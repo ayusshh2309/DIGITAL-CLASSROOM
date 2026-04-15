@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Learner Registration</title>
+    <script>
+        (function () {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <style>
+        :root {
+            color-scheme: light;
+            font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            --bg: #f5f7fb;
+            --surface: #ffffff;
+            --surface-soft: #edf2fb;
+            --surface-strong: #e2e8f0;
+            --text: #0f172a;
+            --muted: #64748b;
+            --primary: #3b82f6;
+            --primary-soft: #dbeafe;
+            --success: #22c55e;
+            --border: #d1d5db;
+            --shadow: 0 28px 60px rgba(15, 23, 42, 0.08);
+            --radius: 32px;
+        }
+
+        [data-theme="dark"] {
+            color-scheme: dark;
+            --bg: #0d172c;
+            --surface: #111827;
+            --surface-soft: #111f3f;
+            --surface-strong: #1f2937;
+            --text: #f8fafc;
+            --muted: #cbd5e1;
+            --primary: #60a5fa;
+            --primary-soft: rgba(96, 165, 250, 0.18);
+            --success: #4ade80;
+            --border: #334155;
+            --shadow: 0 28px 60px rgba(0, 0, 0, 0.36);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            min-height: 100%;
+            background: linear-gradient(180deg, var(--bg), var(--surface-soft));
+            color: var(--text);
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .page {
+            width: min(1200px, 100%);
+            background: transparent;
+        }
+
+        .card {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 28px;
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            min-height: 720px;
+        }
+
+        .illustration-panel {
+            position: relative;
+            background: linear-gradient(180deg, #eef5ff 0%, #ffffff 100%);
+            overflow: hidden;
+        }
+
+        .illustration-panel::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at top left, rgba(59, 130, 246, 0.16), transparent 28%),
+                radial-gradient(circle at bottom right, rgba(147, 197, 253, 0.16), transparent 28%);
+        }
+
+        .illustration-card {
+            position: relative;
+            height: 100%;
+            display: grid;
+            place-items: center;
+        }
+
+        .illustration-stage {
+            width: min(92%, 520px);
+            aspect-ratio: 4 / 3.1;
+            position: relative;
+            border-radius: 36px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(229, 241, 255, 0.94));
+            border: 1px solid rgba(255, 255, 255, 0.85);
+            box-shadow: 0 18px 50px rgba(15, 23, 42, 0.1);
+            overflow: hidden;
+        }
+
+        .illustration-stage::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at top center, rgba(59, 130, 246, 0.08), transparent 40%);
+        }
+
+        .study-highlights {
+            position: absolute;
+            inset: 14%;
+            display: grid;
+            gap: 14px;
+        }
+
+        .motivation-pill {
+            width: fit-content;
+            padding: 12px 18px;
+            border-radius: 999px;
+            background: rgba(59, 130, 246, 0.12);
+            color: #2563eb;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            box-shadow: 0 10px 24px rgba(59, 130, 246, 0.08);
+        }
+
+        .motivation-caption {
+            max-width: 78%;
+            color: rgba(15, 23, 42, 0.75);
+            font-size: 0.98rem;
+            line-height: 1.7;
+        }
+
+        .student-group {
+            position: relative;
+            width: 100%;
+            height: 54%;
+            display: grid;
+            place-items: center;
+        }
+
+        .student {
+            position: relative;
+            width: 180px;
+            height: 220px;
+            display: grid;
+            place-items: center;
+        }
+
+        .student-head {
+            width: 76px;
+            height: 76px;
+            border-radius: 50%;
+            background: radial-gradient(circle at top, #f8fafc, #bfdbfe);
+            border: 6px solid white;
+            box-shadow: 0 16px 32px rgba(15, 23, 42, 0.12);
+        }
+
+        .student-body {
+            position: absolute;
+            top: 52%;
+            width: 120px;
+            height: 96px;
+            border-radius: 48px 48px 28px 28px;
+            background: linear-gradient(180deg, #bfdbfe 0%, #eff6ff 100%);
+            border: 1px solid rgba(59, 130, 246, 0.18);
+        }
+
+        .student-desk {
+            position: absolute;
+            top: 80%;
+            width: 220px;
+            height: 24px;
+            border-radius: 16px;
+            background: linear-gradient(180deg, #e2e8f0, #cbd5e1);
+            box-shadow: 0 18px 28px rgba(15, 23, 42, 0.08);
+        }
+
+        .student-screen {
+            position: absolute;
+            top: 64%;
+            width: 100px;
+            height: 62px;
+            border-radius: 18px;
+            background: linear-gradient(180deg, #ffffff 0%, #dbeafe 100%);
+            border: 2px solid rgba(59, 130, 246, 0.25);
+            box-shadow: inset 0 2px 10px rgba(59, 130, 246, 0.12);
+        }
+
+        .student-screen::before {
+            content: "📘";
+            position: absolute;
+            top: 12px;
+            left: 14px;
+            color: rgba(59, 130, 246, 0.9);
+            font-size: 26px;
+        }
+
+        .growth-arrow {
+            position: absolute;
+            right: -4%;
+            bottom: 14%;
+            width: 40%;
+            height: 40%;
+            background: rgba(59, 130, 246, 0.12);
+            border-radius: 48px;
+            display: grid;
+            place-items: center;
+            box-shadow: 0 14px 26px rgba(59, 130, 246, 0.08);
+        }
+
+        .growth-arrow::before {
+            content: "";
+            width: 16px;
+            height: 72px;
+            background: linear-gradient(180deg, #2563eb, #60a5fa);
+            border-radius: 12px;
+            transform: rotate(-12deg);
+            position: absolute;
+            bottom: 18%;
+            left: 36%;
+        }
+
+        .growth-arrow::after {
+            content: "";
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-left: 18px solid transparent;
+            border-right: 18px solid transparent;
+            border-bottom: 26px solid #2563eb;
+            transform: rotate(-12deg);
+            top: 6%;
+            left: 42%;
+        }
+
+        .sparkle {
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            background: rgba(59, 130, 246, 0.25);
+            border-radius: 50%;
+            filter: blur(1px);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .sparkle.one { top: 16%; left: 18%; }
+        .sparkle.two { top: 10%; right: 18%; width: 22px; height: 22px; }
+        .sparkle.three { bottom: 20%; left: 12%; width: 14px; height: 14px; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .form-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .form-header {
+            margin: 0 0 24px;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: var(--surface-soft);
+            color: var(--primary);
+            font-size: 0.88rem;
+            font-weight: 700;
+            margin-bottom: 18px;
+        }
+
+        .form-header h1 {
+            margin: 0;
+            font-size: clamp(2rem, 2.45vw, 2.5rem);
+            line-height: 1.05;
+        }
+
+        .form-header p {
+            margin: 12px 0 0;
+            color: var(--muted);
+            line-height: 1.8;
+            max-width: 520px;
+        }
+
+        .fields-grid {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: 1fr 1fr;
+            margin-bottom: 18px;
+        }
+
+        .field {
+            display: grid;
+            gap: 8px;
+        }
+
+        .field.full {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 16px 18px;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            background: var(--surface);
+            color: var(--text);
+            font-size: 0.96rem;
+            outline: none;
+            transition: border-color 200ms ease, box-shadow 200ms ease;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+        input.valid {
+            border-color: var(--success);
+        }
+
+        .input-icon {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+            font-size: 0.98rem;
+            pointer-events: none;
+        }
+
+        .prefix {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+            font-size: 0.95rem;
+            font-weight: 700;
+            padding: 12px 12px;
+            border: 1px solid transparent;
+            border-radius: 14px;
+            background: rgba(243, 244, 246, 0.95);
+            min-width: 92px;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .field input.phone {
+            padding-left: 120px;
+        }
+
+        .field input.email {
+            padding-right: 48px;
+        }
+
+        .field input.password {
+            padding-right: 90px;
+        }
+
+        .show-hide {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: none;
+            background: transparent;
+            color: var(--primary);
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .password-meter {
+            display: grid;
+            gap: 10px;
+            padding: 14px 18px;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            background: var(--surface-soft);
+            margin-top: 6px;
+        }
+
+        .meter-label {
+            font-size: 0.94rem;
+            color: var(--muted);
+        }
+
+        .meter-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .meter-step {
+            padding: 10px 12px;
+            border-radius: 14px;
+            background: rgba(148, 163, 184, 0.12);
+            color: var(--muted);
+            font-size: 0.82rem;
+            text-align: center;
+        }
+
+        .meter-step.active {
+            background: rgba(34, 197, 94, 0.14);
+            color: var(--success);
+        }
+
+        .aux-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin: 12px 0 20px;
+            flex-wrap: nowrap;
+        }
+
+        .aux-row label {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+            color: var(--text);
+            white-space: nowrap;
+        }
+
+        .aux-row a {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .aux-row a:hover {
+            text-decoration: underline;
+        }
+
+        .social-row {
+            display: grid;
+            gap: 14px;
+            margin: 18px 0;
+        }
+
+        .social-row p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .social-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .social-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 16px;
+            border-radius: 18px;
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .social-button:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .submit-group {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 18px;
+            margin-top: 10px;
+        }
+
+        .agreement {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.94rem;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .agreement a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .primary-button {
+            width: auto;
+            min-width: 220px;
+            padding: 18px 22px;
+            border: none;
+            border-radius: 18px;
+            background: var(--primary);
+            color: white;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 18px 30px rgba(59, 130, 246, 0.18);
+            transition: var(--transition);
+        }
+
+        .primary-button:hover {
+            transform: translateY(-1px);
+            background: #2563eb;
+        }
+
+        @media (max-width: 980px) {
+            .card {
+                grid-template-columns: 1fr;
+            }
+
+            .page {
+                padding: 20px;
+            }
+
+            .illustration-panel {
+                order: 2;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .fields-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .social-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <div class="card">
+            <section class="illustration-panel">
+                <div class="illustration-card">
+                    <div class="illustration-stage">
+                                <div class="study-highlights">
+                            <div class="motivation-pill">Dream big. Learn smarter.</div>
+                            <div class="motivation-caption">Every step today brings you closer to the confident learner you want to become.</div>
+                            <div class="student-group">
+                                <div class="student">
+                                    <div class="student-head"></div>
+                                    <div class="student-body"></div>
+                                    <div class="student-screen"></div>
+                                    <div class="student-desk"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="growth-arrow"></div>
+                        <div class="sparkle one"></div>
+                        <div class="sparkle two"></div>
+                        <div class="sparkle three"></div>
+                    </div>
+                </div>
+            </section>
+            <section class="form-panel">
+                <div class="form-header">
+                    <div class="eyebrow">Learner Registration</div>
+                    <h1>Create Your Account and Start Your Smart Journey</h1>
+                    <p>Join a modern learning experience with a clear workflow, smart tools, and personalized support from day one.</p>
+                </div>
+                <div class="fields-grid">
+                    <div class="field full">
+                        <label for="fullname">Full Name</label>
+                        <div class="input-group">
+                            <input id="fullname" name="fullname" type="text" placeholder="e.g., John Doe" />
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="grade">Class/Grade</label>
+                        <div class="input-group">
+                            <select id="grade" name="grade">
+                                <option value="">Select grade</option>
+                                <option>Grade 6</option>
+                                <option>Grade 7</option>
+                                <option>Grade 8</option>
+                                <option>Grade 9</option>
+                                <option>Grade 10</option>
+                                <option>Grade 11</option>
+                                <option>Grade 12</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="dob">Date of Birth</label>
+                        <div class="input-group">
+                            <input id="dob" name="dob" type="date" placeholder="Select your birth date" />
+                        </div>
+                    </div>
+                    <div class="field full">
+                        <label for="phone">Phone Number</label>
+                        <div class="input-group">
+                            <select id="countryPrefix" class="prefix" aria-label="Country code">
+                                <option value="+1">+1 US</option>
+                                <option value="+44">+44 UK</option>
+                                <option value="+61">+61 AU</option>
+                                <option value="+91">+91 IN</option>
+                                <option value="+81">+81 JP</option>
+                            </select>
+                            <input id="phone" name="phone" class="phone" type="tel" placeholder="555 123 4567" />
+                        </div>
+                    </div>
+                    <div class="field full">
+                        <label for="email">Email</label>
+                        <div class="input-group">
+                            <input id="email" name="email" class="email" type="email" placeholder="you@example.com" />
+                            <span class="input-icon">@</span>
+                        </div>
+                    </div>
+                    <div class="field full">
+                        <label for="password">Password</label>
+                        <div class="input-group">
+                            <input id="password" name="password" class="password" type="password" placeholder="Create a password" />
+                            <button type="button" class="show-hide" id="togglePassword">Show</button>
+                        </div>
+                        <div class="password-meter" id="passwordMeter">
+                            <div class="meter-label">Password Strength</div>
+                            <div class="meter-grid">
+                                <div class="meter-step" id="meterLength">8+ chars</div>
+                                <div class="meter-step" id="meterUpper">1 Upper</div>
+                                <div class="meter-step" id="meterLower">1 Lower</div>
+                                <div class="meter-step" id="meterSpecial">1 Special</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="aux-row">
+                    <label><input type="checkbox" id="remember" checked /> Remember Me</label>
+                    <a href="#">Forgot Password?</a>
+                </div>
+                <div class="social-row">
+                    <p>Or Sign Up with</p>
+                    <div class="social-buttons">
+                        <button class="social-button" type="button">Google</button>
+                        <button class="social-button" type="button">Microsoft</button>
+                        <button class="social-button" type="button">LinkedIn</button>
+                    </div>
+                </div>
+                <div class="submit-group">
+                    <label class="agreement"><input type="checkbox" id="terms" /> I agree to the <a href="#">Terms of Service</a></label>
+                    <button class="primary-button" type="button">Create Account</button>
+                </div>
+            </section>
+        </div>
+    </div>
+    <script>
+        const passwordInput = document.getElementById('password');
+        const togglePassword = document.getElementById('togglePassword');
+        const fullnameInput = document.getElementById('fullname');
+        const gradeSelect = document.getElementById('grade');
+        const dobInput = document.getElementById('dob');
+        const phoneInput = document.getElementById('phone');
+        const emailInput = document.getElementById('email');
+        const meterLength = document.getElementById('meterLength');
+        const meterUpper = document.getElementById('meterUpper');
+        const meterLower = document.getElementById('meterLower');
+        const meterSpecial = document.getElementById('meterSpecial');
+
+        togglePassword.addEventListener('click', () => {
+            const type = passwordInput.type === 'password' ? 'text' : 'password';
+            passwordInput.type = type;
+            togglePassword.textContent = type === 'password' ? 'Show' : 'Hide';
+        });
+
+        function validateInput(input, predicate) {
+            if (predicate(input.value)) {
+                input.classList.add('valid');
+            } else {
+                input.classList.remove('valid');
+            }
+        }
+
+        fullnameInput.addEventListener('input', () => {
+            validateInput(fullnameInput, value => value.trim().length >= 3);
+        });
+
+        gradeSelect.addEventListener('change', () => {
+            validateInput(gradeSelect, value => value !== '');
+        });
+
+        dobInput.addEventListener('input', () => {
+            validateInput(dobInput, value => Boolean(value) && new Date(value) < new Date());
+        });
+
+        phoneInput.addEventListener('input', () => {
+            validateInput(phoneInput, value => /^\(?\d{3}\)?[-\s]?\d{3}[-\s]?\d{4}$/.test(value));
+        });
+
+        emailInput.addEventListener('input', () => {
+            validateInput(emailInput, value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value));
+        });
+
+        passwordInput.addEventListener('input', () => {
+            const value = passwordInput.value;
+            const checks = {
+                length: value.length >= 8,
+                upper: /[A-Z]/.test(value),
+                lower: /[a-z]/.test(value),
+                special: /[!@#$%^&*(),.?":{}|<>]/.test(value),
+            };
+            meterLength.classList.toggle('active', checks.length);
+            meterUpper.classList.toggle('active', checks.upper);
+            meterLower.classList.toggle('active', checks.lower);
+            meterSpecial.classList.toggle('active', checks.special);
+            validateInput(passwordInput, value => Object.values(checks).every(Boolean));
+        });
+    </script>
+</body>
+
+</html>
