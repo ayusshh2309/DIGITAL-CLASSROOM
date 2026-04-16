@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Smart</title>
+    <title>Smart Learning</title>
     <script>
         (function () {
             const theme = localStorage.getItem('theme') || 'light';
@@ -616,37 +616,6 @@
             font-size: 0.95rem;
             line-height: 1.7;
         }
-
-        @media (max-width: 920px) {
-            .hero-panel {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 620px) {
-            .page {
-                padding: 18px;
-            }
-
-            .topbar {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .nav-links {
-                width: 100%;
-                justify-content: flex-start;
-            }
-
-            .illustration-card,
-            .selection-card {
-                padding: 24px;
-            }
-
-            .illustration-frame {
-                min-height: 280px;
-            }
-        }
     </style>
 </head>
 
@@ -662,7 +631,7 @@
                     <button class="theme-toggle" id="themeToggle" type="button"><span class="theme-icon" aria-hidden="true">🌙</span><span class="theme-label">Dark mode</span></button>
                 </span>
                 <span class="nav-item">
-                    <a href=" login">Log in</a>
+                    <a href="login.learning.html">Log in</a>
                 </span>
             </nav>
         </header>
@@ -763,38 +732,23 @@
         const cards = document.querySelectorAll('.variant-card');
         const roleTargets = {
             learner: 'login.learning.html',
-            teacher: 'master.html'
+            teacher: 'master.login.html'
         };
-
-        function mockRecordSelection(role) {
-            console.log(`Mock API: recording selected role -> ${role}`);
-
-            // Simulate a backend call without requiring a real service.
-            return new Promise(resolve => {
-                window.setTimeout(() => {
-                    resolve({ status: 'ok', role });
-                }, 180);
-            });
-        }
 
         function handleRoleClick(card) {
             const role = card.dataset.role;
-            const targetUrl = roleTargets[role] || 'learner.login.html';
+            const targetUrl = roleTargets[role] || 'login.learning.html';
 
             cards.forEach(item => item.classList.remove('selected'));
             card.classList.add('selected');
 
-            mockRecordSelection(role).then(() => {
-                document.body.classList.add('fade-out');
-                window.setTimeout(() => {
-                    window.location.href = targetUrl;
-                }, 260);
-            });
+            document.body.classList.add('fade-out');
+            window.setTimeout(() => {
+                window.location.href = targetUrl;
+            }, 220);
         }
 
-        cards.forEach(card => {
-            card.addEventListener('click', () => handleRoleClick(card));
-        });
+        cards.forEach(card => card.addEventListener('click', () => handleRoleClick(card)));
 
         const themeToggle = document.getElementById('themeToggle');
         const themeIcon = themeToggle.querySelector('.theme-icon');
