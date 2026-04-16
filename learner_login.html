@@ -48,7 +48,8 @@
             box-sizing: border-box;
         }
 
-        html, body {
+        html,
+        body {
             margin: 0;
             min-height: 100%;
             background: linear-gradient(180deg, var(--bg), var(--surface-soft));
@@ -255,13 +256,35 @@
             animation: float 6s ease-in-out infinite;
         }
 
-        .sparkle.one { top: 16%; left: 18%; }
-        .sparkle.two { top: 10%; right: 18%; width: 22px; height: 22px; }
-        .sparkle.three { bottom: 20%; left: 12%; width: 14px; height: 14px; }
+        .sparkle.one {
+            top: 16%;
+            left: 18%;
+        }
+
+        .sparkle.two {
+            top: 10%;
+            right: 18%;
+            width: 22px;
+            height: 22px;
+        }
+
+        .sparkle.three {
+            bottom: 20%;
+            left: 12%;
+            width: 14px;
+            height: 14px;
+        }
 
         @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
         }
 
         .form-panel {
@@ -339,15 +362,46 @@
             color: var(--text);
         }
 
+        .contact-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: var(--surface-soft);
+            padding: 6px;
+            border-radius: 999px;
+            width: fit-content;
+        }
+
+        .contact-toggle button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 999px;
+            background: transparent;
+            color: var(--muted);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 200ms ease;
+        }
+
+        .contact-toggle button.active {
+            background: var(--surface);
+            color: var(--primary);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+
         .input-group {
             position: relative;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         input,
         select {
             width: 100%;
+            min-width: 0;
             padding: 16px 18px;
-            border: 1px solid var(--border);
+            border: 2px solid var(--border);
             border-radius: 18px;
             background: var(--surface);
             color: var(--text);
@@ -366,6 +420,10 @@
             border-color: var(--success);
         }
 
+        .input-group input {
+            flex: 1;
+        }
+
         .input-icon {
             position: absolute;
             right: 18px;
@@ -377,24 +435,23 @@
         }
 
         .prefix {
-            position: absolute;
-            left: 18px;
-            top: 50%;
-            transform: translateY(-50%);
+            position: static;
             color: var(--muted);
             font-size: 0.95rem;
             font-weight: 700;
-            padding: 12px 12px;
-            border: 1px solid transparent;
+            padding: 12px 14px;
+            border: 2px solid var(--border);
             border-radius: 14px;
             background: rgba(243, 244, 246, 0.95);
-            min-width: 92px;
+            min-width: 120px;
+            width: auto;
+            flex: 0 0 auto;
             appearance: none;
             cursor: pointer;
         }
 
         .field input.phone {
-            padding-left: 120px;
+            padding-left: 18px;
         }
 
         .field input.email {
@@ -585,6 +642,26 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        .login-prompt {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 20px;
+            font-size: 0.95rem;
+            color: var(--muted);
+        }
+
+        .login-prompt .login-link {
+            color: var(--primary);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .login-prompt .login-link:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 
@@ -594,9 +671,10 @@
             <section class="illustration-panel">
                 <div class="illustration-card">
                     <div class="illustration-stage">
-                                <div class="study-highlights">
+                        <div class="study-highlights">
                             <div class="motivation-pill">Dream big. Learn smarter.</div>
-                            <div class="motivation-caption">Every step today brings you closer to the confident learner you want to become.</div>
+                            <div class="motivation-caption">Every step today brings you closer to the confident learner
+                                you want to become.</div>
                             <div class="student-group">
                                 <div class="student">
                                     <div class="student-head"></div>
@@ -617,7 +695,8 @@
                 <div class="form-header">
                     <div class="eyebrow">Learner Registration</div>
                     <h1>Create Your Account and Start Your Smart Journey</h1>
-                    <p>Join a modern learning experience with a clear workflow, smart tools, and personalized support from day one.</p>
+                    <p>Join a modern learning experience with a clear workflow, smart tools, and personalized support
+                        from day one.</p>
                 </div>
                 <div class="fields-grid">
                     <div class="field full">
@@ -662,6 +741,19 @@
                         </div>
                     </div>
                     <div class="field full">
+                        <div class="contact-toggle">
+                            <button type="button" class="contact-method active" data-method="email" id="emailToggle">Email</button>
+                            <button type="button" class="contact-method" data-method="phone" id="phoneToggle">Phone</button>
+                        </div>
+                    </div>
+                    <div class="field full" id="emailField">
+                        <label for="email">Email</label>
+                        <div class="input-group">
+                            <input id="email" name="email" class="email" type="email" placeholder="you@example.com" />
+                            <span class="input-icon">@</span>
+                        </div>
+                    </div>
+                    <div class="field full" id="phoneField" style="display: none;">
                         <label for="phone">Phone Number</label>
                         <div class="input-group">
                             <select id="countryPrefix" class="prefix" aria-label="Country code">
@@ -675,16 +767,10 @@
                         </div>
                     </div>
                     <div class="field full">
-                        <label for="email">Email</label>
-                        <div class="input-group">
-                            <input id="email" name="email" class="email" type="email" placeholder="you@example.com" />
-                            <span class="input-icon">@</span>
-                        </div>
-                    </div>
-                    <div class="field full">
                         <label for="password">Password</label>
                         <div class="input-group">
-                            <input id="password" name="password" class="password" type="password" placeholder="Create a password" />
+                            <input id="password" name="password" class="password" type="password"
+                                placeholder="Create a password" />
                             <button type="button" class="show-hide" id="togglePassword">Show</button>
                         </div>
                         <div class="password-meter" id="passwordMeter">
@@ -711,13 +797,45 @@
                     </div>
                 </div>
                 <div class="submit-group">
-                    <label class="agreement"><input type="checkbox" id="terms" /> I agree to the <a href="#">Terms of Service</a></label>
+                    <label class="agreement"><input type="checkbox" id="terms" /> I agree to the <a href="#">Terms of
+                            Service</a></label>
                     <button id="createAccountButton" class="primary-button" type="button">Create Account</button>
+                </div>
+                <div class="login-prompt">
+                    <span>Already have an account?</span>
+                    <a href="index.html#login" class="login-link">Log in</a>
                 </div>
             </section>
         </div>
     </div>
-    <script>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
+        import { getFirestore, collection, addDoc } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCnvCkzycQxrJOXmH1ol43uUCAJtzpz3eA",
+            authDomain: "digital-classroom-de2b7.firebaseapp.com",
+            databaseURL: "https://digital-classroom-de2b7-default-rtdb.firebaseio.com",
+            projectId: "digital-classroom-de2b7",
+            storageBucket: "digital-classroom-de2b7.firebasestorage.app",
+            messagingSenderId: "30446374460",
+            appId: "1:30446374460:web:32508ecdafa718785c3d39",
+            measurementId: "G-3TH6YJJQWM"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        async function saveLearnerData(learner) {
+            try {
+                await addDoc(collection(db, 'learners'), learner);
+            } catch (error) {
+                console.error('Error saving learner data:', error);
+                alert('Unable to save registration data. Please try again later.');
+                throw error;
+            }
+        }
+
         const passwordInput = document.getElementById('password');
         const togglePassword = document.getElementById('togglePassword');
         const fullnameInput = document.getElementById('fullname');
@@ -728,10 +846,49 @@
         const dobInput = document.getElementById('dob');
         const phoneInput = document.getElementById('phone');
         const emailInput = document.getElementById('email');
+        const termsInput = document.getElementById('terms');
+        const countryPrefix = document.getElementById('countryPrefix');
         const meterLength = document.getElementById('meterLength');
         const meterUpper = document.getElementById('meterUpper');
         const meterLower = document.getElementById('meterLower');
         const meterSpecial = document.getElementById('meterSpecial');
+        const emailToggle = document.getElementById('emailToggle');
+        const phoneToggle = document.getElementById('phoneToggle');
+        const emailField = document.getElementById('emailField');
+        const phoneField = document.getElementById('phoneField');
+        let contactMethod = 'email'; // Track current contact method
+
+        // Verify elements exist before adding listeners
+        if (!emailToggle || !phoneToggle) {
+            console.error('Toggle buttons not found');
+        }
+
+        // Toggle between email and phone
+        if (emailToggle) {
+            emailToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                contactMethod = 'email';
+                emailToggle.classList.add('active');
+                phoneToggle.classList.remove('active');
+                emailField.style.display = 'block';
+                phoneField.style.display = 'none';
+                emailInput.focus();
+            });
+        }
+
+        if (phoneToggle) {
+            phoneToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                contactMethod = 'phone';
+                phoneToggle.classList.add('active');
+                emailToggle.classList.remove('active');
+                phoneField.style.display = 'block';
+                emailField.style.display = 'none';
+                phoneInput.focus();
+            });
+        }
 
         togglePassword.addEventListener('click', () => {
             const type = passwordInput.type === 'password' ? 'text' : 'password';
@@ -765,7 +922,13 @@
             }
         }
 
-        createAccountButton.addEventListener('click', () => {
+        createAccountButton.addEventListener('click', async () => {
+            if (!fullnameInput.value.trim()) {
+                alert('Please enter your full name.');
+                fullnameInput.focus();
+                return;
+            }
+
             if (!gradeSelect.value) {
                 alert('Please select your class/grade.');
                 gradeSelect.focus();
@@ -778,14 +941,50 @@
                 return;
             }
 
+            // Validate based on contact method
+            if (contactMethod === 'email') {
+                if (!emailInput.value.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value)) {
+                    alert('Please enter a valid email address.');
+                    emailInput.focus();
+                    return;
+                }
+            } else {
+                const phoneValue = phoneInput.value.trim();
+                const phoneValid = /^[+\d]?(?:[\d\s()\-]){7,20}$/.test(phoneValue);
+                if (!phoneValid) {
+                    alert('Please enter a valid phone number.');
+                    phoneInput.focus();
+                    return;
+                }
+            }
+
+            const passwordValue = passwordInput.value;
+            const passwordValid = passwordValue.length >= 8 && /[A-Z]/.test(passwordValue) && /[a-z]/.test(passwordValue) && /[^A-Za-z0-9]/.test(passwordValue);
+            if (!passwordValid) {
+                alert('Password must be at least 8 characters and include one uppercase letter, one lowercase letter, and one special character.');
+                passwordInput.focus();
+                return;
+            }
+
+            if (!termsInput.checked) {
+                alert('Please agree to the Terms of Service.');
+                termsInput.focus();
+                return;
+            }
+
             const learnerProfile = {
                 fullname: fullnameInput.value.trim(),
                 grade: gradeSelect.value,
                 stream: streamSelect.value || '',
                 dob: dobInput.value,
-                email: emailInput.value.trim()
+                contactMethod: contactMethod,
+                phone: contactMethod === 'phone' ? `${countryPrefix.value} ${phoneInput.value.trim()}` : '',
+                email: contactMethod === 'email' ? emailInput.value.trim() : '',
+                termsAccepted: termsInput.checked,
+                createdAt: new Date().toISOString()
             };
 
+            await saveLearnerData(learnerProfile);
             localStorage.setItem('learnerProfile', JSON.stringify(learnerProfile));
             window.location.href = 'learner_dashboard.html';
         });
@@ -797,11 +996,15 @@
         });
 
         phoneInput.addEventListener('input', () => {
-            validateInput(phoneInput, value => /^\(?\d{3}\)?[-\s]?\d{3}[-\s]?\d{4}$/.test(value));
+            if (contactMethod === 'phone') {
+                validateInput(phoneInput, value => /^[+\d]?(?:[\d\s()\-]){7,20}$/.test(value));
+            }
         });
 
         emailInput.addEventListener('input', () => {
-            validateInput(emailInput, value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value));
+            if (contactMethod === 'email') {
+                validateInput(emailInput, value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value));
+            }
         });
 
         passwordInput.addEventListener('input', () => {

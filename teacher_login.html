@@ -595,6 +595,27 @@
             transition: width 180ms ease, background 180ms ease;
         }
 
+        .meter-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .meter-step {
+            padding: 12px 14px;
+            border-radius: 16px;
+            background: rgba(15, 44, 93, 0.06);
+            color: var(--muted);
+            font-size: 0.92rem;
+            text-align: center;
+            transition: background 180ms ease, color 180ms ease;
+        }
+
+        .meter-step.active {
+            background: rgba(34, 197, 94, 0.12);
+            color: #166534;
+        }
+
         .security-strength {
             font-size: 0.92rem;
             color: var(--muted);
@@ -665,6 +686,26 @@
                 width: 100%;
                 min-width: auto;
             }
+        }
+
+        .login-prompt {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 20px;
+            font-size: 0.95rem;
+            color: var(--muted);
+        }
+
+        .login-prompt .login-link {
+            color: var(--primary);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .login-prompt .login-link:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -773,10 +814,11 @@
                     </div>
                     <div class="field-group">
                         <label>Document Upload</label>
-                        <div class="upload-box">
+                        <div class="upload-box" id="uploadBox" tabindex="0">
                             <div class="upload-icon">☁</div>
                             <p>Teaching Certification</p>
-                            <span>Drag files here or browse to upload</span>
+                            <span id="uploadMessage">Drag files here or browse to upload</span>
+                            <input type="file" id="documentUpload" accept=".pdf,.doc,.docx,.png,.jpg" hidden />
                         </div>
                     </div>
                     <div class="field-group security-group">
@@ -790,16 +832,26 @@
                             <span id="securityText">Weak</span>
                         </div>
                         <div class="security-bar"><span id="securityBar"></span></div>
+                        <div class="meter-grid">
+                            <div class="meter-step" id="meterLength">8+ chars</div>
+                            <div class="meter-step" id="meterUpper">1 Upper</div>
+                            <div class="meter-step" id="meterLower">1 Lower</div>
+                            <div class="meter-step" id="meterSpecial">1 Special</div>
+                        </div>
                     </div>
                     <div class="submit-row">
                         <div class="field-group">
                             <label for="staffId">Staff ID</label>
-                            <input id="staffId" name="staffId" type="number" placeholder="123456" />
+                            <input id="staffId" name="staffId" type="text" placeholder="Auto-generated" readonly />
                         </div>
                         <button id="createAccountButton" class="btn-primary" type="button">Create Account</button>
                     </div>
                 </form>
                 <p class="hint">Your information is encrypted and stored securely with enterprise-grade education privacy protection.</p>
+                <div class="login-prompt">
+                    <span>Already have an account?</span>
+                    <a href="index.html#login" class="login-link">Log in</a>
+                </div>
             </section>
         </div>
     </div>
@@ -810,6 +862,17 @@
         const tagInput = document.getElementById('tagInput');
         const expertiseInput = document.getElementById('expertise');
         const fullNameInput = document.getElementById('fullName');
+        const workEmailInput = document.getElementById('workEmail');
+        const institutionInput = document.getElementById('institution');
+        const experienceInput = document.getElementById('experience');
+        const staffIdInput = document.getElementById('staffId');
+        const uploadBox = document.getElementById('uploadBox');
+        const documentUploadInput = document.getElementById('documentUpload');
+        const uploadMessage = document.getElementById('uploadMessage');
+        const meterLength = document.getElementById('meterLength');
+        const meterUpper = document.getElementById('meterUpper');
+        const meterLower = document.getElementById('meterLower');
+        const meterSpecial = document.getElementById('meterSpecial');
         const createAccountButton = document.getElementById('createAccountButton');
 
         function getExpertiseTags() {
@@ -818,24 +881,117 @@
                 .filter(Boolean);
         }
 
+        function generateStaffId() {
+            const usedIds = JSON.parse(localStorage.getItem('usedStaffIds') || '[]');
+            let id;
+            do {
+                id = String(Math.floor(100000 + Math.random() * 900000));
+            } while (usedIds.includes(id));
+            usedIds.push(id);
+            localStorage.setItem('usedStaffIds', JSON.stringify(usedIds));
+            return id;
+        }
+
+        function updateUploadLabel(fileName) {
+            uploadMessage.textContent = fileName ? `Selected: ${fileName}` : 'Drag files here or browse to upload';
+        }
+
+        uploadBox.addEventListener('click', () => documentUploadInput.click());
+        uploadBox.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                documentUploadInput.click();
+            }
+        });
+
+        uploadBox.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            uploadBox.classList.add('dragover');
+        });
+
+        uploadBox.addEventListener('dragleave', () => {
+            uploadBox.classList.remove('dragover');
+        });
+
+        uploadBox.addEventListener('drop', (event) => {
+            event.preventDefault();
+            uploadBox.classList.remove('dragover');
+            const file = event.dataTransfer.files[0];
+            if (file) {
+                documentUploadInput.files = event.dataTransfer.files;
+                updateUploadLabel(file.name);
+            }
+        });
+
+        documentUploadInput.addEventListener('change', () => {
+            const file = documentUploadInput.files[0];
+            updateUploadLabel(file ? file.name : 'Drag files here or browse to upload');
+        });
+
+        staffIdInput.value = '';
+
         createAccountButton.addEventListener('click', () => {
+            const passwordValue = passwordInput.value;
+            const passwordValid = passwordValue.length >= 8 && /[A-Z]/.test(passwordValue) && /[a-z]/.test(passwordValue) && /[^A-Za-z0-9]/.test(passwordValue);
+            const workEmailValue = workEmailInput.value.trim();
+            const selectedFile = documentUploadInput.files[0];
+            const staffId = generateStaffId();
+
+            if (!fullNameInput.value.trim()) {
+                alert('Please enter your full name.');
+                fullNameInput.focus();
+                return;
+            }
+
+            if (!workEmailValue || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(workEmailValue)) {
+                alert('Please enter a valid work email.');
+                workEmailInput.focus();
+                return;
+            }
+
+            if (!passwordValid) {
+                alert('Password must be at least 8 characters and include one uppercase letter, one lowercase letter, and one special character.');
+                passwordInput.focus();
+                return;
+            }
+
+            if (!selectedFile) {
+                alert('Please upload your teaching certification document.');
+                uploadBox.focus();
+                return;
+            }
+
             const profile = {
-                fullName: fullNameInput.value.trim() || 'Mr. Sharma',
-                expertise: getExpertiseTags().join(', ') || 'Mathematics & Science'
+                fullName: fullNameInput.value.trim(),
+                email: workEmailValue,
+                expertise: getExpertiseTags().join(', ') || 'Mathematics & Science',
+                institution: institutionInput.value.trim(),
+                experience: experienceInput.value ? Number(experienceInput.value) : null,
+                staffId: staffId,
+                documentName: selectedFile.name
             };
+
+            staffIdInput.value = staffId;
             localStorage.setItem('teacherProfile', JSON.stringify(profile));
             window.location.href = 'teacher_dashboard.html';
         });
 
         passwordInput.addEventListener('input', () => {
             const value = passwordInput.value;
-            let score = 0;
-            if (value.length >= 8) score += 1;
-            if (/[A-Z]/.test(value)) score += 1;
-            if (/[0-9]/.test(value)) score += 1;
-            if (/[^A-Za-z0-9]/.test(value)) score += 1;
-            const width = score * 25;
-            securityBar.style.width = width + '%';
+            const checks = {
+                length: value.length >= 8,
+                upper: /[A-Z]/.test(value),
+                lower: /[a-z]/.test(value),
+                special: /[^A-Za-z0-9]/.test(value)
+            };
+            const score = Object.values(checks).filter(Boolean).length;
+            const width = Math.round((score / 4) * 100);
+            securityBar.style.width = `${width}%`;
+
+            meterLength.classList.toggle('active', checks.length);
+            meterUpper.classList.toggle('active', checks.upper);
+            meterLower.classList.toggle('active', checks.lower);
+            meterSpecial.classList.toggle('active', checks.special);
+
             if (score <= 1) {
                 securityBar.style.background = '#ef4444';
                 securityText.textContent = 'Weak';
