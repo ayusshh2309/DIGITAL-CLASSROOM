@@ -631,7 +631,7 @@
                     <button class="theme-toggle" id="themeToggle" type="button"><span class="theme-icon" aria-hidden="true">🌙</span><span class="theme-label">Dark mode</span></button>
                 </span>
                 <span class="nav-item">
-                    <a href="login.learning.html">Log in</a>
+                    <a href="learner_login.html">Log in</a>
                 </span>
             </nav>
         </header>
@@ -731,13 +731,13 @@
     <script>
         const cards = document.querySelectorAll('.variant-card');
         const roleTargets = {
-            learner: 'login.learning.html',
-            teacher: 'master.login.html'
+            learner: 'learner_login.html',
+            teacher: 'teacher_login.html'
         };
 
         function handleRoleClick(card) {
             const role = card.dataset.role;
-            const targetUrl = roleTargets[role] || 'login.learning.html';
+            const targetUrl = roleTargets[role] || 'learner_login.html';
 
             cards.forEach(item => item.classList.remove('selected'));
             card.classList.add('selected');
@@ -759,13 +759,14 @@
             const isDark = mode === 'dark';
             document.documentElement.setAttribute('data-theme', mode);
             document.body.classList.toggle('dark-mode', isDark);
-            themeIcon.textContent = isDark ? '🌙' : '☀️';
-            themeLabel.textContent = isDark ? 'Dark mode' : 'Light mode';
+            themeIcon.textContent = isDark ? '☀️' : '🌙';
+            themeLabel.textContent = isDark ? 'Light mode' : 'Dark mode';
             localStorage.setItem('theme', mode);
         }
 
         themeToggle.addEventListener('click', () => {
-            applyTheme(document.body.classList.contains('dark-mode') ? 'light' : 'dark');
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            applyTheme(currentTheme === 'light' ? 'dark' : 'light');
         });
 
         applyTheme(savedTheme);

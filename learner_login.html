@@ -317,6 +317,22 @@
             grid-column: 1 / -1;
         }
 
+        .field.conditional-field {
+            max-height: 0;
+            opacity: 0;
+            transform: translateY(-10px);
+            overflow: hidden;
+            pointer-events: none;
+            transition: max-height 240ms ease, opacity 240ms ease, transform 240ms ease;
+        }
+
+        .field.conditional-field.visible {
+            max-height: 160px;
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
         label {
             font-size: 0.95rem;
             font-weight: 600;
@@ -615,13 +631,27 @@
                         <div class="input-group">
                             <select id="grade" name="grade">
                                 <option value="">Select grade</option>
-                                <option>Grade 6</option>
-                                <option>Grade 7</option>
-                                <option>Grade 8</option>
-                                <option>Grade 9</option>
-                                <option>Grade 10</option>
-                                <option>Grade 11</option>
-                                <option>Grade 12</option>
+                                <option value="5">Class 5</option>
+                                <option value="6">Class 6</option>
+                                <option value="7">Class 7</option>
+                                <option value="8">Class 8</option>
+                                <option value="9">Class 9</option>
+                                <option value="10">Class 10</option>
+                                <option value="11">Class 11</option>
+                                <option value="12">Class 12</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="field full conditional-field" id="streamField">
+                        <label for="stream">Stream</label>
+                        <div class="input-group">
+                            <select id="stream" name="stream">
+                                <option value="">Choose stream</option>
+                                <option value="PCM">PCM (Physics, Chemistry, Math)</option>
+                                <option value="PCB">PCB (Physics, Chemistry, Biology)</option>
+                                <option value="Commerce">Commerce</option>
+                                <option value="Arts / Humanities">Arts/Humanities</option>
+                                <option value="Vocational">Vocational</option>
                             </select>
                         </div>
                     </div>
@@ -682,7 +712,7 @@
                 </div>
                 <div class="submit-group">
                     <label class="agreement"><input type="checkbox" id="terms" /> I agree to the <a href="#">Terms of Service</a></label>
-                    <button class="primary-button" type="button">Create Account</button>
+                    <button id="createAccountButton" class="primary-button" type="button">Create Account</button>
                 </div>
             </section>
         </div>
@@ -692,6 +722,9 @@
         const togglePassword = document.getElementById('togglePassword');
         const fullnameInput = document.getElementById('fullname');
         const gradeSelect = document.getElementById('grade');
+        const streamField = document.getElementById('streamField');
+        const streamSelect = document.getElementById('stream');
+        const createAccountButton = document.getElementById('createAccountButton');
         const dobInput = document.getElementById('dob');
         const phoneInput = document.getElementById('phone');
         const emailInput = document.getElementById('email');
@@ -720,7 +753,44 @@
 
         gradeSelect.addEventListener('change', () => {
             validateInput(gradeSelect, value => value !== '');
+            updateStreamVisibility();
         });
+
+        function updateStreamVisibility() {
+            const selectedClass = gradeSelect.value;
+            const shouldShowStream = selectedClass === '11' || selectedClass === '12';
+            streamField.classList.toggle('visible', shouldShowStream);
+            if (!shouldShowStream) {
+                streamSelect.value = '';
+            }
+        }
+
+        createAccountButton.addEventListener('click', () => {
+            if (!gradeSelect.value) {
+                alert('Please select your class/grade.');
+                gradeSelect.focus();
+                return;
+            }
+
+            if ((gradeSelect.value === '11' || gradeSelect.value === '12') && !streamSelect.value) {
+                alert('Please choose a stream for Class 11 or Class 12.');
+                streamSelect.focus();
+                return;
+            }
+
+            const learnerProfile = {
+                fullname: fullnameInput.value.trim(),
+                grade: gradeSelect.value,
+                stream: streamSelect.value || '',
+                dob: dobInput.value,
+                email: emailInput.value.trim()
+            };
+
+            localStorage.setItem('learnerProfile', JSON.stringify(learnerProfile));
+            window.location.href = 'learner_dashboard.html';
+        });
+
+        updateStreamVisibility();
 
         dobInput.addEventListener('input', () => {
             validateInput(dobInput, value => Boolean(value) && new Date(value) < new Date());

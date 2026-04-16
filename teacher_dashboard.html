@@ -1,0 +1,453 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Teacher Dashboard</title>
+    <script>
+        (function () {
+            const theme = localStorage.getItem('teacherTheme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            color-scheme: light;
+            --bg: #eef3ff;
+            --surface: #ffffff;
+            --surface-soft: #f3f5ff;
+            --surface-strong: #e5e9ff;
+            --text: #102a43;
+            --muted: #64748b;
+            --border: rgba(16, 42, 67, 0.12);
+            --primary: #5b63f5;
+            --primary-soft: rgba(91, 99, 245, 0.16);
+            --accent: #7c3aed;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --shadow: 0 28px 80px rgba(16, 42, 67, 0.08);
+            --radius: 24px;
+            --radius-sm: 18px;
+            font-family: Inter, system-ui, sans-serif;
+        }
+        [data-theme='dark'] {
+            color-scheme: dark;
+            --bg: #07101e;
+            --surface: #0d1628;
+            --surface-soft: #111f36;
+            --surface-strong: #16243f;
+            --text: #e2e8f0;
+            --muted: #94a3b8;
+            --border: rgba(148, 163, 184, 0.24);
+            --primary: #8b5cf6;
+            --primary-soft: rgba(139, 92, 246, 0.14);
+            --accent: #a855f7;
+            --success: #4ade80;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --shadow: 0 28px 80px rgba(0, 0, 0, 0.35);
+        }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; min-height: 100%; background: radial-gradient(circle at top left, rgba(91, 97, 245, 0.12), transparent 28%), linear-gradient(180deg, var(--bg), #02060f); color: var(--text); }
+        body { padding: 12px; }
+        button, input, select, textarea { font: inherit; }
+        body, input, button, select, textarea { color: inherit; }
+        a { color: inherit; text-decoration: none; }
+        .layout { max-width: 1480px; margin: 0 auto; display: grid; gap: 12px; }
+        .topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 18px; background: rgba(255,255,255,0.92); border: 1px solid var(--border); box-shadow: 0 14px 32px rgba(16, 42, 67, 0.08); backdrop-filter: blur(14px); }
+        [data-theme='dark'] .topbar { background: rgba(13, 22, 40, 0.88); }
+        .brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: 0.96rem; }
+        .brand-dot { width: 10px; height: 10px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent)); box-shadow: 0 0 12px rgba(124, 58, 237, 0.22); }
+        .topbar-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: var(--surface-soft); border: 1px solid var(--border); }
+        [data-theme='dark'] .pill { background: rgba(15, 23, 42, 0.8); }
+        .pill span { font-weight: 600; }
+        .theme-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-soft); cursor: pointer; }
+        .theme-toggle:hover { transform: translateY(-1px); }
+        .dashboard-grid { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 12px; }
+        .sidebar { padding: 16px 12px; border-radius: 18px; background: var(--surface); border: 1px solid var(--border); box-shadow: 0 16px 36px rgba(16, 42, 67, 0.08); display: grid; gap: 14px; }
+        [data-theme='dark'] .sidebar { background: rgba(15, 23, 42, 0.88); }
+        .sidebar h2 { margin: 0 0 8px; font-size: 0.94rem; font-weight: 700; }
+        .menu { display: grid; gap: 6px; }
+        .menu-item { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: center; padding: 8px 10px; border-radius: 14px; background: var(--surface-soft); border: 1px solid transparent; cursor: pointer; transition: background 180ms ease, border-color 180ms ease; }
+        .menu-item:hover, .menu-item.active { background: var(--primary-soft); border-color: rgba(91, 97, 245, 0.2); }
+        .menu-item span.icon { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 10px; background: rgba(91, 97, 245, 0.12); }
+        .profile-card { border-radius: 18px; background: linear-gradient(180deg, rgba(99, 102, 241, 0.14), rgba(124, 58, 237, 0.08)); padding: 14px; display: grid; gap: 10px; }
+        .profile-card h3 { margin: 0; }
+        .profile-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); }
+        .avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent)); display: grid; place-items: center; color: #fff; font-weight: 700; }
+        .card { border-radius: 18px; background: var(--surface); border: 1px solid var(--border); box-shadow: 0 14px 36px rgba(16, 42, 67, 0.08); padding: 16px; display: grid; gap: 14px; }
+        [data-theme='dark'] .card { background: rgba(15, 23, 42, 0.9); }
+        .section-title { margin: 0; font-size: clamp(1.2rem, 1.4vw, 1.4rem); font-weight: 800; }
+        .section-subtitle { margin: 0; color: var(--muted); line-height: 1.5; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+        .stats-item { background: var(--surface-soft); border-radius: 18px; padding: 12px; border: 1px solid var(--border); display: grid; gap: 6px; }
+        [data-theme='dark'] .stats-item { background: rgba(15, 23, 42, 0.78); }
+        .stats-item h4 { margin: 0; font-size: 0.88rem; color: var(--muted); }
+        .stats-item strong { font-size: 1.1rem; display: block; }
+        .button-group { display: flex; flex-wrap: wrap; gap: 8px; }
+        .btn { border: none; border-radius: 14px; padding: 8px 14px; cursor: pointer; transition: transform 180ms ease, box-shadow 180ms ease; }
+        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; box-shadow: 0 14px 26px rgba(91, 97, 245, 0.22); }
+        .btn-secondary { background: var(--surface-soft); color: var(--text); border: 1px solid var(--border); }
+        .btn-primary:hover, .btn-secondary:hover { transform: translateY(-1px); }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+        .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .class-card { display: grid; gap: 10px; border-radius: 18px; padding: 14px; background: var(--surface-soft); border: 1px solid var(--border); }
+        [data-theme='dark'] .class-card { background: rgba(15, 23, 42, 0.78); }
+        .class-card h4 { margin: 0; }
+        .class-card .meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .label { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); font-size: 0.82rem; }
+        .content-management { display: grid; gap: 14px; }
+        .content-action-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+        .content-search { flex: 1 1 280px; display: flex; gap: 8px; align-items: center; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface-soft); }
+        .content-search input { border: none; background: transparent; width: 100%; outline: none; color: inherit; }
+        .filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+        .filters select { width: 100%; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-soft); color: inherit; }
+        .resource-table { width: 100%; border-collapse: collapse; }
+        .resource-table th, .resource-table td { text-align: left; padding: 10px; border-bottom: 1px solid var(--border); }
+        .resource-table th { color: var(--muted); font-weight: 600; }
+        .resource-row { transition: background 160ms ease; }
+        .resource-row:hover { background: var(--surface-soft); }
+        [data-theme='dark'] .resource-row:hover { background: rgba(255,255,255,0.04); }
+        .live-card { display: grid; gap: 12px; }
+        .live-card .line-item { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+        .live-card .line-item span { color: var(--muted); }
+        .badge-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+        .badge-card { display: grid; gap: 10px; padding: 14px; border-radius: 18px; background: var(--surface-soft); border: 1px solid var(--border); }
+        [data-theme='dark'] .badge-card { background: rgba(15, 23, 42, 0.78); }
+        .badge-icon { width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; background: linear-gradient(135deg, rgba(91, 97, 245, 0.16), rgba(124, 58, 237, 0.12)); }
+        .analytics-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .chat-panel { display: grid; gap: 12px; }
+        .chat-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 16px; background: var(--surface-soft); border: 1px solid var(--border); }
+        .chat-row strong { font-size: 0.92rem; }
+        .attendance-panel { display: grid; gap: 12px; }
+        .attendance-summary { display: flex; gap: 10px; flex-wrap: wrap; }
+        .attendance-card { flex: 1; min-width: 130px; padding: 12px; border-radius: 16px; background: var(--surface-soft); border: 1px solid var(--border); }
+        .calendar-panel { display: grid; gap: 12px; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+        .calendar-day { padding: 10px; border-radius: 14px; background: var(--surface-soft); border: 1px solid var(--border); text-align: center; }
+        .calendar-day strong { display: block; font-size: 1.3rem; }
+        .small-note { color: var(--muted); font-size: 0.88rem; line-height: 1.5; }
+        .chart-card { min-height: 220px; }
+        .chart-wrapper { position: relative; min-height: 180px; }
+        .footer { text-align: center; color: var(--muted); font-size: 0.88rem; }
+        @media (max-width: 1180px) { .dashboard-grid { grid-template-columns: 1fr; } .sidebar { grid-row: 1; } }
+        @media (max-width: 860px) { .stats-grid { grid-template-columns: 1fr 1fr; } .grid-3 { grid-template-columns: 1fr; } .badge-list { grid-template-columns: 1fr; } .analytics-grid { grid-template-columns: 1fr; } .filters { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 620px) { body { padding: 12px; } .topbar { flex-direction: column; align-items: stretch; } .stats-grid { grid-template-columns: 1fr; } .live-card, .profile-card, .resource-table, .attendance-summary { width: 100%; } }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <header class="topbar">
+            <div class="brand"><span class="brand-dot"></span>Teacher Console</div>
+            <div class="topbar-actions">
+                <div class="pill">New messages <strong>3</strong></div>
+                <div class="pill">Live classes <strong>2</strong></div>
+                <button id="logoutBtn" class="btn btn-secondary" type="button">Logout</button>
+                <button id="themeToggle" class="theme-toggle" type="button"><span id="themeIcon">🌙</span><span id="themeLabel">Dark mode</span></button>
+            </div>
+        </header>
+
+        <div class="dashboard-grid">
+            <aside class="sidebar">
+                <div class="profile-card">
+                    <div style="display:flex;align-items:center;gap:14px;">
+                        <div class="avatar" id="profileAvatar">S</div>
+                        <div>
+                            <div id="profileName" style="font-weight:800;font-size:1rem;">Mr. Sharma</div>
+                            <div id="profileRole" style="color:var(--muted);font-size:0.95rem;">Mathematics & Science</div>
+                        </div>
+                    </div>
+                    <div class="pill" style="justify-content:space-between;">
+                        <span>Today's classes</span><strong>3</strong>
+                    </div>
+                    <div class="pill" style="justify-content:space-between;">
+                        <span>Active students</span><strong>124</strong>
+                    </div>
+                </div>
+                <div class="menu">
+                    <div class="menu-item active"><span class="icon">🏠</span><span>Dashboard</span></div>
+                    <div class="menu-item"><span class="icon">🏫</span><span>Classes</span></div>
+                    <div class="menu-item"><span class="icon">🎥</span><span>Live Classes</span></div>
+                    <div class="menu-item"><span class="icon">📝</span><span>Assignments</span></div>
+                    <div class="menu-item"><span class="icon">❓</span><span>Quizzes</span></div>
+                    <div class="menu-item"><span class="icon">👩‍🎓</span><span>Students</span></div>
+                    <div class="menu-item"><span class="icon">📊</span><span>Analytics</span></div>
+                    <div class="menu-item"><span class="icon">📁</span><span>Resources</span></div>
+                    <div class="menu-item"><span class="icon">💬</span><span>Messages</span></div>
+                    <div class="menu-item"><span class="icon">⚙️</span><span>Settings</span></div>
+                </div>
+            </aside>
+
+            <main class="content">
+                <section class="card">
+                    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:18px;align-items:center;">
+                        <div>
+                            <p class="section-subtitle">Welcome back</p>
+                            <h1 id="welcomeGreeting" class="section-title">Good Afternoon, Mr. Sharma 👋</h1>
+                            <p class="small-note">Managing classes, lessons, attendance, and communication from one teacher dashboard.</p>
+                        </div>
+                        <div class="button-group">
+                            <button class="btn btn-primary" id="startClassBtn">Start Class</button>
+                            <button class="btn btn-secondary">Create Lesson</button>
+                        </div>
+                    </div>
+                    <div class="stats-grid" style="margin-top:4px;">
+                        <div class="stats-item"><h4>Today's classes</h4><strong>3</strong></div>
+                        <div class="stats-item"><h4>Pending assessments</h4><strong>12</strong></div>
+                        <div class="stats-item"><h4>Active students</h4><strong>124</strong></div>
+                        <div class="stats-item"><h4>Notifications</h4><strong>8</strong></div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+                        <div>
+                            <p class="small-title">Class Management</p>
+                            <h2 class="section-title">Your teaching batches</h2>
+                        </div>
+                        <button class="btn btn-secondary">View all classes</button>
+                    </div>
+                    <div class="grid-3" style="margin-top:10px;">
+                        <div class="class-card"><div class="label">Class 5</div><h4>Math</h4><div class="meta"><span>28 students</span><span>Next live: 10:30 AM</span></div><div class="button-group"><button class="btn btn-primary">View students</button><button class="btn btn-secondary">Attendance</button></div></div>
+                        <div class="class-card"><div class="label">Class 8</div><h4>Science</h4><div class="meta"><span>32 students</span><span>Next live: 01:00 PM</span></div><div class="button-group"><button class="btn btn-primary">Add materials</button><button class="btn btn-secondary">View students</button></div></div>
+                        <div class="class-card"><div class="label">Class 12</div><h4>Biology</h4><div class="meta"><span>28 students</span><span>Next live: 03:40 PM</span></div><div class="button-group"><button class="btn btn-primary">Attendance</button><button class="btn btn-secondary">Add materials</button></div></div>
+                    </div>
+                </section>
+
+                <section class="card content-management">
+                    <div class="content-action-row">
+                        <div>
+                            <p class="small-title">Lesson & Content Management</p>
+                            <h2 class="section-title">Upload and organize teaching resources</h2>
+                        </div>
+                        <button class="btn btn-primary">Upload Content</button>
+                    </div>
+                    <div class="content-action-row">
+                        <div class="content-search"><span>🔍</span><input type="search" id="resourceSearch" placeholder="Search resources, classes, date or subject" /></div>
+                        <div class="filters"><select id="filterSubject"><option value="all">Subject</option><option>Math</option><option>Science</option><option>Biology</option><option>English</option></select><select id="filterClass"><option value="all">Class</option><option>5</option><option>8</option><option>12</option></select><select id="filterType"><option value="all">Type</option><option>Video</option><option>PDF</option><option>Assignment</option><option>Quiz</option></select><select id="filterStatus"><option value="all">Status</option><option>Draft</option><option>Published</option></select></div>
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <table class="resource-table">
+                            <thead><tr><th>Title</th><th>Class</th><th>Subject</th><th>Type</th><th>Status</th><th>Actions</th></tr></thead>
+                            <tbody id="resourceTableBody">
+                                <tr class="resource-row"><td>Algebra fundamentals</td><td>5</td><td>Math</td><td>Video</td><td>Published</td><td><button class="btn btn-secondary">Edit</button></td></tr>
+                                <tr class="resource-row"><td>Newton forces notes</td><td>8</td><td>Science</td><td>PDF</td><td>Draft</td><td><button class="btn btn-secondary">Publish</button></td></tr>
+                                <tr class="resource-row"><td>Biology quiz 2</td><td>12</td><td>Biology</td><td>MCQ</td><td>Published</td><td><button class="btn btn-secondary">Review</button></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="card grid-2">
+                    <div class="live-card">
+                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;"><div><p class="small-title">Live Class Module</p><h2 class="section-title">Schedule or start your next session</h2></div><button class="btn btn-primary">Schedule Live Class</button></div>
+                        <div class="line-item"><span>Upcoming class</span><strong>Physics revision • 01:00 PM</strong></div>
+                        <div class="line-item"><span>Meeting link</span><a href="#" style="color:var(--primary);">Copy link</a></div>
+                        <div class="line-item"><span>Student join list</span><strong>24 joined</strong></div>
+                        <div class="line-item"><span>Attendance</span><strong>22/24 present</strong></div>
+                        <button class="btn btn-primary">Start class now</button>
+                        <div style="padding:18px;border-radius:22px;background:var(--surface-soft);border:1px solid var(--border);">
+                            <strong>Last class recap</strong>
+                            <p class="small-note" style="margin:8px 0 0;">Shared notes, assignment link, and quiz review for Class 8 Science.</p>
+                        </div>
+                    </div>
+                    <div class="live-card">
+                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;"><div><p class="small-title">Assignment & Quiz Management</p><h2 class="section-title">Track submissions & performance</h2></div><button class="btn btn-secondary">Create Quiz</button></div>
+                        <div class="line-item"><span>Attempted</span><strong>34</strong></div>
+                        <div class="line-item"><span>Pending</span><strong>18</strong></div>
+                        <div class="line-item"><span>Average score</span><strong>78%</strong></div>
+                        <div class="line-item"><span>Top performer</span><strong>Riya</strong></div>
+                        <button class="btn btn-primary">Review submissions</button>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;">
+                        <div><p class="small-title">Student Performance Analytics</p><h2 class="section-title">Insights for every class and learner</h2></div>
+                        <button class="btn btn-secondary">Compare students</button>
+                    </div>
+                    <div class="analytics-grid">
+                        <div class="chart-card card"><p class="small-title">Class Average</p><div class="chart-wrapper"><canvas id="classAverageChart"></canvas></div></div>
+                        <div class="chart-card card"><p class="small-title">Attendance Trend</p><div class="chart-wrapper"><canvas id="attendanceChart"></canvas></div></div>
+                        <div class="chart-card card"><p class="small-title">Quiz Accuracy</p><div class="chart-wrapper"><canvas id="accuracyChart"></canvas></div></div>
+                        <div class="chart-card card"><p class="small-title">Student Progress Comparison</p><div class="chart-wrapper"><canvas id="progressChart"></canvas></div></div>
+                    </div>
+                </section>
+
+                <section class="card grid-2">
+                    <div class="attendance-panel">
+                        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;"><div><p class="small-title">Attendance System</p><h2 class="section-title">Mark attendance & review alerts</h2></div><button class="btn btn-primary">Download report</button></div>
+                        <div class="attendance-summary">
+                            <div class="attendance-card"><strong>Weekly average</strong><p>92%</p></div>
+                            <div class="attendance-card"><strong>Monthly</strong><p>89%</p></div>
+                            <div class="attendance-card"><strong>Absentees</strong><p>5 alerts</p></div>
+                        </div>
+                        <div class="chart-wrapper"><canvas id="attendanceBarChart"></canvas></div>
+                    </div>
+                    <div class="chat-panel">
+                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;"><div><p class="small-title">Communication Tools</p><h2 class="section-title">Messages and announcements</h2></div><button class="btn btn-secondary">New announcement</button></div>
+                        <div class="chat-row"><div><strong>New student message</strong><p class="small-note">"Can you share last week's lesson plan?"</p></div><button class="btn btn-primary">Reply</button></div>
+                        <div class="chat-row"><div><strong>Submission alert</strong><p class="small-note">5 new quiz submissions waiting review.</p></div><button class="btn btn-primary">View</button></div>
+                        <div class="chat-row"><div><strong>Class update</strong><p class="small-note">Live class starting in 20 minutes.</p></div><button class="btn btn-secondary">Notify students</button></div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;">
+                        <div><p class="small-title">Resource Library</p><h2 class="section-title">All uploaded teaching materials</h2></div>
+                        <button class="btn btn-secondary">Manage resources</button>
+                    </div>
+                    <div class="resource-grid">
+                        <article class="resource-card"><div class="resource-icon">🎥</div><div><strong>All videos</strong><p class="small-note">Teachable recordings and offline content.</p><button class="btn btn-secondary">Open</button></div></article>
+                        <article class="resource-card"><div class="resource-icon">📄</div><div><strong>All notes</strong><p class="small-note">PDFs and summary sheets.</p><button class="btn btn-secondary">Open</button></div></article>
+                        <article class="resource-card"><div class="resource-icon">📝</div><div><strong>Assignments</strong><p class="small-note">Pending and graded tasks.</p><button class="btn btn-secondary">Open</button></div></article>
+                        <article class="resource-card"><div class="resource-icon">🧠</div><div><strong>Quizzes</strong><p class="small-note">MCQ and subjective sets.</p><button class="btn btn-secondary">Open</button></div></article>
+                    </div>
+                </section>
+
+                <section class="card grid-2">
+                    <div class="badge-list">
+                        <article class="badge-card"><div class="badge-icon">🏅</div><strong>100 hours taught</strong><p class="small-note">Milestone for lessons delivered.</p></article>
+                        <article class="badge-card"><div class="badge-icon">⭐</div><strong>Consistency Star</strong><p class="small-note">Teaching 20 days in a row.</p></article>
+                        <article class="badge-card"><div class="badge-icon">👏</div><strong>Excellent Feedback</strong><p class="small-note">High student satisfaction scores.</p></article>
+                    </div>
+                    <div class="card" style="padding:22px;">
+                        <p class="small-title">Feedback & Rating</p>
+                        <h2 class="section-title">Recent student responses</h2>
+                        <div class="chat-row"><div><strong>Rating</strong><p class="small-note">4.8/5 average</p></div><span>👍</span></div>
+                        <div class="chat-row"><div><strong>Comment</strong><p class="small-note">"Mr. Sharma explained the class clearly."</p></div></div>
+                        <div class="chat-row"><div><strong>Improvement</strong><p class="small-note">"More practice questions please."</p></div></div>
+                    </div>
+                </section>
+
+                <section class="card grid-2">
+                    <div class="calendar-panel">
+                        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;"><div><p class="small-title">Timetable & Calendar</p><h2 class="section-title">Weekly schedule and reminders</h2></div><button class="btn btn-secondary">Sync calendar</button></div>
+                        <div class="calendar-grid">
+                            <div class="calendar-day"><strong>Mon</strong><p>Class 5 Math</p></div>
+                            <div class="calendar-day"><strong>Tue</strong><p>Class 8 Science</p></div>
+                            <div class="calendar-day"><strong>Wed</strong><p>Class 12 Biology</p></div>
+                            <div class="calendar-day"><strong>Thu</strong><p>Live review</p></div>
+                            <div class="calendar-day"><strong>Fri</strong><p>Quiz grading</p></div>
+                            <div class="calendar-day"><strong>Sat</strong><p>Parent meeting</p></div>
+                        </div>
+                    </div>
+                    <div class="profile-card" style="padding:22px;">
+                        <p class="small-title">Profile & Settings</p>
+                        <h2 class="section-title">Account and teaching preferences</h2>
+                        <div class="line-item"><span>Subject</span><strong>Math, Science</strong></div>
+                        <div class="line-item"><span>Experience</span><strong>8 years</strong></div>
+                        <div class="line-item"><span>Language</span><strong>English</strong></div>
+                        <button class="btn btn-primary">Edit profile</button>
+                    </div>
+                </section>
+
+                <p class="footer">Teacher dashboard with theme-aware charts, quick actions, attendance, analytics, messaging, and resource management.</p>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const themeLabel = document.getElementById('themeLabel');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const startClassBtn = document.getElementById('startClassBtn');
+        const profileName = document.getElementById('profileName');
+        const welcomeGreeting = document.getElementById('welcomeGreeting');
+        const profileAvatar = document.getElementById('profileAvatar');
+        const profileRole = document.getElementById('profileRole');
+        const storedTheme = localStorage.getItem('teacherTheme') || 'light';
+
+        function applyTheme(theme) {
+            const isDark = theme === 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+            themeIcon.textContent = isDark ? '☀️' : '🌙';
+            themeLabel.textContent = isDark ? 'Light mode' : 'Dark mode';
+            localStorage.setItem('teacherTheme', theme);
+            updateChartsTheme(isDark);
+        }
+
+        function loadTeacherProfile() {
+            const profile = JSON.parse(localStorage.getItem('teacherProfile') || '{}');
+            const name = profile.fullName?.trim() || 'Mr. Sharma';
+            const role = profile.expertise || 'Mathematics & Science';
+            profileName.textContent = name;
+            profileRole.textContent = role;
+            profileAvatar.textContent = (name.charAt(0) || 'S').toUpperCase();
+            welcomeGreeting.textContent = `Good Afternoon, ${name} 👋`;
+        }
+
+        themeToggle.addEventListener('click', () => {
+            const current = document.documentElement.getAttribute('data-theme') || 'light';
+            applyTheme(current === 'light' ? 'dark' : 'light');
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            window.location.href = 'teacher_login.html';
+        });
+
+        startClassBtn.addEventListener('click', () => {
+            alert('Starting your live class session now.');
+        });
+
+        const chartPalette = {
+            light: { grid: '#e2e8f0', text: '#102a43' },
+            dark: { grid: 'rgba(148, 163, 184, 0.3)', text: '#e2e8f0' }
+        };
+
+        const classAverageChart = new Chart(document.getElementById('classAverageChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['Class 5', 'Class 8', 'Class 12'],
+                datasets: [{ label: 'Average (%)', data: [88, 82, 90], backgroundColor: ['#6366f1', '#7c3aed', '#a855f7'], borderRadius: 16 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { color: chartPalette.light.grid }, ticks: { color: chartPalette.light.text } }, y: { beginAtZero: true, max: 100, grid: { color: chartPalette.light.grid }, ticks: { color: chartPalette.light.text } } }, plugins: { legend: { display: false } } }
+        });
+
+        const attendanceChart = new Chart(document.getElementById('attendanceChart').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+                datasets: [{ label:'Attendance %', data:[92, 95, 90, 93, 91, 94, 92], borderColor:'#8b5cf6', backgroundColor:'rgba(139,92,246,0.16)', fill:true, tension:0.35, pointRadius:4, pointBackgroundColor:'#8b5cf6' }]
+            },
+            options: { responsive:true, maintainAspectRatio:false, scales:{ x:{ grid:{ color:chartPalette.light.grid }, ticks:{ color:chartPalette.light.text } }, y:{ beginAtZero:true, max:100, grid:{ color:chartPalette.light.grid }, ticks:{ color:chartPalette.light.text } } }, plugins:{ legend:{ display:false } } }
+        });
+
+        const accuracyChart = new Chart(document.getElementById('accuracyChart').getContext('2d'), {
+            type: 'doughnut',
+            data: { labels:['Correct','Incorrect','Skipped'], datasets:[{ data:[72, 18, 10], backgroundColor:['#6366f1','#f59e0b','#c7d2fe'] }] },
+            options: { responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{ legend:{ position:'bottom', labels:{ color:chartPalette.light.text } } } }
+        });
+
+        const progressChart = new Chart(document.getElementById('progressChart').getContext('2d'), {
+            type: 'bar',
+            data: { labels:['Nitin','Priya','Rahul','Aanya'], datasets:[{ label:'Progress %', data:[88, 92, 81, 75], backgroundColor:['#7c3aed','#6366f1','#a855f7','#c4b5fd'], borderRadius: 14 }] },
+            options: { responsive:true, maintainAspectRatio:false, scales:{ x:{ grid:{ color:chartPalette.light.grid }, ticks:{ color:chartPalette.light.text } }, y:{ beginAtZero:true, max:100, grid:{ color:chartPalette.light.grid }, ticks:{ color:chartPalette.light.text } } }, plugins:{ legend:{ display:false } } }
+        });
+
+        const attendanceBarChart = new Chart(document.getElementById('attendanceBarChart').getContext('2d'), {
+            type: 'bar',
+            data: { labels:['Week 1','Week 2','Week 3','Week 4'], datasets:[{ label:'Attendance %', data:[89, 91, 94, 92], backgroundColor:['#7c3aed','#6366f1','#a855f7','#8b5cf6'], borderRadius: 14 }] },
+            options: { responsive:true, maintainAspectRatio:false, scales:{ x:{ grid:{ color:chartPalette.light.grid }, ticks:{ color:chartPalette.light.text } }, y:{ beginAtZero:true, max:100, grid:{ color:chartPalette.light.grid }, ticks:{ color:chartPalette.light.text } } }, plugins:{ legend:{ display:false } } }
+        });
+
+        function updateChartsTheme(isDark) {
+            const palette = isDark ? chartPalette.dark : chartPalette.light;
+            [classAverageChart, attendanceChart, accuracyChart, progressChart, attendanceBarChart].forEach(chart => {
+                chart.options.scales && Object.values(chart.options.scales).forEach(axis => { if (axis.ticks) axis.ticks.color = palette.text; if (axis.grid) axis.grid.color = palette.grid; });
+                if (chart.options.plugins && chart.options.plugins.legend && chart.options.plugins.legend.labels) chart.options.plugins.legend.labels.color = palette.text;
+                chart.update();
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTeacherProfile();
+            applyTheme(storedTheme);
+        });
+    </script>
+</body>
+</html>

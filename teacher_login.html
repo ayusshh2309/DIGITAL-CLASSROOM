@@ -796,7 +796,7 @@
                             <label for="staffId">Staff ID</label>
                             <input id="staffId" name="staffId" type="number" placeholder="123456" />
                         </div>
-                        <button class="btn-primary" type="button">Create Account</button>
+                        <button id="createAccountButton" class="btn-primary" type="button">Create Account</button>
                     </div>
                 </form>
                 <p class="hint">Your information is encrypted and stored securely with enterprise-grade education privacy protection.</p>
@@ -809,6 +809,23 @@
         const securityText = document.getElementById('securityText');
         const tagInput = document.getElementById('tagInput');
         const expertiseInput = document.getElementById('expertise');
+        const fullNameInput = document.getElementById('fullName');
+        const createAccountButton = document.getElementById('createAccountButton');
+
+        function getExpertiseTags() {
+            return Array.from(tagInput.querySelectorAll('span.tag'))
+                .map(tag => tag.textContent.replace('×', '').trim())
+                .filter(Boolean);
+        }
+
+        createAccountButton.addEventListener('click', () => {
+            const profile = {
+                fullName: fullNameInput.value.trim() || 'Mr. Sharma',
+                expertise: getExpertiseTags().join(', ') || 'Mathematics & Science'
+            };
+            localStorage.setItem('teacherProfile', JSON.stringify(profile));
+            window.location.href = 'teacher_dashboard.html';
+        });
 
         passwordInput.addEventListener('input', () => {
             const value = passwordInput.value;
