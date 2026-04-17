@@ -29,6 +29,12 @@
             --shadow: 0 28px 80px rgba(15, 23, 42, 0.12);
             --radius: 30px;
             --radius-sm: 16px;
+            --input-bg: #f8fbff;
+            --input-text: #101828;
+            --input-border: #d2dee8;
+            --input-placeholder: rgba(15, 23, 42, 0.55);
+            --input-focus: rgba(15, 44, 93, 0.18);
+            --prefix-bg: rgba(248, 251, 255, 0.95);
         }
 
         [data-theme="dark"] {
@@ -45,6 +51,12 @@
             --accent: #93c5fd;
             --success: #4ade80;
             --shadow: 0 28px 80px rgba(0, 0, 0, 0.28);
+            --input-bg: #1f2937;
+            --input-text: #f8fafc;
+            --input-border: #334155;
+            --input-placeholder: rgba(248, 250, 252, 0.68);
+            --input-focus: rgba(96, 165, 250, 0.35);
+            --prefix-bg: rgba(255, 255, 255, 0.08);
         }
 
         * {
@@ -460,6 +472,28 @@
 
         .input-group {
             position: relative;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .prefix {
+            position: static;
+            color: var(--text);
+            font-size: 0.95rem;
+            font-weight: 700;
+            padding: 12px 14px;
+            border: 1px solid var(--input-border);
+            border-radius: 16px;
+            background: var(--prefix-bg);
+            min-width: 110px;
+            width: auto;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .field-group input.phone {
+            padding-left: 18px;
         }
 
         input,
@@ -467,20 +501,40 @@
         select {
             width: 100%;
             padding: 16px 18px;
-            border: 1px solid var(--border);
+            border: 1px solid var(--input-border);
             border-radius: 16px;
-            background: #f8fbff;
-            color: var(--text);
+            background: var(--input-bg);
+            color: var(--input-text);
             font-size: 0.96rem;
             outline: none;
-            transition: border-color 180ms ease, box-shadow 180ms ease;
+            transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+            caret-color: var(--input-text);
+        }
+
+        input::placeholder,
+        textarea::placeholder,
+        select::placeholder {
+            color: var(--input-placeholder);
         }
 
         input:focus,
         textarea:focus,
         select:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(15, 44, 93, 0.1);
+            box-shadow: 0 0 0 4px var(--input-focus);
+        }
+
+        input.valid,
+        select.valid {
+            border-color: #22c55e;
+            box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.12);
+        }
+
+        .input-group input,
+        .input-group select,
+        .tag-input input,
+        select.prefix {
+            color: var(--text);
         }
 
         .input-icon {
@@ -492,15 +546,27 @@
             font-size: 1rem;
         }
 
+        .show-hide {
+            position: absolute;
+            top: 50%;
+            right: 62px;
+            transform: translateY(-50%);
+            border: none;
+            background: transparent;
+            color: var(--primary);
+            font-weight: 700;
+            cursor: pointer;
+        }
+
         .tag-input {
             min-height: 54px;
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
             padding: 12px 16px;
-            border: 1px solid var(--border);
+            border: 1px solid var(--input-border);
             border-radius: 16px;
-            background: #f8fbff;
+            background: var(--input-bg);
             cursor: text;
         }
 
@@ -540,7 +606,7 @@
             padding: 32px;
             border: 2px dashed rgba(15, 44, 93, 0.2);
             border-radius: 22px;
-            background: #f8fbff;
+            background: var(--input-bg);
             text-align: center;
             gap: 14px;
         }
@@ -791,6 +857,19 @@
                         </div>
                     </div>
                     <div class="field-group">
+                        <label for="phone">Phone Number</label>
+                        <div class="input-group">
+                            <select id="countryPrefix" class="prefix" aria-label="Country code">
+                                <option value="+1">+1 US</option>
+                                <option value="+44">+44 UK</option>
+                                <option value="+61">+61 AU</option>
+                                <option value="+91" selected>+91 IN</option>
+                                <option value="+81">+81 JP</option>
+                            </select>
+                            <input id="phone" name="phone" class="phone" type="tel" placeholder="555 123 4567" />
+                        </div>
+                    </div>
+                    <div class="field-group">
                         <label for="expertise">Subject Expertise</label>
                         <div class="tag-input" id="tagInput" tabindex="0">
                             <span class="tag">Mathematics<button type="button">×</button></span>
@@ -825,6 +904,7 @@
                         <label for="password">Password</label>
                         <div class="input-group">
                             <input id="password" name="password" type="password" placeholder="Create a secure password" />
+                            <button type="button" class="show-hide" id="togglePassword">Show</button>
                             <span class="input-icon">🔒</span>
                         </div>
                         <div class="meter-label">
@@ -855,14 +935,44 @@
             </section>
         </div>
     </div>
-    <script>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
+        import { getFirestore, collection, addDoc } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCnvCkzycQxrJOXmH1ol43uUCAJtzpz3eA",
+            authDomain: "digital-classroom-de2b7.firebaseapp.com",
+            databaseURL: "https://digital-classroom-de2b7-default-rtdb.firebaseio.com",
+            projectId: "digital-classroom-de2b7",
+            storageBucket: "digital-classroom-de2b7.firebasestorage.app",
+            messagingSenderId: "30446374460",
+            appId: "1:30446374460:web:32508ecdafa718785c3d39",
+            measurementId: "G-3TH6YJJQWM"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        async function saveTeacherData(teacher) {
+            try {
+                await addDoc(collection(db, 'teachers'), teacher);
+            } catch (error) {
+                console.error('Error saving teacher data:', error);
+                alert('Unable to save registration data. Please try again later.');
+                throw error;
+            }
+        }
+
         const passwordInput = document.getElementById('password');
+        const togglePassword = document.getElementById('togglePassword');
         const securityBar = document.getElementById('securityBar');
         const securityText = document.getElementById('securityText');
         const tagInput = document.getElementById('tagInput');
         const expertiseInput = document.getElementById('expertise');
         const fullNameInput = document.getElementById('fullName');
         const workEmailInput = document.getElementById('workEmail');
+        const phoneInput = document.getElementById('phone');
+        const countryPrefix = document.getElementById('countryPrefix');
         const institutionInput = document.getElementById('institution');
         const experienceInput = document.getElementById('experience');
         const staffIdInput = document.getElementById('staffId');
@@ -929,10 +1039,25 @@
 
         staffIdInput.value = '';
 
-        createAccountButton.addEventListener('click', () => {
+        function validateInput(input, predicate) {
+            if (predicate(input.value.trim())) {
+                input.classList.add('valid');
+            } else {
+                input.classList.remove('valid');
+            }
+        }
+
+        togglePassword.addEventListener('click', () => {
+            const type = passwordInput.type === 'password' ? 'text' : 'password';
+            passwordInput.type = type;
+            togglePassword.textContent = type === 'password' ? 'Show' : 'Hide';
+        });
+
+        createAccountButton.addEventListener('click', async () => {
             const passwordValue = passwordInput.value;
             const passwordValid = passwordValue.length >= 8 && /[A-Z]/.test(passwordValue) && /[a-z]/.test(passwordValue) && /[^A-Za-z0-9]/.test(passwordValue);
             const workEmailValue = workEmailInput.value.trim();
+            const phoneValue = phoneInput.value.trim();
             const selectedFile = documentUploadInput.files[0];
             const staffId = generateStaffId();
 
@@ -942,9 +1067,15 @@
                 return;
             }
 
-            if (!workEmailValue || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(workEmailValue)) {
+            if (!workEmailValue || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(workEmailValue)) {
                 alert('Please enter a valid work email.');
                 workEmailInput.focus();
+                return;
+            }
+
+            if (!phoneValue || !/^[+\d]?(?:[\d\s()\-]){7,20}$/.test(phoneValue)) {
+                alert('Please enter a valid phone number.');
+                phoneInput.focus();
                 return;
             }
 
@@ -963,15 +1094,24 @@
             const profile = {
                 fullName: fullNameInput.value.trim(),
                 email: workEmailValue,
+                phone: `${countryPrefix.value} ${phoneValue}`,
                 expertise: getExpertiseTags().join(', ') || 'Mathematics & Science',
                 institution: institutionInput.value.trim(),
                 experience: experienceInput.value ? Number(experienceInput.value) : null,
                 staffId: staffId,
-                documentName: selectedFile.name
+                documentName: selectedFile.name,
+                createdAt: new Date().toISOString()
             };
 
             staffIdInput.value = staffId;
             localStorage.setItem('teacherProfile', JSON.stringify(profile));
+
+            try {
+                await saveTeacherData(profile);
+            } catch (error) {
+                return;
+            }
+
             window.location.href = 'teacher_dashboard.html';
         });
 
@@ -1005,6 +1145,28 @@
                 securityBar.style.background = '#0f2c5d';
                 securityText.textContent = 'Very Strong';
             }
+
+            validateInput(passwordInput, value => Object.values(checks).every(Boolean));
+        });
+
+        fullNameInput.addEventListener('input', () => {
+            validateInput(fullNameInput, value => value.trim().length >= 3);
+        });
+
+        workEmailInput.addEventListener('input', () => {
+            validateInput(workEmailInput, value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(value));
+        });
+
+        phoneInput.addEventListener('input', () => {
+            validateInput(phoneInput, value => /^[+\d]?(?:[\d\s()\-]){7,20}$/.test(value));
+        });
+
+        institutionInput.addEventListener('input', () => {
+            validateInput(institutionInput, value => value.trim().length >= 2);
+        });
+
+        experienceInput.addEventListener('input', () => {
+            validateInput(experienceInput, value => value.trim() === '' || /^\d+$/.test(value));
         });
 
         tagInput.addEventListener('click', () => {

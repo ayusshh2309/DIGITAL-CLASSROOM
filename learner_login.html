@@ -740,12 +740,6 @@
                             <input id="dob" name="dob" type="date" placeholder="Select your birth date" />
                         </div>
                     </div>
-                    <div class="field full">
-                        <div class="contact-toggle">
-                            <button type="button" class="contact-method active" data-method="email" id="emailToggle">Email</button>
-                            <button type="button" class="contact-method" data-method="phone" id="phoneToggle">Phone</button>
-                        </div>
-                    </div>
                     <div class="field full" id="emailField">
                         <label for="email">Email</label>
                         <div class="input-group">
@@ -753,7 +747,7 @@
                             <span class="input-icon">@</span>
                         </div>
                     </div>
-                    <div class="field full" id="phoneField" style="display: none;">
+                    <div class="field full" id="phoneField">
                         <label for="phone">Phone Number</label>
                         <div class="input-group">
                             <select id="countryPrefix" class="prefix" aria-label="Country code">
@@ -852,43 +846,8 @@
         const meterUpper = document.getElementById('meterUpper');
         const meterLower = document.getElementById('meterLower');
         const meterSpecial = document.getElementById('meterSpecial');
-        const emailToggle = document.getElementById('emailToggle');
-        const phoneToggle = document.getElementById('phoneToggle');
         const emailField = document.getElementById('emailField');
         const phoneField = document.getElementById('phoneField');
-        let contactMethod = 'email'; // Track current contact method
-
-        // Verify elements exist before adding listeners
-        if (!emailToggle || !phoneToggle) {
-            console.error('Toggle buttons not found');
-        }
-
-        // Toggle between email and phone
-        if (emailToggle) {
-            emailToggle.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                contactMethod = 'email';
-                emailToggle.classList.add('active');
-                phoneToggle.classList.remove('active');
-                emailField.style.display = 'block';
-                phoneField.style.display = 'none';
-                emailInput.focus();
-            });
-        }
-
-        if (phoneToggle) {
-            phoneToggle.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                contactMethod = 'phone';
-                phoneToggle.classList.add('active');
-                emailToggle.classList.remove('active');
-                phoneField.style.display = 'block';
-                emailField.style.display = 'none';
-                phoneInput.focus();
-            });
-        }
 
         togglePassword.addEventListener('click', () => {
             const type = passwordInput.type === 'password' ? 'text' : 'password';
@@ -942,20 +901,16 @@
             }
 
             // Validate based on contact method
-            if (contactMethod === 'email') {
-                if (!emailInput.value.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value)) {
-                    alert('Please enter a valid email address.');
-                    emailInput.focus();
-                    return;
-                }
-            } else {
-                const phoneValue = phoneInput.value.trim();
-                const phoneValid = /^[+\d]?(?:[\d\s()\-]){7,20}$/.test(phoneValue);
-                if (!phoneValid) {
-                    alert('Please enter a valid phone number.');
-                    phoneInput.focus();
-                    return;
-                }
+            const emailValue = emailInput.value.trim();
+            const phoneValue = phoneInput.value.trim();
+            const emailValid = /^[^\s@]+@gmail\.com$/i.test(emailValue);
+            const phoneValid = /^[+\d]?(?:[\d\s()\-]){7,20}$/.test(phoneValue);
+            
+            if (!emailValid && !phoneValid) {
+                alert('Please enter a valid email ending with @gmail.com or a valid phone number.');
+                if (!emailValid) emailInput.focus();
+                else phoneInput.focus();
+                return;
             }
 
             const passwordValue = passwordInput.value;
@@ -977,9 +932,8 @@
                 grade: gradeSelect.value,
                 stream: streamSelect.value || '',
                 dob: dobInput.value,
-                contactMethod: contactMethod,
-                phone: contactMethod === 'phone' ? `${countryPrefix.value} ${phoneInput.value.trim()}` : '',
-                email: contactMethod === 'email' ? emailInput.value.trim() : '',
+                phone: `${countryPrefix.value} ${phoneInput.value.trim()}`,
+                email: emailInput.value.trim(),
                 termsAccepted: termsInput.checked,
                 createdAt: new Date().toISOString()
             };
@@ -996,15 +950,11 @@
         });
 
         phoneInput.addEventListener('input', () => {
-            if (contactMethod === 'phone') {
-                validateInput(phoneInput, value => /^[+\d]?(?:[\d\s()\-]){7,20}$/.test(value));
-            }
+            validateInput(phoneInput, value => /^[+\d]?(?:[\d\s()\-]){7,20}$/.test(value));
         });
 
         emailInput.addEventListener('input', () => {
-            if (contactMethod === 'email') {
-                validateInput(emailInput, value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value));
-            }
+            validateInput(emailInput, value => /^[^\s@]+@gmail\.com$/i.test(value));
         });
 
         passwordInput.addEventListener('input', () => {
