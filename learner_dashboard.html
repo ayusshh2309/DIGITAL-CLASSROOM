@@ -6,7 +6,7 @@
     <title>Smart Learning Dashboard</title>
     <script>
         (function () {
-            const theme = localStorage.getItem('dashboardTheme') || 'light';
+            const theme = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
@@ -823,7 +823,7 @@
 
         function applyTheme(theme) {
             document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('dashboardTheme', theme);
+            localStorage.setItem('theme', theme);
             const isDark = theme === 'dark';
             themeIcon.textContent = isDark ? '☀️' : '🌙';
             themeLabel.textContent = isDark ? 'Light mode' : 'Dark mode';
@@ -831,7 +831,7 @@
         }
 
         function initTheme() {
-            const storedTheme = localStorage.getItem('dashboardTheme') || 'light';
+            const storedTheme = localStorage.getItem('theme') || 'light';
             applyTheme(storedTheme);
         }
 

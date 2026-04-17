@@ -785,9 +785,9 @@
                 <div class="social-row">
                     <p>Or Sign Up with</p>
                     <div class="social-buttons">
-                        <button class="social-button" type="button">Google</button>
-                        <button class="social-button" type="button">Microsoft</button>
-                        <button class="social-button" type="button">LinkedIn</button>
+                        <button id="googleSignupButton" class="social-button" type="button">Google</button>
+                        <button id="microsoftSignupButton" class="social-button" type="button">Microsoft</button>
+                        <button id="linkedinSignupButton" id="linkedinSignupButton" class="social-button" type="button">LinkedIn</button>
                     </div>
                 </div>
                 <div class="submit-group">
@@ -804,7 +804,8 @@
     </div>
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
-        import { getFirestore, collection, addDoc } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+        import { getFirestore, collection, doc, setDoc } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+        import { getAuth, createUserWithEmailAndPassword, GoogleAuthProvider, OAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyCnvCkzycQxrJOXmH1ol43uUCAJtzpz3eA",
@@ -818,11 +819,18 @@
         };
 
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getFirestore(app);
 
-        async function saveLearnerData(learner) {
+        async function saveLearnerData(learner, email, password) {
             try {
-                await addDoc(collection(db, 'learners'), learner);
+                if (email && password) {
+                    const authResult = await createUserWithEmailAndPassword(auth, email, password);
+                    const userUid = authResult.user.uid;
+                    await setDoc(doc(db, 'students', userUid), learner);
+                } else {
+                    await setDoc(doc(collection(db, 'students')), learner);
+                }
             } catch (error) {
                 console.error('Error saving learner data:', error);
                 alert('Unable to save registration data. Please try again later.');
@@ -846,8 +854,9 @@
         const meterUpper = document.getElementById('meterUpper');
         const meterLower = document.getElementById('meterLower');
         const meterSpecial = document.getElementById('meterSpecial');
-        const emailField = document.getElementById('emailField');
-        const phoneField = document.getElementById('phoneField');
+        const googleSignupButton = document.getElementById('googleSignupButton');
+        const microsoftSignupButton = document.getElementById('microsoftSignupButton');
+        const linkedinSignupButton = document.getElementById('linkedinSignupButton');
 
         togglePassword.addEventListener('click', () => {
             const type = passwordInput.type === 'password' ? 'text' : 'password';
@@ -938,7 +947,7 @@
                 createdAt: new Date().toISOString()
             };
 
-            await saveLearnerData(learnerProfile);
+            await saveLearnerData(learnerProfile, emailValue, passwordValue);
             localStorage.setItem('learnerProfile', JSON.stringify(learnerProfile));
             window.location.href = 'learner_dashboard.html';
         });
@@ -963,13 +972,59 @@
                 length: value.length >= 8,
                 upper: /[A-Z]/.test(value),
                 lower: /[a-z]/.test(value),
-                special: /[!@#$%^&*(),.?":{}|<>]/.test(value),
+                special: /[!@#$%^&*(),.?":{}|<>]/.test(value)
             };
+
             meterLength.classList.toggle('active', checks.length);
             meterUpper.classList.toggle('active', checks.upper);
             meterLower.classList.toggle('active', checks.lower);
             meterSpecial.classList.toggle('active', checks.special);
             validateInput(passwordInput, value => Object.values(checks).every(Boolean));
+        });
+
+        function setAuthStatus(message, isError = false) {
+            const status = document.getElementById('loginStatus') || document.createElement('p');
+            if (status.id === 'loginStatus') {
+                status.textContent = message;
+                status.style.color = isError ? '#ef4444' : 'var(--text)';
+            } else {
+                console.log(message);
+            }
+        }
+
+        async function handleSocialSignIn(provider, providerName) {
+            try {
+                const result = await signInWithPopup(auth, provider);
+                const role = 'learner';
+                localStorage.setItem('userAuth', JSON.stringify({
+                    uid: result.user.uid,
+                    email: result.user.email || '',
+                    phone: result.user.phoneNumber || '',
+                    provider: providerName,
+                    role,
+                    signedInAt: new Date().toISOString()
+                }));
+                setAuthStatus(`${providerName} login successful. Redirecting…`);
+                window.setTimeout(() => {
+                    window.location.href = 'learner_dashboard.html';
+                }, 900);
+            } catch (error) {
+                setAuthStatus(error.message || `Unable to sign in with ${providerName}.`, true);
+            }
+        }
+
+        googleSignupButton.addEventListener('click', () => {
+            handleSocialSignIn(new GoogleAuthProvider(), 'Google');
+        });
+
+        microsoftSignupButton.addEventListener('click', () => {
+            const microsoftProvider = new OAuthProvider('microsoft.com');
+            handleSocialSignIn(microsoftProvider, 'Microsoft');
+        });
+
+        linkedinSignupButton.addEventListener('click', () => {
+            const linkedinProvider = new OAuthProvider('linkedin.com');
+            handleSocialSignIn(linkedinProvider, 'LinkedIn');
         });
     </script>
 </body>

@@ -717,6 +717,43 @@
             background: #102d58;
         }
 
+        .social-row {
+            display: grid;
+            gap: 14px;
+            margin: 18px 0;
+        }
+
+        .social-row p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .social-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .social-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 16px;
+            border-radius: 18px;
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .social-button:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
         .hint {
             color: var(--muted);
             font-size: 0.92rem;
@@ -872,8 +909,6 @@
                     <div class="field-group">
                         <label for="expertise">Subject Expertise</label>
                         <div class="tag-input" id="tagInput" tabindex="0">
-                            <span class="tag">Mathematics<button type="button">×</button></span>
-                            <span class="tag">Physics<button type="button">×</button></span>
                             <input id="expertise" name="expertise" type="text" placeholder="Add subject expertise" />
                         </div>
                     </div>
@@ -919,6 +954,14 @@
                             <div class="meter-step" id="meterSpecial">1 Special</div>
                         </div>
                     </div>
+                    <div class="social-row">
+                        <p>Or Sign Up with</p>
+                        <div class="social-buttons">
+                            <button id="googleSignupButton" class="social-button" type="button">Google</button>
+                            <button id="microsoftSignupButton" class="social-button" type="button">Microsoft</button>
+                            <button id="linkedinSignupButton" class="social-button" type="button">LinkedIn</button>
+                        </div>
+                    </div>
                     <div class="submit-row">
                         <div class="field-group">
                             <label for="staffId">Staff ID</label>
@@ -937,7 +980,8 @@
     </div>
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
-        import { getFirestore, collection, addDoc } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+        import { getFirestore, collection, doc, setDoc } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+        import { getAuth, createUserWithEmailAndPassword, GoogleAuthProvider, OAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyCnvCkzycQxrJOXmH1ol43uUCAJtzpz3eA",
@@ -951,11 +995,18 @@
         };
 
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getFirestore(app);
 
-        async function saveTeacherData(teacher) {
+        async function saveTeacherData(teacher, email, password) {
             try {
-                await addDoc(collection(db, 'teachers'), teacher);
+                if (email && password) {
+                    const authResult = await createUserWithEmailAndPassword(auth, email, password);
+                    const userUid = authResult.user.uid;
+                    await setDoc(doc(db, 'teachers', userUid), teacher);
+                } else {
+                    await setDoc(doc(collection(db, 'teachers')), teacher);
+                }
             } catch (error) {
                 console.error('Error saving teacher data:', error);
                 alert('Unable to save registration data. Please try again later.');
@@ -983,6 +1034,9 @@
         const meterUpper = document.getElementById('meterUpper');
         const meterLower = document.getElementById('meterLower');
         const meterSpecial = document.getElementById('meterSpecial');
+        const googleSignupButton = document.getElementById('googleSignupButton');
+        const microsoftSignupButton = document.getElementById('microsoftSignupButton');
+        const linkedinSignupButton = document.getElementById('linkedinSignupButton');
         const createAccountButton = document.getElementById('createAccountButton');
 
         function getExpertiseTags() {
@@ -1037,23 +1091,23 @@
             updateUploadLabel(file ? file.name : 'Drag files here or browse to upload');
         });
 
-        staffIdInput.value = '';
+        googleSignupButton.addEventListener('click', () => {
+            handleSocialSignIn(new GoogleAuthProvider(), 'Google');
+        });
 
-        function validateInput(input, predicate) {
-            if (predicate(input.value.trim())) {
-                input.classList.add('valid');
-            } else {
-                input.classList.remove('valid');
-            }
-        }
+        microsoftSignupButton.addEventListener('click', () => {
+            const microsoftProvider = new OAuthProvider('microsoft.com');
+            handleSocialSignIn(microsoftProvider, 'Microsoft');
+        });
 
-        togglePassword.addEventListener('click', () => {
-            const type = passwordInput.type === 'password' ? 'text' : 'password';
-            passwordInput.type = type;
-            togglePassword.textContent = type === 'password' ? 'Show' : 'Hide';
+        linkedinSignupButton.addEventListener('click', () => {
+            const linkedinProvider = new OAuthProvider('linkedin.com');
+            handleSocialSignIn(linkedinProvider, 'LinkedIn');
         });
 
         createAccountButton.addEventListener('click', async () => {
+            staffIdInput.value = '';
+
             const passwordValue = passwordInput.value;
             const passwordValid = passwordValue.length >= 8 && /[A-Z]/.test(passwordValue) && /[a-z]/.test(passwordValue) && /[^A-Za-z0-9]/.test(passwordValue);
             const workEmailValue = workEmailInput.value.trim();
@@ -1091,11 +1145,23 @@
                 return;
             }
 
+            const expertiseTags = getExpertiseTags();
+            const typedExpertise = expertiseInput.value.trim();
+            if (typedExpertise && !expertiseTags.includes(typedExpertise)) {
+                expertiseTags.push(typedExpertise);
+            }
+
+            if (expertiseTags.length === 0) {
+                alert('Please add at least one subject expertise.');
+                expertiseInput.focus();
+                return;
+            }
+
             const profile = {
                 fullName: fullNameInput.value.trim(),
                 email: workEmailValue,
                 phone: `${countryPrefix.value} ${phoneValue}`,
-                expertise: getExpertiseTags().join(', ') || 'Mathematics & Science',
+                expertise: expertiseTags.join(', '),
                 institution: institutionInput.value.trim(),
                 experience: experienceInput.value ? Number(experienceInput.value) : null,
                 staffId: staffId,
@@ -1107,7 +1173,7 @@
             localStorage.setItem('teacherProfile', JSON.stringify(profile));
 
             try {
-                await saveTeacherData(profile);
+                await saveTeacherData(profile, workEmailValue, passwordValue);
             } catch (error) {
                 return;
             }
@@ -1173,20 +1239,61 @@
             expertiseInput.focus();
         });
 
+        function addExpertiseTag(value) {
+            const tagValue = value.trim();
+            if (!tagValue) return;
+            const existingTags = getExpertiseTags();
+            if (existingTags.includes(tagValue)) {
+                expertiseInput.value = '';
+                return;
+            }
+            const newTag = document.createElement('span');
+            newTag.className = 'tag';
+            newTag.innerHTML = `${tagValue}<button type="button">×</button>`;
+            tagInput.insertBefore(newTag, expertiseInput);
+            expertiseInput.value = '';
+            newTag.querySelector('button').addEventListener('click', () => {
+                newTag.remove();
+            });
+        }
+
         expertiseInput.addEventListener('keydown', (event) => {
             if (event.key === 'Enter' && expertiseInput.value.trim()) {
                 event.preventDefault();
-                const value = expertiseInput.value.trim();
-                const newTag = document.createElement('span');
-                newTag.className = 'tag';
-                newTag.innerHTML = `${value}<button type="button">×</button>`;
-                tagInput.insertBefore(newTag, expertiseInput);
-                expertiseInput.value = '';
-                newTag.querySelector('button').addEventListener('click', () => {
-                    newTag.remove();
-                });
+                addExpertiseTag(expertiseInput.value);
             }
         });
+
+        expertiseInput.addEventListener('blur', () => {
+            if (expertiseInput.value.trim()) {
+                addExpertiseTag(expertiseInput.value);
+            }
+        });
+
+        function setAuthStatus(message, isError = false) {
+            console.log(message);
+        }
+
+        async function handleSocialSignIn(provider, providerName) {
+            try {
+                const result = await signInWithPopup(auth, provider);
+                const role = 'teacher';
+                localStorage.setItem('userAuth', JSON.stringify({
+                    uid: result.user.uid,
+                    email: result.user.email || '',
+                    phone: result.user.phoneNumber || '',
+                    provider: providerName,
+                    role,
+                    signedInAt: new Date().toISOString()
+                }));
+                setAuthStatus(`${providerName} login successful.`);
+                window.setTimeout(() => {
+                    window.location.href = 'teacher_dashboard.html';
+                }, 900);
+            } catch (error) {
+                setAuthStatus(error.message || `Unable to sign in with ${providerName}.`, true);
+            }
+        }
     </script>
 </body>
 

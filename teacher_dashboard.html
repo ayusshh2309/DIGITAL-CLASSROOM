@@ -6,7 +6,7 @@
     <title>Teacher Dashboard</title>
     <script>
         (function () {
-            const theme = localStorage.getItem('teacherTheme') || 'light';
+            const theme = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
@@ -360,14 +360,14 @@
         const welcomeGreeting = document.getElementById('welcomeGreeting');
         const profileAvatar = document.getElementById('profileAvatar');
         const profileRole = document.getElementById('profileRole');
-        const storedTheme = localStorage.getItem('teacherTheme') || 'light';
+        const storedTheme = localStorage.getItem('theme') || 'light';
 
         function applyTheme(theme) {
             const isDark = theme === 'dark';
             document.documentElement.setAttribute('data-theme', theme);
             themeIcon.textContent = isDark ? '☀️' : '🌙';
             themeLabel.textContent = isDark ? 'Light mode' : 'Dark mode';
-            localStorage.setItem('teacherTheme', theme);
+            localStorage.setItem('theme', theme);
             updateChartsTheme(isDark);
         }
 
