@@ -56,7 +56,7 @@
         body, input, button, select, textarea { color: inherit; }
         a { color: inherit; text-decoration: none; }
         .layout { max-width: 1480px; margin: 0 auto; display: grid; gap: 12px; }
-        .topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 18px; background: rgba(255,255,255,0.92); border: 1px solid var(--border); box-shadow: 0 14px 32px rgba(16, 42, 67, 0.08); backdrop-filter: blur(14px); }
+        .topbar { position: relative; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 18px; background: rgba(255,255,255,0.92); border: 1px solid var(--border); box-shadow: 0 14px 32px rgba(16, 42, 67, 0.08); backdrop-filter: blur(14px); }
         [data-theme='dark'] .topbar { background: rgba(13, 22, 40, 0.88); }
         .brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: 0.96rem; }
         .brand-dot { width: 10px; height: 10px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent)); box-shadow: 0 0 12px rgba(124, 58, 237, 0.22); }
@@ -66,9 +66,8 @@
         .pill span { font-weight: 600; }
         .theme-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-soft); cursor: pointer; }
         .theme-toggle:hover { transform: translateY(-1px); }
-        .dashboard-grid { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 12px; }
-        .sidebar { padding: 16px 12px; border-radius: 18px; background: var(--surface); border: 1px solid var(--border); box-shadow: 0 16px 36px rgba(16, 42, 67, 0.08); display: grid; gap: 14px; }
-        [data-theme='dark'] .sidebar { background: rgba(15, 23, 42, 0.88); }
+        .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+        .sidebar { display: none; }
         .sidebar h2 { margin: 0 0 8px; font-size: 0.94rem; font-weight: 700; }
         .menu { display: grid; gap: 6px; }
         .menu-item { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: center; padding: 8px 10px; border-radius: 14px; background: var(--surface-soft); border: 1px solid transparent; cursor: pointer; transition: background 180ms ease, border-color 180ms ease; }
@@ -128,6 +127,59 @@
         .calendar-panel { display: grid; gap: 12px; }
         .calendar-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
         .calendar-day { padding: 10px; border-radius: 14px; background: var(--surface-soft); border: 1px solid var(--border); text-align: center; }
+        .notification-pill { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 14px; background: var(--surface-soft); border: 1px solid var(--border); cursor: pointer; }
+        .notification-count { min-width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; background: var(--primary); color: #fff; font-size: 0.8rem; padding: 0 6px; }
+        .notification-panel { position: absolute; top: calc(100% + 8px); right: 0; width: 320px; border-radius: 20px; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow); z-index: 20; display: none; overflow: hidden; }
+        .notification-panel.open { display: block; }
+        .notification-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--border); background: var(--surface-soft); }
+        .notification-header strong { font-size: 0.95rem; }
+        .notifications-list { max-height: 280px; overflow-y: auto; }
+        .notification-item { padding: 14px 18px; display: grid; gap: 6px; border-bottom: 1px solid var(--border); }
+        .notification-item:last-child { border-bottom: none; }
+        .notification-item strong { display: block; font-size: 0.95rem; }
+        .notification-item span { color: var(--muted); font-size: 0.9rem; }
+        .notification-empty { padding: 18px; color: var(--muted); font-size: 0.95rem; }
+        .toast { position: fixed; bottom: 24px; right: 24px; padding: 14px 18px; background: rgba(15, 23, 42, 0.95); color: #fff; border-radius: 16px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18); opacity: 0; transform: translateY(12px); transition: opacity 180ms ease, transform 180ms ease; z-index: 30; pointer-events: none; min-width: 220px; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .clock-chip { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 14px 16px; border-radius: 22px; background: var(--surface-soft); border: 1px solid var(--border); color: var(--text); min-width: 180px; }
+        .clock-chip strong { display: block; font-size: 0.95rem; }
+        .clock-chip span { color: var(--muted); font-size: 0.92rem; }
+        .content-grid { display: grid; gap: 14px; margin-top: 18px; }
+        .content-card { border-radius: 18px; background: var(--surface-soft); border: 1px solid var(--border); padding: 16px; display: grid; gap: 10px; }
+        .content-card h4 { margin: 0; }
+        .subject-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 16px; }
+        .subject-card { border-radius: 18px; background: var(--surface-soft); border: 1px solid var(--border); padding: 16px; display: grid; gap: 12px; }
+        .subject-card h3 { margin: 0; }
+        .subject-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+        .subject-panel { display: grid; gap: 14px; margin-top: 18px; }
+        .section-panel { border-radius: 18px; background: var(--surface-soft); padding: 18px; border: 1px solid var(--border); }
+        .section-panel h4 { margin: 0 0 10px; }
+        .resource-list { display: grid; gap: 10px; margin-top: 10px; }
+        .resource-item { padding: 14px; border-radius: 16px; background: var(--surface); border: 1px solid var(--border); display: grid; gap: 6px; }
+        .resource-item strong { display: block; }
+        .resource-item span { color: var(--muted); font-size: 0.9rem; }
+        .resource-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        .content-card p { margin: 0; color: var(--muted); line-height: 1.5; }
+        .modal { position: fixed; inset: 0; display: none; justify-content: center; align-items: center; background: rgba(10, 18, 35, 0.65); z-index: 40; padding: 20px; }
+        .modal.open { display: flex; }
+        .modal-body { width: min(760px, 100%); border-radius: 22px; background: var(--surface); padding: 24px; box-shadow: 0 24px 80px rgba(16, 42, 67, 0.18); max-height: calc(100vh - 60px); overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; }
+        .modal-header h3 { margin: 0; }
+        .modal-close { border: none; background: transparent; font-size: 1.4rem; cursor: pointer; color: var(--muted); }
+        .form-row { display: grid; gap: 14px; }
+        .form-row label { font-weight: 700; }
+        .form-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; margin-top: 18px; }
+        .assign-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 16px; }
+        .assign-summary .pill { display: inline-flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border-radius: 18px; background: var(--surface-soft); border: 1px solid var(--border); }
+        .assign-summary .pill strong { font-size: 0.95rem; }
+        .assign-summary .pill span { color: var(--muted); font-size: 0.92rem; }
+        .content-help { color: var(--muted); font-size: 0.92rem; }
+        .content-input-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+        .content-input-row.full { grid-template-columns: 1fr; }
+        .content-note { color: var(--muted); font-size: 0.92rem; }
+        .content-file { padding: 14px 16px; border-radius: 16px; border: 1px dashed var(--border); background: var(--surface-soft); color: var(--muted); cursor: pointer; }
+        .content-file input { display: none; }
+        .content-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 16px; border: 1px solid var(--border); background: var(--surface-soft); cursor: pointer; }
         .calendar-day strong { display: block; font-size: 1.3rem; }
         .small-note { color: var(--muted); font-size: 0.88rem; line-height: 1.5; }
         .chart-card { min-height: 220px; }
@@ -143,43 +195,32 @@
         <header class="topbar">
             <div class="brand"><span class="brand-dot"></span>Teacher Console</div>
             <div class="topbar-actions">
-                <div class="pill">New messages <strong>3</strong></div>
-                <div class="pill">Live classes <strong>2</strong></div>
+                <button id="notificationToggle" class="notification-pill" type="button" aria-label="Toggle notifications">
+                    <span>Notifications</span>
+                    <span aria-hidden="true">🔔</span>
+                    <span id="notificationCount" class="notification-count" style="display:none;">0</span>
+                </button>
+                <div class="clock-chip">
+                    <strong id="todayDate">Loading date…</strong>
+                    <span id="realTimeClock">00:00:00</span>
+                </div>
                 <button id="logoutBtn" class="btn btn-secondary" type="button">Logout</button>
                 <button id="themeToggle" class="theme-toggle" type="button"><span id="themeIcon">🌙</span><span id="themeLabel">Dark mode</span></button>
             </div>
+            <div id="notificationPanel" class="notification-panel">
+                <div class="notification-header">
+                    <strong>Latest updates</strong>
+                    <button id="clearNotifications" class="btn btn-secondary" type="button">Clear</button>
+                </div>
+                <div id="notificationsList" class="notifications-list">
+                    <div class="notification-empty">No notifications yet.</div>
+                </div>
+            </div>
+            <div id="dashboardToast" class="toast">Notification dismissed</div>
         </header>
 
         <div class="dashboard-grid">
-            <aside class="sidebar">
-                <div class="profile-card">
-                    <div style="display:flex;align-items:center;gap:14px;">
-                        <div class="avatar" id="profileAvatar">S</div>
-                        <div>
-                            <div id="profileName" style="font-weight:800;font-size:1rem;">Mr. Sharma</div>
-                            <div id="profileRole" style="color:var(--muted);font-size:0.95rem;">Mathematics & Science</div>
-                        </div>
-                    </div>
-                    <div class="pill" style="justify-content:space-between;">
-                        <span>Today's classes</span><strong>3</strong>
-                    </div>
-                    <div class="pill" style="justify-content:space-between;">
-                        <span>Active students</span><strong>124</strong>
-                    </div>
-                </div>
-                <div class="menu">
-                    <div class="menu-item active"><span class="icon">🏠</span><span>Dashboard</span></div>
-                    <div class="menu-item"><span class="icon">🏫</span><span>Classes</span></div>
-                    <div class="menu-item"><span class="icon">🎥</span><span>Live Classes</span></div>
-                    <div class="menu-item"><span class="icon">📝</span><span>Assignments</span></div>
-                    <div class="menu-item"><span class="icon">❓</span><span>Quizzes</span></div>
-                    <div class="menu-item"><span class="icon">👩‍🎓</span><span>Students</span></div>
-                    <div class="menu-item"><span class="icon">📊</span><span>Analytics</span></div>
-                    <div class="menu-item"><span class="icon">📁</span><span>Resources</span></div>
-                    <div class="menu-item"><span class="icon">💬</span><span>Messages</span></div>
-                    <div class="menu-item"><span class="icon">⚙️</span><span>Settings</span></div>
-                </div>
-            </aside>
+            <aside class="sidebar"></aside>
 
             <main class="content">
                 <section class="card">
@@ -200,6 +241,29 @@
                         <div class="stats-item"><h4>Active students</h4><strong>124</strong></div>
                         <div class="stats-item"><h4>Notifications</h4><strong>8</strong></div>
                     </div>
+                    <div class="assign-summary">
+                        <div class="pill"><strong>Assigned teaching</strong><span id="assignmentBadge">Loading...</span></div>
+                        <div class="pill"><strong>Allowed classes</strong><span id="assignmentClasses">Loading assignment details…</span></div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+                        <div>
+                            <p class="small-title">Hybrid Teaching Model</p>
+                            <h2 class="section-title">Upload and manage teaching content</h2>
+                        </div>
+                        <div class="button-group">
+                            <button id="uploadVideoBtn" class="btn btn-primary">Upload Video</button>
+                            <button id="uploadPdfBtn" class="btn btn-secondary">Upload PDF / Notes</button>
+                            <button id="uploadImageBtn" class="btn btn-secondary">Upload Images / Diagrams</button>
+                            <button id="createQuizBtn" class="btn btn-secondary">Create Quiz</button>
+                            <button id="scheduleLiveBtn" class="btn btn-primary">Schedule Live Class</button>
+                        </div>
+                    </div>
+                    <div id="uploadedContentGrid" class="content-grid">
+                        <div class="content-card"><h4>No content uploaded yet</h4><p>Use the buttons above to add videos, notes, images, quizzes, or live class schedules.</p></div>
+                    </div>
                 </section>
 
                 <section class="card">
@@ -210,57 +274,75 @@
                         </div>
                         <button class="btn btn-secondary">View all classes</button>
                     </div>
-                    <div class="grid-3" style="margin-top:10px;">
-                        <div class="class-card"><div class="label">Class 5</div><h4>Math</h4><div class="meta"><span>28 students</span><span>Next live: 10:30 AM</span></div><div class="button-group"><button class="btn btn-primary">View students</button><button class="btn btn-secondary">Attendance</button></div></div>
-                        <div class="class-card"><div class="label">Class 8</div><h4>Science</h4><div class="meta"><span>32 students</span><span>Next live: 01:00 PM</span></div><div class="button-group"><button class="btn btn-primary">Add materials</button><button class="btn btn-secondary">View students</button></div></div>
-                        <div class="class-card"><div class="label">Class 12</div><h4>Biology</h4><div class="meta"><span>28 students</span><span>Next live: 03:40 PM</span></div><div class="button-group"><button class="btn btn-primary">Attendance</button><button class="btn btn-secondary">Add materials</button></div></div>
-                    </div>
+                    <div id="classBatchGrid" class="grid-3" style="margin-top:10px;"></div>
                 </section>
 
                 <section class="card content-management">
                     <div class="content-action-row">
                         <div>
                             <p class="small-title">Lesson & Content Management</p>
-                            <h2 class="section-title">Upload and organize teaching resources</h2>
+                            <h2 class="section-title">Choose grade and manage subject content</h2>
                         </div>
                         <button class="btn btn-primary">Upload Content</button>
                     </div>
                     <div class="content-action-row">
-                        <div class="content-search"><span>🔍</span><input type="search" id="resourceSearch" placeholder="Search resources, classes, date or subject" /></div>
-                        <div class="filters"><select id="filterSubject"><option value="all">Subject</option><option>Math</option><option>Science</option><option>Biology</option><option>English</option></select><select id="filterClass"><option value="all">Class</option><option>5</option><option>8</option><option>12</option></select><select id="filterType"><option value="all">Type</option><option>Video</option><option>PDF</option><option>Assignment</option><option>Quiz</option></select><select id="filterStatus"><option value="all">Status</option><option>Draft</option><option>Published</option></select></div>
+                        <div class="content-search"><span>🔍</span><input type="search" id="resourceSearch" placeholder="Search resources, classes, date or subject" disabled /></div>
+                        <div class="filters"><select id="filterSubject" disabled><option value="all">Subject</option></select><select id="filterClass" disabled><option value="all">Class</option></select><select id="filterType" disabled><option value="all">Type</option></select><select id="filterStatus" disabled><option value="all">Status</option></select></div>
                     </div>
-                    <div style="overflow-x:auto;">
-                        <table class="resource-table">
-                            <thead><tr><th>Title</th><th>Class</th><th>Subject</th><th>Type</th><th>Status</th><th>Actions</th></tr></thead>
-                            <tbody id="resourceTableBody">
-                                <tr class="resource-row"><td>Algebra fundamentals</td><td>5</td><td>Math</td><td>Video</td><td>Published</td><td><button class="btn btn-secondary">Edit</button></td></tr>
-                                <tr class="resource-row"><td>Newton forces notes</td><td>8</td><td>Science</td><td>PDF</td><td>Draft</td><td><button class="btn btn-secondary">Publish</button></td></tr>
-                                <tr class="resource-row"><td>Biology quiz 2</td><td>12</td><td>Biology</td><td>MCQ</td><td>Published</td><td><button class="btn btn-secondary">Review</button></td></tr>
-                            </tbody>
-                        </table>
+                    <div class="content-action-row" style="align-items:center; gap:16px; margin-top:18px;">
+                        <label for="teacherGradeSelect" style="font-weight:700; margin-bottom:0;">Choose Grade</label>
+                        <select id="teacherGradeSelect"></select>
                     </div>
-                </section>
-
-                <section class="card grid-2">
-                    <div class="live-card">
-                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;"><div><p class="small-title">Live Class Module</p><h2 class="section-title">Schedule or start your next session</h2></div><button class="btn btn-primary">Schedule Live Class</button></div>
-                        <div class="line-item"><span>Upcoming class</span><strong>Physics revision • 01:00 PM</strong></div>
-                        <div class="line-item"><span>Meeting link</span><a href="#" style="color:var(--primary);">Copy link</a></div>
-                        <div class="line-item"><span>Student join list</span><strong>24 joined</strong></div>
-                        <div class="line-item"><span>Attendance</span><strong>22/24 present</strong></div>
-                        <button class="btn btn-primary">Start class now</button>
-                        <div style="padding:18px;border-radius:22px;background:var(--surface-soft);border:1px solid var(--border);">
-                            <strong>Last class recap</strong>
-                            <p class="small-note" style="margin:8px 0 0;">Shared notes, assignment link, and quiz review for Class 8 Science.</p>
+                    <div id="subjectSection" class="subject-grid">
+                        <div class="content-card"><h4>Select a grade to view subjects</h4><p class="small-note">Choose one of your assigned grades to load the available subjects.</p></div>
+                    </div>
+                    <div id="subjectContentPanel" class="subject-panel" style="display:none;">
+                        <div class="content-card">
+                            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+                                <div>
+                                    <p class="small-title">Subject Content</p>
+                                    <h2 id="selectedSubjectHeading" class="section-title">Select a subject to open content</h2>
+                                </div>
+                                <div class="button-group">
+                                    <button id="uploadQuizBtn" class="btn btn-secondary" type="button">Upload Quiz</button>
+                                    <button id="uploadVideoBtnSubject" class="btn btn-secondary" type="button">Upload Video</button>
+                                    <button id="uploadPhotoBtnSubject" class="btn btn-secondary" type="button">Upload Photo</button>
+                                    <button id="uploadDocBtnSubject" class="btn btn-secondary" type="button">Upload Document</button>
+                                </div>
+                            </div>
+                            <div class="grid-2">
+                                <section class="section-panel">
+                                    <div style="display:flex;justify-content:space-between;align-items:center; gap:10px;">
+                                        <h4>Quizzes</h4>
+                                        <button id="uploadQuizSubjectBtn" class="btn btn-primary" type="button">Upload Quiz</button>
+                                    </div>
+                                    <div id="quizzesList" class="resource-list"><div class="content-card"><p class="small-note">No quiz content yet.</p></div></div>
+                                </section>
+                                <section class="section-panel">
+                                    <div style="display:flex;justify-content:space-between;align-items:center; gap:10px;">
+                                        <h4>Videos</h4>
+                                        <button id="uploadVideoSubjectBtn" class="btn btn-primary" type="button">Upload Video</button>
+                                    </div>
+                                    <div id="videosList" class="resource-list"><div class="content-card"><p class="small-note">No videos yet.</p></div></div>
+                                </section>
+                            </div>
+                            <div class="grid-2">
+                                <section class="section-panel">
+                                    <div style="display:flex;justify-content:space-between;align-items:center; gap:10px;">
+                                        <h4>Photos</h4>
+                                        <button id="uploadPhotoSubjectBtn" class="btn btn-primary" type="button">Upload Photo</button>
+                                    </div>
+                                    <div id="photosList" class="resource-list"><div class="content-card"><p class="small-note">No photos yet.</p></div></div>
+                                </section>
+                                <section class="section-panel">
+                                    <div style="display:flex;justify-content:space-between;align-items:center; gap:10px;">
+                                        <h4>Notes / PDFs</h4>
+                                        <button id="uploadDocBtnSubject" class="btn btn-primary" type="button">Upload Document</button>
+                                    </div>
+                                    <div id="docsList" class="resource-list"><div class="content-card"><p class="small-note">No documents yet.</p></div></div>
+                                </section>
+                            </div>
                         </div>
-                    </div>
-                    <div class="live-card">
-                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;"><div><p class="small-title">Assignment & Quiz Management</p><h2 class="section-title">Track submissions & performance</h2></div><button class="btn btn-secondary">Create Quiz</button></div>
-                        <div class="line-item"><span>Attempted</span><strong>34</strong></div>
-                        <div class="line-item"><span>Pending</span><strong>18</strong></div>
-                        <div class="line-item"><span>Average score</span><strong>78%</strong></div>
-                        <div class="line-item"><span>Top performer</span><strong>Riya</strong></div>
-                        <button class="btn btn-primary">Review submissions</button>
                     </div>
                 </section>
 
@@ -277,7 +359,7 @@
                     </div>
                 </section>
 
-                <section class="card grid-2">
+                <section class="card">
                     <div class="attendance-panel">
                         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;"><div><p class="small-title">Attendance System</p><h2 class="section-title">Mark attendance & review alerts</h2></div><button class="btn btn-primary">Download report</button></div>
                         <div class="attendance-summary">
@@ -287,25 +369,6 @@
                         </div>
                         <div class="chart-wrapper"><canvas id="attendanceBarChart"></canvas></div>
                     </div>
-                    <div class="chat-panel">
-                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;"><div><p class="small-title">Communication Tools</p><h2 class="section-title">Messages and announcements</h2></div><button class="btn btn-secondary">New announcement</button></div>
-                        <div class="chat-row"><div><strong>New student message</strong><p class="small-note">"Can you share last week's lesson plan?"</p></div><button class="btn btn-primary">Reply</button></div>
-                        <div class="chat-row"><div><strong>Submission alert</strong><p class="small-note">5 new quiz submissions waiting review.</p></div><button class="btn btn-primary">View</button></div>
-                        <div class="chat-row"><div><strong>Class update</strong><p class="small-note">Live class starting in 20 minutes.</p></div><button class="btn btn-secondary">Notify students</button></div>
-                    </div>
-                </section>
-
-                <section class="card">
-                    <div style="display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;">
-                        <div><p class="small-title">Resource Library</p><h2 class="section-title">All uploaded teaching materials</h2></div>
-                        <button class="btn btn-secondary">Manage resources</button>
-                    </div>
-                    <div class="resource-grid">
-                        <article class="resource-card"><div class="resource-icon">🎥</div><div><strong>All videos</strong><p class="small-note">Teachable recordings and offline content.</p><button class="btn btn-secondary">Open</button></div></article>
-                        <article class="resource-card"><div class="resource-icon">📄</div><div><strong>All notes</strong><p class="small-note">PDFs and summary sheets.</p><button class="btn btn-secondary">Open</button></div></article>
-                        <article class="resource-card"><div class="resource-icon">📝</div><div><strong>Assignments</strong><p class="small-note">Pending and graded tasks.</p><button class="btn btn-secondary">Open</button></div></article>
-                        <article class="resource-card"><div class="resource-icon">🧠</div><div><strong>Quizzes</strong><p class="small-note">MCQ and subjective sets.</p><button class="btn btn-secondary">Open</button></div></article>
-                    </div>
                 </section>
 
                 <section class="card grid-2">
@@ -314,53 +377,526 @@
                         <article class="badge-card"><div class="badge-icon">⭐</div><strong>Consistency Star</strong><p class="small-note">Teaching 20 days in a row.</p></article>
                         <article class="badge-card"><div class="badge-icon">👏</div><strong>Excellent Feedback</strong><p class="small-note">High student satisfaction scores.</p></article>
                     </div>
-                    <div class="card" style="padding:22px;">
-                        <p class="small-title">Feedback & Rating</p>
-                        <h2 class="section-title">Recent student responses</h2>
-                        <div class="chat-row"><div><strong>Rating</strong><p class="small-note">4.8/5 average</p></div><span>👍</span></div>
-                        <div class="chat-row"><div><strong>Comment</strong><p class="small-note">"Mr. Sharma explained the class clearly."</p></div></div>
-                        <div class="chat-row"><div><strong>Improvement</strong><p class="small-note">"More practice questions please."</p></div></div>
-                    </div>
                 </section>
 
-                <section class="card grid-2">
-                    <div class="calendar-panel">
-                        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;"><div><p class="small-title">Timetable & Calendar</p><h2 class="section-title">Weekly schedule and reminders</h2></div><button class="btn btn-secondary">Sync calendar</button></div>
-                        <div class="calendar-grid">
-                            <div class="calendar-day"><strong>Mon</strong><p>Class 5 Math</p></div>
-                            <div class="calendar-day"><strong>Tue</strong><p>Class 8 Science</p></div>
-                            <div class="calendar-day"><strong>Wed</strong><p>Class 12 Biology</p></div>
-                            <div class="calendar-day"><strong>Thu</strong><p>Live review</p></div>
-                            <div class="calendar-day"><strong>Fri</strong><p>Quiz grading</p></div>
-                            <div class="calendar-day"><strong>Sat</strong><p>Parent meeting</p></div>
+                <div id="contentModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+                    <div class="modal-body">
+                        <div class="modal-header">
+                            <h3 id="modalTitle">Upload new teaching content</h3>
+                            <button id="contentModalClose" class="modal-close" type="button" aria-label="Close modal">×</button>
+                        </div>
+                        <div class="form-row">
+                            <label for="contentType">Content type</label>
+                            <select id="contentType">
+                                <option value="video">Video</option>
+                                <option value="pdf">PDF / Notes</option>
+                                <option value="image">Images / Diagrams</option>
+                                <option value="quiz">Quiz</option>
+                                <option value="live">Schedule Live Class</option>
+                            </select>
+                            <div class="content-input-row">
+                                <div>
+                                    <label for="contentClass">Class</label>
+                                    <select id="contentClass"></select>
+                                </div>
+                                <div>
+                                    <label for="contentSubject">Subject</label>
+                                    <select id="contentSubject"></select>
+                                </div>
+                            </div>
+                            <label for="contentChapter">Chapter / Topic</label>
+                            <input id="contentChapter" type="text" placeholder="Chapter name or topic" />
+                            <label for="contentTitle">Title</label>
+                            <input id="contentTitle" type="text" placeholder="Resource title" />
+                            <label for="contentDescription">Description</label>
+                            <textarea id="contentDescription" rows="4" placeholder="Brief summary of the resource"></textarea>
+                            <label for="contentFile">Attach file</label>
+                            <label class="content-file" for="contentFile">Choose a file or drag and drop</label>
+                            <input id="contentFile" type="file" />
+                            <div id="liveScheduleFields" style="display:none;">
+                                <label for="contentDate">Schedule date</label>
+                                <input id="contentDate" type="date" />
+                                <label for="contentTime">Schedule time</label>
+                                <input id="contentTime" type="time" />
+                            </div>
+                            <p class="content-note">Uploaded content is linked to your assigned classes, subjects and chapters, and will update student dashboards in real time.</p>
+                        </div>
+                        <div class="form-actions">
+                            <button id="saveContentBtn" class="btn btn-primary" type="button">Publish content</button>
+                            <button id="cancelContentBtn" class="btn btn-secondary" type="button">Cancel</button>
                         </div>
                     </div>
-                    <div class="profile-card" style="padding:22px;">
-                        <p class="small-title">Profile & Settings</p>
-                        <h2 class="section-title">Account and teaching preferences</h2>
-                        <div class="line-item"><span>Subject</span><strong>Math, Science</strong></div>
-                        <div class="line-item"><span>Experience</span><strong>8 years</strong></div>
-                        <div class="line-item"><span>Language</span><strong>English</strong></div>
-                        <button class="btn btn-primary">Edit profile</button>
-                    </div>
-                </section>
+                </div>
 
                 <p class="footer">Teacher dashboard with theme-aware charts, quick actions, attendance, analytics, messaging, and resource management.</p>
             </main>
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
+        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+        import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js';
+
         const themeToggle = document.getElementById('themeToggle');
         const themeIcon = document.getElementById('themeIcon');
         const themeLabel = document.getElementById('themeLabel');
         const logoutBtn = document.getElementById('logoutBtn');
         const startClassBtn = document.getElementById('startClassBtn');
+        const notificationToggle = document.getElementById('notificationToggle');
+        const notificationPanel = document.getElementById('notificationPanel');
+        const notificationsList = document.getElementById('notificationsList');
+        const notificationCount = document.getElementById('notificationCount');
+        const clearNotifications = document.getElementById('clearNotifications');
+        const todayDate = document.getElementById('todayDate');
+        const realTimeClock = document.getElementById('realTimeClock');
         const profileName = document.getElementById('profileName');
         const welcomeGreeting = document.getElementById('welcomeGreeting');
         const profileAvatar = document.getElementById('profileAvatar');
         const profileRole = document.getElementById('profileRole');
         const storedTheme = localStorage.getItem('theme') || 'light';
+        const notificationsStorageKey = 'teacherNotifications';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCnvCkzycQxrJOXmH1ol43uUCAJtzpz3eA",
+            authDomain: "digital-classroom-de2b7.firebaseapp.com",
+            databaseURL: "https://digital-classroom-de2b7-default-rtdb.firebaseio.com",
+            projectId: "digital-classroom-de2b7",
+            storageBucket: "digital-classroom-de2b7.firebasestorage.app",
+            messagingSenderId: "30446374460",
+            appId: "1:30446374460:web:32508ecdafa718785c3d39",
+            measurementId: "G-3TH6YJJQWM"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        const uploadVideoBtn = document.getElementById('uploadVideoBtn');
+        const uploadPdfBtn = document.getElementById('uploadPdfBtn');
+        const uploadImageBtn = document.getElementById('uploadImageBtn');
+        const createQuizBtn = document.getElementById('createQuizBtn');
+        const scheduleLiveBtn = document.getElementById('scheduleLiveBtn');
+        const contentModal = document.getElementById('contentModal');
+        const contentModalClose = document.getElementById('contentModalClose');
+        const contentTypeSelect = document.getElementById('contentType');
+        const contentClassSelect = document.getElementById('contentClass');
+        const contentSubjectSelect = document.getElementById('contentSubject');
+        const contentChapterInput = document.getElementById('contentChapter');
+        const contentTitleInput = document.getElementById('contentTitle');
+        const contentDescriptionInput = document.getElementById('contentDescription');
+        const contentFileInput = document.getElementById('contentFile');
+        const liveScheduleFields = document.getElementById('liveScheduleFields');
+        const contentDateInput = document.getElementById('contentDate');
+        const contentTimeInput = document.getElementById('contentTime');
+        const saveContentBtn = document.getElementById('saveContentBtn');
+        const cancelContentBtn = document.getElementById('cancelContentBtn');
+        const assignmentBadge = document.getElementById('assignmentBadge');
+        const assignmentClasses = document.getElementById('assignmentClasses');
+        const uploadedContentGrid = document.getElementById('uploadedContentGrid');
+        const gradeSelect = document.getElementById('teacherGradeSelect');
+        const subjectSection = document.getElementById('subjectSection');
+        const subjectContentPanel = document.getElementById('subjectContentPanel');
+        const selectedSubjectHeading = document.getElementById('selectedSubjectHeading');
+        const quizzesList = document.getElementById('quizzesList');
+        const videosList = document.getElementById('videosList');
+        const photosList = document.getElementById('photosList');
+        const docsList = document.getElementById('docsList');
+        const uploadQuizBtn = document.getElementById('uploadQuizBtn');
+        const uploadVideoBtnSubject = document.getElementById('uploadVideoBtnSubject');
+        const uploadPhotoBtnSubject = document.getElementById('uploadPhotoBtnSubject');
+        const uploadDocBtnSubject = document.getElementById('uploadDocBtnSubject');
+        const uploadQuizSubjectBtn = document.getElementById('uploadQuizSubjectBtn');
+
+        let teacherProfile = null;
+        let teacherAssignment = null;
+        let selectedGrade = null;
+        let selectedSubject = null;
+        let subjectContentUnsubscribe = null;
+
+        function loadNotifications() {
+            return JSON.parse(localStorage.getItem(notificationsStorageKey) || '[]');
+        }
+
+        function saveNotifications(items) {
+            localStorage.setItem(notificationsStorageKey, JSON.stringify(items));
+        }
+
+        function getTeacherAssignment() {
+            return teacherProfile?.teachingAssignment || null;
+        }
+
+        function getAllowedSubjects() {
+            if (!teacherAssignment) return [];
+            return teacherAssignment.subjects || [];
+        }
+
+        function getAllowedClasses() {
+            if (!teacherAssignment) return [];
+            if (teacherAssignment.mode === 'teachAll') {
+                return teacherAssignment.classes || [];
+            }
+            return [...new Set(Object.values(teacherAssignment.classMap || {}).flat())];
+        }
+
+        function formatAssignmentSummary() {
+            if (!teacherAssignment) return 'No teaching assignment found.';
+            if (teacherAssignment.mode === 'teachAll') {
+                const stream = teacherAssignment.stream ? ` • ${teacherAssignment.stream}` : '';
+                return `${teacherAssignment.gradeGroup.replace('-', '–')} All Subjects${stream}`;
+            }
+            const subjectCount = teacherAssignment.subjects?.length || 0;
+            return `Subject Specialist • ${subjectCount} subject${subjectCount === 1 ? '' : 's'}`;
+        }
+
+        function formatAssignmentClasses() {
+            const allowedClasses = getAllowedClasses();
+            if (!allowedClasses.length) return 'No classes assigned yet.';
+            return allowedClasses.join(', ');
+        }
+
+        function renderClassBatches() {
+            const container = document.getElementById('classBatchGrid');
+            const subjects = getAllowedSubjects();
+            const classes = getAllowedClasses();
+            if (!container) return;
+            if (!subjects.length || !classes.length) {
+                container.innerHTML = '<div class="content-card"><h4>No batch assignment found</h4><p>Your dashboard will display the classes and subjects selected during registration.</p></div>';
+                return;
+            }
+            const cards = classes.map(classLevel => {
+                const subjectList = subjects.slice(0, 3).map(subject => `<span class="tag">${subject}</span>`).join('');
+                return `
+                    <div class="class-card">
+                        <div class="label">Class ${classLevel}</div>
+                        <h4>${subjects.length === 1 ? subjects[0] : subjects.length > 3 ? 'Assigned subjects' : 'Assigned subjects'}</h4>
+                        <div class="meta"><span>${subjectList}</span><span>${subjects.length} subjects</span></div>
+                        <div class="button-group"><button class="btn btn-primary">View students</button><button class="btn btn-secondary">Attendance</button></div>
+                    </div>
+                `;
+            });
+            container.innerHTML = cards.join('');
+        }
+
+        function populateContentOptions() {
+            const subjects = selectedGrade ? getAllowedSubjectsForGrade(selectedGrade) : getAllowedSubjects();
+            contentSubjectSelect.innerHTML = subjects.length
+                ? subjects.map(subject => `<option value="${subject}">${subject}</option>`).join('')
+                : '<option value="">No subject defined</option>';
+            const classes = getAllowedClasses();
+            contentClassSelect.innerHTML = classes.length
+                ? classes.map(level => `<option value="${level}">Class ${level}</option>`).join('')
+                : '<option value="">No class defined</option>';
+        }
+
+        function buildGradeOptions() {
+            const grades = getAllowedClasses();
+            if (!gradeSelect) return;
+            if (!grades.length) {
+                gradeSelect.innerHTML = '<option value="">No grades assigned</option>';
+                selectedGrade = null;
+                renderSubjectSection();
+                return;
+            }
+            gradeSelect.innerHTML = grades.map(level => `<option value="${level}">Grade ${level}</option>`).join('');
+            selectedGrade = grades[0];
+            renderSubjectSection();
+        }
+
+        function getAllowedSubjectsForGrade(grade) {
+            if (!teacherAssignment || !grade) return [];
+            if (teacherAssignment.mode === 'teachAll') {
+                return teacherAssignment.subjects || [];
+            }
+            return (teacherAssignment.subjects || []).filter(subject => {
+                return Array.isArray(teacherAssignment.classMap?.[subject]) && teacherAssignment.classMap[subject].includes(grade);
+            });
+        }
+
+        function renderSubjectSection() {
+            if (!subjectSection) return;
+            if (!selectedGrade) {
+                subjectSection.innerHTML = '<div class="content-card"><h4>Select a grade to view subjects</h4><p class="small-note">Choose one of your assigned grades to load the available subjects.</p></div>';
+                if (subjectContentPanel) subjectContentPanel.style.display = 'none';
+                return;
+            }
+            const subjects = getAllowedSubjectsForGrade(selectedGrade);
+            if (!subjects.length) {
+                subjectSection.innerHTML = '<div class="content-card"><h4>No subjects available</h4><p class="small-note">Your selected grade is not assigned to any subjects yet.</p></div>';
+                if (subjectContentPanel) subjectContentPanel.style.display = 'none';
+                return;
+            }
+            subjectSection.innerHTML = subjects.map(subject => `
+                <article class="subject-card">
+                    <div style="display:flex;justify-content:space-between;align-items:center; gap:10px; flex-wrap:wrap;">
+                        <div>
+                            <h3>${subject}</h3>
+                            <span class="small-note">Grade ${selectedGrade}</span>
+                        </div>
+                    </div>
+                    <div class="subject-actions">
+                        <button class="btn btn-secondary" type="button" data-subject="${subject}">Assignments</button>
+                        <button class="btn btn-secondary" type="button" data-subject="${subject}">Quizzes</button>
+                        <button class="btn btn-secondary" type="button" data-subject="${subject}">Videos</button>
+                        <button class="btn btn-secondary" type="button" data-subject="${subject}">Photos</button>
+                        <button class="btn btn-secondary" type="button" data-subject="${subject}">Notes/PDFs</button>
+                    </div>
+                </article>
+            `).join('');
+            subjectSection.querySelectorAll('button[data-subject]').forEach(button => {
+                button.addEventListener('click', () => selectSubject(button.dataset.subject));
+            });
+            if (subjectContentPanel) subjectContentPanel.style.display = 'none';
+        }
+
+        function selectSubject(subject) {
+            selectedSubject = subject;
+            if (gradeSelect) {
+                selectedGrade = gradeSelect.value;
+            }
+            if (!selectedGrade || !selectedSubject) return;
+            if (selectedSubjectHeading) {
+                selectedSubjectHeading.textContent = `${selectedSubject} • Grade ${selectedGrade}`;
+            }
+            if (subjectContentPanel) {
+                subjectContentPanel.style.display = 'block';
+            }
+            listenToSelectedSubjectContent();
+        }
+
+        function renderResourceList(container, items, emptyText) {
+            if (!container) return;
+            if (!items.length) {
+                container.innerHTML = `<div class="content-card"><p class="small-note">${emptyText}</p></div>`;
+                return;
+            }
+            container.innerHTML = items.map(item => `
+                <article class="resource-item">
+                    <strong>${item.title || item.fileName || 'Untitled resource'}</strong>
+                    <span>${item.subject} • Grade ${item.classLevel} • ${item.type?.toUpperCase() || 'Resource'}</span>
+                    <span>${new Date(item.createdAt).toLocaleString()}</span>
+                    <span>Teacher ID: ${item.teacherId || 'N/A'}</span>
+                    ${item.fileUrl ? `<a href="${item.fileUrl}" target="_blank" class="btn btn-secondary">Open file</a>` : ''}
+                </article>
+            `).join('');
+        }
+
+        function renderSubjectContentLists(items) {
+            const quizzes = items.filter(item => item.type === 'quiz');
+            const videos = items.filter(item => item.type === 'video');
+            const photos = items.filter(item => item.type === 'image');
+            const docs = items.filter(item => item.type === 'pdf');
+            renderResourceList(quizzesList, quizzes, 'No quizzes uploaded for this subject yet.');
+            renderResourceList(videosList, videos, 'No video lessons uploaded yet.');
+            renderResourceList(photosList, photos, 'No photos or diagrams uploaded yet.');
+            renderResourceList(docsList, docs, 'No notes or PDFs uploaded yet.');
+        }
+
+        function listenToSelectedSubjectContent() {
+            if (!teacherProfile || !teacherProfile.staffId || !selectedSubject || !selectedGrade) return;
+            if (subjectContentUnsubscribe) {
+                subjectContentUnsubscribe();
+            }
+            const selectedContentQuery = query(
+                collection(db, 'contentItems'),
+                where('teacherId', '==', teacherProfile.staffId),
+                where('classLevel', '==', selectedGrade),
+                where('subject', '==', selectedSubject),
+                orderBy('createdAt', 'desc')
+            );
+            subjectContentUnsubscribe = onSnapshot(selectedContentQuery, snapshot => {
+                const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderSubjectContentLists(items);
+            }, error => {
+                console.error('Subject content listener failed:', error);
+            });
+        }
+
+        function openContentModal(type, subject = null, grade = null) {
+            const typeLabel = {
+                video: 'Upload video lesson',
+                pdf: 'Upload PDF / notes',
+                image: 'Upload images / diagrams',
+                quiz: 'Create quiz',
+                live: 'Schedule live class'
+            }[type] || 'Upload content';
+            contentTypeSelect.value = type;
+            updateModalFields();
+            document.getElementById('modalTitle').textContent = typeLabel;
+            populateContentOptions();
+            if (subject && contentSubjectSelect) contentSubjectSelect.value = subject;
+            if (grade && contentClassSelect) contentClassSelect.value = grade;
+            contentChapterInput.value = '';
+            contentTitleInput.value = '';
+            contentDescriptionInput.value = '';
+            contentFileInput.value = '';
+            contentDateInput.value = '';
+            contentTimeInput.value = '';
+            contentModal.classList.add('open');
+        }
+
+        function closeContentModal() {
+            contentModal.classList.remove('open');
+        }
+
+        async function uploadTeacherContent() {
+            if (!teacherAssignment) {
+                alert('Teacher assignment is required before uploading content.');
+                return;
+            }
+            const subject = contentSubjectSelect.value;
+            const classLevel = contentClassSelect.value;
+            const chapter = contentChapterInput.value.trim();
+            const title = contentTitleInput.value.trim();
+            const description = contentDescriptionInput.value.trim();
+            const type = contentTypeSelect.value;
+            const file = contentFileInput.files[0];
+
+            if (!subject || !classLevel || !chapter || !title) {
+                alert('Please complete all required fields.');
+                return;
+            }
+            if (type !== 'quiz' && !file) {
+                alert('Please attach a file for this content type.');
+                return;
+            }
+            const meta = {
+                teacherId: teacherProfile.staffId,
+                teacherName: teacherProfile.fullName,
+                type,
+                subject,
+                classLevel,
+                chapter,
+                title,
+                description,
+                createdAt: new Date().toISOString(),
+                assignmentMode: teacherAssignment.mode,
+                gradeGroup: teacherAssignment.gradeGroup || null,
+                stream: teacherAssignment.stream || null,
+                source: 'teacher_dashboard'
+            };
+
+            try {
+                if (file) {
+                    const fileRef = ref(storage, `teacher-content/${teacherProfile.staffId}/${Date.now()}-${file.name}`);
+                    const uploadTask = uploadBytesResumable(fileRef, file);
+                    await new Promise((resolve, reject) => {
+                        uploadTask.on('state_changed', null, reject, resolve);
+                    });
+                    meta.fileUrl = await getDownloadURL(fileRef);
+                    meta.fileName = file.name;
+                }
+                if (type === 'live') {
+                    if (!contentDateInput.value || !contentTimeInput.value) {
+                        alert('Please choose a schedule date and time for live class sessions.');
+                        return;
+                    }
+                    meta.scheduledAt = `${contentDateInput.value} ${contentTimeInput.value}`;
+                }
+                await addDoc(collection(db, 'contentItems'), meta);
+                closeContentModal();
+                showToast('Content uploaded successfully');
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert('Unable to publish the content at this time.');
+            }
+        }
+
+        function renderTeacherContent(items) {
+            if (!items.length) {
+                uploadedContentGrid.innerHTML = '<div class="content-card"><h4>No resources uploaded yet</h4><p>Use the buttons above to share videos, notes, images, quizzes, or live sessions.</p></div>';
+                return;
+            }
+            uploadedContentGrid.innerHTML = items.map(item => `
+                <article class="content-card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+                        <div>
+                            <h4>${item.title || item.chapter}</h4>
+                            <p>${item.subject} • Class ${item.classLevel} • ${item.type.toUpperCase()}</p>
+                        </div>
+                        <span class="badge-pill">${new Date(item.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <p>${item.description || 'No description available.'}</p>
+                    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+                        ${item.fileUrl ? `<a href="${item.fileUrl}" target="_blank" class="btn btn-secondary">View file</a>` : ''}
+                        ${item.type === 'live' ? `<span class="content-note">Scheduled at ${item.scheduledAt}</span>` : ''}
+                    </div>
+                </article>
+            `).join('');
+        }
+
+        function listenToTeacherContent() {
+            if (!teacherProfile || !teacherProfile.staffId) return;
+            const contentQuery = query(
+                collection(db, 'contentItems'),
+                where('teacherId', '==', teacherProfile.staffId),
+                orderBy('createdAt', 'desc')
+            );
+            onSnapshot(contentQuery, snapshot => {
+                const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderTeacherContent(items);
+            }, error => {
+                console.error('Content listener failed:', error);
+            });
+        }
+
+        function updateTeacherAssignmentCard() {
+            assignmentBadge.textContent = formatAssignmentSummary();
+            assignmentClasses.textContent = formatAssignmentClasses();
+        }
+
+
+        function showToast(message) {
+            const toast = document.getElementById('dashboardToast');
+            if (!toast) return;
+            toast.textContent = message;
+            toast.classList.add('show');
+            clearTimeout(window.dashboardToastTimer);
+            window.dashboardToastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+        }
+
+        function renderNotifications() {
+            if (!notificationsList || !notificationCount || !notificationToggle) return;
+            const items = loadNotifications();
+            notificationCount.textContent = items.length;
+            notificationCount.style.display = items.length ? 'inline-flex' : 'none';
+            notificationToggle.classList.toggle('unread', items.length > 0 && !notificationPanel.classList.contains('open'));
+            if (!items.length) {
+                notificationsList.innerHTML = '<div class="notification-empty">No notifications yet.</div>';
+                return;
+            }
+            notificationsList.innerHTML = items.map(item => `
+                <div class="notification-item" data-notification-id="${item.id}">
+                    <strong>${item.message}</strong>
+                    <span>${new Date(item.timestamp).toLocaleString()}</span>
+                </div>
+            `).join('');
+            notificationsList.querySelectorAll('.notification-item').forEach(node => {
+                node.addEventListener('click', () => dismissNotification(node.dataset.notificationId));
+            });
+        }
+
+        function dismissNotification(id) {
+            const items = loadNotifications().filter(item => item.id !== id);
+            saveNotifications(items);
+            renderNotifications();
+            showToast('Notification dismissed');
+        }
+
+        function initClock() {
+            updateRealTimeClock();
+            setInterval(updateRealTimeClock, 1000);
+        }
+
+        function ensureNotificationSeed() {
+            const items = loadNotifications();
+            if (items.length) return;
+            const seed = [
+                { id: 'welcome-'+Date.now(), message: 'Welcome to your teacher console notifications.', timestamp: new Date().toISOString() },
+                { id: 'schedule-'+Date.now(), message: 'You have a meeting scheduled for tomorrow at 9:00 AM.', timestamp: new Date().toISOString() }
+            ];
+            saveNotifications(seed);
+        }
 
         function applyTheme(theme) {
             const isDark = theme === 'dark';
@@ -373,12 +909,15 @@
 
         function loadTeacherProfile() {
             const profile = JSON.parse(localStorage.getItem('teacherProfile') || '{}');
+            teacherProfile = profile;
+            teacherAssignment = getTeacherAssignment();
             const name = profile.fullName?.trim() || 'Mr. Sharma';
             const role = profile.expertise || 'Mathematics & Science';
-            profileName.textContent = name;
-            profileRole.textContent = role;
-            profileAvatar.textContent = (name.charAt(0) || 'S').toUpperCase();
+            if (profileName) profileName.textContent = name;
+            if (profileRole) profileRole.textContent = role;
+            if (profileAvatar) profileAvatar.textContent = (name.charAt(0) || 'S').toUpperCase();
             welcomeGreeting.textContent = `Good Afternoon, ${name} 👋`;
+            return profile;
         }
 
         themeToggle.addEventListener('click', () => {
@@ -392,6 +931,44 @@
 
         startClassBtn.addEventListener('click', () => {
             alert('Starting your live class session now.');
+        });
+
+        uploadVideoBtn?.addEventListener('click', () => openContentModal('video'));
+        uploadPdfBtn?.addEventListener('click', () => openContentModal('pdf'));
+        uploadImageBtn?.addEventListener('click', () => openContentModal('image'));
+        createQuizBtn?.addEventListener('click', () => openContentModal('quiz'));
+        scheduleLiveBtn?.addEventListener('click', () => openContentModal('live'));
+        gradeSelect?.addEventListener('change', () => {
+            selectedGrade = gradeSelect.value;
+            selectedSubject = null;
+            renderSubjectSection();
+        });
+        uploadQuizBtn?.addEventListener('click', () => {
+            if (selectedSubject && selectedGrade) openContentModal('quiz', selectedSubject, selectedGrade);
+        });
+        uploadVideoBtnSubject?.addEventListener('click', () => {
+            if (selectedSubject && selectedGrade) openContentModal('video', selectedSubject, selectedGrade);
+        });
+        uploadPhotoBtnSubject?.addEventListener('click', () => {
+            if (selectedSubject && selectedGrade) openContentModal('image', selectedSubject, selectedGrade);
+        });
+        uploadDocBtnSubject?.addEventListener('click', () => {
+            if (selectedSubject && selectedGrade) openContentModal('pdf', selectedSubject, selectedGrade);
+        });
+        uploadQuizSubjectBtn?.addEventListener('click', () => {
+            if (selectedSubject && selectedGrade) openContentModal('quiz', selectedSubject, selectedGrade);
+        });
+        contentModalClose?.addEventListener('click', closeContentModal);
+        cancelContentBtn?.addEventListener('click', closeContentModal);
+        contentTypeSelect?.addEventListener('change', updateModalFields);
+        saveContentBtn?.addEventListener('click', uploadTeacherContent);
+        contentFileInput?.addEventListener('change', () => {
+            const fileLabel = document.querySelector('label[for="contentFile"]');
+            if (contentFileInput.files.length) {
+                fileLabel.textContent = `Selected: ${contentFileInput.files[0].name}`;
+            } else {
+                fileLabel.textContent = 'Choose a file or drag and drop';
+            }
         });
 
         const chartPalette = {
@@ -447,6 +1024,33 @@
         document.addEventListener('DOMContentLoaded', () => {
             loadTeacherProfile();
             applyTheme(storedTheme);
+            updateTeacherAssignmentCard();
+            renderClassBatches();
+            buildGradeOptions();
+            populateContentOptions();
+            listenToTeacherContent();
+            ensureNotificationSeed();
+            initClock();
+            renderNotifications();
+        });
+
+        notificationToggle?.addEventListener('click', () => {
+            notificationPanel?.classList.toggle('open');
+            if (notificationPanel?.classList.contains('open')) {
+                notificationToggle.classList.remove('unread');
+            }
+            renderNotifications();
+        });
+
+        clearNotifications?.addEventListener('click', () => {
+            saveNotifications([]);
+            renderNotifications();
+        });
+
+        document.addEventListener('click', event => {
+            if (notificationPanel && notificationToggle && !notificationPanel.contains(event.target) && !notificationToggle.contains(event.target)) {
+                notificationPanel.classList.remove('open');
+            }
         });
     </script>
 </body>

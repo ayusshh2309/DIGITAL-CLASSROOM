@@ -589,6 +589,84 @@
             font-weight: 700;
         }
 
+        .radio-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .radio-group label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            border-radius: 16px;
+            border: 1px solid var(--input-border);
+            background: var(--input-bg);
+            cursor: pointer;
+            transition: border-color 180ms ease, background 180ms ease;
+        }
+
+        .radio-group input {
+            accent-color: var(--primary);
+        }
+
+        .checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+        }
+
+        .checkbox-grid label {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 14px;
+            border-radius: 16px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            cursor: pointer;
+        }
+
+        .checkbox-grid input {
+            accent-color: var(--primary);
+        }
+
+        .subject-class-row {
+            margin-top: 14px;
+            border-radius: 16px;
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
+            padding: 14px;
+        }
+
+        .subject-class-row strong {
+            display: block;
+            margin-bottom: 10px;
+            color: var(--text);
+        }
+
+        .class-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+            gap: 10px;
+        }
+
+        .class-grid label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            border-radius: 14px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            cursor: pointer;
+        }
+
+        .class-grid input {
+            accent-color: var(--primary);
+        }
+
         .tag-input input {
             flex: 1;
             border: none;
@@ -913,6 +991,41 @@
                         </div>
                     </div>
                     <div class="field-group">
+                        <label>Teaching Mode</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="teachingMode" value="teachAll" checked /> Teach All Subjects</label>
+                            <label><input type="radio" name="teachingMode" value="specialist" /> Subject Specialist</label>
+                        </div>
+                    </div>
+                    <div id="assignmentPanel">
+                        <div class="field-group" id="gradeGroupField">
+                            <label for="gradeGroup">Grade Group</label>
+                            <select id="gradeGroup" name="gradeGroup">
+                                <option value="5-6">Grades 5–6 (All subjects)</option>
+                                <option value="7-8">Grades 7–8 (All subjects)</option>
+                                <option value="9-10">Grades 9–10 (All subjects)</option>
+                                <option value="11-12">Grades 11–12 (Stream-wise subjects only)</option>
+                            </select>
+                        </div>
+                        <div class="field-group" id="streamField" style="display:none;">
+                            <label for="stream">Stream</label>
+                            <select id="stream" name="stream">
+                                <option value="PCM">Science - PCM</option>
+                                <option value="PCB">Science - PCB</option>
+                                <option value="Commerce">Commerce</option>
+                                <option value="Arts">Arts</option>
+                            </select>
+                        </div>
+                        <div class="field-group" id="specialistField" style="display:none;">
+                            <label>Select Subjects</label>
+                            <div id="subjectChecklist" class="checkbox-grid"></div>
+                        </div>
+                        <div class="field-group" id="classSelectionContainer" style="display:none;">
+                            <label>Classes per subject</label>
+                            <div id="subjectClassMap"></div>
+                        </div>
+                    </div>
+                    <div class="field-group">
                         <label for="institution">Institution Name</label>
                         <div class="input-group">
                             <input id="institution" name="institution" type="text" placeholder="Brightfield Academy" />
@@ -1038,6 +1151,106 @@
         const microsoftSignupButton = document.getElementById('microsoftSignupButton');
         const linkedinSignupButton = document.getElementById('linkedinSignupButton');
         const createAccountButton = document.getElementById('createAccountButton');
+        const teachingModeInputs = document.querySelectorAll('input[name="teachingMode"]');
+        const gradeGroupSelect = document.getElementById('gradeGroup');
+        const streamField = document.getElementById('streamField');
+        const streamSelect = document.getElementById('stream');
+        const specialistField = document.getElementById('specialistField');
+        const subjectChecklist = document.getElementById('subjectChecklist');
+        const classSelectionContainer = document.getElementById('classSelectionContainer');
+        const subjectClassMap = document.getElementById('subjectClassMap');
+
+        const subjectOptions = ['Mathematics', 'Science', 'Physics', 'Chemistry', 'Biology', 'English', 'Hindi', 'Social Science', 'Computer Science', 'Commerce', 'History'];
+
+        const streamSubjects = {
+            PCM: ['Mathematics', 'Physics', 'Chemistry', 'English'],
+            PCB: ['Biology', 'Chemistry', 'Physics', 'English'],
+            Commerce: ['Commerce', 'Economics', 'Business Studies', 'English'],
+            Arts: ['History', 'Geography', 'Political Science', 'English']
+        };
+
+        function updateAssignmentPanel() {
+            const selectedMode = document.querySelector('input[name="teachingMode"]:checked').value;
+            const isTeachAll = selectedMode === 'teachAll';
+            gradeGroupSelect.closest('.field-group').style.display = isTeachAll ? 'grid' : 'none';
+            streamField.style.display = isTeachAll && gradeGroupSelect.value === '11-12' ? 'grid' : 'none';
+            specialistField.style.display = isTeachAll ? 'none' : 'grid';
+            classSelectionContainer.style.display = isTeachAll ? 'none' : (subjectChecklist.querySelectorAll('input[type="checkbox"]:checked').length ? 'grid' : 'none');
+        }
+
+        function renderSubjectChecklist() {
+            subjectChecklist.innerHTML = subjectOptions.map(subject => `
+                <label><input type="checkbox" value="${subject}" /> ${subject}</label>
+            `).join('');
+            subjectChecklist.querySelectorAll('input[type="checkbox"]').forEach(input => {
+                input.addEventListener('change', refreshClassSelection);
+            });
+            refreshClassSelection();
+        }
+
+        function refreshClassSelection() {
+            const selectedSubjects = Array.from(subjectChecklist.querySelectorAll('input[type="checkbox"]:checked')).map(input => input.value);
+            classSelectionContainer.innerHTML = selectedSubjects.map(subject => `
+                <div class="subject-class-row">
+                    <strong>${subject}</strong>
+                    <div class="class-grid">
+                        ${[5,6,7,8,9,10,11,12].map(level => `
+                            <label><input type="checkbox" value="${level}" data-subject="${subject}" /> ${level}</label>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+            classSelectionContainer.style.display = selectedSubjects.length ? 'grid' : 'none';
+        }
+
+        function getTeacherAssignment() {
+            const mode = document.querySelector('input[name="teachingMode"]:checked').value;
+            if (mode === 'teachAll') {
+                const gradeGroup = gradeGroupSelect.value;
+                const stream = gradeGroup === '11-12' ? streamSelect.value : null;
+                const subjects = gradeGroup === '11-12' ? streamSubjects[stream] : ['Mathematics', 'Science', 'English', 'Hindi', 'Social Science', 'Computer Science'];
+                const classes = gradeGroup === '5-6' ? ['5', '6'] : gradeGroup === '7-8' ? ['7', '8'] : gradeGroup === '9-10' ? ['9', '10'] : ['11', '12'];
+                return { mode, gradeGroup, stream, subjects, classes };
+            }
+            const selectedSubjects = Array.from(subjectChecklist.querySelectorAll('input[type="checkbox"]:checked')).map(input => input.value);
+            const classMap = {};
+            classSelectionContainer.querySelectorAll('input[type="checkbox"]:checked').forEach(input => {
+                const subject = input.dataset.subject;
+                classMap[subject] = classMap[subject] || [];
+                classMap[subject].push(input.value);
+            });
+            return { mode, subjects: selectedSubjects, classMap };
+        }
+
+        function validateTeachingAssignment(assignment) {
+            if (assignment.mode === 'teachAll') {
+                if (!assignment.gradeGroup) {
+                    alert('Please select a grade group for Teach All Subjects mode.');
+                    return false;
+                }
+                if (assignment.gradeGroup === '11-12' && !assignment.stream) {
+                    alert('Please choose a stream for 11-12 grade group.');
+                    return false;
+                }
+                return true;
+            }
+            if (!assignment.subjects.length) {
+                alert('Please select at least one subject for Subject Specialist mode.');
+                return false;
+            }
+            for (const subject of assignment.subjects) {
+                if (!assignment.classMap[subject] || !assignment.classMap[subject].length) {
+                    alert(`Please select classes for ${subject}.`);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        teachingModeInputs.forEach(input => input.addEventListener('change', updateAssignmentPanel));
+        gradeGroupSelect.addEventListener('change', updateAssignmentPanel);
+        streamSelect.addEventListener('change', updateAssignmentPanel);
+        renderSubjectChecklist();
 
         function getExpertiseTags() {
             return Array.from(tagInput.querySelectorAll('span.tag'))
@@ -1157,6 +1370,11 @@
                 return;
             }
 
+            const assignment = getTeacherAssignment();
+            if (!validateTeachingAssignment(assignment)) {
+                return;
+            }
+
             const profile = {
                 fullName: fullNameInput.value.trim(),
                 email: workEmailValue,
@@ -1166,6 +1384,7 @@
                 experience: experienceInput.value ? Number(experienceInput.value) : null,
                 staffId: staffId,
                 documentName: selectedFile.name,
+                teachingAssignment: assignment,
                 createdAt: new Date().toISOString()
             };
 

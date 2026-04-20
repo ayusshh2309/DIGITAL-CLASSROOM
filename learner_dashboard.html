@@ -148,6 +148,23 @@
             color: var(--text);
         }
 
+        .profile-meta-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-size: 0.95rem;
+            margin-top: 8px;
+        }
+
+        [data-theme='dark'] .profile-meta-badge {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
         .nav-item {
             display: inline-flex;
             align-items: center;
@@ -262,6 +279,146 @@
             background: var(--surface-soft);
             border: 1px solid var(--border);
             width: fit-content;
+        }
+
+        .notification-pill {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: border-color 180ms ease, box-shadow 180ms ease;
+        }
+
+        .notification-pill.unread {
+            border-color: rgba(99, 102, 241, 0.45);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.08);
+        }
+
+        .notification-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            border-radius: 999px;
+            background: var(--warning);
+            color: #fff;
+        }
+
+        .notification-panel {
+            position: absolute;
+            right: 0;
+            top: 60px;
+            width: min(360px, calc(100vw - 40px));
+            border-radius: 20px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            z-index: 20;
+            display: none;
+            overflow: hidden;
+        }
+
+        .notification-panel.open {
+            display: block;
+        }
+
+        .notification-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px 18px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface-soft);
+        }
+
+        .notification-header strong {
+            font-size: 0.95rem;
+        }
+
+        .notifications-list {
+            max-height: 280px;
+            overflow-y: auto;
+        }
+
+        .notification-item {
+            padding: 14px 18px;
+            display: grid;
+            gap: 6px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+
+        .notification-item strong {
+            display: block;
+            font-size: 0.95rem;
+        }
+
+        .notification-item span {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .notification-empty {
+            padding: 18px;
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 14px 18px;
+            background: rgba(15, 23, 42, 0.95);
+            color: #fff;
+            border-radius: 16px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+            opacity: 0;
+            transform: translateY(12px);
+            transition: opacity 180ms ease, transform 180ms ease;
+            z-index: 30;
+            pointer-events: none;
+            min-width: 220px;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .clock-chip {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+            padding: 16px 18px;
+            border-radius: 22px;
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
+            color: var(--text);
+            min-width: 190px;
+        }
+
+        .clock-chip strong {
+            display: block;
+            font-size: 0.95rem;
+        }
+
+        .clock-chip span {
+            color: var(--muted);
+            font-size: 0.92rem;
         }
 
         .progress-chip {
@@ -386,6 +543,79 @@
             color: var(--primary);
             font-size: 0.85rem;
             font-weight: 700;
+        }
+
+        .select-control {
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 12px 16px;
+            background: var(--surface);
+            color: var(--text);
+            font: inherit;
+            min-width: 180px;
+        }
+
+
+        .subject-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
+        }
+
+        .subject-card {
+            display: grid;
+            gap: 14px;
+            padding: 22px;
+            border-radius: 24px;
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: transform 180ms ease, box-shadow 180ms ease;
+        }
+
+        .subject-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 42px rgba(99, 102, 241, 0.12);
+        }
+
+        .subject-card h3 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .subject-card p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .subject-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .subject-action {
+            border: none;
+            border-radius: 14px;
+            padding: 10px 12px;
+            background: var(--surface);
+            color: var(--text);
+            cursor: pointer;
+            transition: background 180ms ease;
+        }
+
+        .subject-action:hover {
+            background: var(--surface-strong);
+        }
+
+        .subject-settings {
+            display: grid;
+            gap: 12px;
+        }
+
+        .subject-settings .small-title {
+            margin-bottom: 0;
         }
 
         .progress-bar {
@@ -550,10 +780,21 @@
                     <span class="brand-dot"></span>
                     <span>Smart Learning</span>
                 </a>
-                <div class="nav-item">
+                <div id="notificationToggle" class="notification-pill" type="button" aria-label="Toggle notifications">
                     <span>Notifications</span>
                     <span aria-hidden="true">🔔</span>
+                    <span id="notificationCount" class="notification-count" style="display:none;">0</span>
                 </div>
+                <div id="notificationPanel" class="notification-panel">
+                    <div class="notification-header">
+                        <strong>Latest updates</strong>
+                        <button id="clearNotifications" class="btn-soft">Clear</button>
+                    </div>
+                    <div id="notificationsList" class="notifications-list">
+                        <div class="notification-empty">No notifications yet.</div>
+                    </div>
+                </div>
+                <div id="dashboardToast" class="toast">Notification dismissed</div>
             </div>
             <div class="nav-right">
                 <button class="theme-toggle nav-item" id="themeToggle" type="button" aria-label="Toggle theme">
@@ -576,41 +817,34 @@
                 <div>
                     <p class="small-title">Welcome back</p>
                     <h1 id="welcomeGreeting" class="section-title">Good Morning, Ayush 👋</h1>
-                    <p class="section-subtitle">Here’s your progress summary for today. Keep the streak alive and finish your study goals.</p>
+                    <p class="section-subtitle">Here’s your progress summary for today. Keep your focus on goals and follow the study plan.</p>
                 </div>
-                <div class="badge-pill">
-                    <span>Live Score</span>
-                    <strong>+18 XP</strong>
-                </div>
-            </div>
-            <div class="stats-grid">
-                <div class="stat">
-                    <strong>XP Level</strong>
-                    <span>Level 12</span>
-                </div>
-                <div class="stat">
-                    <strong>Streak</strong>
-                    <span>9 days</span>
-                </div>
-                <div class="stat">
-                    <strong>Continue Learning</strong>
-                    <span id="lastSessionLabel">Algebra Basics • Chapter 3</span>
+                <div class="clock-chip">
+                    <span id="todayDate">Loading date…</span>
+                    <strong id="realTimeClock">00:00:00</strong>
+                    <span id="dailyStudyLabel">Study time today: 0m</span>
                 </div>
             </div>
             <div class="profile-meta">
                 <div class="profile-meta-item">
                     <strong>Class/Grade</strong>
                     <span id="dashboardGrade">Grade 10</span>
-                </div>
-                <div class="profile-meta-item" id="dashboardStreamContainer">
-                    <strong>Stream</strong>
-                    <span id="dashboardStream">PCM</span>
+                    <div id="dashboardStreamBadge" class="profile-meta-badge" style="display:none;">
+                        <span>Stream</span>
+                        <strong id="dashboardStream">Science</strong>
+                    </div>
                 </div>
             </div>
-            <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
-                <button class="btn-solid" id="resumeButton">Resume chapter</button>
-                <button class="btn-soft">View progress report</button>
+        </section>
+
+        <section class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:14px;">
+                <div>
+                    <p class="small-title">Subjects</p>
+                    <h2 class="section-title">Your active subjects</h2>
+                </div>
             </div>
+            <div id="subjectCards" class="subject-grid"></div>
         </section>
 
         <div class="main-grid">
@@ -671,82 +905,6 @@
             </div>
         </div>
 
-        <section class="card">
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:14px;">
-                <div>
-                    <p class="small-title">Continue Learning</p>
-                    <h2 class="section-title">Pick up where you left off</h2>
-                </div>
-                <button class="btn-soft">View all lessons</button>
-            </div>
-            <div class="learning-grid">
-                <article class="learning-card">
-                    <img class="learning-thumbnail" src="https://images.unsplash.com/photo-1554774853-188b5edd05e9?auto=format&fit=crop&w=900&q=80" alt="Last watched video thumbnail" />
-                    <div class="tag-pill">Mathematics</div>
-                    <h3>Algebra Thinking: Chapter 3</h3>
-                    <p style="margin:0;color:var(--muted);">Analyze problems and solve equations with real examples.</p>
-                    <div class="progress-bar"><div class="progress-fill" style="width: 68%;"></div></div>
-                    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
-                        <span style="font-weight:700;">68% complete</span>
-                        <button class="btn-solid">Resume</button>
-                    </div>
-                </article>
-                <article class="learning-card">
-                    <div class="tag-pill">Science</div>
-                    <h3>Physics Sparks</h3>
-                    <p style="margin:0;color:var(--muted);">Recommended lesson on motion and energy.</p>
-                    <div class="progress-bar"><div class="progress-fill" style="width: 34%;"></div></div>
-                    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
-                        <span style="font-weight:700;">34% complete</span>
-                        <button class="btn-soft">Start</button>
-                    </div>
-                </article>
-            </div>
-        </section>
-
-        <section class="card">
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:14px;">
-                <div>
-                    <p class="small-title">Resource Library</p>
-                    <h2 class="section-title">Study materials at a glance</h2>
-                </div>
-                <button class="btn-soft">Explore library</button>
-            </div>
-            <div class="resource-grid">
-                <article class="resource-card">
-                    <div class="resource-icon">📄</div>
-                    <div>
-                        <strong>PDF Notes</strong>
-                        <p style="margin:4px 0 10px;color:var(--muted);">Download class summaries.</p>
-                        <button class="btn-solid">View</button>
-                    </div>
-                </article>
-                <article class="resource-card">
-                    <div class="resource-icon">🎥</div>
-                    <div>
-                        <strong>Offline Videos</strong>
-                        <p style="margin:4px 0 10px;color:var(--muted);">Save lessons for later.</p>
-                        <button class="btn-solid">Download</button>
-                    </div>
-                </article>
-                <article class="resource-card">
-                    <div class="resource-icon">📷</div>
-                    <div>
-                        <strong>Photos</strong>
-                        <p style="margin:4px 0 10px;color:var(--muted);">Illustrations and diagrams.</p>
-                        <button class="btn-solid">View</button>
-                    </div>
-                </article>
-                <article class="resource-card">
-                    <div class="resource-icon">📝</div>
-                    <div>
-                        <strong>Assignments</strong>
-                        <p style="margin:4px 0 10px;color:var(--muted);">Latest homework tasks.</p>
-                        <button class="btn-solid">Open</button>
-                    </div>
-                </article>
-            </div>
-        </section>
 
         <section class="card">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:14px;">
@@ -754,37 +912,9 @@
                     <p class="small-title">Achievements</p>
                     <h2 class="section-title">Badges & milestones</h2>
                 </div>
-                <button class="btn-soft">See all</button>
             </div>
-            <div class="badge-grid">
-                <article class="badge-card">
-                    <div class="badge-icon">🏆</div>
-                    <div>
-                        <strong>Math Master</strong>
-                        <p style="margin:4px 0;color:var(--muted);">Reached 90% accuracy in math quizzes.</p>
-                    </div>
-                </article>
-                <article class="badge-card">
-                    <div class="badge-icon">🔥</div>
-                    <div>
-                        <strong>Consistency King</strong>
-                        <p style="margin:4px 0;color:var(--muted);">Studied 9 days in a row.</p>
-                    </div>
-                </article>
-                <article class="badge-card">
-                    <div class="badge-icon">🎯</div>
-                    <div>
-                        <strong>Quiz Champion</strong>
-                        <p style="margin:4px 0;color:var(--muted);">High scores across weekly quizzes.</p>
-                    </div>
-                </article>
-                <article class="badge-card">
-                    <div class="badge-icon">🧪</div>
-                    <div>
-                        <strong>Science Explorer</strong>
-                        <p style="margin:4px 0;color:var(--muted);">Completed 12 science lessons.</p>
-                    </div>
-                </article>
+            <div id="achievementGrid" class="badge-grid">
+                <div class="notification-empty" style="padding: 24px;">Loading achievements…</div>
             </div>
         </section>
 
@@ -795,17 +925,25 @@
         const themeToggleButton = document.getElementById('themeToggle');
         const themeIcon = document.getElementById('themeIcon');
         const themeLabel = document.getElementById('themeLabel');
-        const resumeButton = document.getElementById('resumeButton');
-        const lastSessionLabel = document.getElementById('lastSessionLabel');
         const taskList = document.getElementById('taskList');
         const goalPercent = document.getElementById('goalPercent');
         const goalFill = document.getElementById('goalFill');
         const dashboardGrade = document.getElementById('dashboardGrade');
         const dashboardStream = document.getElementById('dashboardStream');
-        const dashboardStreamContainer = document.getElementById('dashboardStreamContainer');
+        const dashboardStreamBadge = document.getElementById('dashboardStreamBadge');
         const profileName = document.getElementById('profileName');
         const welcomeGreeting = document.getElementById('welcomeGreeting');
         const profileAvatar = document.getElementById('profileAvatar');
+        const subjectCards = document.getElementById('subjectCards');
+        const achievementGrid = document.getElementById('achievementGrid');
+        const notificationToggle = document.getElementById('notificationToggle');
+        const notificationPanel = document.getElementById('notificationPanel');
+        const notificationCount = document.getElementById('notificationCount');
+        const notificationsList = document.getElementById('notificationsList');
+        const clearNotifications = document.getElementById('clearNotifications');
+        const todayDate = document.getElementById('todayDate');
+        const realTimeClock = document.getElementById('realTimeClock');
+        const dailyStudyLabel = document.getElementById('dailyStudyLabel');
         const countdownTimer = document.getElementById('countdownTimer');
 
         const tasksData = [
@@ -819,6 +957,22 @@
             topic: 'Algebra Basics • Chapter 3',
             progress: 68,
             lastWatched: 'Last watched 22m ago'
+        };
+
+        const mandatorySubjects = ['English', 'Physical Education', 'Computer Science'];
+        const gradeSubjects = {
+            '5': ['Mathematics', 'English', 'Science', 'Social Studies', 'Hindi', 'Art'],
+            '6': ['Mathematics', 'English', 'Science', 'Social Studies', 'Computer Science', 'Art'],
+            '7': ['Mathematics', 'English', 'Science', 'Social Studies', 'Computer Science', 'Hindi'],
+            '8': ['Mathematics', 'English', 'Science', 'Social Studies', 'Computer Science', 'Art'],
+            '9': ['Mathematics', 'English', 'Science', 'Social Studies', 'Computer Science', 'Physical Education'],
+            '10': ['Mathematics', 'English', 'Science', 'Social Studies', 'Computer Science', 'Physical Education']
+        };
+        const streamSubjects = {
+            'PCM': ['Physics', 'Chemistry', 'Mathematics'],
+            'PCB': ['Physics', 'Chemistry', 'Biology'],
+            'Commerce': ['Accountancy', 'Business Studies', 'Economics'],
+            'Arts': ['History', 'Geography', 'Political Science', 'Sociology', 'Psychology']
         };
 
         function applyTheme(theme) {
@@ -836,32 +990,31 @@
         }
 
         function loadLearningSession() {
-            const storedProgress = JSON.parse(localStorage.getItem('learningSession')) || learningSession;
-            lastSessionLabel.textContent = storedProgress.topic;
-            goalPercent.textContent = `${Math.round(storedProgress.progress)}%`;
-            goalFill.style.width = `${Math.round(storedProgress.progress)}%`;
-            localStorage.setItem('learningSession', JSON.stringify(storedProgress));
+            const analytics = loadAnalytics();
+            updateStudyTimeLabel(analytics.dailyStudy[getTodayKey()] || 0);
+            updateStudyChart();
+            updateQuizChart();
+            renderNotifications();
+            localStorage.setItem(analyticsStorageKey, JSON.stringify(analytics));
         }
 
         function loadLearnerProfile() {
-            const profile = JSON.parse(localStorage.getItem('learnerProfile') || '{}');
+            const profile = getLearnerProfile();
             const name = profile.fullname ? profile.fullname.trim() : 'Ayush';
             profileName.textContent = name || 'Ayush';
             welcomeGreeting.textContent = `Good Morning, ${name || 'Ayush'} 👋`;
             profileAvatar.textContent = (name || 'A').charAt(0).toUpperCase();
 
             if (!profile.grade) {
-                dashboardGrade.textContent = 'Grade 10';
-                dashboardStreamContainer.style.display = 'none';
-                return;
+                profile.grade = '10';
             }
-            dashboardGrade.textContent = `Grade ${profile.grade}`;
-            if (profile.grade === '11' || profile.grade === '12') {
-                dashboardStream.textContent = profile.stream || 'Not selected';
-                dashboardStreamContainer.style.display = 'grid';
+            if (profile.grade !== '11' && profile.grade !== '12') {
+                delete profile.stream;
             } else {
-                dashboardStreamContainer.style.display = 'none';
+                profile.stream = profile.stream || 'PCM';
             }
+            saveLearnerProfile(profile);
+            updateSubjectSelection(profile.grade, profile.stream);
         }
 
         function renderTasks() {
@@ -884,6 +1037,403 @@
                 });
                 taskList.appendChild(taskRow);
             });
+        }
+
+        function saveLearnerProfile(profile) {
+            localStorage.setItem('learnerProfile', JSON.stringify(profile));
+        }
+
+        const analyticsStorageKey = 'learnerDashboardAnalytics';
+        const subjectActionTypes = {
+            video: 'videos',
+            notes: 'notes',
+            images: 'images',
+            quiz: 'quizzes'
+        };
+
+        function getTodayKey() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        function formatDuration(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const hrs = Math.floor(mins / 60);
+            const remainingMins = mins % 60;
+            if (hrs > 0) {
+                return `${hrs}h ${remainingMins}m`;
+            }
+            return `${remainingMins}m`;
+        }
+
+        function loadAnalytics() {
+            const stored = JSON.parse(localStorage.getItem(analyticsStorageKey) || '{}');
+            return {
+                subjects: stored.subjects || {},
+                dailyStudy: stored.dailyStudy || {},
+                totals: stored.totals || { videos: 0, notes: 0, images: 0, quizzes: 0 },
+                dailySubjectActions: stored.dailySubjectActions || {},
+                quizScores: stored.quizScores || [],
+                notifications: stored.notifications || []
+            };
+        }
+
+        function saveAnalytics(data) {
+            localStorage.setItem(analyticsStorageKey, JSON.stringify(data));
+        }
+
+        function updateStudyTimeLabel(seconds) {
+            dailyStudyLabel.textContent = `Study time today: ${formatDuration(seconds)}`;
+        }
+
+        function updateRealTimeClock() {
+            const now = new Date();
+            todayDate.textContent = now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+            realTimeClock.textContent = now.toLocaleTimeString(undefined, { hour12: false });
+        }
+
+        function ensureSubjectStats(subject) {
+            const analytics = loadAnalytics();
+            if (!analytics.subjects[subject]) {
+                analytics.subjects[subject] = { videos: 0, notes: 0, images: 0, quizzes: 0, studySeconds: 0 };
+                saveAnalytics(analytics);
+            }
+            return analytics.subjects[subject];
+        }
+
+        function trackSubjectAction(subject, action) {
+            if (!subject || !action) return;
+            const analytics = loadAnalytics();
+            analytics.subjects = analytics.subjects || {};
+            analytics.dailyStudy = analytics.dailyStudy || {};
+            analytics.totals = analytics.totals || { videos: 0, notes: 0, images: 0, quizzes: 0 };
+            analytics.dailySubjectActions = analytics.dailySubjectActions || {};
+            analytics.quizScores = analytics.quizScores || [];
+            analytics.notifications = analytics.notifications || [];
+
+            const statKey = subjectActionTypes[action];
+            if (!analytics.subjects[subject]) {
+                analytics.subjects[subject] = { videos: 0, notes: 0, images: 0, quizzes: 0, studySeconds: 0 };
+            }
+            analytics.subjects[subject][statKey] = (analytics.subjects[subject][statKey] || 0) + 1;
+            analytics.totals[statKey] = (analytics.totals[statKey] || 0) + 1;
+
+            const today = getTodayKey();
+            analytics.dailySubjectActions[today] = analytics.dailySubjectActions[today] || {};
+            analytics.dailySubjectActions[today][subject] = analytics.dailySubjectActions[today][subject] || { videos: 0, notes: 0, images: 0, quizzes: 0 };
+            analytics.dailySubjectActions[today][subject][statKey] += 1;
+
+            if (action === 'quiz') {
+                const score = generateQuizScore(subject, analytics);
+                analytics.quizScores.push({ subject, score, date: today });
+                pushNotification(subject, 'quiz', `New quiz result added: ${subject} scored ${score}%`);
+            } else {
+                const label = action === 'images' ? 'photo' : action;
+                pushNotification(subject, action, `New ${label} added for ${subject}.`);
+            }
+
+            saveAnalytics(analytics);
+            updateQuizChart();
+            updateSubjectChart(currentSubjectList || []);
+            renderAchievements(currentSubjectList || []);
+        }
+
+        function calculateSubjectScore(subject) {
+            const analytics = loadAnalytics();
+            const stats = analytics.subjects[subject] || { videos: 0, notes: 0, images: 0, quizzes: 0, studySeconds: 0 };
+            const score = Math.min(100, Math.round(
+                stats.videos * 18 +
+                stats.notes * 14 +
+                stats.images * 12 +
+                stats.quizzes * 24 +
+                Math.min(stats.studySeconds, 7200) * 0.04
+            ));
+            return score;
+        }
+
+        function getActionTotals() {
+            const analytics = loadAnalytics();
+            const totals = analytics.totals || { videos: 0, notes: 0, images: 0, quizzes: 0 };
+            return totals;
+        }
+
+        let currentSubjectList = [];
+
+        function updateSubjectChart(subjects) {
+            currentSubjectList = subjects;
+            const labels = subjects;
+            const values = subjects.map(subject => calculateSubjectScore(subject));
+            subjectChart.data.labels = labels;
+            subjectChart.data.datasets = [{
+                label: 'Performance',
+                data: values,
+                backgroundColor: labels.map((label, index) => `rgba(99, 102, 241, ${0.7 - index * 0.05})`),
+                borderRadius: 16,
+                maxBarThickness: 40
+            }];
+            subjectChart.options.scales.y.max = 100;
+            subjectChart.update();
+        }
+
+        function updateStudyChart() {
+            const analytics = loadAnalytics();
+            const dates = [];
+            const values = [];
+            for (let daysAgo = 6; daysAgo >= 0; daysAgo--) {
+                const date = new Date();
+                date.setDate(date.getDate() - daysAgo);
+                const key = date.toISOString().split('T')[0];
+                dates.push(date.toLocaleDateString(undefined, { weekday: 'short' }));
+                values.push(Math.round((analytics.dailyStudy[key] || 0) / 60));
+            }
+            studyChart.data.labels = dates;
+            studyChart.data.datasets[0].data = values;
+            studyChart.update();
+        }
+
+        function updateQuizChart() {
+            const totals = getActionTotals();
+            quizChart.data.labels = ['Videos', 'Notes', 'Images', 'Quizzes'];
+            quizChart.data.datasets[0].data = [totals.videos, totals.notes, totals.images, totals.quizzes];
+            quizChart.data.datasets[0].backgroundColor = ['#6366f1', '#22c55e', '#8b5cf6', '#f59e0b'];
+            quizChart.update();
+        }
+
+        function getHighScoreSubjects() {
+            const analytics = loadAnalytics();
+            return [...new Set(analytics.quizScores.filter(score => score.score >= 90).map(score => score.subject))];
+        }
+
+        function getExplorerSubjects(subjects) {
+            const analytics = loadAnalytics();
+            const today = getTodayKey();
+            const finished = [];
+            const todayActions = analytics.dailySubjectActions[today] || {};
+            subjects.forEach(subject => {
+                const stats = todayActions[subject];
+                if (stats && stats.videos > 0 && stats.notes > 0 && stats.images > 0 && stats.quizzes > 0) {
+                    finished.push(subject);
+                }
+            });
+            return finished;
+        }
+
+        function generateQuizScore(subject, analytics) {
+            const baseScore = calculateSubjectScore(subject);
+            const quizCount = analytics.subjects[subject]?.quizzes || 1;
+            return Math.min(100, Math.max(70, Math.round(baseScore * 0.7 + quizCount * 5 + (subject.length % 10))));
+        }
+
+        function pushNotification(subject, type, message) {
+            const analytics = loadAnalytics();
+            analytics.notifications = analytics.notifications || [];
+            const today = getTodayKey();
+            const id = `${type}-${subject}-${today}-${message}`;
+            if (!analytics.notifications.some(item => item.id === id)) {
+                analytics.notifications.unshift({ id, subject, type, message, timestamp: new Date().toISOString() });
+                if (analytics.notifications.length > 20) analytics.notifications.length = 20;
+                saveAnalytics(analytics);
+            }
+            renderNotifications();
+        }
+
+        function dismissNotification(id) {
+            const analytics = loadAnalytics();
+            analytics.notifications = (analytics.notifications || []).filter(item => item.id !== id);
+            saveAnalytics(analytics);
+            renderNotifications();
+            showToast('Notification dismissed');
+        }
+
+        function showToast(message) {
+            let toast = document.getElementById('dashboardToast');
+            if (!toast) return;
+            toast.textContent = message;
+            toast.classList.add('show');
+            clearTimeout(window.dashboardToastTimer);
+            window.dashboardToastTimer = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2200);
+        }
+
+        function renderNotifications() {
+            const analytics = loadAnalytics();
+            const items = analytics.notifications || [];
+            notificationCount.textContent = items.length;
+            notificationCount.style.display = items.length ? 'inline-flex' : 'none';
+            notificationToggle.classList.toggle('unread', items.length > 0 && !notificationPanel.classList.contains('open'));
+            if (!items.length) {
+                notificationsList.innerHTML = '<div class="notification-empty">No notifications yet.</div>';
+                return;
+            }
+            notificationsList.innerHTML = items.map(item => `
+                <div class="notification-item" data-notification-id="${item.id}">
+                    <strong>${item.message}</strong>
+                    <span>${new Date(item.timestamp).toLocaleString()}</span>
+                </div>
+            `).join('');
+            notificationsList.querySelectorAll('.notification-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const id = item.dataset.notificationId;
+                    dismissNotification(id);
+                });
+            });
+        }
+
+        function renderAchievements(subjects) {
+            const analytics = loadAnalytics();
+            const masterSubjects = getHighScoreSubjects();
+            const explorerSubjects = getExplorerSubjects(subjects);
+            const quizEntries = analytics.quizScores.slice(-6).reverse();
+            const achievementCards = [];
+
+            achievementCards.push(`
+                <article class="badge-card">
+                    <div class="badge-icon">🏅</div>
+                    <div>
+                        <strong>Master achievements</strong>
+                        <p style="margin:4px 0;color:var(--muted);">
+                            ${masterSubjects.length ? `High marks earned in ${masterSubjects.join(', ')}.` : 'Earn 90% or higher in any subject quiz to unlock Master achievements.'}
+                        </p>
+                    </div>
+                </article>
+            `);
+
+            achievementCards.push(`
+                <article class="badge-card">
+                    <div class="badge-icon">🎯</div>
+                    <div>
+                        <strong>Quiz Champion</strong>
+                        <p style="margin:4px 0;color:var(--muted);">
+                            ${quizEntries.length ? 'Recent quiz scores:' : 'Complete a quiz to begin tracking your scores.'}
+                        </p>
+                        ${quizEntries.length ? `<ul style="margin:8px 0 0;padding-left:18px;color:var(--text);">${quizEntries.map(score => `<li>${score.subject}: ${score.score}% (${new Date(score.date).toLocaleDateString()})</li>`).join('')}</ul>` : ''}
+                    </div>
+                </article>
+            `);
+
+            if (explorerSubjects.length) {
+                explorerSubjects.forEach(subject => {
+                    achievementCards.push(`
+                        <article class="badge-card">
+                            <div class="badge-icon">🧭</div>
+                            <div>
+                                <strong>${subject} Explorer</strong>
+                                <p style="margin:4px 0;color:var(--muted);">Completed every daily activity in ${subject} today.</p>
+                            </div>
+                        </article>
+                    `);
+                });
+            } else {
+                achievementCards.push(`
+                    <article class="badge-card">
+                        <div class="badge-icon">🧭</div>
+                        <div>
+                            <strong>Explorer progress</strong>
+                            <p style="margin:4px 0;color:var(--muted);">Complete videos, notes, photos, and quizzes in any subject today to unlock subject explorer badges.</p>
+                        </div>
+                    </article>
+                `);
+            }
+
+            achievementGrid.innerHTML = achievementCards.join('');
+        }
+
+        function scheduleLiveClassNotification(subject) {
+            if (!subject) return;
+            pushNotification(subject, 'live', `New live class added for ${subject} today.`);
+        }
+
+        function updateAnalyticsCharts(subjects) {
+            updateSubjectChart(subjects);
+            updateStudyChart();
+            updateQuizChart();
+        }
+
+        function initClock() {
+            updateRealTimeClock();
+            setInterval(updateRealTimeClock, 1000);
+        }
+
+        function initStudyTimer() {
+            setInterval(() => {
+                if (document.visibilityState !== 'visible') return;
+                const analytics = loadAnalytics();
+                const key = getTodayKey();
+                analytics.dailyStudy[key] = (analytics.dailyStudy[key] || 0) + 1;
+                saveAnalytics(analytics);
+                updateStudyTimeLabel(analytics.dailyStudy[key]);
+                updateStudyChart();
+            }, 1000);
+        }
+
+        function getLearnerProfile() {
+            return JSON.parse(localStorage.getItem('learnerProfile') || '{}');
+        }
+
+        function renderSubjectCards(subjects) {
+            subjectCards.innerHTML = subjects.map(subject => `
+                <article class="subject-card" data-subject="${subject}">
+                    <div>
+                        <p class="small-title">Subject</p>
+                        <h3>${subject}</h3>
+                        <p>${subject.includes('Optional') ? 'Optional subject available for deeper study.' : 'Tap to explore videos, notes, quizzes and images.'}</p>
+                    </div>
+                    <div class="subject-actions">
+                        <button class="subject-action" data-action="video">Videos</button>
+                        <button class="subject-action" data-action="notes">Notes</button>
+                        <button class="subject-action" data-action="quiz">Quizzes</button>
+                        <button class="subject-action" data-action="images">Images</button>
+                    </div>
+                </article>`).join('');
+
+            subjectCards.querySelectorAll('.subject-card').forEach(card => {
+                card.addEventListener('click', event => {
+                    const subject = card.dataset.subject;
+                    const button = event.target.closest('button[data-action]');
+                    const action = button ? button.dataset.action : 'overview';
+                    if (button) {
+                        trackSubjectAction(subject, action);
+                    }
+                    openSubjectResource(subject, action);
+                });
+            });
+        }
+
+        function openSubjectResource(subject, action) {
+            const pageAction = action === 'overview' ? 'overview' : action;
+            window.location.href = `subject_resource.html?subject=${encodeURIComponent(subject)}&action=${encodeURIComponent(pageAction)}`;
+        }
+
+        function normalizeStream(stream) {
+            if (!stream) return 'PCM';
+            const key = stream.toLowerCase();
+            if (key.includes('pcm')) return 'PCM';
+            if (key.includes('pcb')) return 'PCB';
+            if (key.includes('commerce')) return 'Commerce';
+            if (key.includes('arts')) return 'Arts';
+            return 'PCM';
+        }
+
+        function updateSubjectSelection(grade, stream) {
+            const normalizedGrade = String(grade || '10');
+            dashboardGrade.textContent = `Grade ${normalizedGrade}`;
+            const isSeniorGrade = normalizedGrade === '11' || normalizedGrade === '12';
+            const selectedStream = isSeniorGrade ? normalizeStream(stream) : null;
+
+            dashboardStreamBadge.style.display = isSeniorGrade ? 'inline-flex' : 'none';
+            if (isSeniorGrade) {
+                dashboardStream.textContent = selectedStream;
+            } else {
+                dashboardStream.textContent = '';
+            }
+
+            const subjects = isSeniorGrade
+                ? [...mandatorySubjects, ...streamSubjects[selectedStream]]
+                : gradeSubjects[normalizedGrade] || ['Mathematics', 'English', 'Science'];
+            renderSubjectCards(subjects);
+            updateAnalyticsCharts(subjects);
+            renderAchievements(subjects);
+            scheduleLiveClassNotification(subjects[0]);
         }
 
         function updateGoalProgress() {
@@ -1012,18 +1562,39 @@
             window.location.href = 'learner_login.html';
         });
 
-        resumeButton.addEventListener('click', () => {
-            alert('Resuming your last session: ' + lastSessionLabel.textContent);
+        notificationToggle.addEventListener('click', () => {
+            notificationPanel.classList.toggle('open');
+            if (notificationPanel.classList.contains('open')) {
+                notificationToggle.classList.remove('unread');
+            }
+            renderNotifications();
+        });
+
+        clearNotifications.addEventListener('click', () => {
+            const analytics = loadAnalytics();
+            analytics.notifications = [];
+            saveAnalytics(analytics);
+            renderNotifications();
+        });
+
+        document.addEventListener('click', event => {
+            if (!notificationPanel.contains(event.target) && !notificationToggle.contains(event.target)) {
+                notificationPanel.classList.remove('open');
+            }
         });
 
         document.addEventListener('DOMContentLoaded', () => {
             initTheme();
-            loadLearningSession();
+            setupCharts();
+            initClock();
             loadLearnerProfile();
+            loadLearningSession();
             renderTasks();
             updateGoalProgress();
+            renderNotifications();
+            renderAchievements(currentSubjectList);
+            initStudyTimer();
             initCountdown();
-            setupCharts();
         });
     </script>
 </body>

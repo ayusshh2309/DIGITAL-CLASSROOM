@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Subject Resource</title>
+    <script>
+        (function () {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <style>
+        :root {
+            color-scheme: light;
+            font-family: 'Inter', system-ui, sans-serif;
+            --bg: #eef4ff;
+            --surface: #ffffff;
+            --surface-soft: #f5f8ff;
+            --text: #0f172a;
+            --muted: #64748b;
+            --border: rgba(15, 23, 42, 0.08);
+            --primary: #6366f1;
+            --primary-soft: rgba(99, 102, 241, 0.14);
+            --radius: 24px;
+            --card-radius: 22px;
+        }
+
+        [data-theme='dark'] {
+            color-scheme: dark;
+            --bg: #081129;
+            --surface: #0d1725;
+            --surface-soft: #111d33;
+            --text: #e2e8f0;
+            --muted: #94a3b8;
+            --border: rgba(148, 163, 184, 0.24);
+            --primary: #8b5cf6;
+            --primary-soft: rgba(139, 92, 246, 0.14);
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: radial-gradient(circle at top, rgba(99, 102, 241, 0.14), transparent 28%),
+                linear-gradient(180deg, var(--bg) 0%, #0f172a 100%);
+            color: var(--text);
+            padding: 24px;
+        }
+        .page {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            gap: 24px;
+        }
+        .card {
+            border-radius: var(--card-radius);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+            padding: 24px;
+            display: grid;
+            gap: 18px;
+        }
+        [data-theme='dark'] .card {
+            background: rgba(15, 23, 42, 0.88);
+        }
+        .hero {
+            display: grid;
+            gap: 12px;
+        }
+        .hero h1 {
+            margin: 0;
+            font-size: clamp(2rem, 2.5vw, 2.6rem);
+        }
+        .hero p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 18px;
+            border-radius: 16px;
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
+            color: inherit;
+            text-decoration: none;
+            width: fit-content;
+        }
+        .resource-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 18px;
+        }
+        .resource-card {
+            border-radius: 22px;
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
+            padding: 20px;
+            display: grid;
+            gap: 12px;
+        }
+        .resource-card h2 {
+            margin: 0;
+            font-size: 1.15rem;
+        }
+        .resource-card p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+        .resource-card ul {
+            margin: 0;
+            padding-left: 18px;
+            color: var(--muted);
+        }
+        .resource-card li {
+            margin-bottom: 8px;
+        }
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: var(--primary-soft);
+            color: var(--primary);
+            font-weight: 700;
+            width: fit-content;
+        }
+        .footer {
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+        @media (max-width: 720px) {
+            body { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <a href="learner_dashboard.html" class="back-link">← Back to Dashboard</a>
+        <section class="card hero">
+            <span class="tag" id="resourceTag">Loading...</span>
+            <h1 id="subjectTitle">Subject Resource</h1>
+            <p id="subjectDescription">Fetch and explore videos, notes, quizzes, and images for your chosen subject.</p>
+        </section>
+        <section class="card">
+            <div class="resource-grid" id="resourceGrid"></div>
+        </section>
+        <p class="footer">Smart Learning • Personalized subject resource page</p>
+    </div>
+
+    <script>
+        function decodeParam(value) {
+            try {
+                return decodeURIComponent(value || '');
+            } catch {
+                return value || '';
+            }
+        }
+
+        function parseQuery() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                subject: decodeParam(params.get('subject') || 'Unknown Subject'),
+                action: params.get('action') || 'overview'
+            };
+        }
+
+        function renderResources({ subject, action }) {
+            const actionLabel = {
+                overview: 'Overview',
+                video: 'Videos',
+                notes: 'Notes',
+                quiz: 'Quizzes',
+                images: 'Images'
+            }[action] || 'Overview';
+
+            document.getElementById('resourceTag').textContent = actionLabel;
+            document.getElementById('subjectTitle').textContent = `${subject} • ${actionLabel}`;
+            document.getElementById('subjectDescription').textContent = action === 'overview'
+                ? `Browse the latest ${subject} curriculum content across videos, notes, quizzes, and images.`
+                : `Open ${actionLabel.toLowerCase()} for ${subject}.`;
+
+            const sections = {
+                overview: [
+                    { title: 'Video lessons', items: ['Watch the latest concept walkthroughs', 'Review chapter summaries', 'Revisit solved examples'] },
+                    { title: 'Study notes', items: ['Download summary sheets', 'Read key concept notes', 'Compare important formulas'] },
+                    { title: 'Practice quizzes', items: ['Attempt topic quizzes', 'Check instant feedback', 'Track your quiz stamina'] },
+                    { title: 'Visual library', items: ['View diagrams and charts', 'Explore subject images', 'Review handwritten examples'] }
+                ],
+                video: [
+                    { title: 'Featured videos', items: ['Introduction to the chapter', 'Important exam questions', 'Problem-solving walkthroughs'] }
+                ],
+                notes: [
+                    { title: 'Notes library', items: ['Chapter notes', 'Revision cards', 'Formula sheets'] }
+                ],
+                quiz: [
+                    { title: 'Quiz practice', items: ['Topic-based quizzes', 'Timed tests', 'Score and review'] }
+                ],
+                images: [
+                    { title: 'Visual resources', items: ['Diagrams', 'Flowcharts', 'Illustrated examples'] }
+                ]
+            };
+
+            document.getElementById('resourceGrid').innerHTML = (sections[action] || sections.overview)
+                .map(section => `
+                    <article class="resource-card">
+                        <h2>${section.title}</h2>
+                        <p>${section.items.length} resources available</p>
+                        <ul>${section.items.map(item => `<li>${item}</li>`).join('')}</ul>
+                    </article>
+                `).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderResources(parseQuery());
+        });
+    </script>
+</body>
+</html>
