@@ -984,12 +984,7 @@
                             <input id="phone" name="phone" class="phone" type="tel" placeholder="555 123 4567" />
                         </div>
                     </div>
-                    <div class="field-group">
-                        <label for="expertise">Subject Expertise</label>
-                        <div class="tag-input" id="tagInput" tabindex="0">
-                            <input id="expertise" name="expertise" type="text" placeholder="Add subject expertise" />
-                        </div>
-                    </div>
+                    
                     <div class="field-group">
                         <label>Teaching Mode</label>
                         <div class="radio-group">
@@ -1092,34 +1087,31 @@
         </div>
     </div>
     <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
-        import { getFirestore, collection, doc, setDoc } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
-        import { getAuth, createUserWithEmailAndPassword, GoogleAuthProvider, OAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyCnvCkzycQxrJOXmH1ol43uUCAJtzpz3eA",
-            authDomain: "digital-classroom-de2b7.firebaseapp.com",
-            databaseURL: "https://digital-classroom-de2b7-default-rtdb.firebaseio.com",
-            projectId: "digital-classroom-de2b7",
-            storageBucket: "digital-classroom-de2b7.firebasestorage.app",
-            messagingSenderId: "30446374460",
-            appId: "1:30446374460:web:32508ecdafa718785c3d39",
-            measurementId: "G-3TH6YJJQWM"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        async function saveTeacherData(teacher, email, password) {
+        // Simple localStorage-based registration (no Firebase)
+        
+        function saveTeacherData(teacher, email, password) {
             try {
-                if (email && password) {
-                    const authResult = await createUserWithEmailAndPassword(auth, email, password);
-                    const userUid = authResult.user.uid;
-                    await setDoc(doc(db, 'teachers', userUid), teacher);
-                } else {
-                    await setDoc(doc(collection(db, 'teachers')), teacher);
+                // Store user in localStorage
+                const users = JSON.parse(localStorage.getItem('sl_users') || '[]');
+                
+                // Check if email already exists
+                if (users.find(u => u.email === email)) {
+                    alert('Email already registered. Please use a different email.');
+                    return Promise.reject(new Error('Email already exists'));
                 }
+
+                const newUser = {
+                    id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+                    ...teacher,
+                    password: password, // In production, this should be hashed
+                    role: 'teacher'
+                };
+
+                users.push(newUser);
+                localStorage.setItem('sl_users', JSON.stringify(users));
+                localStorage.setItem('sl_current_user', JSON.stringify(newUser));
+                
+                return Promise.resolve();
             } catch (error) {
                 console.error('Error saving teacher data:', error);
                 alert('Unable to save registration data. Please try again later.');
@@ -1304,18 +1296,17 @@
             updateUploadLabel(file ? file.name : 'Drag files here or browse to upload');
         });
 
+        // Social signup buttons - show message that these require backend setup
         googleSignupButton.addEventListener('click', () => {
-            handleSocialSignIn(new GoogleAuthProvider(), 'Google');
+            setAuthStatus('Social signup requires backend setup. Please use email registration.', true);
         });
 
         microsoftSignupButton.addEventListener('click', () => {
-            const microsoftProvider = new OAuthProvider('microsoft.com');
-            handleSocialSignIn(microsoftProvider, 'Microsoft');
+            setAuthStatus('Social signup requires backend setup. Please use email registration.', true);
         });
 
         linkedinSignupButton.addEventListener('click', () => {
-            const linkedinProvider = new OAuthProvider('linkedin.com');
-            handleSocialSignIn(linkedinProvider, 'LinkedIn');
+            setAuthStatus('Social signup requires backend setup. Please use email registration.', true);
         });
 
         createAccountButton.addEventListener('click', async () => {
@@ -1491,27 +1482,6 @@
 
         function setAuthStatus(message, isError = false) {
             console.log(message);
-        }
-
-        async function handleSocialSignIn(provider, providerName) {
-            try {
-                const result = await signInWithPopup(auth, provider);
-                const role = 'teacher';
-                localStorage.setItem('userAuth', JSON.stringify({
-                    uid: result.user.uid,
-                    email: result.user.email || '',
-                    phone: result.user.phoneNumber || '',
-                    provider: providerName,
-                    role,
-                    signedInAt: new Date().toISOString()
-                }));
-                setAuthStatus(`${providerName} login successful.`);
-                window.setTimeout(() => {
-                    window.location.href = 'teacher_dashboard.html';
-                }, 900);
-            } catch (error) {
-                setAuthStatus(error.message || `Unable to sign in with ${providerName}.`, true);
-            }
         }
     </script>
 </body>

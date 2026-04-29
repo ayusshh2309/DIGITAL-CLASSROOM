@@ -940,65 +940,13 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
-        import { getAuth, signInWithEmailAndPassword, RecaptchaVerifier, signInWithPhoneNumber, GoogleAuthProvider, OAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
-        import { getFirestore, doc, getDoc, collection, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
-
+        // Simple localStorage-based authentication (no Firebase)
+        
         const cards = document.querySelectorAll('.variant-card');
         const roleTargets = {
             learner: 'learner_login.html',
             teacher: 'teacher_login.html'
         };
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyCnvCkzycQxrJOXmH1ol43uUCAJtzpz3eA",
-            authDomain: "digital-classroom-de2b7.firebaseapp.com",
-            databaseURL: "https://digital-classroom-de2b7-default-rtdb.firebaseio.com",
-            projectId: "digital-classroom-de2b7",
-            storageBucket: "digital-classroom-de2b7.firebasestorage.app",
-            messagingSenderId: "30446374460",
-            appId: "1:30446374460:web:32508ecdafa718785c3d39",
-            measurementId: "G-3TH6YJJQWM"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        async function routeUserByUid(uid, email) {
-            // Try exact UID match first.
-            const studentDoc = await getDoc(doc(db, 'students', uid));
-            if (studentDoc.exists()) {
-                window.location.href = 'learner_dashboard.html';
-                return true;
-            }
-
-            const teacherDoc = await getDoc(doc(db, 'teachers', uid));
-            if (teacherDoc.exists()) {
-                window.location.href = 'teacher_dashboard.html';
-                return true;
-            }
-
-            // Fallback: look up by email if profile documents were created with auto-generated IDs.
-            if (email) {
-                const studentQuery = query(collection(db, 'students'), where('email', '==', email));
-                const studentSnapshot = await getDocs(studentQuery);
-                if (!studentSnapshot.empty) {
-                    window.location.href = 'learner_dashboard.html';
-                    return true;
-                }
-
-                const teacherQuery = query(collection(db, 'teachers'), where('email', '==', email));
-                const teacherSnapshot = await getDocs(teacherQuery);
-                if (!teacherSnapshot.empty) {
-                    window.location.href = 'teacher_dashboard.html';
-                    return true;
-                }
-            }
-
-            setLoginStatus('Authenticated, but no student or teacher profile was found. Please register at the correct signup page or contact support.', true);
-            return false;
-        }
 
         function handleRoleClick(card) {
             const role = card.dataset.role;
@@ -1027,7 +975,6 @@
         const loginOtp = document.getElementById('loginOtp');
         const sendOtpButton = document.getElementById('sendOtpButton');
         const recaptchaContainer = document.getElementById('recaptcha-container');
-        let confirmationResult = null;
 
         function applyTheme(mode) {
             const isDark = mode === 'dark';
@@ -1114,44 +1061,8 @@
             loginStatus.style.color = isError ? '#ef4444' : 'var(--text)';
         }
 
-        async function handleSocialSignIn(provider, providerName) {
-            try {
-                const result = await signInWithPopup(auth, provider);
-                localStorage.setItem('userAuth', JSON.stringify({
-                    uid: result.user.uid,
-                    email: result.user.email || '',
-                    phone: result.user.phoneNumber || '',
-                    provider: providerName,
-                    signedInAt: new Date().toISOString()
-                }));
-                setLoginStatus(`${providerName} login successful. Redirecting…`);
-                await routeUserByUid(result.user.uid, result.user.email || '');
-            } catch (error) {
-                console.error(`${providerName} social login failed:`, error);
-                setLoginStatus(error.message || `Unable to sign in with ${providerName}.`, true);
-            }
-        }
-
-        function createRecaptchaVerifier() {
-            if (window.recaptchaVerifier) {
-                try {
-                    window.recaptchaVerifier.clear();
-                } catch (clearError) {
-                    // ignore clear failures, create a fresh verifier
-                }
-                window.recaptchaVerifier = null;
-            }
-
-            window.recaptchaVerifier = new RecaptchaVerifier(recaptchaContainer, {
-                size: 'invisible'
-            }, auth);
-            window.recaptchaVerifier.render().catch(() => {
-                /* ignore render errors in unsupported environments */
-            });
-            return window.recaptchaVerifier;
-        }
-
-        async function handleEmailLogin() {
+        // Simple localStorage-based login (no Firebase)
+        async function handleLocalLogin() {
             const email = loginEmail.value.trim();
             const password = loginPassword.value;
 
@@ -1160,124 +1071,71 @@
                 return;
             }
 
-            try {
-                const result = await signInWithEmailAndPassword(auth, email, password);
-                localStorage.setItem('userAuth', JSON.stringify({
-                    uid: result.user.uid,
-                    email: result.user.email,
-                    signedInAt: new Date().toISOString()
-                }));
-                setLoginStatus('Login successful. Redirecting…');
-                const redirected = await routeUserByUid(result.user.uid, email);
-                if (!redirected) {
-                    setLoginStatus('Login succeeded, but no student or teacher profile was found. Please register at the correct signup page or contact support.', true);
-                }
-            } catch (error) {
-                console.error('Email login failed:', error);
-                setLoginStatus(error.message || 'Unable to sign in. Check your credentials.', true);
-            }
-        }
-
-        async function handlePhoneLogin() {
-            const otpCode = loginOtp.value.trim();
-
-            if (!confirmationResult) {
-                setLoginStatus('Please send the OTP first.', true);
-                return;
-            }
-
-            if (!otpCode) {
-                setLoginStatus('Please enter the OTP code.', true);
-                return;
-            }
-
-            try {
-                const result = await confirmationResult.confirm(otpCode);
-                localStorage.setItem('userAuth', JSON.stringify({
-                    uid: result.user.uid,
-                    phone: result.user.phoneNumber,
-                    signedInAt: new Date().toISOString()
-                }));
-                setLoginStatus('Phone login successful. Redirecting…');
-                const redirected = await routeUserByUid(result.user.uid, result.user.email);
-                if (!redirected) {
-                    setLoginStatus('Phone login succeeded, but no student or teacher profile was found. Please register at the correct signup page or contact support.', true);
-                }
-            } catch (error) {
-                confirmationResult = null;
-                if (window.recaptchaVerifier) {
-                    try {
-                        window.recaptchaVerifier.clear();
-                    } catch (clearError) {
-                        // ignore
+            // Check stored users
+            const storedUser = localStorage.getItem('sl_current_user');
+            if (storedUser) {
+                const user = JSON.parse(storedUser);
+                if (user.email === email) {
+                    setLoginStatus('Login successful. Redirecting…');
+                    // Determine redirect based on role
+                    if (user.role === 'teacher') {
+                        window.location.href = 'teacher_dashboard.html';
+                    } else {
+                        window.location.href = 'learner_dashboard.html';
                     }
-                    window.recaptchaVerifier = null;
+                    return;
                 }
-                console.error('Phone login failed:', error);
-                setLoginStatus(error.message || 'Invalid OTP or expired credential. Please request a new code.', true);
-            }
-        }
-
-        async function handleSendOtp() {
-            const phoneNumber = loginPhone.value.trim();
-
-            if (!phoneNumber) {
-                setLoginStatus('Please enter your phone number.', true);
-                return;
             }
 
-            try {
-                createRecaptchaVerifier();
-                const confirmation = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
-                confirmationResult = confirmation;
-                setLoginStatus('OTP sent. Check your phone and enter the code below.');
-            } catch (error) {
-                confirmationResult = null;
-                if (window.recaptchaVerifier) {
-                    try {
-                        window.recaptchaVerifier.clear();
-                    } catch (clearError) {
-                        // ignore
+            // Check if user exists in stored users
+            const storedUsers = localStorage.getItem('sl_users');
+            if (storedUsers) {
+                const users = JSON.parse(storedUsers);
+                const foundUser = users.find(u => u.email === email && u.password === password);
+                if (foundUser) {
+                    localStorage.setItem('sl_current_user', JSON.stringify(foundUser));
+                    setLoginStatus('Login successful. Redirecting…');
+                    if (foundUser.role === 'teacher') {
+                        window.location.href = 'teacher_dashboard.html';
+                    } else {
+                        window.location.href = 'learner_dashboard.html';
                     }
-                    window.recaptchaVerifier = null;
+                    return;
                 }
-                setLoginStatus(error.message || 'Unable to send OTP. Check your phone number.', true);
             }
+
+            setLoginStatus('Invalid email or password. Please check your credentials or register first.', true);
         }
 
-        sendOtpButton.addEventListener('click', handleSendOtp);
-        loginAccountButton.addEventListener('click', () => {
-            if (emailSection.classList.contains('active')) {
-                handleEmailLogin();
-            } else {
-                handlePhoneLogin();
-            }
+        // Social login buttons - show message that these require backend setup
+        googleLoginButton.addEventListener('click', () => {
+            setLoginStatus('Social login requires backend setup. Please use email login or register.', true);
         });
 
+        microsoftLoginButton.addEventListener('click', () => {
+            setLoginStatus('Social login requires backend setup. Please use email login or register.', true);
+        });
+
+        linkedinLoginButton.addEventListener('click', () => {
+            setLoginStatus('Social login requires backend setup. Please use email login or register.', true);
+        });
+
+        sendOtpButton.addEventListener('click', () => {
+            setLoginStatus('Phone login requires backend setup. Please use email login.', true);
+        });
+
+        loginAccountButton.addEventListener('click', handleLocalLogin);
+
         loginPassword.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter' && emailSection.classList.contains('active')) {
-                handleEmailLogin();
+            if (event.key === 'Enter') {
+                handleLocalLogin();
             }
         });
 
         loginOtp.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter' && phoneSection.classList.contains('active')) {
-                handlePhoneLogin();
+            if (event.key === 'Enter') {
+                setLoginStatus('Phone login requires backend setup. Please use email login.', true);
             }
-        });
-
-        googleLoginButton.addEventListener('click', () => {
-            handleSocialSignIn(new GoogleAuthProvider(), 'Google');
-        });
-
-        microsoftLoginButton.addEventListener('click', () => {
-            const microsoftProvider = new OAuthProvider('microsoft.com');
-            handleSocialSignIn(microsoftProvider, 'Microsoft');
-        });
-
-        linkedinLoginButton.addEventListener('click', () => {
-            const linkedinProvider = new OAuthProvider('linkedin.com');
-            handleSocialSignIn(linkedinProvider, 'LinkedIn');
         });
 
         applyTheme(savedTheme);
