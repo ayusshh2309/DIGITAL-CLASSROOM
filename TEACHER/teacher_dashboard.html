@@ -236,25 +236,6 @@
                 <section class="card">
                     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
                         <div>
-                            <p class="small-title">Hybrid Teaching Model</p>
-                            <h2 class="section-title">Upload and manage teaching content</h2>
-                        </div>
-                        <div class="button-group">
-                            <button id="uploadVideoBtn" class="btn btn-primary">Upload Video</button>
-                            <button id="uploadPdfBtn" class="btn btn-secondary">Upload PDF / Notes</button>
-                            <button id="uploadImageBtn" class="btn btn-secondary">Upload Images / Diagrams</button>
-                            <button id="createQuizBtn" class="btn btn-secondary">Create Quiz</button>
-                            <button id="scheduleLiveBtn" class="btn btn-primary">Schedule Live Class</button>
-                        </div>
-                    </div>
-                    <div id="uploadedContentGrid" class="content-grid">
-                        <div class="content-card"><h4>No content uploaded yet</h4><p>Use the buttons above to add videos, notes, images, quizzes, or live class schedules.</p></div>
-                    </div>
-                </section>
-
-                <section class="card">
-                    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-                        <div>
                             <p class="small-title">Class Management</p>
                             <h2 class="section-title">Your teaching batches</h2>
                         </div>
@@ -451,11 +432,6 @@
         const storedTheme = localStorage.getItem('theme') || 'light';
         const notificationsStorageKey = 'teacherNotifications';
 
-        const uploadVideoBtn = document.getElementById('uploadVideoBtn');
-        const uploadPdfBtn = document.getElementById('uploadPdfBtn');
-        const uploadImageBtn = document.getElementById('uploadImageBtn');
-        const createQuizBtn = document.getElementById('createQuizBtn');
-        const scheduleLiveBtn = document.getElementById('scheduleLiveBtn');
         const contentModal = document.getElementById('contentModal');
         const contentModalClose = document.getElementById('contentModalClose');
         const contentTypeSelect = document.getElementById('contentType');
@@ -471,7 +447,6 @@
         const cancelContentBtn = document.getElementById('cancelContentBtn');
         const assignmentBadge = document.getElementById('assignmentBadge');
         const assignmentClasses = document.getElementById('assignmentClasses');
-        const uploadedContentGrid = document.getElementById('uploadedContentGrid');
         const gradeSelect = document.getElementById('teacherGradeSelect');
         const subjectSection = document.getElementById('subjectSection');
         const subjectContentPanel = document.getElementById('subjectContentPanel');
@@ -818,54 +793,8 @@
         }
 
         function renderTeacherContent() {
-            if (!teacherProfile) return;
-            
-            const allContent = JSON.parse(localStorage.getItem('teacherContent') || '[]');
-            const items = allContent
-                .filter(item => item.teacherId === teacherProfile.staffId)
-                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            
-            if (!items.length) {
-                uploadedContentGrid.innerHTML = '<div class="content-card"><h4>No resources uploaded yet</h4><p>Use the buttons above to share videos, notes, images, quizzes, or live sessions.</p></div>';
-                return;
-            }
-
-            const getTypeIcon = (type) => {
-                const icons = { video: '🎬', pdf: '📄', image: '🖼️', quiz: '📝', live: '📡' };
-                return icons[type] || '📁';
-            };
-
-            const getStatusBadge = (item) => {
-                if (item.type === 'live') {
-                    const isPast = item.scheduleInfo && new Date(item.scheduleInfo.date) < new Date();
-                    return `<span class="badge-pill" style="background:${isPast ? '#94a3b8' : '#22c55e'};color:#fff;">${isPast ? 'Completed' : 'Scheduled'}</span>`;
-                }
-                return `<span class="badge-pill">Published</span>`;
-            };
-
-            uploadedContentGrid.innerHTML = items.map(item => `
-                <article class="content-card">
-                    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
-                        <div style="display:flex;align-items:center;gap:10px;">
-                            <span style="font-size:1.5rem;">${getTypeIcon(item.type)}</span>
-                            <div>
-                                <h4>${item.title || item.chapter}</h4>
-                                <p>${item.subject} • Class ${item.classLevel} • ${item.chapter}</p>
-                            </div>
-                        </div>
-                        ${getStatusBadge(item)}
-                    </div>
-                    <p>${item.description || 'No description available.'}</p>
-                    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:0.85rem;color:var(--muted);">
-                        <span>📅 ${new Date(item.createdAt).toLocaleDateString()}</span>
-                        ${item.fileInfo ? `<span>📎 ${item.fileInfo.name} (${item.fileInfo.size} MB)</span>` : ''}
-                        ${item.scheduleInfo ? `<span>⏰ ${item.scheduleInfo.date} at ${item.scheduleInfo.time}</span>` : ''}
-                    </div>
-                    <div style="display:flex;gap:8px;margin-top:12px;">
-                        <button class="btn btn-secondary" onclick="deleteContent('${item.id}')">Delete</button>
-                    </div>
-                </article>
-            `).join('');
+            // Content rendering is now handled through the lesson & content management section
+            // This function can be removed or repurposed in the future
         }
 
         // Global functions for content management
@@ -1071,11 +1000,6 @@
             showToast('Live class session starting...');
         });
 
-        uploadVideoBtn?.addEventListener('click', () => openContentModal('video'));
-        uploadPdfBtn?.addEventListener('click', () => openContentModal('pdf'));
-        uploadImageBtn?.addEventListener('click', () => openContentModal('image'));
-        createQuizBtn?.addEventListener('click', () => openContentModal('quiz'));
-        scheduleLiveBtn?.addEventListener('click', () => openContentModal('live'));
         gradeSelect?.addEventListener('change', () => {
             selectedGrade = gradeSelect.value;
             selectedSubject = null;
