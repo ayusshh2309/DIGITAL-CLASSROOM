@@ -174,6 +174,7 @@
         .small-note { color: var(--muted); font-size: 0.88rem; line-height: 1.5; }
         .chart-card { min-height: 220px; }
         .chart-wrapper { position: relative; min-height: 180px; }
+        .small-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 4px; }
         .footer { text-align: center; color: var(--muted); font-size: 0.88rem; }
         @media (max-width: 1180px) { .dashboard-grid { grid-template-columns: 1fr; } }
         @media (max-width: 860px) { .stats-grid { grid-template-columns: 1fr 1fr; } .grid-3 { grid-template-columns: 1fr; } .badge-list { grid-template-columns: 1fr; } .analytics-grid { grid-template-columns: 1fr; } .filters { grid-template-columns: 1fr 1fr; } }
@@ -190,10 +191,7 @@
                     <span aria-hidden="true">🔔</span>
                     <span id="notificationCount" class="notification-count" style="display:none;">0</span>
                 </button>
-                <div class="clock-chip">
-                    <strong id="todayDate">Loading date…</strong>
-                    <span id="realTimeClock">00:00:00</span>
-                </div>
+               
                 <button id="logoutBtn" class="btn btn-secondary" type="button">Logout</button>
                 <button id="themeToggle" class="theme-toggle" type="button"><span id="themeIcon">🌙</span><span id="themeLabel">Dark mode</span></button>
             </div>
@@ -220,7 +218,7 @@
                         </div>
                         <div class="button-group">
                             <button class="btn btn-primary" id="startClassBtn">Start Class</button>
-                            <button class="btn btn-secondary">Create Lesson</button>
+                            <button class="btn btn-secondary" id="createLessonBtn">Create Lesson</button>
                         </div>
                     </div>
                     <div class="stats-grid" style="margin-top:4px;">
@@ -274,8 +272,8 @@
                         <button class="btn btn-primary">Upload Content</button>
                     </div>
                     <div class="content-action-row">
-                        <div class="content-search"><span>🔍</span><input type="search" id="resourceSearch" placeholder="Search resources, classes, date or subject" disabled /></div>
-                        <div class="filters"><select id="filterSubject" disabled><option value="all">Subject</option></select><select id="filterClass" disabled><option value="all">Class</option></select><select id="filterType" disabled><option value="all">Type</option></select><select id="filterStatus" disabled><option value="all">Status</option></select></div>
+                        <div class="content-search"><span>🔍</span><input type="search" id="resourceSearch" placeholder="Search resources, classes, date or subject" /></div>
+                        <div class="filters"><select id="filterSubject"><option value="all">Subject</option></select><select id="filterClass"><option value="all">Class</option></select><select id="filterType"><option value="all">Type</option></select><select id="filterStatus"><option value="all">Status</option></select></div>
                     </div>
                     <div class="content-action-row" style="align-items:center; gap:16px; margin-top:18px;">
                         <label for="teacherGradeSelect" style="font-weight:700; margin-bottom:0;">Choose Grade</label>
@@ -284,6 +282,7 @@
                     <div id="subjectSection" class="subject-grid">
                         <div class="content-card"><h4>Select a grade to view subjects</h4><p class="small-note">Choose one of your assigned grades to load the available subjects.</p></div>
                     </div>
+                    <div id="studentSection" class="subject-grid" style="display:none;"></div>
                     <div id="subjectContentPanel" class="subject-panel" style="display:none;">
                         <div class="content-card">
                             <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
@@ -325,7 +324,7 @@
                                 <section class="section-panel">
                                     <div style="display:flex;justify-content:space-between;align-items:center; gap:10px;">
                                         <h4>Notes / PDFs</h4>
-                                        <button id="uploadDocBtnSubject" class="btn btn-primary" type="button">Upload Document</button>
+                                        <button id="uploadDocSubjectPanelBtn" class="btn btn-primary" type="button">Upload Document</button>
                                     </div>
                                     <div id="docsList" class="resource-list"><div class="content-card"><p class="small-note">No documents yet.</p></div></div>
                                 </section>
@@ -356,14 +355,6 @@
                             <div class="attendance-card"><strong>Absentees</strong><p>5 alerts</p></div>
                         </div>
                         <div class="chart-wrapper"><canvas id="attendanceBarChart"></canvas></div>
-                    </div>
-                </section>
-
-                <section class="card grid-2">
-                    <div class="badge-list">
-                        <article class="badge-card"><div class="badge-icon">🏅</div><strong>100 hours taught</strong><p class="small-note">Milestone for lessons delivered.</p></article>
-                        <article class="badge-card"><div class="badge-icon">⭐</div><strong>Consistency Star</strong><p class="small-note">Teaching 20 days in a row.</p></article>
-                        <article class="badge-card"><div class="badge-icon">👏</div><strong>Excellent Feedback</strong><p class="small-note">High student satisfaction scores.</p></article>
                     </div>
                 </section>
 
@@ -404,8 +395,6 @@
                             <div id="liveScheduleFields" style="display:none;">
                                 <label for="contentDate">Schedule date</label>
                                 <input id="contentDate" type="date" />
-                                <label for="contentTime">Schedule time</label>
-                                <input id="contentTime" type="time" />
                             </div>
                             <p class="content-note">Uploaded content is linked to your assigned classes, subjects and chapters, and will update student dashboards in real time.</p>
                         </div>
@@ -416,12 +405,34 @@
                     </div>
                 </div>
 
-                <p class="footer">Teacher dashboard with theme-aware charts, quick actions, attendance, analytics, messaging, and resource management.</p>
+                <div id="startClassModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="startClassTitle">
+                    <div class="modal-body">
+                        <div class="modal-header">
+                            <h3 id="startClassTitle">Start Live Class</h3>
+                            <button id="startClassModalClose" class="modal-close" type="button" aria-label="Close modal">×</button>
+                        </div>
+                        <div class="form-row">
+                            <label for="startClassSubject">Subject</label>
+                            <select id="startClassSubject"></select>
+                            <label for="startClassGrade">Grade</label>
+                            <select id="startClassGrade"></select>
+                            <label for="startClassTopic">Topic</label>
+                            <input id="startClassTopic" type="text" placeholder="Class topic" />
+                            <label for="startClassDuration">Duration (minutes)</label>
+                            <input id="startClassDuration" type="number" placeholder="60" />
+                        </div>
+                        <div class="form-actions">
+                            <button id="startClassConfirm" class="btn btn-primary" type="button">Start Class</button>
+                            <button id="startClassCancel" class="btn btn-secondary" type="button">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
             </main>
         </div>
     </div>
 
-    <script type="module">
+    <script>
         // Simple localStorage-based teacher dashboard (no Firebase)
         
         const themeToggle = document.getElementById('themeToggle');
@@ -434,8 +445,8 @@
         const notificationsList = document.getElementById('notificationsList');
         const notificationCount = document.getElementById('notificationCount');
         const clearNotifications = document.getElementById('clearNotifications');
-        const todayDate = document.getElementById('todayDate');
-        const realTimeClock = document.getElementById('realTimeClock');
+        let todayDate;
+        let realTimeClock;
         const welcomeGreeting = document.getElementById('welcomeGreeting');
         const storedTheme = localStorage.getItem('theme') || 'light';
         const notificationsStorageKey = 'teacherNotifications';
@@ -456,7 +467,6 @@
         const contentFileInput = document.getElementById('contentFile');
         const liveScheduleFields = document.getElementById('liveScheduleFields');
         const contentDateInput = document.getElementById('contentDate');
-        const contentTimeInput = document.getElementById('contentTime');
         const saveContentBtn = document.getElementById('saveContentBtn');
         const cancelContentBtn = document.getElementById('cancelContentBtn');
         const assignmentBadge = document.getElementById('assignmentBadge');
@@ -585,12 +595,14 @@
             if (!selectedGrade) {
                 subjectSection.innerHTML = '<div class="content-card"><h4>Select a grade to view subjects</h4><p class="small-note">Choose one of your assigned grades to load the available subjects.</p></div>';
                 if (subjectContentPanel) subjectContentPanel.style.display = 'none';
+                renderStudentSection();
                 return;
             }
             const subjects = getAllowedSubjectsForGrade(selectedGrade);
             if (!subjects.length) {
                 subjectSection.innerHTML = '<div class="content-card"><h4>No subjects available</h4><p class="small-note">Your selected grade is not assigned to any subjects yet.</p></div>';
                 if (subjectContentPanel) subjectContentPanel.style.display = 'none';
+                renderStudentSection();
                 return;
             }
             subjectSection.innerHTML = subjects.map(subject => `
@@ -613,6 +625,7 @@
             subjectSection.querySelectorAll('button[data-subject]').forEach(button => {
                 button.addEventListener('click', () => selectSubject(button.dataset.subject));
             });
+            renderStudentSection();
             if (subjectContentPanel) subjectContentPanel.style.display = 'none';
         }
 
@@ -664,7 +677,7 @@
             // Load from localStorage
             const allContent = JSON.parse(localStorage.getItem('teacherContent') || '[]');
             const filteredContent = allContent.filter(item => 
-                (item.teacherId === teacherProfile.staffId || item.teacherId === 'T001') &&
+                item.teacherId === teacherProfile.staffId &&
                 item.classLevel === selectedGrade &&
                 item.subject === selectedSubject
             ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -691,7 +704,6 @@
             contentDescriptionInput.value = '';
             contentFileInput.value = '';
             contentDateInput.value = '';
-            contentTimeInput.value = '';
             contentModal.classList.add('open');
         }
 
@@ -756,17 +768,16 @@
             let scheduleInfo = null;
             if (type === 'live') {
                 const date = contentDateInput.value;
-                const time = contentTimeInput.value;
-                if (!date || !time) {
-                    showToast('Please set date and time for live class');
+                if (!date) {
+                    showToast('Please set a date for the live class');
                     return;
                 }
-                scheduleInfo = { date, time };
+                scheduleInfo = { date };
             }
             
             const meta = {
                 id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-                teacherId: teacherProfile.staffId || 'T001',
+                teacherId: teacherProfile.staffId,
                 teacherName: teacherProfile.fullName || 'Teacher',
                 type,
                 subject,
@@ -796,7 +807,6 @@
                 contentDescriptionInput.value = '';
                 contentFileInput.value = '';
                 contentDateInput.value = '';
-                contentTimeInput.value = '';
                 
                 closeContentModal();
                 showToast(type === 'live' ? 'Live class scheduled successfully!' : 'Content published successfully!');
@@ -812,7 +822,7 @@
             
             const allContent = JSON.parse(localStorage.getItem('teacherContent') || '[]');
             const items = allContent
-                .filter(item => item.teacherId === teacherProfile.staffId || item.teacherId === 'T001')
+                .filter(item => item.teacherId === teacherProfile.staffId)
                 .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             
             if (!items.length) {
@@ -852,7 +862,6 @@
                         ${item.scheduleInfo ? `<span>⏰ ${item.scheduleInfo.date} at ${item.scheduleInfo.time}</span>` : ''}
                     </div>
                     <div style="display:flex;gap:8px;margin-top:12px;">
-                        <button class="btn btn-secondary" onclick="editContent('${item.id}')">Edit</button>
                         <button class="btn btn-secondary" onclick="deleteContent('${item.id}')">Delete</button>
                     </div>
                 </article>
@@ -860,9 +869,6 @@
         }
 
         // Global functions for content management
-        window.editContent = function(id) {
-            showToast('Edit feature coming soon!');
-        };
 
         window.deleteContent = function(id) {
             if (confirm('Are you sure you want to delete this content?')) {
@@ -874,9 +880,90 @@
             }
         };
 
-        function updateTeacherAssignmentCard() {
-            assignmentBadge.textContent = formatAssignmentSummary();
-            assignmentClasses.textContent = formatAssignmentClasses();
+        function filterAndRenderContent() {
+            if (!teacherProfile) return;
+            
+            const searchTerm = document.getElementById('resourceSearch').value.toLowerCase();
+            const subjectFilter = document.getElementById('filterSubject').value;
+            const classFilter = document.getElementById('filterClass').value;
+            const typeFilter = document.getElementById('filterType').value;
+            const statusFilter = document.getElementById('filterStatus').value;
+            
+            const allContent = JSON.parse(localStorage.getItem('teacherContent') || '[]');
+            let items = allContent.filter(item => item.teacherId === teacherProfile.staffId);
+            
+            // Apply filters
+            if (searchTerm) {
+                items = items.filter(item => 
+                    item.title?.toLowerCase().includes(searchTerm) ||
+                    item.subject?.toLowerCase().includes(searchTerm) ||
+                    item.chapter?.toLowerCase().includes(searchTerm) ||
+                    item.description?.toLowerCase().includes(searchTerm) ||
+                    new Date(item.createdAt).toLocaleDateString().toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            if (subjectFilter !== 'all') {
+                items = items.filter(item => item.subject === subjectFilter);
+            }
+            
+            if (classFilter !== 'all') {
+                items = items.filter(item => item.classLevel === classFilter);
+            }
+            
+            if (typeFilter !== 'all') {
+                items = items.filter(item => item.type === typeFilter);
+            }
+            
+            if (statusFilter !== 'all') {
+                items = items.filter(item => item.status === statusFilter);
+            }
+            
+            items = items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            
+            // Render filtered content
+            renderFilteredContent(items);
+        }
+
+        function renderFilteredContent(items) {
+            if (!items.length) {
+                uploadedContentGrid.innerHTML = '<div class="content-card"><h4>No resources found</h4><p>Try adjusting your search or filters.</p></div>';
+                return;
+            }
+            const getTypeIcon = (type) => {
+                const icons = { video: '🎬', pdf: '📄', image: '🖼️', quiz: '📝', live: '📡' };
+                return icons[type] || '📁';
+            };
+            const getStatusBadge = (item) => {
+                if (item.type === 'live') {
+                    const isPast = item.scheduleInfo && new Date(item.scheduleInfo.date) < new Date();
+                    return `<span class="badge-pill" style="background:${isPast ? '#94a3b8' : '#22c55e'};color:#fff;">${isPast ? 'Completed' : 'Scheduled'}</span>`;
+                }
+                return `<span class="badge-pill">Published</span>`;
+            };
+            uploadedContentGrid.innerHTML = items.map(item => `
+                <article class="content-card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <span style="font-size:1.5rem;">${getTypeIcon(item.type)}</span>
+                            <div>
+                                <h4>${item.title || item.chapter}</h4>
+                                <p>${item.subject} • Class ${item.classLevel} • ${item.chapter}</p>
+                            </div>
+                        </div>
+                        ${getStatusBadge(item)}
+                    </div>
+                    <p>${item.description || 'No description available.'}</p>
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:0.85rem;color:var(--muted);">
+                        <span>📅 ${new Date(item.createdAt).toLocaleDateString()}</span>
+                        ${item.fileInfo ? `<span>📎 ${item.fileInfo.name} (${item.fileInfo.size} MB)</span>` : ''}
+                        ${item.scheduleInfo ? `<span>⏰ ${item.scheduleInfo.date} at ${item.scheduleInfo.time}</span>` : ''}
+                    </div>
+                    <div style="display:flex;gap:8px;margin-top:12px;">
+                        <button class="btn btn-secondary" onclick="deleteContent('${item.id}')">Delete</button>
+                    </div>
+                </article>
+            `).join('');
         }
 
 
@@ -918,6 +1005,13 @@
         }
 
         
+        function updateRealTimeClock() {
+            if (!todayDate || !realTimeClock) return;
+            const now = new Date();
+            todayDate.textContent = now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+            realTimeClock.textContent = now.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+        }
+
         function initClock() {
             updateRealTimeClock();
             setInterval(updateRealTimeClock, 1000);
@@ -943,16 +1037,25 @@
         }
 
         function loadTeacherProfile() {
-            const profile = JSON.parse(localStorage.getItem('teacherProfile') || '{}');
+            const profile = JSON.parse(localStorage.getItem('teacherProfile') || 'null');
+            if (!profile || !profile.fullName) {
+                window.location.href = 'teacher_login.html';
+                return null;
+            }
             teacherProfile = profile;
             teacherAssignment = getTeacherAssignment();
-            const name = profile.fullName?.trim() || 'Mr. Sharma';
-            const role = profile.expertise || 'Mathematics & Science';
-            if (profileName) profileName.textContent = name;
-            if (profileRole) profileRole.textContent = role;
-            if (profileAvatar) profileAvatar.textContent = (name.charAt(0) || 'S').toUpperCase();
-            welcomeGreeting.textContent = `Good Afternoon, ${name} 👋`;
+            welcomeGreeting.textContent = `Good Afternoon, ${profile.fullName} 👋`;
             return profile;
+        }
+
+        function updateTeacherAssignmentCard() {
+            if (!teacherAssignment) {
+                document.querySelector('.assign-summary').style.display = 'none';
+                return;
+            }
+            document.querySelector('.assign-summary').style.display = 'grid';
+            assignmentBadge.textContent = formatAssignmentSummary();
+            assignmentClasses.textContent = formatAssignmentClasses();
         }
 
         themeToggle.addEventListener('click', () => {
@@ -965,7 +1068,7 @@
         });
 
         startClassBtn.addEventListener('click', () => {
-            alert('Starting your live class session now.');
+            showToast('Live class session starting...');
         });
 
         uploadVideoBtn?.addEventListener('click', () => openContentModal('video'));
@@ -988,6 +1091,10 @@
             if (selectedSubject && selectedGrade) openContentModal('image', selectedSubject, selectedGrade);
         });
         uploadDocBtnSubject?.addEventListener('click', () => {
+            if (selectedSubject && selectedGrade) openContentModal('pdf', selectedSubject, selectedGrade);
+        });
+        const uploadDocSubjectPanelBtn = document.getElementById('uploadDocSubjectPanelBtn');
+        uploadDocSubjectPanelBtn?.addEventListener('click', () => {
             if (selectedSubject && selectedGrade) openContentModal('pdf', selectedSubject, selectedGrade);
         });
         uploadQuizSubjectBtn?.addEventListener('click', () => {
@@ -1056,18 +1163,113 @@
             });
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            loadTeacherProfile();
+        function populateFilters() {
+            const subjects = getAllowedSubjects();
+            const classes = getAllowedClasses();
+            const types = ['video', 'pdf', 'image', 'quiz', 'live'];
+            const statuses = ['published', 'scheduled'];
+            document.getElementById('filterSubject').innerHTML = '<option value="all">Subject</option>' + subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+            document.getElementById('filterClass').innerHTML = '<option value="all">Class</option>' + classes.map(c => `<option value="${c}">Class ${c}</option>`).join('');
+            document.getElementById('filterType').innerHTML = '<option value="all">Type</option>' + types.map(t => `<option value="${t}">${t}</option>`).join('');
+            document.getElementById('filterStatus').innerHTML = '<option value="all">Status</option>' + statuses.map(s => `<option value="${s}">${s}</option>`).join('');
+        }
+
+        function updateStats() {
+            const todaysClasses = getTodaysClasses();
+            const pendingAssessments = getPendingAssessments();
+            const activeStudents = getActiveStudents();
+            const notifications = loadNotifications().length;
+            document.querySelector('.stats-grid > div:nth-child(1) strong').textContent = todaysClasses;
+            document.querySelector('.stats-grid > div:nth-child(2) strong').textContent = pendingAssessments;
+            document.querySelector('.stats-grid > div:nth-child(3) strong').textContent = activeStudents;
+            document.querySelector('.stats-grid > div:nth-child(4) strong').textContent = notifications;
+        }
+
+        function getTodaysClasses() {
+            const allContent = JSON.parse(localStorage.getItem('teacherContent') || '[]');
+            const today = new Date().toISOString().split('T')[0];
+            return allContent.filter(item => item.teacherId === teacherProfile.staffId && item.type === 'live' && item.scheduleInfo?.date === today).length;
+        }
+
+        function getPendingAssessments() {
+            const allContent = JSON.parse(localStorage.getItem('teacherContent') || '[]');
+            return allContent.filter(item => item.teacherId === teacherProfile.staffId && item.type === 'quiz').length;
+        }
+
+        function getActiveStudents() {
+            // Mock
+            return 124;
+        }
+
+        function renderStudentSection() {
+            const studentSection = document.getElementById('studentSection');
+            if (!studentSection) return;
+            if (!selectedGrade) {
+                studentSection.innerHTML = '<div class="content-card"><h4>Select a grade to view enrolled students</h4><p class="small-note">Choose one of your assigned grades to load the enrolled students.</p></div>';
+                studentSection.style.display = 'none';
+                return;
+            }
+            const students = [
+                { name: 'Nitin', progress: 88 },
+                { name: 'Priya', progress: 92 },
+                { name: 'Rahul', progress: 81 },
+                { name: 'Aanya', progress: 75 }
+            ];
+            studentSection.innerHTML = students.map(student => `
+                <article class="subject-card">
+                    <div style="display:flex;justify-content:space-between;align-items:center; gap:10px; flex-wrap:wrap;">
+                        <div>
+                            <h3>${student.name}</h3>
+                            <span class="small-note">Grade ${selectedGrade}</span>
+                        </div>
+                        <span>${student.progress}% progress</span>
+                    </div>
+                </article>
+            `).join('');
+            studentSection.style.display = 'grid';
+        }
+
+        function updateCharts() {
+            const allowedClasses = getAllowedClasses();
+            classAverageChart.data.labels = allowedClasses.map(c => `Class ${c}`);
+            classAverageChart.data.datasets[0].data = allowedClasses.map(() => Math.floor(Math.random() * 20) + 80);
+            classAverageChart.update();
+            progressChart.data.labels = ['Nitin', 'Priya', 'Rahul', 'Aanya'];
+            progressChart.data.datasets[0].data = [88, 92, 81, 75];
+            progressChart.update();
+        }
+
+        function updateAttendanceSummary() {
+            // Mock
+            document.querySelector('.attendance-summary .attendance-card:nth-child(1) p').textContent = '92%';
+            document.querySelector('.attendance-summary .attendance-card:nth-child(2) p').textContent = '89%';
+            document.querySelector('.attendance-summary .attendance-card:nth-child(3) p').textContent = '5 alerts';
+        }
+
+        function bootstrapDashboard() {
+            todayDate = document.getElementById('todayDate');
+            realTimeClock = document.getElementById('realTimeClock');
+            if (!loadTeacherProfile()) return;
             applyTheme(storedTheme);
             updateTeacherAssignmentCard();
             renderClassBatches();
             buildGradeOptions();
             populateContentOptions();
+            populateFilters();
             renderTeacherContent();
             ensureNotificationSeed();
             initClock();
             renderNotifications();
-        });
+            updateStats();
+            updateCharts();
+            updateAttendanceSummary();
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bootstrapDashboard);
+        } else {
+            bootstrapDashboard();
+        }
 
         notificationToggle?.addEventListener('click', () => {
             notificationPanel?.classList.toggle('open');

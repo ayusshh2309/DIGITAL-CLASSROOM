@@ -789,7 +789,8 @@
             </a>
             <nav class="nav-links" aria-label="Primary navigation">
                 <span class="nav-item">
-                    <button class="theme-toggle" id="themeToggle" type="button"><span class="theme-icon" aria-hidden="true">🌙</span><span class="theme-label">Dark mode</span></button>
+                    <button class="theme-toggle" id="themeToggle" type="button"><span class="theme-icon"
+                            aria-hidden="true">🌙</span><span class="theme-label">Dark mode</span></button>
                 </span>
                 <span class="nav-item">
                     <a href="#" class="login-link">Log in</a>
@@ -934,18 +935,24 @@
                     <button id="linkedinLoginButton" class="social-button" type="button">LinkedIn</button>
                 </div>
             </div>
-            <p class="login-secondary">If you do not have an account, register through the teacher or learner signup pages first.</p>
+            <p class="login-secondary">If you do not have an account, register through the teacher or learner signup
+                pages first.</p>
             <p class="login-status" id="loginStatus"></p>
         </div>
     </div>
 
+
+
+    <!-- then your own JS file after -->
+    <script src="login.js"></script>
+
     <script type="module">
-        // Simple localStorage-based authentication (no Firebase)
         
+
         const cards = document.querySelectorAll('.variant-card');
         const roleTargets = {
             learner: 'learner_login.html',
-            teacher: 'teacher_login.html'
+            teacher: '../TEACHER/teacher_login.html'
         };
 
         function handleRoleClick(card) {
