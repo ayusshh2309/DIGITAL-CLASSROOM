@@ -94,6 +94,14 @@
         .content-search input { border: none; background: transparent; width: 100%; outline: none; color: inherit; }
         .filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
         .filters select { width: 100%; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-soft); color: inherit; }
+        .filter-pill { display: inline-flex; align-items: center; justify-content: space-between; gap: 6px; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-soft); color: inherit; cursor: pointer; min-height: 40px; position: relative; }
+        .filter-pill:hover, .filter-pill:focus { background: rgba(91, 99, 245, 0.08); outline: none; }
+        .filter-pill .pill-arrow { font-size: 0.85rem; color: var(--muted); }
+        .filter-dropdown { display: none; position: absolute; top: calc(100% + 6px); left: 0; width: 100%; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); box-shadow: 0 10px 30px rgba(16, 42, 67, 0.12); z-index: 20; overflow: hidden; }
+        .filter-dropdown.open { display: block; }
+        .filter-option { padding: 10px 14px; cursor: pointer; color: var(--text); transition: background 160ms ease; }
+        .filter-option:hover, .filter-option:focus { background: var(--surface-soft); }
+        .filter-option.empty { color: var(--muted); cursor: default; }
         .resource-table { width: 100%; border-collapse: collapse; }
         .resource-table th, .resource-table td { text-align: left; padding: 10px; border-bottom: 1px solid var(--border); }
         .resource-table th { color: var(--muted); font-weight: 600; }
@@ -245,20 +253,21 @@
                 </section>
 
                 <section class="card content-management">
-                    <div class="content-action-row">
+                    <div class="content-action-row" style="align-items:center;gap:12px;">
                         <div>
                             <p class="small-title">Lesson & Content Management</p>
                             <h2 class="section-title">Choose grade and manage subject content</h2>
                         </div>
-                        <button class="btn btn-primary">Upload Content</button>
-                    </div>
-                    <div class="content-action-row">
-                        <div class="content-search"><span>🔍</span><input type="search" id="resourceSearch" placeholder="Search resources, classes, date or subject" /></div>
-                        <div class="filters"><select id="filterSubject"><option value="all">Subject</option></select><select id="filterClass"><option value="all">Class</option></select><select id="filterType"><option value="all">Type</option></select><select id="filterStatus"><option value="all">Status</option></select></div>
-                    </div>
-                    <div class="content-action-row" style="align-items:center; gap:16px; margin-top:18px;">
-                        <label for="teacherGradeSelect" style="font-weight:700; margin-bottom:0;">Choose Grade</label>
-                        <select id="teacherGradeSelect"></select>
+                        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                            <div id="gradeFilterPill" class="filter-pill" tabindex="0" role="button" aria-haspopup="listbox" aria-expanded="false">
+                                <span>Grade</span>
+                                <span class="pill-arrow">▼</span>
+                                <div id="gradeDropdown" class="filter-dropdown" aria-hidden="true">
+                                    <div id="gradeOptions"></div>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary">Upload Content</button>
+                        </div>
                     </div>
                     <div id="subjectSection" class="subject-grid">
                         <div class="content-card"><h4>Select a grade to view subjects</h4><p class="small-note">Choose one of your assigned grades to load the available subjects.</p></div>
@@ -447,7 +456,9 @@
         const cancelContentBtn = document.getElementById('cancelContentBtn');
         const assignmentBadge = document.getElementById('assignmentBadge');
         const assignmentClasses = document.getElementById('assignmentClasses');
-        const gradeSelect = document.getElementById('teacherGradeSelect');
+        const gradeFilterPill = document.getElementById('gradeFilterPill');
+        const gradeDropdown = document.getElementById('gradeDropdown');
+        const gradeOptions = document.getElementById('gradeOptions');
         const subjectSection = document.getElementById('subjectSection');
         const subjectContentPanel = document.getElementById('subjectContentPanel');
         const selectedSubjectHeading = document.getElementById('selectedSubjectHeading');
@@ -543,15 +554,37 @@
 
         function buildGradeOptions() {
             const grades = getAllowedClasses();
-            if (!gradeSelect) return;
+            if (!gradeOptions) return;
             if (!grades.length) {
-                gradeSelect.innerHTML = '<option value="">No grades assigned</option>';
                 selectedGrade = null;
+                gradeOptions.innerHTML = '<div class="filter-option empty">No grades assigned</div>';
                 renderSubjectSection();
                 return;
             }
-            gradeSelect.innerHTML = grades.map(level => `<option value="${level}">Grade ${level}</option>`).join('');
-            selectedGrade = grades[0];
+            gradeOptions.innerHTML = grades.map(level => `<div class="filter-option" data-grade="${level}" tabindex="0">Grade ${level}</div>`).join('');
+            gradeOptions.querySelectorAll('.filter-option').forEach(option => {
+                option.addEventListener('click', () => selectGrade(option.dataset.grade));
+                option.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        selectGrade(option.dataset.grade);
+                    }
+                });
+            });
+            if (!selectedGrade) {
+                selectedGrade = grades[0];
+            }
+            renderSubjectSection();
+        }
+
+        function selectGrade(grade) {
+            selectedGrade = grade;
+            selectedSubject = null;
+            if (gradeDropdown) {
+                gradeDropdown.classList.remove('open');
+                gradeFilterPill?.setAttribute('aria-expanded', 'false');
+                gradeDropdown.setAttribute('aria-hidden', 'true');
+            }
             renderSubjectSection();
         }
 
@@ -606,9 +639,6 @@
 
         function selectSubject(subject) {
             selectedSubject = subject;
-            if (gradeSelect) {
-                selectedGrade = gradeSelect.value;
-            }
             if (!selectedGrade || !selectedSubject) return;
             if (selectedSubjectHeading) {
                 selectedSubjectHeading.textContent = `${selectedSubject} • Grade ${selectedGrade}`;
@@ -1000,11 +1030,29 @@
             showToast('Live class session starting...');
         });
 
-        gradeSelect?.addEventListener('change', () => {
-            selectedGrade = gradeSelect.value;
-            selectedSubject = null;
-            renderSubjectSection();
+        gradeFilterPill?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!gradeDropdown) return;
+            const isOpen = gradeDropdown.classList.toggle('open');
+            gradeFilterPill.setAttribute('aria-expanded', String(isOpen));
+            gradeDropdown.setAttribute('aria-hidden', String(!isOpen));
         });
+
+        document.addEventListener('click', (event) => {
+            if (gradeFilterPill && !gradeFilterPill.contains(event.target)) {
+                gradeDropdown?.classList.remove('open');
+                gradeFilterPill?.setAttribute('aria-expanded', 'false');
+                gradeDropdown?.setAttribute('aria-hidden', 'true');
+            }
+        });
+
+        gradeFilterPill?.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                gradeFilterPill.click();
+            }
+        });
+
         uploadQuizBtn?.addEventListener('click', () => {
             if (selectedSubject && selectedGrade) openContentModal('quiz', selectedSubject, selectedGrade);
         });
@@ -1068,7 +1116,7 @@
 
         const progressChart = new Chart(document.getElementById('progressChart').getContext('2d'), {
             type: 'bar',
-            data: { labels:['Nitin','Priya','Rahul','Aanya'], datasets:[{ label:'Progress %', data:[88, 92, 81, 75], backgroundColor:['#7c3aed','#6366f1','#a855f7','#c4b5fd'], borderRadius: 14 }] },
+            data: { labels:['Student 1','Student 2','Student 3','Student 4'], datasets:[{ label:'Progress %', data:[0, 0, 0, 0], backgroundColor:['#7c3aed','#6366f1','#a855f7','#c4b5fd'], borderRadius: 14 }] },
             options: { responsive:true, maintainAspectRatio:false, scales:{ x:{ grid:{ color:chartPalette.light.grid }, ticks:{ color:chartPalette.light.text } }, y:{ beginAtZero:true, max:100, grid:{ color:chartPalette.light.grid }, ticks:{ color:chartPalette.light.text } } }, plugins:{ legend:{ display:false } } }
         });
 
@@ -1085,17 +1133,6 @@
                 if (chart.options.plugins && chart.options.plugins.legend && chart.options.plugins.legend.labels) chart.options.plugins.legend.labels.color = palette.text;
                 chart.update();
             });
-        }
-
-        function populateFilters() {
-            const subjects = getAllowedSubjects();
-            const classes = getAllowedClasses();
-            const types = ['video', 'pdf', 'image', 'quiz', 'live'];
-            const statuses = ['published', 'scheduled'];
-            document.getElementById('filterSubject').innerHTML = '<option value="all">Subject</option>' + subjects.map(s => `<option value="${s}">${s}</option>`).join('');
-            document.getElementById('filterClass').innerHTML = '<option value="all">Class</option>' + classes.map(c => `<option value="${c}">Class ${c}</option>`).join('');
-            document.getElementById('filterType').innerHTML = '<option value="all">Type</option>' + types.map(t => `<option value="${t}">${t}</option>`).join('');
-            document.getElementById('filterStatus').innerHTML = '<option value="all">Status</option>' + statuses.map(s => `<option value="${s}">${s}</option>`).join('');
         }
 
         function updateStats() {
@@ -1120,9 +1157,28 @@
             return allContent.filter(item => item.teacherId === teacherProfile.staffId && item.type === 'quiz').length;
         }
 
+        function getStoredStudentsForGrade(grade) {
+            const users = JSON.parse(localStorage.getItem('sl_users') || '[]');
+            const students = users.filter(user => {
+                const profile = user.profile || {};
+                const role = (profile.role || user.role || '').toString().toLowerCase();
+                return role === 'student';
+            });
+
+            if (!grade) {
+                return students;
+            }
+
+            const gradeKey = String(grade);
+            return students.filter(user => {
+                const profile = user.profile || {};
+                const userGrade = profile.grade || user.grade || profile.classLevel || user.classLevel;
+                return String(userGrade) === gradeKey;
+            });
+        }
+
         function getActiveStudents() {
-            // Mock
-            return 124;
+            return getStoredStudentsForGrade(selectedGrade).length;
         }
 
         function renderStudentSection() {
@@ -1133,33 +1189,42 @@
                 studentSection.style.display = 'none';
                 return;
             }
-            const students = [
-                { name: 'Nitin', progress: 88 },
-                { name: 'Priya', progress: 92 },
-                { name: 'Rahul', progress: 81 },
-                { name: 'Aanya', progress: 75 }
-            ];
-            studentSection.innerHTML = students.map(student => `
-                <article class="subject-card">
-                    <div style="display:flex;justify-content:space-between;align-items:center; gap:10px; flex-wrap:wrap;">
-                        <div>
-                            <h3>${student.name}</h3>
-                            <span class="small-note">Grade ${selectedGrade}</span>
+
+            const students = getStoredStudentsForGrade(selectedGrade);
+            if (!students.length) {
+                studentSection.innerHTML = '<div class="content-card"><h4>No students found for this grade</h4><p class="small-note">There are no enrolled students available for the selected grade yet.</p></div>';
+                studentSection.style.display = 'grid';
+                return;
+            }
+
+            studentSection.innerHTML = students.map(student => {
+                const profile = student.profile || {};
+                const studentName = profile.name || profile.fullName || student.name || 'Enrolled student';
+                const progress = student.progress ?? profile.progress ?? 0;
+                return `
+                    <article class="subject-card">
+                        <div style="display:flex;justify-content:space-between;align-items:center; gap:10px; flex-wrap:wrap;">
+                            <div>
+                                <h3>${studentName}</h3>
+                                <span class="small-note">Grade ${selectedGrade}</span>
+                            </div>
+                            <span>${progress}% progress</span>
                         </div>
-                        <span>${student.progress}% progress</span>
-                    </div>
-                </article>
-            `).join('');
+                    </article>
+                `;
+            }).join('');
             studentSection.style.display = 'grid';
         }
 
         function updateCharts() {
-            const allowedClasses = getAllowedClasses();
-            classAverageChart.data.labels = allowedClasses.map(c => `Class ${c}`);
-            classAverageChart.data.datasets[0].data = allowedClasses.map(() => Math.floor(Math.random() * 20) + 80);
-            classAverageChart.update();
-            progressChart.data.labels = ['Nitin', 'Priya', 'Rahul', 'Aanya'];
-            progressChart.data.datasets[0].data = [88, 92, 81, 75];
+            const students = selectedGrade ? getStoredStudentsForGrade(selectedGrade) : [];
+            const labels = students.length ? students.map(student => {
+                const profile = student.profile || {};
+                return profile.name || profile.fullName || student.name || 'Student';
+            }) : ['Student 1', 'Student 2', 'Student 3'];
+            const data = students.length ? students.map(student => student.progress ?? student.profile?.progress ?? 0) : [0, 0, 0];
+            progressChart.data.labels = labels;
+            progressChart.data.datasets[0].data = data;
             progressChart.update();
         }
 
@@ -1179,7 +1244,6 @@
             renderClassBatches();
             buildGradeOptions();
             populateContentOptions();
-            populateFilters();
             renderTeacherContent();
             ensureNotificationSeed();
             initClock();
