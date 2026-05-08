@@ -575,6 +575,7 @@
                 selectedGrade = grades[0];
             }
             renderSubjectSection();
+            updateCharts();
         }
 
         function selectGrade(grade) {
@@ -586,6 +587,7 @@
                 gradeDropdown.setAttribute('aria-hidden', 'true');
             }
             renderSubjectSection();
+            updateCharts();
         }
 
         function getAllowedSubjectsForGrade(grade) {
@@ -1090,11 +1092,74 @@
             dark: { grid: 'rgba(148, 163, 184, 0.3)', text: '#e2e8f0' }
         };
 
+        // Fetch functions for dynamic data
+        function fetchClassAverages() {
+            const classes = [5, 6, 7, 8, 9, 10, 11, 12];
+            const averages = classes.map(cls => {
+                const students = getStoredStudentsForGrade(cls);
+                if (!students.length) return 0;
+                const marks = students.map(student => {
+                    const allMarks = JSON.parse(localStorage.getItem('sl_marks') || '[]');
+                    const studentMarks = allMarks.filter(m => m.studentId === student.id);
+                    if (!studentMarks.length) return 0;
+                    const avg = studentMarks.reduce((sum, m) => sum + m.marks, 0) / studentMarks.length;
+                    return avg;
+                });
+                const classAvg = marks.reduce((sum, m) => sum + m, 0) / marks.length || 0;
+                return Math.round(classAvg);
+            });
+            return { labels: classes.map(c => `Class ${c}`), data: averages };
+        }
+
+        function fetchAttendanceTrend(grade) {
+            const students = getStoredStudentsForGrade(grade);
+            if (!students.length) return { labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], data: [0, 0, 0, 0, 0, 0, 0] };
+            const today = new Date();
+            const dates = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(today);
+                d.setDate(today.getDate() - i);
+                dates.push(d.toISOString().split('T')[0]);
+            }
+            const attendanceRecords = JSON.parse(localStorage.getItem('sl_attendance') || '[]');
+            const data = dates.map(date => {
+                const records = attendanceRecords.filter(r => r.date === date && students.some(s => s.id === r.studentId));
+                const present = records.filter(r => r.status === 'present').length;
+                const total = records.length;
+                return total ? Math.round((present / total) * 100) : 0;
+            });
+            const labels = dates.map(d => new Date(d).toLocaleDateString('en', { weekday: 'short' }));
+            return { labels, data };
+        }
+
+        function fetchStudentProgress(grade) {
+            const students = getStoredStudentsForGrade(grade).slice(0, 4);
+            const allMarks = JSON.parse(localStorage.getItem('sl_marks') || '[]');
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const datasets = students.map((student, index) => {
+                const studentMarks = allMarks.filter(m => m.studentId === student.id);
+                const monthlyAvg = months.map((_, i) => {
+                    const monthMarks = studentMarks.filter(m => new Date(m.date).getMonth() === i);
+                    return monthMarks.length ? monthMarks.reduce((sum, m) => sum + m.marks, 0) / monthMarks.length : null;
+                });
+                const profile = student.profile || {};
+                const name = profile.name || profile.fullName || student.name || 'Student';
+                return {
+                    label: name,
+                    data: monthlyAvg,
+                    borderColor: ['#7c3aed', '#6366f1', '#a855f7', '#c4b5fd'][index],
+                    backgroundColor: 'transparent',
+                    tension: 0.35
+                };
+            });
+            return { labels: months, datasets };
+        }
+
         const classAverageChart = new Chart(document.getElementById('classAverageChart').getContext('2d'), {
             type: 'bar',
             data: {
-                labels: ['Class 5', 'Class 8', 'Class 12'],
-                datasets: [{ label: 'Average (%)', data: [88, 82, 90], backgroundColor: ['#6366f1', '#7c3aed', '#a855f7'], borderRadius: 16 }]
+                labels: [],
+                datasets: [{ label: 'Average (%)', data: [], backgroundColor: ['#6366f1', '#7c3aed', '#a855f7', '#8b5cf6', '#a855f7', '#c4b5fd', '#7c3aed', '#6366f1'], borderRadius: 16 }]
             },
             options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { color: chartPalette.light.grid }, ticks: { color: chartPalette.light.text } }, y: { beginAtZero: true, max: 100, grid: { color: chartPalette.light.grid }, ticks: { color: chartPalette.light.text } } }, plugins: { legend: { display: false } } }
         });
@@ -1102,22 +1167,22 @@
         const attendanceChart = new Chart(document.getElementById('attendanceChart').getContext('2d'), {
             type: 'line',
             data: {
-                labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
-                datasets: [{ label:'Attendance %', data:[92, 95, 90, 93, 91, 94, 92], borderColor:'#8b5cf6', backgroundColor:'rgba(139,92,246,0.16)', fill:true, tension:0.35, pointRadius:4, pointBackgroundColor:'#8b5cf6' }]
+                labels: [],
+                datasets: [{ label:'Attendance %', data:[], borderColor:'#8b5cf6', backgroundColor:'rgba(139,92,246,0.16)', fill:true, tension:0.35, pointRadius:4, pointBackgroundColor:'#8b5cf6' }]
             },
             options: { responsive:true, maintainAspectRatio:false, scales:{ x:{ grid:{ color:chartPalette.light.grid }, ticks:{ color:chartPalette.light.text } }, y:{ beginAtZero:true, max:100, grid:{ color:chartPalette.light.grid }, ticks:{ color:chartPalette.light.text } } }, plugins:{ legend:{ display:false } } }
         });
 
         const accuracyChart = new Chart(document.getElementById('accuracyChart').getContext('2d'), {
             type: 'doughnut',
-            data: { labels:['Correct','Incorrect','Skipped'], datasets:[{ data:[72, 18, 10], backgroundColor:['#6366f1','#f59e0b','#c7d2fe'] }] },
+            data: { labels:['Correct','Incorrect','Skipped'], datasets:[{ data:[], backgroundColor:['#6366f1','#f59e0b','#c7d2fe'] }] },
             options: { responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{ legend:{ position:'bottom', labels:{ color:chartPalette.light.text } } } }
         });
 
         const progressChart = new Chart(document.getElementById('progressChart').getContext('2d'), {
-            type: 'bar',
-            data: { labels:['Student 1','Student 2','Student 3','Student 4'], datasets:[{ label:'Progress %', data:[0, 0, 0, 0], backgroundColor:['#7c3aed','#6366f1','#a855f7','#c4b5fd'], borderRadius: 14 }] },
-            options: { responsive:true, maintainAspectRatio:false, scales:{ x:{ grid:{ color:chartPalette.light.grid }, ticks:{ color:chartPalette.light.text } }, y:{ beginAtZero:true, max:100, grid:{ color:chartPalette.light.grid }, ticks:{ color:chartPalette.light.text } } }, plugins:{ legend:{ display:false } } }
+            type: 'line',
+            data: { labels:[], datasets:[] },
+            options: { responsive:true, maintainAspectRatio:false, scales:{ x:{ grid:{ color:chartPalette.light.grid }, ticks:{ color:chartPalette.light.text } }, y:{ beginAtZero:true, max:100, grid:{ color:chartPalette.light.grid }, ticks:{ color:chartPalette.light.text } } }, plugins:{ legend:{ position:'top', labels:{ color:chartPalette.light.text } } } }
         });
 
         const attendanceBarChart = new Chart(document.getElementById('attendanceBarChart').getContext('2d'), {
@@ -1190,12 +1255,7 @@
                 return;
             }
 
-            const students = getStoredStudentsForGrade(selectedGrade);
-            if (!students.length) {
-                studentSection.innerHTML = '<div class="content-card"><h4>No students found for this grade</h4><p class="small-note">There are no enrolled students available for the selected grade yet.</p></div>';
-                studentSection.style.display = 'grid';
-                return;
-            }
+            
 
             studentSection.innerHTML = students.map(student => {
                 const profile = student.profile || {};
@@ -1217,14 +1277,29 @@
         }
 
         function updateCharts() {
-            const students = selectedGrade ? getStoredStudentsForGrade(selectedGrade) : [];
-            const labels = students.length ? students.map(student => {
-                const profile = student.profile || {};
-                return profile.name || profile.fullName || student.name || 'Student';
-            }) : ['Student 1', 'Student 2', 'Student 3'];
-            const data = students.length ? students.map(student => student.progress ?? student.profile?.progress ?? 0) : [0, 0, 0];
-            progressChart.data.labels = labels;
-            progressChart.data.datasets[0].data = data;
+            // Update class average (global)
+            const classAvgData = fetchClassAverages();
+            classAverageChart.data.labels = classAvgData.labels;
+            classAverageChart.data.datasets[0].data = classAvgData.data;
+            classAverageChart.update();
+
+            if (!selectedGrade) return;
+
+            // Attendance trend for selected grade
+            const attendanceData = fetchAttendanceTrend(selectedGrade);
+            attendanceChart.data.labels = attendanceData.labels;
+            attendanceChart.data.datasets[0].data = attendanceData.data;
+            attendanceChart.update();
+
+            // Quiz accuracy for selected grade
+            const accuracyData = fetchQuizAccuracy(selectedGrade);
+            accuracyChart.data.datasets[0].data = accuracyData.data;
+            accuracyChart.update();
+
+            // Student progress comparison for selected grade
+            const progressData = fetchStudentProgress(selectedGrade);
+            progressChart.data.labels = progressData.labels;
+            progressChart.data.datasets = progressData.datasets;
             progressChart.update();
         }
 

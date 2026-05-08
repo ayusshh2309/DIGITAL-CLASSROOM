@@ -843,6 +843,26 @@
         const createAccountButton = document.getElementById('createAccountButton');
         const dobInput = document.getElementById('dob');
         const phoneInput = document.getElementById('phone');
+
+        const mandatorySubjects = ['English', 'Physical Education', 'Computer Science'];
+        const seniorStreamSubjects = {
+            PCM: ['Physics', 'Chemistry', 'Mathematics'],
+            PCB: ['Physics', 'Chemistry', 'Biology'],
+            Commerce: ['Accountancy', 'Business Studies', 'Economics'],
+            Arts: ['History', 'Political Science', 'Geography', 'Sociology', 'Psychology']
+        };
+
+        function getSubjectsForGradeAndStream(grade, stream) {
+            if (grade === '11' || grade === '12') {
+                const selectedStream = stream || 'PCM';
+                return [
+                    ...((seniorStreamSubjects[selectedStream] || [])),
+                    ...mandatorySubjects
+                ];
+            }
+            return [];
+        }
+
         const emailInput = document.getElementById('email');
         const termsInput = document.getElementById('terms');
         const countryPrefix = document.getElementById('countryPrefix');

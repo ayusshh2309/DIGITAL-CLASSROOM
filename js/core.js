@@ -247,6 +247,160 @@ const Auth = {
 };
 
 // ============================================
+// CLASSES & SUBJECTS MAPPING
+// ============================================
+const Classes = {
+    // Mandatory subjects for all streams in Classes 11-12
+    mandatorySubjects: () => [
+        { id: 'english', name: 'English', icon: '📚', color: '#8b5cf6', description: 'Communication, Literature, Writing' },
+        { id: 'physical_education', name: 'Physical Education', icon: '⚽', color: '#ec4899', description: 'Sports, Fitness, Health' },
+        { id: 'computer_science', name: 'Computer Science', icon: '💻', color: '#06b6d4', description: 'Programming, Algorithms, Web Dev' }
+    ],
+
+    // Stream-specific subjects for Class 11-12
+    streamSubjects: () => ({
+        'PCM': {
+            name: 'PCM (Physics, Chemistry, Mathematics)',
+            subjects: [
+                { id: 'physics', name: 'Physics', icon: '⚛️', color: '#3b82f6', description: 'Mechanics, Thermodynamics, Waves, Optics' },
+                { id: 'chemistry', name: 'Chemistry', icon: '🧪', color: '#22c55e', description: 'Organic, Inorganic, Physical Chemistry' },
+                { id: 'mathematics', name: 'Mathematics', icon: '📐', color: '#f59e0b', description: 'Calculus, Algebra, Trigonometry, Statistics' }
+            ]
+        },
+        'PCB': {
+            name: 'PCB (Physics, Chemistry, Biology)',
+            subjects: [
+                { id: 'physics', name: 'Physics', icon: '⚛️', color: '#3b82f6', description: 'Mechanics, Thermodynamics, Waves, Optics' },
+                { id: 'chemistry', name: 'Chemistry', icon: '🧪', color: '#22c55e', description: 'Organic, Inorganic, Physical Chemistry' },
+                { id: 'biology', name: 'Biology', icon: '🧬', color: '#06b6d4', description: 'Botany, Zoology, Ecology, Genetics' }
+            ]
+        },
+        'Commerce': {
+            name: 'Commerce',
+            subjects: [
+                { id: 'accountancy', name: 'Accountancy', icon: '📊', color: '#3b82f6', description: 'Financial Accounting, Cost Accounting, Management Accounting' },
+                { id: 'business_studies', name: 'Business Studies', icon: '🏢', color: '#f59e0b', description: 'Principles of Management, Business Organization' },
+                { id: 'economics', name: 'Economics', icon: '💹', color: '#22c55e', description: 'Micro Economics, Macro Economics, Statistics' }
+            ]
+        },
+        'Arts': {
+            name: 'Arts / Humanities',
+            subjects: [
+                { id: 'history', name: 'History', icon: '🏛️', color: '#8b5cf6', description: 'Ancient, Medieval, Modern World History' },
+                { id: 'political_science', name: 'Political Science', icon: '🗳️', color: '#3b82f6', description: 'Indian Constitution, Political Theory, International Relations' },
+                { id: 'geography', name: 'Geography', icon: '🌍', color: '#06b6d4', description: 'Physical Geography, Human Geography, Cartography' },
+                { id: 'psychology_sociology', name: 'Psychology / Sociology', icon: '👥', color: '#ec4899', description: 'Human Behavior, Social Structure, Cultural Studies' }
+            ]
+        }
+    }),
+
+    // Class to subjects mapping for Classes 5-10
+    getMapping: () => ({
+        '5': {
+            name: 'Class 5',
+            subjects: [
+                { id: 'english', name: 'English', icon: '📚', color: '#8b5cf6', description: 'Grammar, Reading, Writing' },
+                { id: 'mathematics', name: 'Mathematics', icon: '📐', color: '#3b82f6', description: 'Arithmetic, Geometry, Problem Solving' },
+                { id: 'evs', name: 'Environmental Studies (EVS)', icon: '🌍', color: '#22c55e', description: 'Nature, Environment, Social Studies' },
+                { id: 'hindi', name: 'Hindi/Second Language', icon: '🗣️', color: '#f59e0b', description: 'Language Learning' },
+                { id: 'physical_education', name: 'Physical Education', icon: '⚽', color: '#ec4899', description: 'Sports, Fitness, Health' },
+                { id: 'computer_science', name: 'Computer Science', icon: '💻', color: '#06b6d4', description: 'Basic Computing, Programming' }
+            ]
+        },
+        '6': {
+            name: 'Class 6',
+            subjects: [
+                { id: 'english', name: 'English', icon: '📚', color: '#8b5cf6', description: 'Grammar, Literature, Writing' },
+                { id: 'mathematics', name: 'Mathematics', icon: '📐', color: '#3b82f6', description: 'Algebra, Geometry, Statistics' },
+                { id: 'science', name: 'Science', icon: '🔬', color: '#22c55e', description: 'Physics, Chemistry, Biology' },
+                { id: 'social_science', name: 'Social Science', icon: '🏛️', color: '#06b6d4', description: 'History, Geography, Civics' },
+                { id: 'hindi', name: 'Hindi/Second Language', icon: '🗣️', color: '#f59e0b', description: 'Language Learning' },
+                { id: 'physical_education', name: 'Physical Education', icon: '⚽', color: '#ec4899', description: 'Sports, Fitness, Health' },
+                { id: 'computer_science', name: 'Computer Science', icon: '💻', color: '#06b6d4', description: 'Basic Computing, Programming' }
+            ]
+        },
+        '7': {
+            name: 'Class 7',
+            subjects: [
+                { id: 'english', name: 'English', icon: '📚', color: '#8b5cf6', description: 'Grammar, Literature, Writing' },
+                { id: 'mathematics', name: 'Mathematics', icon: '📐', color: '#3b82f6', description: 'Algebra, Geometry, Statistics' },
+                { id: 'science', name: 'Science', icon: '🔬', color: '#22c55e', description: 'Physics, Chemistry, Biology' },
+                { id: 'social_science', name: 'Social Science', icon: '🏛️', color: '#06b6d4', description: 'History, Geography, Civics' },
+                { id: 'hindi', name: 'Hindi/Second Language', icon: '🗣️', color: '#f59e0b', description: 'Language Learning' },
+                { id: 'physical_education', name: 'Physical Education', icon: '⚽', color: '#ec4899', description: 'Sports, Fitness, Health' },
+                { id: 'computer_science', name: 'Computer Science', icon: '💻', color: '#06b6d4', description: 'Basic Computing, Programming' }
+            ]
+        },
+        '8': {
+            name: 'Class 8',
+            subjects: [
+                { id: 'english', name: 'English', icon: '📚', color: '#8b5cf6', description: 'Grammar, Literature, Writing' },
+                { id: 'mathematics', name: 'Mathematics', icon: '📐', color: '#3b82f6', description: 'Algebra, Geometry, Statistics' },
+                { id: 'science', name: 'Science', icon: '🔬', color: '#22c55e', description: 'Physics, Chemistry, Biology' },
+                { id: 'social_science', name: 'Social Science', icon: '🏛️', color: '#06b6d4', description: 'History, Geography, Civics' },
+                { id: 'hindi', name: 'Hindi/Second Language', icon: '🗣️', color: '#f59e0b', description: 'Language Learning' },
+                { id: 'physical_education', name: 'Physical Education', icon: '⚽', color: '#ec4899', description: 'Sports, Fitness, Health' },
+                { id: 'computer_science', name: 'Computer Science', icon: '💻', color: '#06b6d4', description: 'Basic Computing, Programming' }
+            ]
+        },
+        '9': {
+            name: 'Class 9',
+            subjects: [
+                { id: 'english', name: 'English', icon: '📚', color: '#8b5cf6', description: 'Grammar, Literature, Writing' },
+                { id: 'mathematics', name: 'Mathematics', icon: '📐', color: '#3b82f6', description: 'Algebra, Geometry, Trigonometry' },
+                { id: 'science', name: 'Science', icon: '🔬', color: '#22c55e', description: 'Physics, Chemistry, Biology' },
+                { id: 'social_science', name: 'Social Science', icon: '🏛️', color: '#06b6d4', description: 'History, Geography, Political Science, Economics' },
+                { id: 'hindi', name: 'Hindi/Second Language', icon: '🗣️', color: '#f59e0b', description: 'Language Learning' },
+                { id: 'physical_education', name: 'Physical Education', icon: '⚽', color: '#ec4899', description: 'Sports, Fitness, Health' },
+                { id: 'computer_science', name: 'Computer Science', icon: '💻', color: '#06b6d4', description: 'Basic Computing, Programming' }
+            ]
+        },
+        '10': {
+            name: 'Class 10',
+            subjects: [
+                { id: 'english', name: 'English', icon: '📚', color: '#8b5cf6', description: 'Grammar, Literature, Writing' },
+                { id: 'mathematics', name: 'Mathematics', icon: '📐', color: '#3b82f6', description: 'Algebra, Geometry, Trigonometry' },
+                { id: 'science', name: 'Science', icon: '🔬', color: '#22c55e', description: 'Physics, Chemistry, Biology' },
+                { id: 'social_science', name: 'Social Science', icon: '🏛️', color: '#06b6d4', description: 'History, Geography, Political Science, Economics' },
+                { id: 'hindi', name: 'Hindi/Second Language', icon: '🗣️', color: '#f59e0b', description: 'Language Learning' },
+                { id: 'physical_education', name: 'Physical Education', icon: '⚽', color: '#ec4899', description: 'Sports, Fitness, Health' },
+                { id: 'computer_science', name: 'Computer Science', icon: '💻', color: '#06b6d4', description: 'Basic Computing, Programming' }
+            ]
+        }
+    }),
+
+    // Get subjects for a specific class
+    getSubjectsForClass: (classNumber) => {
+        const mapping = Classes.getMapping();
+        const classSubjects = mapping[classNumber.toString()]?.subjects || [];
+        const mandatory = Classes.mandatorySubjects();
+        // For all classes, include mandatory subjects
+        return [...classSubjects, ...mandatory];
+    },
+
+    // Get subjects for a specific stream (Classes 11-12)
+    getSubjectsForStream: (stream) => {
+        const streams = Classes.streamSubjects();
+        const streamData = streams[stream];
+        const mandatory = Classes.mandatorySubjects();
+        if (!streamData) return [...mandatory];
+        return [...streamData.subjects, ...mandatory];
+    },
+
+    // Get stream name
+    getStreamName: (stream) => {
+        const streams = Classes.streamSubjects();
+        return streams[stream]?.name || stream;
+    },
+
+    // Get class name
+    getClassName: (classNumber) => {
+        const mapping = Classes.getMapping();
+        return mapping[classNumber.toString()]?.name || '';
+    }
+};
+
+// ============================================
 // SUBJECTS & RESOURCES
 // ============================================
 const Subjects = {
@@ -268,6 +422,16 @@ const Subjects = {
             Storage.set(APP_CONFIG.storageKeys.subjects, subjects);
         }
         return subjects;
+    },
+
+    // Get subjects for a specific class
+    getForClass: (classNumber) => {
+        return Classes.getSubjectsForClass(classNumber);
+    },
+
+    // Get subjects for a specific stream (Classes 11-12)
+    getForStream: (stream) => {
+        return Classes.getSubjectsForStream(stream);
     },
 
     // Get subject by ID
@@ -306,6 +470,21 @@ const Resources = {
                 { id: 'q2', title: 'Linear Equations Test', questions: 15, duration: '20 min' }
             ]
         },
+        mathematics: {
+            videos: [
+                { id: 'v1', title: 'Introduction to Algebra', duration: '15:30', url: '#', thumbnail: 'https://picsum.photos/seed/math1/300/200' },
+                { id: 'v2', title: 'Linear Equations Explained', duration: '22:45', url: '#', thumbnail: 'https://picsum.photos/seed/math2/300/200' },
+                { id: 'v3', title: 'Quadratic Functions', duration: '18:20', url: '#', thumbnail: 'https://picsum.photos/seed/math3/300/200' }
+            ],
+            notes: [
+                { id: 'n1', title: 'Algebra Basics PDF', size: '2.5 MB', url: '#' },
+                { id: 'n2', title: 'Equation Solving Guide', size: '1.8 MB', url: '#' }
+            ],
+            quizzes: [
+                { id: 'q1', title: 'Algebra Fundamentals', questions: 10, duration: '15 min' },
+                { id: 'q2', title: 'Linear Equations Test', questions: 15, duration: '20 min' }
+            ]
+        },
         science: {
             videos: [
                 { id: 'v1', title: 'Introduction to Physics', duration: '20:00', url: '#', thumbnail: 'https://picsum.photos/seed/sci1/300/200' },
@@ -326,6 +505,34 @@ const Resources = {
             quizzes: [
                 { id: 'q1', title: 'Grammar Test', questions: 20, duration: '25 min' }
             ]
+        },
+        evs: {
+            videos: [
+                { id: 'v1', title: 'Environmental Science Basics', duration: '20:00', url: '#', thumbnail: 'https://picsum.photos/seed/env1/300/200' }
+            ],
+            notes: [
+                { id: 'n1', title: 'EVS Fundamentals', size: '2.5 MB', url: '#' }
+            ],
+            quizzes: []
+        },
+        hindi: {
+            videos: [
+                { id: 'v1', title: 'Hindi Grammar Basics', duration: '18:00', url: '#', thumbnail: 'https://picsum.photos/seed/hindi1/300/200' }
+            ],
+            notes: [
+                { id: 'n1', title: 'Hindi Language Guide', size: '2.0 MB', url: '#' }
+            ],
+            quizzes: []
+        },
+        social_science: {
+            videos: [
+                { id: 'v1', title: 'World History Overview', duration: '25:00', url: '#', thumbnail: 'https://picsum.photos/seed/his1/300/200' },
+                { id: 'v2', title: 'Geography Fundamentals', duration: '20:00', url: '#', thumbnail: 'https://picsum.photos/seed/geo1/300/200' }
+            ],
+            notes: [
+                { id: 'n1', title: 'Social Science Handbook', size: '4.0 MB', url: '#' }
+            ],
+            quizzes: []
         },
         history: {
             videos: [
@@ -353,6 +560,159 @@ const Resources = {
             ],
             quizzes: [
                 { id: 'q1', title: 'Programming Basics', questions: 15, duration: '20 min' }
+            ]
+        },
+        // Class 11-12 Stream Subjects - PCM
+        physics: {
+            videos: [
+                { id: 'v1', title: 'Mechanics & Motion', duration: '28:00', url: '#', thumbnail: 'https://picsum.photos/seed/physics1/300/200' },
+                { id: 'v2', title: 'Thermodynamics Explained', duration: '32:15', url: '#', thumbnail: 'https://picsum.photos/seed/physics2/300/200' },
+                { id: 'v3', title: 'Waves & Optics', duration: '26:45', url: '#', thumbnail: 'https://picsum.photos/seed/physics3/300/200' }
+            ],
+            notes: [
+                { id: 'n1', title: 'Physics Mechanics Guide', size: '3.8 MB', url: '#' },
+                { id: 'n2', title: 'Thermodynamics Notes', size: '2.9 MB', url: '#' }
+            ],
+            quizzes: [
+                { id: 'q1', title: 'Mechanics Quiz', questions: 20, duration: '30 min' },
+                { id: 'q2', title: 'Waves & Optics Test', questions: 18, duration: '28 min' }
+            ]
+        },
+        chemistry: {
+            videos: [
+                { id: 'v1', title: 'Organic Chemistry Basics', duration: '30:00', url: '#', thumbnail: 'https://picsum.photos/seed/chem1/300/200' },
+                { id: 'v2', title: 'Inorganic Chemistry', duration: '27:30', url: '#', thumbnail: 'https://picsum.photos/seed/chem2/300/200' },
+                { id: 'v3', title: 'Physical Chemistry', duration: '29:45', url: '#', thumbnail: 'https://picsum.photos/seed/chem3/300/200' }
+            ],
+            notes: [
+                { id: 'n1', title: 'Organic Reactions Guide', size: '4.2 MB', url: '#' },
+                { id: 'n2', title: 'Periodic Table Study', size: '2.1 MB', url: '#' }
+            ],
+            quizzes: [
+                { id: 'q1', title: 'Organic Chemistry Test', questions: 22, duration: '32 min' },
+                { id: 'q2', title: 'Chemical Bonding Quiz', questions: 18, duration: '25 min' }
+            ]
+        },
+        biology: {
+            videos: [
+                { id: 'v1', title: 'Cell Biology & Structure', duration: '26:00', url: '#', thumbnail: 'https://picsum.photos/seed/bio1/300/200' },
+                { id: 'v2', title: 'Genetics & Evolution', duration: '31:20', url: '#', thumbnail: 'https://picsum.photos/seed/bio2/300/200' },
+                { id: 'v3', title: 'Ecology & Ecosystems', duration: '28:15', url: '#', thumbnail: 'https://picsum.photos/seed/bio3/300/200' }
+            ],
+            notes: [
+                { id: 'n1', title: 'Photosynthesis Guide', size: '3.5 MB', url: '#' },
+                { id: 'n2', title: 'Human Physiology Notes', size: '3.8 MB', url: '#' }
+            ],
+            quizzes: [
+                { id: 'q1', title: 'Cell & Genetics Test', questions: 20, duration: '30 min' },
+                { id: 'q2', title: 'Ecology Quiz', questions: 17, duration: '24 min' }
+            ]
+        },
+        // Class 11-12 Commerce Subjects
+        accountancy: {
+            videos: [
+                { id: 'v1', title: 'Financial Accounting Basics', duration: '32:00', url: '#', thumbnail: 'https://picsum.photos/seed/acc1/300/200' },
+                { id: 'v2', title: 'Journal & Ledger', duration: '28:45', url: '#', thumbnail: 'https://picsum.photos/seed/acc2/300/200' },
+                { id: 'v3', title: 'Balance Sheet Preparation', duration: '30:15', url: '#', thumbnail: 'https://picsum.photos/seed/acc3/300/200' }
+            ],
+            notes: [
+                { id: 'n1', title: 'Accounting Standards', size: '3.2 MB', url: '#' },
+                { id: 'n2', title: 'Double Entry System', size: '2.8 MB', url: '#' }
+            ],
+            quizzes: [
+                { id: 'q1', title: 'Accounting Principles', questions: 20, duration: '30 min' },
+                { id: 'q2', title: 'Balance Sheet Quiz', questions: 15, duration: '22 min' }
+            ]
+        },
+        business_studies: {
+            videos: [
+                { id: 'v1', title: 'Business Organization', duration: '29:00', url: '#', thumbnail: 'https://picsum.photos/seed/biz1/300/200' },
+                { id: 'v2', title: 'Management Principles', duration: '31:20', url: '#', thumbnail: 'https://picsum.photos/seed/biz2/300/200' },
+                { id: 'v3', title: 'Entrepreneurship & Business Plan', duration: '27:45', url: '#', thumbnail: 'https://picsum.photos/seed/biz3/300/200' }
+            ],
+            notes: [
+                { id: 'n1', title: 'Business Functions Guide', size: '3.6 MB', url: '#' },
+                { id: 'n2', title: 'Corporate Governance', size: '2.9 MB', url: '#' }
+            ],
+            quizzes: [
+                { id: 'q1', title: 'Business Management Test', questions: 18, duration: '28 min' },
+                { id: 'q2', title: 'Organization Quiz', questions: 16, duration: '24 min' }
+            ]
+        },
+        economics: {
+            videos: [
+                { id: 'v1', title: 'Microeconomics Fundamentals', duration: '30:00', url: '#', thumbnail: 'https://picsum.photos/seed/econ1/300/200' },
+                { id: 'v2', title: 'Macroeconomics Overview', duration: '32:15', url: '#', thumbnail: 'https://picsum.photos/seed/econ2/300/200' },
+                { id: 'v3', title: 'Supply & Demand', duration: '26:30', url: '#', thumbnail: 'https://picsum.photos/seed/econ3/300/200' }
+            ],
+            notes: [
+                { id: 'n1', title: 'Economic Theories', size: '4.1 MB', url: '#' },
+                { id: 'n2', title: 'Market Analysis Guide', size: '3.2 MB', url: '#' }
+            ],
+            quizzes: [
+                { id: 'q1', title: 'Micro Economics Test', questions: 19, duration: '28 min' },
+                { id: 'q2', title: 'Macro Economics Quiz', questions: 17, duration: '25 min' }
+            ]
+        },
+        // Class 11-12 Arts Subjects
+        political_science: {
+            videos: [
+                { id: 'v1', title: 'Indian Constitution', duration: '35:00', url: '#', thumbnail: 'https://picsum.photos/seed/poli1/300/200' },
+                { id: 'v2', title: 'Political Theory & Philosophy', duration: '32:20', url: '#', thumbnail: 'https://picsum.photos/seed/poli2/300/200' },
+                { id: 'v3', title: 'International Relations', duration: '28:45', url: '#', thumbnail: 'https://picsum.photos/seed/poli3/300/200' }
+            ],
+            notes: [
+                { id: 'n1', title: 'Constitutional Rights Guide', size: '3.9 MB', url: '#' },
+                { id: 'n2', title: 'Government Systems', size: '3.4 MB', url: '#' }
+            ],
+            quizzes: [
+                { id: 'q1', title: 'Constitution Quiz', questions: 21, duration: '32 min' },
+                { id: 'q2', title: 'Political Systems Test', questions: 18, duration: '27 min' }
+            ]
+        },
+        psychology_sociology: {
+            videos: [
+                { id: 'v1', title: 'Introduction to Psychology', duration: '28:00', url: '#', thumbnail: 'https://picsum.photos/seed/psych1/300/200' },
+                { id: 'v2', title: 'Sociology & Social Structure', duration: '30:15', url: '#', thumbnail: 'https://picsum.photos/seed/psych2/300/200' },
+                { id: 'v3', title: 'Cultural Studies', duration: '26:45', url: '#', thumbnail: 'https://picsum.photos/seed/psych3/300/200' }
+            ],
+            notes: [
+                { id: 'n1', title: 'Human Behavior Study', size: '3.7 MB', url: '#' },
+                { id: 'n2', title: 'Social Systems Analysis', size: '3.2 MB', url: '#' }
+            ],
+            quizzes: [
+                { id: 'q1', title: 'Psychology Basics', questions: 17, duration: '25 min' },
+                { id: 'q2', title: 'Sociology Test', questions: 16, duration: '24 min' }
+            ]
+        },
+        physical_education: {
+            videos: [
+                { id: 'v1', title: 'Sports Fundamentals', duration: '22:00', url: '#', thumbnail: 'https://picsum.photos/seed/pe1/300/200' },
+                { id: 'v2', title: 'Health & Fitness', duration: '24:30', url: '#', thumbnail: 'https://picsum.photos/seed/pe2/300/200' },
+                { id: 'v3', title: 'Nutrition & Wellness', duration: '20:45', url: '#', thumbnail: 'https://picsum.photos/seed/pe3/300/200' }
+            ],
+            notes: [
+                { id: 'n1', title: 'Sports Rules Guide', size: '2.5 MB', url: '#' },
+                { id: 'n2', title: 'Fitness Programs', size: '2.1 MB', url: '#' }
+            ],
+            quizzes: [
+                { id: 'q1', title: 'Sports Knowledge', questions: 14, duration: '20 min' },
+                { id: 'q2', title: 'Health Quiz', questions: 12, duration: '18 min' }
+            ]
+        },
+        computer_science: {
+            videos: [
+                { id: 'v1', title: 'Data Structures', duration: '33:00', url: '#', thumbnail: 'https://picsum.photos/seed/cs1/300/200' },
+                { id: 'v2', title: 'Database Management', duration: '29:45', url: '#', thumbnail: 'https://picsum.photos/seed/cs2/300/200' },
+                { id: 'v3', title: 'Web Technologies', duration: '31:15', url: '#', thumbnail: 'https://picsum.photos/seed/cs3/300/200' }
+            ],
+            notes: [
+                { id: 'n1', title: 'Programming Algorithms', size: '4.5 MB', url: '#' },
+                { id: 'n2', title: 'Database Design', size: '3.8 MB', url: '#' }
+            ],
+            quizzes: [
+                { id: 'q1', title: 'Data Structures Test', questions: 22, duration: '32 min' },
+                { id: 'q2', title: 'Programming Quiz', questions: 20, duration: '30 min' }
             ]
         }
     }),

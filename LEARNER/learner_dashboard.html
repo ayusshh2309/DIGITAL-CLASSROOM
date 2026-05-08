@@ -921,6 +921,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="../js/core.js"></script>
     <script>
         const themeToggleButton = document.getElementById('themeToggle');
         const themeIcon = document.getElementById('themeIcon');
@@ -960,14 +961,8 @@
         };
 
         const mandatorySubjects = ['English', 'Physical Education', 'Computer Science'];
-        const gradeSubjects = {
-            '5': ['Mathematics', 'English', 'Science', 'Social Studies', 'Hindi', 'Art'],
-            '6': ['Mathematics', 'English', 'Science', 'Social Studies', 'Computer Science', 'Art'],
-            '7': ['Mathematics', 'English', 'Science', 'Social Studies', 'Computer Science', 'Hindi'],
-            '8': ['Mathematics', 'English', 'Science', 'Social Studies', 'Computer Science', 'Art'],
-            '9': ['Mathematics', 'English', 'Science', 'Social Studies', 'Computer Science', 'Physical Education'],
-            '10': ['Mathematics', 'English', 'Science', 'Social Studies', 'Computer Science', 'Physical Education']
-        };
+        // Stream subjects are now loaded from core.js Classes module via Subjects.getForStream()
+        // Old streamSubjects object kept for reference/backward compatibility
         const streamSubjects = {
             'PCM': ['Physics', 'Chemistry', 'Mathematics'],
             'PCB': ['Physics', 'Chemistry', 'Biology'],
@@ -1371,7 +1366,9 @@
         }
 
         function renderSubjectCards(subjects) {
-            subjectCards.innerHTML = subjects.map(subject => `
+            // Convert class subject objects to just names for rendering
+            const subjectNames = subjects.map(s => typeof s === 'string' ? s : s.name);
+            subjectCards.innerHTML = subjectNames.map(subject => `
                 <article class="subject-card" data-subject="${subject}">
                     <div>
                         <p class="small-title">Subject</p>
@@ -1416,7 +1413,10 @@
 
         function updateSubjectSelection(grade, stream) {
             const normalizedGrade = String(grade || '10');
-            dashboardGrade.textContent = `Grade ${normalizedGrade}`;
+            
+            // Update class display
+            dashboardGrade.textContent = `Class ${normalizedGrade}`;
+            
             const isSeniorGrade = normalizedGrade === '11' || normalizedGrade === '12';
             const selectedStream = isSeniorGrade ? normalizeStream(stream) : null;
 
@@ -1427,9 +1427,21 @@
                 dashboardStream.textContent = '';
             }
 
-            const subjects = isSeniorGrade
-                ? [...mandatorySubjects, ...streamSubjects[selectedStream]]
-                : gradeSubjects[normalizedGrade] || ['Mathematics', 'English', 'Science'];
+            // Get subjects from Classes module for Classes 5-10
+            let subjects = [];
+            if (normalizedGrade >= '5' && normalizedGrade <= '10') {
+                // Get subjects for this class from the Classes module
+                const classSubjects = Subjects.getForClass(normalizedGrade);
+                subjects = classSubjects.map(s => s.name);
+            } else if (isSeniorGrade) {
+                // For Class 11-12, use stream-based subjects from Classes.getSubjectsForStream()
+                const streamSubjects = Subjects.getForStream(selectedStream);
+                subjects = streamSubjects.map(s => s.name);
+            } else {
+                // Default fallback
+                subjects = ['Mathematics', 'English', 'Science'];
+            }
+            
             renderSubjectCards(subjects);
             updateAnalyticsCharts(subjects);
             renderAchievements(subjects);
