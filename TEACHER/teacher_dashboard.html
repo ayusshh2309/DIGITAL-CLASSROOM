@@ -146,9 +146,12 @@
         .content-card { border-radius: 18px; background: var(--surface-soft); border: 1px solid var(--border); padding: 16px; display: grid; gap: 10px; }
         .content-card h4 { margin: 0; }
         .subject-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 16px; }
-        .subject-card { border-radius: 18px; background: var(--surface-soft); border: 1px solid var(--border); padding: 16px; display: grid; gap: 12px; }
-        .subject-card h3 { margin: 0; }
-        .subject-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+        .subject-card { border-radius: 18px; background: var(--surface-soft); border: 1px solid var(--border); padding: 20px; display: grid; gap: 16px; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .subject-card:hover { transform: translateY(-2px); box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08); }
+        .subject-card h3 { margin: 0; font-size: 1.05rem; }
+        .subject-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+        .subject-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: rgba(99, 102, 241, 0.15); color: var(--primary); font-size: 0.82rem; font-weight: 700; }
+        .subject-actions { display: flex; flex-wrap: wrap; gap: 10px; }
         .subject-panel { display: grid; gap: 14px; margin-top: 18px; }
         .section-panel { border-radius: 18px; background: var(--surface-soft); padding: 18px; border: 1px solid var(--border); }
         .section-panel h4 { margin: 0 0 10px; }
@@ -580,6 +583,14 @@
             return teacherProfile?.teachingAssignment || null;
         }
 
+        const mandatory11Subjects = ['English', 'Physical Education', 'Computer Science'];
+        const stream11Subjects = {
+            PCM: ['Physics', 'Chemistry', 'Mathematics'],
+            PCB: ['Biology', 'Chemistry', 'Physics'],
+            Commerce: ['Commerce', 'Economics', 'Business Studies'],
+            Arts: ['History', 'Geography', 'Political Science']
+        };
+
         function getAllowedSubjects() {
             if (!teacherAssignment) return [];
             return teacherAssignment.subjects || [];
@@ -681,8 +692,18 @@
             updateCharts();
         }
 
+        function getStreamSubjectsForGrade() {
+            const stream = teacherAssignment?.stream;
+            return stream11Subjects[stream] || [];
+        }
+
         function getAllowedSubjectsForGrade(grade) {
             if (!teacherAssignment || !grade) return [];
+            const gradeNumber = Number(grade);
+            if (teacherAssignment.mode === 'teachAll' && (gradeNumber === 11 || gradeNumber === 12)) {
+                const streamSubjects = getStreamSubjectsForGrade();
+                return [...mandatory11Subjects, ...streamSubjects];
+            }
             if (teacherAssignment.mode === 'teachAll') {
                 return teacherAssignment.subjects || [];
             }
@@ -706,13 +727,18 @@
                 renderStudentSection();
                 return;
             }
-            subjectSection.innerHTML = subjects.map(subject => `
+            const streamLabel = (teacherAssignment.mode === 'teachAll' && (selectedGrade === '11' || selectedGrade === '12') && teacherAssignment.stream)
+                ? `${teacherAssignment.stream} stream` : '';
+            subjectSection.innerHTML = subjects.map(subject => {
+                const isMandatory = mandatory11Subjects.includes(subject);
+                return `
                 <article class="subject-card">
-                    <div style="display:flex;justify-content:space-between;align-items:center; gap:10px; flex-wrap:wrap;">
+                    <div class="subject-meta">
                         <div>
                             <h3>${subject}</h3>
-                            <span class="small-note">Grade ${selectedGrade}</span>
+                            <span class="small-note">Grade ${selectedGrade}${streamLabel ? ` • ${streamLabel}` : ''}</span>
                         </div>
+                        ${isMandatory ? '<span class="subject-badge">Mandatory</span>' : ''}
                     </div>
                     <div class="subject-actions">
                         <button class="btn btn-secondary" type="button" data-subject="${subject}" data-action="assignments">Assignments</button>
@@ -723,7 +749,8 @@
                         <button class="btn btn-primary" type="button" data-subject="${subject}" data-action="view-materials">View Materials</button>
                     </div>
                 </article>
-            `).join('');
+            `;
+            }).join('');
             subjectSection.querySelectorAll('button[data-subject]').forEach(button => {
                 button.addEventListener('click', () => {
                     const action = button.dataset.action;
