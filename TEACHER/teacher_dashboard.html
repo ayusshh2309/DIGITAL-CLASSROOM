@@ -161,6 +161,50 @@
         .modal { position: fixed; inset: 0; display: none; justify-content: center; align-items: center; background: rgba(10, 18, 35, 0.65); z-index: 40; padding: 20px; }
         .modal.open { display: flex; }
         .modal-body { width: min(760px, 100%); border-radius: 22px; background: var(--surface); padding: 24px; box-shadow: 0 24px 80px rgba(16, 42, 67, 0.18); max-height: calc(100vh - 60px); overflow-y: auto; }
+        .content-modal-body { width: min(900px, 100%); padding: 30px 32px; }
+        .content-modal-body .modal-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; margin-bottom: 24px; }
+        .content-modal-body .modal-header h3 { margin: 0; font-size: 1.6rem; letter-spacing: -0.02em; }
+        .content-modal-body .modal-header .small-title { margin: 0 0 6px; color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.16em; }
+        .content-modal-body .modal-close { border: none; background: transparent; font-size: 1.5rem; cursor: pointer; color: var(--muted); }
+        .content-upload-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 24px; }
+        .content-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 24px; box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06); display: grid; gap: 20px; }
+        .content-panel .field { display: grid; gap: 10px; }
+        .content-panel .field-group { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+        .content-panel .field-group.full { grid-template-columns: 1fr; }
+        .content-panel .field-label { font-size: 0.95rem; font-weight: 700; color: var(--text); }
+        .content-panel .field-input,
+        .content-panel .field-textarea,
+        .content-panel select { width: 100%; min-height: 48px; padding: 14px 16px; border-radius: 16px; border: 1px solid var(--border); background: var(--surface-soft); color: var(--text); font-size: 1rem; outline: none; transition: border-color 150ms ease, box-shadow 150ms ease; }
+        .content-panel .field-input:focus,
+        .content-panel .field-textarea:focus,
+        .content-panel select:focus { border-color: rgba(99, 102, 241, 0.55); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.08); }
+        .content-panel .field-textarea { min-height: 160px; resize: vertical; padding-top: 16px; }
+        .content-panel .content-note { color: var(--muted); font-size: 0.92rem; line-height: 1.6; margin-top: 4px; }
+        .dropzone { display: grid; gap: 18px; padding: 24px; border-radius: 20px; background: rgba(99, 102, 241, 0.08); border: 1px dashed rgba(99, 102, 241, 0.45); cursor: pointer; transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease; }
+        .dropzone:hover { background: rgba(99, 102, 241, 0.12); transform: translateY(-1px); }
+        .dropzone-icon { width: 56px; height: 56px; border-radius: 18px; display: grid; place-items: center; background: rgba(99, 102, 241, 0.2); font-size: 1.6rem; }
+        .dropzone strong { font-size: 1rem; margin: 0; }
+        .dropzone p { margin: 0; color: var(--muted); font-size: 0.95rem; line-height: 1.5; }
+        .btn-ghost { border: 1px solid var(--border); background: var(--surface-soft); color: var(--text); }
+        .content-modal-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 14px; margin-top: 24px; }
+        .content-modal-actions .btn { min-width: 140px; }
+        @media (max-width: 860px) {
+            .content-upload-grid { grid-template-columns: 1fr; }
+            .content-panel .field-group { grid-template-columns: 1fr; }
+        }
+        .large-modal { width: min(1200px, 100%); }
+        .materials-content { display: grid; gap: 16px; }
+        .materials-search { display: flex; }
+        .materials-search input { flex: 1; padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-soft); }
+        .materials-container { display: grid; gap: 20px; max-height: 60vh; overflow-y: auto; }
+        .material-group h4 { margin: 0 0 12px; font-size: 1.1rem; }
+        .material-list { display: grid; gap: 8px; }
+        .material-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; background: var(--surface-soft); border: 1px solid var(--border); }
+        .material-icon { font-size: 1.5rem; }
+        .material-info { flex: 1; }
+        .material-info strong { display: block; }
+        .material-info span { color: var(--muted); font-size: 0.9rem; }
+        .material-download button { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--primary); color: white; cursor: pointer; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; }
         .modal-header h3 { margin: 0; }
         .modal-close { border: none; background: transparent; font-size: 1.4rem; cursor: pointer; color: var(--muted); }
@@ -349,48 +393,72 @@
                 </section>
 
                 <div id="contentModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-                    <div class="modal-body">
+                    <div class="modal-body content-modal-body">
                         <div class="modal-header">
-                            <h3 id="modalTitle">Upload new teaching content</h3>
+                            <div>
+                                <p class="small-title">Upload teaching resource</p>
+                                <h3 id="modalTitle">Publish new content</h3>
+                            </div>
                             <button id="contentModalClose" class="modal-close" type="button" aria-label="Close modal">×</button>
                         </div>
-                        <div class="form-row">
-                            <label for="contentType">Content type</label>
-                            <select id="contentType">
-                                <option value="video">Video</option>
-                                <option value="pdf">PDF / Notes</option>
-                                <option value="image">Images / Diagrams</option>
-                                <option value="quiz">Quiz</option>
-                                <option value="live">Schedule Live Class</option>
-                            </select>
-                            <div class="content-input-row">
-                                <div>
-                                    <label for="contentClass">Class</label>
-                                    <select id="contentClass"></select>
+                        <div class="content-upload-grid">
+                            <div class="content-panel">
+                                <div class="field">
+                                    <label class="field-label" for="contentType">Content Type</label>
+                                    <select class="field-input" id="contentType">
+                                        <option value="video">Video</option>
+                                        <option value="pdf">PDF / Notes</option>
+                                        <option value="image">Images / Diagrams</option>
+                                        <option value="quiz">Quiz</option>
+                                        <option value="live">Schedule Live Class</option>
+                                    </select>
                                 </div>
-                                <div>
-                                    <label for="contentSubject">Subject</label>
-                                    <select id="contentSubject"></select>
+                                <div class="field-group">
+                                    <div class="field">
+                                        <label class="field-label" for="contentClass">Class</label>
+                                        <select class="field-input" id="contentClass"></select>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label" for="contentSubject">Subject</label>
+                                        <select class="field-input" id="contentSubject"></select>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label" for="contentChapter">Chapter / Topic</label>
+                                    <input class="field-input" id="contentChapter" type="text" placeholder="Chapter name or topic" />
+                                </div>
+                                <div class="field">
+                                    <label class="field-label" for="contentTitle">Title</label>
+                                    <input class="field-input" id="contentTitle" type="text" placeholder="Resource title" />
+                                </div>
+                                <div class="field full">
+                                    <label class="field-label" for="contentDescription">Description</label>
+                                    <textarea class="field-textarea" id="contentDescription" rows="5" placeholder="Brief summary of the resource"></textarea>
                                 </div>
                             </div>
-                            <label for="contentChapter">Chapter / Topic</label>
-                            <input id="contentChapter" type="text" placeholder="Chapter name or topic" />
-                            <label for="contentTitle">Title</label>
-                            <input id="contentTitle" type="text" placeholder="Resource title" />
-                            <label for="contentDescription">Description</label>
-                            <textarea id="contentDescription" rows="4" placeholder="Brief summary of the resource"></textarea>
-                            <label for="contentFile">Attach file</label>
-                            <label class="content-file" for="contentFile">Choose a file or drag and drop</label>
-                            <input id="contentFile" type="file" />
-                            <div id="liveScheduleFields" style="display:none;">
-                                <label for="contentDate">Schedule date</label>
-                                <input id="contentDate" type="date" />
+                            <div class="content-panel">
+                                <div class="field">
+                                    <label class="field-label" for="contentFile">Attach file</label>
+                                    <div class="dropzone" role="button" tabindex="0" onclick="document.getElementById('contentFile').click()">
+                                        <div class="dropzone-icon">📎</div>
+                                        <div>
+                                            <strong>Drag & drop your file here</strong>
+                                            <p>or browse to choose a document, image, video, or presentation.</p>
+                                        </div>
+                                        <button class="btn btn-ghost" type="button">Choose file</button>
+                                    </div>
+                                    <input id="contentFile" type="file" hidden />
+                                </div>
+                                <div class="field full" id="liveScheduleFields" style="display:none;">
+                                    <label class="field-label" for="contentDate">Schedule date</label>
+                                    <input class="field-input" id="contentDate" type="date" />
+                                </div>
+                                <p class="content-note">Uploaded content is linked to your assigned classes, subjects, and chapters. Students will see it in their dashboards immediately.</p>
                             </div>
-                            <p class="content-note">Uploaded content is linked to your assigned classes, subjects and chapters, and will update student dashboards in real time.</p>
                         </div>
-                        <div class="form-actions">
-                            <button id="saveContentBtn" class="btn btn-primary" type="button">Publish content</button>
-                            <button id="cancelContentBtn" class="btn btn-secondary" type="button">Cancel</button>
+                        <div class="content-modal-actions">
+                            <button id="saveContentBtn" class="btn btn-primary" type="button">Publish Content</button>
+                            <button id="cancelContentBtn" class="btn btn-secondary btn-ghost" type="button">Cancel</button>
                         </div>
                     </div>
                 </div>
@@ -414,6 +482,21 @@
                         <div class="form-actions">
                             <button id="startClassConfirm" class="btn btn-primary" type="button">Start Class</button>
                             <button id="startClassCancel" class="btn btn-secondary" type="button">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="materialsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="materialsTitle">
+                    <div class="modal-body large-modal">
+                        <div class="modal-header">
+                            <h3 id="materialsTitle">All Materials</h3>
+                            <button id="materialsModalClose" class="modal-close" type="button" aria-label="Close modal">×</button>
+                        </div>
+                        <div class="materials-content">
+                            <div class="materials-search">
+                                <input type="text" id="materialsSearch" placeholder="Search materials..." />
+                            </div>
+                            <div id="materialsContainer" class="materials-container"></div>
                         </div>
                     </div>
                 </div>
@@ -472,10 +555,18 @@
         const uploadDocBtnSubject = document.getElementById('uploadDocBtnSubject');
         const uploadQuizSubjectBtn = document.getElementById('uploadQuizSubjectBtn');
 
+        const materialsModal = document.getElementById('materialsModal');
+        const materialsModalClose = document.getElementById('materialsModalClose');
+        const materialsTitle = document.getElementById('materialsTitle');
+        const materialsSearch = document.getElementById('materialsSearch');
+        const materialsContainer = document.getElementById('materialsContainer');
+
         let teacherProfile = null;
         let teacherAssignment = null;
         let selectedGrade = null;
         let selectedSubject = null;
+        let selectedAction = null;
+        let currentMaterialsSubject = null;
 
         function loadNotifications() {
             return JSON.parse(localStorage.getItem(notificationsStorageKey) || '[]');
@@ -624,23 +715,32 @@
                         </div>
                     </div>
                     <div class="subject-actions">
-                        <button class="btn btn-secondary" type="button" data-subject="${subject}">Assignments</button>
-                        <button class="btn btn-secondary" type="button" data-subject="${subject}">Quizzes</button>
-                        <button class="btn btn-secondary" type="button" data-subject="${subject}">Videos</button>
-                        <button class="btn btn-secondary" type="button" data-subject="${subject}">Photos</button>
-                        <button class="btn btn-secondary" type="button" data-subject="${subject}">Notes/PDFs</button>
+                        <button class="btn btn-secondary" type="button" data-subject="${subject}" data-action="assignments">Assignments</button>
+                        <button class="btn btn-secondary" type="button" data-subject="${subject}" data-action="quizzes">Quizzes</button>
+                        <button class="btn btn-secondary" type="button" data-subject="${subject}" data-action="videos">Videos</button>
+                        <button class="btn btn-secondary" type="button" data-subject="${subject}" data-action="photos">Photos</button>
+                        <button class="btn btn-secondary" type="button" data-subject="${subject}" data-action="notes">Notes/PDFs</button>
+                        <button class="btn btn-primary" type="button" data-subject="${subject}" data-action="view-materials">View Materials</button>
                     </div>
                 </article>
             `).join('');
             subjectSection.querySelectorAll('button[data-subject]').forEach(button => {
-                button.addEventListener('click', () => selectSubject(button.dataset.subject));
+                button.addEventListener('click', () => {
+                    const action = button.dataset.action;
+                    if (action === 'view-materials') {
+                        openMaterialsModal(button.dataset.subject);
+                    } else {
+                        selectSubject(button.dataset.subject, action);
+                    }
+                });
             });
             renderStudentSection();
             if (subjectContentPanel) subjectContentPanel.style.display = 'none';
         }
 
-        function selectSubject(subject) {
+        function selectSubject(subject, action = null) {
             selectedSubject = subject;
+            selectedAction = action; // new variable
             if (!selectedGrade || !selectedSubject) return;
             if (selectedSubjectHeading) {
                 selectedSubjectHeading.textContent = `${selectedSubject} • Grade ${selectedGrade}`;
@@ -678,18 +778,79 @@
             renderResourceList(docsList, docs, 'No notes or PDFs uploaded yet.');
         }
 
-        function renderSelectedSubjectContent() {
-            if (!teacherProfile || !selectedSubject || !selectedGrade) return;
-            
-            // Load from localStorage
+        function openMaterialsModal(subject) {
+            currentMaterialsSubject = subject;
+            materialsTitle.textContent = `Materials for ${subject} - Grade ${selectedGrade}`;
+            materialsSearch.value = '';
+            renderMaterials(subject);
+            materialsModal.classList.add('open');
+        }
+
+        function renderMaterials(subject, search = '') {
             const allContent = JSON.parse(localStorage.getItem('teacherContent') || '[]');
-            const filteredContent = allContent.filter(item => 
+            let filteredContent = allContent.filter(item => 
                 item.teacherId === teacherProfile.staffId &&
                 item.classLevel === selectedGrade &&
-                item.subject === selectedSubject
+                item.subject === subject
             ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            
-            renderSubjectContentLists(filteredContent);
+
+            if (search) {
+                filteredContent = filteredContent.filter(item => 
+                    (item.title || '').toLowerCase().includes(search.toLowerCase()) ||
+                    (item.fileName || '').toLowerCase().includes(search.toLowerCase())
+                );
+            }
+
+            const grouped = {
+                assignments: filteredContent.filter(item => item.type === 'assignment'),
+                quizzes: filteredContent.filter(item => item.type === 'quiz'),
+                videos: filteredContent.filter(item => item.type === 'video'),
+                photos: filteredContent.filter(item => item.type === 'image'),
+                notes: filteredContent.filter(item => item.type === 'pdf')
+            };
+
+            const html = Object.entries(grouped).map(([type, items]) => {
+                if (!items.length) return '';
+                const typeLabel = {
+                    assignments: 'Assignments',
+                    quizzes: 'Quizzes',
+                    videos: 'Videos',
+                    photos: 'Photos',
+                    notes: 'Notes/PDFs'
+                }[type];
+                const icon = {
+                    assignments: '📄',
+                    quizzes: '📝',
+                    videos: '🎥',
+                    photos: '🖼️',
+                    notes: '📚'
+                }[type];
+                const list = items.map(item => `
+                    <div class="material-item">
+                        <div class="material-icon">${icon}</div>
+                        <div class="material-info">
+                            <strong>${item.title || item.fileName || 'Untitled'}</strong>
+                            <span>${new Date(item.createdAt).toLocaleString()}</span>
+                        </div>
+                        <div class="material-download">
+                            <button onclick="downloadMaterial('${item.id}')">Download</button>
+                        </div>
+                    </div>
+                `).join('');
+                return `
+                    <div class="material-group">
+                        <h4>${typeLabel}</h4>
+                        <div class="material-list">${list}</div>
+                    </div>
+                `;
+            }).join('');
+
+            materialsContainer.innerHTML = html || '<p class="small-note">No materials found.</p>';
+        }
+
+        function downloadMaterial(id) {
+            // Simulate download - in real app, would trigger file download
+            alert('Download functionality would be implemented here.');
         }
 
         function openContentModal(type, subject = null, grade = null) {
@@ -1350,6 +1511,13 @@
         document.addEventListener('click', event => {
             if (notificationPanel && notificationToggle && !notificationPanel.contains(event.target) && !notificationToggle.contains(event.target)) {
                 notificationPanel.classList.remove('open');
+            }
+        });
+
+        materialsModalClose?.addEventListener('click', () => materialsModal.classList.remove('open'));
+        materialsSearch?.addEventListener('input', () => {
+            if (currentMaterialsSubject) {
+                renderMaterials(currentMaterialsSubject, materialsSearch.value);
             }
         });
     </script>
