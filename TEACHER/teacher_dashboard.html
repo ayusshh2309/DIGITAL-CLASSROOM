@@ -151,7 +151,8 @@
         .subject-card h3 { margin: 0; font-size: 1.05rem; }
         .subject-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
         .subject-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: rgba(99, 102, 241, 0.15); color: var(--primary); font-size: 0.82rem; font-weight: 700; }
-        .subject-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+        .tag { display: inline-flex; align-items: center; padding: 6px 10px; margin: 0 8px 8px 0; border-radius: 999px; background: rgba(91, 99, 245, 0.12); color: var(--text); font-size: 0.85rem; border: 1px solid var(--border); }
+        .subject-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
         .subject-panel { display: grid; gap: 14px; margin-top: 18px; }
         .section-panel { border-radius: 18px; background: var(--surface-soft); padding: 18px; border: 1px solid var(--border); }
         .section-panel h4 { margin: 0 0 10px; }
@@ -504,6 +505,19 @@
                     </div>
                 </div>
 
+                <div id="studentModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="studentModalTitle">
+                    <div class="modal-body">
+                        <div class="modal-header">
+                            <div>
+                                <p class="small-title">Class students</p>
+                                <h3 id="studentModalTitle">Students</h3>
+                            </div>
+                            <button id="studentModalClose" class="modal-close" type="button" aria-label="Close student modal">×</button>
+                        </div>
+                        <div id="studentListContainer" class="materials-container" style="max-height:60vh; display:grid; gap:14px;"></div>
+                    </div>
+                </div>
+
             </main>
         </div>
     </div>
@@ -563,6 +577,10 @@
         const materialsTitle = document.getElementById('materialsTitle');
         const materialsSearch = document.getElementById('materialsSearch');
         const materialsContainer = document.getElementById('materialsContainer');
+        const studentModal = document.getElementById('studentModal');
+        const studentModalClose = document.getElementById('studentModalClose');
+        const studentModalTitle = document.getElementById('studentModalTitle');
+        const studentListContainer = document.getElementById('studentListContainer');
 
         let teacherProfile = null;
         let teacherAssignment = null;
@@ -636,11 +654,14 @@
                         <div class="label">Class ${classLevel}</div>
                         <h4>${subjects.length === 1 ? subjects[0] : subjects.length > 3 ? 'Assigned subjects' : 'Assigned subjects'}</h4>
                         <div class="meta"><span>${subjectList}</span><span>${subjects.length} subjects</span></div>
-                        <div class="button-group"><button class="btn btn-primary">View students</button><button class="btn btn-secondary">Attendance</button></div>
+                        <div class="button-group"><button class="btn btn-primary view-students-btn" data-class-level="${classLevel}" type="button">View students</button><button class="btn btn-secondary" type="button">Attendance</button></div>
                     </div>
                 `;
             });
             container.innerHTML = cards.join('');
+            container.querySelectorAll('.view-students-btn').forEach(button => {
+                button.addEventListener('click', () => openStudentModal(button.dataset.classLevel));
+            });
         }
 
         function populateContentOptions() {
@@ -811,6 +832,40 @@
             materialsSearch.value = '';
             renderMaterials(subject);
             materialsModal.classList.add('open');
+        }
+
+        function openStudentModal(classLevel) {
+            const students = getStoredStudentsForGrade(classLevel);
+            if (studentModalTitle) {
+                studentModalTitle.textContent = `Grade ${classLevel} students`;
+            }
+            if (!studentListContainer) return;
+            if (!students.length) {
+                studentListContainer.innerHTML = `<div class="content-card"><p class="small-note">No students enrolled for Grade ${classLevel}.</p></div>`;
+            } else {
+                studentListContainer.innerHTML = students.map(student => {
+                    const profile = student.profile || {};
+                    const studentName = profile.name || profile.fullName || student.name || 'Student';
+                    const roll = profile.rollNumber || student.roll || profile.roll || 'N/A';
+                    const progress = student.progress ?? profile.progress ?? 0;
+                    return `
+                        <article class="subject-card">
+                            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+                                <div>
+                                    <h4>${studentName}</h4>
+                                    <p class="small-note">Roll: ${roll}</p>
+                                </div>
+                                <span>${progress}% progress</span>
+                            </div>
+                        </article>
+                    `;
+                }).join('');
+            }
+            studentModal.classList.add('open');
+        }
+
+        function closeStudentModal() {
+            studentModal?.classList.remove('open');
         }
 
         function renderMaterials(subject, search = '') {
@@ -1443,18 +1498,24 @@
                 return;
             }
 
-            
+            const students = getStoredStudentsForGrade(selectedGrade);
+            if (!students.length) {
+                studentSection.innerHTML = '<div class="content-card"><h4>No students enrolled yet</h4><p class="small-note">Your selected grade has no registered students in the local system.</p></div>';
+                studentSection.style.display = 'grid';
+                return;
+            }
 
             studentSection.innerHTML = students.map(student => {
                 const profile = student.profile || {};
                 const studentName = profile.name || profile.fullName || student.name || 'Enrolled student';
                 const progress = student.progress ?? profile.progress ?? 0;
+                const roll = profile.rollNumber || student.roll || profile.roll || 'N/A';
                 return `
                     <article class="subject-card">
                         <div style="display:flex;justify-content:space-between;align-items:center; gap:10px; flex-wrap:wrap;">
                             <div>
                                 <h3>${studentName}</h3>
-                                <span class="small-note">Grade ${selectedGrade}</span>
+                                <span class="small-note">Grade ${selectedGrade} • Roll ${roll}</span>
                             </div>
                             <span>${progress}% progress</span>
                         </div>
@@ -1541,6 +1602,7 @@
             }
         });
 
+        studentModalClose?.addEventListener('click', closeStudentModal);
         materialsModalClose?.addEventListener('click', () => materialsModal.classList.remove('open'));
         materialsSearch?.addEventListener('input', () => {
             if (currentMaterialsSubject) {
