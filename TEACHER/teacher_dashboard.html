@@ -71,14 +71,49 @@
         [data-theme='dark'] .card { background: rgba(15, 23, 42, 0.9); }
         .section-title { margin: 0; font-size: clamp(1.2rem, 1.4vw, 1.4rem); font-weight: 800; }
         .section-subtitle { margin: 0; color: var(--muted); line-height: 1.5; }
-        .stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-        .stats-item { background: var(--surface-soft); border-radius: 18px; padding: 12px; border: 1px solid var(--border); display: grid; gap: 6px; }
-        [data-theme='dark'] .stats-item { background: rgba(15, 23, 42, 0.78); }
-        .stats-item h4 { margin: 0; font-size: 0.88rem; color: var(--muted); }
-        .stats-item strong { font-size: 1.1rem; display: block; }
-        .button-group { display: flex; flex-wrap: wrap; gap: 8px; }
-        .btn { border: none; border-radius: 14px; padding: 8px 14px; cursor: pointer; transition: transform 180ms ease, box-shadow 180ms ease; }
-        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; box-shadow: 0 14px 26px rgba(91, 97, 245, 0.22); }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 22px; }
+        .stats-item { background: rgba(15, 23, 42, 0.82); border-radius: 22px; padding: 18px 20px; border: 1px solid rgba(255,255,255,0.06); box-shadow: 0 0 0 1px rgba(255,255,255,0.03), 0 16px 40px rgba(0, 0, 0, 0.16); display: grid; gap: 6px; transition: transform 180ms ease, box-shadow 180ms ease; }
+        .stats-item:hover { transform: translateY(-2px); box-shadow: 0 20px 46px rgba(99, 102, 241, 0.18); }
+        .stats-item h4 { margin: 0; font-size: 0.92rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+        .stats-item strong { font-size: 1.5rem; display: block; letter-spacing: -0.02em; }
+        .stat-highlights { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+        .card-hero { background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.82)); border: 1px solid rgba(255,255,255,0.08); }
+        .btn { border: none; border-radius: 14px; padding: 12px 18px; cursor: pointer; transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease; }
+        .btn-primary { background: linear-gradient(135deg, #7c3aed, #4f46e5); color: #fff; box-shadow: 0 12px 30px rgba(124, 58, 237, 0.28); }
+        .btn-primary:hover { box-shadow: 0 18px 36px rgba(124, 58, 237, 0.32); }
+        .btn-secondary { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid rgba(255,255,255,0.08); }
+        .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+        .btn-ghost { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: inherit; }
+        .btn-ghost:hover { background: rgba(255,255,255,0.08); }
+        .modal-stepper { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 24px; }
+        .step-pill { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); }
+        .step-pill.active { background: rgba(124, 58, 237, 0.14); border-color: rgba(124, 58, 237, 0.24); }
+        .step-pill strong { font-size: 0.95rem; }
+        .step-pill span { color: var(--muted); font-size: 0.88rem; }
+        .resource-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+        .resource-card { display: grid; gap: 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); padding: 18px; transition: transform 180ms ease, box-shadow 180ms ease; }
+        .resource-card:hover { transform: translateY(-2px); box-shadow: 0 18px 40px rgba(99, 102, 241, 0.14); }
+        .resource-card .resource-title { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+        .resource-card .resource-count { color: var(--muted); }
+        .resource-card button { width: fit-content; }
+        .resource-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+        .active-class-bar { position: fixed; inset: auto 20px 20px; display: none; align-items: center; gap: 16px; justify-content: space-between; width: min(760px, calc(100% - 40px)); padding: 16px 20px; border-radius: 20px; background: rgba(13, 22, 40, 0.95); border: 1px solid rgba(124, 58, 237, 0.24); box-shadow: 0 22px 64px rgba(0, 0, 0, 0.32); z-index: 50; backdrop-filter: blur(8px); }
+        .active-class-bar.open { display: flex; }
+        .active-class-info { display: grid; gap: 6px; }
+        .active-class-info strong { font-size: 1rem; }
+        .active-class-metrics { display: flex; gap: 12px; flex-wrap: wrap; }
+        .metric-chip { padding: 10px 14px; border-radius: 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); display: inline-flex; gap: 8px; align-items: center; }
+        .modal-subtitle { color: var(--muted); margin: 0; }
+        .field { display: grid; gap: 10px; }
+        .field label { font-weight: 700; }
+        .field select, .field input { width: 100%; min-height: 48px; padding: 12px 14px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: inherit; }
+        .field input::placeholder, .field select { color: var(--muted); }
+        .form-row { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .form-row label { font-size: 0.95rem; }
+        .form-row.full { grid-template-columns: 1fr; }
+        .form-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; margin-top: 18px; }
+        @media (max-width: 980px) { .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .resource-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .form-row { grid-template-columns: 1fr; } }
+        @media (max-width: 620px) { .stats-grid { grid-template-columns: 1fr; } .resource-grid { grid-template-columns: 1fr; } .active-class-bar { width: calc(100% - 32px); bottom: 16px; right: 16px; left: 16px; } }
         .btn-secondary { background: var(--surface-soft); color: var(--text); border: 1px solid var(--border); }
         .btn-primary:hover, .btn-secondary:hover { transform: translateY(-1px); }
         .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
@@ -467,6 +502,93 @@
                     </div>
                 </div>
 
+                <div id="createLessonModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="createLessonTitle">
+                    <div class="modal-body large-modal">
+                        <div class="modal-header">
+                            <div>
+                                <p class="small-title">Create a new lesson</p>
+                                <h3 id="createLessonTitle">Lesson creator</h3>
+                                <p class="modal-subtitle">Complete the steps to build the lesson, add resources, and publish.</p>
+                            </div>
+                            <button id="createLessonModalClose" class="modal-close" type="button" aria-label="Close modal">×</button>
+                        </div>
+                        <div class="modal-stepper">
+                            <div id="lessonStep1" class="step-pill active"><strong>Step 1</strong><span>Lesson info</span></div>
+                            <div id="lessonStep2" class="step-pill"><strong>Step 2</strong><span>Add resources</span></div>
+                            <div id="lessonStep3" class="step-pill"><strong>Step 3</strong><span>Publish</span></div>
+                        </div>
+                        <div id="lessonStepContent">
+                            <div id="lessonStepOne" class="lesson-stage">
+                                <div class="content-panel">
+                                    <div class="field">
+                                        <label for="lessonTitle">Lesson Title</label>
+                                        <input id="lessonTitle" type="text" placeholder="Enter lesson title" />
+                                    </div>
+                                    <div class="field-group">
+                                        <div class="field">
+                                            <label for="lessonSubject">Subject</label>
+                                            <select id="lessonSubject"></select>
+                                        </div>
+                                        <div class="field">
+                                            <label for="lessonGrade">Grade</label>
+                                            <select id="lessonGrade"></select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="lessonStepTwo" class="lesson-stage" style="display:none;">
+                                <div class="resource-grid">
+                                    <article class="resource-card">
+                                        <div class="resource-title"><span>📄</span>Assignments</div>
+                                        <div class="resource-count" id="resourceAssignmentsCount">0 resources</div>
+                                        <button id="addAssignmentBtn" class="btn btn-primary" type="button">Add</button>
+                                    </article>
+                                    <article class="resource-card">
+                                        <div class="resource-title"><span>📝</span>Quizzes</div>
+                                        <div class="resource-count" id="resourceQuizzesCount">0 resources</div>
+                                        <button id="addQuizBtn" class="btn btn-primary" type="button">Add</button>
+                                    </article>
+                                    <article class="resource-card">
+                                        <div class="resource-title"><span>🎥</span>Videos</div>
+                                        <div class="resource-count" id="resourceVideosCount">0 resources</div>
+                                        <button id="addVideoBtn" class="btn btn-primary" type="button">Add</button>
+                                    </article>
+                                    <article class="resource-card">
+                                        <div class="resource-title"><span>🖼️</span>Photos</div>
+                                        <div class="resource-count" id="resourcePhotosCount">0 resources</div>
+                                        <button id="addPhotoBtn" class="btn btn-primary" type="button">Add</button>
+                                    </article>
+                                    <article class="resource-card">
+                                        <div class="resource-title"><span>📚</span>Notes / PDFs</div>
+                                        <div class="resource-count" id="resourceNotesCount">0 resources</div>
+                                        <button id="addNoteBtn" class="btn btn-primary" type="button">Add</button>
+                                    </article>
+                                </div>
+                            </div>
+                            <div id="lessonStepThree" class="lesson-stage" style="display:none;">
+                                <div class="content-panel">
+                                    <div class="field full">
+                                        <label for="lessonDescription">Lesson Summary</label>
+                                        <textarea id="lessonDescription" class="field-textarea" placeholder="Describe the lesson objectives"></textarea>
+                                    </div>
+                                    <div class="field">
+                                        <label for="lessonPublishStatus">Publish options</label>
+                                        <select id="lessonPublishStatus">
+                                            <option value="draft">Save as draft</option>
+                                            <option value="published">Publish lesson</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="content-modal-actions form-actions">
+                            <button id="lessonBackBtn" class="btn btn-secondary" type="button">Back</button>
+                            <button id="lessonNextBtn" class="btn btn-primary" type="button">Next</button>
+                            <button id="lessonSaveBtn" class="btn btn-primary" type="button" style="display:none;">Save Lesson</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="startClassModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="startClassTitle">
                     <div class="modal-body">
                         <div class="modal-header">
@@ -474,14 +596,26 @@
                             <button id="startClassModalClose" class="modal-close" type="button" aria-label="Close modal">×</button>
                         </div>
                         <div class="form-row">
-                            <label for="startClassSubject">Subject</label>
-                            <select id="startClassSubject"></select>
-                            <label for="startClassGrade">Grade</label>
-                            <select id="startClassGrade"></select>
-                            <label for="startClassTopic">Topic</label>
-                            <input id="startClassTopic" type="text" placeholder="Class topic" />
-                            <label for="startClassDuration">Duration (minutes)</label>
-                            <input id="startClassDuration" type="number" placeholder="60" />
+                            <div class="field">
+                                <label for="startClassSubject">Select Subject</label>
+                                <select id="startClassSubject"></select>
+                            </div>
+                            <div class="field">
+                                <label for="startClassGrade">Select Grade</label>
+                                <select id="startClassGrade"></select>
+                            </div>
+                            <div class="field">
+                                <label for="startClassLesson">Select Lesson</label>
+                                <select id="startClassLesson"></select>
+                            </div>
+                            <div class="field">
+                                <label for="startClassTopic">Optional Topic Name</label>
+                                <input id="startClassTopic" type="text" placeholder="Enter topic name" />
+                            </div>
+                            <div class="field">
+                                <label for="startClassDuration">Duration (minutes)</label>
+                                <input id="startClassDuration" type="number" placeholder="45" />
+                            </div>
                         </div>
                         <div class="form-actions">
                             <button id="startClassConfirm" class="btn btn-primary" type="button">Start Class</button>
@@ -522,6 +656,18 @@
         </div>
     </div>
 
+    <div id="activeClassBar" class="active-class-bar" role="status" aria-live="polite">
+        <div class="active-class-info">
+            <strong id="activeClassLabel">Live class in session</strong>
+            <p class="small-note" id="activeClassTopic">Topic: —</p>
+        </div>
+        <div class="active-class-metrics">
+            <span class="metric-chip">⏱️ <strong id="activeClassTimer">00:00</strong></span>
+            <span class="metric-chip">👥 <strong id="activeClassCount">0</strong> joining</span>
+        </div>
+        <button id="endClassBtn" class="btn btn-secondary" type="button">End Class</button>
+    </div>
+
     <script>
         // Simple localStorage-based teacher dashboard (no Firebase)
         
@@ -530,13 +676,12 @@
         const themeLabel = document.getElementById('themeLabel');
         const logoutBtn = document.getElementById('logoutBtn');
         const startClassBtn = document.getElementById('startClassBtn');
+        const createLessonBtn = document.getElementById('createLessonBtn');
         const notificationToggle = document.getElementById('notificationToggle');
         const notificationPanel = document.getElementById('notificationPanel');
         const notificationsList = document.getElementById('notificationsList');
         const notificationCount = document.getElementById('notificationCount');
         const clearNotifications = document.getElementById('clearNotifications');
-        let todayDate;
-        let realTimeClock;
         const welcomeGreeting = document.getElementById('welcomeGreeting');
         const storedTheme = localStorage.getItem('theme') || 'light';
         const notificationsStorageKey = 'teacherNotifications';
@@ -582,12 +727,66 @@
         const studentModalTitle = document.getElementById('studentModalTitle');
         const studentListContainer = document.getElementById('studentListContainer');
 
+        // Start class & lesson UI elements
+        const createLessonModal = document.getElementById('createLessonModal');
+        const createLessonModalClose = document.getElementById('createLessonModalClose');
+        const lessonTitleInput = document.getElementById('lessonTitle');
+        const lessonSubjectSelect = document.getElementById('lessonSubject');
+        const lessonGradeSelect = document.getElementById('lessonGrade');
+        const lessonDescriptionInput = document.getElementById('lessonDescription');
+        const lessonPublishStatus = document.getElementById('lessonPublishStatus');
+        const lessonBackBtn = document.getElementById('lessonBackBtn');
+        const lessonNextBtn = document.getElementById('lessonNextBtn');
+        const lessonSaveBtn = document.getElementById('lessonSaveBtn');
+        const lessonStep1 = document.getElementById('lessonStep1');
+        const lessonStep2 = document.getElementById('lessonStep2');
+        const lessonStep3 = document.getElementById('lessonStep3');
+        const lessonStepOne = document.getElementById('lessonStepOne');
+        const lessonStepTwo = document.getElementById('lessonStepTwo');
+        const lessonStepThree = document.getElementById('lessonStepThree');
+        const resourceAssignmentsCount = document.getElementById('resourceAssignmentsCount');
+        const resourceQuizzesCount = document.getElementById('resourceQuizzesCount');
+        const resourceVideosCount = document.getElementById('resourceVideosCount');
+        const resourcePhotosCount = document.getElementById('resourcePhotosCount');
+        const resourceNotesCount = document.getElementById('resourceNotesCount');
+        const addAssignmentBtn = document.getElementById('addAssignmentBtn');
+        const addQuizBtn = document.getElementById('addQuizBtn');
+        const addVideoBtn = document.getElementById('addVideoBtn');
+        const addPhotoBtn = document.getElementById('addPhotoBtn');
+        const addNoteBtn = document.getElementById('addNoteBtn');
+
+        const startClassSubjectSelect = document.getElementById('startClassSubject');
+        const startClassGradeSelect = document.getElementById('startClassGrade');
+        const startClassLessonSelect = document.getElementById('startClassLesson');
+        const startClassTopicInput = document.getElementById('startClassTopic');
+        const startClassDurationInput = document.getElementById('startClassDuration');
+        const startClassConfirm = document.getElementById('startClassConfirm');
+        const startClassCancel = document.getElementById('startClassCancel');
+        const startClassModalClose = document.getElementById('startClassModalClose');
+        const startClassModal = document.getElementById('startClassModal');
+        const activeClassBar = document.getElementById('activeClassBar');
+        const activeClassLabel = document.getElementById('activeClassLabel');
+        const activeClassTopic = document.getElementById('activeClassTopic');
+        const activeClassTimer = document.getElementById('activeClassTimer');
+        const activeClassCount = document.getElementById('activeClassCount');
+        const endClassBtn = document.getElementById('endClassBtn');
+
         let teacherProfile = null;
         let teacherAssignment = null;
         let selectedGrade = null;
         let selectedSubject = null;
-        let selectedAction = null;
         let currentMaterialsSubject = null;
+        let activeClassTimerInterval = null;
+        let activeClassState = null;
+        let lessonStep = 1;
+        const lessonCreateData = { title: '', subject: '', grade: '', description: '', publishStatus: 'draft', resources: { assignments: 0, quizzes: 0, videos: 0, photos: 0, notes: 0 } };
+        const resourceButtons = {
+            assignments: 'addAssignmentBtn',
+            quizzes: 'addQuizBtn',
+            videos: 'addVideoBtn',
+            photos: 'addPhotoBtn',
+            notes: 'addNoteBtn'
+        };
 
         function loadNotifications() {
             return JSON.parse(localStorage.getItem(notificationsStorageKey) || '[]');
@@ -728,9 +927,15 @@
             if (teacherAssignment.mode === 'teachAll') {
                 return teacherAssignment.subjects || [];
             }
-            return (teacherAssignment.subjects || []).filter(subject => {
+            const subjects = (teacherAssignment.subjects || []).filter(subject => {
                 return Array.isArray(teacherAssignment.classMap?.[subject]) && teacherAssignment.classMap[subject].includes(grade);
             });
+            if (gradeNumber === 11 || gradeNumber === 12) {
+                const mandatory = mandatory11Subjects.filter(subject => subjects.includes(subject));
+                const others = subjects.filter(subject => !mandatory.includes(subject));
+                return [...mandatory, ...others];
+            }
+            return subjects;
         }
 
         function renderSubjectSection() {
@@ -758,9 +963,7 @@
                         <div>
                             <h3>${subject}</h3>
                             <span class="small-note">Grade ${selectedGrade}${streamLabel ? ` • ${streamLabel}` : ''}</span>
-                        </div>
-                        ${isMandatory ? '<span class="subject-badge">Mandatory</span>' : ''}
-                    </div>
+                        
                     <div class="subject-actions">
                         <button class="btn btn-secondary" type="button" data-subject="${subject}" data-action="assignments">Assignments</button>
                         <button class="btn btn-secondary" type="button" data-subject="${subject}" data-action="quizzes">Quizzes</button>
@@ -786,9 +989,8 @@
             if (subjectContentPanel) subjectContentPanel.style.display = 'none';
         }
 
-        function selectSubject(subject, action = null) {
+        function selectSubject(subject) {
             selectedSubject = subject;
-            selectedAction = action; // new variable
             if (!selectedGrade || !selectedSubject) return;
             if (selectedSubjectHeading) {
                 selectedSubjectHeading.textContent = `${selectedSubject} • Grade ${selectedGrade}`;
@@ -930,6 +1132,195 @@
             materialsContainer.innerHTML = html || '<p class="small-note">No materials found.</p>';
         }
 
+        function dispatchRealtimeEvent(eventType, payload = {}) {
+            const event = new CustomEvent('dashboard-event', { detail: { type: eventType, payload } });
+            window.dispatchEvent(event);
+            localStorage.setItem('dashboardLastUpdate', JSON.stringify({ type: eventType, payload, timestamp: Date.now() }));
+        }
+
+        function registerRealtimeListeners() {
+            window.addEventListener('dashboard-event', event => {
+                const { type } = event.detail || {};
+                if (!type) return;
+                updateStats();
+                if (type === 'class-started') renderClassBatches();
+                if (type === 'assessment-submitted') showToast('Pending assessments updated');
+                if (type === 'student-joined') showToast('Student joined live class');
+                if (type === 'announcement') renderNotifications();
+            });
+
+            window.addEventListener('storage', () => {
+                updateStats();
+                renderNotifications();
+            });
+        }
+
+        function getLessonsForSubject(subject) {
+            const lessons = JSON.parse(localStorage.getItem('teacherLessons') || '[]');
+            return lessons.filter(lesson => lesson.teacherId === teacherProfile.staffId && lesson.subject === subject);
+        }
+
+        function populateStartClassOptions() {
+            const classes = getAllowedClasses();
+            startClassGradeSelect.innerHTML = classes.length
+                ? classes.map(level => `<option value="${level}">Grade ${level}</option>`).join('')
+                : '<option value="">No grade available</option>';
+            const subjects = getAllowedSubjects();
+            startClassSubjectSelect.innerHTML = subjects.length
+                ? subjects.map(subject => `<option value="${subject}">${subject}</option>`).join('')
+                : '<option value="">No subject available</option>';
+            updateStartClassLessons();
+        }
+
+        function updateStartClassLessons() {
+            const subject = startClassSubjectSelect.value;
+            const lessons = getLessonsForSubject(subject);
+            if (!lessons.length) {
+                startClassLessonSelect.innerHTML = '<option value="">No lessons created yet</option>';
+                return;
+            }
+            startClassLessonSelect.innerHTML = lessons.map(lesson => `<option value="${lesson.id}">${lesson.title}</option>`).join('');
+        }
+
+        function openStartClassModal() {
+            populateStartClassOptions();
+            if (startClassModal) startClassModal.classList.add('open');
+        }
+
+        function closeStartClassModal() {
+            if (startClassModal) startClassModal.classList.remove('open');
+        }
+
+        function renderActiveClassBar(session) {
+            if (!activeClassBar) return;
+            activeClassState = session;
+            activeClassLabel.textContent = session.title || 'Live class in session';
+            activeClassTopic.textContent = `Topic: ${session.topic || 'Not specified'}`;
+            activeClassCount.textContent = session.joiningCount || 0;
+            activeClassTimer.textContent = formatTimer(session.elapsed || 0);
+            activeClassBar.classList.add('open');
+            clearInterval(activeClassTimerInterval);
+            activeClassTimerInterval = setInterval(() => {
+                session.elapsed += 1;
+                activeClassTimer.textContent = formatTimer(session.elapsed);
+                if (session.joiningCount < 24) session.joiningCount += Math.floor(Math.random() * 2);
+                activeClassCount.textContent = session.joiningCount;
+            }, 1000);
+        }
+
+        function formatTimer(seconds) {
+            const minutes = String(Math.floor(seconds / 60)).padStart(2, '0');
+            const remaining = String(seconds % 60).padStart(2, '0');
+            return `${minutes}:${remaining}`;
+        }
+
+        function endActiveClass() {
+            if (!activeClassState) return;
+            clearInterval(activeClassTimerInterval);
+            activeClassBar.classList.remove('open');
+            showToast('Live class ended successfully');
+            dispatchRealtimeEvent('class-ended', { classId: activeClassState.id });
+            activeClassState = null;
+        }
+
+        function openCreateLessonModal() {
+            lessonStep = 1;
+            resetLessonForm();
+            updateLessonStep();
+            if (createLessonModal) createLessonModal.classList.add('open');
+        }
+
+        function closeCreateLessonModal() {
+            if (createLessonModal) createLessonModal.classList.remove('open');
+        }
+
+        function resetLessonForm() {
+            lessonCreateData.title = '';
+            lessonCreateData.subject = getAllowedSubjects()[0] || '';
+            lessonCreateData.grade = getAllowedClasses()[0] || '';
+            lessonCreateData.description = '';
+            lessonCreateData.publishStatus = 'draft';
+            lessonCreateData.resources = { assignments: 0, quizzes: 0, videos: 0, photos: 0, notes: 0 };
+            lessonTitleInput.value = '';
+            lessonSubjectSelect.innerHTML = getAllowedSubjects().map(subject => `<option value="${subject}">${subject}</option>`).join('');
+            lessonGradeSelect.innerHTML = getAllowedClasses().map(level => `<option value="${level}">Grade ${level}</option>`).join('');
+            lessonSubjectSelect.value = lessonCreateData.subject;
+            lessonGradeSelect.value = lessonCreateData.grade;
+            lessonDescriptionInput.value = '';
+            lessonPublishStatus.value = 'draft';
+            updateLessonResourceDisplay();
+        }
+
+        function updateLessonStep() {
+            lessonStep1.classList.toggle('active', lessonStep === 1);
+            lessonStep2.classList.toggle('active', lessonStep === 2);
+            lessonStep3.classList.toggle('active', lessonStep === 3);
+            lessonStepOne.style.display = lessonStep === 1 ? 'block' : 'none';
+            lessonStepTwo.style.display = lessonStep === 2 ? 'grid' : 'none';
+            lessonStepThree.style.display = lessonStep === 3 ? 'block' : 'none';
+            lessonBackBtn.style.display = lessonStep === 1 ? 'none' : 'inline-flex';
+            lessonNextBtn.style.display = lessonStep < 3 ? 'inline-flex' : 'none';
+            lessonSaveBtn.style.display = lessonStep === 3 ? 'inline-flex' : 'none';
+        }
+
+        function updateLessonResourceDisplay() {
+            resourceAssignmentsCount.textContent = `${lessonCreateData.resources.assignments} resources`;
+            resourceQuizzesCount.textContent = `${lessonCreateData.resources.quizzes} resources`;
+            resourceVideosCount.textContent = `${lessonCreateData.resources.videos} resources`;
+            resourcePhotosCount.textContent = `${lessonCreateData.resources.photos} resources`;
+            resourceNotesCount.textContent = `${lessonCreateData.resources.notes} resources`;
+        }
+
+        function addLessonResource(type) {
+            lessonCreateData.resources[type] = (lessonCreateData.resources[type] || 0) + 1;
+            updateLessonResourceDisplay();
+            showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} added`);
+        }
+
+        function saveLesson() {
+            lessonCreateData.title = lessonTitleInput.value.trim();
+            lessonCreateData.subject = lessonSubjectSelect.value;
+            lessonCreateData.grade = lessonGradeSelect.value;
+            lessonCreateData.description = lessonDescriptionInput.value.trim();
+            lessonCreateData.publishStatus = lessonPublishStatus.value;
+            if (!lessonCreateData.title || !lessonCreateData.subject || !lessonCreateData.grade) {
+                showToast('Please complete the lesson title, subject, and grade');
+                return;
+            }
+            const lessons = JSON.parse(localStorage.getItem('teacherLessons') || '[]');
+            lessons.push({
+                id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+                teacherId: teacherProfile.staffId,
+                title: lessonCreateData.title,
+                subject: lessonCreateData.subject,
+                classLevel: lessonCreateData.grade,
+                description: lessonCreateData.description,
+                resources: { ...lessonCreateData.resources },
+                status: lessonCreateData.publishStatus,
+                createdAt: new Date().toISOString()
+            });
+            localStorage.setItem('teacherLessons', JSON.stringify(lessons));
+            closeCreateLessonModal();
+            showToast(lessonCreateData.publishStatus === 'published' ? 'Lesson published live' : 'Lesson saved as draft');
+            dispatchRealtimeEvent('lesson-published', { lessonTitle: lessonCreateData.title });
+        }
+
+        function selectLessonNext() {
+            if (lessonStep === 1 && (!lessonTitleInput.value.trim() || !lessonSubjectSelect.value || !lessonGradeSelect.value)) {
+                showToast('Please fill lesson title, subject, and grade to continue');
+                return;
+            }
+            lessonStep += 1;
+            updateLessonStep();
+        }
+
+        function selectLessonBack() {
+            if (lessonStep > 1) {
+                lessonStep -= 1;
+                updateLessonStep();
+            }
+        }
+
         function downloadMaterial(id) {
             // Simulate download - in real app, would trigger file download
             alert('Download functionality would be implemented here.');
@@ -1060,114 +1451,21 @@
                 
                 closeContentModal();
                 showToast(type === 'live' ? 'Live class scheduled successfully!' : 'Content published successfully!');
-                renderTeacherContent();
             } catch (error) {
                 console.error('Upload error:', error);
                 showToast('Unable to save the content. Please try again.');
             }
         }
 
-        function renderTeacherContent() {
-            // Content rendering is now handled through the lesson & content management section
-            // This function can be removed or repurposed in the future
-        }
-
         // Global functions for content management
 
-        window.deleteContent = function(id) {
-            if (confirm('Are you sure you want to delete this content?')) {
-                const allContent = JSON.parse(localStorage.getItem('teacherContent') || '[]');
-                const updatedContent = allContent.filter(item => item.id !== id);
-                localStorage.setItem('teacherContent', JSON.stringify(updatedContent));
-                renderTeacherContent();
-                showToast('Content deleted successfully');
-            }
-        };
-
-        function filterAndRenderContent() {
-            if (!teacherProfile) return;
-            
-            const searchTerm = document.getElementById('resourceSearch').value.toLowerCase();
-            const subjectFilter = document.getElementById('filterSubject').value;
-            const classFilter = document.getElementById('filterClass').value;
-            const typeFilter = document.getElementById('filterType').value;
-            const statusFilter = document.getElementById('filterStatus').value;
-            
-            const allContent = JSON.parse(localStorage.getItem('teacherContent') || '[]');
-            let items = allContent.filter(item => item.teacherId === teacherProfile.staffId);
-            
-            // Apply filters
-            if (searchTerm) {
-                items = items.filter(item => 
-                    item.title?.toLowerCase().includes(searchTerm) ||
-                    item.subject?.toLowerCase().includes(searchTerm) ||
-                    item.chapter?.toLowerCase().includes(searchTerm) ||
-                    item.description?.toLowerCase().includes(searchTerm) ||
-                    new Date(item.createdAt).toLocaleDateString().toLowerCase().includes(searchTerm)
-                );
-            }
-            
-            if (subjectFilter !== 'all') {
-                items = items.filter(item => item.subject === subjectFilter);
-            }
-            
-            if (classFilter !== 'all') {
-                items = items.filter(item => item.classLevel === classFilter);
-            }
-            
-            if (typeFilter !== 'all') {
-                items = items.filter(item => item.type === typeFilter);
-            }
-            
-            if (statusFilter !== 'all') {
-                items = items.filter(item => item.status === statusFilter);
-            }
-            
-            items = items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            
-            // Render filtered content
-            renderFilteredContent(items);
-        }
-
-        function renderFilteredContent(items) {
-            if (!items.length) {
-                uploadedContentGrid.innerHTML = '<div class="content-card"><h4>No resources found</h4><p>Try adjusting your search or filters.</p></div>';
-                return;
-            }
-            const getTypeIcon = (type) => {
-                const icons = { video: '🎬', pdf: '📄', image: '🖼️', quiz: '📝', live: '📡' };
-                return icons[type] || '📁';
-            };
-            const getStatusBadge = (item) => {
-                if (item.type === 'live') {
-                    const isPast = item.scheduleInfo && new Date(item.scheduleInfo.date) < new Date();
-                    return `<span class="badge-pill" style="background:${isPast ? '#94a3b8' : '#22c55e'};color:#fff;">${isPast ? 'Completed' : 'Scheduled'}</span>`;
-                }
-                return `<span class="badge-pill">Published</span>`;
-            };
-            uploadedContentGrid.innerHTML = items.map(item => `
-                <article class="content-card">
-                    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
-                        <div style="display:flex;align-items:center;gap:10px;">
-                            <span style="font-size:1.5rem;">${getTypeIcon(item.type)}</span>
-                            <div>
-                                <h4>${item.title || item.chapter}</h4>
-                                <p>${item.subject} • Class ${item.classLevel} • ${item.chapter}</p>
-                            </div>
-                        </div>
-                        ${getStatusBadge(item)}
-                    </div>
-                    <p>${item.description || 'No description available.'}</p>
-                    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:0.85rem;color:var(--muted);">
-                        <span>📅 ${new Date(item.createdAt).toLocaleDateString()}</span>
-                        ${item.fileInfo ? `<span>📎 ${item.fileInfo.name} (${item.fileInfo.size} MB)</span>` : ''}
-                        ${item.scheduleInfo ? `<span>⏰ ${item.scheduleInfo.date} at ${item.scheduleInfo.time}</span>` : ''}
-                    </div>
-                    <div style="display:flex;gap:8px;margin-top:12px;">
-                        <button class="btn btn-secondary" onclick="deleteContent('${item.id}')">Delete</button>
-                    </div>
-                </article>
-            `).join('');
+        function showToast(message) {
+            const toast = document.getElementById('dashboardToast');
+            if (!toast) return;
+            toast.textContent = message;
+            toast.classList.add('show');
+            clearTimeout(window.dashboardToastTimer);
+            window.dashboardToastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
         }
 
 
@@ -1209,18 +1507,6 @@
         }
 
         
-        function updateRealTimeClock() {
-            if (!todayDate || !realTimeClock) return;
-            const now = new Date();
-            todayDate.textContent = now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-            realTimeClock.textContent = now.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
-        }
-
-        function initClock() {
-            updateRealTimeClock();
-            setInterval(updateRealTimeClock, 1000);
-        }
-
         function ensureNotificationSeed() {
             const items = loadNotifications();
             if (items.length) return;
@@ -1271,9 +1557,8 @@
             window.location.href = 'teacher_login.html';
         });
 
-        startClassBtn.addEventListener('click', () => {
-            showToast('Live class session starting...');
-        });
+        startClassBtn.addEventListener('click', openStartClassModal);
+        createLessonBtn?.addEventListener('click', openCreateLessonModal);
 
         gradeFilterPill?.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -1297,6 +1582,54 @@
                 gradeFilterPill.click();
             }
         });
+
+        startClassSubjectSelect?.addEventListener('change', updateStartClassLessons);
+        startClassGradeSelect?.addEventListener('change', updateStartClassLessons);
+        startClassConfirm?.addEventListener('click', () => {
+            const subject = startClassSubjectSelect.value;
+            const grade = startClassGradeSelect.value;
+            const lessonId = startClassLessonSelect.value;
+            const topic = startClassTopicInput.value.trim();
+            const duration = Number(startClassDurationInput.value) || 45;
+            if (!subject || !grade || !lessonId) {
+                showToast('Please select subject, grade and lesson');
+                return;
+            }
+            const lesson = getLessonsForSubject(subject).find(item => item.id === lessonId);
+            const session = {
+                id: Date.now().toString(36),
+                title: lesson ? lesson.title : `${subject} live session`,
+                topic: topic || lesson?.title || 'Live lesson',
+                classLevel: grade,
+                subject,
+                lessonId,
+                elapsed: 0,
+                joiningCount: 1
+            };
+            renderActiveClassBar(session);
+            closeStartClassModal();
+            dispatchRealtimeEvent('class-started', session);
+            showToast('Class started successfully');
+        });
+        startClassCancel?.addEventListener('click', closeStartClassModal);
+        startClassModalClose?.addEventListener('click', closeStartClassModal);
+        endClassBtn?.addEventListener('click', endActiveClass);
+
+        createLessonModalClose?.addEventListener('click', closeCreateLessonModal);
+        lessonBackBtn?.addEventListener('click', selectLessonBack);
+        lessonNextBtn?.addEventListener('click', selectLessonNext);
+        lessonSaveBtn?.addEventListener('click', saveLesson);
+        lessonSubjectSelect?.addEventListener('change', () => {
+            lessonCreateData.subject = lessonSubjectSelect.value;
+        });
+        lessonGradeSelect?.addEventListener('change', () => {
+            lessonCreateData.grade = lessonGradeSelect.value;
+        });
+        addAssignmentBtn?.addEventListener('click', () => addLessonResource('assignments'));
+        addQuizBtn?.addEventListener('click', () => addLessonResource('quizzes'));
+        addVideoBtn?.addEventListener('click', () => addLessonResource('videos'));
+        addPhotoBtn?.addEventListener('click', () => addLessonResource('photos'));
+        addNoteBtn?.addEventListener('click', () => addLessonResource('notes'));
 
         uploadQuizBtn?.addEventListener('click', () => {
             if (selectedSubject && selectedGrade) openContentModal('quiz', selectedSubject, selectedGrade);
@@ -1560,17 +1893,14 @@
         }
 
         function bootstrapDashboard() {
-            todayDate = document.getElementById('todayDate');
-            realTimeClock = document.getElementById('realTimeClock');
             if (!loadTeacherProfile()) return;
             applyTheme(storedTheme);
             updateTeacherAssignmentCard();
             renderClassBatches();
             buildGradeOptions();
             populateContentOptions();
-            renderTeacherContent();
             ensureNotificationSeed();
-            initClock();
+            registerRealtimeListeners();
             renderNotifications();
             updateStats();
             updateCharts();
