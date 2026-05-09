@@ -771,6 +771,39 @@
             margin: 0;
         }
 
+        .primary-button,
+        .secondary-button {
+            width: 100%;
+            border: none;
+            border-radius: 18px;
+            padding: 16px 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+        }
+
+        .primary-button {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 14px 30px rgba(59, 130, 246, 0.16);
+        }
+
+        .primary-button:hover {
+            transform: translateY(-1px);
+            background: #2563eb;
+        }
+
+        .secondary-button {
+            background: transparent;
+            color: var(--primary);
+            border: 1px solid rgba(59, 130, 246, 0.32);
+        }
+
+        .secondary-button:hover {
+            background: rgba(59, 130, 246, 0.1);
+            transform: translateY(-1px);
+        }
+
         .login-status {
             min-height: 1.4rem;
             margin: 0;
@@ -895,11 +928,7 @@
         <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="loginModalTitle">
             <button class="modal-close" id="loginClose" aria-label="Close login form">×</button>
             <h2 id="loginModalTitle">Sign in to Smart Learning</h2>
-            <p class="modal-copy">Sign in with your email/password or phone number and OTP.</p>
-            <div class="login-method-tabs">
-                <button id="emailMethodButton" class="login-method active" type="button">Email</button>
-                <button id="phoneMethodButton" class="login-method" type="button">Phone</button>
-            </div>
+            <p class="modal-copy">Sign in with your email and password to continue.</p>
             <div id="emailSection" class="login-section active">
                 <div class="modal-field">
                     <label for="loginEmail">Email address</label>
@@ -910,22 +939,9 @@
                     <input id="loginPassword" type="password" placeholder="Enter your password" />
                 </div>
             </div>
-            <div id="phoneSection" class="login-section">
-                <div class="modal-field">
-                    <label for="loginPhone">Phone number</label>
-                    <input id="loginPhone" type="tel" placeholder="+911234567890" />
-                </div>
-                <div class="login-action-row">
-                    <button id="sendOtpButton" class="primary-button" type="button">Send OTP</button>
-                </div>
-                <div class="modal-field">
-                    <label for="loginOtp">Verification code</label>
-                    <input id="loginOtp" type="text" maxlength="6" placeholder="Enter OTP" />
-                </div>
-                <div id="recaptcha-container"></div>
-            </div>
             <div class="login-action-row">
                 <button id="loginAccountButton" class="primary-button" type="button">Login account</button>
+                <button id="forgotPasswordButton" class="secondary-button" type="button">Forgot password?</button>
             </div>
             <div class="social-row">
                 <p>Or continue with</p>
@@ -974,14 +990,6 @@
         const themeIcon = themeToggle.querySelector('.theme-icon');
         const themeLabel = themeToggle.querySelector('.theme-label');
         const savedTheme = localStorage.getItem('theme') || 'light';
-        const emailMethodButton = document.getElementById('emailMethodButton');
-        const phoneMethodButton = document.getElementById('phoneMethodButton');
-        const emailSection = document.getElementById('emailSection');
-        const phoneSection = document.getElementById('phoneSection');
-        const loginPhone = document.getElementById('loginPhone');
-        const loginOtp = document.getElementById('loginOtp');
-        const sendOtpButton = document.getElementById('sendOtpButton');
-        const recaptchaContainer = document.getElementById('recaptcha-container');
 
         function applyTheme(mode) {
             const isDark = mode === 'dark';
@@ -1009,23 +1017,10 @@
         const linkedinLoginButton = document.getElementById('linkedinLoginButton');
         const loginStatus = document.getElementById('loginStatus');
 
-        function setLoginMethod(method) {
-            const isEmail = method === 'email';
-            emailMethodButton.classList.toggle('active', isEmail);
-            phoneMethodButton.classList.toggle('active', !isEmail);
-            emailSection.classList.toggle('active', isEmail);
-            phoneSection.classList.toggle('active', !isEmail);
-            if (isEmail) {
-                loginEmail.focus();
-            } else {
-                loginPhone.focus();
-            }
-        }
-
         function openLoginModal() {
             loginModal.classList.add('active');
             loginModal.setAttribute('aria-hidden', 'false');
-            setLoginMethod('email');
+            loginEmail.focus();
         }
 
         function closeLoginModal() {
@@ -1059,9 +1054,6 @@
                 closeLoginModal();
             }
         });
-
-        emailMethodButton.addEventListener('click', () => setLoginMethod('email'));
-        phoneMethodButton.addEventListener('click', () => setLoginMethod('phone'));
 
         function setLoginStatus(message, isError = false) {
             loginStatus.textContent = message;
@@ -1127,8 +1119,9 @@
             setLoginStatus('Social login requires backend setup. Please use email login or register.', true);
         });
 
-        sendOtpButton.addEventListener('click', () => {
-            setLoginStatus('Phone login requires backend setup. Please use email login.', true);
+        const forgotPasswordButton = document.getElementById('forgotPasswordButton');
+        forgotPasswordButton.addEventListener('click', () => {
+            setLoginStatus('Forgot password is not configured yet. Please contact support or use your registered email.', true);
         });
 
         loginAccountButton.addEventListener('click', handleLocalLogin);
@@ -1136,12 +1129,6 @@
         loginPassword.addEventListener('keydown', (event) => {
             if (event.key === 'Enter') {
                 handleLocalLogin();
-            }
-        });
-
-        loginOtp.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-                setLoginStatus('Phone login requires backend setup. Please use email login.', true);
             }
         });
 

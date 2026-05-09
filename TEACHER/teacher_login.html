@@ -985,12 +985,6 @@
                         </div>
                     </div>
                     <div class="field-group">
-                        <label>Subject Expertise</label>
-                        <div id="tagInput" class="tag-input">
-                            <input id="expertise" name="expertise" type="text" placeholder="Add subject expertise and press Enter" />
-                        </div>
-                    </div>
-                    <div class="field-group">
                         <label>Teaching Mode</label>
                         <div class="radio-group">
                             <label><input type="radio" name="teachingMode" value="teachAll" checked /> Teach All Subjects</label>
@@ -1128,8 +1122,6 @@
         const togglePassword = document.getElementById('togglePassword');
         const securityBar = document.getElementById('securityBar');
         const securityText = document.getElementById('securityText');
-        const tagInput = document.getElementById('tagInput');
-        const expertiseInput = document.getElementById('expertise');
         const fullNameInput = document.getElementById('fullName');
         const workEmailInput = document.getElementById('workEmail');
         const phoneInput = document.getElementById('phone');
@@ -1249,12 +1241,6 @@
         streamSelect.addEventListener('change', updateAssignmentPanel);
         renderSubjectChecklist();
 
-        function getExpertiseTags() {
-            return Array.from(tagInput.querySelectorAll('span.tag'))
-                .map(tag => tag.textContent.replace('×', '').trim())
-                .filter(Boolean);
-        }
-
         function generateStaffId() {
             const usedIds = JSON.parse(localStorage.getItem('usedStaffIds') || '[]');
             let id;
@@ -1354,18 +1340,6 @@
                 return;
             }
 
-            const expertiseTags = getExpertiseTags();
-            const typedExpertise = expertiseInput.value.trim();
-            if (typedExpertise && !expertiseTags.includes(typedExpertise)) {
-                expertiseTags.push(typedExpertise);
-            }
-
-            if (expertiseTags.length === 0) {
-                alert('Please add at least one subject expertise.');
-                expertiseInput.focus();
-                return;
-            }
-
             const assignment = getTeacherAssignment();
             if (!validateTeachingAssignment(assignment)) {
                 return;
@@ -1375,7 +1349,6 @@
                 fullName: fullNameInput.value.trim(),
                 email: workEmailValue,
                 phone: `${countryPrefix.value} ${phoneValue}`,
-                expertise: expertiseTags.join(', '),
                 institution: institutionInput.value.trim(),
                 experience: experienceInput.value ? Number(experienceInput.value) : null,
                 staffId: staffId,
@@ -1448,41 +1421,6 @@
 
         experienceInput.addEventListener('input', () => {
             validateInput(experienceInput, value => value.trim() === '' || /^\d+$/.test(value));
-        });
-
-        tagInput.addEventListener('click', () => {
-            expertiseInput.focus();
-        });
-
-        function addExpertiseTag(value) {
-            const tagValue = value.trim();
-            if (!tagValue) return;
-            const existingTags = getExpertiseTags();
-            if (existingTags.includes(tagValue)) {
-                expertiseInput.value = '';
-                return;
-            }
-            const newTag = document.createElement('span');
-            newTag.className = 'tag';
-            newTag.innerHTML = `${tagValue}<button type="button">×</button>`;
-            tagInput.insertBefore(newTag, expertiseInput);
-            expertiseInput.value = '';
-            newTag.querySelector('button').addEventListener('click', () => {
-                newTag.remove();
-            });
-        }
-
-        expertiseInput.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter' && expertiseInput.value.trim()) {
-                event.preventDefault();
-                addExpertiseTag(expertiseInput.value);
-            }
-        });
-
-        expertiseInput.addEventListener('blur', () => {
-            if (expertiseInput.value.trim()) {
-                addExpertiseTag(expertiseInput.value);
-            }
         });
 
         function setAuthStatus(message, isError = false) {
