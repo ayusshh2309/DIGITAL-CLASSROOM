@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -79,7 +80,7 @@
             gap: 16px;
             padding: 18px 24px;
             border-radius: var(--radius);
-            background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.6));
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.6));
             box-shadow: var(--shadow);
             border: 1px solid var(--border);
             backdrop-filter: blur(18px);
@@ -743,6 +744,7 @@
         }
 
         @media (max-width: 620px) {
+
             .navbar,
             .card {
                 padding: 18px;
@@ -771,6 +773,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="dashboard">
         <header class="navbar">
@@ -816,7 +819,8 @@
                 <div>
                     <p class="small-title">Welcome back</p>
                     <h1 id="welcomeGreeting" class="section-title">Good Morning, Ayush 👋</h1>
-                    <p class="section-subtitle">Here’s your progress summary for today. Keep your focus on goals and follow the study plan.</p>
+                    <p class="section-subtitle">Here’s your progress summary for today. Keep your focus on goals and
+                        follow the study plan.</p>
                 </div>
                 <div class="clock-chip">
                     <span id="todayDate">Loading date…</span>
@@ -888,7 +892,9 @@
                         <strong id="goalPercent">62%</strong>
                     </div>
                 </div>
-                <div class="progress-bar"><div id="goalFill" class="progress-fill" style="width:62%;"></div></div>
+                <div class="progress-bar">
+                    <div id="goalFill" class="progress-fill" style="width:62%;"></div>
+                </div>
                 <div id="taskList"></div>
                 <div class="live-class">
                     <div>
@@ -917,10 +923,12 @@
             </div>
         </section>
 
-        <p class="footer-note">Premium learning dashboard powered by Smart Learning • Theme and progress saved locally</p>
+        <p class="footer-note">Premium learning dashboard powered by Smart Learning • Theme and progress saved locally
+        </p>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/core.js"></script>
     <script>
         const themeToggleButton = document.getElementById('themeToggle');
@@ -1413,10 +1421,10 @@
 
         function updateSubjectSelection(grade, stream) {
             const normalizedGrade = String(grade || '10');
-            
+
             // Update class display
             dashboardGrade.textContent = `Class ${normalizedGrade}`;
-            
+
             const isSeniorGrade = normalizedGrade === '11' || normalizedGrade === '12';
             const selectedStream = isSeniorGrade ? normalizeStream(stream) : null;
 
@@ -1441,7 +1449,7 @@
                 // Default fallback
                 subjects = ['Mathematics', 'English', 'Science'];
             }
-            
+
             renderSubjectCards(subjects);
             updateAnalyticsCharts(subjects);
             renderAchievements(subjects);
@@ -1569,10 +1577,7 @@
             applyTheme(current === 'light' ? 'dark' : 'light');
         });
 
-        const logoutButton = document.getElementById('logoutButton');
-        logoutButton.addEventListener('click', () => {
-            window.location.href = 'learner_login.html';
-        });
+
 
         notificationToggle.addEventListener('click', () => {
             notificationPanel.classList.toggle('open');
@@ -1608,6 +1613,20 @@
             initStudyTimer();
             initCountdown();
         });
+
+        const { createClient } = supabase
+
+        const client = createClient(
+            'https://pdrorihddscfkbesocdq.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkcm9yaWhkZHNjZmtiZXNvY2RxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTUwNzYsImV4cCI6MjA5MjczMTA3Nn0.PmXoZ8cFGFGjKqH2tKXyljEF09vQQXu8F0-OpyyBwkQ'
+        )
+
+        const logoutButton = document.getElementById('logoutButton')
+        logoutButton.addEventListener('click', async () => {
+            await client.auth.signOut()        // ← signs out from supabase
+            window.location.href = 'learner_login.html'
+        })
     </script>
 </body>
+
 </html>

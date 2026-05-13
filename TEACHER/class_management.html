@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Class Management Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      background: #0f1123;
+      color: #f5f7ff;
+      font-family: 'Inter', system-ui, sans-serif;
+      padding: 32px;
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    .header { margin-bottom: 32px; }
+    .header p {
+      color: #9aa3c7;
+      letter-spacing: 0.16em;
+      font-size: 0.82rem;
+      text-transform: uppercase;
+    }
+    .header h1 {
+      margin-top: 12px;
+      font-size: 2rem;
+      line-height: 1.1;
+    }
+
+    .cards-grid {
+      display: grid;
+      gap: 24px;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    }
+
+    .card {
+      border-radius: 28px;
+      background: #161931;
+      border: 1px solid #292f57;
+      padding: 24px;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.16);
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .class-badge {
+      display: inline-flex;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(139,92,246,0.22), rgba(99,102,241,0.22));
+      color: #8b5cf6;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .subject-count { color: #9aa3c7; font-size: 0.92rem; }
+
+    .subjects-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .subject-tag {
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: #1c2140;
+      border: 1px solid #292f57;
+      font-size: 0.93rem;
+      color: #f5f7ff;
+    }
+
+    .buttons-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .btn-primary {
+      min-width: 140px;
+      border-radius: 14px;
+      border: none;
+      background: #8b5cf6;
+      color: #fff;
+      padding: 14px 18px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 12px 24px rgba(139,92,246,0.2);
+      font-size: 0.95rem;
+    }
+
+    .btn-outline {
+      min-width: 140px;
+      border-radius: 14px;
+      border: 1px solid #8b5cf6;
+      background: transparent;
+      color: #8b5cf6;
+      padding: 14px 18px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+
+    /* MODAL */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background: rgba(15, 17, 35, 0.82);
+      place-items: center;
+      padding: 24px;
+    }
+
+    .modal-overlay.active { display: grid; }
+
+    .modal {
+      width: 100%;
+      max-width: 680px;
+      background: #161931;
+      border-radius: 28px;
+      border: 1px solid #292f57;
+      box-shadow: 0 32px 80px rgba(15,23,42,0.3);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 24px 28px 18px;
+      border-bottom: 1px solid #292f57;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .modal-header p {
+      color: #9aa3c7;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.78rem;
+    }
+
+    .modal-header h2 {
+      margin-top: 10px;
+      font-size: 1.6rem;
+    }
+
+    .close-btn {
+      background: transparent;
+      border: none;
+      color: #9aa3c7;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    .modal-body {
+      padding: 24px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .student-card {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 18px;
+      border-radius: 20px;
+      background: #1c2140;
+      border: 1px solid #292f57;
+    }
+
+    .student-name {
+      font-weight: 700;
+      font-size: 1rem;
+      color: #f5f7ff;
+    }
+
+    .student-roll { color: #9aa3c7; font-size: 0.92rem; }
+
+    .class-pill {
+      color: #8b5cf6;
+      background: rgba(139,92,246,0.12);
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header class="header">
+      <p>Class Management</p>
+      <h1>Class 11 &amp; Class 12 Dashboard</h1>
+    </header>
+
+    <div class="cards-grid" id="cardsGrid"></div>
+  </div>
+
+  <!-- MODAL -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <p>Registered students</p>
+          <h2 id="modalTitle">Class Students</h2>
+        </div>
+        <button class="close-btn" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    const classCards = [
+      {
+        id: '11',
+        title: 'Class 11',
+        subjects: ['Biology', 'Chemistry', 'Physics'],
+        totalSubjects: 4
+      },
+      {
+        id: '12',
+        title: 'Class 12',
+        subjects: ['Biology', 'Chemistry', 'Physics'],
+        totalSubjects: 4
+      }
+    ]
+
+    const studentsByClass = {
+      '11': [
+        { roll: '11-01', name: 'Ananya Kapoor' },
+        { roll: '11-02', name: 'Rohan Singh' },
+        { roll: '11-03', name: 'Meera Patel' },
+        { roll: '11-04', name: 'Arjun Das' }
+      ],
+      '12': [
+        { roll: '12-01', name: 'Priya Nair' },
+        { roll: '12-02', name: 'Vivaan Iyer' },
+        { roll: '12-03', name: 'Simran Kaur' },
+        { roll: '12-04', name: 'Kabir Shah' }
+      ]
+    }
+
+    // Render cards
+    const grid = document.getElementById('cardsGrid')
+
+    classCards.forEach(card => {
+      const subjectTags = card.subjects
+        .map(s => `<span class="subject-tag">${s}</span>`)
+        .join('')
+
+      grid.innerHTML += `
+        <div class="card">
+          <div class="card-top">
+            <span class="class-badge">${card.title}</span>
+            <span class="subject-count">${card.totalSubjects} subjects</span>
+          </div>
+          <div class="subjects-row">${subjectTags}</div>
+          <div class="buttons-row">
+            <button class="btn-primary" onclick="openModal('${card.id}')">
+              View Students
+            </button>
+            <button class="btn-outline">Attendance</button>
+          </div>
+        </div>
+      `
+    })
+
+    // Open modal
+    function openModal(classId) {
+      const students = studentsByClass[classId] || []
+      document.getElementById('modalTitle').textContent = `Class ${classId} Students`
+
+      const body = document.getElementById('modalBody')
+
+      if (students.length === 0) {
+        body.innerHTML = `<p style="color:#9aa3c7">No students registered yet.</p>`
+      } else {
+        body.innerHTML = students.map(student => `
+          <div class="student-card">
+            <div>
+              <p class="student-name">${student.name}</p>
+              <span class="student-roll">Roll Number: ${student.roll}</span>
+            </div>
+            <span class="class-pill">${classId}</span>
+          </div>
+        `).join('')
+      }
+
+      document.getElementById('modalOverlay').classList.add('active')
+    }
+
+    // Close modal
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.remove('active')
+    }
+
+    // Close on overlay click
+    document.getElementById('modalOverlay').addEventListener('click', function(e) {
+      if (e.target === this) closeModal()
+    })
+  </script>
+
+</body>
+</html>
