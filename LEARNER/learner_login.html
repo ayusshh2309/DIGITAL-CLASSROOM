@@ -4,44 +4,52 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Learner Registration</title>
+    <title>Teacher Dashboard</title>
     <script>
         (function () {
             const theme = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             color-scheme: light;
-            font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            --bg: #f5f7fb;
+            --bg: #eef3ff;
             --surface: #ffffff;
-            --surface-soft: #edf2fb;
-            --surface-strong: #e2e8f0;
-            --text: #0f172a;
+            --surface-soft: #f3f5ff;
+            --surface-strong: #e5e9ff;
+            --text: #102a43;
             --muted: #64748b;
-            --primary: #3b82f6;
-            --primary-soft: #dbeafe;
+            --border: rgba(16, 42, 67, 0.12);
+            --primary: #5b63f5;
+            --primary-soft: rgba(91, 99, 245, 0.16);
+            --accent: #7c3aed;
             --success: #22c55e;
-            --border: #d1d5db;
-            --shadow: 0 28px 60px rgba(15, 23, 42, 0.08);
-            --radius: 32px;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --shadow: 0 28px 80px rgba(16, 42, 67, 0.08);
+            --radius: 24px;
+            --radius-sm: 18px;
+            font-family: Inter, system-ui, sans-serif;
         }
 
-        [data-theme="dark"] {
+        [data-theme='dark'] {
             color-scheme: dark;
-            --bg: #0d172c;
-            --surface: #111827;
-            --surface-soft: #111f3f;
-            --surface-strong: #1f2937;
-            --text: #f8fafc;
-            --muted: #cbd5e1;
-            --primary: #60a5fa;
-            --primary-soft: rgba(96, 165, 250, 0.18);
+            --bg: #07101e;
+            --surface: #0d1628;
+            --surface-soft: #111f36;
+            --surface-strong: #16243f;
+            --text: #e2e8f0;
+            --muted: #94a3b8;
+            --border: rgba(148, 163, 184, 0.24);
+            --primary: #8b5cf6;
+            --primary-soft: rgba(139, 92, 246, 0.14);
+            --accent: #a855f7;
             --success: #4ade80;
-            --border: #334155;
-            --shadow: 0 28px 60px rgba(0, 0, 0, 0.36);
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --shadow: 0 28px 80px rgba(0, 0, 0, 0.35);
         }
 
         * {
@@ -52,974 +60,3252 @@
         body {
             margin: 0;
             min-height: 100%;
-            background: linear-gradient(180deg, var(--bg), var(--surface-soft));
+            background: radial-gradient(circle at top left, rgba(91, 97, 245, 0.12), transparent 28%), linear-gradient(180deg, var(--bg), #02060f);
             color: var(--text);
         }
 
         body {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
+            padding: 12px;
         }
 
-        .page {
-            width: min(1200px, 100%);
-            background: transparent;
+        button,
+        input,
+        select,
+        textarea {
+            font: inherit;
         }
 
-        .card {
+        body,
+        input,
+        button,
+        select,
+        textarea {
+            color: inherit;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .layout {
+            max-width: 1480px;
+            margin: 0 auto;
             display: grid;
-            grid-template-columns: 1.1fr 0.9fr;
-            gap: 28px;
-            background: var(--surface);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            overflow: hidden;
-            min-height: 720px;
-        }
-
-        .illustration-panel {
-            position: relative;
-            background: linear-gradient(180deg, #eef5ff 0%, #ffffff 100%);
-            overflow: hidden;
-        }
-
-        .illustration-panel::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at top left, rgba(59, 130, 246, 0.16), transparent 28%),
-                radial-gradient(circle at bottom right, rgba(147, 197, 253, 0.16), transparent 28%);
-        }
-
-        .illustration-card {
-            position: relative;
-            height: 100%;
-            display: grid;
-            place-items: center;
-        }
-
-        .illustration-stage {
-            width: min(92%, 520px);
-            aspect-ratio: 4 / 3.1;
-            position: relative;
-            border-radius: 36px;
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(229, 241, 255, 0.94));
-            border: 1px solid rgba(255, 255, 255, 0.85);
-            box-shadow: 0 18px 50px rgba(15, 23, 42, 0.1);
-            overflow: hidden;
-        }
-
-        .illustration-stage::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at top center, rgba(59, 130, 246, 0.08), transparent 40%);
-        }
-
-        .study-highlights {
-            position: absolute;
-            inset: 14%;
-            display: grid;
-            gap: 14px;
-        }
-
-        .motivation-pill {
-            width: fit-content;
-            padding: 12px 18px;
-            border-radius: 999px;
-            background: rgba(59, 130, 246, 0.12);
-            color: #2563eb;
-            font-weight: 700;
-            letter-spacing: 0.02em;
-            box-shadow: 0 10px 24px rgba(59, 130, 246, 0.08);
-        }
-
-        .motivation-caption {
-            max-width: 78%;
-            color: rgba(15, 23, 42, 0.75);
-            font-size: 0.98rem;
-            line-height: 1.7;
-        }
-
-        .student-group {
-            position: relative;
-            width: 100%;
-            height: 54%;
-            display: grid;
-            place-items: center;
-        }
-
-        .student {
-            position: relative;
-            width: 180px;
-            height: 220px;
-            display: grid;
-            place-items: center;
-        }
-
-        .student-head {
-            width: 76px;
-            height: 76px;
-            border-radius: 50%;
-            background: radial-gradient(circle at top, #f8fafc, #bfdbfe);
-            border: 6px solid white;
-            box-shadow: 0 16px 32px rgba(15, 23, 42, 0.12);
-        }
-
-        .student-body {
-            position: absolute;
-            top: 52%;
-            width: 120px;
-            height: 96px;
-            border-radius: 48px 48px 28px 28px;
-            background: linear-gradient(180deg, #bfdbfe 0%, #eff6ff 100%);
-            border: 1px solid rgba(59, 130, 246, 0.18);
-        }
-
-        .student-desk {
-            position: absolute;
-            top: 80%;
-            width: 220px;
-            height: 24px;
-            border-radius: 16px;
-            background: linear-gradient(180deg, #e2e8f0, #cbd5e1);
-            box-shadow: 0 18px 28px rgba(15, 23, 42, 0.08);
-        }
-
-        .student-screen {
-            position: absolute;
-            top: 64%;
-            width: 100px;
-            height: 62px;
-            border-radius: 18px;
-            background: linear-gradient(180deg, #ffffff 0%, #dbeafe 100%);
-            border: 2px solid rgba(59, 130, 246, 0.25);
-            box-shadow: inset 0 2px 10px rgba(59, 130, 246, 0.12);
-        }
-
-        .student-screen::before {
-            content: "📘";
-            position: absolute;
-            top: 12px;
-            left: 14px;
-            color: rgba(59, 130, 246, 0.9);
-            font-size: 26px;
-        }
-
-        .growth-arrow {
-            position: absolute;
-            right: -4%;
-            bottom: 14%;
-            width: 40%;
-            height: 40%;
-            background: rgba(59, 130, 246, 0.12);
-            border-radius: 48px;
-            display: grid;
-            place-items: center;
-            box-shadow: 0 14px 26px rgba(59, 130, 246, 0.08);
-        }
-
-        .growth-arrow::before {
-            content: "";
-            width: 16px;
-            height: 72px;
-            background: linear-gradient(180deg, #2563eb, #60a5fa);
-            border-radius: 12px;
-            transform: rotate(-12deg);
-            position: absolute;
-            bottom: 18%;
-            left: 36%;
-        }
-
-        .growth-arrow::after {
-            content: "";
-            position: absolute;
-            width: 0;
-            height: 0;
-            border-left: 18px solid transparent;
-            border-right: 18px solid transparent;
-            border-bottom: 26px solid #2563eb;
-            transform: rotate(-12deg);
-            top: 6%;
-            left: 42%;
-        }
-
-        .sparkle {
-            position: absolute;
-            width: 18px;
-            height: 18px;
-            background: rgba(59, 130, 246, 0.25);
-            border-radius: 50%;
-            filter: blur(1px);
-            animation: float 6s ease-in-out infinite;
-        }
-
-        .sparkle.one {
-            top: 16%;
-            left: 18%;
-        }
-
-        .sparkle.two {
-            top: 10%;
-            right: 18%;
-            width: 22px;
-            height: 22px;
-        }
-
-        .sparkle.three {
-            bottom: 20%;
-            left: 12%;
-            width: 14px;
-            height: 14px;
-        }
-
-        @keyframes float {
-
-            0%,
-            100% {
-                transform: translateY(0);
-            }
-
-            50% {
-                transform: translateY(-10px);
-            }
-        }
-
-        .form-panel {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding: 40px;
-        }
-
-        .form-header {
-            margin: 0 0 24px;
-        }
-
-        .eyebrow {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 14px;
-            border-radius: 999px;
-            background: var(--surface-soft);
-            color: var(--primary);
-            font-size: 0.88rem;
-            font-weight: 700;
-            margin-bottom: 18px;
-        }
-
-        .form-header h1 {
-            margin: 0;
-            font-size: clamp(2rem, 2.45vw, 2.5rem);
-            line-height: 1.05;
-        }
-
-        .form-header p {
-            margin: 12px 0 0;
-            color: var(--muted);
-            line-height: 1.8;
-            max-width: 520px;
-        }
-
-        .fields-grid {
-            display: grid;
-            gap: 16px;
-            grid-template-columns: 1fr 1fr;
-            margin-bottom: 18px;
-        }
-
-        .field {
-            display: grid;
-            gap: 8px;
-        }
-
-        .field.full {
-            grid-column: 1 / -1;
-        }
-
-        .field.conditional-field {
-            max-height: 0;
-            opacity: 0;
-            transform: translateY(-10px);
-            overflow: hidden;
-            pointer-events: none;
-            transition: max-height 240ms ease, opacity 240ms ease, transform 240ms ease;
-        }
-
-        .field.conditional-field.visible {
-            max-height: 160px;
-            opacity: 1;
-            transform: translateY(0);
-            pointer-events: auto;
-        }
-
-        label {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        .contact-toggle {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            background: var(--surface-soft);
-            padding: 6px;
-            border-radius: 999px;
-            width: fit-content;
-        }
-
-        .contact-toggle button {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 999px;
-            background: transparent;
-            color: var(--muted);
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 200ms ease;
-        }
-
-        .contact-toggle button.active {
-            background: var(--surface);
-            color: var(--primary);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-        }
-
-        .input-group {
-            position: relative;
-            display: flex;
-            align-items: center;
             gap: 12px;
         }
 
-        input,
-        select {
-            width: 100%;
-            min-width: 0;
-            padding: 16px 18px;
-            border: 2px solid var(--border);
-            border-radius: 18px;
-            background: var(--surface);
-            color: var(--text);
-            font-size: 0.96rem;
-            outline: none;
-            transition: border-color 200ms ease, box-shadow 200ms ease;
-        }
-
-        input:focus,
-        select:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-        }
-
-        input.valid {
-            border-color: var(--success);
-        }
-
-        .input-group input {
-            flex: 1;
-        }
-
-        .input-icon {
-            position: absolute;
-            right: 18px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--muted);
-            font-size: 0.98rem;
-            pointer-events: none;
-        }
-
-        .prefix {
-            position: static;
-            color: var(--muted);
-            font-size: 0.95rem;
-            font-weight: 700;
-            padding: 12px 14px;
-            border: 2px solid var(--border);
-            border-radius: 14px;
-            background: rgba(243, 244, 246, 0.95);
-            min-width: 120px;
-            width: auto;
-            flex: 0 0 auto;
-            appearance: none;
-            cursor: pointer;
-        }
-
-        .field input.phone {
-            padding-left: 18px;
-        }
-
-        .field input.email {
-            padding-right: 48px;
-        }
-
-        .field input.password {
-            padding-right: 90px;
-        }
-
-        .show-hide {
-            position: absolute;
-            right: 18px;
-            top: 50%;
-            transform: translateY(-50%);
-            border: none;
-            background: transparent;
-            color: var(--primary);
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        .password-meter {
-            display: grid;
-            gap: 10px;
-            padding: 14px 18px;
-            border: 1px solid var(--border);
-            border-radius: 18px;
-            background: var(--surface-soft);
-            margin-top: 6px;
-        }
-
-        .meter-label {
-            font-size: 0.94rem;
-            color: var(--muted);
-        }
-
-        .meter-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-        }
-
-        .meter-step {
-            padding: 10px 12px;
-            border-radius: 14px;
-            background: rgba(148, 163, 184, 0.12);
-            color: var(--muted);
-            font-size: 0.82rem;
-            text-align: center;
-        }
-
-        .meter-step.active {
-            background: rgba(34, 197, 94, 0.14);
-            color: var(--success);
-        }
-
-        .aux-row {
+        .topbar {
+            position: relative;
             display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 12px;
-            margin: 12px 0 20px;
-            flex-wrap: nowrap;
+            padding: 12px 14px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid var(--border);
+            box-shadow: 0 14px 32px rgba(16, 42, 67, 0.08);
+            backdrop-filter: blur(14px);
         }
 
-        .aux-row label {
+        [data-theme='dark'] .topbar {
+            background: rgba(13, 22, 40, 0.88);
+        }
+
+        .brand {
             display: inline-flex;
             align-items: center;
-            gap: 10px;
-            font-weight: 500;
-            color: var(--text);
-            white-space: nowrap;
+            gap: 8px;
+            font-weight: 800;
+            font-size: 0.96rem;
         }
 
-        .aux-row a {
-            color: var(--primary);
-            text-decoration: none;
-            font-size: 0.95rem;
+        .brand-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            box-shadow: 0 0 12px rgba(124, 58, 237, 0.22);
+        }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
+        }
+
+        [data-theme='dark'] .pill {
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        .pill span {
             font-weight: 600;
-            white-space: nowrap;
         }
 
-        .aux-row a:hover {
-            text-decoration: underline;
+        .theme-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: var(--surface-soft);
+            cursor: pointer;
         }
 
-        .social-row {
+        .theme-toggle:hover {
+            transform: translateY(-1px);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 12px;
+        }
+
+        .card {
+            border-radius: 18px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            box-shadow: 0 14px 36px rgba(16, 42, 67, 0.08);
+            padding: 16px;
             display: grid;
             gap: 14px;
-            margin: 18px 0;
         }
 
-        .social-row p {
+        [data-theme='dark'] .card {
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        .section-title {
+            margin: 0;
+            font-size: clamp(1.2rem, 1.4vw, 1.4rem);
+            font-weight: 800;
+        }
+
+        .section-subtitle {
             margin: 0;
             color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 22px;
+        }
+
+        .stats-item {
+            background: rgba(15, 23, 42, 0.82);
+            border-radius: 22px;
+            padding: 18px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.03), 0 16px 40px rgba(0, 0, 0, 0.16);
+            display: grid;
+            gap: 6px;
+            transition: transform 180ms ease, box-shadow 180ms ease;
+        }
+
+        .stats-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 46px rgba(99, 102, 241, 0.18);
+        }
+
+        .stats-item h4 {
+            margin: 0;
+            font-size: 0.92rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .stats-item strong {
+            font-size: 1.5rem;
+            display: block;
+            letter-spacing: -0.02em;
+        }
+
+        .stat-highlights {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .card-hero {
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.82));
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .btn {
+            border: none;
+            border-radius: 14px;
+            padding: 12px 18px;
+            cursor: pointer;
+            transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #7c3aed, #4f46e5);
+            color: #fff;
+            box-shadow: 0 12px 30px rgba(124, 58, 237, 0.28);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 18px 36px rgba(124, 58, 237, 0.32);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-ghost {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: inherit;
+        }
+
+        .btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .modal-stepper {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .step-pill {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 14px 16px;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .step-pill.active {
+            background: rgba(124, 58, 237, 0.14);
+            border-color: rgba(124, 58, 237, 0.24);
+        }
+
+        .step-pill strong {
             font-size: 0.95rem;
         }
 
-        .social-buttons {
+        .step-pill span {
+            color: var(--muted);
+            font-size: 0.88rem;
+        }
+
+        .resource-grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 14px;
         }
 
-        .social-button {
-            display: inline-flex;
+        .resource-card {
+            display: grid;
+            gap: 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.04);
+            padding: 18px;
+            transition: transform 180ms ease, box-shadow 180ms ease;
+        }
+
+        .resource-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 18px 40px rgba(99, 102, 241, 0.14);
+        }
+
+        .resource-card .resource-title {
+            display: flex;
             align-items: center;
-            justify-content: center;
             gap: 10px;
-            padding: 14px 16px;
-            border-radius: 18px;
-            background: var(--surface-soft);
-            border: 1px solid var(--border);
-            color: var(--text);
             font-weight: 700;
-            cursor: pointer;
-            transition: var(--transition);
         }
 
-        .social-button:hover {
-            background: rgba(59, 130, 246, 0.1);
+        .resource-card .resource-count {
+            color: var(--muted);
         }
 
-        .submit-group {
+        .resource-card button {
+            width: fit-content;
+        }
+
+        .resource-actions {
             display: flex;
             flex-wrap: wrap;
-            align-items: center;
-            justify-content: flex-start;
-            gap: 18px;
-            margin-top: 10px;
+            gap: 10px;
         }
 
-        .agreement {
+        .active-class-bar {
+            position: fixed;
+            inset: auto 20px 20px;
+            display: none;
+            align-items: center;
+            gap: 16px;
+            justify-content: space-between;
+            width: min(760px, calc(100% - 40px));
+            padding: 16px 20px;
+            border-radius: 20px;
+            background: rgba(13, 22, 40, 0.95);
+            border: 1px solid rgba(124, 58, 237, 0.24);
+            box-shadow: 0 22px 64px rgba(0, 0, 0, 0.32);
+            z-index: 50;
+            backdrop-filter: blur(8px);
+        }
+
+        .active-class-bar.open {
             display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 0.94rem;
-            color: var(--muted);
-            white-space: nowrap;
         }
 
-        .agreement a {
-            color: var(--primary);
-            text-decoration: none;
+        .active-class-info {
+            display: grid;
+            gap: 6px;
         }
 
-        .primary-button {
-            width: auto;
-            min-width: 220px;
-            padding: 18px 22px;
-            border: none;
-            border-radius: 18px;
-            background: var(--primary);
-            color: white;
+        .active-class-info strong {
             font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            box-shadow: 0 18px 30px rgba(59, 130, 246, 0.18);
-            transition: var(--transition);
         }
 
-        .primary-button:hover {
-            transform: translateY(-1px);
-            background: #2563eb;
+        .active-class-metrics {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .metric-chip {
+            padding: 10px 14px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: inline-flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .modal-subtitle {
+            color: var(--muted);
+            margin: 0;
+        }
+
+        .field {
+            display: grid;
+            gap: 10px;
+        }
+
+        .field label {
+            font-weight: 700;
+        }
+
+        .field select,
+        .field input {
+            width: 100%;
+            min-height: 48px;
+            padding: 12px 14px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
+            color: inherit;
+        }
+
+        .field input::placeholder,
+        .field select {
+            color: var(--muted);
+        }
+
+        .form-row {
+            display: grid;
+            gap: 14px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .form-row label {
+            font-size: 0.95rem;
+        }
+
+        .form-row.full {
+            grid-template-columns: 1fr;
+        }
+
+        .form-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 18px;
         }
 
         @media (max-width: 980px) {
-            .card {
-                grid-template-columns: 1fr;
+            .stats-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
-            .page {
-                padding: 20px;
+            .resource-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
-            .illustration-panel {
-                order: 2;
-            }
-        }
-
-        @media (max-width: 720px) {
-            .fields-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .social-buttons {
+            .form-row {
                 grid-template-columns: 1fr;
             }
         }
 
-        .login-prompt {
+        @media (max-width: 620px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .resource-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .active-class-bar {
+                width: calc(100% - 32px);
+                bottom: 16px;
+                right: 16px;
+                left: 16px;
+            }
+        }
+
+        .btn-secondary {
+            background: var(--surface-soft);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-primary:hover,
+        .btn-secondary:hover {
+            transform: translateY(-1px);
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .class-card {
+            display: grid;
+            gap: 10px;
+            border-radius: 18px;
+            padding: 14px;
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
+        }
+
+        [data-theme='dark'] .class-card {
+            background: rgba(15, 23, 42, 0.78);
+        }
+
+        .class-card h4 {
+            margin: 0;
+        }
+
+        .class-card .meta {
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
             gap: 8px;
-            margin-top: 20px;
-            font-size: 0.95rem;
+        }
+
+        .label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: var(--primary-soft);
+            color: var(--primary);
+            font-size: 0.82rem;
+        }
+
+        .content-management {
+            display: grid;
+            gap: 14px;
+        }
+
+        .content-action-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .content-search {
+            flex: 1 1 280px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: var(--surface-soft);
+        }
+
+        .content-search input {
+            border: none;
+            background: transparent;
+            width: 100%;
+            outline: none;
+            color: inherit;
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .filters select {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--surface-soft);
+            color: inherit;
+        }
+
+        .filter-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            padding: 8px 10px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--surface-soft);
+            color: inherit;
+            cursor: pointer;
+            min-height: 40px;
+            position: relative;
+        }
+
+        .filter-pill:hover,
+        .filter-pill:focus {
+            background: rgba(91, 99, 245, 0.08);
+            outline: none;
+        }
+
+        .filter-pill .pill-arrow {
+            font-size: 0.85rem;
             color: var(--muted);
         }
 
-        .login-prompt .login-link {
-            color: var(--primary);
-            font-weight: 600;
-            text-decoration: none;
+        .filter-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            width: 100%;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            box-shadow: 0 10px 30px rgba(16, 42, 67, 0.12);
+            z-index: 20;
+            overflow: hidden;
         }
 
-        .login-prompt .login-link:hover {
-            text-decoration: underline;
+        .filter-dropdown.open {
+            display: block;
+        }
+
+        .filter-option {
+            padding: 10px 14px;
+            cursor: pointer;
+            color: var(--text);
+            transition: background 160ms ease;
+        }
+
+        .filter-option:hover,
+        .filter-option:focus {
+            background: var(--surface-soft);
+        }
+
+        .filter-option.empty {
+            color: var(--muted);
+            cursor: default;
+        }
+
+        .resource-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .resource-table th,
+        .resource-table td {
+            text-align: left;
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .resource-table th {
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .resource-row {
+            transition: background 160ms ease;
+        }
+
+        .resource-row:hover {
+            background: var(--surface-soft);
+        }
+
+        [data-theme='dark'] .resource-row:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .live-card {
+            display: grid;
+            gap: 12px;
+        }
+
+        .live-card .line-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .live-card .line-item span {
+            color: var(--muted);
+        }
+
+        .badge-list {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .badge-card {
+            display: grid;
+            gap: 10px;
+            padding: 14px;
+            border-radius: 18px;
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
+        }
+
+        [data-theme='dark'] .badge-card {
+            background: rgba(15, 23, 42, 0.78);
+        }
+
+        .badge-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(135deg, rgba(91, 97, 245, 0.16), rgba(124, 58, 237, 0.12));
+        }
+
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .chat-panel {
+            display: grid;
+            gap: 12px;
+        }
+
+        .chat-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-radius: 16px;
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
+        }
+
+        .chat-row strong {
+            font-size: 0.92rem;
+        }
+
+        .attendance-panel {
+            display: grid;
+            gap: 12px;
+        }
+
+        .attendance-summary {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .attendance-card {
+            flex: 1;
+            min-width: 130px;
+            padding: 12px;
+            border-radius: 16px;
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
+        }
+
+        .calendar-panel {
+            display: grid;
+            gap: 12px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .calendar-day {
+            padding: 10px;
+            border-radius: 14px;
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .notification-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 14px;
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
+            cursor: pointer;
+        }
+
+        .notification-count {
+            min-width: 22px;
+            height: 22px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            background: var(--primary);
+            color: #fff;
+            font-size: 0.8rem;
+            padding: 0 6px;
+        }
+
+        .notification-panel {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            width: 320px;
+            border-radius: 20px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            z-index: 20;
+            display: none;
+            overflow: hidden;
+        }
+
+        .notification-panel.open {
+            display: block;
+        }
+
+        .notification-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px 18px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface-soft);
+        }
+
+        .notification-header strong {
+            font-size: 0.95rem;
+        }
+
+        .notifications-list {
+            max-height: 280px;
+            overflow-y: auto;
+        }
+
+        .notification-item {
+            padding: 14px 18px;
+            display: grid;
+            gap: 6px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+
+        .notification-item strong {
+            display: block;
+            font-size: 0.95rem;
+        }
+
+        .notification-item span {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .notification-empty {
+            padding: 18px;
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 14px 18px;
+            background: rgba(15, 23, 42, 0.95);
+            color: #fff;
+            border-radius: 16px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+            opacity: 0;
+            transform: translateY(12px);
+            transition: opacity 180ms ease, transform 180ms ease;
+            z-index: 30;
+            pointer-events: none;
+            min-width: 220px;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .content-grid {
+            display: grid;
+            gap: 14px;
+            margin-top: 18px;
+        }
+
+        .content-card {
+            border-radius: 18px;
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
+            padding: 16px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .content-card h4 {
+            margin: 0;
+        }
+
+        .subject-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .subject-card {
+            border-radius: 18px;
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
+            padding: 20px;
+            display: grid;
+            gap: 16px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .subject-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+        }
+
+        .subject-card h3 {
+            margin: 0;
+            font-size: 1.05rem;
+        }
+
+        .subject-meta {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .subject-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--primary);
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 10px;
+            margin: 0 8px 8px 0;
+            border-radius: 999px;
+            background: rgba(91, 99, 245, 0.12);
+            color: var(--text);
+            font-size: 0.85rem;
+            border: 1px solid var(--border);
+        }
+
+        .subject-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .subject-panel {
+            display: grid;
+            gap: 14px;
+            margin-top: 18px;
+        }
+
+        .section-panel {
+            border-radius: 18px;
+            background: var(--surface-soft);
+            padding: 18px;
+            border: 1px solid var(--border);
+        }
+
+        .section-panel h4 {
+            margin: 0 0 10px;
+        }
+
+        .resource-list {
+            display: grid;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .resource-item {
+            padding: 14px;
+            border-radius: 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            display: grid;
+            gap: 6px;
+        }
+
+        .resource-item strong {
+            display: block;
+        }
+
+        .resource-item span {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .resource-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .content-card p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            background: rgba(10, 18, 35, 0.65);
+            z-index: 40;
+            padding: 20px;
+        }
+
+        .modal.open {
+            display: flex;
+        }
+
+        .modal-body {
+            width: min(760px, 100%);
+            border-radius: 22px;
+            background: var(--surface);
+            padding: 24px;
+            box-shadow: 0 24px 80px rgba(16, 42, 67, 0.18);
+            max-height: calc(100vh - 60px);
+            overflow-y: auto;
+        }
+
+        .content-modal-body {
+            width: min(900px, 100%);
+            padding: 30px 32px;
+        }
+
+        .content-modal-body .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 18px;
+            margin-bottom: 24px;
+        }
+
+        .content-modal-body .modal-header h3 {
+            margin: 0;
+            font-size: 1.6rem;
+            letter-spacing: -0.02em;
+        }
+
+        .content-modal-body .modal-header .small-title {
+            margin: 0 0 6px;
+            color: var(--muted);
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+        }
+
+        .content-modal-body .modal-close {
+            border: none;
+            background: transparent;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--muted);
+        }
+
+        .content-upload-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 24px;
+        }
+
+        .content-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+            display: grid;
+            gap: 20px;
+        }
+
+        .content-panel .field {
+            display: grid;
+            gap: 10px;
+        }
+
+        .content-panel .field-group {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .content-panel .field-group.full {
+            grid-template-columns: 1fr;
+        }
+
+        .content-panel .field-label {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .content-panel .field-input,
+        .content-panel .field-textarea,
+        .content-panel select {
+            width: 100%;
+            min-height: 48px;
+            padding: 14px 16px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            background: var(--surface-soft);
+            color: var(--text);
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 150ms ease, box-shadow 150ms ease;
+        }
+
+        .content-panel .field-input:focus,
+        .content-panel .field-textarea:focus,
+        .content-panel select:focus {
+            border-color: rgba(99, 102, 241, 0.55);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.08);
+        }
+
+        .content-panel .field-textarea {
+            min-height: 160px;
+            resize: vertical;
+            padding-top: 16px;
+        }
+
+        .content-panel .content-note {
+            color: var(--muted);
+            font-size: 0.92rem;
+            line-height: 1.6;
+            margin-top: 4px;
+        }
+
+        .dropzone {
+            display: grid;
+            gap: 18px;
+            padding: 24px;
+            border-radius: 20px;
+            background: rgba(99, 102, 241, 0.08);
+            border: 1px dashed rgba(99, 102, 241, 0.45);
+            cursor: pointer;
+            transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+        }
+
+        .dropzone:hover {
+            background: rgba(99, 102, 241, 0.12);
+            transform: translateY(-1px);
+        }
+
+        .dropzone-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 18px;
+            display: grid;
+            place-items: center;
+            background: rgba(99, 102, 241, 0.2);
+            font-size: 1.6rem;
+        }
+
+        .dropzone strong {
+            font-size: 1rem;
+            margin: 0;
+        }
+
+        .dropzone p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .btn-ghost {
+            border: 1px solid var(--border);
+            background: var(--surface-soft);
+            color: var(--text);
+        }
+
+        .content-modal-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 14px;
+            margin-top: 24px;
+        }
+
+        .content-modal-actions .btn {
+            min-width: 140px;
+        }
+
+        @media (max-width: 860px) {
+            .content-upload-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .content-panel .field-group {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .large-modal {
+            width: min(1200px, 100%);
+        }
+
+        .materials-content {
+            display: grid;
+            gap: 16px;
+        }
+
+        .materials-search {
+            display: flex;
+        }
+
+        .materials-search input {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--surface-soft);
+        }
+
+        .materials-container {
+            display: grid;
+            gap: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .material-group h4 {
+            margin: 0 0 12px;
+            font-size: 1.1rem;
+        }
+
+        .material-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .material-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 12px;
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
+        }
+
+        .material-icon {
+            font-size: 1.5rem;
+        }
+
+        .material-info {
+            flex: 1;
+        }
+
+        .material-info strong {
+            display: block;
+        }
+
+        .material-info span {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .material-download button {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--primary);
+            color: white;
+            cursor: pointer;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+        }
+
+        .modal-close {
+            border: none;
+            background: transparent;
+            font-size: 1.4rem;
+            cursor: pointer;
+            color: var(--muted);
+        }
+
+        .form-row {
+            display: grid;
+            gap: 14px;
+        }
+
+        .form-row label {
+            font-weight: 700;
+        }
+
+        .form-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 18px;
+        }
+
+        .assign-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .assign-summary .pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 12px 14px;
+            border-radius: 18px;
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
+        }
+
+        .assign-summary .pill strong {
+            font-size: 0.95rem;
+        }
+
+        .assign-summary .pill span {
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        .content-help {
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        .content-input-row {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .content-input-row.full {
+            grid-template-columns: 1fr;
+        }
+
+        .content-note {
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        .content-file {
+            padding: 14px 16px;
+            border-radius: 16px;
+            border: 1px dashed var(--border);
+            background: var(--surface-soft);
+            color: var(--muted);
+            cursor: pointer;
+        }
+
+        .content-file input {
+            display: none;
+        }
+
+        .content-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            background: var(--surface-soft);
+            cursor: pointer;
+        }
+
+        .calendar-day strong {
+            display: block;
+            font-size: 1.3rem;
+        }
+
+        .small-note {
+            color: var(--muted);
+            font-size: 0.88rem;
+            line-height: 1.5;
+        }
+
+        .chart-card {
+            min-height: 220px;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            min-height: 180px;
+        }
+
+        .small-title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            margin: 0 0 4px;
+        }
+
+        .footer {
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.88rem;
+        }
+
+        @media (max-width: 1180px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 860px) {
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .grid-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .badge-list {
+                grid-template-columns: 1fr;
+            }
+
+            .analytics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filters {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 620px) {
+            body {
+                padding: 12px;
+            }
+
+            .topbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .live-card,
+            .resource-table,
+            .attendance-summary {
+                width: 100%;
+            }
         }
     </style>
 </head>
 
 <body>
-    <div class="page">
-        <div class="card">
-            <section class="illustration-panel">
-                <div class="illustration-card">
-                    <div class="illustration-stage">
-                        <div class="study-highlights">
-                            <div class="motivation-pill">Dream big. Learn smarter.</div>
-                            <div class="motivation-caption">Every step today brings you closer to the confident learner
-                                you want to become.</div>
-                            <div class="student-group">
-                                <div class="student">
-                                    <div class="student-head"></div>
-                                    <div class="student-body"></div>
-                                    <div class="student-screen"></div>
-                                    <div class="student-desk"></div>
+    <div class="layout">
+        <header class="topbar">
+            <div class="brand"><span class="brand-dot"></span>Teacher Console</div>
+            <div class="topbar-actions">
+                <button id="notificationToggle" class="notification-pill" type="button"
+                    aria-label="Toggle notifications">
+                    <span>Notifications</span>
+                    <span aria-hidden="true">🔔</span>
+                    <span id="notificationCount" class="notification-count" style="display:none;">0</span>
+                </button>
+
+                <button id="logoutBtn" class="btn btn-secondary" type="button">Logout</button>
+                <button id="themeToggle" class="theme-toggle" type="button"><span id="themeIcon">🌙</span><span
+                        id="themeLabel">Dark mode</span></button>
+            </div>
+            <div id="notificationPanel" class="notification-panel">
+                <div class="notification-header">
+                    <strong>Latest updates</strong>
+                    <button id="clearNotifications" class="btn btn-secondary" type="button">Clear</button>
+                </div>
+                <div id="notificationsList" class="notifications-list">
+                    <div class="notification-empty">No notifications yet.</div>
+                </div>
+            </div>
+            <div id="dashboardToast" class="toast">Notification dismissed</div>
+        </header>
+
+        <div class="dashboard-grid">
+            <main class="content">
+                <section class="card">
+                    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:18px;align-items:center;">
+                        <div>
+                            <p class="section-subtitle">Welcome back</p>
+                            <h1 id="welcomeGreeting" class="section-title">Good Afternoon, Mr. Sharma 👋</h1>
+                            <p class="small-note">Managing classes, lessons, attendance, and communication from one
+                                teacher dashboard.</p>
+                        </div>
+                        <div class="button-group">
+                            <button class="btn btn-primary" id="startClassBtn">Start Class</button>
+                            <button class="btn btn-secondary" id="createLessonBtn">Create Lesson</button>
+                        </div>
+                    </div>
+                    <div class="stats-grid" style="margin-top:4px;">
+                        <div class="stats-item">
+                            <h4>Today's classes</h4><strong>3</strong>
+                        </div>
+                        <div class="stats-item">
+                            <h4>Pending assessments</h4><strong>12</strong>
+                        </div>
+                        <div class="stats-item">
+                            <h4>Active students</h4><strong>124</strong>
+                        </div>
+                        <div class="stats-item">
+                            <h4>Notifications</h4><strong>8</strong>
+                        </div>
+                    </div>
+                    <div class="assign-summary">
+                        <div class="pill"><strong>Assigned teaching</strong><span id="assignmentBadge">Loading...</span>
+                        </div>
+                        <div class="pill"><strong>Allowed classes</strong><span id="assignmentClasses">Loading
+                                assignment details…</span></div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+                        <div>
+                            <p class="small-title">Class Management</p>
+                            <h2 class="section-title">Your teaching batches</h2>
+                        </div>
+                        <button class="btn btn-secondary">View all classes</button>
+                    </div>
+                    <div id="classBatchGrid" class="grid-3" style="margin-top:10px;"></div>
+                </section>
+
+                <section class="card content-management">
+                    <div class="content-action-row" style="align-items:center;gap:12px;">
+                        <div>
+                            <p class="small-title">Lesson & Content Management</p>
+                            <h2 class="section-title">Choose grade and manage subject content</h2>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                            <div id="gradeFilterPill" class="filter-pill" tabindex="0" role="button"
+                                aria-haspopup="listbox" aria-expanded="false">
+                                <span>Grade</span>
+                                <span class="pill-arrow">▼</span>
+                                <div id="gradeDropdown" class="filter-dropdown" aria-hidden="true">
+                                    <div id="gradeOptions"></div>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary">Upload Content</button>
+                        </div>
+                    </div>
+                    <div id="subjectSection" class="subject-grid">
+                        <div class="content-card">
+                            <h4>Select a grade to view subjects</h4>
+                            <p class="small-note">Choose one of your assigned grades to load the available subjects.</p>
+                        </div>
+                    </div>
+                    <div id="studentSection" class="subject-grid" style="display:none;"></div>
+                    <div id="subjectContentPanel" class="subject-panel" style="display:none;">
+                        <div class="content-card">
+                            <div
+                                style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+                                <div>
+                                    <p class="small-title">Subject Content</p>
+                                    <h2 id="selectedSubjectHeading" class="section-title">Select a subject to open
+                                        content</h2>
+                                </div>
+                                <div class="button-group">
+                                    <button id="uploadQuizBtn" class="btn btn-secondary" type="button">Upload
+                                        Quiz</button>
+                                    <button id="uploadVideoBtnSubject" class="btn btn-secondary" type="button">Upload
+                                        Video</button>
+                                    <button id="uploadPhotoBtnSubject" class="btn btn-secondary" type="button">Upload
+                                        Photo</button>
+                                    <button id="uploadDocBtnSubject" class="btn btn-secondary" type="button">Upload
+                                        Document</button>
+                                </div>
+                            </div>
+                            <div class="grid-2">
+                                <section class="section-panel">
+                                    <div
+                                        style="display:flex;justify-content:space-between;align-items:center; gap:10px;">
+                                        <h4>Quizzes</h4>
+                                        <button id="uploadQuizSubjectBtn" class="btn btn-primary" type="button">Upload
+                                            Quiz</button>
+                                    </div>
+                                    <div id="quizzesList" class="resource-list">
+                                        <div class="content-card">
+                                            <p class="small-note">No quiz content yet.</p>
+                                        </div>
+                                    </div>
+                                </section>
+                                <section class="section-panel">
+                                    <div
+                                        style="display:flex;justify-content:space-between;align-items:center; gap:10px;">
+                                        <h4>Videos</h4>
+                                        <button id="uploadVideoSubjectBtn" class="btn btn-primary" type="button">Upload
+                                            Video</button>
+                                    </div>
+                                    <div id="videosList" class="resource-list">
+                                        <div class="content-card">
+                                            <p class="small-note">No videos yet.</p>
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
+                            <div class="grid-2">
+                                <section class="section-panel">
+                                    <div
+                                        style="display:flex;justify-content:space-between;align-items:center; gap:10px;">
+                                        <h4>Photos</h4>
+                                        <button id="uploadPhotoSubjectBtn" class="btn btn-primary" type="button">Upload
+                                            Photo</button>
+                                    </div>
+                                    <div id="photosList" class="resource-list">
+                                        <div class="content-card">
+                                            <p class="small-note">No photos yet.</p>
+                                        </div>
+                                    </div>
+                                </section>
+                                <section class="section-panel">
+                                    <div
+                                        style="display:flex;justify-content:space-between;align-items:center; gap:10px;">
+                                        <h4>Notes / PDFs</h4>
+                                        <button id="uploadDocSubjectPanelBtn" class="btn btn-primary"
+                                            type="button">Upload Document</button>
+                                    </div>
+                                    <div id="docsList" class="resource-list">
+                                        <div class="content-card">
+                                            <p class="small-note">No documents yet.</p>
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;">
+                        <div>
+                            <p class="small-title">Student Performance Analytics</p>
+                            <h2 class="section-title">Insights for every class and learner</h2>
+                        </div>
+                        <button class="btn btn-secondary">Compare students</button>
+                    </div>
+                    <div class="analytics-grid">
+                        <div class="chart-card card">
+                            <p class="small-title">Class Average</p>
+                            <div class="chart-wrapper"><canvas id="classAverageChart"></canvas></div>
+                        </div>
+                        <div class="chart-card card">
+                            <p class="small-title">Attendance Trend</p>
+                            <div class="chart-wrapper"><canvas id="attendanceChart"></canvas></div>
+                        </div>
+                        <div class="chart-card card">
+                            <p class="small-title">Quiz Accuracy</p>
+                            <div class="chart-wrapper"><canvas id="accuracyChart"></canvas></div>
+                        </div>
+                        <div class="chart-card card">
+                            <p class="small-title">Student Progress Comparison</p>
+                            <div class="chart-wrapper"><canvas id="progressChart"></canvas></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <div class="attendance-panel">
+                        <div
+                            style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+                            <div>
+                                <p class="small-title">Attendance System</p>
+                                <h2 class="section-title">Mark attendance & review alerts</h2>
+                            </div><button class="btn btn-primary">Download report</button>
+                        </div>
+                        <div class="attendance-summary">
+                            <div class="attendance-card"><strong>Weekly average</strong>
+                                <p>92%</p>
+                            </div>
+                            <div class="attendance-card"><strong>Monthly</strong>
+                                <p>89%</p>
+                            </div>
+                            <div class="attendance-card"><strong>Absentees</strong>
+                                <p>5 alerts</p>
+                            </div>
+                        </div>
+                        <div class="chart-wrapper"><canvas id="attendanceBarChart"></canvas></div>
+                    </div>
+                </section>
+
+                <div id="contentModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+                    <div class="modal-body content-modal-body">
+                        <div class="modal-header">
+                            <div>
+                                <p class="small-title">Upload teaching resource</p>
+                                <h3 id="modalTitle">Publish new content</h3>
+                            </div>
+                            <button id="contentModalClose" class="modal-close" type="button"
+                                aria-label="Close modal">×</button>
+                        </div>
+                        <div class="content-upload-grid">
+                            <div class="content-panel">
+                                <div class="field">
+                                    <label class="field-label" for="contentType">Content Type</label>
+                                    <select class="field-input" id="contentType">
+                                        <option value="video">Video</option>
+                                        <option value="pdf">PDF / Notes</option>
+                                        <option value="image">Images / Diagrams</option>
+                                        <option value="quiz">Quiz</option>
+                                        <option value="live">Schedule Live Class</option>
+                                    </select>
+                                </div>
+                                <div class="field-group">
+                                    <div class="field">
+                                        <label class="field-label" for="contentClass">Class</label>
+                                        <select class="field-input" id="contentClass"></select>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label" for="contentSubject">Subject</label>
+                                        <select class="field-input" id="contentSubject"></select>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label" for="contentChapter">Chapter / Topic</label>
+                                    <input class="field-input" id="contentChapter" type="text"
+                                        placeholder="Chapter name or topic" />
+                                </div>
+                                <div class="field">
+                                    <label class="field-label" for="contentTitle">Title</label>
+                                    <input class="field-input" id="contentTitle" type="text"
+                                        placeholder="Resource title" />
+                                </div>
+                                <div class="field full">
+                                    <label class="field-label" for="contentDescription">Description</label>
+                                    <textarea class="field-textarea" id="contentDescription" rows="5"
+                                        placeholder="Brief summary of the resource"></textarea>
+                                </div>
+                            </div>
+                            <div class="content-panel">
+                                <div class="field">
+                                    <label class="field-label" for="contentFile">Attach file</label>
+                                    <div class="dropzone" role="button" tabindex="0"
+                                        onclick="document.getElementById('contentFile').click()">
+                                        <div class="dropzone-icon">📎</div>
+                                        <div>
+                                            <strong>Drag & drop your file here</strong>
+                                            <p>or browse to choose a document, image, video, or presentation.</p>
+                                        </div>
+                                        <button class="btn btn-ghost" type="button">Choose file</button>
+                                    </div>
+                                    <input id="contentFile" type="file" hidden />
+                                </div>
+                                <div class="field full" id="liveScheduleFields" style="display:none;">
+                                    <label class="field-label" for="contentDate">Schedule date</label>
+                                    <input class="field-input" id="contentDate" type="date" />
+                                </div>
+                                <p class="content-note">Uploaded content is linked to your assigned classes, subjects,
+                                    and chapters. Students will see it in their dashboards immediately.</p>
+                            </div>
+                        </div>
+                        <div class="content-modal-actions">
+                            <button id="saveContentBtn" class="btn btn-primary" type="button">Publish Content</button>
+                            <button id="cancelContentBtn" class="btn btn-secondary btn-ghost"
+                                type="button">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="createLessonModal" class="modal" role="dialog" aria-modal="true"
+                    aria-labelledby="createLessonTitle">
+                    <div class="modal-body large-modal">
+                        <div class="modal-header">
+                            <div>
+                                <p class="small-title">Create a new lesson</p>
+                                <h3 id="createLessonTitle">Lesson creator</h3>
+                                <p class="modal-subtitle">Complete the steps to build the lesson, add resources, and
+                                    publish.</p>
+                            </div>
+                            <button id="createLessonModalClose" class="modal-close" type="button"
+                                aria-label="Close modal">×</button>
+                        </div>
+                        <div class="modal-stepper">
+                            <div id="lessonStep1" class="step-pill active"><strong>Step 1</strong><span>Lesson
+                                    info</span></div>
+                            <div id="lessonStep2" class="step-pill"><strong>Step 2</strong><span>Add resources</span>
+                            </div>
+                            <div id="lessonStep3" class="step-pill"><strong>Step 3</strong><span>Publish</span></div>
+                        </div>
+                        <div id="lessonStepContent">
+                            <div id="lessonStepOne" class="lesson-stage">
+                                <div class="content-panel">
+                                    <div class="field">
+                                        <label for="lessonTitle">Lesson Title</label>
+                                        <input id="lessonTitle" type="text" placeholder="Enter lesson title" />
+                                    </div>
+                                    <div class="field-group">
+                                        <div class="field">
+                                            <label for="lessonSubject">Subject</label>
+                                            <select id="lessonSubject"></select>
+                                        </div>
+                                        <div class="field">
+                                            <label for="lessonGrade">Grade</label>
+                                            <select id="lessonGrade"></select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="lessonStepTwo" class="lesson-stage" style="display:none;">
+                                <div class="resource-grid">
+                                    <article class="resource-card">
+                                        <div class="resource-title"><span>📄</span>Assignments</div>
+                                        <div class="resource-count" id="resourceAssignmentsCount">0 resources</div>
+                                        <button id="addAssignmentBtn" class="btn btn-primary" type="button">Add</button>
+                                    </article>
+                                    <article class="resource-card">
+                                        <div class="resource-title"><span>📝</span>Quizzes</div>
+                                        <div class="resource-count" id="resourceQuizzesCount">0 resources</div>
+                                        <button id="addQuizBtn" class="btn btn-primary" type="button">Add</button>
+                                    </article>
+                                    <article class="resource-card">
+                                        <div class="resource-title"><span>🎥</span>Videos</div>
+                                        <div class="resource-count" id="resourceVideosCount">0 resources</div>
+                                        <button id="addVideoBtn" class="btn btn-primary" type="button">Add</button>
+                                    </article>
+                                    <article class="resource-card">
+                                        <div class="resource-title"><span>🖼️</span>Photos</div>
+                                        <div class="resource-count" id="resourcePhotosCount">0 resources</div>
+                                        <button id="addPhotoBtn" class="btn btn-primary" type="button">Add</button>
+                                    </article>
+                                    <article class="resource-card">
+                                        <div class="resource-title"><span>📚</span>Notes / PDFs</div>
+                                        <div class="resource-count" id="resourceNotesCount">0 resources</div>
+                                        <button id="addNoteBtn" class="btn btn-primary" type="button">Add</button>
+                                    </article>
+                                </div>
+                            </div>
+                            <div id="lessonStepThree" class="lesson-stage" style="display:none;">
+                                <div class="content-panel">
+                                    <div class="field full">
+                                        <label for="lessonDescription">Lesson Summary</label>
+                                        <textarea id="lessonDescription" class="field-textarea"
+                                            placeholder="Describe the lesson objectives"></textarea>
+                                    </div>
+                                    <div class="field">
+                                        <label for="lessonPublishStatus">Publish options</label>
+                                        <select id="lessonPublishStatus">
+                                            <option value="draft">Save as draft</option>
+                                            <option value="published">Publish lesson</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="growth-arrow"></div>
-                        <div class="sparkle one"></div>
-                        <div class="sparkle two"></div>
-                        <div class="sparkle three"></div>
+                        <div class="content-modal-actions form-actions">
+                            <button id="lessonBackBtn" class="btn btn-secondary" type="button">Back</button>
+                            <button id="lessonNextBtn" class="btn btn-primary" type="button">Next</button>
+                            <button id="lessonSaveBtn" class="btn btn-primary" type="button" style="display:none;">Save
+                                Lesson</button>
+                        </div>
                     </div>
                 </div>
-            </section>
-            <section class="form-panel">
-                <div class="form-header">
-                    <div class="eyebrow">Learner Registration</div>
-                    <h1>Create Your Account and Start Your Smart Journey</h1>
-                    <p>Join a modern learning experience with a clear workflow, smart tools, and personalized support
-                        from day one.</p>
-                </div>
-                <div class="fields-grid">
-                    <div class="field full">
-                        <label for="fullname">Full Name</label>
-                        <div class="input-group">
-                            <input id="fullname" name="fullname" type="text" placeholder="e.g., John Doe" />
+
+                <div id="startClassModal" class="modal" role="dialog" aria-modal="true"
+                    aria-labelledby="startClassTitle">
+                    <div class="modal-body">
+                        <div class="modal-header">
+                            <h3 id="startClassTitle">Start Live Class</h3>
+                            <button id="startClassModalClose" class="modal-close" type="button"
+                                aria-label="Close modal">×</button>
                         </div>
-                    </div>
-                    <div class="field">
-                        <label for="grade">Class/Grade</label>
-                        <div class="input-group">
-                            <select id="grade" name="grade">
-                                <option value="">Select grade</option>
-                                <option value="5">Class 5</option>
-                                <option value="6">Class 6</option>
-                                <option value="7">Class 7</option>
-                                <option value="8">Class 8</option>
-                                <option value="9">Class 9</option>
-                                <option value="10">Class 10</option>
-                                <option value="11">Class 11</option>
-                                <option value="12">Class 12</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="field full conditional-field" id="streamField">
-                        <label for="stream">Stream</label>
-                        <div class="input-group">
-                            <select id="stream" name="stream">
-                                <option value="">Choose stream</option>
-                                <option value="PCM">PCM (Physics, Chemistry, Mathematics)</option>
-                                <option value="PCB">PCB (Physics, Chemistry, Biology)</option>
-                                <option value="Commerce">Commerce</option>
-                                <option value="Arts">Arts</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <label for="dob">Date of Birth</label>
-                        <div class="input-group">
-                            <input id="dob" name="dob" type="date" placeholder="Select your birth date" />
-                        </div>
-                    </div>
-                    <div class="field full" id="emailField">
-                        <label for="email">Email</label>
-                        <div class="input-group">
-                            <input id="email" name="email" class="email" type="email" placeholder="you@example.com" />
-                            <span class="input-icon">@</span>
-                        </div>
-                    </div>
-                    <div class="field full" id="phoneField">
-                        <label for="phone">Phone Number</label>
-                        <div class="input-group">
-                            <select id="countryPrefix" class="prefix" aria-label="Country code">
-                                <option value="+1">+1 US</option>
-                                <option value="+44">+44 UK</option>
-                                <option value="+61">+61 AU</option>
-                                <option value="+91">+91 IN</option>
-                                <option value="+81">+81 JP</option>
-                            </select>
-                            <input id="phone" name="phone" class="phone" type="tel" placeholder="555 123 4567" />
-                        </div>
-                    </div>
-                    <div class="field full">
-                        <label for="password">Password</label>
-                        <div class="input-group">
-                            <input id="password" name="password" class="password" type="password"
-                                placeholder="Create a password" />
-                            <button type="button" class="show-hide" id="togglePassword">Show</button>
-                        </div>
-                        <div class="password-meter" id="passwordMeter">
-                            <div class="meter-label">Password Strength</div>
-                            <div class="meter-grid">
-                                <div class="meter-step" id="meterLength">8+ chars</div>
-                                <div class="meter-step" id="meterUpper">1 Upper</div>
-                                <div class="meter-step" id="meterLower">1 Lower</div>
-                                <div class="meter-step" id="meterSpecial">1 Special</div>
+                        <div class="form-row">
+                            <div class="field">
+                                <label for="startClassSubject">Select Subject</label>
+                                <select id="startClassSubject"></select>
+                            </div>
+                            <div class="field">
+                                <label for="startClassGrade">Select Grade</label>
+                                <select id="startClassGrade"></select>
+                            </div>
+                            <div class="field">
+                                <label for="startClassLesson">Select Lesson</label>
+                                <select id="startClassLesson"></select>
+                            </div>
+                            <div class="field">
+                                <label for="startClassTopic">Optional Topic Name</label>
+                                <input id="startClassTopic" type="text" placeholder="Enter topic name" />
+                            </div>
+                            <div class="field">
+                                <label for="startClassDuration">Duration (minutes)</label>
+                                <input id="startClassDuration" type="number" placeholder="45" />
                             </div>
                         </div>
+                        <div class="form-actions">
+                            <button id="startClassConfirm" class="btn btn-primary" type="button">Start Class</button>
+                            <button id="startClassCancel" class="btn btn-secondary" type="button">Cancel</button>
+                        </div>
                     </div>
                 </div>
-                <div class="aux-row">
-                    <label><input type="checkbox" id="remember" checked /> Remember Me</label>
-                    <a href="#">Forgot Password?</a>
-                </div>
-                <div class="social-row">
-                    <p>Or Sign Up with</p>
-                    <div class="social-buttons">
-                        <button id="googleSignupButton" class="social-button" type="button">Google</button>
-                        <button id="microsoftSignupButton" class="social-button" type="button">Microsoft</button>
-                        <button id="linkedinSignupButton" id="linkedinSignupButton" class="social-button" type="button">LinkedIn</button>
+
+                <div id="materialsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="materialsTitle">
+                    <div class="modal-body large-modal">
+                        <div class="modal-header">
+                            <h3 id="materialsTitle">All Materials</h3>
+                            <button id="materialsModalClose" class="modal-close" type="button"
+                                aria-label="Close modal">×</button>
+                        </div>
+                        <div class="materials-content">
+                            <div class="materials-search">
+                                <input type="text" id="materialsSearch" placeholder="Search materials..." />
+                            </div>
+                            <div id="materialsContainer" class="materials-container"></div>
+                        </div>
                     </div>
                 </div>
-                <div class="submit-group">
-                    <label class="agreement"><input type="checkbox" id="terms" /> I agree to the <a href="#">Terms of
-                            Service</a></label>
-                    <button id="createAccountButton" class="primary-button" type="button">Create Account</button>
+
+                <div id="studentModal" class="modal" role="dialog" aria-modal="true"
+                    aria-labelledby="studentModalTitle">
+                    <div class="modal-body">
+                        <div class="modal-header">
+                            <div>
+                                <p class="small-title">Class students</p>
+                                <h3 id="studentModalTitle">Students</h3>
+                            </div>
+                            <button id="studentModalClose" class="modal-close" type="button"
+                                aria-label="Close student modal">×</button>
+                        </div>
+                        <div id="studentListContainer" class="materials-container"
+                            style="max-height:60vh; display:grid; gap:14px;"></div>
+                    </div>
                 </div>
-                <div class="login-prompt">
-                    <span>Already have an account?</span>
-                    <a href="index.html#login" class="login-link">Log in</a>
-                </div>
-            </section>
+
+            </main>
         </div>
     </div>
-    <script type="module">
-        // Simple localStorage-based registration (no Firebase)
-        
-        function saveLearnerData(learner, email, password) {
-            try {
-                // Store user in localStorage
-                const users = JSON.parse(localStorage.getItem('sl_users') || '[]');
-                
-                // Check if email already exists
-                if (users.find(u => u.email === email)) {
-                    alert('Email already registered. Please use a different email.');
-                    return Promise.reject(new Error('Email already exists'));
-                }
 
-                const newUser = {
-                    id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-                    ...learner,
-                    password: password, // In production, this should be hashed
-                    role: 'learner'
-                };
+    <div id="activeClassBar" class="active-class-bar" role="status" aria-live="polite">
+        <div class="active-class-info">
+            <strong id="activeClassLabel">Live class in session</strong>
+            <p class="small-note" id="activeClassTopic">Topic: —</p>
+        </div>
+        <div class="active-class-metrics">
+            <span class="metric-chip">⏱️ <strong id="activeClassTimer">00:00</strong></span>
+            <span class="metric-chip">👥 <strong id="activeClassCount">0</strong> joining</span>
+        </div>
+        <button id="endClassBtn" class="btn btn-secondary" type="button">End Class</button>
+    </div>
 
-                users.push(newUser);
-                localStorage.setItem('sl_users', JSON.stringify(users));
-                localStorage.setItem('sl_current_user', JSON.stringify(newUser));
-                
-                return Promise.resolve();
-            } catch (error) {
-                console.error('Error saving learner data:', error);
-                alert('Unable to save registration data. Please try again later.');
-                throw error;
-            }
-        }
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Simple localStorage-based teacher dashboard (no Firebase)
 
-        const passwordInput = document.getElementById('password');
-        const togglePassword = document.getElementById('togglePassword');
-        const fullnameInput = document.getElementById('fullname');
-        const gradeSelect = document.getElementById('grade');
-        const streamField = document.getElementById('streamField');
-        const streamSelect = document.getElementById('stream');
-        const createAccountButton = document.getElementById('createAccountButton');
-        const dobInput = document.getElementById('dob');
-        const phoneInput = document.getElementById('phone');
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const themeLabel = document.getElementById('themeLabel');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const startClassBtn = document.getElementById('startClassBtn');
+        const createLessonBtn = document.getElementById('createLessonBtn');
+        const notificationToggle = document.getElementById('notificationToggle');
+        const notificationPanel = document.getElementById('notificationPanel');
+        const notificationsList = document.getElementById('notificationsList');
+        const notificationCount = document.getElementById('notificationCount');
+        const clearNotifications = document.getElementById('clearNotifications');
+        const welcomeGreeting = document.getElementById('welcomeGreeting');
+        const storedTheme = localStorage.getItem('theme') || 'light';
+        const notificationsStorageKey = 'teacherNotifications';
 
-        const mandatorySubjects = ['English', 'Physical Education', 'Computer Science'];
-        const seniorStreamSubjects = {
-            PCM: ['Physics', 'Chemistry', 'Mathematics'],
-            PCB: ['Physics', 'Chemistry', 'Biology'],
-            Commerce: ['Accountancy', 'Business Studies', 'Economics'],
-            Arts: ['History', 'Political Science', 'Geography', 'Sociology', 'Psychology']
+        const contentModal = document.getElementById('contentModal');
+        const contentModalClose = document.getElementById('contentModalClose');
+        const contentTypeSelect = document.getElementById('contentType');
+        const contentClassSelect = document.getElementById('contentClass');
+        const contentSubjectSelect = document.getElementById('contentSubject');
+        const contentChapterInput = document.getElementById('contentChapter');
+        const contentTitleInput = document.getElementById('contentTitle');
+        const contentDescriptionInput = document.getElementById('contentDescription');
+        const contentFileInput = document.getElementById('contentFile');
+        const liveScheduleFields = document.getElementById('liveScheduleFields');
+        const contentDateInput = document.getElementById('contentDate');
+        const saveContentBtn = document.getElementById('saveContentBtn');
+        const cancelContentBtn = document.getElementById('cancelContentBtn');
+        const assignmentBadge = document.getElementById('assignmentBadge');
+        const assignmentClasses = document.getElementById('assignmentClasses');
+        const gradeFilterPill = document.getElementById('gradeFilterPill');
+        const gradeDropdown = document.getElementById('gradeDropdown');
+        const gradeOptions = document.getElementById('gradeOptions');
+        const subjectSection = document.getElementById('subjectSection');
+        const subjectContentPanel = document.getElementById('subjectContentPanel');
+        const selectedSubjectHeading = document.getElementById('selectedSubjectHeading');
+        const quizzesList = document.getElementById('quizzesList');
+        const videosList = document.getElementById('videosList');
+        const photosList = document.getElementById('photosList');
+        const docsList = document.getElementById('docsList');
+        const uploadQuizBtn = document.getElementById('uploadQuizBtn');
+        const uploadVideoBtnSubject = document.getElementById('uploadVideoBtnSubject');
+        const uploadPhotoBtnSubject = document.getElementById('uploadPhotoBtnSubject');
+        const uploadDocBtnSubject = document.getElementById('uploadDocBtnSubject');
+        const uploadQuizSubjectBtn = document.getElementById('uploadQuizSubjectBtn');
+
+        const materialsModal = document.getElementById('materialsModal');
+        const materialsModalClose = document.getElementById('materialsModalClose');
+        const materialsTitle = document.getElementById('materialsTitle');
+        const materialsSearch = document.getElementById('materialsSearch');
+        const materialsContainer = document.getElementById('materialsContainer');
+        const studentModal = document.getElementById('studentModal');
+        const studentModalClose = document.getElementById('studentModalClose');
+        const studentModalTitle = document.getElementById('studentModalTitle');
+        const studentListContainer = document.getElementById('studentListContainer');
+
+        // Start class & lesson UI elements
+        const createLessonModal = document.getElementById('createLessonModal');
+        const createLessonModalClose = document.getElementById('createLessonModalClose');
+        const lessonTitleInput = document.getElementById('lessonTitle');
+        const lessonSubjectSelect = document.getElementById('lessonSubject');
+        const lessonGradeSelect = document.getElementById('lessonGrade');
+        const lessonDescriptionInput = document.getElementById('lessonDescription');
+        const lessonPublishStatus = document.getElementById('lessonPublishStatus');
+        const lessonBackBtn = document.getElementById('lessonBackBtn');
+        const lessonNextBtn = document.getElementById('lessonNextBtn');
+        const lessonSaveBtn = document.getElementById('lessonSaveBtn');
+        const lessonStep1 = document.getElementById('lessonStep1');
+        const lessonStep2 = document.getElementById('lessonStep2');
+        const lessonStep3 = document.getElementById('lessonStep3');
+        const lessonStepOne = document.getElementById('lessonStepOne');
+        const lessonStepTwo = document.getElementById('lessonStepTwo');
+        const lessonStepThree = document.getElementById('lessonStepThree');
+        const resourceAssignmentsCount = document.getElementById('resourceAssignmentsCount');
+        const resourceQuizzesCount = document.getElementById('resourceQuizzesCount');
+        const resourceVideosCount = document.getElementById('resourceVideosCount');
+        const resourcePhotosCount = document.getElementById('resourcePhotosCount');
+        const resourceNotesCount = document.getElementById('resourceNotesCount');
+        const addAssignmentBtn = document.getElementById('addAssignmentBtn');
+        const addQuizBtn = document.getElementById('addQuizBtn');
+        const addVideoBtn = document.getElementById('addVideoBtn');
+        const addPhotoBtn = document.getElementById('addPhotoBtn');
+        const addNoteBtn = document.getElementById('addNoteBtn');
+
+        const startClassSubjectSelect = document.getElementById('startClassSubject');
+        const startClassGradeSelect = document.getElementById('startClassGrade');
+        const startClassLessonSelect = document.getElementById('startClassLesson');
+        const startClassTopicInput = document.getElementById('startClassTopic');
+        const startClassDurationInput = document.getElementById('startClassDuration');
+        const startClassConfirm = document.getElementById('startClassConfirm');
+        const startClassCancel = document.getElementById('startClassCancel');
+        const startClassModalClose = document.getElementById('startClassModalClose');
+        const startClassModal = document.getElementById('startClassModal');
+        const activeClassBar = document.getElementById('activeClassBar');
+        const activeClassLabel = document.getElementById('activeClassLabel');
+        const activeClassTopic = document.getElementById('activeClassTopic');
+        const activeClassTimer = document.getElementById('activeClassTimer');
+        const activeClassCount = document.getElementById('activeClassCount');
+        const endClassBtn = document.getElementById('endClassBtn');
+
+        let teacherProfile = null;
+        let teacherAssignment = null;
+        let selectedGrade = null;
+        let selectedSubject = null;
+        let currentMaterialsSubject = null;
+        let activeClassTimerInterval = null;
+        let activeClassState = null;
+        let lessonStep = 1;
+        const lessonCreateData = { title: '', subject: '', grade: '', description: '', publishStatus: 'draft', resources: { assignments: 0, quizzes: 0, videos: 0, photos: 0, notes: 0 } };
+        const resourceButtons = {
+            assignments: 'addAssignmentBtn',
+            quizzes: 'addQuizBtn',
+            videos: 'addVideoBtn',
+            photos: 'addPhotoBtn',
+            notes: 'addNoteBtn'
         };
 
-        function getSubjectsForGradeAndStream(grade, stream) {
-            if (grade === '11' || grade === '12') {
-                const selectedStream = stream || 'PCM';
-                return [
-                    ...((seniorStreamSubjects[selectedStream] || [])),
-                    ...mandatorySubjects
-                ];
-            }
-            return [];
+        function loadNotifications() {
+            return JSON.parse(localStorage.getItem(notificationsStorageKey) || '[]');
         }
 
-        const emailInput = document.getElementById('email');
-        const termsInput = document.getElementById('terms');
-        const countryPrefix = document.getElementById('countryPrefix');
-        const meterLength = document.getElementById('meterLength');
-        const meterUpper = document.getElementById('meterUpper');
-        const meterLower = document.getElementById('meterLower');
-        const meterSpecial = document.getElementById('meterSpecial');
-        const googleSignupButton = document.getElementById('googleSignupButton');
-        const microsoftSignupButton = document.getElementById('microsoftSignupButton');
-        const linkedinSignupButton = document.getElementById('linkedinSignupButton');
+        function saveNotifications(items) {
+            localStorage.setItem(notificationsStorageKey, JSON.stringify(items));
+        }
 
-        togglePassword.addEventListener('click', () => {
-            const type = passwordInput.type === 'password' ? 'text' : 'password';
-            passwordInput.type = type;
-            togglePassword.textContent = type === 'password' ? 'Show' : 'Hide';
-        });
+        function getTeacherAssignment() {
+            return teacherProfile?.teachingAssignment || null;
+        }
 
-        function validateInput(input, predicate) {
-            if (predicate(input.value)) {
-                input.classList.add('valid');
+        const mandatory11Subjects = ['English', 'Physical Education', 'Computer Science'];
+        const stream11Subjects = {
+            PCM: ['Physics', 'Chemistry', 'Mathematics'],
+            PCB: ['Biology', 'Chemistry', 'Physics'],
+            Commerce: ['Commerce', 'Economics', 'Business Studies'],
+            Arts: ['History', 'Geography', 'Political Science']
+        };
+
+        function getAllowedSubjects() {
+            if (!teacherAssignment) return [];
+            return teacherAssignment.subjects || [];
+        }
+
+        function getAllowedClasses() {
+            if (!teacherAssignment) return [];
+            if (teacherAssignment.mode === 'teachAll') {
+                return teacherAssignment.classes || [];
+            }
+            return [...new Set(Object.values(teacherAssignment.classMap || {}).flat())];
+        }
+
+        function formatAssignmentSummary() {
+            if (!teacherAssignment) return 'No teaching assignment found.';
+            if (teacherAssignment.mode === 'teachAll') {
+                const stream = teacherAssignment.stream ? ` • ${teacherAssignment.stream}` : '';
+                return `${teacherAssignment.gradeGroup.replace('-', '–')} All Subjects${stream}`;
+            }
+            const subjectCount = teacherAssignment.subjects?.length || 0;
+            return `Subject Specialist • ${subjectCount} subject${subjectCount === 1 ? '' : 's'}`;
+        }
+
+        function formatAssignmentClasses() {
+            const allowedClasses = getAllowedClasses();
+            if (!allowedClasses.length) return 'No classes assigned yet.';
+            return allowedClasses.join(', ');
+        }
+
+        function renderClassBatches() {
+            const container = document.getElementById('classBatchGrid');
+            const subjects = getAllowedSubjects();
+            const classes = getAllowedClasses();
+            if (!container) return;
+            if (!subjects.length || !classes.length) {
+                container.innerHTML = '<div class="content-card"><h4>No batch assignment found</h4><p>Your dashboard will display the classes and subjects selected during registration.</p></div>';
+                return;
+            }
+            const cards = classes.map(classLevel => {
+                const subjectList = subjects.slice(0, 3).map(subject => `<span class="tag">${subject}</span>`).join('');
+                return `
+                    <div class="class-card">
+                        <div class="label">Class ${classLevel}</div>
+                        <h4>${subjects.length === 1 ? subjects[0] : subjects.length > 3 ? 'Assigned subjects' : 'Assigned subjects'}</h4>
+                        <div class="meta"><span>${subjectList}</span><span>${subjects.length} subjects</span></div>
+                        <div class="button-group"><button class="btn btn-primary view-students-btn" data-class-level="${classLevel}" type="button">View students</button><button class="btn btn-secondary" type="button">Attendance</button></div>
+                    </div>
+                `;
+            });
+            container.innerHTML = cards.join('');
+            container.querySelectorAll('.view-students-btn').forEach(button => {
+                button.addEventListener('click', () => openStudentModal(button.dataset.classLevel));
+            });
+        }
+
+        function populateContentOptions() {
+            const subjects = selectedGrade ? getAllowedSubjectsForGrade(selectedGrade) : getAllowedSubjects();
+            contentSubjectSelect.innerHTML = subjects.length
+                ? subjects.map(subject => `<option value="${subject}">${subject}</option>`).join('')
+                : '<option value="">No subject defined</option>';
+            const classes = getAllowedClasses();
+            contentClassSelect.innerHTML = classes.length
+                ? classes.map(level => `<option value="${level}">Class ${level}</option>`).join('')
+                : '<option value="">No class defined</option>';
+        }
+
+        function buildGradeOptions() {
+            const grades = getAllowedClasses();
+            if (!gradeOptions) return;
+            if (!grades.length) {
+                selectedGrade = null;
+                gradeOptions.innerHTML = '<div class="filter-option empty">No grades assigned</div>';
+                renderSubjectSection();
+                return;
+            }
+            gradeOptions.innerHTML = grades.map(level => `<div class="filter-option" data-grade="${level}" tabindex="0">Grade ${level}</div>`).join('');
+            gradeOptions.querySelectorAll('.filter-option').forEach(option => {
+                option.addEventListener('click', () => selectGrade(option.dataset.grade));
+                option.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        selectGrade(option.dataset.grade);
+                    }
+                });
+            });
+            if (!selectedGrade) {
+                selectedGrade = grades[0];
+            }
+            renderSubjectSection();
+            updateCharts();
+        }
+
+        function selectGrade(grade) {
+            selectedGrade = grade;
+            selectedSubject = null;
+            if (gradeDropdown) {
+                gradeDropdown.classList.remove('open');
+                gradeFilterPill?.setAttribute('aria-expanded', 'false');
+                gradeDropdown.setAttribute('aria-hidden', 'true');
+            }
+            renderSubjectSection();
+            updateCharts();
+        }
+
+        function getStreamSubjectsForGrade() {
+            const stream = teacherAssignment?.stream;
+            return stream11Subjects[stream] || [];
+        }
+
+        function getAllowedSubjectsForGrade(grade) {
+            if (!teacherAssignment || !grade) return [];
+            const gradeNumber = Number(grade);
+            if (teacherAssignment.mode === 'teachAll' && (gradeNumber === 11 || gradeNumber === 12)) {
+                const streamSubjects = getStreamSubjectsForGrade();
+                return [...mandatory11Subjects, ...streamSubjects];
+            }
+            if (teacherAssignment.mode === 'teachAll') {
+                return teacherAssignment.subjects || [];
+            }
+            const subjects = (teacherAssignment.subjects || []).filter(subject => {
+                return Array.isArray(teacherAssignment.classMap?.[subject]) && teacherAssignment.classMap[subject].includes(grade);
+            });
+            if (gradeNumber === 11 || gradeNumber === 12) {
+                const mandatory = mandatory11Subjects.filter(subject => subjects.includes(subject));
+                const others = subjects.filter(subject => !mandatory.includes(subject));
+                return [...mandatory, ...others];
+            }
+            return subjects;
+        }
+
+        function renderSubjectSection() {
+            if (!subjectSection) return;
+            if (!selectedGrade) {
+                subjectSection.innerHTML = '<div class="content-card"><h4>Select a grade to view subjects</h4><p class="small-note">Choose one of your assigned grades to load the available subjects.</p></div>';
+                if (subjectContentPanel) subjectContentPanel.style.display = 'none';
+                renderStudentSection();
+                return;
+            }
+            const subjects = getAllowedSubjectsForGrade(selectedGrade);
+            if (!subjects.length) {
+                subjectSection.innerHTML = '<div class="content-card"><h4>No subjects available</h4><p class="small-note">Your selected grade is not assigned to any subjects yet.</p></div>';
+                if (subjectContentPanel) subjectContentPanel.style.display = 'none';
+                renderStudentSection();
+                return;
+            }
+            const streamLabel = (teacherAssignment.mode === 'teachAll' && (selectedGrade === '11' || selectedGrade === '12') && teacherAssignment.stream)
+                ? `${teacherAssignment.stream} stream` : '';
+            subjectSection.innerHTML = subjects.map(subject => {
+                const isMandatory = mandatory11Subjects.includes(subject);
+                return `
+                <article class="subject-card">
+                    <div class="subject-meta">
+                        <div>
+                            <h3>${subject}</h3>
+                            <span class="small-note">Grade ${selectedGrade}${streamLabel ? ` • ${streamLabel}` : ''}</span>
+                        
+                    <div class="subject-actions">
+                        <button class="btn btn-secondary" type="button" data-subject="${subject}" data-action="assignments">Assignments</button>
+                        <button class="btn btn-secondary" type="button" data-subject="${subject}" data-action="quizzes">Quizzes</button>
+                        <button class="btn btn-secondary" type="button" data-subject="${subject}" data-action="videos">Videos</button>
+                        <button class="btn btn-secondary" type="button" data-subject="${subject}" data-action="photos">Photos</button>
+                        <button class="btn btn-secondary" type="button" data-subject="${subject}" data-action="notes">Notes/PDFs</button>
+                        <button class="btn btn-primary" type="button" data-subject="${subject}" data-action="view-materials">View Materials</button>
+                    </div>
+                </article>
+            `;
+            }).join('');
+            subjectSection.querySelectorAll('button[data-subject]').forEach(button => {
+                button.addEventListener('click', () => {
+                    const action = button.dataset.action;
+                    if (action === 'view-materials') {
+                        openMaterialsModal(button.dataset.subject);
+                    } else {
+                        selectSubject(button.dataset.subject, action);
+                    }
+                });
+            });
+            renderStudentSection();
+            if (subjectContentPanel) subjectContentPanel.style.display = 'none';
+        }
+
+        function selectSubject(subject) {
+            selectedSubject = subject;
+            if (!selectedGrade || !selectedSubject) return;
+            if (selectedSubjectHeading) {
+                selectedSubjectHeading.textContent = `${selectedSubject} • Grade ${selectedGrade}`;
+            }
+            if (subjectContentPanel) {
+                subjectContentPanel.style.display = 'block';
+            }
+            renderSelectedSubjectContent();
+        }
+
+        function renderResourceList(container, items, emptyText) {
+            if (!container) return;
+            if (!items.length) {
+                container.innerHTML = `<div class="content-card"><p class="small-note">${emptyText}</p></div>`;
+                return;
+            }
+            container.innerHTML = items.map(item => `
+                <article class="resource-item">
+                    <strong>${item.title || item.fileName || 'Untitled resource'}</strong>
+                    <span>${item.subject} • Grade ${item.classLevel} • ${item.type?.toUpperCase() || 'Resource'}</span>
+                    <span>${new Date(item.createdAt).toLocaleString()}</span>
+                    <span>Teacher ID: ${item.teacherId || 'N/A'}</span>
+                </article>
+            `).join('');
+        }
+
+        function renderSubjectContentLists(items) {
+            const quizzes = items.filter(item => item.type === 'quiz');
+            const videos = items.filter(item => item.type === 'video');
+            const photos = items.filter(item => item.type === 'image');
+            const docs = items.filter(item => item.type === 'pdf');
+            renderResourceList(quizzesList, quizzes, 'No quizzes uploaded for this subject yet.');
+            renderResourceList(videosList, videos, 'No video lessons uploaded yet.');
+            renderResourceList(photosList, photos, 'No photos or diagrams uploaded yet.');
+            renderResourceList(docsList, docs, 'No notes or PDFs uploaded yet.');
+        }
+
+        function openMaterialsModal(subject) {
+            currentMaterialsSubject = subject;
+            materialsTitle.textContent = `Materials for ${subject} - Grade ${selectedGrade}`;
+            materialsSearch.value = '';
+            renderMaterials(subject);
+            materialsModal.classList.add('open');
+        }
+
+        function openStudentModal(classLevel) {
+            const students = getStoredStudentsForGrade(classLevel);
+            if (studentModalTitle) {
+                studentModalTitle.textContent = `Grade ${classLevel} students`;
+            }
+            if (!studentListContainer) return;
+            if (!students.length) {
+                studentListContainer.innerHTML = `<div class="content-card"><p class="small-note">No students enrolled for Grade ${classLevel}.</p></div>`;
             } else {
-                input.classList.remove('valid');
+                studentListContainer.innerHTML = students.map(student => {
+                    const profile = student.profile || {};
+                    const studentName = profile.name || profile.fullName || student.name || 'Student';
+                    const roll = profile.rollNumber || student.roll || profile.roll || 'N/A';
+                    const progress = student.progress ?? profile.progress ?? 0;
+                    return `
+                        <article class="subject-card">
+                            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+                                <div>
+                                    <h4>${studentName}</h4>
+                                    <p class="small-note">Roll: ${roll}</p>
+                                </div>
+                                <span>${progress}% progress</span>
+                            </div>
+                        </article>
+                    `;
+                }).join('');
             }
+            studentModal.classList.add('open');
         }
 
-        fullnameInput.addEventListener('input', () => {
-            validateInput(fullnameInput, value => value.trim().length >= 3);
-        });
-
-        gradeSelect.addEventListener('change', () => {
-            validateInput(gradeSelect, value => value !== '');
-            updateStreamVisibility();
-        });
-
-        function updateStreamVisibility() {
-            const selectedClass = gradeSelect.value;
-            const shouldShowStream = selectedClass === '11' || selectedClass === '12';
-            streamField.classList.toggle('visible', shouldShowStream);
-            if (!shouldShowStream) {
-                streamSelect.value = '';
-            }
+        function closeStudentModal() {
+            studentModal?.classList.remove('open');
         }
 
-        createAccountButton.addEventListener('click', async () => {
-            if (!fullnameInput.value.trim()) {
-                alert('Please enter your full name.');
-                fullnameInput.focus();
-                return;
+        function renderMaterials(subject, search = '') {
+            const allContent = JSON.parse(localStorage.getItem('teacherContent') || '[]');
+            let filteredContent = allContent.filter(item =>
+                item.teacherId === teacherProfile.staffId &&
+                item.classLevel === selectedGrade &&
+                item.subject === subject
+            ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+            if (search) {
+                filteredContent = filteredContent.filter(item =>
+                    (item.title || '').toLowerCase().includes(search.toLowerCase()) ||
+                    (item.fileName || '').toLowerCase().includes(search.toLowerCase())
+                );
             }
 
-            if (!gradeSelect.value) {
-                alert('Please select your class/grade.');
-                gradeSelect.focus();
+            const grouped = {
+                assignments: filteredContent.filter(item => item.type === 'assignment'),
+                quizzes: filteredContent.filter(item => item.type === 'quiz'),
+                videos: filteredContent.filter(item => item.type === 'video'),
+                photos: filteredContent.filter(item => item.type === 'image'),
+                notes: filteredContent.filter(item => item.type === 'pdf')
+            };
+
+            const html = Object.entries(grouped).map(([type, items]) => {
+                if (!items.length) return '';
+                const typeLabel = {
+                    assignments: 'Assignments',
+                    quizzes: 'Quizzes',
+                    videos: 'Videos',
+                    photos: 'Photos',
+                    notes: 'Notes/PDFs'
+                }[type];
+                const icon = {
+                    assignments: '📄',
+                    quizzes: '📝',
+                    videos: '🎥',
+                    photos: '🖼️',
+                    notes: '📚'
+                }[type];
+                const list = items.map(item => `
+                    <div class="material-item">
+                        <div class="material-icon">${icon}</div>
+                        <div class="material-info">
+                            <strong>${item.title || item.fileName || 'Untitled'}</strong>
+                            <span>${new Date(item.createdAt).toLocaleString()}</span>
+                        </div>
+                        <div class="material-download">
+                            <button onclick="downloadMaterial('${item.id}')">Download</button>
+                        </div>
+                    </div>
+                `).join('');
+                return `
+                    <div class="material-group">
+                        <h4>${typeLabel}</h4>
+                        <div class="material-list">${list}</div>
+                    </div>
+                `;
+            }).join('');
+
+            materialsContainer.innerHTML = html || '<p class="small-note">No materials found.</p>';
+        }
+
+        function dispatchRealtimeEvent(eventType, payload = {}) {
+            const event = new CustomEvent('dashboard-event', { detail: { type: eventType, payload } });
+            window.dispatchEvent(event);
+            localStorage.setItem('dashboardLastUpdate', JSON.stringify({ type: eventType, payload, timestamp: Date.now() }));
+        }
+
+        function registerRealtimeListeners() {
+            window.addEventListener('dashboard-event', event => {
+                const { type } = event.detail || {};
+                if (!type) return;
+                updateStats();
+                if (type === 'class-started') renderClassBatches();
+                if (type === 'assessment-submitted') showToast('Pending assessments updated');
+                if (type === 'student-joined') showToast('Student joined live class');
+                if (type === 'announcement') renderNotifications();
+            });
+
+            window.addEventListener('storage', () => {
+                updateStats();
+                renderNotifications();
+            });
+        }
+
+        function getLessonsForSubject(subject) {
+            const lessons = JSON.parse(localStorage.getItem('teacherLessons') || '[]');
+            return lessons.filter(lesson => lesson.teacherId === teacherProfile.staffId && lesson.subject === subject);
+        }
+
+        function populateStartClassOptions() {
+            const classes = getAllowedClasses();
+            startClassGradeSelect.innerHTML = classes.length
+                ? classes.map(level => `<option value="${level}">Grade ${level}</option>`).join('')
+                : '<option value="">No grade available</option>';
+            const subjects = getAllowedSubjects();
+            startClassSubjectSelect.innerHTML = subjects.length
+                ? subjects.map(subject => `<option value="${subject}">${subject}</option>`).join('')
+                : '<option value="">No subject available</option>';
+            updateStartClassLessons();
+        }
+
+        function updateStartClassLessons() {
+            const subject = startClassSubjectSelect.value;
+            const lessons = getLessonsForSubject(subject);
+            if (!lessons.length) {
+                startClassLessonSelect.innerHTML = '<option value="">No lessons created yet</option>';
                 return;
             }
+            startClassLessonSelect.innerHTML = lessons.map(lesson => `<option value="${lesson.id}">${lesson.title}</option>`).join('');
+        }
 
-            if ((gradeSelect.value === '11' || gradeSelect.value === '12') && !streamSelect.value) {
-                alert('Please choose a stream for Class 11 or Class 12.');
-                streamSelect.focus();
+        function openStartClassModal() {
+            populateStartClassOptions();
+            if (startClassModal) startClassModal.classList.add('open');
+        }
+
+        function closeStartClassModal() {
+            if (startClassModal) startClassModal.classList.remove('open');
+        }
+
+        function renderActiveClassBar(session) {
+            if (!activeClassBar) return;
+            activeClassState = session;
+            activeClassLabel.textContent = session.title || 'Live class in session';
+            activeClassTopic.textContent = `Topic: ${session.topic || 'Not specified'}`;
+            activeClassCount.textContent = session.joiningCount || 0;
+            activeClassTimer.textContent = formatTimer(session.elapsed || 0);
+            activeClassBar.classList.add('open');
+            clearInterval(activeClassTimerInterval);
+            activeClassTimerInterval = setInterval(() => {
+                session.elapsed += 1;
+                activeClassTimer.textContent = formatTimer(session.elapsed);
+                if (session.joiningCount < 24) session.joiningCount += Math.floor(Math.random() * 2);
+                activeClassCount.textContent = session.joiningCount;
+            }, 1000);
+        }
+
+        function formatTimer(seconds) {
+            const minutes = String(Math.floor(seconds / 60)).padStart(2, '0');
+            const remaining = String(seconds % 60).padStart(2, '0');
+            return `${minutes}:${remaining}`;
+        }
+
+        function endActiveClass() {
+            if (!activeClassState) return;
+            clearInterval(activeClassTimerInterval);
+            activeClassBar.classList.remove('open');
+            showToast('Live class ended successfully');
+            dispatchRealtimeEvent('class-ended', { classId: activeClassState.id });
+            activeClassState = null;
+        }
+
+        function openCreateLessonModal() {
+            lessonStep = 1;
+            resetLessonForm();
+            updateLessonStep();
+            if (createLessonModal) createLessonModal.classList.add('open');
+        }
+
+        function closeCreateLessonModal() {
+            if (createLessonModal) createLessonModal.classList.remove('open');
+        }
+
+        function resetLessonForm() {
+            lessonCreateData.title = '';
+            lessonCreateData.subject = getAllowedSubjects()[0] || '';
+            lessonCreateData.grade = getAllowedClasses()[0] || '';
+            lessonCreateData.description = '';
+            lessonCreateData.publishStatus = 'draft';
+            lessonCreateData.resources = { assignments: 0, quizzes: 0, videos: 0, photos: 0, notes: 0 };
+            lessonTitleInput.value = '';
+            lessonSubjectSelect.innerHTML = getAllowedSubjects().map(subject => `<option value="${subject}">${subject}</option>`).join('');
+            lessonGradeSelect.innerHTML = getAllowedClasses().map(level => `<option value="${level}">Grade ${level}</option>`).join('');
+            lessonSubjectSelect.value = lessonCreateData.subject;
+            lessonGradeSelect.value = lessonCreateData.grade;
+            lessonDescriptionInput.value = '';
+            lessonPublishStatus.value = 'draft';
+            updateLessonResourceDisplay();
+        }
+
+        function updateLessonStep() {
+            lessonStep1.classList.toggle('active', lessonStep === 1);
+            lessonStep2.classList.toggle('active', lessonStep === 2);
+            lessonStep3.classList.toggle('active', lessonStep === 3);
+            lessonStepOne.style.display = lessonStep === 1 ? 'block' : 'none';
+            lessonStepTwo.style.display = lessonStep === 2 ? 'grid' : 'none';
+            lessonStepThree.style.display = lessonStep === 3 ? 'block' : 'none';
+            lessonBackBtn.style.display = lessonStep === 1 ? 'none' : 'inline-flex';
+            lessonNextBtn.style.display = lessonStep < 3 ? 'inline-flex' : 'none';
+            lessonSaveBtn.style.display = lessonStep === 3 ? 'inline-flex' : 'none';
+        }
+
+        function updateLessonResourceDisplay() {
+            resourceAssignmentsCount.textContent = `${lessonCreateData.resources.assignments} resources`;
+            resourceQuizzesCount.textContent = `${lessonCreateData.resources.quizzes} resources`;
+            resourceVideosCount.textContent = `${lessonCreateData.resources.videos} resources`;
+            resourcePhotosCount.textContent = `${lessonCreateData.resources.photos} resources`;
+            resourceNotesCount.textContent = `${lessonCreateData.resources.notes} resources`;
+        }
+
+        function addLessonResource(type) {
+            lessonCreateData.resources[type] = (lessonCreateData.resources[type] || 0) + 1;
+            updateLessonResourceDisplay();
+            showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} added`);
+        }
+
+        function saveLesson() {
+            lessonCreateData.title = lessonTitleInput.value.trim();
+            lessonCreateData.subject = lessonSubjectSelect.value;
+            lessonCreateData.grade = lessonGradeSelect.value;
+            lessonCreateData.description = lessonDescriptionInput.value.trim();
+            lessonCreateData.publishStatus = lessonPublishStatus.value;
+            if (!lessonCreateData.title || !lessonCreateData.subject || !lessonCreateData.grade) {
+                showToast('Please complete the lesson title, subject, and grade');
                 return;
             }
-
-            // Validate based on contact method
-            const emailValue = emailInput.value.trim();
-            const phoneValue = phoneInput.value.trim();
-            const emailValid = /^[^\s@]+@gmail\.com$/i.test(emailValue);
-            const phoneValid = /^[+\d]?(?:[\d\s()\-]){7,20}$/.test(phoneValue);
-            
-            if (!emailValid && !phoneValid) {
-                alert('Please enter a valid email ending with @gmail.com or a valid phone number.');
-                if (!emailValid) emailInput.focus();
-                else phoneInput.focus();
-                return;
-            }
-
-            const passwordValue = passwordInput.value;
-            const passwordValid = passwordValue.length >= 8 && /[A-Z]/.test(passwordValue) && /[a-z]/.test(passwordValue) && /[^A-Za-z0-9]/.test(passwordValue);
-            if (!passwordValid) {
-                alert('Password must be at least 8 characters and include one uppercase letter, one lowercase letter, and one special character.');
-                passwordInput.focus();
-                return;
-            }
-
-            if (!termsInput.checked) {
-                alert('Please agree to the Terms of Service.');
-                termsInput.focus();
-                return;
-            }
-
-            const learnerProfile = {
-                fullname: fullnameInput.value.trim(),
-                grade: gradeSelect.value,
-                stream: streamSelect.value || '',
-                dob: dobInput.value,
-                phone: `${countryPrefix.value} ${phoneInput.value.trim()}`,
-                email: emailInput.value.trim(),
-                termsAccepted: termsInput.checked,
+            const lessons = JSON.parse(localStorage.getItem('teacherLessons') || '[]');
+            lessons.push({
+                id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+                teacherId: teacherProfile.staffId,
+                title: lessonCreateData.title,
+                subject: lessonCreateData.subject,
+                classLevel: lessonCreateData.grade,
+                description: lessonCreateData.description,
+                resources: { ...lessonCreateData.resources },
+                status: lessonCreateData.publishStatus,
                 createdAt: new Date().toISOString()
-            };
+            });
+            localStorage.setItem('teacherLessons', JSON.stringify(lessons));
+            closeCreateLessonModal();
+            showToast(lessonCreateData.publishStatus === 'published' ? 'Lesson published live' : 'Lesson saved as draft');
+            dispatchRealtimeEvent('lesson-published', { lessonTitle: lessonCreateData.title });
+        }
 
-            await saveLearnerData(learnerProfile, emailValue, passwordValue);
-            localStorage.setItem('learnerProfile', JSON.stringify(learnerProfile));
-            window.location.href = 'learner_dashboard.html';
-        });
+        function selectLessonNext() {
+            if (lessonStep === 1 && (!lessonTitleInput.value.trim() || !lessonSubjectSelect.value || !lessonGradeSelect.value)) {
+                showToast('Please fill lesson title, subject, and grade to continue');
+                return;
+            }
+            lessonStep += 1;
+            updateLessonStep();
+        }
 
-        updateStreamVisibility();
-
-        dobInput.addEventListener('input', () => {
-            validateInput(dobInput, value => Boolean(value) && new Date(value) < new Date());
-        });
-
-        phoneInput.addEventListener('input', () => {
-            validateInput(phoneInput, value => /^[+\d]?(?:[\d\s()\-]){7,20}$/.test(value));
-        });
-
-        emailInput.addEventListener('input', () => {
-            validateInput(emailInput, value => /^[^\s@]+@gmail\.com$/i.test(value));
-        });
-
-        passwordInput.addEventListener('input', () => {
-            const value = passwordInput.value;
-            const checks = {
-                length: value.length >= 8,
-                upper: /[A-Z]/.test(value),
-                lower: /[a-z]/.test(value),
-                special: /[!@#$%^&*(),.?":{}|<>]/.test(value)
-            };
-
-            meterLength.classList.toggle('active', checks.length);
-            meterUpper.classList.toggle('active', checks.upper);
-            meterLower.classList.toggle('active', checks.lower);
-            meterSpecial.classList.toggle('active', checks.special);
-            validateInput(passwordInput, value => Object.values(checks).every(Boolean));
-        });
-
-        function setAuthStatus(message, isError = false) {
-            const status = document.getElementById('loginStatus') || document.createElement('p');
-            if (status.id === 'loginStatus') {
-                status.textContent = message;
-                status.style.color = isError ? '#ef4444' : 'var(--text)';
-            } else {
-                console.log(message);
+        function selectLessonBack() {
+            if (lessonStep > 1) {
+                lessonStep -= 1;
+                updateLessonStep();
             }
         }
 
-        // Social signup buttons - show message that these require backend setup
-        googleSignupButton.addEventListener('click', () => {
-            setAuthStatus('Social signup requires backend setup. Please use email registration.', true);
+        function downloadMaterial(id) {
+            // Simulate download - in real app, would trigger file download
+            alert('Download functionality would be implemented here.');
+        }
+
+        function openContentModal(type, subject = null, grade = null) {
+            const typeLabel = {
+                video: 'Upload video lesson',
+                pdf: 'Upload PDF / notes',
+                image: 'Upload images / diagrams',
+                quiz: 'Create quiz',
+                live: 'Schedule live class'
+            }[type] || 'Upload content';
+            contentTypeSelect.value = type;
+            updateModalFields();
+            document.getElementById('modalTitle').textContent = typeLabel;
+            populateContentOptions();
+            if (subject && contentSubjectSelect) contentSubjectSelect.value = subject;
+            if (grade && contentClassSelect) contentClassSelect.value = grade;
+            contentChapterInput.value = '';
+            contentTitleInput.value = '';
+            contentDescriptionInput.value = '';
+            contentFileInput.value = '';
+            contentDateInput.value = '';
+            contentModal.classList.add('open');
+        }
+
+        function closeContentModal() {
+            contentModal.classList.remove('open');
+        }
+
+        function updateModalFields() {
+            const type = contentTypeSelect.value;
+            const isLive = type === 'live';
+            const isQuiz = type === 'quiz';
+
+            // Show/hide live schedule fields
+            const liveFields = document.getElementById('liveScheduleFields');
+            if (liveFields) {
+                liveFields.style.display = isLive ? 'grid' : 'none';
+            }
+
+            // For quiz, file is optional
+            const fileLabel = document.querySelector('label[for="contentFile"]');
+            if (fileLabel) {
+                fileLabel.textContent = isQuiz ? 'Attach file (optional for quiz)' : 'Choose a file or drag and drop';
+            }
+        }
+
+        function uploadTeacherContent() {
+            if (!teacherAssignment) {
+                alert('Teacher assignment is required before uploading content.');
+                return;
+            }
+            const subject = contentSubjectSelect.value;
+            const classLevel = contentClassSelect.value;
+            const chapter = contentChapterInput.value.trim();
+            const title = contentTitleInput.value.trim();
+            const description = contentDescriptionInput.value.trim();
+            const type = contentTypeSelect.value;
+            const file = contentFileInput.files[0];
+
+            // Validation
+            if (!subject || !classLevel || !chapter || !title) {
+                showToast('Please complete all required fields');
+                return;
+            }
+            if (type !== 'quiz' && type !== 'live' && !file) {
+                showToast('Please attach a file for this content type');
+                return;
+            }
+
+            // Get file info if exists
+            let fileInfo = null;
+            if (file) {
+                const fileSize = file.size;
+                const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
+                fileInfo = {
+                    name: file.name,
+                    size: fileSizeMB,
+                    type: file.type
+                };
+            }
+
+            // For live classes, get schedule
+            let scheduleInfo = null;
+            if (type === 'live') {
+                const date = contentDateInput.value;
+                if (!date) {
+                    showToast('Please set a date for the live class');
+                    return;
+                }
+                scheduleInfo = { date };
+            }
+
+            const meta = {
+                id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+                teacherId: teacherProfile.staffId,
+                teacherName: teacherProfile.fullName || 'Teacher',
+                type,
+                subject,
+                classLevel,
+                chapter,
+                title,
+                description,
+                fileInfo: fileInfo,
+                scheduleInfo: scheduleInfo,
+                createdAt: new Date().toISOString(),
+                assignmentMode: teacherAssignment?.mode || 'teachAll',
+                gradeGroup: teacherAssignment?.gradeGroup || null,
+                stream: teacherAssignment?.stream || null,
+                source: 'teacher_dashboard',
+                status: type === 'live' ? 'scheduled' : 'published'
+            };
+
+            try {
+                // Store in localStorage
+                const allContent = JSON.parse(localStorage.getItem('teacherContent') || '[]');
+                allContent.push(meta);
+                localStorage.setItem('teacherContent', JSON.stringify(allContent));
+
+                // Clear form
+                contentChapterInput.value = '';
+                contentTitleInput.value = '';
+                contentDescriptionInput.value = '';
+                contentFileInput.value = '';
+                contentDateInput.value = '';
+
+                closeContentModal();
+                showToast(type === 'live' ? 'Live class scheduled successfully!' : 'Content published successfully!');
+            } catch (error) {
+                console.error('Upload error:', error);
+                showToast('Unable to save the content. Please try again.');
+            }
+        }
+
+        // Global functions for content management
+
+        function showToast(message) {
+            const toast = document.getElementById('dashboardToast');
+            if (!toast) return;
+            toast.textContent = message;
+            toast.classList.add('show');
+            clearTimeout(window.dashboardToastTimer);
+            window.dashboardToastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+        }
+
+
+        function showToast(message) {
+            const toast = document.getElementById('dashboardToast');
+            if (!toast) return;
+            toast.textContent = message;
+            toast.classList.add('show');
+            clearTimeout(window.dashboardToastTimer);
+            window.dashboardToastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+        }
+
+        function renderNotifications() {
+            if (!notificationsList || !notificationCount || !notificationToggle) return;
+            const items = loadNotifications();
+            notificationCount.textContent = items.length;
+            notificationCount.style.display = items.length ? 'inline-flex' : 'none';
+            notificationToggle.classList.toggle('unread', items.length > 0 && !notificationPanel.classList.contains('open'));
+            if (!items.length) {
+                notificationsList.innerHTML = '<div class="notification-empty">No notifications yet.</div>';
+                return;
+            }
+            notificationsList.innerHTML = items.map(item => `
+                <div class="notification-item" data-notification-id="${item.id}">
+                    <strong>${item.message}</strong>
+                    <span>${new Date(item.timestamp).toLocaleString()}</span>
+                </div>
+            `).join('');
+            notificationsList.querySelectorAll('.notification-item').forEach(node => {
+                node.addEventListener('click', () => dismissNotification(node.dataset.notificationId));
+            });
+        }
+
+        function dismissNotification(id) {
+            const items = loadNotifications().filter(item => item.id !== id);
+            saveNotifications(items);
+            renderNotifications();
+            showToast('Notification dismissed');
+        }
+
+
+        function ensureNotificationSeed() {
+            const items = loadNotifications();
+            if (items.length) return;
+            const seed = [
+                { id: 'welcome-' + Date.now(), message: 'Welcome to your teacher console notifications.', timestamp: new Date().toISOString() },
+                { id: 'schedule-' + Date.now(), message: 'You have a meeting scheduled for tomorrow at 9:00 AM.', timestamp: new Date().toISOString() }
+            ];
+            saveNotifications(seed);
+        }
+
+        function applyTheme(theme) {
+            const isDark = theme === 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+            themeIcon.textContent = isDark ? '☀️' : '🌙';
+            themeLabel.textContent = isDark ? 'Light mode' : 'Dark mode';
+            localStorage.setItem('theme', theme);
+            updateChartsTheme(isDark);
+        }
+
+        function loadTeacherProfile() {
+            const profile = JSON.parse(localStorage.getItem('teacherProfile') || 'null');
+            if (!profile || !profile.fullName) {
+                window.location.href = 'teacher_login.html';
+                return null;
+            }
+            teacherProfile = profile;
+            teacherAssignment = getTeacherAssignment();
+            welcomeGreeting.textContent = `Good Afternoon, ${profile.fullName} 👋`;
+            return profile;
+        }
+
+        function updateTeacherAssignmentCard() {
+            if (!teacherAssignment) {
+                document.querySelector('.assign-summary').style.display = 'none';
+                return;
+            }
+            document.querySelector('.assign-summary').style.display = 'grid';
+            assignmentBadge.textContent = formatAssignmentSummary();
+            assignmentClasses.textContent = formatAssignmentClasses();
+        }
+
+        themeToggle.addEventListener('click', () => {
+            const current = document.documentElement.getAttribute('data-theme') || 'light';
+            applyTheme(current === 'light' ? 'dark' : 'light');
         });
 
-        microsoftSignupButton.addEventListener('click', () => {
-            setAuthStatus('Social signup requires backend setup. Please use email registration.', true);
+
+        startClassBtn.addEventListener('click', openStartClassModal);
+        createLessonBtn?.addEventListener('click', openCreateLessonModal);
+
+        gradeFilterPill?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!gradeDropdown) return;
+            const isOpen = gradeDropdown.classList.toggle('open');
+            gradeFilterPill.setAttribute('aria-expanded', String(isOpen));
+            gradeDropdown.setAttribute('aria-hidden', String(!isOpen));
         });
 
-        linkedinSignupButton.addEventListener('click', () => {
-            setAuthStatus('Social signup requires backend setup. Please use email registration.', true);
+        document.addEventListener('click', (event) => {
+            if (gradeFilterPill && !gradeFilterPill.contains(event.target)) {
+                gradeDropdown?.classList.remove('open');
+                gradeFilterPill?.setAttribute('aria-expanded', 'false');
+                gradeDropdown?.setAttribute('aria-hidden', 'true');
+            }
         });
+
+        gradeFilterPill?.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                gradeFilterPill.click();
+            }
+        });
+
+        startClassSubjectSelect?.addEventListener('change', updateStartClassLessons);
+        startClassGradeSelect?.addEventListener('change', updateStartClassLessons);
+        startClassConfirm?.addEventListener('click', () => {
+            const subject = startClassSubjectSelect.value;
+            const grade = startClassGradeSelect.value;
+            const lessonId = startClassLessonSelect.value;
+            const topic = startClassTopicInput.value.trim();
+            const duration = Number(startClassDurationInput.value) || 45;
+            if (!subject || !grade || !lessonId) {
+                showToast('Please select subject, grade and lesson');
+                return;
+            }
+            const lesson = getLessonsForSubject(subject).find(item => item.id === lessonId);
+            const session = {
+                id: Date.now().toString(36),
+                title: lesson ? lesson.title : `${subject} live session`,
+                topic: topic || lesson?.title || 'Live lesson',
+                classLevel: grade,
+                subject,
+                lessonId,
+                elapsed: 0,
+                joiningCount: 1
+            };
+            renderActiveClassBar(session);
+            closeStartClassModal();
+            dispatchRealtimeEvent('class-started', session);
+            showToast('Class started successfully');
+        });
+        startClassCancel?.addEventListener('click', closeStartClassModal);
+        startClassModalClose?.addEventListener('click', closeStartClassModal);
+        endClassBtn?.addEventListener('click', endActiveClass);
+
+        createLessonModalClose?.addEventListener('click', closeCreateLessonModal);
+        lessonBackBtn?.addEventListener('click', selectLessonBack);
+        lessonNextBtn?.addEventListener('click', selectLessonNext);
+        lessonSaveBtn?.addEventListener('click', saveLesson);
+        lessonSubjectSelect?.addEventListener('change', () => {
+            lessonCreateData.subject = lessonSubjectSelect.value;
+        });
+        lessonGradeSelect?.addEventListener('change', () => {
+            lessonCreateData.grade = lessonGradeSelect.value;
+        });
+        addAssignmentBtn?.addEventListener('click', () => addLessonResource('assignments'));
+        addQuizBtn?.addEventListener('click', () => addLessonResource('quizzes'));
+        addVideoBtn?.addEventListener('click', () => addLessonResource('videos'));
+        addPhotoBtn?.addEventListener('click', () => addLessonResource('photos'));
+        addNoteBtn?.addEventListener('click', () => addLessonResource('notes'));
+
+        uploadQuizBtn?.addEventListener('click', () => {
+            if (selectedSubject && selectedGrade) openContentModal('quiz', selectedSubject, selectedGrade);
+        });
+        uploadVideoBtnSubject?.addEventListener('click', () => {
+            if (selectedSubject && selectedGrade) openContentModal('video', selectedSubject, selectedGrade);
+        });
+        uploadPhotoBtnSubject?.addEventListener('click', () => {
+            if (selectedSubject && selectedGrade) openContentModal('image', selectedSubject, selectedGrade);
+        });
+        uploadDocBtnSubject?.addEventListener('click', () => {
+            if (selectedSubject && selectedGrade) openContentModal('pdf', selectedSubject, selectedGrade);
+        });
+        const uploadDocSubjectPanelBtn = document.getElementById('uploadDocSubjectPanelBtn');
+        uploadDocSubjectPanelBtn?.addEventListener('click', () => {
+            if (selectedSubject && selectedGrade) openContentModal('pdf', selectedSubject, selectedGrade);
+        });
+        uploadQuizSubjectBtn?.addEventListener('click', () => {
+            if (selectedSubject && selectedGrade) openContentModal('quiz', selectedSubject, selectedGrade);
+        });
+        contentModalClose?.addEventListener('click', closeContentModal);
+        cancelContentBtn?.addEventListener('click', closeContentModal);
+        contentTypeSelect?.addEventListener('change', updateModalFields);
+        saveContentBtn?.addEventListener('click', uploadTeacherContent);
+        contentFileInput?.addEventListener('change', () => {
+            const fileLabel = document.querySelector('label[for="contentFile"]');
+            if (contentFileInput.files.length) {
+                fileLabel.textContent = `Selected: ${contentFileInput.files[0].name}`;
+            } else {
+                fileLabel.textContent = 'Choose a file or drag and drop';
+            }
+        });
+
+        const chartPalette = {
+            light: { grid: '#e2e8f0', text: '#102a43' },
+            dark: { grid: 'rgba(148, 163, 184, 0.3)', text: '#e2e8f0' }
+        };
+
+        // Fetch functions for dynamic data
+        function fetchClassAverages() {
+            const classes = [5, 6, 7, 8, 9, 10, 11, 12];
+            const averages = classes.map(cls => {
+                const students = getStoredStudentsForGrade(cls);
+                if (!students.length) return 0;
+                const marks = students.map(student => {
+                    const allMarks = JSON.parse(localStorage.getItem('sl_marks') || '[]');
+                    const studentMarks = allMarks.filter(m => m.studentId === student.id);
+                    if (!studentMarks.length) return 0;
+                    const avg = studentMarks.reduce((sum, m) => sum + m.marks, 0) / studentMarks.length;
+                    return avg;
+                });
+                const classAvg = marks.reduce((sum, m) => sum + m, 0) / marks.length || 0;
+                return Math.round(classAvg);
+            });
+            return { labels: classes.map(c => `Class ${c}`), data: averages };
+        }
+
+        function fetchAttendanceTrend(grade) {
+            const students = getStoredStudentsForGrade(grade);
+            if (!students.length) return { labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], data: [0, 0, 0, 0, 0, 0, 0] };
+            const today = new Date();
+            const dates = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(today);
+                d.setDate(today.getDate() - i);
+                dates.push(d.toISOString().split('T')[0]);
+            }
+            const attendanceRecords = JSON.parse(localStorage.getItem('sl_attendance') || '[]');
+            const data = dates.map(date => {
+                const records = attendanceRecords.filter(r => r.date === date && students.some(s => s.id === r.studentId));
+                const present = records.filter(r => r.status === 'present').length;
+                const total = records.length;
+                return total ? Math.round((present / total) * 100) : 0;
+            });
+            const labels = dates.map(d => new Date(d).toLocaleDateString('en', { weekday: 'short' }));
+            return { labels, data };
+        }
+
+        function fetchStudentProgress(grade) {
+            const students = getStoredStudentsForGrade(grade).slice(0, 4);
+            const allMarks = JSON.parse(localStorage.getItem('sl_marks') || '[]');
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const datasets = students.map((student, index) => {
+                const studentMarks = allMarks.filter(m => m.studentId === student.id);
+                const monthlyAvg = months.map((_, i) => {
+                    const monthMarks = studentMarks.filter(m => new Date(m.date).getMonth() === i);
+                    return monthMarks.length ? monthMarks.reduce((sum, m) => sum + m.marks, 0) / monthMarks.length : null;
+                });
+                const profile = student.profile || {};
+                const name = profile.name || profile.fullName || student.name || 'Student';
+                return {
+                    label: name,
+                    data: monthlyAvg,
+                    borderColor: ['#7c3aed', '#6366f1', '#a855f7', '#c4b5fd'][index],
+                    backgroundColor: 'transparent',
+                    tension: 0.35
+                };
+            });
+            return { labels: months, datasets };
+        }
+
+        const classAverageChart = new Chart(document.getElementById('classAverageChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [{ label: 'Average (%)', data: [], backgroundColor: ['#6366f1', '#7c3aed', '#a855f7', '#8b5cf6', '#a855f7', '#c4b5fd', '#7c3aed', '#6366f1'], borderRadius: 16 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { color: chartPalette.light.grid }, ticks: { color: chartPalette.light.text } }, y: { beginAtZero: true, max: 100, grid: { color: chartPalette.light.grid }, ticks: { color: chartPalette.light.text } } }, plugins: { legend: { display: false } } }
+        });
+
+        const attendanceChart = new Chart(document.getElementById('attendanceChart').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{ label: 'Attendance %', data: [], borderColor: '#8b5cf6', backgroundColor: 'rgba(139,92,246,0.16)', fill: true, tension: 0.35, pointRadius: 4, pointBackgroundColor: '#8b5cf6' }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { color: chartPalette.light.grid }, ticks: { color: chartPalette.light.text } }, y: { beginAtZero: true, max: 100, grid: { color: chartPalette.light.grid }, ticks: { color: chartPalette.light.text } } }, plugins: { legend: { display: false } } }
+        });
+
+        const accuracyChart = new Chart(document.getElementById('accuracyChart').getContext('2d'), {
+            type: 'doughnut',
+            data: { labels: ['Correct', 'Incorrect', 'Skipped'], datasets: [{ data: [], backgroundColor: ['#6366f1', '#f59e0b', '#c7d2fe'] }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { color: chartPalette.light.text } } } }
+        });
+
+        const progressChart = new Chart(document.getElementById('progressChart').getContext('2d'), {
+            type: 'line',
+            data: { labels: [], datasets: [] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { color: chartPalette.light.grid }, ticks: { color: chartPalette.light.text } }, y: { beginAtZero: true, max: 100, grid: { color: chartPalette.light.grid }, ticks: { color: chartPalette.light.text } } }, plugins: { legend: { position: 'top', labels: { color: chartPalette.light.text } } } }
+        });
+
+        const attendanceBarChart = new Chart(document.getElementById('attendanceBarChart').getContext('2d'), {
+            type: 'bar',
+            data: { labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'], datasets: [{ label: 'Attendance %', data: [89, 91, 94, 92], backgroundColor: ['#7c3aed', '#6366f1', '#a855f7', '#8b5cf6'], borderRadius: 14 }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { color: chartPalette.light.grid }, ticks: { color: chartPalette.light.text } }, y: { beginAtZero: true, max: 100, grid: { color: chartPalette.light.grid }, ticks: { color: chartPalette.light.text } } }, plugins: { legend: { display: false } } }
+        });
+
+        function updateChartsTheme(isDark) {
+            const palette = isDark ? chartPalette.dark : chartPalette.light;
+            [classAverageChart, attendanceChart, accuracyChart, progressChart, attendanceBarChart].forEach(chart => {
+                chart.options.scales && Object.values(chart.options.scales).forEach(axis => { if (axis.ticks) axis.ticks.color = palette.text; if (axis.grid) axis.grid.color = palette.grid; });
+                if (chart.options.plugins && chart.options.plugins.legend && chart.options.plugins.legend.labels) chart.options.plugins.legend.labels.color = palette.text;
+                chart.update();
+            });
+        }
+
+        function updateStats() {
+            const todaysClasses = getTodaysClasses();
+            const pendingAssessments = getPendingAssessments();
+            const activeStudents = getActiveStudents();
+            const notifications = loadNotifications().length;
+            document.querySelector('.stats-grid > div:nth-child(1) strong').textContent = todaysClasses;
+            document.querySelector('.stats-grid > div:nth-child(2) strong').textContent = pendingAssessments;
+            document.querySelector('.stats-grid > div:nth-child(3) strong').textContent = activeStudents;
+            document.querySelector('.stats-grid > div:nth-child(4) strong').textContent = notifications;
+        }
+
+        function getTodaysClasses() {
+            const allContent = JSON.parse(localStorage.getItem('teacherContent') || '[]');
+            const today = new Date().toISOString().split('T')[0];
+            return allContent.filter(item => item.teacherId === teacherProfile.staffId && item.type === 'live' && item.scheduleInfo?.date === today).length;
+        }
+
+        function getPendingAssessments() {
+            const allContent = JSON.parse(localStorage.getItem('teacherContent') || '[]');
+            return allContent.filter(item => item.teacherId === teacherProfile.staffId && item.type === 'quiz').length;
+        }
+
+        function getStoredStudentsForGrade(grade) {
+            const users = JSON.parse(localStorage.getItem('sl_users') || '[]');
+            const students = users.filter(user => {
+                const profile = user.profile || {};
+                const role = (profile.role || user.role || '').toString().toLowerCase();
+                return role === 'student';
+            });
+
+            if (!grade) {
+                return students;
+            }
+
+            const gradeKey = String(grade);
+            return students.filter(user => {
+                const profile = user.profile || {};
+                const userGrade = profile.grade || user.grade || profile.classLevel || user.classLevel;
+                return String(userGrade) === gradeKey;
+            });
+        }
+
+        function getActiveStudents() {
+            return getStoredStudentsForGrade(selectedGrade).length;
+        }
+
+        function renderStudentSection() {
+            const studentSection = document.getElementById('studentSection');
+            if (!studentSection) return;
+            if (!selectedGrade) {
+                studentSection.innerHTML = '<div class="content-card"><h4>Select a grade to view enrolled students</h4><p class="small-note">Choose one of your assigned grades to load the enrolled students.</p></div>';
+                studentSection.style.display = 'none';
+                return;
+            }
+
+            const students = getStoredStudentsForGrade(selectedGrade);
+            if (!students.length) {
+                studentSection.innerHTML = '<div class="content-card"><h4>No students enrolled yet</h4><p class="small-note">Your selected grade has no registered students in the local system.</p></div>';
+                studentSection.style.display = 'grid';
+                return;
+            }
+
+            studentSection.innerHTML = students.map(student => {
+                const profile = student.profile || {};
+                const studentName = profile.name || profile.fullName || student.name || 'Enrolled student';
+                const progress = student.progress ?? profile.progress ?? 0;
+                const roll = profile.rollNumber || student.roll || profile.roll || 'N/A';
+                return `
+                    <article class="subject-card">
+                        <div style="display:flex;justify-content:space-between;align-items:center; gap:10px; flex-wrap:wrap;">
+                            <div>
+                                <h3>${studentName}</h3>
+                                <span class="small-note">Grade ${selectedGrade} • Roll ${roll}</span>
+                            </div>
+                            <span>${progress}% progress</span>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+            studentSection.style.display = 'grid';
+        }
+
+        function updateCharts() {
+            // Update class average (global)
+            const classAvgData = fetchClassAverages();
+            classAverageChart.data.labels = classAvgData.labels;
+            classAverageChart.data.datasets[0].data = classAvgData.data;
+            classAverageChart.update();
+
+            if (!selectedGrade) return;
+
+            // Attendance trend for selected grade
+            const attendanceData = fetchAttendanceTrend(selectedGrade);
+            attendanceChart.data.labels = attendanceData.labels;
+            attendanceChart.data.datasets[0].data = attendanceData.data;
+            attendanceChart.update();
+
+            // Quiz accuracy for selected grade
+            const accuracyData = fetchQuizAccuracy(selectedGrade);
+            accuracyChart.data.datasets[0].data = accuracyData.data;
+            accuracyChart.update();
+
+            // Student progress comparison for selected grade
+            const progressData = fetchStudentProgress(selectedGrade);
+            progressChart.data.labels = progressData.labels;
+            progressChart.data.datasets = progressData.datasets;
+            progressChart.update();
+        }
+
+        function updateAttendanceSummary() {
+            // Mock
+            document.querySelector('.attendance-summary .attendance-card:nth-child(1) p').textContent = '92%';
+            document.querySelector('.attendance-summary .attendance-card:nth-child(2) p').textContent = '89%';
+            document.querySelector('.attendance-summary .attendance-card:nth-child(3) p').textContent = '5 alerts';
+        }
+
+        function bootstrapDashboard() {
+            if (!loadTeacherProfile()) return;
+            applyTheme(storedTheme);
+            updateTeacherAssignmentCard();
+            renderClassBatches();
+            buildGradeOptions();
+            populateContentOptions();
+            ensureNotificationSeed();
+            registerRealtimeListeners();
+            renderNotifications();
+            updateStats();
+            updateCharts();
+            updateAttendanceSummary();
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bootstrapDashboard);
+        } else {
+            bootstrapDashboard();
+        }
+
+        notificationToggle?.addEventListener('click', () => {
+            notificationPanel?.classList.toggle('open');
+            if (notificationPanel?.classList.contains('open')) {
+                notificationToggle.classList.remove('unread');
+            }
+            renderNotifications();
+        });
+
+        clearNotifications?.addEventListener('click', () => {
+            saveNotifications([]);
+            renderNotifications();
+        });
+
+        document.addEventListener('click', event => {
+            if (notificationPanel && notificationToggle && !notificationPanel.contains(event.target) && !notificationToggle.contains(event.target)) {
+                notificationPanel.classList.remove('open');
+            }
+        });
+
+        studentModalClose?.addEventListener('click', closeStudentModal);
+        materialsModalClose?.addEventListener('click', () => materialsModal.classList.remove('open'));
+        materialsSearch?.addEventListener('input', () => {
+            if (currentMaterialsSubject) {
+                renderMaterials(currentMaterialsSubject, materialsSearch.value);
+            }
+        });
+
+        const { createClient } = supabase
+
+const client = createClient(
+    'https://pdrorihddscfkbesocdq.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkcm9yaWhkZHNjZmtiZXNvY2RxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTUwNzYsImV4cCI6MjA5MjczMTA3Nn0.PmXoZ8cFGFGjKqH2tKXyljEF09vQQXu8F0-OpyyBwkQ'
+)
+
+// Check session — redirect if not logged in
+const checkSession = async () => {
+    const { data: { user } } = await client.auth.getUser()
+    if (!user) {
+        window.location.href = 'learner_login.html'
+        return
+    }
+
+    // Load real name from Supabase learners table
+    const { data: learner } = await client
+        .from('learners')
+        .select('full_name, class_grade')
+        .eq('auth_user_id', user.id)
+        .single()
+
+    if (learner) {
+        // Update name and grade from real Supabase data
+        const name = learner.full_name || 'Learner'
+        profileName.textContent = name
+        welcomeGreeting.textContent = `Good Morning, ${name} 👋`
+        profileAvatar.textContent = name.charAt(0).toUpperCase()
+        dashboardGrade.textContent = `Class ${learner.class_grade || '10'}`
+    }
+}
+
+checkSession()
+
+// Logout
+const logoutButton = document.getElementById('logoutButton')
+logoutButton.addEventListener('click', async () => {
+    await client.auth.signOut()
+    window.location.href = 'learner_login.html'
+})
     </script>
 </body>
 
