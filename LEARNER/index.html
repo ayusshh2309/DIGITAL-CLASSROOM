@@ -961,7 +961,6 @@
 
 
     <script src="login.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/supabase-client.js"></script>
     <script type="module">
 
@@ -1061,10 +1060,10 @@
             loginStatus.style.color = isError ? '#ef4444' : 'var(--text)';
         }
 
-        // Supabase setup
-        const client = window.supabaseClient || (typeof supabase !== 'undefined' && supabase.createClient ? supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY) : null)
+        // Client setup
+        const client = window.appClient || null
 
-        // Login with Supabase
+        // Login
         async function handleLocalLogin() {
             const email = loginEmail.value.trim()
             const password = loginPassword.value
@@ -1117,7 +1116,7 @@
             })
         })
 
-        // LinkedIn (not supported by Supabase directly)
+        // LinkedIn login not supported directly
         linkedinLoginButton.addEventListener('click', () => {
             setLoginStatus('LinkedIn login not supported. Please use email or Google.', true)
         })

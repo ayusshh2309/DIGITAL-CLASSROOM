@@ -789,11 +789,10 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/supabase-client.js"></script>
     <script>
-        // ── Supabase client ──────────────────────────────────────
-        const client = window.supabaseClient || (typeof supabase !== 'undefined' && supabase.createClient ? supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY) : null)
+        // ── Client setup ──────────────────────────────────────
+        const client = window.appClient || null
 
         // ── Elements ─────────────────────────────────────────────
         const fullNameInput = document.getElementById('fullName')
@@ -888,6 +887,12 @@
         createAccountBtn.addEventListener('click', async () => {
             setStatus('')
 
+            if (typeof client === 'undefined' || client === null) {
+                console.error('Backend client is not initialized on this page');
+                setStatus('Unable to connect to the backend. Check client configuration.', 'error');
+                return;
+            }
+
             const fullName = fullNameInput.value.trim()
             const grade = classGradeSelect.value
             const stream = streamSelect.value
@@ -940,22 +945,30 @@
             createAccountBtn.disabled = true
             setStatus('Creating your account...', '')
 
-            // ── Step 1: Supabase Auth signup ─────────────────────
-            const { data, error: authError } = await client.auth.signUp({
-                email,
-                password
-            })
-
-            if (authError) {
-                setStatus(authError.message, 'error')
+            // ── Step 1: Auth signup ─────────────────────
+            let userId = null
+            try {
+                console.log('Attempting signup for', email)
+                const { data, error: authError } = await client.auth.signUp({ email, password })
+                console.log('Signup response', { data, authError })
+                if (authError) throw authError
+                // Some projects require email confirmation; in that case data.user may be null.
+                if (!data || !data.user || !data.user.id) {
+                    setStatus('Account created. Please check your email to confirm your account before signing in.', 'success')
+                    createAccountBtn.disabled = false
+                    return
+                }
+                userId = data.user.id
+            } catch (err) {
+                console.error('Auth signup error', err)
+                setStatus(err.message || 'Signup failed. Check console for details.', 'error')
                 createAccountBtn.disabled = false
                 return
             }
 
-            const userId = data.user.id
-
             // ── Step 2: Insert into learners table ───────────────
-            const { error: dbError } = await client.from('learners').insert({
+            try {
+                const { error: dbError } = await client.from('learners').insert({
                 auth_user_id: userId,
                 full_name: fullName,
                 class_grade: grade,
@@ -967,35 +980,30 @@
                 agreed_to_terms: true,
                 auth_provider: 'email'
             })
-
-            if (dbError) {
-                setStatus(dbError.message, 'error')
+                if (dbError) throw dbError
+            } catch (err) {
+                console.error('DB insert error (learners)', err)
+                setStatus(err.message || 'Unable to save profile. Check console for details.', 'error')
                 createAccountBtn.disabled = false
                 return
             }
 
             // ── Step 3: Insert into user_roles table ─────────────
-            await client.from('user_roles').insert({
-                auth_user_id: userId,
-                role: 'learner'
-            })
+            try {
+                const { error: roleErr } = await client.from('user_roles').insert({ auth_user_id: userId, role: 'learner' })
+                if (roleErr) throw roleErr
+            } catch (err) {
+                console.warn('Failed to insert into user_roles', err)
+            }
 
             // ── Step 4: Save to localStorage for dashboard ────────
-            localStorage.setItem('learnerProfile', JSON.stringify({
-                fullname: fullName,
-                grade: grade,
-                stream: stream || null,
-                email: email,
-                authUserId: userId
-            }))
+            localStorage.setItem('learnerProfile', JSON.stringify({ fullname: fullName, grade: grade, stream: stream || null, email: email, authUserId: userId }))
 
             setStatus('Account created! Redirecting to your dashboard...', 'success')
             createAccountBtn.disabled = false
 
             // ── Step 5: Redirect to dashboard ─────────────────────
-            setTimeout(() => {
-                window.location.href = 'learner_dashboard.html'
-            }, 2000)
+            setTimeout(() => { window.location.href = 'learner_dashboard.html' }, 1200)
         })
 
         // ── Enter key support ────────────────────────────────────

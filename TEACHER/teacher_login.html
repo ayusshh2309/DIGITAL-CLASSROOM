@@ -1093,13 +1093,12 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/supabase-client.js"></script>
     <script type="module">
 
 
-        // Supabase setup
-        const client = window.supabaseClient || (typeof supabase !== 'undefined' && supabase.createClient ? supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY) : null)
+        // Client setup
+        const client = window.appClient || null
 
         async function saveTeacherData(teacher, email, password) {
             // Step 1: Create auth user
@@ -1116,7 +1115,7 @@
             const userId = data.user.id
             const staffId = teacher.staffId
 
-            // Step 2: Upload certification to Supabase Storage
+            // Step 2: Upload certification to storage
             let certUrl = null
             const certFile = documentUploadInput.files[0]
             if (certFile) {

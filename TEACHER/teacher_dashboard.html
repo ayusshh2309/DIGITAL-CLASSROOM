@@ -1996,7 +1996,6 @@
         <button id="endClassBtn" class="btn btn-secondary" type="button">End Class</button>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/supabase-client.js"></script>
     <script>
         // Simple localStorage-based teacher dashboard (no Firebase)
@@ -2767,7 +2766,7 @@
             };
 
             try {
-                // If file present, upload to Supabase storage
+                // If file present, upload to storage
                 let fileUrl = null;
                 if (file && typeof client !== 'undefined') {
                     const bucket = type === 'video' ? 'videos' : type === 'image' ? 'images' : type === 'pdf' ? 'docs' : 'materials';
@@ -2779,7 +2778,7 @@
                     meta.fileInfo = { ...(meta.fileInfo || {}), url: fileUrl, path: uploadData.path, bucket };
                 }
 
-                // Persist record to Supabase DB if available
+                // Persist record to database if available
                 if (typeof client !== 'undefined') {
                     const { error: dbError } = await client.from('teacher_content').insert({
                         teacher_id: teacherProfile.staffId,
@@ -2829,16 +2828,7 @@
 
         // Global functions for content management
 
-        function showToast(message) {
-            const toast = document.getElementById('dashboardToast');
-            if (!toast) return;
-            toast.textContent = message;
-            toast.classList.add('show');
-            clearTimeout(window.dashboardToastTimer);
-            window.dashboardToastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
-        }
-
-
+        
         function showToast(message) {
             const toast = document.getElementById('dashboardToast');
             if (!toast) return;
@@ -3307,7 +3297,7 @@
             }
         });
 
-        const client = window.supabaseClient || (typeof supabase !== 'undefined' && supabase.createClient ? supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY) : null)
+        const client = window.appClient || null
 
         // Check session — redirect if not logged in
         const checkSession = async () => {
@@ -3318,7 +3308,7 @@
                 return
             }
 
-            // Load real teacher profile from Supabase
+            // Load teacher profile from backend
             const { data: teacher } = await client
                 .from('teachers')
                 .select('full_name, work_email, teaching_mode, grade_group, staff_id, institution_name')
@@ -3367,7 +3357,7 @@
                 localStorage.setItem('teacherProfile', JSON.stringify(profile))
             }
 
-            // Load students from Supabase learners table
+            // Load students from learners table
             const { data: students } = await client
                 .from('learners')
                 .select('full_name, class_grade, auth_user_id')

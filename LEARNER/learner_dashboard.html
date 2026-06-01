@@ -928,7 +928,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/supabase-client.js"></script>
     <script src="../js/core.js"></script>
     <script>
@@ -1615,11 +1614,11 @@
             initCountdown();
         });
 
-        const client = window.supabaseClient || (typeof supabase !== 'undefined' && supabase.createClient ? supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY) : null)
+        const client = window.appClient || null
 
         const logoutButton = document.getElementById('logoutButton')
         logoutButton.addEventListener('click', async () => {
-            await client.auth.signOut()        // ← signs out from supabase
+            await client.auth.signOut()        // ← signs out from backend
             window.location.href = 'learner_login.html'
         })
     </script>
