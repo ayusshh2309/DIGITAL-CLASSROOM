@@ -913,7 +913,8 @@
                                 </div>
                                 <div class="portrait-card">
                                     <h3>Teaching with clarity, care, and confidence.</h3>
-                                    <p>“The best teachers inspire curiosity, courage, and a lifelong love of learning.”</p>
+                                    <p>“The best teachers inspire curiosity, courage, and a lifelong love of learning.”
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -954,7 +955,8 @@
                 <div class="form-intro">
                     <div class="eyebrow">Faculty Onboarding</div>
                     <h1>Teacher Registration</h1>
-                    <p class="lead">Complete your registration for the Smart Learning platform with a streamlined onboarding experience designed for educators.</p>
+                    <p class="lead">Complete your registration for the Smart Learning platform with a streamlined
+                        onboarding experience designed for educators.</p>
                 </div>
                 <form class="fields-grid" novalidate>
                     <div class="field-group">
@@ -987,8 +989,10 @@
                     <div class="field-group">
                         <label>Teaching Mode</label>
                         <div class="radio-group">
-                            <label><input type="radio" name="teachingMode" value="teachAll" checked /> Teach All Subjects</label>
-                            <label><input type="radio" name="teachingMode" value="specialist" /> Subject Specialist</label>
+                            <label><input type="radio" name="teachingMode" value="teachAll" checked /> Teach All
+                                Subjects</label>
+                            <label><input type="radio" name="teachingMode" value="specialist" /> Subject
+                                Specialist</label>
                         </div>
                     </div>
                     <div id="assignmentPanel">
@@ -1029,7 +1033,8 @@
                     <div class="field-group">
                         <label for="experience">Years of Experience</label>
                         <div class="input-group">
-                            <input id="experience" name="experience" type="number" min="0" max="50" placeholder="Your experience" />
+                            <input id="experience" name="experience" type="number" min="0" max="50"
+                                placeholder="Your experience" />
                             <span class="input-icon">⏳</span>
                         </div>
                     </div>
@@ -1045,7 +1050,8 @@
                     <div class="field-group security-group">
                         <label for="password">Password</label>
                         <div class="input-group">
-                            <input id="password" name="password" type="password" placeholder="Create a secure password" />
+                            <input id="password" name="password" type="password"
+                                placeholder="Create a secure password" />
                             <button type="button" class="show-hide" id="togglePassword">Show</button>
                             <span class="input-icon">🔒</span>
                         </div>
@@ -1077,7 +1083,8 @@
                         <button id="createAccountButton" class="btn-primary" type="button">Create Account</button>
                     </div>
                 </form>
-                <p class="hint">Your information is encrypted and stored securely with enterprise-grade education privacy protection.</p>
+                <p class="hint">Your information is encrypted and stored securely with enterprise-grade education
+                    privacy protection.</p>
                 <div class="login-prompt">
                     <span>Already have an account?</span>
                     <a href="index.html#login" class="login-link">Log in</a>
@@ -1085,37 +1092,92 @@
             </section>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase-client.js"></script>
     <script type="module">
-        // Simple localStorage-based registration (no Firebase)
-        
-        function saveTeacherData(teacher, email, password) {
-            try {
-                // Store user in localStorage
-                const users = JSON.parse(localStorage.getItem('sl_users') || '[]');
-                
-                // Check if email already exists
-                if (users.find(u => u.email === email)) {
-                    alert('Email already registered. Please use a different email.');
-                    return Promise.reject(new Error('Email already exists'));
-                }
 
-                const newUser = {
-                    id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-                    ...teacher,
-                    password: password, // In production, this should be hashed
-                    role: 'teacher'
-                };
 
-                users.push(newUser);
-                localStorage.setItem('sl_users', JSON.stringify(users));
-                localStorage.setItem('sl_current_user', JSON.stringify(newUser));
-                
-                return Promise.resolve();
-            } catch (error) {
-                console.error('Error saving teacher data:', error);
-                alert('Unable to save registration data. Please try again later.');
-                throw error;
+        // Supabase setup
+        const client = window.supabaseClient || (typeof supabase !== 'undefined' && supabase.createClient ? supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY) : null)
+
+        async function saveTeacherData(teacher, email, password) {
+            // Step 1: Create auth user
+            const { data, error } = await client.auth.signUp({
+                email: email,
+                password: password
+            })
+
+            if (error) {
+                alert(error.message)
+                throw error
             }
+
+            const userId = data.user.id
+            const staffId = teacher.staffId
+
+            // Step 2: Upload certification to Supabase Storage
+            let certUrl = null
+            const certFile = documentUploadInput.files[0]
+            if (certFile) {
+                const { data: fileData } = await client.storage
+                    .from('certifications')
+                    .upload(`${userId}/${certFile.name}`, certFile)
+                if (fileData) {
+                    const { data: urlData } = client.storage
+                        .from('certifications')
+                        .getPublicUrl(fileData.path)
+                    certUrl = urlData.publicUrl
+                }
+            }
+
+            // Step 3: Save teacher details to teachers table
+            const assignment = teacher.teachingAssignment
+            const { data: teacherRow, error: dbError } = await client
+                .from('teachers')
+                .insert({
+                    auth_user_id: userId,
+                    full_name: teacher.fullName,
+                    work_email: email,
+                    phone_number: teacher.phone,
+                    teaching_mode: assignment.mode,
+                    grade_group: assignment.gradeGroup || null,
+                    subject_expertise: assignment.subjects || null,
+                    institution_name: teacher.institution,
+                    years_of_experience: teacher.experience,
+                    certification_url: certUrl,
+                    staff_id: staffId,
+                    auth_provider: 'email'
+                })
+                .select()
+                .single()
+
+            if (dbError) {
+                alert(dbError.message)
+                throw dbError
+            }
+
+            // Step 4: Save subject-class map if specialist
+            if (assignment.mode === 'specialist' && assignment.subjects?.length) {
+                const rows = assignment.subjects.map(subject => ({
+                    teacher_id: teacherRow.id,
+                    subject: subject,
+                    classes: assignment.classMap?.[subject] || []
+                }))
+                await client.from('teacher_subjects').insert(rows)
+            }
+
+            // Step 5: Save role
+            await client.from('user_roles').insert({
+                auth_user_id: userId,
+                role: 'teacher'
+            })
+
+            // Save to localStorage for dashboard use
+            localStorage.setItem('teacherProfile', JSON.stringify({
+                ...teacher,
+                authUserId: userId
+            }))
         }
 
         const passwordInput = document.getElementById('password');
@@ -1183,7 +1245,7 @@
                 <div class="subject-class-row">
                     <strong>${subject}</strong>
                     <div class="class-grid">
-                        ${[5,6,7,8,9,10,11,12].map(level => `
+                        ${[5, 6, 7, 8, 9, 10, 11, 12].map(level => `
                             <label><input type="checkbox" value="${level}" data-subject="${subject}" /> ${level}</label>
                         `).join('')}
                     </div>
@@ -1287,18 +1349,23 @@
             updateUploadLabel(file ? file.name : 'Drag files here or browse to upload');
         });
 
-        // Social signup buttons - show message that these require backend setup
-        googleSignupButton.addEventListener('click', () => {
-            setAuthStatus('Social signup requires backend setup. Please use email registration.', true);
-        });
+        googleSignupButton.addEventListener('click', async () => {
+            await client.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: window.location.origin + '/TEACHER/teacher_dashboard.html' }
+            })
+        })
 
-        microsoftSignupButton.addEventListener('click', () => {
-            setAuthStatus('Social signup requires backend setup. Please use email registration.', true);
-        });
+        microsoftSignupButton.addEventListener('click', async () => {
+            await client.auth.signInWithOAuth({
+                provider: 'azure',
+                options: { redirectTo: window.location.origin + '/TEACHER/teacher_dashboard.html' }
+            })
+        })
 
         linkedinSignupButton.addEventListener('click', () => {
-            setAuthStatus('Social signup requires backend setup. Please use email registration.', true);
-        });
+            alert('LinkedIn login not supported. Please use email or Google.')
+        })
 
         createAccountButton.addEventListener('click', async () => {
             staffIdInput.value = '';

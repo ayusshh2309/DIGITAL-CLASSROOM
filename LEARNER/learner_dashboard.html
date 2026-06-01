@@ -929,6 +929,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase-client.js"></script>
     <script src="../js/core.js"></script>
     <script>
         const themeToggleButton = document.getElementById('themeToggle');
@@ -1614,12 +1615,7 @@
             initCountdown();
         });
 
-        const { createClient } = supabase
-
-        const client = createClient(
-            'https://pdrorihddscfkbesocdq.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkcm9yaWhkZHNjZmtiZXNvY2RxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTUwNzYsImV4cCI6MjA5MjczMTA3Nn0.PmXoZ8cFGFGjKqH2tKXyljEF09vQQXu8F0-OpyyBwkQ'
-        )
+        const client = window.supabaseClient || (typeof supabase !== 'undefined' && supabase.createClient ? supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY) : null)
 
         const logoutButton = document.getElementById('logoutButton')
         logoutButton.addEventListener('click', async () => {

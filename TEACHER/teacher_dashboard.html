@@ -1997,6 +1997,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase-client.js"></script>
     <script>
         // Simple localStorage-based teacher dashboard (no Firebase)
 
@@ -2766,9 +2767,44 @@
             };
 
             try {
-                // Store in localStorage
+                // If file present, upload to Supabase storage
+                let fileUrl = null;
+                if (file && typeof client !== 'undefined') {
+                    const bucket = type === 'video' ? 'videos' : type === 'image' ? 'images' : type === 'pdf' ? 'docs' : 'materials';
+                    const filePath = `${teacherProfile.staffId}/${classLevel}/${subject}/${Date.now()}_${file.name}`;
+                    const { data: uploadData, error: uploadError } = await client.storage.from(bucket).upload(filePath, file, { cacheControl: '3600', upsert: false });
+                    if (uploadError) throw uploadError;
+                    const { data: urlData } = client.storage.from(bucket).getPublicUrl(uploadData.path);
+                    fileUrl = urlData?.publicUrl || null;
+                    meta.fileInfo = { ...(meta.fileInfo || {}), url: fileUrl, path: uploadData.path, bucket };
+                }
+
+                // Persist record to Supabase DB if available
+                if (typeof client !== 'undefined') {
+                    const { error: dbError } = await client.from('teacher_content').insert({
+                        teacher_id: teacherProfile.staffId,
+                        teacher_name: teacherProfile.fullName || 'Teacher',
+                        type: meta.type,
+                        subject: meta.subject,
+                        class_level: meta.classLevel,
+                        chapter: meta.chapter,
+                        title: meta.title,
+                        description: meta.description,
+                        file_info: meta.fileInfo,
+                        schedule_info: meta.scheduleInfo,
+                        assignment_mode: meta.assignmentMode,
+                        grade_group: meta.gradeGroup,
+                        stream: meta.stream,
+                        source: meta.source,
+                        status: meta.status,
+                        created_at: meta.createdAt
+                    });
+                    if (dbError) throw dbError;
+                }
+
+                // Also keep a local cache for offline UX
                 const allContent = JSON.parse(localStorage.getItem('teacherContent') || '[]');
-                allContent.push(meta);
+                allContent.unshift(meta);
                 localStorage.setItem('teacherContent', JSON.stringify(allContent));
 
                 // Clear form
@@ -2782,7 +2818,12 @@
                 showToast(type === 'live' ? 'Live class scheduled successfully!' : 'Content published successfully!');
             } catch (error) {
                 console.error('Upload error:', error);
-                showToast('Unable to save the content. Please try again.');
+                // Fallback to saving locally
+                const allContent = JSON.parse(localStorage.getItem('teacherContent') || '[]');
+                allContent.push(meta);
+                localStorage.setItem('teacherContent', JSON.stringify(allContent));
+                closeContentModal();
+                showToast('Content saved locally (offline mode)');
             }
         }
 
@@ -3266,13 +3307,96 @@
             }
         });
 
-        const { createClient } = supabase
+        const client = window.supabaseClient || (typeof supabase !== 'undefined' && supabase.createClient ? supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY) : null)
 
-        const client = createClient(
-            'https://pdrorihddscfkbesocdq.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkcm9yaWhkZHNjZmtiZXNvY2RxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTUwNzYsImV4cCI6MjA5MjczMTA3Nn0.PmXoZ8cFGFGjKqH2tKXyljEF09vQQXu8F0-OpyyBwkQ'
-        )
+        // Check session — redirect if not logged in
+        const checkSession = async () => {
+            const { data: { user } } = await client.auth.getUser()
 
+            if (!user) {
+                window.location.href = 'teacher_login.html'
+                return
+            }
+
+            // Load real teacher profile from Supabase
+            const { data: teacher } = await client
+                .from('teachers')
+                .select('full_name, work_email, teaching_mode, grade_group, staff_id, institution_name')
+                .eq('auth_user_id', user.id)
+                .single()
+
+            if (teacher) {
+                // Update welcome greeting with real name
+                const name = teacher.full_name || 'Teacher'
+                welcomeGreeting.textContent = `Good Afternoon, ${name} 👋`
+
+                // Update assignment badge with real data
+                if (assignmentBadge) {
+                    assignmentBadge.textContent = teacher.teaching_mode === 'teach_all'
+                        ? `Teach All Subjects • ${teacher.grade_group || ''}`
+                        : 'Subject Specialist'
+                }
+
+                // Store in localStorage so rest of dashboard works
+                localStorage.setItem('teacherProfile', JSON.stringify({
+                    fullName: teacher.full_name,
+                    email: teacher.work_email,
+                    staffId: teacher.staff_id,
+                    institution: teacher.institution_name,
+                    teachingAssignment: {
+                        mode: teacher.teaching_mode,
+                        gradeGroup: teacher.grade_group
+                    }
+                }))
+            }
+
+            // Load teacher subjects if subject specialist
+            const { data: subjectData } = await client
+                .from('teacher_subjects')
+                .select('subject, classes')
+                .eq('teacher_id', user.id)
+
+            if (subjectData && subjectData.length > 0) {
+                const subjects = subjectData.map(s => s.subject)
+                const classMap = {}
+                subjectData.forEach(s => { classMap[s.subject] = s.classes })
+
+                const profile = JSON.parse(localStorage.getItem('teacherProfile') || '{}')
+                profile.teachingAssignment.subjects = subjects
+                profile.teachingAssignment.classMap = classMap
+                localStorage.setItem('teacherProfile', JSON.stringify(profile))
+            }
+
+            // Load students from Supabase learners table
+            const { data: students } = await client
+                .from('learners')
+                .select('full_name, class_grade, auth_user_id')
+
+            if (students && students.length > 0) {
+                const formattedStudents = students.map((s, index) => ({
+                    id: s.auth_user_id,
+                    name: s.full_name,
+                    profile: {
+                        fullName: s.full_name,
+                        grade: s.class_grade,
+                        roll: String(index + 1).padStart(2, '0')
+                    },
+                    grade: s.class_grade,
+                    progress: 0
+                }))
+                localStorage.setItem('sl_users', JSON.stringify(
+                    formattedStudents.map(s => ({
+                        ...s,
+                        role: 'student',
+                        profile: { ...s.profile, role: 'student' }
+                    }))
+                ))
+            }
+        }
+
+        checkSession()
+
+        // Logout
         logoutBtn.addEventListener('click', async () => {
             await client.auth.signOut()
             window.location.href = 'teacher_login.html'

@@ -6,9 +6,11 @@ export const supabase = createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkcm9yaWhkZHNjZmtiZXNvY2RxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTUwNzYsImV4cCI6MjA5MjczMTA3Nn0.PmXoZ8cFGFGjKqH2tKXyljEF09vQQXu8F0-OpyyBwkQ'
 )
 
+const client = (typeof window !== 'undefined' && window.supabaseClient) ? window.supabaseClient : supabase
+
 // LEARNER SIGNUP
 export const learnerSignUp = async (form) => {
-  const { data, error } = await supabase.auth.signUp({
+  const { data, error } = await client.auth.signUp({
     email: form.email,
     password: form.password,
   })
@@ -16,7 +18,7 @@ export const learnerSignUp = async (form) => {
 
   const userId = data.user.id
 
-  const { error: dbError } = await supabase.from('learners').insert({
+  const { error: dbError } = await client.from('learners').insert({
     auth_user_id: userId,
     full_name: form.fullName,
     class_grade: form.classGrade,
@@ -28,7 +30,7 @@ export const learnerSignUp = async (form) => {
   })
   if (dbError) return { error: dbError }
 
-  await supabase.from('user_roles').insert({
+  await client.from('user_roles').insert({
     auth_user_id: userId,
     role: 'learner'
   })
@@ -38,7 +40,7 @@ export const learnerSignUp = async (form) => {
 
 // TEACHER SIGNUP
 export const teacherSignUp = async (form, selectedSubjects, selectedClasses, certFile) => {
-  const { data, error } = await supabase.auth.signUp({
+  const { data, error } = await client.auth.signUp({
     email: form.email,
     password: form.password,
   })
@@ -49,18 +51,18 @@ export const teacherSignUp = async (form, selectedSubjects, selectedClasses, cer
 
   let certUrl = null
   if (certFile) {
-    const { data: fileData } = await supabase.storage
+    const { data: fileData } = await client.storage
       .from('certifications')
       .upload(`${userId}/${certFile.name}`, certFile)
     if (fileData) {
-      const { data: urlData } = supabase.storage
+      const { data: urlData } = client.storage
         .from('certifications')
         .getPublicUrl(fileData.path)
       certUrl = urlData.publicUrl
     }
   }
 
-  const { data: teacher, error: dbError } = await supabase
+  const { data: teacher, error: dbError } = await client
     .from('teachers').insert({
       auth_user_id: userId,
       full_name: form.fullName,
@@ -84,10 +86,10 @@ export const teacherSignUp = async (form, selectedSubjects, selectedClasses, cer
       subject: subject,
       classes: selectedClasses[subject] || []
     }))
-    await supabase.from('teacher_subjects').insert(rows)
+    await client.from('teacher_subjects').insert(rows)
   }
 
-  await supabase.from('user_roles').insert({
+  await client.from('user_roles').insert({
     auth_user_id: userId,
     role: 'teacher'
   })
@@ -97,13 +99,13 @@ export const teacherSignUp = async (form, selectedSubjects, selectedClasses, cer
 
 // LOGIN
 export const loginUser = async (email, password) => {
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await client.auth.signInWithPassword({
     email,
     password
   })
   if (error) return { error }
 
-  const { data: roleData } = await supabase
+  const { data: roleData } = await client
     .from('user_roles')
     .select('role')
     .eq('auth_user_id', data.user.id)
@@ -114,7 +116,7 @@ export const loginUser = async (email, password) => {
 
 // FORGOT PASSWORD
 export const forgotPassword = async (email) => {
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+  const { error } = await client.auth.resetPasswordForEmail(email, {
     redirectTo: `${window.location.origin}/reset-password`
   })
   if (error) return { error }
@@ -123,32 +125,32 @@ export const forgotPassword = async (email) => {
 
 // RESET PASSWORD
 export const resetPassword = async (newPassword) => {
-  const { error } = await supabase.auth.updateUser({ password: newPassword })
+  const { error } = await client.auth.updateUser({ password: newPassword })
   if (error) return { error }
   return { success: true }
 }
 
 // LOGOUT
 export const logoutUser = async () => {
-  await supabase.auth.signOut()
+  await client.auth.signOut()
 }
 
 // GET CURRENT USER
 export const getCurrentUser = async () => {
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user } } = await client.auth.getUser()
   return user
 }
 
 // SOCIAL LOGIN
 export const googleLogin = async () => {
-  await supabase.auth.signInWithOAuth({
+  await client.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: window.location.origin }
   })
 }
 
 export const microsoftLogin = async () => {
-  await supabase.auth.signInWithOAuth({
+  await client.auth.signInWithOAuth({
     provider: 'azure',
     options: { redirectTo: window.location.origin }
   })

@@ -1,5 +1,5 @@
 // ADD AT TOP
-import { loginUser, googleLogin, microsoftLogin } from '../supabase'
+import { loginUser, googleLogin, microsoftLogin } from './supabase'
 
 // ADD inside your existing login button handler
 const handleLogin = async () => {

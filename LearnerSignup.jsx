@@ -1,5 +1,5 @@
 // ADD AT TOP
-import { learnerSignUp, googleLogin, microsoftLogin } from '../supabase'
+import { learnerSignUp, googleLogin, microsoftLogin } from './supabase'
 
 // ADD inside your existing submit button handler
 const handleSubmit = async () => {

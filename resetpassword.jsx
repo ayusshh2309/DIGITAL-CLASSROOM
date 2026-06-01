@@ -1,5 +1,5 @@
 // ADD AT TOP
-import { resetPassword } from '../supabase'
+import { resetPassword } from './supabase'
 
 // ADD inside your existing reset button handler
 const handleReset = async () => {

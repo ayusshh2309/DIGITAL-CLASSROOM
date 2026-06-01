@@ -1,5 +1,5 @@
 // ADD AT TOP
-import { getCurrentUser } from '../supabase'
+import { getCurrentUser } from './supabase'
 
 // ADD inside useEffect
 useEffect(() => {

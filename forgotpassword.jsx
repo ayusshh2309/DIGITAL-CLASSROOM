@@ -1,5 +1,5 @@
 // ADD AT TOP
-import { forgotPassword } from '../supabase'
+import { forgotPassword } from './supabase'
 
 // ADD inside your existing send button handler
 const handleForgotPassword = async () => {

@@ -1,5 +1,5 @@
 // ADD AT TOP
-import { teacherSignUp } from '../supabase'
+import { teacherSignUp } from './supabase'
 
 // ADD inside your existing submit button handler
 const handleSubmit = async () => {

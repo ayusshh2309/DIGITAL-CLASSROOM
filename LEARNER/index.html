@@ -959,11 +959,12 @@
 
 
 
-    <!-- then your own JS file after -->
-    <script src="login.js"></script>
 
+    <script src="login.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase-client.js"></script>
     <script type="module">
-        
+
 
         const cards = document.querySelectorAll('.variant-card');
         const roleTargets = {
@@ -1060,70 +1061,80 @@
             loginStatus.style.color = isError ? '#ef4444' : 'var(--text)';
         }
 
-        // Simple localStorage-based login (no Firebase)
+        // Supabase setup
+        const client = window.supabaseClient || (typeof supabase !== 'undefined' && supabase.createClient ? supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY) : null)
+
+        // Login with Supabase
         async function handleLocalLogin() {
-            const email = loginEmail.value.trim();
-            const password = loginPassword.value;
+            const email = loginEmail.value.trim()
+            const password = loginPassword.value
 
             if (!email || !password) {
-                setLoginStatus('Please enter both email and password.', true);
-                return;
+                setLoginStatus('Please enter both email and password.', true)
+                return
             }
 
-            // Check stored users
-            const storedUser = localStorage.getItem('sl_current_user');
-            if (storedUser) {
-                const user = JSON.parse(storedUser);
-                if (user.email === email) {
-                    setLoginStatus('Login successful. Redirecting…');
-                    // Determine redirect based on role
-                    if (user.role === 'teacher') {
-                        window.location.href = 'teacher_dashboard.html';
-                    } else {
-                        window.location.href = 'learner_dashboard.html';
-                    }
-                    return;
-                }
+            setLoginStatus('Signing in...')
+
+            const { data, error } = await client.auth.signInWithPassword({
+                email,
+                password
+            })
+
+            if (error) {
+                setLoginStatus(error.message, true)
+                return
             }
 
-            // Check if user exists in stored users
-            const storedUsers = localStorage.getItem('sl_users');
-            if (storedUsers) {
-                const users = JSON.parse(storedUsers);
-                const foundUser = users.find(u => u.email === email && u.password === password);
-                if (foundUser) {
-                    localStorage.setItem('sl_current_user', JSON.stringify(foundUser));
-                    setLoginStatus('Login successful. Redirecting…');
-                    if (foundUser.role === 'teacher') {
-                        window.location.href = 'teacher_dashboard.html';
-                    } else {
-                        window.location.href = 'learner_dashboard.html';
-                    }
-                    return;
-                }
-            }
+            // Fetch role from user_roles table
+            const { data: roleData } = await client
+                .from('user_roles')
+                .select('role')
+                .eq('auth_user_id', data.user.id)
+                .single()
 
-            setLoginStatus('Invalid email or password. Please check your credentials or register first.', true);
+            setLoginStatus('Login successful. Redirecting...')
+
+            if (roleData?.role === 'teacher') {
+                window.location.href = '../TEACHER/teacher_dashboard.html'
+            } else {
+                window.location.href = 'learner_dashboard.html'
+            }
         }
+        // Google Login
+        googleLoginButton.addEventListener('click', async () => {
+            await client.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: window.location.origin }
+            })
+        })
 
-        // Social login buttons - show message that these require backend setup
-        googleLoginButton.addEventListener('click', () => {
-            setLoginStatus('Social login requires backend setup. Please use email login or register.', true);
-        });
+        // Microsoft Login
+        microsoftLoginButton.addEventListener('click', async () => {
+            await client.auth.signInWithOAuth({
+                provider: 'azure',
+                options: { redirectTo: window.location.origin }
+            })
+        })
 
-        microsoftLoginButton.addEventListener('click', () => {
-            setLoginStatus('Social login requires backend setup. Please use email login or register.', true);
-        });
-
+        // LinkedIn (not supported by Supabase directly)
         linkedinLoginButton.addEventListener('click', () => {
-            setLoginStatus('Social login requires backend setup. Please use email login or register.', true);
-        });
+            setLoginStatus('LinkedIn login not supported. Please use email or Google.', true)
+        })
 
         const forgotPasswordButton = document.getElementById('forgotPasswordButton');
-        forgotPasswordButton.addEventListener('click', () => {
-            setLoginStatus('Forgot password is not configured yet. Please contact support or use your registered email.', true);
-        });
-
+        forgotPasswordButton.addEventListener('click', async () => {
+            const email = loginEmail.value.trim()
+            if (!email) {
+                setLoginStatus('Please enter your email first.', true)
+                return
+            }
+            const { error } = await client.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.origin + '/reset-password.html'
+            })
+            if (error) setLoginStatus(error.message, true)
+            else setLoginStatus('Reset link sent! Check your email.')
+        })
         loginAccountButton.addEventListener('click', handleLocalLogin);
 
         loginPassword.addEventListener('keydown', (event) => {
