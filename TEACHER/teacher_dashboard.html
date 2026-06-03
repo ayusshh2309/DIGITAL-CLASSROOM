@@ -12,6 +12,11 @@
         })();
     </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase-client.js"></script>
+    <script src="../js/auth-helpers.js"></script>
+    <script src="../js/quiz-helpers.js"></script>
+    <script src="../js/materials-helpers.js"></script>
     <style>
         :root {
             color-scheme: light;
@@ -1996,6 +2001,7 @@
         <button id="endClassBtn" class="btn btn-secondary" type="button">End Class</button>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
     <script src="../js/supabase-client.js"></script>
     <script>
         // Simple localStorage-based teacher dashboard (no Firebase)
@@ -2828,7 +2834,7 @@
 
         // Global functions for content management
 
-        
+
         function showToast(message) {
             const toast = document.getElementById('dashboardToast');
             if (!toast) return;

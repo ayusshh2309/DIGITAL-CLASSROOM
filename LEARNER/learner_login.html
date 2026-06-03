@@ -11,6 +11,12 @@
             document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase-client.js"></script>
+    <script src="../js/auth-helpers.js"></script>
+    <script src="../js/quiz-helpers.js"></script>
+    <script src="../js/materials-helpers.js"></script>
     <style>
         :root {
             --bg: #0d1117;
@@ -789,6 +795,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
     <script src="../js/supabase-client.js"></script>
     <script>
         // ── Client setup ──────────────────────────────────────
@@ -961,7 +968,10 @@
                 userId = data.user.id
             } catch (err) {
                 console.error('Auth signup error', err)
-                setStatus(err.message || 'Signup failed. Check console for details.', 'error')
+                const signupErrorMessage = err?.status === 429 || /rate/i.test(err?.message || '')
+                    ? 'Too many account attempts. Please wait a minute and try again.'
+                    : err.message || 'Signup failed. Check console for details.'
+                setStatus(signupErrorMessage, 'error')
                 createAccountBtn.disabled = false
                 return
             }
@@ -969,17 +979,17 @@
             // ── Step 2: Insert into learners table ───────────────
             try {
                 const { error: dbError } = await client.from('learners').insert({
-                auth_user_id: userId,
-                full_name: fullName,
-                class_grade: grade,
-                stream: stream || null,
-                date_of_birth: dob,
-                email: email,
-                phone_country_code: prefix,
-                phone_number: phone,
-                agreed_to_terms: true,
-                auth_provider: 'email'
-            })
+                    auth_user_id: userId,
+                    full_name: fullName,
+                    class_grade: grade,
+                    stream: stream || null,
+                    date_of_birth: dob,
+                    email: email,
+                    phone_country_code: prefix,
+                    phone_number: phone,
+                    agreed_to_terms: true,
+                    auth_provider: 'email'
+                })
                 if (dbError) throw dbError
             } catch (err) {
                 console.error('DB insert error (learners)', err)

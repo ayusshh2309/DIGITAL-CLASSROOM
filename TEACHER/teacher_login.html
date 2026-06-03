@@ -11,6 +11,12 @@
             document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase-client.js"></script>
+    <script src="../js/auth-helpers.js"></script>
+    <script src="../js/quiz-helpers.js"></script>
+    <script src="../js/materials-helpers.js"></script>
     <style>
         :root {
             font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -888,6 +894,68 @@
         .login-prompt .login-link:hover {
             text-decoration: underline;
         }
+
+        .auth-tabs {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 28px;
+        }
+
+        .auth-tab {
+            padding: 12px 16px;
+            border: 1px solid var(--input-border);
+            border-radius: 14px;
+            background: var(--input-bg);
+            color: var(--text);
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 180ms ease;
+        }
+
+        .auth-tab.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+        }
+
+        .auth-section {
+            display: none;
+        }
+
+        .auth-section.active {
+            display: grid;
+        }
+
+        .login-status {
+            min-height: 1.4rem;
+            padding: 8px 0;
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .login-status.error {
+            color: #f85149;
+        }
+
+        .login-status.success {
+            color: #3fb950;
+        }
+
+        .secondary-button {
+            border: 1px solid var(--input-border);
+            border-radius: 14px;
+            background: var(--input-bg);
+            color: var(--text);
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 180ms ease;
+        }
+
+        .secondary-button:hover {
+            background: rgba(15, 44, 93, 0.1);
+            border-color: var(--primary);
+        }
     </style>
 </head>
 
@@ -952,147 +1020,192 @@
                 </div>
             </section>
             <section class="form-panel">
-                <div class="form-intro">
-                    <div class="eyebrow">Faculty Onboarding</div>
-                    <h1>Teacher Registration</h1>
-                    <p class="lead">Complete your registration for the Smart Learning platform with a streamlined
-                        onboarding experience designed for educators.</p>
+                <!-- Tabs -->
+                <div class="auth-tabs">
+                    <button class="auth-tab active" id="loginTab" type="button">Log In</button>
+                    <button class="auth-tab" id="signupTab" type="button">Create Account</button>
                 </div>
-                <form class="fields-grid" novalidate>
-                    <div class="field-group">
-                        <label for="fullName">Full Name</label>
-                        <div class="input-group">
-                            <input id="fullName" name="fullName" type="text" placeholder="Jane Doe" />
-                            <span class="input-icon">👤</span>
-                        </div>
+
+                <!-- LOGIN SECTION -->
+                <div id="loginSection" class="auth-section active">
+                    <div class="form-intro">
+                        <div class="eyebrow">Faculty Login</div>
+                        <h1>Sign In to Smart Learning</h1>
+                        <p class="lead">Sign in with your email and password to access your dashboard.</p>
                     </div>
-                    <div class="field-group">
-                        <label for="workEmail">Work Email</label>
-                        <div class="input-group">
-                            <input id="workEmail" name="workEmail" type="email" placeholder="jane.doe@school.edu" />
-                            <span class="input-icon">✉️</span>
-                        </div>
-                    </div>
-                    <div class="field-group">
-                        <label for="phone">Phone Number</label>
-                        <div class="input-group">
-                            <select id="countryPrefix" class="prefix" aria-label="Country code">
-                                <option value="+1">+1 US</option>
-                                <option value="+44">+44 UK</option>
-                                <option value="+61">+61 AU</option>
-                                <option value="+91" selected>+91 IN</option>
-                                <option value="+81">+81 JP</option>
-                            </select>
-                            <input id="phone" name="phone" class="phone" type="tel" placeholder="555 123 4567" />
-                        </div>
-                    </div>
-                    <div class="field-group">
-                        <label>Teaching Mode</label>
-                        <div class="radio-group">
-                            <label><input type="radio" name="teachingMode" value="teachAll" checked /> Teach All
-                                Subjects</label>
-                            <label><input type="radio" name="teachingMode" value="specialist" /> Subject
-                                Specialist</label>
-                        </div>
-                    </div>
-                    <div id="assignmentPanel">
-                        <div class="field-group" id="gradeGroupField">
-                            <label for="gradeGroup">Grade Group</label>
-                            <select id="gradeGroup" name="gradeGroup">
-                                <option value="5-6">Grades 5–6 (All subjects)</option>
-                                <option value="7-8">Grades 7–8 (All subjects)</option>
-                                <option value="9-10">Grades 9–10 (All subjects)</option>
-                                <option value="11-12">Grades 11–12 (Stream-wise subjects only)</option>
-                            </select>
-                        </div>
-                        <div class="field-group" id="streamField" style="display:none;">
-                            <label for="stream">Stream</label>
-                            <select id="stream" name="stream">
-                                <option value="PCM">Science - PCM</option>
-                                <option value="PCB">Science - PCB</option>
-                                <option value="Commerce">Commerce</option>
-                                <option value="Arts">Arts</option>
-                            </select>
-                        </div>
-                        <div class="field-group" id="specialistField" style="display:none;">
-                            <label>Select Subjects</label>
-                            <div id="subjectChecklist" class="checkbox-grid"></div>
-                        </div>
-                        <div class="field-group" id="classSelectionContainer" style="display:none;">
-                            <label>Classes per subject</label>
-                            <div id="subjectClassMap"></div>
-                        </div>
-                    </div>
-                    <div class="field-group">
-                        <label for="institution">Institution Name</label>
-                        <div class="input-group">
-                            <input id="institution" name="institution" type="text" placeholder="Brightfield Academy" />
-                            <span class="input-icon">🏫</span>
-                        </div>
-                    </div>
-                    <div class="field-group">
-                        <label for="experience">Years of Experience</label>
-                        <div class="input-group">
-                            <input id="experience" name="experience" type="number" min="0" max="50"
-                                placeholder="Your experience" />
-                            <span class="input-icon">⏳</span>
-                        </div>
-                    </div>
-                    <div class="field-group">
-                        <label>Document Upload</label>
-                        <div class="upload-box" id="uploadBox" tabindex="0">
-                            <div class="upload-icon">☁</div>
-                            <p>Teaching Certification</p>
-                            <span id="uploadMessage">Drag files here or browse to upload</span>
-                            <input type="file" id="documentUpload" accept=".pdf,.doc,.docx,.png,.jpg" hidden />
-                        </div>
-                    </div>
-                    <div class="field-group security-group">
-                        <label for="password">Password</label>
-                        <div class="input-group">
-                            <input id="password" name="password" type="password"
-                                placeholder="Create a secure password" />
-                            <button type="button" class="show-hide" id="togglePassword">Show</button>
-                            <span class="input-icon">🔒</span>
-                        </div>
-                        <div class="meter-label">
-                            <span>Security Strength</span>
-                            <span id="securityText">Weak</span>
-                        </div>
-                        <div class="security-bar"><span id="securityBar"></span></div>
-                        <div class="meter-grid">
-                            <div class="meter-step" id="meterLength">8+ chars</div>
-                            <div class="meter-step" id="meterUpper">1 Upper</div>
-                            <div class="meter-step" id="meterLower">1 Lower</div>
-                            <div class="meter-step" id="meterSpecial">1 Special</div>
-                        </div>
-                    </div>
-                    <div class="social-row">
-                        <p>Or Sign Up with</p>
-                        <div class="social-buttons">
-                            <button id="googleSignupButton" class="social-button" type="button">Google</button>
-                            <button id="microsoftSignupButton" class="social-button" type="button">Microsoft</button>
-                            <button id="linkedinSignupButton" class="social-button" type="button">LinkedIn</button>
-                        </div>
-                    </div>
-                    <div class="submit-row">
+                    <div class="fields-grid">
                         <div class="field-group">
-                            <label for="staffId">Staff ID</label>
-                            <input id="staffId" name="staffId" type="text" placeholder="Auto-generated" readonly />
+                            <label for="loginEmail">Work Email</label>
+                            <div class="input-group">
+                                <input id="loginEmail" type="email" placeholder="your.email@school.edu" />
+                                <span class="input-icon">✉️</span>
+                            </div>
                         </div>
-                        <button id="createAccountButton" class="btn-primary" type="button">Create Account</button>
+                        <div class="field-group">
+                            <label for="loginPassword">Password</label>
+                            <div class="input-group">
+                                <input id="loginPassword" type="password" placeholder="Enter your password" />
+                                <button type="button" class="show-hide" id="toggleLoginPassword">Show</button>
+                                <span class="input-icon">🔒</span>
+                            </div>
+                        </div>
+                        <p class="login-status" id="loginStatus"></p>
+                        <button id="loginButton" class="btn-primary" type="button"
+                            style="min-width: auto; width: 100%;">Sign In</button>
+                        <button id="forgotPasswordButton" class="secondary-button" type="button"
+                            style="width: 100%; background: var(--surface-soft); border: 1px solid var(--input-border); color: var(--text); padding: 14px 18px; margin-top: 10px;">Forgot
+                            Password?</button>
                     </div>
-                </form>
-                <p class="hint">Your information is encrypted and stored securely with enterprise-grade education
-                    privacy protection.</p>
-                <div class="login-prompt">
-                    <span>Already have an account?</span>
-                    <a href="index.html#login" class="login-link">Log in</a>
+                </div>
+
+                <!-- SIGNUP SECTION -->
+                <div id="signupSection" class="auth-section">
+                    <div class="form-intro">
+                        <div class="eyebrow">Faculty Onboarding</div>
+                        <h1>Teacher Registration</h1>
+                        <p class="lead">Complete your registration for the Smart Learning platform with a streamlined
+                            onboarding experience designed for educators.</p>
+                    </div>
+                    <form class="fields-grid" novalidate>
+                        <div class="field-group">
+                            <label for="fullName">Full Name</label>
+                            <div class="input-group">
+                                <input id="fullName" name="fullName" type="text" placeholder="Jane Doe" />
+                                <span class="input-icon">👤</span>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <label for="workEmail">Work Email</label>
+                            <div class="input-group">
+                                <input id="workEmail" name="workEmail" type="email" placeholder="jane.doe@school.edu" />
+                                <span class="input-icon">✉️</span>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <label for="phone">Phone Number</label>
+                            <div class="input-group">
+                                <select id="countryPrefix" class="prefix" aria-label="Country code">
+                                    <option value="+1">+1 US</option>
+                                    <option value="+44">+44 UK</option>
+                                    <option value="+61">+61 AU</option>
+                                    <option value="+91" selected>+91 IN</option>
+                                    <option value="+81">+81 JP</option>
+                                </select>
+                                <input id="phone" name="phone" class="phone" type="tel" placeholder="555 123 4567" />
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <label>Teaching Mode</label>
+                            <div class="radio-group">
+                                <label><input type="radio" name="teachingMode" value="teachAll" checked /> Teach All
+                                    Subjects</label>
+                                <label><input type="radio" name="teachingMode" value="specialist" /> Subject
+                                    Specialist</label>
+                            </div>
+                        </div>
+                        <div id="assignmentPanel">
+                            <div class="field-group" id="gradeGroupField">
+                                <label for="gradeGroup">Grade Group</label>
+                                <select id="gradeGroup" name="gradeGroup">
+                                    <option value="5-6">Grades 5–6 (All subjects)</option>
+                                    <option value="7-8">Grades 7–8 (All subjects)</option>
+                                    <option value="9-10">Grades 9–10 (All subjects)</option>
+                                    <option value="11-12">Grades 11–12 (Stream-wise subjects only)</option>
+                                </select>
+                            </div>
+                            <div class="field-group" id="streamField" style="display:none;">
+                                <label for="stream">Stream</label>
+                                <select id="stream" name="stream">
+                                    <option value="PCM">Science - PCM</option>
+                                    <option value="PCB">Science - PCB</option>
+                                    <option value="Commerce">Commerce</option>
+                                    <option value="Arts">Arts</option>
+                                </select>
+                            </div>
+                            <div class="field-group" id="specialistField" style="display:none;">
+                                <label>Select Subjects</label>
+                                <div id="subjectChecklist" class="checkbox-grid"></div>
+                            </div>
+                            <div class="field-group" id="classSelectionContainer" style="display:none;">
+                                <label>Classes per subject</label>
+                                <div id="subjectClassMap"></div>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <label for="institution">Institution Name</label>
+                            <div class="input-group">
+                                <input id="institution" name="institution" type="text"
+                                    placeholder="Brightfield Academy" />
+                                <span class="input-icon">🏫</span>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <label for="experience">Years of Experience</label>
+                            <div class="input-group">
+                                <input id="experience" name="experience" type="number" min="0" max="50"
+                                    placeholder="Your experience" />
+                                <span class="input-icon">⏳</span>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <label>Document Upload</label>
+                            <div class="upload-box" id="uploadBox" tabindex="0">
+                                <div class="upload-icon">☁</div>
+                                <p>Teaching Certification</p>
+                                <span id="uploadMessage">Drag files here or browse to upload</span>
+                                <input type="file" id="documentUpload" accept=".pdf,.doc,.docx,.png,.jpg" hidden />
+                            </div>
+                        </div>
+                        <div class="field-group security-group">
+                            <label for="password">Password</label>
+                            <div class="input-group">
+                                <input id="password" name="password" type="password"
+                                    placeholder="Create a secure password" />
+                                <button type="button" class="show-hide" id="togglePassword">Show</button>
+                                <span class="input-icon">🔒</span>
+                            </div>
+                            <div class="meter-label">
+                                <span>Security Strength</span>
+                                <span id="securityText">Weak</span>
+                            </div>
+                            <div class="security-bar"><span id="securityBar"></span></div>
+                            <div class="meter-grid">
+                                <div class="meter-step" id="meterLength">8+ chars</div>
+                                <div class="meter-step" id="meterUpper">1 Upper</div>
+                                <div class="meter-step" id="meterLower">1 Lower</div>
+                                <div class="meter-step" id="meterSpecial">1 Special</div>
+                            </div>
+                        </div>
+                        <div class="social-row">
+                            <p>Or Sign Up with</p>
+                            <div class="social-buttons">
+                                <button id="googleSignupButton" class="social-button" type="button">Google</button>
+                                <button id="microsoftSignupButton" class="social-button"
+                                    type="button">Microsoft</button>
+                                <button id="linkedinSignupButton" class="social-button" type="button">LinkedIn</button>
+                            </div>
+                        </div>
+                        <div class="submit-row">
+                            <div class="field-group">
+                                <label for="staffId">Staff ID</label>
+                                <input id="staffId" name="staffId" type="text" placeholder="Auto-generated" readonly />
+                            </div>
+                            <button id="createAccountButton" class="btn-primary" type="button">Create Account</button>
+                        </div>
+                    </form>
+                    <p class="hint">Your information is encrypted and stored securely with enterprise-grade education
+                        privacy protection.</p>
+                    <div class="login-prompt">
+                        <span>Already have an account?</span>
+                        <a href="#" onclick="document.getElementById('loginTab').click(); return false;"
+                            class="login-link">Log in</a>
+                    </div>
                 </div>
             </section>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
     <script src="../js/supabase-client.js"></script>
     <script type="module">
 
@@ -1108,7 +1221,10 @@
             })
 
             if (error) {
-                alert(error.message)
+                const signupErrorMessage = error?.status === 429 || /rate/i.test(error?.message || '')
+                    ? 'Too many account attempts. Please wait a minute and try again.'
+                    : error.message
+                alert(signupErrorMessage)
                 throw error
             }
 
@@ -1492,6 +1608,169 @@
         function setAuthStatus(message, isError = false) {
             console.log(message);
         }
+
+        // ═══════════════════════════════════════════
+        // TAB SWITCHING & LOGIN FUNCTIONALITY
+        // ═══════════════════════════════════════════
+
+        const loginTab = document.getElementById('loginTab');
+        const signupTab = document.getElementById('signupTab');
+        const loginSection = document.getElementById('loginSection');
+        const signupSection = document.getElementById('signupSection');
+        const loginEmail = document.getElementById('loginEmail');
+        const loginPassword = document.getElementById('loginPassword');
+        const loginButton = document.getElementById('loginButton');
+        const forgotPasswordButton = document.getElementById('forgotPasswordButton');
+        const loginStatus = document.getElementById('loginStatus');
+        const toggleLoginPassword = document.getElementById('toggleLoginPassword');
+
+        // Tab switching
+        loginTab.addEventListener('click', () => {
+            loginTab.classList.add('active');
+            signupTab.classList.remove('active');
+            loginSection.classList.add('active');
+            signupSection.classList.remove('active');
+            loginEmail.focus();
+        });
+
+        signupTab.addEventListener('click', () => {
+            signupTab.classList.add('active');
+            loginTab.classList.remove('active');
+            signupSection.classList.add('active');
+            loginSection.classList.remove('active');
+            fullNameInput.focus();
+        });
+
+        // Show/hide login password
+        toggleLoginPassword.addEventListener('click', () => {
+            const isHidden = loginPassword.type === 'password';
+            loginPassword.type = isHidden ? 'text' : 'password';
+            toggleLoginPassword.textContent = isHidden ? 'Hide' : 'Show';
+        });
+
+        // Set login status message
+        function setLoginStatus(msg, type = '') {
+            loginStatus.textContent = msg;
+            loginStatus.className = 'login-status ' + type;
+        }
+
+        // Login handler
+        loginButton.addEventListener('click', async () => {
+            const email = loginEmail.value.trim();
+            const password = loginPassword.value;
+
+            if (!email || !password) {
+                setLoginStatus('Please enter both email and password.', 'error');
+                return;
+            }
+
+            loginButton.disabled = true;
+            setLoginStatus('Signing in...', '');
+
+            try {
+                if (typeof client === 'undefined' || client === null) {
+                    throw new Error('Backend client is not initialized');
+                }
+
+                const { data, error: authError } = await client.auth.signInWithPassword({
+                    email,
+                    password
+                });
+
+                if (authError) {
+                    throw authError;
+                }
+
+                if (!data || !data.user) {
+                    throw new Error('Login failed. Please try again.');
+                }
+
+                // Get teacher profile from database
+                const { data: teacherData, error: dbError } = await client
+                    .from('teachers')
+                    .select('*')
+                    .eq('auth_user_id', data.user.id)
+                    .single();
+
+                if (dbError) {
+                    console.warn('Could not fetch teacher profile:', dbError);
+                }
+
+                // Save profile to localStorage
+                const profile = {
+                    fullName: teacherData?.full_name || email,
+                    email: email,
+                    staffId: teacherData?.staff_id || null,
+                    institution: teacherData?.institution_name || null,
+                    experience: teacherData?.years_of_experience || null,
+                    phone: teacherData?.phone_number || null,
+                    teachingAssignment: teacherData?.teaching_mode ? {
+                        mode: teacherData.teaching_mode,
+                        subjects: teacherData.subject_expertise || [],
+                        gradeGroup: teacherData.grade_group || null
+                    } : null,
+                    authUserId: data.user.id,
+                    createdAt: new Date().toISOString()
+                };
+
+                localStorage.setItem('teacherProfile', JSON.stringify(profile));
+
+                setLoginStatus('Login successful! Redirecting...', 'success');
+
+                // Redirect to dashboard
+                setTimeout(() => {
+                    window.location.href = 'teacher_dashboard.html';
+                }, 800);
+
+            } catch (err) {
+                console.error('Login error:', err);
+                setLoginStatus(err.message || 'Login failed. Please check your credentials.', 'error');
+            } finally {
+                loginButton.disabled = false;
+            }
+        });
+
+        // Forgot password handler
+        forgotPasswordButton.addEventListener('click', async () => {
+            const email = loginEmail.value.trim();
+            if (!email) {
+                setLoginStatus('Please enter your email first.', 'error');
+                loginEmail.focus();
+                return;
+            }
+
+            try {
+                if (typeof client === 'undefined' || client === null) {
+                    throw new Error('Backend client is not initialized');
+                }
+
+                await client.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin + '/reset-password.html'
+                });
+
+                setLoginStatus('Password reset link sent! Check your email.', 'success');
+            } catch (err) {
+                setLoginStatus(err.message || 'Failed to send reset link.', 'error');
+            }
+        });
+
+        // Check if already logged in
+        const checkExistingTeacherSession = async () => {
+            try {
+                if (typeof client === 'undefined' || client === null) {
+                    return;
+                }
+
+                const { data: { user } } = await client.auth.getUser();
+                if (user) {
+                    window.location.href = 'teacher_dashboard.html';
+                }
+            } catch (err) {
+                console.warn('Could not check session:', err);
+            }
+        };
+
+        checkExistingTeacherSession();
     </script>
 </body>
 
