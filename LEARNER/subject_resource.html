@@ -1,232 +1,967 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Subject Resource</title>
-    <script>
-        (function () {
-            const theme = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-theme', theme);
-        })();
-    </script>
-    Add to <head> of every HTML file:
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../js/supabase-client.js"></script>
-<script src="../js/auth-helpers.js"></script>
-<script src="../js/quiz-helpers.js"></script>
-<script src="../js/materials-helpers.js"></script>
-    <style>
-        :root {
-            color-scheme: light;
-            font-family: 'Inter', system-ui, sans-serif;
-            --bg: #eef4ff;
-            --surface: #ffffff;
-            --surface-soft: #f5f8ff;
-            --text: #0f172a;
-            --muted: #64748b;
-            --border: rgba(15, 23, 42, 0.08);
-            --primary: #6366f1;
-            --primary-soft: rgba(99, 102, 241, 0.14);
-            --radius: 24px;
-            --card-radius: 22px;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Learning DC — Subject Resource</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
 
-        [data-theme='dark'] {
-            color-scheme: dark;
-            --bg: #081129;
-            --surface: #0d1725;
-            --surface-soft: #111d33;
-            --text: #e2e8f0;
-            --muted: #94a3b8;
-            --border: rgba(148, 163, 184, 0.24);
-            --primary: #8b5cf6;
-            --primary-soft: rgba(139, 92, 246, 0.14);
-        }
+  <script>
+    (function () {
+      const t = localStorage.getItem('sl-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
 
-        * { box-sizing: border-box; }
-        body {
-            margin: 0;
-            min-height: 100vh;
-            background: radial-gradient(circle at top, rgba(99, 102, 241, 0.14), transparent 28%),
-                linear-gradient(180deg, var(--bg) 0%, #0f172a 100%);
-            color: var(--text);
-            padding: 24px;
-        }
-        .page {
-            max-width: 1100px;
-            margin: 0 auto;
-            display: grid;
-            gap: 24px;
-        }
-        .card {
-            border-radius: var(--card-radius);
-            background: var(--surface);
-            border: 1px solid var(--border);
-            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
-            padding: 24px;
-            display: grid;
-            gap: 18px;
-        }
-        [data-theme='dark'] .card {
-            background: rgba(15, 23, 42, 0.88);
-        }
-        .hero {
-            display: grid;
-            gap: 12px;
-        }
-        .hero h1 {
-            margin: 0;
-            font-size: clamp(2rem, 2.5vw, 2.6rem);
-        }
-        .hero p {
-            margin: 0;
-            color: var(--muted);
-            line-height: 1.7;
-        }
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 18px;
-            border-radius: 16px;
-            background: var(--surface-soft);
-            border: 1px solid var(--border);
-            color: inherit;
-            text-decoration: none;
-            width: fit-content;
-        }
-        .resource-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 18px;
-        }
-        .resource-card {
-            border-radius: 22px;
-            background: var(--surface-soft);
-            border: 1px solid var(--border);
-            padding: 20px;
-            display: grid;
-            gap: 12px;
-        }
-        .resource-card h2 {
-            margin: 0;
-            font-size: 1.15rem;
-        }
-        .resource-card p {
-            margin: 0;
-            color: var(--muted);
-            line-height: 1.6;
-        }
-        .resource-card ul {
-            margin: 0;
-            padding-left: 18px;
-            color: var(--muted);
-        }
-        .resource-card li {
-            margin-bottom: 8px;
-        }
-        .tag {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 10px 14px;
-            border-radius: 999px;
-            background: var(--primary-soft);
-            color: var(--primary);
-            font-weight: 700;
-            width: fit-content;
-        }
-        .footer {
-            text-align: center;
-            color: var(--muted);
-            font-size: 0.95rem;
-        }
-        @media (max-width: 720px) {
-            body { padding: 16px; }
-        }
-    </style>
+  <style>
+    /* ── TOKENS ─────────────────────────────────────────── */
+    :root {
+      --bg:       #f0f4fb;
+      --surface:  #ffffff;
+      --surf2:    #f5f8ff;
+      --surf3:    #edf2ff;
+      --text:     #0f172a;
+      --muted:    #64748b;
+      --border:   rgba(15,23,42,0.08);
+      --primary:  #6366f1;
+      --pri-soft: rgba(99,102,241,0.12);
+      --pri-glow: rgba(99,102,241,0.20);
+      --success:  #22c55e;
+      --warning:  #f59e0b;
+      --danger:   #ef4444;
+      --radius:   22px;
+      --shadow:   0 4px 24px rgba(15,23,42,0.08);
+      --shadow-lg:0 20px 60px rgba(15,23,42,0.10);
+      --font:     'DM Sans', sans-serif;
+      --font-d:   'Playfair Display', serif;
+    }
+    [data-theme="dark"] {
+      --bg:       #07101f;
+      --surface:  #0d1a2e;
+      --surf2:    #111f35;
+      --surf3:    #162540;
+      --text:     #e2e8f0;
+      --muted:    #94a3b8;
+      --border:   rgba(148,163,184,0.12);
+      --primary:  #818cf8;
+      --pri-soft: rgba(129,140,248,0.14);
+      --pri-glow: rgba(129,140,248,0.22);
+      --success:  #4ade80;
+      --warning:  #fbbf24;
+      --danger:   #f87171;
+      --shadow:   0 4px 24px rgba(0,0,0,0.35);
+      --shadow-lg:0 20px 60px rgba(0,0,0,0.45);
+    }
+
+    /* ── RESET ──────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background 200ms, color 200ms;
+    }
+    a { text-decoration: none; color: inherit; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+    /* ── NAVBAR ─────────────────────────────────────────── */
+    .navbar {
+      position: sticky; top: 0; z-index: 50;
+      height: 68px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      padding: 0 28px;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+    .nav-left  { display: flex; align-items: center; gap: 16px; }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+
+    .brand {
+      display: flex; align-items: center; gap: 9px;
+      font-weight: 700; font-size: 1rem; letter-spacing: -0.01em;
+    }
+    .brand-mark {
+      width: 32px; height: 32px; border-radius: 9px;
+      background: var(--primary); display: grid; place-items: center;
+    }
+    .brand-mark svg { width: 16px; height: 16px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; }
+
+    .btn-back {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 16px; border-radius: 999px;
+      background: var(--surf2); border: 1px solid var(--border);
+      font-size: 0.875rem; font-weight: 600; color: var(--text);
+      transition: background 180ms, border-color 180ms;
+    }
+    .btn-back:hover { background: var(--surf3); border-color: var(--primary); }
+
+    .btn-icon {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: var(--surf2); border: 1px solid var(--border);
+      display: grid; place-items: center; font-size: 1rem;
+      transition: background 180ms, transform 200ms;
+    }
+    .btn-icon:hover { background: var(--surf3); }
+    #themeBtn:hover { transform: rotate(20deg); }
+
+    .subject-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 7px 14px; border-radius: 999px;
+      background: var(--pri-soft); color: var(--primary);
+      font-size: 0.82rem; font-weight: 700;
+    }
+    .subject-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); }
+
+    /* ── PAGE ────────────────────────────────────────────── */
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 24px 60px;
+      display: grid;
+      gap: 24px;
+    }
+
+    /* ── HERO ────────────────────────────────────────────── */
+    .hero-card {
+      background: linear-gradient(135deg, var(--pri-soft), transparent 60%), var(--surface);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 32px;
+      display: grid; gap: 16px;
+    }
+    .hero-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .hero-title {
+      font-family: var(--font-d);
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      font-weight: 800; line-height: 1.1; letter-spacing: -0.02em;
+      margin-top: 8px;
+    }
+    .hero-sub { color: var(--muted); font-size: 0.97rem; line-height: 1.75; font-weight: 300; }
+
+    /* Action tabs */
+    .action-tabs {
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .tab-btn {
+      padding: 9px 18px; border-radius: 999px;
+      font-size: 0.875rem; font-weight: 700;
+      border: 1.5px solid var(--border);
+      background: var(--surf2); color: var(--muted);
+      transition: background 180ms, border-color 180ms, color 180ms, transform 130ms;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .tab-btn:hover { background: var(--surf3); border-color: var(--primary); color: var(--text); }
+    .tab-btn.active {
+      background: var(--primary); border-color: var(--primary);
+      color: #fff; box-shadow: 0 4px 14px var(--pri-glow);
+      transform: translateY(-1px);
+    }
+
+    /* ── CONTENT AREA ────────────────────────────────────── */
+    .content-area { display: grid; gap: 18px; }
+
+    /* ── CARD BASE ───────────────────────────────────────── */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow); padding: 26px;
+    }
+    .card-title {
+      font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--muted); margin-bottom: 6px;
+    }
+    .card-heading {
+      font-family: var(--font-d);
+      font-size: clamp(1.1rem, 1.6vw, 1.4rem);
+      font-weight: 800; line-height: 1.15;
+      margin-bottom: 18px;
+    }
+
+    /* ── RESOURCE GRID ───────────────────────────────────── */
+    .res-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .res-card {
+      background: var(--surf2); border: 1px solid var(--border);
+      border-radius: 18px; padding: 20px;
+      display: flex; flex-direction: column; gap: 14px;
+      transition: transform 180ms, border-color 180ms, box-shadow 180ms;
+    }
+    .res-card:hover { transform: translateY(-2px); border-color: var(--primary); box-shadow: 0 10px 28px var(--pri-glow); }
+
+    .res-icon {
+      width: 46px; height: 46px; border-radius: 13px;
+      background: var(--pri-soft); display: grid; place-items: center;
+      font-size: 1.3rem; flex-shrink: 0;
+    }
+    .res-name { font-weight: 700; font-size: 0.97rem; }
+    .res-desc { color: var(--muted); font-size: 0.85rem; line-height: 1.55; font-weight: 300; flex: 1; }
+    .res-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .res-tag {
+      padding: 4px 10px; border-radius: 999px;
+      background: var(--pri-soft); color: var(--primary);
+      font-size: 0.75rem; font-weight: 700;
+    }
+    .res-tag.green { background: rgba(34,197,94,0.12); color: var(--success); }
+    .res-tag.amber { background: rgba(245,158,11,0.12); color: var(--warning); }
+
+    .btn-res {
+      width: 100%; padding: 11px; border-radius: 12px;
+      background: var(--primary); color: #fff;
+      font-size: 0.875rem; font-weight: 700;
+      box-shadow: 0 4px 14px var(--pri-glow);
+      transition: opacity 180ms, transform 140ms;
+    }
+    .btn-res:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-res.done { background: var(--success); box-shadow: none; }
+    .btn-res.secondary {
+      background: transparent; color: var(--primary);
+      border: 1.5px solid rgba(99,102,241,0.3); box-shadow: none;
+    }
+    .btn-res.secondary:hover { background: var(--pri-soft); }
+
+    /* ── VIDEO PLAYER MOCK ───────────────────────────────── */
+    .video-player {
+      width: 100%; aspect-ratio: 16/9; border-radius: 16px;
+      background: var(--surf3); border: 1px solid var(--border);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+      position: relative; overflow: hidden; cursor: pointer;
+      transition: box-shadow 180ms;
+    }
+    .video-player:hover { box-shadow: 0 12px 32px var(--pri-glow); }
+    .video-player::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, var(--pri-soft), transparent 60%);
+    }
+    .play-btn {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: var(--primary); display: grid; place-items: center;
+      box-shadow: 0 8px 24px var(--pri-glow); position: relative; z-index: 1;
+      transition: transform 200ms, box-shadow 200ms;
+    }
+    .video-player:hover .play-btn { transform: scale(1.1); box-shadow: 0 12px 32px var(--pri-glow); }
+    .play-btn svg { width: 28px; height: 28px; fill: #fff; margin-left: 4px; }
+    .video-duration {
+      position: absolute; bottom: 14px; right: 16px; z-index: 1;
+      background: rgba(15,23,42,0.75); color: #fff;
+      padding: 4px 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 700;
+    }
+    .video-title {
+      position: relative; z-index: 1;
+      font-weight: 700; font-size: 1rem; color: var(--text); text-align: center;
+      padding: 0 24px;
+    }
+
+    /* ── NOTES ───────────────────────────────────────────── */
+    .notes-content {
+      background: var(--surf2); border: 1px solid var(--border);
+      border-radius: 16px; padding: 24px;
+      line-height: 1.8; font-size: 0.95rem; color: var(--text);
+    }
+    .notes-content h3 { font-size: 1.05rem; font-weight: 700; margin: 18px 0 8px; color: var(--primary); }
+    .notes-content h3:first-child { margin-top: 0; }
+    .notes-content p  { color: var(--muted); margin-bottom: 12px; font-weight: 300; }
+    .notes-content ul { padding-left: 20px; color: var(--muted); margin-bottom: 12px; }
+    .notes-content li { margin-bottom: 6px; }
+    .notes-content strong { color: var(--text); font-weight: 700; }
+
+    .formula-box {
+      background: var(--surf3); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px 20px;
+      font-family: 'Courier New', monospace; font-size: 1rem;
+      color: var(--primary); font-weight: 700;
+      margin: 12px 0; letter-spacing: 0.02em;
+    }
+
+    /* ── QUIZ ────────────────────────────────────────────── */
+    .quiz-wrap { display: grid; gap: 20px; }
+    .quiz-progress-bar { height: 6px; border-radius: 999px; background: var(--border); overflow: hidden; }
+    .quiz-progress-fill { height: 100%; border-radius: 999px; background: var(--primary); transition: width 400ms ease; }
+    .quiz-counter { font-size: 0.82rem; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+
+    .question-box {
+      background: var(--surf2); border: 1px solid var(--border);
+      border-radius: 18px; padding: 24px;
+      font-size: 1rem; font-weight: 600; line-height: 1.6;
+    }
+    .options-grid { display: grid; gap: 10px; }
+    .option-btn {
+      width: 100%; padding: 14px 18px; border-radius: 14px;
+      border: 1.5px solid var(--border); background: var(--surf2);
+      color: var(--text); font-size: 0.9rem; font-weight: 600;
+      text-align: left; transition: background 160ms, border-color 160ms, transform 120ms;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .option-btn:hover:not(:disabled) { background: var(--surf3); border-color: var(--primary); transform: translateX(3px); }
+    .option-btn.correct { background: rgba(34,197,94,0.12); border-color: var(--success); color: var(--success); }
+    .option-btn.wrong   { background: rgba(239,68,68,0.10); border-color: var(--danger); color: var(--danger); }
+    .option-btn:disabled { cursor: default; transform: none; }
+    .opt-label {
+      width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      display: grid; place-items: center; font-size: 0.8rem; font-weight: 800;
+    }
+    .quiz-nav { display: flex; gap: 10px; justify-content: flex-end; }
+    .btn-quiz-nav {
+      padding: 12px 22px; border-radius: 14px;
+      font-size: 0.9rem; font-weight: 700;
+      background: var(--primary); color: #fff;
+      box-shadow: 0 4px 14px var(--pri-glow);
+      transition: opacity 180ms, transform 140ms;
+      display: none;
+    }
+    .btn-quiz-nav:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-quiz-nav.visible { display: block; }
+
+    .quiz-result {
+      text-align: center; padding: 32px; display: grid; gap: 16px;
+      display: none;
+    }
+    .quiz-result.show { display: grid; }
+    .result-score {
+      font-family: var(--font-d); font-size: 3.5rem; font-weight: 800;
+      color: var(--primary); line-height: 1;
+    }
+    .result-label { color: var(--muted); font-size: 1rem; }
+    .result-msg { font-size: 1.1rem; font-weight: 700; margin-top: 4px; }
+    .btn-retry {
+      display: inline-block; margin: 0 auto;
+      padding: 13px 28px; border-radius: 14px;
+      background: var(--primary); color: #fff;
+      font-size: 0.9rem; font-weight: 700;
+      box-shadow: 0 4px 14px var(--pri-glow);
+      transition: opacity 180ms; cursor: pointer;
+    }
+    .btn-retry:hover { opacity: 0.9; }
+
+    /* ── IMAGES ──────────────────────────────────────────── */
+    .img-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 14px;
+    }
+    .img-card {
+      border-radius: 16px; overflow: hidden;
+      background: var(--surf2); border: 1px solid var(--border);
+      cursor: pointer; transition: transform 180ms, box-shadow 180ms;
+    }
+    .img-card:hover { transform: scale(1.02); box-shadow: 0 10px 28px var(--pri-glow); }
+    .img-thumb {
+      aspect-ratio: 4/3;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 3rem;
+      background: linear-gradient(135deg, var(--pri-soft), var(--surf3));
+    }
+    .img-caption {
+      padding: 10px 14px;
+      font-size: 0.82rem; font-weight: 600; color: var(--muted);
+    }
+
+    /* ── OVERVIEW ────────────────────────────────────────── */
+    .overview-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px;
+    }
+    .ov-card {
+      background: var(--surf2); border: 1px solid var(--border);
+      border-radius: 16px; padding: 20px;
+      display: flex; align-items: flex-start; gap: 14px;
+      cursor: pointer; transition: border-color 180ms, transform 180ms, box-shadow 180ms;
+    }
+    .ov-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 8px 24px var(--pri-glow); }
+    .ov-icon {
+      width: 44px; height: 44px; border-radius: 13px;
+      background: var(--pri-soft); display: grid; place-items: center; font-size: 1.3rem; flex-shrink: 0;
+    }
+    .ov-name { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+    .ov-desc { color: var(--muted); font-size: 0.82rem; line-height: 1.5; }
+    .ov-count {
+      display: inline-block; margin-top: 8px;
+      padding: 4px 10px; border-radius: 999px;
+      background: var(--pri-soft); color: var(--primary);
+      font-size: 0.75rem; font-weight: 700;
+    }
+
+    /* ── TOAST ───────────────────────────────────────────── */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      padding: 13px 20px; border-radius: 14px;
+      background: var(--text); color: var(--surface);
+      font-size: 0.875rem; font-weight: 600;
+      box-shadow: var(--shadow-lg);
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 200ms, transform 200ms;
+      z-index: 200; pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* ── RESPONSIVE ──────────────────────────────────────── */
+    @media (max-width: 720px) {
+      .navbar { padding: 0 16px; }
+      .page   { padding: 18px 14px 48px; }
+      .res-grid { grid-template-columns: 1fr; }
+      .overview-grid { grid-template-columns: 1fr; }
+      .img-grid { grid-template-columns: repeat(2, 1fr); }
+      .hero-card { padding: 22px; }
+      .brand span:last-child { display: none; }
+    }
+  </style>
 </head>
 <body>
-    <div class="page">
-        <a href="learner_dashboard.html" class="back-link">← Back to Dashboard</a>
-        <section class="card hero">
-            <span class="tag" id="resourceTag">Loading...</span>
-            <h1 id="subjectTitle">Subject Resource</h1>
-            <p id="subjectDescription">Fetch and explore videos, notes, quizzes, and images for your chosen subject.</p>
-        </section>
-        <section class="card">
-            <div class="resource-grid" id="resourceGrid"></div>
-        </section>
-        <p class="footer">Smart Learning • Personalized subject resource page</p>
+
+<!-- ── NAVBAR ──────────────────────────────────────────── -->
+<nav class="navbar">
+  <div class="nav-left">
+    <a href="learner_dashboard.html" class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      </div>
+      <span>Smart Learning DC</span>
+    </a>
+    <a href="learner_dashboard.html" class="btn-back">← Dashboard</a>
+  </div>
+  <div class="nav-right">
+    <span class="subject-badge"><span class="subject-dot"></span><span id="navSubjectLabel">Subject</span></span>
+    <button class="btn-icon" id="themeBtn" aria-label="Toggle theme">🌙</button>
+  </div>
+</nav>
+
+<!-- ── PAGE ────────────────────────────────────────────── -->
+<div class="page">
+
+  <!-- HERO -->
+  <div class="hero-card">
+    <div class="hero-top">
+      <div>
+        <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Subject Resource</div>
+        <h1 class="hero-title" id="heroTitle">Loading…</h1>
+        <p class="hero-sub" id="heroSub">Select an action below to explore resources for this subject.</p>
+      </div>
     </div>
+    <!-- Action tabs -->
+    <div class="action-tabs" id="actionTabs">
+      <button class="tab-btn" data-action="overview">🗂 Overview</button>
+      <button class="tab-btn" data-action="videos">▶ Videos</button>
+      <button class="tab-btn" data-action="notes">📝 Notes</button>
+      <button class="tab-btn" data-action="quizzes">🎯 Quiz</button>
+      <button class="tab-btn" data-action="images">🖼 Images</button>
+    </div>
+  </div>
 
-    <script>
-        function decodeParam(value) {
-            try {
-                return decodeURIComponent(value || '');
-            } catch {
-                return value || '';
-            }
-        }
+  <!-- CONTENT AREA -->
+  <div class="content-area" id="contentArea"></div>
 
-        function parseQuery() {
-            const params = new URLSearchParams(window.location.search);
-            return {
-                subject: decodeParam(params.get('subject') || 'Unknown Subject'),
-                action: params.get('action') || 'overview'
-            };
-        }
+</div>
 
-        function renderResources({ subject, action }) {
-            const actionLabel = {
-                overview: 'Overview',
-                video: 'Videos',
-                notes: 'Notes',
-                quiz: 'Quizzes',
-                images: 'Images'
-            }[action] || 'Overview';
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
 
-            document.getElementById('resourceTag').textContent = actionLabel;
-            document.getElementById('subjectTitle').textContent = `${subject} • ${actionLabel}`;
-            document.getElementById('subjectDescription').textContent = action === 'overview'
-                ? `Browse the latest ${subject} curriculum content across videos, notes, quizzes, and images.`
-                : `Open ${actionLabel.toLowerCase()} for ${subject}.`;
+<script>
+/* ═══════════════════════════════════════════════════════════
+   SMART LEARNING DC — subject_resource.html
+   Fully dynamic. All tracking saved to localStorage.
+   ═══════════════════════════════════════════════════════════ */
 
-            const sections = {
-                overview: [
-                    { title: 'Video lessons', items: ['Watch the latest concept walkthroughs', 'Review chapter summaries', 'Revisit solved examples'] },
-                    { title: 'Study notes', items: ['Download summary sheets', 'Read key concept notes', 'Compare important formulas'] },
-                    { title: 'Practice quizzes', items: ['Attempt topic quizzes', 'Check instant feedback', 'Track your quiz stamina'] },
-                    { title: 'Visual library', items: ['View diagrams and charts', 'Explore subject images', 'Review handwritten examples'] }
-                ],
-                video: [
-                    { title: 'Featured videos', items: ['Introduction to the chapter', 'Important exam questions', 'Problem-solving walkthroughs'] }
-                ],
-                notes: [
-                    { title: 'Notes library', items: ['Chapter notes', 'Revision cards', 'Formula sheets'] }
-                ],
-                quiz: [
-                    { title: 'Quiz practice', items: ['Topic-based quizzes', 'Timed tests', 'Score and review'] }
-                ],
-                images: [
-                    { title: 'Visual resources', items: ['Diagrams', 'Flowcharts', 'Illustrated examples'] }
-                ]
-            };
+/* ── 1. URL PARAMS ─────────────────────────────────────── */
+function getParams() {
+  const p = new URLSearchParams(window.location.search);
+  return {
+    subject: decodeURIComponent(p.get('subject') || 'Mathematics'),
+    action:  p.get('action') || 'overview'
+  };
+}
+const { subject, action: initAction } = getParams();
+let currentAction = initAction;
 
-            document.getElementById('resourceGrid').innerHTML = (sections[action] || sections.overview)
-                .map(section => `
-                    <article class="resource-card">
-                        <h2>${section.title}</h2>
-                        <p>${section.items.length} resources available</p>
-                        <ul>${section.items.map(item => `<li>${item}</li>`).join('')}</ul>
-                    </article>
-                `).join('');
-        }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            renderResources(parseQuery());
-        });
-    </script>
+/* ── 2. THEME ──────────────────────────────────────────── */
+const themeBtn = document.getElementById('themeBtn');
+function getTheme() { return localStorage.getItem('sl-theme') || 'light'; }
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  themeBtn.textContent = t === 'dark' ? '☀️' : '🌙';
+  localStorage.setItem('sl-theme', t);
+}
+themeBtn.addEventListener('click', () => applyTheme(getTheme() === 'dark' ? 'light' : 'dark'));
+applyTheme(getTheme());
+
+
+/* ── 3. TOAST ──────────────────────────────────────────── */
+const toastEl = document.getElementById('toast');
+let toastTimer;
+function showToast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2500);
+}
+
+
+/* ── 4. ANALYTICS TRACKING ─────────────────────────────── */
+const STORE_KEY = 'sl_analytics';
+function getData() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch { return {}; }
+}
+function saveData(d) { localStorage.setItem(STORE_KEY, JSON.stringify(d)); }
+
+function trackAction(subj, action) {
+  const d = getData();
+  d.subjects  = d.subjects  || {};
+  d.totals    = d.totals    || { videos:0, notes:0, images:0, quizzes:0 };
+  d.activity  = d.activity  || [];
+
+  const actionMap = { videos:'videos', notes:'notes', images:'images', quizzes:'quizzes' };
+  const key = actionMap[action];
+  if (!key) return;
+
+  d.subjects[subj]      = d.subjects[subj] || { videos:0, notes:0, images:0, quizzes:0 };
+  d.subjects[subj][key] = (d.subjects[subj][key] || 0) + 1;
+  d.totals[key]         = (d.totals[key] || 0) + 1;
+
+  const labels = { videos:'watched a video', notes:'read notes', images:'viewed images', quizzes:'completed a quiz' };
+  d.activity.unshift({ subject: subj, action, label: labels[key], ts: new Date().toISOString() });
+  if (d.activity.length > 30) d.activity.length = 30;
+
+  saveData(d);
+}
+
+function saveQuizScore(subj, score, total) {
+  const d = getData();
+  d.quizScores = d.quizScores || [];
+  d.quizScores.push({ subject: subj, score, total, pct: Math.round((score/total)*100), date: new Date().toISOString() });
+  saveData(d);
+  trackAction(subj, 'quizzes');
+}
+
+
+/* ── 5. CONTENT DATA ───────────────────────────────────── */
+
+// Videos per subject (realistic)
+const VIDEOS = {
+  Mathematics: [
+    { title:'Introduction to Algebra', duration:'14:30', icon:'➗', level:'Beginner', desc:'Learn the basics of variables, expressions, and equations.' },
+    { title:'Quadratic Equations Explained', duration:'18:45', icon:'📐', level:'Intermediate', desc:'Solve quadratic equations step by step with worked examples.' },
+    { title:'Geometry: Triangles & Angles', duration:'12:20', icon:'📏', level:'Beginner', desc:'Explore properties of triangles, angle sums, and congruence.' },
+    { title:'Trigonometry Fundamentals', duration:'21:10', icon:'🔢', level:'Advanced', desc:'Sin, cos, tan and their applications in real-world problems.' },
+  ],
+  Science: [
+    { title:'Newton\'s Laws of Motion', duration:'16:00', icon:'⚡', level:'Intermediate', desc:'Understand all three of Newton\'s laws with real examples.' },
+    { title:'Photosynthesis Explained', duration:'13:45', icon:'🌱', level:'Beginner', desc:'How plants convert sunlight into food — step by step.' },
+    { title:'The Periodic Table', duration:'19:30', icon:'⚗️', level:'Intermediate', desc:'Navigate the periodic table and understand element groups.' },
+    { title:'Forces & Energy', duration:'15:20', icon:'🔋', level:'Beginner', desc:'Explore work, power, and the conservation of energy.' },
+  ],
+  English: [
+    { title:'Essay Writing Structure', duration:'11:00', icon:'✍️', level:'Beginner', desc:'Introduction, body, and conclusion — the perfect essay format.' },
+    { title:'Grammar: Tenses Explained', duration:'14:15', icon:'📖', level:'Beginner', desc:'Past, present, future — mastering English tenses clearly.' },
+    { title:'Reading Comprehension Tips', duration:'10:30', icon:'📚', level:'Intermediate', desc:'Strategies to answer comprehension questions accurately.' },
+    { title:'Poetry Analysis Guide', duration:'13:00', icon:'🎭', level:'Advanced', desc:'How to analyse themes, tone, and literary devices in poetry.' },
+  ],
+};
+function getVideos(subj) {
+  return VIDEOS[subj] || [
+    { title:`Introduction to ${subj}`, duration:'15:00', icon:'📹', level:'Beginner', desc:`Start your journey in ${subj} with this foundational lesson.` },
+    { title:`${subj} Core Concepts`, duration:'18:00', icon:'💡', level:'Intermediate', desc:`Deep dive into the key concepts you need to master in ${subj}.` },
+    { title:`${subj} Practice Problems`, duration:'20:00', icon:'🎯', level:'Advanced', desc:`Apply your knowledge with guided problem-solving sessions.` },
+    { title:`${subj} Revision`, duration:'12:00', icon:'🔁', level:'Intermediate', desc:`Quick revision of all important topics before your exams.` },
+  ];
+}
+
+// Notes per subject
+const NOTES = {
+  Mathematics: {
+    chapters: [
+      { title:'Algebra', content: `<h3>Key Concepts</h3><p>Algebra deals with symbols and the rules for manipulating those symbols. A <strong>variable</strong> is a letter representing an unknown number.</p><div class="formula-box">ax² + bx + c = 0</div><h3>Solving Linear Equations</h3><p>To solve for x, isolate x on one side of the equation using inverse operations.</p><ul><li>Add or subtract the same value from both sides</li><li>Multiply or divide both sides by the same non-zero number</li><li>Always check your answer by substituting back</li></ul>` },
+      { title:'Geometry', content: `<h3>Triangles</h3><p>A triangle has <strong>three sides</strong> and <strong>three angles</strong> that always sum to 180°.</p><div class="formula-box">Area = ½ × base × height</div><h3>Types of Triangles</h3><ul><li><strong>Equilateral</strong> — all sides equal, all angles 60°</li><li><strong>Isosceles</strong> — two sides equal, two angles equal</li><li><strong>Scalene</strong> — no sides equal</li></ul>` },
+    ]
+  },
+  Science: {
+    chapters: [
+      { title:'Physics — Forces', content: `<h3>Newton's Laws</h3><p>Sir Isaac Newton described three fundamental laws that govern motion of objects.</p><div class="formula-box">F = ma (Force = mass × acceleration)</div><ul><li><strong>1st Law</strong> — An object stays at rest or in motion unless acted upon by a force</li><li><strong>2nd Law</strong> — Force equals mass times acceleration</li><li><strong>3rd Law</strong> — Every action has an equal and opposite reaction</li></ul>` },
+      { title:'Biology — Cells', content: `<h3>Cell Structure</h3><p>All living things are made of <strong>cells</strong>. Cells are the basic unit of life.</p><ul><li><strong>Cell membrane</strong> — controls what enters and exits</li><li><strong>Nucleus</strong> — contains DNA, controls the cell</li><li><strong>Mitochondria</strong> — produces energy (ATP)</li><li><strong>Cytoplasm</strong> — jelly-like fluid that fills the cell</li></ul>` },
+    ]
+  },
+};
+function getNotes(subj) {
+  return (NOTES[subj] || {chapters:[
+    { title:`${subj} — Chapter 1`, content:`<h3>Introduction</h3><p>This chapter introduces the core fundamentals of <strong>${subj}</strong>. Study each concept carefully and practise with the questions provided.</p><ul><li>Key term definitions</li><li>Core principles and rules</li><li>Common exam question formats</li></ul>` },
+    { title:`${subj} — Chapter 2`, content:`<h3>Core Concepts</h3><p>Building on Chapter 1, we now explore the most important topics in depth.</p><div class="formula-box">Refer to your textbook for subject-specific formulas</div><ul><li>Advanced applications</li><li>Worked examples</li><li>Practice exercises</li></ul>` },
+  ]}).chapters;
+}
+
+// Quiz questions per subject
+const QUIZZES = {
+  Mathematics: [
+    { q:'What is the value of x in: 2x + 6 = 14?', opts:['4','5','3','6'], ans:0 },
+    { q:'What is the area of a triangle with base 8cm and height 5cm?', opts:['20 cm²','40 cm²','13 cm²','25 cm²'], ans:0 },
+    { q:'What is 15% of 200?', opts:['30','25','35','20'], ans:0 },
+    { q:'Which of these is a prime number?', opts:['17','15','21','9'], ans:0 },
+    { q:'Solve: x² = 49. What is x?', opts:['±7','7','49','14'], ans:0 },
+  ],
+  Science: [
+    { q:'What is the chemical symbol for water?', opts:['H₂O','CO₂','O₂','NaCl'], ans:0 },
+    { q:'Which organelle is the powerhouse of the cell?', opts:['Mitochondria','Nucleus','Ribosome','Vacuole'], ans:0 },
+    { q:'What force keeps planets in orbit around the sun?', opts:['Gravity','Magnetism','Friction','Tension'], ans:0 },
+    { q:'What is the speed of light in vacuum?', opts:['3×10⁸ m/s','3×10⁶ m/s','3×10¹⁰ m/s','3×10⁴ m/s'], ans:0 },
+    { q:'Which gas do plants absorb during photosynthesis?', opts:['CO₂','O₂','N₂','H₂'], ans:0 },
+  ],
+  English: [
+    { q:'Which sentence is grammatically correct?', opts:['She don\'t know','She doesn\'t know','She doesn\'t knows','She not know'], ans:1 },
+    { q:'What is a synonym for "happy"?', opts:['Joyful','Sad','Angry','Tired'], ans:0 },
+    { q:'Which literary device is used in "The wind whispered"?', opts:['Personification','Simile','Metaphor','Alliteration'], ans:0 },
+    { q:'What is the past tense of "run"?', opts:['Ran','Runned','Running','Runs'], ans:0 },
+    { q:'A word that describes a noun is called a...?', opts:['Adjective','Adverb','Verb','Pronoun'], ans:0 },
+  ],
+};
+function getQuiz(subj) {
+  return QUIZZES[subj] || [
+    { q:`What is the main focus of ${subj}?`, opts:['Core study and application','Unrelated topics','Physical exercises','Language study'], ans:0 },
+    { q:`Which approach is best when studying ${subj}?`, opts:['Regular practice','Reading once','Ignoring examples','Memorising only'], ans:0 },
+    { q:`${subj} is best learned by...?`, opts:['Solving problems daily','Skipping chapters','Not taking notes','Avoiding revision'], ans:0 },
+    { q:`A key skill in ${subj} is...?`, opts:['Critical thinking','Guessing','Copying','Rushing'], ans:0 },
+  ];
+}
+
+// Images per subject
+const IMAGES = {
+  Mathematics: [
+    { icon:'📐', caption:'Geometric shapes & angles' },
+    { icon:'📊', caption:'Bar and line graphs' },
+    { icon:'🔢', caption:'Number line visualization' },
+    { icon:'📏', caption:'Measurement diagrams' },
+    { icon:'🧮', caption:'Algebraic equation flowchart' },
+    { icon:'🔵', caption:'Circle theorems diagram' },
+  ],
+  Science: [
+    { icon:'🧬', caption:'DNA double helix structure' },
+    { icon:'⚗️', caption:'Periodic table overview' },
+    { icon:'🌱', caption:'Photosynthesis diagram' },
+    { icon:'🔋', caption:'Electric circuit diagram' },
+    { icon:'🪐', caption:'Solar system model' },
+    { icon:'🦴', caption:'Human skeletal system' },
+  ],
+};
+function getImages(subj) {
+  return IMAGES[subj] || [
+    { icon:'🖼️', caption:`${subj} overview diagram` },
+    { icon:'📊', caption:`${subj} concept chart` },
+    { icon:'📌', caption:`${subj} key terms visual` },
+    { icon:'🗺️', caption:`${subj} mind map` },
+    { icon:'📋', caption:`${subj} summary infographic` },
+    { icon:'🔍', caption:`${subj} deep dive visual` },
+  ];
+}
+
+
+/* ── 6. RENDER FUNCTIONS ───────────────────────────────── */
+
+function renderOverview() {
+  const d = getData();
+  const s = d.subjects && d.subjects[subject] ? d.subjects[subject] : {};
+  return `
+    <div class="card">
+      <div class="card-title">Overview</div>
+      <div class="card-heading">${subject} — All Resources</div>
+      <div class="overview-grid">
+        <div class="ov-card" onclick="switchTab('videos')">
+          <div class="ov-icon">▶️</div>
+          <div>
+            <div class="ov-name">Video Lessons</div>
+            <div class="ov-desc">Watch concept videos and walkthroughs for ${subject}.</div>
+            <span class="ov-count">${s.videos || 0} watched</span>
+          </div>
+        </div>
+        <div class="ov-card" onclick="switchTab('notes')">
+          <div class="ov-icon">📝</div>
+          <div>
+            <div class="ov-name">Study Notes</div>
+            <div class="ov-desc">Read chapter notes, formulas, and key concepts.</div>
+            <span class="ov-count">${s.notes || 0} read</span>
+          </div>
+        </div>
+        <div class="ov-card" onclick="switchTab('quizzes')">
+          <div class="ov-icon">🎯</div>
+          <div>
+            <div class="ov-name">Practice Quizzes</div>
+            <div class="ov-desc">Test your knowledge with timed topic quizzes.</div>
+            <span class="ov-count">${s.quizzes || 0} taken</span>
+          </div>
+        </div>
+        <div class="ov-card" onclick="switchTab('images')">
+          <div class="ov-icon">🖼</div>
+          <div>
+            <div class="ov-name">Visual Library</div>
+            <div class="ov-desc">Explore diagrams, charts, and illustrated examples.</div>
+            <span class="ov-count">${s.images || 0} viewed</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderVideos() {
+  const videos = getVideos(subject);
+  const viewed = JSON.parse(localStorage.getItem(`sl_viewed_videos_${subject}`) || '[]');
+  return `
+    <div class="card">
+      <div class="card-title">Video Lessons</div>
+      <div class="card-heading">${subject} — Watch & Learn</div>
+      <div class="res-grid">
+        ${videos.map((v, i) => {
+          const done = viewed.includes(i);
+          return `
+          <div class="res-card">
+            <div class="video-player" onclick="watchVideo('${subject}',${i})">
+              <div class="play-btn">
+                <svg viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>
+              </div>
+              <div class="video-title">${v.title}</div>
+              <div class="video-duration">${v.duration}</div>
+            </div>
+            <div class="res-meta">
+              <span class="res-tag">${v.level}</span>
+              ${done ? '<span class="res-tag green">✓ Watched</span>' : ''}
+            </div>
+            <div class="res-desc">${v.desc}</div>
+            <button class="btn-res ${done ? 'done' : ''}" id="vbtn-${i}" onclick="watchVideo('${subject}',${i})">
+              ${done ? '✓ Watched' : '▶ Watch now'}
+            </button>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
+function renderNotes() {
+  const chapters = getNotes(subject);
+  const readChapters = JSON.parse(localStorage.getItem(`sl_read_notes_${subject}`) || '[]');
+  return `
+    <div class="card">
+      <div class="card-title">Study Notes</div>
+      <div class="card-heading">${subject} — Read & Revise</div>
+      ${chapters.map((ch, i) => {
+        const done = readChapters.includes(i);
+        return `
+        <div style="display:grid;gap:12px;padding-bottom:20px;border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <div style="font-weight:700;font-size:1rem;">${ch.title}</div>
+            ${done ? '<span class="res-tag green">✓ Read</span>' : ''}
+          </div>
+          <div class="notes-content">${ch.content}</div>
+          <button class="btn-res ${done ? 'done' : ''}" onclick="markNoteRead('${subject}',${i})">
+            ${done ? '✓ Marked as read' : '📌 Mark as read'}
+          </button>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+let quizState = {};
+
+function renderQuiz() {
+  const questions = getQuiz(subject);
+  quizState = { questions, current: 0, answers: Array(questions.length).fill(null), score: 0, done: false };
+  return `
+    <div class="card">
+      <div class="card-title">Practice Quiz</div>
+      <div class="card-heading">${subject} — Test Your Knowledge</div>
+      <div class="quiz-wrap" id="quizWrap">
+        ${buildQuestion()}
+      </div>
+    </div>`;
+}
+
+function buildQuestion() {
+  if (quizState.done) return buildResult();
+  const q   = quizState.questions[quizState.current];
+  const idx = quizState.current;
+  const total = quizState.questions.length;
+  const pct = Math.round((idx / total) * 100);
+  const labels = ['A','B','C','D'];
+  return `
+    <div class="quiz-counter">Question ${idx + 1} of ${total}</div>
+    <div class="quiz-progress-bar"><div class="quiz-progress-fill" style="width:${pct}%"></div></div>
+    <div class="question-box">${q.q}</div>
+    <div class="options-grid">
+      ${q.opts.map((opt, i) => `
+        <button class="option-btn" id="opt-${i}" onclick="selectOption(${i})">
+          <span class="opt-label">${labels[i]}</span>
+          ${opt}
+        </button>`).join('')}
+    </div>
+    <div class="quiz-nav">
+      <button class="btn-quiz-nav" id="nextBtn">Next →</button>
+    </div>`;
+}
+
+function selectOption(chosen) {
+  const q   = quizState.questions[quizState.current];
+  const correct = q.ans;
+  quizState.answers[quizState.current] = chosen;
+  if (chosen === correct) quizState.score++;
+
+  // Disable all options and show correct/wrong
+  q.opts.forEach((_, i) => {
+    const btn = document.getElementById(`opt-${i}`);
+    if (!btn) return;
+    btn.disabled = true;
+    if (i === correct) btn.classList.add('correct');
+    else if (i === chosen && i !== correct) btn.classList.add('wrong');
+  });
+
+  document.getElementById('nextBtn').classList.add('visible');
+}
+
+function nextQuestion() {
+  quizState.current++;
+  if (quizState.current >= quizState.questions.length) {
+    quizState.done = true;
+    saveQuizScore(subject, quizState.score, quizState.questions.length);
+    showToast(`Quiz done! Score: ${quizState.score}/${quizState.questions.length}`);
+  }
+  document.getElementById('quizWrap').innerHTML = buildQuestion();
+}
+
+function buildResult() {
+  const { score, questions } = quizState;
+  const pct = Math.round((score / questions.length) * 100);
+  const msg = pct >= 80 ? '🎉 Excellent work!' : pct >= 60 ? '👍 Good effort!' : '📚 Keep practising!';
+  return `
+    <div class="quiz-result show">
+      <div class="result-score">${pct}%</div>
+      <div class="result-label">${score} correct out of ${questions.length} questions</div>
+      <div class="result-msg">${msg}</div>
+      <button class="btn-retry" onclick="retryQuiz()">🔄 Try again</button>
+    </div>`;
+}
+
+function retryQuiz() {
+  document.getElementById('quizWrap').innerHTML = '';
+  quizState = { ...quizState, current:0, answers: Array(quizState.questions.length).fill(null), score:0, done:false };
+  document.getElementById('quizWrap').innerHTML = buildQuestion();
+}
+
+function renderImages() {
+  const imgs = getImages(subject);
+  const viewed = JSON.parse(localStorage.getItem(`sl_viewed_images_${subject}`) || '[]');
+  return `
+    <div class="card">
+      <div class="card-title">Visual Library</div>
+      <div class="card-heading">${subject} — Diagrams & Visuals</div>
+      <div class="img-grid">
+        ${imgs.map((img, i) => {
+          const done = viewed.includes(i);
+          return `
+          <div class="img-card" onclick="viewImage('${subject}',${i})">
+            <div class="img-thumb">${img.icon}</div>
+            <div class="img-caption">${img.caption}${done ? ' ✓' : ''}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <p style="color:var(--muted);font-size:0.85rem;margin-top:8px;">Click any image to mark it as viewed and track your progress.</p>
+    </div>`;
+}
+
+
+/* ── 7. ACTION HANDLERS ────────────────────────────────── */
+function watchVideo(subj, idx) {
+  const viewed = JSON.parse(localStorage.getItem(`sl_viewed_videos_${subj}`) || '[]');
+  if (!viewed.includes(idx)) {
+    viewed.push(idx);
+    localStorage.setItem(`sl_viewed_videos_${subj}`, JSON.stringify(viewed));
+    trackAction(subj, 'videos');
+    showToast('Video watched! Progress tracked ✓');
+    renderContent();
+  } else {
+    showToast('Already watched — great revision!');
+  }
+}
+
+function markNoteRead(subj, idx) {
+  const read = JSON.parse(localStorage.getItem(`sl_read_notes_${subj}`) || '[]');
+  if (!read.includes(idx)) {
+    read.push(idx);
+    localStorage.setItem(`sl_read_notes_${subj}`, JSON.stringify(read));
+    trackAction(subj, 'notes');
+    showToast('Notes marked as read ✓');
+    renderContent();
+  } else {
+    showToast('Already marked as read!');
+  }
+}
+
+function viewImage(subj, idx) {
+  const viewed = JSON.parse(localStorage.getItem(`sl_viewed_images_${subj}`) || '[]');
+  if (!viewed.includes(idx)) {
+    viewed.push(idx);
+    localStorage.setItem(`sl_viewed_images_${subj}`, JSON.stringify(viewed));
+    trackAction(subj, 'images');
+    showToast('Image viewed! Progress tracked ✓');
+    renderContent();
+  } else {
+    showToast('Image already viewed!');
+  }
+}
+
+// Expose for quiz inline calls
+window.selectOption = selectOption;
+window.nextQuestion = nextQuestion;
+window.retryQuiz    = retryQuiz;
+window.switchTab    = switchTab;
+window.watchVideo   = watchVideo;
+window.markNoteRead = markNoteRead;
+window.viewImage    = viewImage;
+
+
+/* ── 8. TAB SWITCHING ──────────────────────────────────── */
+function switchTab(action) {
+  currentAction = action;
+
+  // Update URL without reload
+  const url = new URL(window.location);
+  url.searchParams.set('action', action);
+  window.history.replaceState({}, '', url);
+
+  // Update tab buttons
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.action === action);
+  });
+
+  renderContent();
+}
+
+function renderContent() {
+  const area = document.getElementById('contentArea');
+  const renderers = {
+    overview: renderOverview,
+    videos:   renderVideos,
+    notes:    renderNotes,
+    quizzes:  renderQuiz,
+    images:   renderImages,
+  };
+  area.innerHTML = (renderers[currentAction] || renderOverview)();
+}
+
+
+/* ── 9. INIT ───────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  // Set header info
+  document.getElementById('heroTitle').textContent   = subject;
+  document.getElementById('navSubjectLabel').textContent = subject;
+  document.getElementById('heroSub').textContent =
+    `Explore videos, notes, quizzes, and visuals for ${subject}. All your activity is tracked and shown on your dashboard.`;
+
+  // Set active tab
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.action === currentAction);
+    btn.addEventListener('click', () => switchTab(btn.dataset.action));
+  });
+
+  renderContent();
+});
+</script>
 </body>
 </html>

@@ -1,1156 +1,1071 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Smart Learning</title>
-    <script>
-        (function () {
-            const theme = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-theme', theme);
-        })();
-    </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="../js/supabase-client.js"></script>
-    <script src="../js/auth-helpers.js"></script>
-    <script src="../js/quiz-helpers.js"></script>
-    <script src="../js/materials-helpers.js"></script>
-    <style> 
-        :root {
-            color-scheme: light;
-            font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            --bg: #eef4fb;
-            --page-bg: #f8fbff;
-            --surface: #ffffff;
-            --surface-soft: #f7fbff;
-            --surface-strong: #eff6ff;
-            --text: #0f172a;
-            --muted: #475569;
-            --nav-text: #334155;
-            --primary: #3b82f6;
-            --primary-soft: #dbeafe;
-            --shadow: 0 32px 80px rgba(15, 23, 42, 0.08);
-            --radius: 28px;
-        }
-
-        .dark-mode,
-        [data-theme="dark"] {
-            color-scheme: dark;
-            --bg: #061021;
-            --page-bg: #071127;
-            --surface: #0f172a;
-            --surface-soft: #112240;
-            --surface-strong: #15263c;
-            --text: #f8fafc;
-            --muted: #94a3b8;
-            --nav-text: #e2e8f0;
-            --primary: #60a5fa;
-            --primary-soft: rgba(96, 165, 250, 0.14);
-            --shadow: 0 40px 90px rgba(15, 23, 42, 0.45);
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            min-height: 100vh;
-            background: linear-gradient(180deg, var(--page-bg) 0%, var(--bg) 100%);
-            color: var(--text);
-            transition: background 220ms ease, color 220ms ease, opacity 220ms ease, transform 220ms ease;
-        }
-
-        .page {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 24px;
-        }
-
-        .topbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-            padding: 12px 0;
-        }
-
-        .fade-out {
-            opacity: 0;
-            transform: scale(0.98);
-        }
-
-        .brand {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 700;
-            font-size: 1.05rem;
-            color: var(--text);
-        }
-
-        .brand-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: var(--primary);
-        }
-
-        .nav-links {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .nav-item {
-            display: inline-flex;
-            align-items: center;
-            border-radius: 999px;
-            border: 1px solid rgba(15, 23, 42, 0.08);
-            background: rgba(255, 255, 255, 0.76);
-            transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
-        }
-
-        .dark-mode .nav-item,
-        [data-theme="dark"] .nav-item {
-            background: rgba(15, 23, 42, 0.24);
-            border-color: rgba(255, 255, 255, 0.12);
-        }
-
-        .nav-links a,
-        .nav-links button {
-            border: none;
-            background: transparent;
-            color: var(--text);
-            font-weight: 600;
-            cursor: pointer;
-            padding: 10px 16px;
-        }
-
-        .theme-toggle {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 16px;
-            border-radius: 999px;
-            border: 1px solid transparent;
-            background: rgba(59, 130, 246, 0.10);
-            color: var(--text);
-            font-weight: 700;
-            transition: background 180ms ease, transform 180ms ease, border-color 180ms ease;
-        }
-
-        .theme-toggle .theme-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 20px;
-            font-size: 1rem;
-        }
-
-        .theme-toggle:hover {
-            background: rgba(59, 130, 246, 0.18);
-            transform: translateY(-1px);
-            border-color: rgba(59, 130, 246, 0.25);
-        }
-
-        .dark-mode .theme-toggle,
-        [data-theme="dark"] .theme-toggle {
-            background: rgba(96, 165, 250, 0.12);
-        }
-
-        .nav-links .primary-btn {
-            padding: 12px 20px;
-            border-radius: 999px;
-            background: var(--primary);
-            color: #fff;
-            box-shadow: 0 18px 30px rgba(59, 130, 246, 0.18);
-        }
-
-        .hero-panel {
-            margin-top: 24px;
-            display: grid;
-            grid-template-columns: 1.1fr 0.9fr;
-            gap: 32px;
-        }
-
-        .illustration-card,
-        .selection-card {
-            background: var(--surface);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            padding: 32px;
-        }
-
-        .illustration-card {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            gap: 24px;
-        }
-
-        .illustration-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-        }
-
-        .tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 14px;
-            border-radius: 999px;
-            background: rgba(59, 130, 246, 0.12);
-            color: var(--primary);
-            font-size: 0.95rem;
-            font-weight: 700;
-        }
-
-        .illustration-card h1 {
-            margin: 0;
-            font-size: clamp(2rem, 2.6vw, 3rem);
-            line-height: 1.02;
-        }
-
-        .illustration-card p {
-            margin: 0;
-            color: var(--muted);
-            font-size: 1.03rem;
-            line-height: 1.8;
-        }
-
-        .illustration-frame {
-            position: relative;
-            min-height: 360px;
-            border-radius: 32px;
-            overflow: hidden;
-            background: radial-gradient(circle at top left, rgba(59, 130, 246, 0.15), transparent 34%),
-                linear-gradient(180deg, #dbeafe 0%, #eff6ff 100%);
-            display: grid;
-            place-items: center;
-        }
-
-        .illustration-frame::before {
-            content: "";
-            position: absolute;
-            inset: 24px;
-            border-radius: 28px;
-            background: rgba(255, 255, 255, 0.72);
-            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8);
-        }
-
-        .illustration-scene {
-            position: relative;
-            z-index: 1;
-            width: 100%;
-            height: 100%;
-            display: grid;
-            place-items: center;
-            gap: 0;
-        }
-
-        .background-panel {
-            position: absolute;
-            border-radius: 28px;
-            filter: blur(10px);
-            opacity: 0.72;
-        }
-
-        .background-panel.one {
-            width: 48%;
-            height: 38%;
-            top: 10%;
-            left: 8%;
-            background: linear-gradient(135deg, rgba(91, 133, 255, 0.32), rgba(194, 228, 255, 0.12));
-        }
-
-        .background-panel.two {
-            width: 42%;
-            height: 22%;
-            top: 14%;
-            right: 6%;
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.18), rgba(255, 255, 255, 0.08));
-        }
-
-        .brain-icon {
-            position: absolute;
-            top: 18%;
-            right: 14%;
-            width: 70px;
-            height: 70px;
-            border-radius: 22px;
-            background: rgba(255, 255, 255, 0.65);
-            border: 1px solid rgba(255, 255, 255, 0.85);
-            display: grid;
-            place-items: center;
-            box-shadow: 0 18px 45px rgba(91, 174, 255, 0.18);
-        }
-
-        .brain-icon::before {
-            content: "";
-            position: absolute;
-            top: 18px;
-            left: 14px;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: var(--primary);
-            box-shadow: 18px 0 var(--primary), 30px 8px var(--primary), 10px 20px var(--primary), 24px 26px var(--primary);
-        }
-
-        .brain-icon::after {
-            content: "";
-            position: absolute;
-            width: 60%;
-            height: 22%;
-            bottom: 12px;
-            left: 50%;
-            transform: translateX(-50%);
-            border-radius: 999px;
-            background: rgba(91, 133, 255, 0.14);
-        }
-
-        .table-surface {
-            position: absolute;
-            width: 78%;
-            height: 48%;
-            border-radius: 40px;
-            background: rgba(255, 255, 255, 0.88);
-            border: 1px solid rgba(255, 255, 255, 0.9);
-            box-shadow: 0 38px 90px rgba(59, 130, 246, 0.12);
-            backdrop-filter: blur(18px);
-        }
-
-        .table-surface::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at top left, rgba(91, 133, 255, 0.22), transparent 25%);
-            border-radius: inherit;
-        }
-
-        .tablet-grid {
-            position: absolute;
-            inset: 16%;
-            display: grid;
-            gap: 14px;
-            grid-template-columns: repeat(4, 1fr);
-            align-items: end;
-        }
-
-        .tablet-grid .bar {
-            width: 100%;
-            border-radius: 18px 18px 0 0;
-            background: linear-gradient(180deg, rgba(59, 130, 246, 0.92), rgba(96, 165, 250, 0.44));
-        }
-
-        .bar.one {
-            height: 40%;
-        }
-
-        .bar.two {
-            height: 58%;
-        }
-
-        .bar.three {
-            height: 50%;
-        }
-
-        .bar.four {
-            height: 70%;
-        }
-
-        .tablet-connection {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-        }
-
-        .tablet-connection span {
-            position: absolute;
-            display: block;
-            width: 2px;
-            background: rgba(91, 133, 255, 0.42);
-            border-radius: 999px;
-        }
-
-        .line-one {
-            height: 42%;
-            left: 26%;
-            top: 14%;
-        }
-
-        .line-two {
-            height: 30%;
-            left: 54%;
-            top: 22%;
-        }
-
-        .line-three {
-            height: 18%;
-            left: 74%;
-            top: 12%;
-        }
-
-        .tablet-node {
-            position: absolute;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #fff;
-            border: 2px solid rgba(91, 133, 255, 0.95);
-            box-shadow: 0 0 14px rgba(91, 133, 255, 0.32);
-        }
-
-        .node-a {
-            top: 22%;
-            left: 32%;
-        }
-
-        .node-b {
-            top: 45%;
-            left: 52%;
-        }
-
-        .node-c {
-            top: 28%;
-            left: 73%;
-        }
-
-        .person {
-            position: absolute;
-            display: grid;
-            gap: 10px;
-            align-items: center;
-            justify-items: center;
-        }
-
-        .person .head {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, rgba(91, 133, 255, 0.95), rgba(147, 197, 253, 0.95));
-            box-shadow: 0 12px 28px rgba(59, 130, 246, 0.18);
-        }
-
-        .person .body {
-            width: 52px;
-            height: 40px;
-            border-radius: 24px;
-            background: rgba(255, 255, 255, 0.92);
-            border: 1px solid rgba(59, 130, 246, 0.2);
-        }
-
-        .person .stylus {
-            width: 6px;
-            height: 40px;
-            border-radius: 12px;
-            background: linear-gradient(180deg, #ffffff, rgba(91, 133, 255, 0.9));
-            transform: rotate(-32deg);
-        }
-
-        .person-a {
-            left: 8%;
-            bottom: 16%;
-        }
-
-        .person-b {
-            right: 10%;
-            bottom: 18%;
-        }
-
-        .person-c {
-            left: 18%;
-            top: 10%;
-        }
-
-        .person-d {
-            right: 16%;
-            top: 12%;
-        }
-
-        @media (max-width: 920px) {
-            .hero-panel {
-                grid-template-columns: 1fr;
-            }
-
-            .illustration-frame {
-                min-height: 320px;
-            }
-        }
-
-        @media (max-width: 620px) {
-            .page {
-                padding: 18px;
-            }
-
-            .topbar {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .nav-links {
-                width: 100%;
-                justify-content: flex-start;
-            }
-
-            .illustration-card,
-            .selection-card {
-                padding: 24px;
-            }
-
-            .illustration-frame {
-                min-height: 300px;
-            }
-        }
-
-        .selection-card {
-            display: flex;
-            flex-direction: column;
-            gap: 28px;
-        }
-
-        .selection-card h2 {
-            margin: 0;
-            font-size: clamp(1.8rem, 2vw, 2.4rem);
-        }
-
-        .selection-card p {
-            margin: 0;
-            color: var(--muted);
-            line-height: 1.75;
-            font-size: 1rem;
-        }
-
-        .variant-list {
-            display: grid;
-            gap: 18px;
-            margin-top: 12px;
-        }
-
-        .variant-card {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 18px;
-            padding: 22px 24px;
-            border-radius: 26px;
-            border: 1px solid transparent;
-            background: var(--surface-strong);
-            cursor: pointer;
-            transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
-        }
-
-        .variant-card:hover,
-        .variant-card.selected {
-            transform: translateY(-2px);
-            border-color: rgba(59, 130, 246, 0.35);
-            background: #eff6ff;
-            box-shadow: 0 14px 30px rgba(59, 130, 246, 0.12);
-        }
-
-        .variant-card .role {
-            display: grid;
-            gap: 6px;
-        }
-
-        .variant-card .role-title {
-            margin: 0;
-            font-size: 1.05rem;
-            font-weight: 700;
-        }
-
-        .variant-card .role-note {
-            margin: 0;
-            color: var(--muted);
-            font-size: 0.96rem;
-        }
-
-        .variant-card button {
-            border: none;
-            background: var(--primary);
-            color: #fff;
-            padding: 10px 18px;
-            border-radius: 999px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: transform 180ms ease;
-        }
-
-        .variant-card button:hover {
-            transform: translateY(-1px);
-        }
-
-        .info-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 14px 18px;
-            border-radius: 22px;
-            background: rgba(59, 130, 246, 0.1);
-            font-size: 0.96rem;
-            color: var(--primary);
-        }
-
-        .login-row {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 10px;
-            color: var(--muted);
-            font-size: 0.98rem;
-            margin-top: 4px;
-        }
-
-        .login-row .login-link {
-            color: var(--primary);
-            font-weight: 700;
-            text-decoration: none;
-        }
-
-        .login-row .login-link:hover {
-            text-decoration: underline;
-        }
-
-        .small-note {
-            color: var(--muted);
-            font-size: 0.95rem;
-            line-height: 1.7;
-        }
-
-        .login-modal {
-            position: fixed;
-            inset: 0;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-            z-index: 40;
-        }
-
-        .login-modal.active {
-            display: grid;
-        }
-
-        .modal-backdrop {
-            position: absolute;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.72);
-            backdrop-filter: blur(4px);
-        }
-
-        .modal-content {
-            position: relative;
-            width: min(520px, 100%);
-            background: var(--surface);
-            border-radius: 28px;
-            box-shadow: var(--shadow);
-            padding: 32px;
-            z-index: 1;
-            display: grid;
-            gap: 18px;
-        }
-
-        .modal-close {
-            position: absolute;
-            top: 18px;
-            right: 18px;
-            width: 38px;
-            height: 38px;
-            border: none;
-            border-radius: 50%;
-            background: rgba(59, 130, 246, 0.12);
-            color: var(--text);
-            font-size: 1.2rem;
-            cursor: pointer;
-        }
-
-        .modal-copy {
-            margin: 0;
-            color: var(--muted);
-            line-height: 1.6;
-        }
-
-        .modal-field {
-            display: grid;
-            gap: 8px;
-        }
-
-        .modal-field label {
-            font-size: 0.95rem;
-            color: var(--muted);
-        }
-
-        .modal-field input {
-            width: 100%;
-            padding: 16px 16px;
-            border-radius: 18px;
-            border: 1px solid rgba(15, 23, 42, 0.12);
-            background: var(--surface-soft);
-            color: var(--text);
-            font-size: 1rem;
-        }
-
-        .login-method-tabs {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 10px;
-        }
-
-        .login-method {
-            border: 1px solid rgba(15, 23, 42, 0.12);
-            border-radius: 18px;
-            background: var(--surface-soft);
-            padding: 12px 16px;
-            font-weight: 700;
-            color: var(--text);
-            cursor: pointer;
-            transition: background 180ms ease, border-color 180ms ease;
-        }
-
-        .login-method.active {
-            background: var(--primary);
-            border-color: var(--primary);
-            color: #fff;
-        }
-
-        .login-section {
-            display: none;
-            gap: 16px;
-        }
-
-        .login-section.active {
-            display: grid;
-        }
-
-        .login-action-row {
-            display: grid;
-            gap: 12px;
-        }
-
-        .social-row {
-            display: grid;
-            gap: 14px;
-            margin-top: 14px;
-        }
-
-        .social-row p {
-            margin: 0;
-            color: var(--muted);
-            font-size: 0.95rem;
-        }
-
-        .social-buttons {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 10px;
-        }
-
-        .social-button {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 14px 12px;
-            border-radius: 18px;
-            background: var(--surface-soft);
-            border: 1px solid var(--border);
-            color: var(--text);
-            font-weight: 700;
-            cursor: pointer;
-            transition: background 180ms ease, transform 180ms ease;
-        }
-
-        .social-button:hover {
-            background: rgba(59, 130, 246, 0.1);
-            transform: translateY(-1px);
-        }
-
-        .login-secondary {
-            color: var(--muted);
-            font-size: 0.95rem;
-            margin: 0;
-        }
-
-        .primary-button,
-        .secondary-button {
-            width: 100%;
-            border: none;
-            border-radius: 18px;
-            padding: 16px 18px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
-        }
-
-        .primary-button {
-            background: var(--primary);
-            color: #fff;
-            box-shadow: 0 14px 30px rgba(59, 130, 246, 0.16);
-        }
-
-        .primary-button:hover {
-            transform: translateY(-1px);
-            background: #2563eb;
-        }
-
-        .secondary-button {
-            background: transparent;
-            color: var(--primary);
-            border: 1px solid rgba(59, 130, 246, 0.32);
-        }
-
-        .secondary-button:hover {
-            background: rgba(59, 130, 246, 0.1);
-            transform: translateY(-1px);
-        }
-
-        .login-status {
-            min-height: 1.4rem;
-            margin: 0;
-            color: var(--muted);
-            font-size: 0.95rem;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Learning DC</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
+
+  <script>
+    /* Apply theme instantly to avoid flash */
+    (function () {
+      const t = localStorage.getItem('sl-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+
+  <style>
+    /* ── TOKENS ─────────────────────────────────────────── */
+    :root {
+      --bg:        #f0f4fa;
+      --surface:   #ffffff;
+      --surf2:     #f7f9fd;
+      --surf3:     #eef3fb;
+      --text:      #0d1117;
+      --muted:     #5a6478;
+      --border:    rgba(13,17,23,0.09);
+      --primary:   #2563eb;
+      --pri-soft:  #dbeafe;
+      --pri-glow:  rgba(37,99,235,0.18);
+      --radius:    24px;
+      --shadow:    0 20px 60px rgba(13,17,23,0.10);
+      --shadow-sm: 0 4px 16px rgba(13,17,23,0.07);
+      --font-body: 'DM Sans', sans-serif;
+      --font-display: 'Playfair Display', serif;
+      --transition: 200ms cubic-bezier(0.4,0,0.2,1);
+    }
+    [data-theme="dark"] {
+      --bg:       #080e1a;
+      --surface:  #0d1424;
+      --surf2:    #111c30;
+      --surf3:    #162036;
+      --text:     #e8edf5;
+      --muted:    #8899b4;
+      --border:   rgba(232,237,245,0.08);
+      --primary:  #60a5fa;
+      --pri-soft: rgba(96,165,250,0.12);
+      --pri-glow: rgba(96,165,250,0.20);
+      --shadow:   0 20px 60px rgba(0,0,0,0.45);
+      --shadow-sm:0 4px 16px rgba(0,0,0,0.3);
+    }
+
+    /* ── RESET ──────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background var(--transition), color var(--transition);
+      line-height: 1.6;
+    }
+    a { text-decoration: none; color: inherit; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+    /* ── PAGE WRAPPER ───────────────────────────────────── */
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 20px 24px 48px;
+    }
+
+    /* ── FADE TRANSITION ────────────────────────────────── */
+    .page-exit {
+      opacity: 0;
+      transform: translateY(8px) scale(0.99);
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+
+    /* ── TOPBAR ─────────────────────────────────────────── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.01em;
+    }
+    .brand-mark {
+      width: 34px; height: 34px;
+      border-radius: 10px;
+      background: var(--primary);
+      display: grid; place-items: center;
+      flex-shrink: 0;
+    }
+    .brand-mark svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-ghost {
+      padding: 9px 18px;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      transition: background var(--transition), color var(--transition), border-color var(--transition);
+    }
+    .btn-ghost:hover { background: var(--surf3); color: var(--text); }
+
+    .btn-theme {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      display: grid; place-items: center;
+      font-size: 1rem;
+      transition: background var(--transition), border-color var(--transition), transform 150ms;
+    }
+    .btn-theme:hover { background: var(--surf3); transform: rotate(20deg); }
+
+    /* ── HERO GRID ──────────────────────────────────────── */
+    .hero {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 24px;
+      margin-top: 24px;
+    }
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; }
+    }
+
+    /* ── LEFT CARD ──────────────────────────────────────── */
+    .left-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      border: 1px solid var(--border);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: var(--pri-soft);
+      color: var(--primary);
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      width: fit-content;
+    }
+    .badge-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--primary);
+    }
+
+    .hero-headline {
+      font-family: var(--font-display);
+      font-size: clamp(2.2rem, 3.5vw, 3.4rem);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    .hero-headline em {
+      font-style: italic;
+      color: var(--primary);
+    }
+
+    .hero-sub {
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.75;
+      font-weight: 300;
+      max-width: 480px;
+    }
+
+    /* ── ILLUSTRATION ───────────────────────────────────── */
+    .illustration {
+      position: relative;
+      border-radius: 20px;
+      overflow: hidden;
+      background: linear-gradient(145deg, var(--surf3) 0%, var(--surf2) 100%);
+      border: 1px solid var(--border);
+      min-height: 260px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ill-inner {
+      position: relative;
+      width: 100%;
+      height: 260px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Floating stat cards */
+    .stat-card {
+      position: absolute;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 12px 16px;
+      box-shadow: var(--shadow-sm);
+      animation: float 4s ease-in-out infinite;
+    }
+    .stat-card:nth-child(2) { animation-delay: -1.3s; }
+    .stat-card:nth-child(3) { animation-delay: -2.6s; }
+    .stat-card .stat-num { font-size: 1.4rem; font-weight: 700; color: var(--primary); }
+    .stat-card .stat-lbl { font-size: 0.75rem; color: var(--muted); font-weight: 500; margin-top: 2px; }
+
+    .stat-card.a { top: 16px; left: 20px; }
+    .stat-card.b { bottom: 24px; left: 30px; }
+    .stat-card.c { top: 30px; right: 20px; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-8px); }
+    }
+
+    /* Centre illustration graphic */
+    .ill-graphic {
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      background: var(--pri-soft);
+      display: grid; place-items: center;
+      border: 3px solid rgba(37,99,235,0.15);
+    }
+    .ill-graphic svg { width: 56px; height: 56px; }
+
+    /* Dots decoration */
+    .ill-dots {
+      position: absolute;
+      bottom: 12px; right: 12px;
+      display: grid;
+      grid-template-columns: repeat(5, 6px);
+      gap: 5px;
+    }
+    .ill-dots span {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--border);
+    }
+    .ill-dots span:nth-child(3n+1) { background: var(--pri-soft); }
+
+    /* ── RIGHT CARD ─────────────────────────────────────── */
+    .right-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 40px 36px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      border: 1px solid var(--border);
+    }
+
+    .right-card h2 {
+      font-family: var(--font-display);
+      font-size: clamp(1.6rem, 2vw, 2rem);
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+    .right-card > p {
+      color: var(--muted);
+      font-size: 0.97rem;
+      line-height: 1.7;
+      font-weight: 300;
+      margin-top: -10px;
+    }
+
+    /* ── ROLE CARDS ─────────────────────────────────────── */
+    .role-list { display: flex; flex-direction: column; gap: 14px; }
+
+    .role-card {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 20px 22px;
+      border-radius: 18px;
+      border: 1.5px solid var(--border);
+      background: var(--surf2);
+      cursor: pointer;
+      transition: border-color var(--transition), background var(--transition), box-shadow var(--transition), transform 150ms;
+      position: relative;
+      overflow: hidden;
+    }
+    .role-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--pri-glow), transparent 60%);
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+    .role-card:hover,
+    .role-card.active {
+      border-color: var(--primary);
+      background: var(--surf3);
+      box-shadow: 0 0 0 3px var(--pri-glow);
+      transform: translateY(-2px);
+    }
+    .role-card:hover::before,
+    .role-card.active::before { opacity: 1; }
+
+    .role-icon {
+      width: 48px; height: 48px;
+      border-radius: 14px;
+      background: var(--pri-soft);
+      display: grid; place-items: center;
+      flex-shrink: 0;
+      position: relative; z-index: 1;
+      transition: background var(--transition);
+    }
+    .role-card:hover .role-icon,
+    .role-card.active .role-icon { background: var(--primary); }
+    .role-icon svg { width: 22px; height: 22px; stroke: var(--primary); fill: none; stroke-width: 1.8; stroke-linecap: round; transition: stroke var(--transition); }
+    .role-card:hover .role-icon svg,
+    .role-card.active .role-icon svg { stroke: #fff; }
+
+    .role-info { flex: 1; position: relative; z-index: 1; }
+    .role-title { font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; }
+    .role-desc  { font-size: 0.875rem; color: var(--muted); margin-top: 3px; font-weight: 400; }
+
+    .role-arrow {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: var(--primary);
+      display: grid; place-items: center;
+      position: relative; z-index: 1;
+      opacity: 0;
+      transform: translateX(-8px);
+      transition: opacity var(--transition), transform var(--transition);
+    }
+    .role-arrow svg { width: 16px; height: 16px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; }
+    .role-card:hover .role-arrow,
+    .role-card.active .role-arrow { opacity: 1; transform: translateX(0); }
+
+    /* ── DIVIDER ────────────────────────────────────────── */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── LOGIN LINK ROW ─────────────────────────────────── */
+    .login-hint {
+      text-align: center;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .login-hint a {
+      color: var(--primary);
+      font-weight: 600;
+    }
+    .login-hint a:hover { text-decoration: underline; }
+
+    .small-note {
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.65;
+      font-weight: 300;
+    }
+
+    /* ── MODAL ──────────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 14, 26, 0.70);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition);
+    }
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 40px;
+      width: min(480px, 100%);
+      border: 1px solid var(--border);
+      transform: translateY(16px) scale(0.98);
+      transition: transform var(--transition);
+      position: relative;
+    }
+    .modal-overlay.open .modal { transform: translateY(0) scale(1); }
+
+    .modal-close {
+      position: absolute;
+      top: 16px; right: 16px;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--surf3);
+      border: 1px solid var(--border);
+      display: grid; place-items: center;
+      font-size: 1.1rem;
+      color: var(--muted);
+      transition: background var(--transition), color var(--transition);
+    }
+    .modal-close:hover { background: var(--surf2); color: var(--text); }
+
+    .modal h2 {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+    .modal-sub {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 28px;
+      font-weight: 300;
+    }
+
+    /* ── FORM FIELDS ────────────────────────────────────── */
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .field label { font-size: 0.85rem; font-weight: 600; color: var(--muted); letter-spacing: 0.02em; }
+
+    .field input {
+      width: 100%;
+      padding: 13px 16px;
+      border-radius: 14px;
+      border: 1.5px solid var(--border);
+      background: var(--surf2);
+      color: var(--text);
+      font-size: 0.97rem;
+      font-family: inherit;
+      transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
+      outline: none;
+    }
+    .field input:focus {
+      border-color: var(--primary);
+      background: var(--surface);
+      box-shadow: 0 0 0 3px var(--pri-glow);
+    }
+    .field input::placeholder { color: var(--muted); opacity: 0.6; }
+
+    /* ── BUTTONS ────────────────────────────────────────── */
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      border-radius: 14px;
+      background: var(--primary);
+      color: #fff;
+      font-size: 0.97rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      transition: opacity var(--transition), transform 150ms, box-shadow var(--transition);
+      box-shadow: 0 8px 24px var(--pri-glow);
+      margin-bottom: 10px;
+    }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 12px 28px var(--pri-glow); }
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-secondary {
+      width: 100%;
+      padding: 13px;
+      border-radius: 14px;
+      background: transparent;
+      color: var(--primary);
+      font-size: 0.93rem;
+      font-weight: 600;
+      border: 1.5px solid rgba(37,99,235,0.28);
+      transition: background var(--transition), border-color var(--transition), transform 150ms;
+      margin-bottom: 10px;
+    }
+    .btn-secondary:hover { background: var(--pri-soft); border-color: var(--primary); transform: translateY(-1px); }
+
+    /* ── SOCIAL BUTTONS ─────────────────────────────────── */
+    .social-label {
+      display: flex; align-items: center; gap: 10px;
+      color: var(--muted); font-size: 0.83rem;
+      margin: 18px 0 12px;
+    }
+    .social-label::before, .social-label::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    .social-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .btn-social {
+      padding: 12px;
+      border-radius: 12px;
+      border: 1.5px solid var(--border);
+      background: var(--surf2);
+      color: var(--text);
+      font-size: 0.875rem;
+      font-weight: 600;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: background var(--transition), border-color var(--transition), transform 150ms;
+    }
+    .btn-social:hover { background: var(--surf3); border-color: var(--primary); transform: translateY(-1px); }
+    .btn-social svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+    /* ── STATUS MESSAGE ─────────────────────────────────── */
+    .status-msg {
+      font-size: 0.875rem;
+      min-height: 20px;
+      margin-top: 4px;
+      padding: 0 2px;
+      transition: color var(--transition);
+    }
+    .status-msg.error   { color: #ef4444; }
+    .status-msg.success { color: #22c55e; }
+    .status-msg.info    { color: var(--muted); }
+
+    /* ── FOOTER NOTE ────────────────────────────────────── */
+    .modal-footer-note {
+      font-size: 0.82rem;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 12px;
+      line-height: 1.6;
+      font-weight: 300;
+    }
+
+    /* ── LOADING SPINNER ────────────────────────────────── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    /* ── RESPONSIVE ─────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .page { padding: 16px 16px 36px; }
+      .left-card, .right-card { padding: 28px 22px; }
+      .modal { padding: 28px 22px; }
+      .topbar-right { gap: 8px; }
+      .social-grid { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 
 <body>
-    <div class="page">
-        <header class="topbar">
-            <a href="#" class="brand">
-                <span class="brand-dot"></span>
-                <span>Smart Learning</span>
-            </a>
-            <nav class="nav-links" aria-label="Primary navigation">
-                <span class="nav-item">
-                    <button class="theme-toggle" id="themeToggle" type="button"><span class="theme-icon"
-                            aria-hidden="true">🌙</span><span class="theme-label">Dark mode</span></button>
-                </span>
-                <span class="nav-item">
-                    <a href="#" class="login-link">Log in</a>
-                </span>
-            </nav>
-        </header>
+<div class="page">
 
-        <section class="hero-panel">
-            <article class="illustration-card">
-                <div class="illustration-header">
-                    <span class="tag">Smart Learning</span>
-                    <span class="info-chip">Built for growth • Designed for clarity</span>
-                </div>
+  <!-- ── TOPBAR ─────────────────────────────────────── -->
+  <header class="topbar">
+    <a href="#" class="brand">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      </span>
+      Smart Learning DC
+    </a>
 
-                <div>
-                    <h1>Your Smart Journey.</h1>
-                    <p>Start as a learner or teacher and get tailored tools, courses, and workflows instantly.</p>
-                </div>
-
-                <div class="illustration-frame" aria-hidden="true">
-                    <div class="illustration-scene">
-                        <div class="background-panel one"></div>
-                        <div class="background-panel two"></div>
-                        <div class="brain-icon"></div>
-                        <div class="table-surface"></div>
-                        <div class="tablet-grid">
-                            <div class="bar one"></div>
-                            <div class="bar two"></div>
-                            <div class="bar three"></div>
-                            <div class="bar four"></div>
-                            <div class="tablet-connection">
-                                <span class="line-one"></span>
-                                <span class="line-two"></span>
-                                <span class="line-three"></span>
-                                <div class="tablet-node node-a"></div>
-                                <div class="tablet-node node-b"></div>
-                                <div class="tablet-node node-c"></div>
-                            </div>
-                        </div>
-                        <div class="person person-a">
-                            <div class="head"></div>
-                            <div class="body"></div>
-                            <div class="stylus"></div>
-                        </div>
-                        <div class="person person-b">
-                            <div class="head"></div>
-                            <div class="body"></div>
-                            <div class="stylus"></div>
-                        </div>
-                        <div class="person person-c">
-                            <div class="head"></div>
-                            <div class="body"></div>
-                            <div class="stylus"></div>
-                        </div>
-                        <div class="person person-d">
-                            <div class="head"></div>
-                            <div class="body"></div>
-                            <div class="stylus"></div>
-                        </div>
-                    </div>
-                </div>
-            </article>
-
-            <aside class="selection-card">
-                <div>
-                    <h2>Choose your learning path.</h2>
-                    <p>Pick the role that matches your goals so we can tailor the experience and get you started faster.
-                    </p>
-                </div>
-
-                <div class="variant-list" role="list">
-                    <div class="variant-card selected" role="listitem" data-role="learner">
-                        <div class="role">
-                            <p class="role-title">I am a Learner</p>
-                            <p class="role-note">Explore lessons, practice goals, and track progress.</p>
-                        </div>
-                        <button type="button">Go</button>
-                    </div>
-                    <div class="variant-card" role="listitem" data-role="teacher">
-                        <div class="role">
-                            <p class="role-title">I am a Teacher</p>
-                            <p class="role-note">Create classes, assign activities, and mentor students.</p>
-                        </div>
-                        <button type="button">Go</button>
-                    </div>
-
-                </div>
-
-                <div class="login-row">
-                    <span>Already have an account?</span>
-                    <a href="#login" class="login-link">Log in</a>
-                </div>
-
-                <p class="small-note">You can switch roles anytime. Signing up as the right role helps us suggest the
-                    best study path for you.</p>
-            </aside>
-        </section>
+    <div class="topbar-right">
+      <button class="btn-theme" id="themeBtn" aria-label="Toggle theme">🌙</button>
+      <button class="btn-ghost" id="navLoginBtn">Log in</button>
     </div>
+  </header>
 
-    <div class="login-modal" id="loginModal" aria-hidden="true">
-        <div class="modal-backdrop" id="loginBackdrop"></div>
-        <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="loginModalTitle">
-            <button class="modal-close" id="loginClose" aria-label="Close login form">×</button>
-            <h2 id="loginModalTitle">Sign in to Smart Learning</h2>
-            <p class="modal-copy">Sign in with your email and password to continue.</p>
-            <div id="emailSection" class="login-section active">
-                <div class="modal-field">
-                    <label for="loginEmail">Email address</label>
-                    <input id="loginEmail" type="email" placeholder="your.email@school.edu" />
-                </div>
-                <div class="modal-field">
-                    <label for="loginPassword">Password</label>
-                    <input id="loginPassword" type="password" placeholder="Enter your password" />
-                </div>
-            </div>
-            <div class="login-action-row">
-                <button id="loginAccountButton" class="primary-button" type="button">Login account</button>
-                <button id="forgotPasswordButton" class="secondary-button" type="button">Forgot password?</button>
-            </div>
-            <div class="social-row">
-                <p>Or continue with</p>
-                <div class="social-buttons">
-                    <button id="googleLoginButton" class="social-button" type="button">Google</button>
-                    <button id="microsoftLoginButton" class="social-button" type="button">Microsoft</button>
-                    <button id="linkedinLoginButton" class="social-button" type="button">LinkedIn</button>
-                </div>
-            </div>
-            <p class="login-secondary">If you do not have an account, register through the teacher or learner signup
-                pages first.</p>
-            <p class="login-status" id="loginStatus"></p>
+  <!-- ── HERO ───────────────────────────────────────── -->
+  <section class="hero">
+
+    <!-- LEFT: Info + Illustration -->
+    <article class="left-card">
+      <div>
+        <span class="badge"><span class="badge-dot"></span>Smart Learning DC</span>
+        <h1 class="hero-headline" style="margin-top:20px;">
+          Your <em>Smartest</em><br>Learning Journey.
+        </h1>
+        <p class="hero-sub" style="margin-top:16px;">
+          A tailored platform for learners and teachers — with courses, quizzes, progress tracking, and materials built for real growth.
+        </p>
+      </div>
+
+      <!-- Illustration -->
+      <div class="illustration">
+        <div class="ill-inner">
+
+          <div class="stat-card a">
+            <div class="stat-num">2.4k+</div>
+            <div class="stat-lbl">Active learners</div>
+          </div>
+
+          <div class="stat-card b">
+            <div class="stat-num">98%</div>
+            <div class="stat-lbl">Pass rate</div>
+          </div>
+
+          <div class="stat-card c">
+            <div class="stat-num">150+</div>
+            <div class="stat-lbl">Courses</div>
+          </div>
+
+          <div class="ill-graphic">
+            <svg viewBox="0 0 56 56" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round">
+              <circle cx="28" cy="28" r="22" stroke-opacity="0.2"/>
+              <path d="M16 28l8 8 16-16" stroke-width="2.5"/>
+              <circle cx="28" cy="28" r="10" stroke-opacity="0.15"/>
+            </svg>
+          </div>
+
+          <div class="ill-dots">
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
         </div>
+      </div>
+    </article>
+
+    <!-- RIGHT: Role Selection -->
+    <aside class="right-card">
+      <div>
+        <h2>Choose your path.</h2>
+        <p>Select your role to get a personalised experience crafted for your goals.</p>
+      </div>
+
+      <div class="role-list">
+
+        <!-- Learner -->
+        <div class="role-card active" data-role="learner" tabindex="0" role="button" aria-label="I am a Learner">
+          <div class="role-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          </div>
+          <div class="role-info">
+            <div class="role-title">I am a Learner</div>
+            <div class="role-desc">Explore lessons, track progress &amp; ace quizzes.</div>
+          </div>
+          <div class="role-arrow">
+            <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+
+        <!-- Teacher -->
+        <div class="role-card" data-role="teacher" tabindex="0" role="button" aria-label="I am a Teacher">
+          <div class="role-icon">
+            <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          </div>
+          <div class="role-info">
+            <div class="role-title">I am a Teacher</div>
+            <div class="role-desc">Create classes, assign quizzes &amp; mentor students.</div>
+          </div>
+          <div class="role-arrow">
+            <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="divider">or</div>
+
+      <div class="login-hint">
+        Already have an account? <a href="#" id="inlineLoginBtn">Log in here</a>
+      </div>
+
+      <p class="small-note">
+        Clicking a role above takes you to the sign-up page for that role. You can always switch later from your account settings.
+      </p>
+    </aside>
+
+  </section>
+</div>
+
+<!-- ── LOGIN MODAL ──────────────────────────────────────── -->
+<div class="modal-overlay" id="modalOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+
+  <div class="modal" id="modal">
+    <button class="modal-close" id="modalClose" aria-label="Close">✕</button>
+
+    <h2 id="modalTitle">Welcome back.</h2>
+    <p class="modal-sub">Sign in to continue to Smart Learning DC.</p>
+
+    <!-- Email field -->
+    <div class="field">
+      <label for="loginEmail">Email address</label>
+      <input type="email" id="loginEmail" placeholder="you@school.edu" autocomplete="email" />
     </div>
 
+    <!-- Password field -->
+    <div class="field">
+      <label for="loginPassword">Password</label>
+      <input type="password" id="loginPassword" placeholder="Your password" autocomplete="current-password" />
+    </div>
+
+    <!-- Status -->
+    <p class="status-msg info" id="statusMsg"></p>
+
+    <!-- Actions -->
+    <button class="btn-primary" id="loginBtn">Sign in</button>
+    <button class="btn-secondary" id="forgotBtn">Forgot password?</button>
+
+    <!-- Social -->
+    <div class="social-label">or continue with</div>
+    <div class="social-grid">
+      <button class="btn-social" id="googleBtn">
+        <!-- Google icon -->
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M21.8 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.5a4.7 4.7 0 01-2 3.1v2.5h3.3c1.9-1.8 3-4.3 3-7.4z" fill="#4285F4"/>
+          <path d="M12 22c2.7 0 5-0.9 6.7-2.4l-3.3-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3v2.6A10 10 0 0012 22z" fill="#34A853"/>
+          <path d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3A10 10 0 002 12c0 1.6.4 3.2 1 4.6L6.4 14z" fill="#FBBC05"/>
+          <path d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9C16.9 2.9 14.6 2 12 2A10 10 0 003 7.4L6.4 10c.8-2.3 3-4.1 5.6-4.1z" fill="#EA4335"/>
+        </svg>
+        Google
+      </button>
+      <button class="btn-social" id="microsoftBtn">
+        <!-- Microsoft icon -->
+        <svg viewBox="0 0 24 24" fill="none">
+          <rect x="2" y="2" width="9.5" height="9.5" fill="#F25022"/>
+          <rect x="12.5" y="2" width="9.5" height="9.5" fill="#7FBA00"/>
+          <rect x="2" y="12.5" width="9.5" height="9.5" fill="#00A4EF"/>
+          <rect x="12.5" y="12.5" width="9.5" height="9.5" fill="#FFB900"/>
+        </svg>
+        Microsoft
+      </button>
+    </div>
+
+    <p class="modal-footer-note">
+      No account yet? Select your role above to sign up through the learner or teacher page.
+    </p>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   SMART LEARNING DC — index.html
+   All logic self-contained. Supabase calls are clearly marked
+   so you can plug in your supabase-client.js later.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── 1. THEME ──────────────────────────────────────────── */
+const themeBtn  = document.getElementById('themeBtn');
+const html      = document.documentElement;
+
+function getTheme()  { return localStorage.getItem('sl-theme') || 'light'; }
+function applyTheme(t) {
+  html.setAttribute('data-theme', t);
+  themeBtn.textContent = t === 'dark' ? '☀️' : '🌙';
+  themeBtn.setAttribute('aria-label', t === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+  localStorage.setItem('sl-theme', t);
+}
+
+themeBtn.addEventListener('click', () => {
+  applyTheme(getTheme() === 'dark' ? 'light' : 'dark');
+});
+
+// Apply on load
+applyTheme(getTheme());
 
 
+/* ── 2. ROLE CARDS → REDIRECT ──────────────────────────── */
+const roleTargets = {
+  learner: 'learner_login.html',
+  teacher: '../TEACHER/teacher_login.html'
+};
 
-    <script src="login.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
-    <script src="../js/supabase-client.js"></script>
-    <script type="module">
+const roleCards = document.querySelectorAll('.role-card');
+
+roleCards.forEach(card => {
+  // Click handler
+  card.addEventListener('click', () => goToRole(card));
+
+  // Keyboard: Enter or Space
+  card.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      goToRole(card);
+    }
+  });
+});
+
+function goToRole(card) {
+  // Highlight selected card
+  roleCards.forEach(c => c.classList.remove('active'));
+  card.classList.add('active');
+
+  const role = card.dataset.role;
+  const target = roleTargets[role] || 'learner_login.html';
+
+  // Smooth page exit
+  document.body.style.transition = 'opacity 220ms ease, transform 220ms ease';
+  document.body.style.opacity    = '0';
+  document.body.style.transform  = 'translateY(8px)';
+
+  setTimeout(() => { window.location.href = target; }, 230);
+}
 
 
-        const cards = document.querySelectorAll('.variant-card');
-        const roleTargets = {
-            learner: 'learner_login.html',
-            teacher: '../TEACHER/teacher_login.html'
-        };
+/* ── 3. MODAL OPEN / CLOSE ─────────────────────────────── */
+const overlay      = document.getElementById('modalOverlay');
+const modalClose   = document.getElementById('modalClose');
+const navLoginBtn  = document.getElementById('navLoginBtn');
+const inlineLoginBtn = document.getElementById('inlineLoginBtn');
+const emailInput   = document.getElementById('loginEmail');
 
-        function handleRoleClick(card) {
-            const role = card.dataset.role;
-            const targetUrl = roleTargets[role] || 'learner_login.html';
+function openModal() {
+  overlay.classList.add('open');
+  overlay.setAttribute('aria-hidden', 'false');
+  setTimeout(() => emailInput.focus(), 50);
+}
 
-            cards.forEach(item => item.classList.remove('selected'));
-            card.classList.add('selected');
+function closeModal() {
+  overlay.classList.remove('open');
+  overlay.setAttribute('aria-hidden', 'true');
+  clearStatus();
+}
 
-            document.body.classList.add('fade-out');
-            window.setTimeout(() => {
-                window.location.href = targetUrl;
-            }, 220);
-        }
+navLoginBtn.addEventListener('click', openModal);
+inlineLoginBtn.addEventListener('click', e => { e.preventDefault(); openModal(); });
 
-        cards.forEach(card => card.addEventListener('click', () => handleRoleClick(card)));
+// Close on backdrop click
+overlay.addEventListener('click', e => {
+  if (e.target === overlay) closeModal();
+});
 
-        const themeToggle = document.getElementById('themeToggle');
-        const themeIcon = themeToggle.querySelector('.theme-icon');
-        const themeLabel = themeToggle.querySelector('.theme-label');
-        const savedTheme = localStorage.getItem('theme') || 'light';
+// Close on ESC
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && overlay.classList.contains('open')) closeModal();
+});
 
-        function applyTheme(mode) {
-            const isDark = mode === 'dark';
-            document.documentElement.setAttribute('data-theme', mode);
-            document.body.classList.toggle('dark-mode', isDark);
-            themeIcon.textContent = isDark ? '☀️' : '🌙';
-            themeLabel.textContent = isDark ? 'Light mode' : 'Dark mode';
-            localStorage.setItem('theme', mode);
-        }
+modalClose.addEventListener('click', closeModal);
 
-        themeToggle.addEventListener('click', () => {
-            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
-            applyTheme(currentTheme === 'light' ? 'dark' : 'light');
-        });
+// Auto-open if URL has #login
+if (window.location.hash === '#login') openModal();
+window.addEventListener('hashchange', () => {
+  if (window.location.hash === '#login') openModal();
+});
 
-        const loginLinks = document.querySelectorAll('.login-link');
-        const loginModal = document.getElementById('loginModal');
-        const loginBackdrop = document.getElementById('loginBackdrop');
-        const loginClose = document.getElementById('loginClose');
-        const loginEmail = document.getElementById('loginEmail');
-        const loginPassword = document.getElementById('loginPassword');
-        const loginAccountButton = document.getElementById('loginAccountButton');
-        const googleLoginButton = document.getElementById('googleLoginButton');
-        const microsoftLoginButton = document.getElementById('microsoftLoginButton');
-        const linkedinLoginButton = document.getElementById('linkedinLoginButton');
-        const loginStatus = document.getElementById('loginStatus');
 
-        function openLoginModal() {
-            loginModal.classList.add('active');
-            loginModal.setAttribute('aria-hidden', 'false');
-            loginEmail.focus();
-        }
+/* ── 4. STATUS HELPERS ─────────────────────────────────── */
+const statusMsg = document.getElementById('statusMsg');
 
-        function closeLoginModal() {
-            loginModal.classList.remove('active');
-            loginModal.setAttribute('aria-hidden', 'true');
-            loginStatus.textContent = '';
-        }
+function setStatus(msg, type = 'info') {
+  statusMsg.textContent = msg;
+  statusMsg.className = 'status-msg ' + type;
+}
+function clearStatus() {
+  statusMsg.textContent = '';
+  statusMsg.className = 'status-msg info';
+}
 
-        loginLinks.forEach(link => {
-            link.addEventListener('click', (event) => {
-                event.preventDefault();
-                openLoginModal();
-            });
-        });
+function setLoading(btn, loading) {
+  if (loading) {
+    btn.dataset.original = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner"></span>Signing in…';
+    btn.disabled = true;
+  } else {
+    btn.innerHTML = btn.dataset.original || 'Sign in';
+    btn.disabled = false;
+  }
+}
 
-        if (window.location.hash === '#login') {
-            openLoginModal();
-        }
 
-        window.addEventListener('hashchange', () => {
-            if (window.location.hash === '#login') {
-                openLoginModal();
-            }
-        });
+/* ── 5. LOGIN WITH EMAIL / PASSWORD ────────────────────── */
+/*
+  NOTE: Replace the body of handleLogin() with real Supabase code.
+  The structure (error handling, role redirect) stays the same.
+  Example Supabase version is shown in the comments below.
+*/
 
-        loginBackdrop.addEventListener('click', closeLoginModal);
-        loginClose.addEventListener('click', closeLoginModal);
+const loginBtn      = document.getElementById('loginBtn');
+const passwordInput = document.getElementById('loginPassword');
 
-        window.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape' && loginModal.classList.contains('active')) {
-                closeLoginModal();
-            }
-        });
+loginBtn.addEventListener('click', handleLogin);
+passwordInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleLogin();
+});
 
-        function setLoginStatus(message, isError = false) {
-            loginStatus.textContent = message;
-            loginStatus.style.color = isError ? '#ef4444' : 'var(--text)';
-        }
+async function handleLogin() {
+  const email    = emailInput.value.trim();
+  const password = passwordInput.value;
 
-        // Client setup
-        const client = window.appClient || null
+  if (!email)    { setStatus('Please enter your email address.', 'error'); emailInput.focus(); return; }
+  if (!password) { setStatus('Please enter your password.', 'error'); passwordInput.focus(); return; }
 
-        // Login
-        async function handleLocalLogin() {
-            const email = loginEmail.value.trim()
-            const password = loginPassword.value
+  setLoading(loginBtn, true);
+  clearStatus();
 
-            if (!email || !password) {
-                setLoginStatus('Please enter both email and password.', true)
-                return
-            }
+  try {
+    /* ── SUPABASE LOGIN ─────────────────────────────────
+       Uncomment and use when supabase-client.js is ready:
 
-            setLoginStatus('Signing in...')
+       const { data, error } = await window.supabaseClient
+         .auth.signInWithPassword({ email, password });
 
-            const { data, error } = await client.auth.signInWithPassword({
-                email,
-                password
-            })
+       if (error) throw error;
 
-            if (error) {
-                setLoginStatus(error.message, true)
-                return
-            }
+       const { data: roleData } = await window.supabaseClient
+         .from('user_roles')
+         .select('role')
+         .eq('auth_user_id', data.user.id)
+         .single();
 
-            // Fetch role from user_roles table
-            const { data: roleData } = await client
-                .from('user_roles')
-                .select('role')
-                .eq('auth_user_id', data.user.id)
-                .single()
+       const role = roleData?.role || 'learner';
+       redirectAfterLogin(role);
+    ─────────────────────────────────────────────────── */
 
-            setLoginStatus('Login successful. Redirecting...')
+    // ── DEMO (remove when Supabase is connected) ───────
+    await new Promise(r => setTimeout(r, 1200)); // simulate network
 
-            if (roleData?.role === 'teacher') {
-                window.location.href = '../TEACHER/teacher_dashboard.html'
-            } else {
-                window.location.href = 'learner_dashboard.html'
-            }
-        }
-        // Google Login
-        googleLoginButton.addEventListener('click', async () => {
-            await client.auth.signInWithOAuth({
-                provider: 'google',
-                options: { redirectTo: window.location.origin }
-            })
-        })
+    // Demo: teacher@demo.com → teacher dashboard
+    //       anything else → learner dashboard
+    if (email === 'teacher@demo.com' && password === 'demo') {
+      redirectAfterLogin('teacher');
+    } else if (password === 'demo') {
+      redirectAfterLogin('learner');
+    } else {
+      throw new Error('Invalid email or password. (Use password "demo" for the preview.)');
+    }
+    // ──────────────────────────────────────────────────
 
-        // Microsoft Login
-        microsoftLoginButton.addEventListener('click', async () => {
-            await client.auth.signInWithOAuth({
-                provider: 'azure',
-                options: { redirectTo: window.location.origin }
-            })
-        })
+  } catch (err) {
+    setStatus(err.message || 'Login failed. Please try again.', 'error');
+    setLoading(loginBtn, false);
+  }
+}
 
-        // LinkedIn login not supported directly
-        linkedinLoginButton.addEventListener('click', () => {
-            setLoginStatus('LinkedIn login not supported. Please use email or Google.', true)
-        })
+function redirectAfterLogin(role) {
+  setStatus('Login successful! Redirecting…', 'success');
+  setTimeout(() => {
+    if (role === 'teacher') {
+      window.location.href = '../TEACHER/teacher_dashboard.html';
+    } else {
+      window.location.href = 'learner_dashboard.html';
+    }
+  }, 800);
+}
 
-        const forgotPasswordButton = document.getElementById('forgotPasswordButton');
-        forgotPasswordButton.addEventListener('click', async () => {
-            const email = loginEmail.value.trim()
-            if (!email) {
-                setLoginStatus('Please enter your email first.', true)
-                return
-            }
-            const { error } = await client.auth.resetPasswordForEmail(email, {
-                redirectTo: window.location.origin + '/reset-password.html'
-            })
-            if (error) setLoginStatus(error.message, true)
-            else setLoginStatus('Reset link sent! Check your email.')
-        })
-        loginAccountButton.addEventListener('click', handleLocalLogin);
 
-        loginPassword.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-                handleLocalLogin();
-            }
-        });
+/* ── 6. FORGOT PASSWORD ────────────────────────────────── */
+const forgotBtn = document.getElementById('forgotBtn');
 
-        applyTheme(savedTheme);
-    </script>
+forgotBtn.addEventListener('click', async () => {
+  const email = emailInput.value.trim();
+
+  if (!email) {
+    setStatus('Enter your email above first, then click Forgot password.', 'error');
+    emailInput.focus();
+    return;
+  }
+
+  forgotBtn.disabled = true;
+  forgotBtn.textContent = 'Sending reset link…';
+  clearStatus();
+
+  try {
+    /* ── SUPABASE FORGOT PASSWORD ───────────────────────
+       const { error } = await window.supabaseClient
+         .auth.resetPasswordForEmail(email, {
+           redirectTo: window.location.origin + '/reset-password.html'
+         });
+       if (error) throw error;
+    ─────────────────────────────────────────────────── */
+
+    await new Promise(r => setTimeout(r, 1000)); // demo delay
+    setStatus('Password reset link sent! Check your email.', 'success');
+
+  } catch (err) {
+    setStatus(err.message || 'Could not send reset link.', 'error');
+  } finally {
+    forgotBtn.disabled = false;
+    forgotBtn.textContent = 'Forgot password?';
+  }
+});
+
+
+/* ── 7. GOOGLE LOGIN ────────────────────────────────────── */
+const googleBtn = document.getElementById('googleBtn');
+
+googleBtn.addEventListener('click', async () => {
+  try {
+    /* ── SUPABASE GOOGLE OAUTH ──────────────────────────
+       await window.supabaseClient.auth.signInWithOAuth({
+         provider: 'google',
+         options: { redirectTo: window.location.origin + '/LEARNER/learner_dashboard.html' }
+       });
+    ─────────────────────────────────────────────────── */
+    setStatus('Google login not connected yet. Add your Supabase client.', 'info');
+  } catch (err) {
+    setStatus(err.message, 'error');
+  }
+});
+
+
+/* ── 8. MICROSOFT LOGIN ─────────────────────────────────── */
+const microsoftBtn = document.getElementById('microsoftBtn');
+
+microsoftBtn.addEventListener('click', async () => {
+  try {
+    /* ── SUPABASE MICROSOFT OAUTH ───────────────────────
+       await window.supabaseClient.auth.signInWithOAuth({
+         provider: 'azure',
+         options: { redirectTo: window.location.origin + '/LEARNER/learner_dashboard.html' }
+       });
+    ─────────────────────────────────────────────────── */
+    setStatus('Microsoft login not connected yet. Add your Supabase client.', 'info');
+  } catch (err) {
+    setStatus(err.message, 'error');
+  }
+});
+
+
+/* ── 9. AUTO SESSION CHECK ──────────────────────────────── */
+/*
+  When Supabase is connected, check if user is already logged in
+  and redirect them straight to their dashboard:
+
+  (async () => {
+    const { data: { session } } = await window.supabaseClient.auth.getSession();
+    if (!session) return;
+
+    const { data: roleData } = await window.supabaseClient
+      .from('user_roles')
+      .select('role')
+      .eq('auth_user_id', session.user.id)
+      .single();
+
+    redirectAfterLogin(roleData?.role || 'learner');
+  })();
+*/
+
+</script>
 </body>
-
 </html>
