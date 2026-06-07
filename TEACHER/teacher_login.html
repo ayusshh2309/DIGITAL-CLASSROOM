@@ -1,1142 +1,2027 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Smart Learning DC — Faculty Portal</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Learning DC — Faculty Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Playfair+Display:wght@700;800&display=swap"
+      rel="stylesheet"
+    />
 
-  <script>
-    (function () {
-      const t = localStorage.getItem('sl-theme') || 'light';
-      document.documentElement.setAttribute('data-theme', t);
-    })();
-  </script>
+    <script>
+      (function () {
+        const t = localStorage.getItem("sl-theme") || "light";
+        document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
 
-  <style>
-    /* ── TOKENS ─────────────────────────────────────────── */
-    :root {
-      --bg:        #eef4fb;
-      --surface:   #ffffff;
-      --surf2:     #f4f8ff;
-      --surf3:     #e8f0fe;
-      --text:      #0f1f3d;
-      --muted:     #5a6e8c;
-      --border:    rgba(15,31,61,0.10);
-      --primary:   #0f2c5d;
-      --pri-soft:  rgba(15,44,93,0.08);
-      --pri-glow:  rgba(15,44,93,0.16);
-      --accent:    #2563eb;
-      --success:   #16a34a;
-      --danger:    #dc2626;
-      --warning:   #d97706;
-      --radius:    26px;
-      --shadow:    0 20px 60px rgba(15,23,42,0.10);
-      --shadow-sm: 0 4px 16px rgba(15,23,42,0.07);
-      --font:      'DM Sans', sans-serif;
-      --font-d:    'Playfair Display', serif;
-      --transition:180ms cubic-bezier(0.4,0,0.2,1);
-    }
-    [data-theme="dark"] {
-      --bg:       #080f1e;
-      --surface:  #0d1829;
-      --surf2:    #111f35;
-      --surf3:    #162640;
-      --text:     #e2eaf5;
-      --muted:    #7a92b4;
-      --border:   rgba(200,220,255,0.10);
-      --primary:  #60a5fa;
-      --pri-soft: rgba(96,165,250,0.12);
-      --pri-glow: rgba(96,165,250,0.20);
-      --accent:   #93c5fd;
-      --success:  #4ade80;
-      --danger:   #f87171;
-      --warning:  #fbbf24;
-      --shadow:   0 20px 60px rgba(0,0,0,0.45);
-      --shadow-sm:0 4px 16px rgba(0,0,0,0.3);
-    }
+    <style>
+      /* ── TOKENS ─────────────────────────────────────────── */
+      :root {
+        --bg: #eef4fb;
+        --surface: #ffffff;
+        --surf2: #f4f8ff;
+        --surf3: #e8f0fe;
+        --text: #0f1f3d;
+        --muted: #5a6e8c;
+        --border: rgba(15, 31, 61, 0.1);
+        --primary: #0f2c5d;
+        --pri-soft: rgba(15, 44, 93, 0.08);
+        --pri-glow: rgba(15, 44, 93, 0.16);
+        --accent: #2563eb;
+        --success: #16a34a;
+        --danger: #dc2626;
+        --warning: #d97706;
+        --radius: 26px;
+        --shadow: 0 20px 60px rgba(15, 23, 42, 0.1);
+        --shadow-sm: 0 4px 16px rgba(15, 23, 42, 0.07);
+        --font: "DM Sans", sans-serif;
+        --font-d: "Playfair Display", serif;
+        --transition: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+      }
 
-    /* ── RESET ──────────────────────────────────────────── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { font-size: 16px; }
-    body {
-      font-family: var(--font);
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      padding: 36px 20px 60px;
-      transition: background var(--transition), color var(--transition);
-    }
-    a { text-decoration: none; color: inherit; }
-    button { font-family: inherit; cursor: pointer; border: none; background: none; }
-    input, select, textarea { font-family: inherit; }
+      [data-theme="dark"] {
+        --bg: #080f1e;
+        --surface: #0d1829;
+        --surf2: #111f35;
+        --surf3: #162640;
+        --text: #e2eaf5;
+        --muted: #7a92b4;
+        --border: rgba(200, 220, 255, 0.1);
+        --primary: #60a5fa;
+        --pri-soft: rgba(96, 165, 250, 0.12);
+        --pri-glow: rgba(96, 165, 250, 0.2);
+        --accent: #93c5fd;
+        --success: #4ade80;
+        --danger: #f87171;
+        --warning: #fbbf24;
+        --shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+        --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.3);
+      }
 
-    /* ── LAYOUT ─────────────────────────────────────────── */
-    .layout {
-      width: min(1120px, 100%);
-      display: grid;
-      grid-template-columns: 0.9fr 1.1fr;
-      gap: 28px;
-      align-items: start;
-    }
+      /* ── RESET ──────────────────────────────────────────── */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
-    /* ── LEFT VISUAL PANEL ──────────────────────────────── */
-    .visual-panel {
-      position: sticky;
-      top: 36px;
-      background: var(--surface);
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
+      html {
+        font-size: 16px;
+      }
 
-    /* Teacher illustration */
-    .ill-wrap {
-      background: linear-gradient(180deg, var(--surf2) 0%, var(--surf3) 100%);
-      padding: 36px 28px 28px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0;
-      position: relative;
-    }
+      body {
+        font-family: var(--font);
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 36px 20px 60px;
+        transition:
+          background var(--transition),
+          color var(--transition);
+      }
 
-    .ill-badge {
-      position: absolute;
-      top: 20px; right: 20px;
-      display: inline-flex; align-items: center; gap: 7px;
-      padding: 8px 14px; border-radius: 999px;
-      background: var(--pri-soft); color: var(--primary);
-      font-size: 0.78rem; font-weight: 700;
-      border: 1px solid var(--border);
-    }
-    .ill-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); }
+      a {
+        text-decoration: none;
+        color: inherit;
+      }
 
-    /* SVG teacher figure */
-    .teacher-figure {
-      width: 180px; height: 220px;
-      position: relative;
-      margin-bottom: 8px;
-    }
-    .fig-hair {
-      position: absolute;
-      top: 0; left: 50%; transform: translateX(-50%);
-      width: 88px; height: 54px;
-      border-radius: 44px 44px 32px 32px;
-      background: #1f345c;
-    }
-    .fig-head {
-      position: absolute;
-      top: 26px; left: 50%; transform: translateX(-50%);
-      width: 72px; height: 72px;
-      border-radius: 50%;
-      background: radial-gradient(circle, #ffe8cd 0%, #f0d0a8 100%);
-    }
-    .fig-body {
-      position: absolute;
-      bottom: 0; left: 50%; transform: translateX(-50%);
-      width: 120px; height: 118px;
-      border-radius: 80px 80px 20px 20px;
-      background: linear-gradient(180deg, #0f2c5d 0%, #3c5d94 100%);
-    }
-    .fig-collar {
-      position: absolute;
-      bottom: 60px; left: 50%; transform: translateX(-50%);
-      width: 60px; height: 24px;
-      background: #ffffff; border-radius: 16px 16px 8px 8px;
-    }
+      button {
+        font-family: inherit;
+        cursor: pointer;
+        border: none;
+        background: none;
+      }
 
-    .ill-quote-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 20px 22px;
-      margin: 16px 0 0;
-      width: 100%;
-    }
-    .ill-quote-card h3 {
-      font-family: var(--font-d);
-      font-size: 1rem; font-weight: 700;
-      color: var(--primary); margin-bottom: 8px;
-    }
-    .ill-quote-card p { color: var(--muted); font-size: 0.87rem; line-height: 1.65; font-weight: 300; }
+      input,
+      select,
+      textarea {
+        font-family: inherit;
+      }
 
-    /* Features */
-    .features-block {
-      padding: 24px 28px;
-      border-top: 1px solid var(--border);
-      display: grid; gap: 16px;
-    }
-    .features-title { font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
-    .feat-row {
-      display: flex; align-items: flex-start; gap: 13px;
-    }
-    .feat-icon {
-      width: 38px; height: 38px; border-radius: 11px;
-      background: var(--pri-soft); display: grid; place-items: center;
-      font-size: 1.1rem; flex-shrink: 0;
-      border: 1px solid var(--border);
-    }
-    .feat-name { font-weight: 700; font-size: 0.875rem; margin-bottom: 2px; }
-    .feat-desc { color: var(--muted); font-size: 0.82rem; line-height: 1.5; font-weight: 300; }
+      /* ── LAYOUT ─────────────────────────────────────────── */
+      .layout {
+        width: min(1120px, 100%);
+        display: grid;
+        grid-template-columns: 0.9fr 1.1fr;
+        gap: 28px;
+        align-items: start;
+      }
 
-    /* Quote banner */
-    .quote-banner {
-      padding: 20px 28px;
-      border-top: 1px solid var(--border);
-      background: var(--pri-soft);
-      text-align: center;
-    }
-    .quote-banner p { font-weight: 700; font-size: 0.92rem; color: var(--primary); line-height: 1.55; }
-    .quote-banner span { display: block; margin-top: 6px; color: var(--muted); font-size: 0.8rem; font-weight: 600; }
+      /* ── LEFT VISUAL PANEL ──────────────────────────────── */
+      .visual-panel {
+        position: sticky;
+        top: 36px;
+        background: var(--surface);
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
 
-    /* Theme toggle inside left panel */
-    .panel-top {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 18px 24px 0;
-    }
-    .brand {
-      display: flex; align-items: center; gap: 9px;
-      font-weight: 700; font-size: 0.95rem;
-    }
-    .brand-mark {
-      width: 30px; height: 30px; border-radius: 9px;
-      background: var(--primary); display: grid; place-items: center;
-    }
-    .brand-mark svg { width: 14px; height: 14px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; }
-    .btn-theme {
-      width: 36px; height: 36px; border-radius: 50%;
-      background: var(--surf2); border: 1px solid var(--border);
-      display: grid; place-items: center; font-size: 1rem;
-      transition: background var(--transition), transform 200ms;
-    }
-    .btn-theme:hover { background: var(--surf3); transform: rotate(20deg); }
+      /* Teacher illustration */
+      .ill-wrap {
+        background: linear-gradient(180deg, var(--surf2) 0%, var(--surf3) 100%);
+        padding: 36px 28px 28px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
+        position: relative;
+      }
 
-    /* ── FORM PANEL ─────────────────────────────────────── */
-    .form-panel {
-      background: var(--surface);
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow);
-      padding: 40px 38px;
-    }
+      .ill-badge {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: var(--pri-soft);
+        color: var(--primary);
+        font-size: 0.78rem;
+        font-weight: 700;
+        border: 1px solid var(--border);
+      }
 
-    /* ── AUTH TABS ───────────────────────────────────────── */
-    .auth-tabs {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 10px; margin-bottom: 32px;
-    }
-    .tab-btn {
-      padding: 13px; border-radius: 14px;
-      font-size: 0.9rem; font-weight: 700;
-      border: 1.5px solid var(--border);
-      background: var(--surf2); color: var(--muted);
-      transition: background var(--transition), border-color var(--transition), color var(--transition);
-    }
-    .tab-btn.active {
-      background: var(--primary); border-color: var(--primary);
-      color: #fff; box-shadow: 0 4px 14px var(--pri-glow);
-    }
+      .ill-badge-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--primary);
+      }
 
-    /* Sections */
-    .auth-section { display: none; }
-    .auth-section.active { display: grid; gap: 0; }
+      /* SVG teacher figure */
+      .teacher-figure {
+        width: 180px;
+        height: 220px;
+        position: relative;
+        margin-bottom: 8px;
+      }
 
-    /* ── FORM HEADERS ────────────────────────────────────── */
-    .eyebrow {
-      display: inline-flex; align-items: center; gap: 7px;
-      padding: 6px 14px; border-radius: 999px;
-      background: var(--pri-soft); color: var(--primary);
-      font-size: 0.75rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.08em;
-      width: fit-content; margin-bottom: 10px;
-    }
-    .form-title {
-      font-family: var(--font-d);
-      font-size: clamp(1.5rem, 2vw, 1.9rem);
-      font-weight: 800; line-height: 1.1; margin-bottom: 8px;
-    }
-    .form-sub {
-      color: var(--muted); font-size: 0.92rem;
-      line-height: 1.7; font-weight: 300; margin-bottom: 28px;
-    }
+      .fig-hair {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 88px;
+        height: 54px;
+        border-radius: 44px 44px 32px 32px;
+        background: #1f345c;
+      }
 
-    /* ── FIELDS ─────────────────────────────────────────── */
-    .fields { display: grid; gap: 16px; }
+      .fig-head {
+        position: absolute;
+        top: 26px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: radial-gradient(circle, #ffe8cd 0%, #f0d0a8 100%);
+      }
 
-    .field-group { display: grid; gap: 7px; }
-    .field-group label {
-      font-size: 0.875rem; font-weight: 600; color: var(--text);
-    }
+      .fig-body {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 120px;
+        height: 118px;
+        border-radius: 80px 80px 20px 20px;
+        background: linear-gradient(180deg, #0f2c5d 0%, #3c5d94 100%);
+      }
 
-    .input-wrap { position: relative; }
-    .input-wrap .icon {
-      position: absolute; right: 14px; top: 50%;
-      transform: translateY(-50%);
-      color: var(--muted); font-size: 0.9rem; pointer-events: none;
-    }
-    .input-wrap input { padding-right: 44px; }
+      .fig-collar {
+        position: absolute;
+        bottom: 60px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 24px;
+        background: #ffffff;
+        border-radius: 16px 16px 8px 8px;
+      }
 
-    input, select {
-      width: 100%; padding: 13px 16px;
-      border: 1.5px solid var(--border);
-      border-radius: 14px;
-      background: var(--surf2); color: var(--text);
-      font-size: 0.93rem; outline: none;
-      transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
-    }
-    input::placeholder { color: var(--muted); opacity: 0.6; }
-    input:focus, select:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px var(--pri-glow);
-      background: var(--surface);
-    }
-    input.valid   { border-color: var(--success); }
-    input.invalid { border-color: var(--danger); }
-    select {
-      cursor: pointer; appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%237a92b4' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 14px center;
-      padding-right: 38px;
-    }
-    select option { background: var(--surf2); color: var(--text); }
+      .ill-quote-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 20px 22px;
+        margin: 16px 0 0;
+        width: 100%;
+      }
 
-    /* Phone row */
-    .phone-row { display: grid; grid-template-columns: 110px 1fr; gap: 10px; }
-    .phone-prefix {
-      padding: 13px 10px;
-      border: 1.5px solid var(--border);
-      border-radius: 14px;
-      background: var(--surf2); color: var(--text);
-      font-size: 0.85rem; font-weight: 600;
-      cursor: pointer; outline: none; appearance: none; text-align: center;
-      transition: border-color var(--transition), box-shadow var(--transition);
-    }
-    .phone-prefix:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--pri-glow); }
+      .ill-quote-card h3 {
+        font-family: var(--font-d);
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 8px;
+      }
 
-    /* Password */
-    .pw-wrap { position: relative; }
-    .pw-wrap input { padding-right: 80px; }
-    .btn-show-hide {
-      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
-      color: var(--primary); font-size: 0.8rem; font-weight: 700;
-      padding: 4px 6px; border-radius: 6px;
-      transition: background var(--transition);
-    }
-    .btn-show-hide:hover { background: var(--pri-soft); }
+      .ill-quote-card p {
+        color: var(--muted);
+        font-size: 0.87rem;
+        line-height: 1.65;
+        font-weight: 300;
+      }
 
-    /* ── PASSWORD STRENGTH ───────────────────────────────── */
-    .strength-box {
-      background: var(--surf2); border: 1px solid var(--border);
-      border-radius: 14px; padding: 12px 14px;
-    }
-    .strength-bar-wrap { height: 6px; border-radius: 999px; background: var(--border); overflow: hidden; margin-bottom: 10px; }
-    .strength-bar { height: 100%; border-radius: 999px; width: 0%; background: var(--danger); transition: width 200ms, background 200ms; }
-    .strength-pills { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
-    .s-pill {
-      padding: 6px 10px; border-radius: 10px; text-align: center;
-      background: var(--surf3); border: 1px solid var(--border);
-      color: var(--muted); font-size: 0.77rem; font-weight: 600;
-      transition: background var(--transition), color var(--transition), border-color var(--transition);
-    }
-    .s-pill.active {
-      background: rgba(22,163,74,0.12);
-      border-color: rgba(22,163,74,0.35); color: var(--success);
-    }
+      /* Features */
+      .features-block {
+        padding: 24px 28px;
+        border-top: 1px solid var(--border);
+        display: grid;
+        gap: 16px;
+      }
 
-    /* ── RADIO GROUP ─────────────────────────────────────── */
-    .radio-row { display: flex; flex-wrap: wrap; gap: 10px; }
-    .radio-card {
-      display: inline-flex; align-items: center; gap: 9px;
-      padding: 11px 16px; border-radius: 13px;
-      border: 1.5px solid var(--border); background: var(--surf2);
-      cursor: pointer; font-size: 0.875rem; font-weight: 600;
-      transition: border-color var(--transition), background var(--transition);
-    }
-    .radio-card input { accent-color: var(--primary); width: 16px; height: 16px; }
-    .radio-card:has(input:checked) { border-color: var(--primary); background: var(--pri-soft); color: var(--primary); }
+      .features-title {
+        font-size: 0.82rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: var(--muted);
+      }
 
-    /* ── CHECKBOX GRID ───────────────────────────────────── */
-    .check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: 9px; }
-    .check-card {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 10px 13px; border-radius: 12px;
-      border: 1.5px solid var(--border); background: var(--surf2);
-      cursor: pointer; font-size: 0.83rem; font-weight: 600;
-      transition: border-color var(--transition), background var(--transition);
-    }
-    .check-card input { accent-color: var(--primary); width: 15px; height: 15px; }
-    .check-card:has(input:checked) { border-color: var(--primary); background: var(--pri-soft); color: var(--primary); }
+      .feat-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 13px;
+      }
 
-    /* Class map row */
-    .class-map-row {
-      background: var(--surf2); border: 1px solid var(--border);
-      border-radius: 14px; padding: 14px 16px; margin-bottom: 10px;
-    }
-    .class-map-row strong { display: block; font-size: 0.875rem; margin-bottom: 10px; }
-    .class-row { display: flex; flex-wrap: wrap; gap: 8px; }
-    .class-chip {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 7px 11px; border-radius: 10px;
-      border: 1.5px solid var(--border); background: var(--surface);
-      cursor: pointer; font-size: 0.8rem; font-weight: 600;
-      transition: border-color var(--transition), background var(--transition);
-    }
-    .class-chip input { accent-color: var(--primary); width: 14px; height: 14px; }
-    .class-chip:has(input:checked) { border-color: var(--primary); background: var(--pri-soft); color: var(--primary); }
+      .feat-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 11px;
+        background: var(--pri-soft);
+        display: grid;
+        place-items: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+        border: 1px solid var(--border);
+      }
 
-    /* ── UPLOAD BOX ──────────────────────────────────────── */
-    .upload-box {
-      border: 2px dashed var(--border); border-radius: 16px;
-      background: var(--surf2); padding: 28px 20px;
-      display: grid; place-items: center; gap: 10px;
-      text-align: center; cursor: pointer;
-      transition: border-color var(--transition), background var(--transition);
-    }
-    .upload-box:hover, .upload-box.dragover { border-color: var(--primary); background: var(--pri-soft); }
-    .upload-icon {
-      width: 48px; height: 48px; border-radius: 14px;
-      background: var(--pri-soft); display: grid; place-items: center; font-size: 1.4rem;
-    }
-    .upload-title { font-weight: 700; font-size: 0.9rem; }
-    .upload-hint  { color: var(--muted); font-size: 0.82rem; }
-    .upload-name  { color: var(--success); font-size: 0.85rem; font-weight: 600; display: none; }
+      .feat-name {
+        font-weight: 700;
+        font-size: 0.875rem;
+        margin-bottom: 2px;
+      }
 
-    /* ── STAFF ID ROW ────────────────────────────────────── */
-    .staff-id-row { display: flex; align-items: flex-end; gap: 12px; }
-    .staff-id-row .field-group { flex: 1; }
-    input[readonly] { opacity: 0.7; cursor: default; }
+      .feat-desc {
+        color: var(--muted);
+        font-size: 0.82rem;
+        line-height: 1.5;
+        font-weight: 300;
+      }
 
-    /* ── SOCIAL ─────────────────────────────────────────── */
-    .social-lbl {
-      display: flex; align-items: center; gap: 10px;
-      color: var(--muted); font-size: 0.82rem;
-    }
-    .social-lbl::before, .social-lbl::after { content:''; flex:1; height:1px; background:var(--border); }
-    .social-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .btn-social {
-      padding: 12px; border-radius: 13px;
-      border: 1.5px solid var(--border); background: var(--surf2);
-      color: var(--text); font-size: 0.875rem; font-weight: 700;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      transition: background var(--transition), border-color var(--transition), transform 150ms;
-    }
-    .btn-social:hover { background: var(--surf3); border-color: var(--primary); transform: translateY(-1px); }
-    .btn-social svg { width: 18px; height: 18px; flex-shrink: 0; }
+      /* Quote banner */
+      .quote-banner {
+        padding: 20px 28px;
+        border-top: 1px solid var(--border);
+        background: var(--pri-soft);
+        text-align: center;
+      }
 
-    /* ── BUTTONS ─────────────────────────────────────────── */
-    .btn-primary {
-      width: 100%; padding: 15px; border-radius: 14px;
-      background: var(--primary); color: #fff;
-      font-size: 0.97rem; font-weight: 700;
-      box-shadow: 0 6px 20px var(--pri-glow);
-      transition: opacity var(--transition), transform 150ms;
-    }
-    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
-    .btn-primary:active { transform: translateY(0); }
-    .btn-primary:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+      .quote-banner p {
+        font-weight: 700;
+        font-size: 0.92rem;
+        color: var(--primary);
+        line-height: 1.55;
+      }
 
-    .btn-secondary {
-      width: 100%; padding: 13px; border-radius: 14px;
-      background: transparent; color: var(--primary);
-      font-size: 0.9rem; font-weight: 700;
-      border: 1.5px solid rgba(15,44,93,0.22);
-      transition: background var(--transition), border-color var(--transition);
-    }
-    .btn-secondary:hover { background: var(--pri-soft); border-color: var(--primary); }
-    [data-theme="dark"] .btn-secondary { border-color: rgba(96,165,250,0.3); }
+      .quote-banner span {
+        display: block;
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
 
-    /* Spinner */
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .spinner {
-      display: inline-block; width: 15px; height: 15px;
-      border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
-      border-radius: 50%; animation: spin 0.7s linear infinite;
-      vertical-align: middle; margin-right: 7px;
-    }
+      /* Theme toggle inside left panel */
+      .panel-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 24px 0;
+      }
 
-    /* ── STATUS ──────────────────────────────────────────── */
-    .status-msg {
-      font-size: 0.875rem; min-height: 20px; padding: 2px 0;
-      transition: color var(--transition);
-    }
-    .status-msg.error   { color: var(--danger); }
-    .status-msg.success { color: var(--success); }
-    .status-msg.info    { color: var(--muted); }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-weight: 700;
+        font-size: 0.95rem;
+      }
 
-    /* ── FOOTER NOTE ─────────────────────────────────────── */
-    .form-footer {
-      margin-top: 16px; text-align: center;
-      color: var(--muted); font-size: 0.85rem; line-height: 1.6;
-    }
-    .form-footer a { color: var(--primary); font-weight: 700; }
-    .form-footer a:hover { text-decoration: underline; }
+      .brand-mark {
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        background: var(--primary);
+        display: grid;
+        place-items: center;
+      }
 
-    /* ── RESPONSIVE ──────────────────────────────────────── */
-    @media (max-width: 960px) {
-      .layout { grid-template-columns: 1fr; }
-      .visual-panel { position: static; }
-    }
-    @media (max-width: 520px) {
-      body { padding: 14px 12px 48px; }
-      .form-panel { padding: 26px 20px; }
-      .social-grid { grid-template-columns: 1fr; }
-      .phone-row { grid-template-columns: 90px 1fr; }
-      .strength-pills { grid-template-columns: 1fr 1fr; }
-    }
-  </style>
-</head>
-<body>
-<div class="layout">
+      .brand-mark svg {
+        width: 14px;
+        height: 14px;
+        fill: none;
+        stroke: #fff;
+        stroke-width: 2;
+        stroke-linecap: round;
+      }
 
-  <!-- ── LEFT: VISUAL PANEL ──────────────────────────── -->
-  <div class="visual-panel">
+      .btn-theme {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--surf2);
+        border: 1px solid var(--border);
+        display: grid;
+        place-items: center;
+        font-size: 1rem;
+        transition:
+          background var(--transition),
+          transform 200ms;
+      }
 
-    <div class="panel-top">
-      <a href="../LEARNER/index.html" class="brand">
-        <div class="brand-mark">
-          <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-        </div>
-        Smart Learning DC
-      </a>
-      <button class="btn-theme" id="themeBtn" aria-label="Toggle theme">🌙</button>
-    </div>
+      .btn-theme:hover {
+        background: var(--surf3);
+        transform: rotate(20deg);
+      }
 
-    <div class="ill-wrap">
-      <div class="ill-badge"><span class="ill-badge-dot"></span>Trusted Instructor</div>
-      <div class="teacher-figure">
-        <div class="fig-hair"></div>
-        <div class="fig-head"></div>
-        <div class="fig-body"></div>
-        <div class="fig-collar"></div>
-      </div>
-      <div class="ill-quote-card">
-        <h3>Teaching with clarity, care, and confidence.</h3>
-        <p>"The best teachers inspire curiosity, courage, and a lifelong love of learning in every student."</p>
-      </div>
-    </div>
+      /* ── FORM PANEL ─────────────────────────────────────── */
+      .form-panel {
+        background: var(--surface);
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        padding: 40px 38px;
+      }
 
-    <div class="features-block">
-      <div class="features-title">Faculty Benefits</div>
-      <div class="feat-row">
-        <div class="feat-icon">📅</div>
-        <div><div class="feat-name">Smart Lesson Planner</div><div class="feat-desc">Reduced prep time with AI-driven templates and tools.</div></div>
-      </div>
-      <div class="feat-row">
-        <div class="feat-icon">📊</div>
-        <div><div class="feat-name">Real-time Insights</div><div class="feat-desc">Deep dives into student progress and performance.</div></div>
-      </div>
-      <div class="feat-row">
-        <div class="feat-icon">🌐</div>
-        <div><div class="feat-name">Educator Community</div><div class="feat-desc">Connect with a worldwide network of educators.</div></div>
-      </div>
-    </div>
+      /* ── AUTH TABS ───────────────────────────────────────── */
+      .auth-tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 32px;
+      }
 
-    <div class="quote-banner">
-      <p>"Every lesson is a chance to shape a brighter future."</p>
-      <span>— Smart Learning Faculty</span>
-    </div>
+      .tab-btn {
+        padding: 13px;
+        border-radius: 14px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        border: 1.5px solid var(--border);
+        background: var(--surf2);
+        color: var(--muted);
+        transition:
+          background var(--transition),
+          border-color var(--transition),
+          color var(--transition);
+      }
 
-  </div>
+      .tab-btn.active {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: #fff;
+        box-shadow: 0 4px 14px var(--pri-glow);
+      }
 
-  <!-- ── RIGHT: FORM PANEL ────────────────────────────── -->
-  <div class="form-panel">
+      /* Sections */
+      .auth-section {
+        display: none;
+      }
 
-    <!-- Tabs -->
-    <div class="auth-tabs">
-      <button class="tab-btn active" id="loginTab">Log In</button>
-      <button class="tab-btn" id="signupTab">Create Account</button>
-    </div>
+      .auth-section.active {
+        display: grid;
+        gap: 0;
+      }
 
-    <!-- ── LOGIN SECTION ──────────────────────────────── -->
-    <div id="loginSection" class="auth-section active">
-      <div class="eyebrow">Faculty Login</div>
-      <h2 class="form-title">Sign In to Smart Learning</h2>
-      <p class="form-sub">Enter your work email and password to access your teacher dashboard.</p>
+      /* ── FORM HEADERS ────────────────────────────────────── */
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 6px 14px;
+        border-radius: 999px;
+        background: var(--pri-soft);
+        color: var(--primary);
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        width: fit-content;
+        margin-bottom: 10px;
+      }
 
-      <div class="fields">
-        <div class="field-group">
-          <label for="loginEmail">Work Email</label>
-          <div class="input-wrap">
-            <input id="loginEmail" type="email" placeholder="jane@school.edu" autocomplete="email" />
-            <span class="icon">✉</span>
-          </div>
-        </div>
+      .form-title {
+        font-family: var(--font-d);
+        font-size: clamp(1.5rem, 2vw, 1.9rem);
+        font-weight: 800;
+        line-height: 1.1;
+        margin-bottom: 8px;
+      }
 
-        <div class="field-group">
-          <label for="loginPassword">Password</label>
-          <div class="pw-wrap">
-            <input id="loginPassword" type="password" placeholder="Your password" autocomplete="current-password" />
-            <button type="button" class="btn-show-hide" id="toggleLoginPw">Show</button>
-          </div>
-        </div>
+      .form-sub {
+        color: var(--muted);
+        font-size: 0.92rem;
+        line-height: 1.7;
+        font-weight: 300;
+        margin-bottom: 28px;
+      }
 
-        <p class="status-msg info" id="loginStatus"></p>
+      /* ── FIELDS ─────────────────────────────────────────── */
+      .fields {
+        display: grid;
+        gap: 16px;
+      }
 
-        <button class="btn-primary" id="loginBtn">Sign In</button>
-        <button class="btn-secondary" id="forgotBtn">Forgot password?</button>
+      .field-group {
+        display: grid;
+        gap: 7px;
+      }
 
-        <div class="social-lbl">or continue with</div>
-        <div class="social-grid">
-          <button class="btn-social" id="googleLoginBtn">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M21.8 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.5a4.7 4.7 0 01-2 3.1v2.5h3.3c1.9-1.8 3-4.3 3-7.4z" fill="#4285F4"/><path d="M12 22c2.7 0 5-.9 6.7-2.4l-3.3-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3v2.6A10 10 0 0012 22z" fill="#34A853"/><path d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3A10 10 0 002 12c0 1.6.4 3.2 1 4.6L6.4 14z" fill="#FBBC05"/><path d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9C16.9 2.9 14.6 2 12 2A10 10 0 003 7.4L6.4 10c.8-2.3 3-4.1 5.6-4.1z" fill="#EA4335"/></svg>
-            Google
+      .field-group label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .input-wrap {
+        position: relative;
+      }
+
+      .input-wrap .icon {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--muted);
+        font-size: 0.9rem;
+        pointer-events: none;
+      }
+
+      .input-wrap input {
+        padding-right: 44px;
+      }
+
+      input,
+      select {
+        width: 100%;
+        padding: 13px 16px;
+        border: 1.5px solid var(--border);
+        border-radius: 14px;
+        background: var(--surf2);
+        color: var(--text);
+        font-size: 0.93rem;
+        outline: none;
+        transition:
+          border-color var(--transition),
+          box-shadow var(--transition),
+          background var(--transition);
+      }
+
+      input::placeholder {
+        color: var(--muted);
+        opacity: 0.6;
+      }
+
+      input:focus,
+      select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--pri-glow);
+        background: var(--surface);
+      }
+
+      input.valid {
+        border-color: var(--success);
+      }
+
+      input.invalid {
+        border-color: var(--danger);
+      }
+
+      select {
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%237a92b4' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 14px center;
+        padding-right: 38px;
+      }
+
+      select option {
+        background: var(--surf2);
+        color: var(--text);
+      }
+
+      /* Phone row */
+      .phone-row {
+        display: grid;
+        grid-template-columns: 110px 1fr;
+        gap: 10px;
+      }
+
+      .phone-prefix {
+        padding: 13px 10px;
+        border: 1.5px solid var(--border);
+        border-radius: 14px;
+        background: var(--surf2);
+        color: var(--text);
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        outline: none;
+        appearance: none;
+        text-align: center;
+        transition:
+          border-color var(--transition),
+          box-shadow var(--transition);
+      }
+
+      .phone-prefix:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--pri-glow);
+      }
+
+      /* Password */
+      .pw-wrap {
+        position: relative;
+      }
+
+      .pw-wrap input {
+        padding-right: 80px;
+      }
+
+      .btn-show-hide {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--primary);
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 4px 6px;
+        border-radius: 6px;
+        transition: background var(--transition);
+      }
+
+      .btn-show-hide:hover {
+        background: var(--pri-soft);
+      }
+
+      /* ── PASSWORD STRENGTH ───────────────────────────────── */
+      .strength-box {
+        background: var(--surf2);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 12px 14px;
+      }
+
+      .strength-bar-wrap {
+        height: 6px;
+        border-radius: 999px;
+        background: var(--border);
+        overflow: hidden;
+        margin-bottom: 10px;
+      }
+
+      .strength-bar {
+        height: 100%;
+        border-radius: 999px;
+        width: 0%;
+        background: var(--danger);
+        transition:
+          width 200ms,
+          background 200ms;
+      }
+
+      .strength-pills {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 7px;
+      }
+
+      .s-pill {
+        padding: 6px 10px;
+        border-radius: 10px;
+        text-align: center;
+        background: var(--surf3);
+        border: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 0.77rem;
+        font-weight: 600;
+        transition:
+          background var(--transition),
+          color var(--transition),
+          border-color var(--transition);
+      }
+
+      .s-pill.active {
+        background: rgba(22, 163, 74, 0.12);
+        border-color: rgba(22, 163, 74, 0.35);
+        color: var(--success);
+      }
+
+      /* ── RADIO GROUP ─────────────────────────────────────── */
+      .radio-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .radio-card {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        padding: 11px 16px;
+        border-radius: 13px;
+        border: 1.5px solid var(--border);
+        background: var(--surf2);
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-weight: 600;
+        transition:
+          border-color var(--transition),
+          background var(--transition);
+      }
+
+      .radio-card input {
+        accent-color: var(--primary);
+        width: 16px;
+        height: 16px;
+      }
+
+      .radio-card:has(input:checked) {
+        border-color: var(--primary);
+        background: var(--pri-soft);
+        color: var(--primary);
+      }
+
+      /* ── CHECKBOX GRID ───────────────────────────────────── */
+      .check-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 9px;
+      }
+
+      .check-card {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 13px;
+        border-radius: 12px;
+        border: 1.5px solid var(--border);
+        background: var(--surf2);
+        cursor: pointer;
+        font-size: 0.83rem;
+        font-weight: 600;
+        transition:
+          border-color var(--transition),
+          background var(--transition);
+      }
+
+      .check-card input {
+        accent-color: var(--primary);
+        width: 15px;
+        height: 15px;
+      }
+
+      .check-card:has(input:checked) {
+        border-color: var(--primary);
+        background: var(--pri-soft);
+        color: var(--primary);
+      }
+
+      /* Class map row */
+      .class-map-row {
+        background: var(--surf2);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 14px 16px;
+        margin-bottom: 10px;
+      }
+
+      .class-map-row strong {
+        display: block;
+        font-size: 0.875rem;
+        margin-bottom: 10px;
+      }
+
+      .class-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .class-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 11px;
+        border-radius: 10px;
+        border: 1.5px solid var(--border);
+        background: var(--surface);
+        cursor: pointer;
+        font-size: 0.8rem;
+        font-weight: 600;
+        transition:
+          border-color var(--transition),
+          background var(--transition);
+      }
+
+      .class-chip input {
+        accent-color: var(--primary);
+        width: 14px;
+        height: 14px;
+      }
+
+      .class-chip:has(input:checked) {
+        border-color: var(--primary);
+        background: var(--pri-soft);
+        color: var(--primary);
+      }
+
+      /* ── UPLOAD BOX ──────────────────────────────────────── */
+      .upload-box {
+        border: 2px dashed var(--border);
+        border-radius: 16px;
+        background: var(--surf2);
+        padding: 28px 20px;
+        display: grid;
+        place-items: center;
+        gap: 10px;
+        text-align: center;
+        cursor: pointer;
+        transition:
+          border-color var(--transition),
+          background var(--transition);
+      }
+
+      .upload-box:hover,
+      .upload-box.dragover {
+        border-color: var(--primary);
+        background: var(--pri-soft);
+      }
+
+      .upload-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: var(--pri-soft);
+        display: grid;
+        place-items: center;
+        font-size: 1.4rem;
+      }
+
+      .upload-title {
+        font-weight: 700;
+        font-size: 0.9rem;
+      }
+
+      .upload-hint {
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+
+      .upload-name {
+        color: var(--success);
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: none;
+      }
+
+      /* ── STAFF ID ROW ────────────────────────────────────── */
+      .staff-id-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 12px;
+      }
+
+      .staff-id-row .field-group {
+        flex: 1;
+      }
+
+      input[readonly] {
+        opacity: 0.7;
+        cursor: default;
+      }
+
+      /* ── SOCIAL ─────────────────────────────────────────── */
+      .social-lbl {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+
+      .social-lbl::before,
+      .social-lbl::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+
+      .social-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .btn-social {
+        padding: 12px;
+        border-radius: 13px;
+        border: 1.5px solid var(--border);
+        background: var(--surf2);
+        color: var(--text);
+        font-size: 0.875rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition:
+          background var(--transition),
+          border-color var(--transition),
+          transform 150ms;
+      }
+
+      .btn-social:hover {
+        background: var(--surf3);
+        border-color: var(--primary);
+        transform: translateY(-1px);
+      }
+
+      .btn-social svg {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+      }
+
+      /* ── BUTTONS ─────────────────────────────────────────── */
+      .btn-primary {
+        width: 100%;
+        padding: 15px;
+        border-radius: 14px;
+        background: var(--primary);
+        color: #fff;
+        font-size: 0.97rem;
+        font-weight: 700;
+        box-shadow: 0 6px 20px var(--pri-glow);
+        transition:
+          opacity var(--transition),
+          transform 150ms;
+      }
+
+      .btn-primary:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+      }
+
+      .btn-primary:active {
+        transform: translateY(0);
+      }
+
+      .btn-primary:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .btn-secondary {
+        width: 100%;
+        padding: 13px;
+        border-radius: 14px;
+        background: transparent;
+        color: var(--primary);
+        font-size: 0.9rem;
+        font-weight: 700;
+        border: 1.5px solid rgba(15, 44, 93, 0.22);
+        transition:
+          background var(--transition),
+          border-color var(--transition);
+      }
+
+      .btn-secondary:hover {
+        background: var(--pri-soft);
+        border-color: var(--primary);
+      }
+
+      [data-theme="dark"] .btn-secondary {
+        border-color: rgba(96, 165, 250, 0.3);
+      }
+
+      /* Spinner */
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .spinner {
+        display: inline-block;
+        width: 15px;
+        height: 15px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        vertical-align: middle;
+        margin-right: 7px;
+      }
+
+      /* ── STATUS ──────────────────────────────────────────── */
+      .status-msg {
+        font-size: 0.875rem;
+        min-height: 20px;
+        padding: 2px 0;
+        transition: color var(--transition);
+      }
+
+      .status-msg.error {
+        color: var(--danger);
+      }
+
+      .status-msg.success {
+        color: var(--success);
+      }
+
+      .status-msg.info {
+        color: var(--muted);
+      }
+
+      /* ── FOOTER NOTE ─────────────────────────────────────── */
+      .form-footer {
+        margin-top: 16px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.85rem;
+        line-height: 1.6;
+      }
+
+      .form-footer a {
+        color: var(--primary);
+        font-weight: 700;
+      }
+
+      .form-footer a:hover {
+        text-decoration: underline;
+      }
+
+      /* ── RESPONSIVE ──────────────────────────────────────── */
+      @media (max-width: 960px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        .visual-panel {
+          position: static;
+        }
+      }
+
+      @media (max-width: 520px) {
+        body {
+          padding: 14px 12px 48px;
+        }
+
+        .form-panel {
+          padding: 26px 20px;
+        }
+
+        .social-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .phone-row {
+          grid-template-columns: 90px 1fr;
+        }
+
+        .strength-pills {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="layout">
+      <!-- ── LEFT: VISUAL PANEL ──────────────────────────── -->
+      <div class="visual-panel">
+        <div class="panel-top">
+          <a href="../LEARNER/index.html" class="brand">
+            <div class="brand-mark">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                <path d="M2 17l10 5 10-5" />
+                <path d="M2 12l10 5 10-5" />
+              </svg>
+            </div>
+            Smart Learning DC
+          </a>
+          <button class="btn-theme" id="themeBtn" aria-label="Toggle theme">
+            🌙
           </button>
-          <button class="btn-social" id="microsoftLoginBtn">
-            <svg viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="9.5" height="9.5" fill="#F25022"/><rect x="12.5" y="2" width="9.5" height="9.5" fill="#7FBA00"/><rect x="2" y="12.5" width="9.5" height="9.5" fill="#00A4EF"/><rect x="12.5" y="12.5" width="9.5" height="9.5" fill="#FFB900"/></svg>
-            Microsoft
-          </button>
         </div>
-      </div>
 
-      <div class="form-footer">
-        No account yet? <a href="#" id="goSignup">Create one here</a>
-      </div>
-    </div>
-
-    <!-- ── SIGNUP SECTION ─────────────────────────────── -->
-    <div id="signupSection" class="auth-section">
-      <div class="eyebrow">Faculty Onboarding</div>
-      <h2 class="form-title">Teacher Registration</h2>
-      <p class="form-sub">Complete your registration to access the Smart Learning teacher platform.</p>
-
-      <div class="fields" id="signupFields">
-
-        <!-- Full Name -->
-        <div class="field-group">
-          <label for="fullName">Full Name</label>
-          <div class="input-wrap">
-            <input id="fullName" type="text" placeholder="Jane Doe" autocomplete="name" />
-            <span class="icon">👤</span>
+        <div class="ill-wrap">
+          <div class="ill-badge">
+            <span class="ill-badge-dot"></span>Trusted Instructor
+          </div>
+          <div class="teacher-figure">
+            <div class="fig-hair"></div>
+            <div class="fig-head"></div>
+            <div class="fig-body"></div>
+            <div class="fig-collar"></div>
+          </div>
+          <div class="ill-quote-card">
+            <h3>Teaching with clarity, care, and confidence.</h3>
+            <p>
+              "The best teachers inspire curiosity, courage, and a lifelong love
+              of learning in every student."
+            </p>
           </div>
         </div>
 
-        <!-- Work Email -->
-        <div class="field-group">
-          <label for="workEmail">Work Email</label>
-          <div class="input-wrap">
-            <input id="workEmail" type="email" placeholder="jane@school.edu" autocomplete="email" />
-            <span class="icon">✉</span>
+        <div class="features-block">
+          <div class="features-title">Faculty Benefits</div>
+          <div class="feat-row">
+            <div class="feat-icon">📅</div>
+            <div>
+              <div class="feat-name">Smart Lesson Planner</div>
+              <div class="feat-desc">
+                Reduced prep time with AI-driven templates and tools.
+              </div>
+            </div>
           </div>
-        </div>
-
-        <!-- Phone -->
-        <div class="field-group">
-          <label for="phone">Phone Number</label>
-          <div class="phone-row">
-            <select id="countryPrefix" class="phone-prefix">
-              <option value="+91">🇮🇳 +91</option>
-              <option value="+1">🇺🇸 +1</option>
-              <option value="+44">🇬🇧 +44</option>
-              <option value="+61">🇦🇺 +61</option>
-              <option value="+81">🇯🇵 +81</option>
-              <option value="+971">🇦🇪 +971</option>
-            </select>
-            <input id="phone" type="tel" placeholder="98765 43210" />
+          <div class="feat-row">
+            <div class="feat-icon">📊</div>
+            <div>
+              <div class="feat-name">Real-time Insights</div>
+              <div class="feat-desc">
+                Deep dives into student progress and performance.
+              </div>
+            </div>
           </div>
-        </div>
-
-        <!-- Teaching Mode -->
-        <div class="field-group">
-          <label>Teaching Mode</label>
-          <div class="radio-row">
-            <label class="radio-card">
-              <input type="radio" name="teachMode" value="teachAll" checked /> Teach All Subjects
-            </label>
-            <label class="radio-card">
-              <input type="radio" name="teachMode" value="specialist" /> Subject Specialist
-            </label>
-          </div>
-        </div>
-
-        <!-- Grade Group (Teach All) -->
-        <div class="field-group" id="gradeGroupField">
-          <label for="gradeGroup">Grade Group</label>
-          <select id="gradeGroup">
-            <option value="5-6">Grades 5–6 (All subjects)</option>
-            <option value="7-8">Grades 7–8 (All subjects)</option>
-            <option value="9-10">Grades 9–10 (All subjects)</option>
-            <option value="11-12">Grades 11–12 (Stream-wise)</option>
-          </select>
-        </div>
-
-        <!-- Stream (only for 11-12) -->
-        <div class="field-group" id="streamField" style="display:none;">
-          <label for="stream">Stream</label>
-          <select id="stream">
-            <option value="PCM">Science — PCM</option>
-            <option value="PCB">Science — PCB</option>
-            <option value="Commerce">Commerce</option>
-            <option value="Arts">Arts / Humanities</option>
-          </select>
-        </div>
-
-        <!-- Subject Specialist fields -->
-        <div class="field-group" id="specialistField" style="display:none;">
-          <label>Select Subjects</label>
-          <div class="check-grid" id="subjectChecklist"></div>
-        </div>
-
-        <div class="field-group" id="classMapContainer" style="display:none;">
-          <label>Classes per Subject</label>
-          <div id="classMapGrid"></div>
-        </div>
-
-        <!-- Institution -->
-        <div class="field-group">
-          <label for="institution">Institution Name</label>
-          <div class="input-wrap">
-            <input id="institution" type="text" placeholder="Brightfield Academy" />
-            <span class="icon">🏫</span>
-          </div>
-        </div>
-
-        <!-- Experience -->
-        <div class="field-group">
-          <label for="experience">Years of Experience</label>
-          <div class="input-wrap">
-            <input id="experience" type="number" min="0" max="50" placeholder="e.g. 5" />
-            <span class="icon">⏳</span>
-          </div>
-        </div>
-
-        <!-- Certification Upload -->
-        <div class="field-group">
-          <label>Teaching Certification</label>
-          <div class="upload-box" id="uploadBox" tabindex="0">
-            <div class="upload-icon">☁️</div>
-            <div class="upload-title">Upload Certification</div>
-            <div class="upload-hint">Drag & drop or click to browse (.pdf, .doc, .png, .jpg)</div>
-            <div class="upload-name" id="uploadName"></div>
-            <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.png,.jpg" hidden />
-          </div>
-        </div>
-
-        <!-- Password -->
-        <div class="field-group">
-          <label for="signupPassword">Password</label>
-          <div class="pw-wrap">
-            <input id="signupPassword" type="password" placeholder="Create a strong password" autocomplete="new-password" />
-            <button type="button" class="btn-show-hide" id="toggleSignupPw">Show</button>
-          </div>
-          <div class="strength-box" style="margin-top:8px;">
-            <div class="strength-bar-wrap"><div class="strength-bar" id="strengthBar"></div></div>
-            <div class="strength-pills">
-              <div class="s-pill" id="pill8">8+ chars</div>
-              <div class="s-pill" id="pillUpper">Uppercase</div>
-              <div class="s-pill" id="pillLower">Lowercase</div>
-              <div class="s-pill" id="pillSpecial">Special char</div>
+          <div class="feat-row">
+            <div class="feat-icon">🌐</div>
+            <div>
+              <div class="feat-name">Educator Community</div>
+              <div class="feat-desc">
+                Connect with a worldwide network of educators.
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Social signup -->
-        <div class="social-lbl">or sign up with</div>
-        <div class="social-grid">
-          <button class="btn-social" id="googleSignupBtn">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M21.8 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.5a4.7 4.7 0 01-2 3.1v2.5h3.3c1.9-1.8 3-4.3 3-7.4z" fill="#4285F4"/><path d="M12 22c2.7 0 5-.9 6.7-2.4l-3.3-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3v2.6A10 10 0 0012 22z" fill="#34A853"/><path d="M6.4 14c-.2-.6-.3-1.3-.3-2V7.4H3A10 10 0 002 12c0 1.6.4 3.2 1 4.6L6.4 14z" fill="#FBBC05"/><path d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9C16.9 2.9 14.6 2 12 2A10 10 0 003 7.4L6.4 10c.8-2.3 3-4.1 5.6-4.1z" fill="#EA4335"/></svg>
-            Google
-          </button>
-          <button class="btn-social" id="microsoftSignupBtn">
-            <svg viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="9.5" height="9.5" fill="#F25022"/><rect x="12.5" y="2" width="9.5" height="9.5" fill="#7FBA00"/><rect x="2" y="12.5" width="9.5" height="9.5" fill="#00A4EF"/><rect x="12.5" y="12.5" width="9.5" height="9.5" fill="#FFB900"/></svg>
-            Microsoft
-          </button>
+        <div class="quote-banner">
+          <p>"Every lesson is a chance to shape a brighter future."</p>
+          <span>— Smart Learning Faculty</span>
         </div>
-
-        <!-- Staff ID + Submit -->
-        <div class="field-group">
-          <label for="staffId">Staff ID (auto-generated)</label>
-          <input id="staffId" type="text" readonly placeholder="Will be generated on submit" />
-        </div>
-
-        <p class="status-msg info" id="signupStatus"></p>
-        <button class="btn-primary" id="createAccountBtn">Create Account</button>
-
       </div>
 
-      <div class="form-footer" style="margin-top:18px;">
-        Already have an account? <a href="#" id="goLogin">Log in here</a><br/>
-        <span style="font-size:0.8rem;">Your information is encrypted and stored securely.</span>
+      <!-- ── RIGHT: FORM PANEL ────────────────────────────── -->
+      <div class="form-panel">
+        <!-- Tabs -->
+        <div class="auth-tabs">
+          <button class="tab-btn active" id="loginTab">Log In</button>
+          <button class="tab-btn" id="signupTab">Create Account</button>
+        </div>
+
+        <!-- ── LOGIN SECTION ──────────────────────────────── -->
+        <div id="loginSection" class="auth-section active">
+          <div class="eyebrow">Faculty Login</div>
+          <h2 class="form-title">Sign In to Smart Learning</h2>
+          <p class="form-sub">
+            Enter your work email and password to access your teacher dashboard.
+          </p>
+
+          <div class="fields">
+            <div class="field-group">
+              <label for="loginEmail">Work Email</label>
+              <div class="input-wrap">
+                <input
+                  id="loginEmail"
+                  type="email"
+                  placeholder="jane@school.edu"
+                  autocomplete="email"
+                />
+                <span class="icon">✉</span>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label for="loginPassword">Password</label>
+              <div class="pw-wrap">
+                <input
+                  id="loginPassword"
+                  type="password"
+                  placeholder="Your password"
+                  autocomplete="current-password"
+                />
+                <button type="button" class="btn-show-hide" id="toggleLoginPw">
+                  Show
+                </button>
+              </div>
+            </div>
+
+            <p class="status-msg info" id="loginStatus"></p>
+
+            <button class="btn-primary" id="loginBtn">Sign In</button>
+            <button class="btn-secondary" id="forgotBtn">
+              Forgot password?
+            </button>
+
+            <div class="social-lbl">or continue with</div>
+            <div class="social-grid">
+              <button class="btn-social" id="googleLoginBtn">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M21.8 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.5a4.7 4.7 0 01-2 3.1v2.5h3.3c1.9-1.8 3-4.3 3-7.4z"
+                    fill="#4285F4"
+                  />
+                  <path
+                    d="M12 22c2.7 0 5-.9 6.7-2.4l-3.3-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3v2.6A10 10 0 0012 22z"
+                    fill="#34A853"
+                  />
+                  <path
+                    d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3A10 10 0 002 12c0 1.6.4 3.2 1 4.6L6.4 14z"
+                    fill="#FBBC05"
+                  />
+                  <path
+                    d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9C16.9 2.9 14.6 2 12 2A10 10 0 003 7.4L6.4 10c.8-2.3 3-4.1 5.6-4.1z"
+                    fill="#EA4335"
+                  />
+                </svg>
+                Google
+              </button>
+              <button class="btn-social" id="microsoftLoginBtn">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <rect x="2" y="2" width="9.5" height="9.5" fill="#F25022" />
+                  <rect
+                    x="12.5"
+                    y="2"
+                    width="9.5"
+                    height="9.5"
+                    fill="#7FBA00"
+                  />
+                  <rect
+                    x="2"
+                    y="12.5"
+                    width="9.5"
+                    height="9.5"
+                    fill="#00A4EF"
+                  />
+                  <rect
+                    x="12.5"
+                    y="12.5"
+                    width="9.5"
+                    height="9.5"
+                    fill="#FFB900"
+                  />
+                </svg>
+                Microsoft
+              </button>
+            </div>
+          </div>
+
+          <div class="form-footer">
+            No account yet? <a href="#" id="goSignup">Create one here</a>
+          </div>
+        </div>
+
+        <!-- ── SIGNUP SECTION ─────────────────────────────── -->
+        <div id="signupSection" class="auth-section">
+          <div class="eyebrow">Faculty Onboarding</div>
+          <h2 class="form-title">Teacher Registration</h2>
+          <p class="form-sub">
+            Complete your registration to access the Smart Learning teacher
+            platform.
+          </p>
+
+          <div class="fields" id="signupFields">
+            <!-- Full Name -->
+            <div class="field-group">
+              <label for="fullName">Full Name</label>
+              <div class="input-wrap">
+                <input
+                  id="fullName"
+                  type="text"
+                  placeholder="Jane Doe"
+                  autocomplete="name"
+                />
+                <span class="icon">👤</span>
+              </div>
+            </div>
+
+            <!-- Work Email -->
+            <div class="field-group">
+              <label for="workEmail">Work Email</label>
+              <div class="input-wrap">
+                <input
+                  id="workEmail"
+                  type="email"
+                  placeholder="jane@school.edu"
+                  autocomplete="email"
+                />
+                <span class="icon">✉</span>
+              </div>
+            </div>
+
+            <!-- Phone -->
+            <div class="field-group">
+              <label for="phone">Phone Number</label>
+              <div class="phone-row">
+                <select id="countryPrefix" class="phone-prefix">
+                  <option value="+91">🇮🇳 +91</option>
+                  <option value="+1">🇺🇸 +1</option>
+                  <option value="+44">🇬🇧 +44</option>
+                  <option value="+61">🇦🇺 +61</option>
+                  <option value="+81">🇯🇵 +81</option>
+                  <option value="+971">🇦🇪 +971</option>
+                </select>
+                <input id="phone" type="tel" placeholder="98765 43210" />
+              </div>
+            </div>
+
+            <!-- Teaching Mode -->
+            <div class="field-group">
+              <label>Teaching Mode</label>
+              <div class="radio-row">
+                <label class="radio-card">
+                  <input
+                    type="radio"
+                    name="teachMode"
+                    value="teachAll"
+                    checked
+                  />
+                  Teach All Subjects
+                </label>
+                <label class="radio-card">
+                  <input type="radio" name="teachMode" value="specialist" />
+                  Subject Specialist
+                </label>
+              </div>
+            </div>
+
+            <!-- Grade Group (Teach All) -->
+            <div class="field-group" id="gradeGroupField">
+              <label for="gradeGroup">Grade Group</label>
+              <select id="gradeGroup">
+                <option value="5-6">Grades 5–6 (All subjects)</option>
+                <option value="7-8">Grades 7–8 (All subjects)</option>
+                <option value="9-10">Grades 9–10 (All subjects)</option>
+                <option value="11-12">Grades 11–12 (Stream-wise)</option>
+              </select>
+            </div>
+
+            <!-- Stream (only for 11-12) -->
+            <div class="field-group" id="streamField" style="display: none">
+              <label for="stream">Stream</label>
+              <select id="stream">
+                <option value="PCM">Science — PCM</option>
+                <option value="PCB">Science — PCB</option>
+                <option value="Commerce">Commerce</option>
+                <option value="Arts">Arts / Humanities</option>
+              </select>
+            </div>
+
+            <!-- Subject Specialist fields -->
+            <div class="field-group" id="specialistField" style="display: none">
+              <label>Select Subjects</label>
+              <div class="check-grid" id="subjectChecklist"></div>
+            </div>
+
+            <div
+              class="field-group"
+              id="classMapContainer"
+              style="display: none"
+            >
+              <label>Classes per Subject</label>
+              <div id="classMapGrid"></div>
+            </div>
+
+            <!-- Institution -->
+            <div class="field-group">
+              <label for="institution">Institution Name</label>
+              <div class="input-wrap">
+                <input
+                  id="institution"
+                  type="text"
+                  placeholder="Brightfield Academy"
+                />
+                <span class="icon">🏫</span>
+              </div>
+            </div>
+
+            <!-- Experience -->
+            <div class="field-group">
+              <label for="experience">Years of Experience</label>
+              <div class="input-wrap">
+                <input
+                  id="experience"
+                  type="number"
+                  min="0"
+                  max="50"
+                  placeholder="e.g. 5"
+                />
+                <span class="icon">⏳</span>
+              </div>
+            </div>
+
+            <!-- Certification Upload -->
+            <div class="field-group">
+              <label>Teaching Certification</label>
+              <div class="upload-box" id="uploadBox" tabindex="0">
+                <div class="upload-icon">☁️</div>
+                <div class="upload-title">Upload Certification</div>
+                <div class="upload-hint">
+                  Drag & drop or click to browse (.pdf, .doc, .png, .jpg)
+                </div>
+                <div class="upload-name" id="uploadName"></div>
+                <input
+                  type="file"
+                  id="fileInput"
+                  accept=".pdf,.doc,.docx,.png,.jpg"
+                  hidden
+                />
+              </div>
+            </div>
+
+            <!-- Password -->
+            <div class="field-group">
+              <label for="signupPassword">Password</label>
+              <div class="pw-wrap">
+                <input
+                  id="signupPassword"
+                  type="password"
+                  placeholder="Create a strong password"
+                  autocomplete="new-password"
+                />
+                <button type="button" class="btn-show-hide" id="toggleSignupPw">
+                  Show
+                </button>
+              </div>
+              <div class="strength-box" style="margin-top: 8px">
+                <div class="strength-bar-wrap">
+                  <div class="strength-bar" id="strengthBar"></div>
+                </div>
+                <div class="strength-pills">
+                  <div class="s-pill" id="pill8">8+ chars</div>
+                  <div class="s-pill" id="pillUpper">Uppercase</div>
+                  <div class="s-pill" id="pillLower">Lowercase</div>
+                  <div class="s-pill" id="pillSpecial">Special char</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Social signup -->
+            <div class="social-lbl">or sign up with</div>
+            <div class="social-grid">
+              <button class="btn-social" id="googleSignupBtn">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M21.8 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.5a4.7 4.7 0 01-2 3.1v2.5h3.3c1.9-1.8 3-4.3 3-7.4z"
+                    fill="#4285F4"
+                  />
+                  <path
+                    d="M12 22c2.7 0 5-.9 6.7-2.4l-3.3-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3v2.6A10 10 0 0012 22z"
+                    fill="#34A853"
+                  />
+                  <path
+                    d="M6.4 14c-.2-.6-.3-1.3-.3-2V7.4H3A10 10 0 002 12c0 1.6.4 3.2 1 4.6L6.4 14z"
+                    fill="#FBBC05"
+                  />
+                  <path
+                    d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9C16.9 2.9 14.6 2 12 2A10 10 0 003 7.4L6.4 10c.8-2.3 3-4.1 5.6-4.1z"
+                    fill="#EA4335"
+                  />
+                </svg>
+                Google
+              </button>
+              <button class="btn-social" id="microsoftSignupBtn">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <rect x="2" y="2" width="9.5" height="9.5" fill="#F25022" />
+                  <rect
+                    x="12.5"
+                    y="2"
+                    width="9.5"
+                    height="9.5"
+                    fill="#7FBA00"
+                  />
+                  <rect
+                    x="2"
+                    y="12.5"
+                    width="9.5"
+                    height="9.5"
+                    fill="#00A4EF"
+                  />
+                  <rect
+                    x="12.5"
+                    y="12.5"
+                    width="9.5"
+                    height="9.5"
+                    fill="#FFB900"
+                  />
+                </svg>
+                Microsoft
+              </button>
+            </div>
+
+            <!-- Staff ID + Submit -->
+            <div class="field-group">
+              <label for="staffId">Staff ID (auto-generated)</label>
+              <input
+                id="staffId"
+                type="text"
+                readonly
+                placeholder="Will be generated on submit"
+              />
+            </div>
+
+            <p class="status-msg info" id="signupStatus"></p>
+            <button class="btn-primary" id="createAccountBtn">
+              Create Account
+            </button>
+          </div>
+
+          <div class="form-footer" style="margin-top: 18px">
+            Already have an account? <a href="#" id="goLogin">Log in here</a
+            ><br />
+            <span style="font-size: 0.8rem"
+              >Your information is encrypted and stored securely.</span
+            >
+          </div>
+        </div>
       </div>
     </div>
 
-  </div>
-</div>
+    <script>
+      /* ═══════════════════════════════════════════════════════════
+ SMART LEARNING DC — teacher_login.html
+ 100% working. No Supabase. All data saved to localStorage.
+ ═══════════════════════════════════════════════════════════ */
 
-<script>
-/* ═══════════════════════════════════════════════════════════
-   SMART LEARNING DC — teacher_login.html
-   100% working. No Supabase. All data saved to localStorage.
-   ═══════════════════════════════════════════════════════════ */
+      /* ── 1. THEME ──────────────────────────────────────────── */
+      const themeBtn = document.getElementById("themeBtn");
+      function getTheme() {
+        return localStorage.getItem("sl-theme") || "light";
+      }
+      function applyTheme(t) {
+        document.documentElement.setAttribute("data-theme", t);
+        themeBtn.textContent = t === "dark" ? "☀️" : "🌙";
+        localStorage.setItem("sl-theme", t);
+      }
+      themeBtn.addEventListener("click", () =>
+        applyTheme(getTheme() === "dark" ? "light" : "dark"),
+      );
+      applyTheme(getTheme());
 
-/* ── 1. THEME ──────────────────────────────────────────── */
-const themeBtn = document.getElementById('themeBtn');
-function getTheme() { return localStorage.getItem('sl-theme') || 'light'; }
-function applyTheme(t) {
-  document.documentElement.setAttribute('data-theme', t);
-  themeBtn.textContent = t === 'dark' ? '☀️' : '🌙';
-  localStorage.setItem('sl-theme', t);
-}
-themeBtn.addEventListener('click', () => applyTheme(getTheme() === 'dark' ? 'light' : 'dark'));
-applyTheme(getTheme());
+      /* ── 2. TAB SWITCHING ──────────────────────────────────── */
+      const loginTab = document.getElementById("loginTab");
+      const signupTab = document.getElementById("signupTab");
+      const loginSection = document.getElementById("loginSection");
+      const signupSection = document.getElementById("signupSection");
 
+      function showLogin() {
+        loginTab.classList.add("active");
+        signupTab.classList.remove("active");
+        loginSection.classList.add("active");
+        signupSection.classList.remove("active");
+        document.getElementById("loginEmail").focus();
+      }
+      function showSignup() {
+        signupTab.classList.add("active");
+        loginTab.classList.remove("active");
+        signupSection.classList.add("active");
+        loginSection.classList.remove("active");
+        document.getElementById("fullName").focus();
+      }
 
-/* ── 2. TAB SWITCHING ──────────────────────────────────── */
-const loginTab     = document.getElementById('loginTab');
-const signupTab    = document.getElementById('signupTab');
-const loginSection = document.getElementById('loginSection');
-const signupSection= document.getElementById('signupSection');
+      loginTab.addEventListener("click", showLogin);
+      signupTab.addEventListener("click", showSignup);
+      document.getElementById("goLogin").addEventListener("click", (e) => {
+        e.preventDefault();
+        showLogin();
+      });
+      document.getElementById("goSignup").addEventListener("click", (e) => {
+        e.preventDefault();
+        showSignup();
+      });
 
-function showLogin() {
-  loginTab.classList.add('active');    signupTab.classList.remove('active');
-  loginSection.classList.add('active');signupSection.classList.remove('active');
-  document.getElementById('loginEmail').focus();
-}
-function showSignup() {
-  signupTab.classList.add('active');    loginTab.classList.remove('active');
-  signupSection.classList.add('active');loginSection.classList.remove('active');
-  document.getElementById('fullName').focus();
-}
+      /* ── 3. SHOW / HIDE PASSWORD ───────────────────────────── */
+      function togglePw(inputId, btn) {
+        const inp = document.getElementById(inputId);
+        const hidden = inp.type === "password";
+        inp.type = hidden ? "text" : "password";
+        btn.textContent = hidden ? "Hide" : "Show";
+      }
+      document
+        .getElementById("toggleLoginPw")
+        .addEventListener("click", () =>
+          togglePw("loginPassword", document.getElementById("toggleLoginPw")),
+        );
+      document
+        .getElementById("toggleSignupPw")
+        .addEventListener("click", () =>
+          togglePw("signupPassword", document.getElementById("toggleSignupPw")),
+        );
 
-loginTab.addEventListener('click',  showLogin);
-signupTab.addEventListener('click', showSignup);
-document.getElementById('goLogin').addEventListener('click',  e => { e.preventDefault(); showLogin(); });
-document.getElementById('goSignup').addEventListener('click', e => { e.preventDefault(); showSignup(); });
+      /* ── 4. STATUS HELPERS ─────────────────────────────────── */
+      function setStatus(id, msg, type = "info") {
+        const el = document.getElementById(id);
+        el.textContent = msg;
+        el.className = "status-msg " + type;
+      }
+      function clearStatus(id) {
+        setStatus(id, "", "info");
+      }
 
+      function setLoading(btn, on, orig) {
+        if (on) {
+          btn.dataset.orig = btn.innerHTML;
+          btn.innerHTML = `<span class="spinner"></span>${orig || "Loading…"}`;
+          btn.disabled = true;
+        } else {
+          btn.innerHTML = btn.dataset.orig || orig;
+          btn.disabled = false;
+        }
+      }
 
-/* ── 3. SHOW / HIDE PASSWORD ───────────────────────────── */
-function togglePw(inputId, btn) {
-  const inp = document.getElementById(inputId);
-  const hidden = inp.type === 'password';
-  inp.type = hidden ? 'text' : 'password';
-  btn.textContent = hidden ? 'Hide' : 'Show';
-}
-document.getElementById('toggleLoginPw').addEventListener('click',  () => togglePw('loginPassword',  document.getElementById('toggleLoginPw')));
-document.getElementById('toggleSignupPw').addEventListener('click', () => togglePw('signupPassword', document.getElementById('toggleSignupPw')));
+      /* ── 5. INLINE VALIDATION ──────────────────────────────── */
+      function validateInput(input, testFn) {
+        const valid = testFn(input.value);
+        input.classList.toggle("valid", valid && input.value.length > 0);
+        input.classList.toggle("invalid", !valid && input.value.length > 0);
+        return valid;
+      }
 
+      document
+        .getElementById("fullName")
+        .addEventListener("input", function () {
+          validateInput(this, (v) => v.trim().length >= 3);
+        });
+      document
+        .getElementById("workEmail")
+        .addEventListener("input", function () {
+          validateInput(this, (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(v));
+        });
+      document.getElementById("phone").addEventListener("input", function () {
+        validateInput(this, (v) => v.replace(/\D/g, "").length >= 7);
+      });
+      document
+        .getElementById("institution")
+        .addEventListener("input", function () {
+          validateInput(this, (v) => v.trim().length >= 2);
+        });
 
-/* ── 4. STATUS HELPERS ─────────────────────────────────── */
-function setStatus(id, msg, type = 'info') {
-  const el = document.getElementById(id);
-  el.textContent = msg;
-  el.className = 'status-msg ' + type;
-}
-function clearStatus(id) { setStatus(id, '', 'info'); }
+      /* ── 6. PASSWORD STRENGTH ──────────────────────────────── */
+      const strengthBar = document.getElementById("strengthBar");
+      const pill8 = document.getElementById("pill8");
+      const pillUpper = document.getElementById("pillUpper");
+      const pillLower = document.getElementById("pillLower");
+      const pillSpec = document.getElementById("pillSpecial");
+      const COLORS = ["", "#ef4444", "#f59e0b", "#22c55e", "#0f2c5d"];
 
-function setLoading(btn, on, orig) {
-  if (on) {
-    btn.dataset.orig = btn.innerHTML;
-    btn.innerHTML = `<span class="spinner"></span>${orig || 'Loading…'}`;
-    btn.disabled = true;
-  } else {
-    btn.innerHTML = btn.dataset.orig || orig;
-    btn.disabled = false;
-  }
-}
+      document
+        .getElementById("signupPassword")
+        .addEventListener("input", function () {
+          const v = this.value;
+          const c = {
+            len: v.length >= 8,
+            upper: /[A-Z]/.test(v),
+            lower: /[a-z]/.test(v),
+            special: /[^A-Za-z0-9]/.test(v),
+          };
+          const score = Object.values(c).filter(Boolean).length;
+          strengthBar.style.width = `${score * 25}%`;
+          strengthBar.style.background = COLORS[score] || "#ef4444";
+          pill8.classList.toggle("active", c.len);
+          pillUpper.classList.toggle("active", c.upper);
+          pillLower.classList.toggle("active", c.lower);
+          pillSpec.classList.toggle("active", c.special);
+        });
 
+      /* ── 7. TEACHING MODE LOGIC ────────────────────────────── */
+      const SUBJECT_OPTIONS = [
+        "Mathematics",
+        "Science",
+        "Physics",
+        "Chemistry",
+        "Biology",
+        "English",
+        "Hindi",
+        "Social Science",
+        "Computer Science",
+        "History",
+        "Geography",
+      ];
+      const STREAM_SUBJECTS = {
+        PCM: ["Mathematics", "Physics", "Chemistry", "English"],
+        PCB: ["Biology", "Chemistry", "Physics", "English"],
+        Commerce: ["Accountancy", "Business Studies", "Economics", "English"],
+        Arts: ["History", "Geography", "Political Science", "English"],
+      };
 
-/* ── 5. INLINE VALIDATION ──────────────────────────────── */
-function validateInput(input, testFn) {
-  const valid = testFn(input.value);
-  input.classList.toggle('valid',   valid && input.value.length > 0);
-  input.classList.toggle('invalid', !valid && input.value.length > 0);
-  return valid;
-}
+      const gradeGroupField = document.getElementById("gradeGroupField");
+      const streamField = document.getElementById("streamField");
+      const specialistField = document.getElementById("specialistField");
+      const classMapContainer = document.getElementById("classMapContainer");
+      const subjectChecklist = document.getElementById("subjectChecklist");
+      const classMapGrid = document.getElementById("classMapGrid");
+      const gradeGroupSelect = document.getElementById("gradeGroup");
 
-document.getElementById('fullName').addEventListener('input', function() {
-  validateInput(this, v => v.trim().length >= 3);
-});
-document.getElementById('workEmail').addEventListener('input', function() {
-  validateInput(this, v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(v));
-});
-document.getElementById('phone').addEventListener('input', function() {
-  validateInput(this, v => v.replace(/\D/g,'').length >= 7);
-});
-document.getElementById('institution').addEventListener('input', function() {
-  validateInput(this, v => v.trim().length >= 2);
-});
+      function updateTeachingMode() {
+        const mode = document.querySelector(
+          'input[name="teachMode"]:checked',
+        ).value;
+        const isTeachAll = mode === "teachAll";
+        gradeGroupField.style.display = isTeachAll ? "grid" : "none";
+        streamField.style.display =
+          isTeachAll && gradeGroupSelect.value === "11-12" ? "grid" : "none";
+        specialistField.style.display = isTeachAll ? "none" : "grid";
+        classMapContainer.style.display = "none";
+      }
 
+      document
+        .querySelectorAll('input[name="teachMode"]')
+        .forEach((r) => r.addEventListener("change", updateTeachingMode));
+      gradeGroupSelect.addEventListener("change", updateTeachingMode);
 
-/* ── 6. PASSWORD STRENGTH ──────────────────────────────── */
-const strengthBar = document.getElementById('strengthBar');
-const pill8       = document.getElementById('pill8');
-const pillUpper   = document.getElementById('pillUpper');
-const pillLower   = document.getElementById('pillLower');
-const pillSpec    = document.getElementById('pillSpecial');
-const COLORS = ['','#ef4444','#f59e0b','#22c55e','#0f2c5d'];
-
-document.getElementById('signupPassword').addEventListener('input', function() {
-  const v = this.value;
-  const c = {
-    len:     v.length >= 8,
-    upper:   /[A-Z]/.test(v),
-    lower:   /[a-z]/.test(v),
-    special: /[^A-Za-z0-9]/.test(v)
-  };
-  const score = Object.values(c).filter(Boolean).length;
-  strengthBar.style.width    = `${score * 25}%`;
-  strengthBar.style.background = COLORS[score] || '#ef4444';
-  pill8.classList.toggle('active',      c.len);
-  pillUpper.classList.toggle('active',  c.upper);
-  pillLower.classList.toggle('active',  c.lower);
-  pillSpec.classList.toggle('active',   c.special);
-});
-
-
-/* ── 7. TEACHING MODE LOGIC ────────────────────────────── */
-const SUBJECT_OPTIONS = [
-  'Mathematics','Science','Physics','Chemistry','Biology',
-  'English','Hindi','Social Science','Computer Science','History','Geography'
-];
-const STREAM_SUBJECTS = {
-  PCM:      ['Mathematics','Physics','Chemistry','English'],
-  PCB:      ['Biology','Chemistry','Physics','English'],
-  Commerce: ['Accountancy','Business Studies','Economics','English'],
-  Arts:     ['History','Geography','Political Science','English'],
-};
-
-const gradeGroupField    = document.getElementById('gradeGroupField');
-const streamField        = document.getElementById('streamField');
-const specialistField    = document.getElementById('specialistField');
-const classMapContainer  = document.getElementById('classMapContainer');
-const subjectChecklist   = document.getElementById('subjectChecklist');
-const classMapGrid       = document.getElementById('classMapGrid');
-const gradeGroupSelect   = document.getElementById('gradeGroup');
-
-function updateTeachingMode() {
-  const mode = document.querySelector('input[name="teachMode"]:checked').value;
-  const isTeachAll = mode === 'teachAll';
-  gradeGroupField.style.display  = isTeachAll ? 'grid' : 'none';
-  streamField.style.display      = (isTeachAll && gradeGroupSelect.value === '11-12') ? 'grid' : 'none';
-  specialistField.style.display  = isTeachAll ? 'none' : 'grid';
-  classMapContainer.style.display= 'none';
-}
-
-document.querySelectorAll('input[name="teachMode"]').forEach(r => r.addEventListener('change', updateTeachingMode));
-gradeGroupSelect.addEventListener('change', updateTeachingMode);
-
-// Build subject checklist
-subjectChecklist.innerHTML = SUBJECT_OPTIONS.map(s => `
+      // Build subject checklist
+      subjectChecklist.innerHTML = SUBJECT_OPTIONS.map(
+        (s) => `
   <label class="check-card">
     <input type="checkbox" value="${s}" /> ${s}
-  </label>`).join('');
+  </label>`,
+      ).join("");
 
-subjectChecklist.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-  cb.addEventListener('change', refreshClassMap);
-});
+      subjectChecklist
+        .querySelectorAll('input[type="checkbox"]')
+        .forEach((cb) => {
+          cb.addEventListener("change", refreshClassMap);
+        });
 
-function refreshClassMap() {
-  const selected = Array.from(subjectChecklist.querySelectorAll('input:checked')).map(i => i.value);
-  classMapContainer.style.display = selected.length ? 'grid' : 'none';
-  classMapGrid.innerHTML = selected.map(s => `
+      function refreshClassMap() {
+        const selected = Array.from(
+          subjectChecklist.querySelectorAll("input:checked"),
+        ).map((i) => i.value);
+        classMapContainer.style.display = selected.length ? "grid" : "none";
+        classMapGrid.innerHTML = selected
+          .map(
+            (s) => `
     <div class="class-map-row">
       <strong>${s}</strong>
       <div class="class-row">
-        ${[5,6,7,8,9,10,11,12].map(c => `
+        ${[5, 6, 7, 8, 9, 10, 11, 12]
+          .map(
+            (c) => `
           <label class="class-chip">
             <input type="checkbox" value="${c}" data-subject="${s}" /> ${c}
-          </label>`).join('')}
+          </label>`,
+          )
+          .join("")}
       </div>
-    </div>`).join('');
-}
+    </div>`,
+          )
+          .join("");
+      }
 
+      /* ── 8. FILE UPLOAD ────────────────────────────────────── */
+      const uploadBox = document.getElementById("uploadBox");
+      const fileInput = document.getElementById("fileInput");
+      const uploadName = document.getElementById("uploadName");
 
-/* ── 8. FILE UPLOAD ────────────────────────────────────── */
-const uploadBox  = document.getElementById('uploadBox');
-const fileInput  = document.getElementById('fileInput');
-const uploadName = document.getElementById('uploadName');
+      uploadBox.addEventListener("click", () => fileInput.click());
+      uploadBox.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") fileInput.click();
+      });
 
-uploadBox.addEventListener('click',  () => fileInput.click());
-uploadBox.addEventListener('keydown', e => { if (e.key === 'Enter') fileInput.click(); });
+      uploadBox.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        uploadBox.classList.add("dragover");
+      });
+      uploadBox.addEventListener("dragleave", () =>
+        uploadBox.classList.remove("dragover"),
+      );
+      uploadBox.addEventListener("drop", (e) => {
+        e.preventDefault();
+        uploadBox.classList.remove("dragover");
+        const file = e.dataTransfer.files[0];
+        if (file) {
+          fileInput.files = e.dataTransfer.files;
+          showFileName(file.name);
+        }
+      });
+      fileInput.addEventListener("change", () => {
+        if (fileInput.files[0]) showFileName(fileInput.files[0].name);
+      });
+      function showFileName(name) {
+        uploadName.textContent = `✓ ${name}`;
+        uploadName.style.display = "block";
+      }
 
-uploadBox.addEventListener('dragover',  e => { e.preventDefault(); uploadBox.classList.add('dragover'); });
-uploadBox.addEventListener('dragleave', () => uploadBox.classList.remove('dragover'));
-uploadBox.addEventListener('drop', e => {
-  e.preventDefault(); uploadBox.classList.remove('dragover');
-  const file = e.dataTransfer.files[0];
-  if (file) { fileInput.files = e.dataTransfer.files; showFileName(file.name); }
-});
-fileInput.addEventListener('change', () => {
-  if (fileInput.files[0]) showFileName(fileInput.files[0].name);
-});
-function showFileName(name) {
-  uploadName.textContent = `✓ ${name}`;
-  uploadName.style.display = 'block';
-}
+      /* ── 9. STAFF ID GENERATOR ─────────────────────────────── */
+      function generateStaffId() {
+        const used = JSON.parse(
+          localStorage.getItem("sl_used_staff_ids") || "[]",
+        );
+        let id;
+        do {
+          id = "TCH" + Math.floor(100000 + Math.random() * 900000);
+        } while (used.includes(id));
+        used.push(id);
+        localStorage.setItem("sl_used_staff_ids", JSON.stringify(used));
+        return id;
+      }
 
+      /* ── 10. GET ASSIGNMENT ────────────────────────────────── */
+      function getAssignment() {
+        const mode = document.querySelector(
+          'input[name="teachMode"]:checked',
+        ).value;
+        if (mode === "teachAll") {
+          const grade = gradeGroupSelect.value;
+          const stream =
+            grade === "11-12" ? document.getElementById("stream").value : null;
+          const classes = {
+            "5-6": ["5", "6"],
+            "7-8": ["7", "8"],
+            "9-10": ["9", "10"],
+            "11-12": ["11", "12"],
+          }[grade];
+          const subjects =
+            grade === "11-12"
+              ? STREAM_SUBJECTS[stream] || []
+              : [
+                  "Mathematics",
+                  "Science",
+                  "English",
+                  "Hindi",
+                  "Social Science",
+                  "Computer Science",
+                ];
+          return { mode, grade, stream, classes, subjects };
+        }
+        const subjects = Array.from(
+          subjectChecklist.querySelectorAll("input:checked"),
+        ).map((i) => i.value);
+        const classMap = {};
+        classMapGrid.querySelectorAll("input:checked").forEach((i) => {
+          classMap[i.dataset.subject] = classMap[i.dataset.subject] || [];
+          classMap[i.dataset.subject].push(i.value);
+        });
+        return { mode, subjects, classMap };
+      }
 
-/* ── 9. STAFF ID GENERATOR ─────────────────────────────── */
-function generateStaffId() {
-  const used = JSON.parse(localStorage.getItem('sl_used_staff_ids') || '[]');
-  let id;
-  do { id = 'TCH' + Math.floor(100000 + Math.random() * 900000); }
-  while (used.includes(id));
-  used.push(id);
-  localStorage.setItem('sl_used_staff_ids', JSON.stringify(used));
-  return id;
-}
+      function validateAssignment(a) {
+        if (a.mode === "teachAll") return true;
+        if (!a.subjects.length) {
+          setStatus(
+            "signupStatus",
+            "Please select at least one subject.",
+            "error",
+          );
+          return false;
+        }
+        for (const s of a.subjects) {
+          if (!a.classMap[s] || !a.classMap[s].length) {
+            setStatus(
+              "signupStatus",
+              `Please select at least one class for ${s}.`,
+              "error",
+            );
+            return false;
+          }
+        }
+        return true;
+      }
 
+      /* ── 11. LOGIN ─────────────────────────────────────────── */
+      const loginBtn = document.getElementById("loginBtn");
+      loginBtn.addEventListener("click", handleLogin);
+      document
+        .getElementById("loginPassword")
+        .addEventListener("keydown", (e) => {
+          if (e.key === "Enter") handleLogin();
+        });
 
-/* ── 10. GET ASSIGNMENT ────────────────────────────────── */
-function getAssignment() {
-  const mode = document.querySelector('input[name="teachMode"]:checked').value;
-  if (mode === 'teachAll') {
-    const grade  = gradeGroupSelect.value;
-    const stream = grade === '11-12' ? document.getElementById('stream').value : null;
-    const classes = { '5-6':['5','6'], '7-8':['7','8'], '9-10':['9','10'], '11-12':['11','12'] }[grade];
-    const subjects = grade === '11-12'
-      ? STREAM_SUBJECTS[stream] || []
-      : ['Mathematics','Science','English','Hindi','Social Science','Computer Science'];
-    return { mode, grade, stream, classes, subjects };
-  }
-  const subjects = Array.from(subjectChecklist.querySelectorAll('input:checked')).map(i => i.value);
-  const classMap = {};
-  classMapGrid.querySelectorAll('input:checked').forEach(i => {
-    classMap[i.dataset.subject] = classMap[i.dataset.subject] || [];
-    classMap[i.dataset.subject].push(i.value);
-  });
-  return { mode, subjects, classMap };
-}
+      async function handleLogin() {
+        clearStatus("loginStatus");
+        const email = document.getElementById("loginEmail").value.trim();
+        const password = document.getElementById("loginPassword").value;
 
-function validateAssignment(a) {
-  if (a.mode === 'teachAll') return true;
-  if (!a.subjects.length) { setStatus('signupStatus','Please select at least one subject.','error'); return false; }
-  for (const s of a.subjects) {
-    if (!a.classMap[s] || !a.classMap[s].length) {
-      setStatus('signupStatus', `Please select at least one class for ${s}.`, 'error'); return false;
-    }
-  }
-  return true;
-}
+        if (!email) {
+          setStatus("loginStatus", "Please enter your email.", "error");
+          return;
+        }
+        if (!password) {
+          setStatus("loginStatus", "Please enter your password.", "error");
+          return;
+        }
 
+        setLoading(loginBtn, true, "Sign In");
+        setStatus("loginStatus", "Signing in…", "info");
 
-/* ── 11. LOGIN ─────────────────────────────────────────── */
-const loginBtn = document.getElementById('loginBtn');
-loginBtn.addEventListener('click', handleLogin);
-document.getElementById('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+        await new Promise((r) => setTimeout(r, 1200)); // demo delay
 
-async function handleLogin() {
-  clearStatus('loginStatus');
-  const email    = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPassword').value;
+        // Demo: any email + password "demo" → login
+        // In production replace this block with Supabase signInWithPassword
+        const stored = JSON.parse(
+          localStorage.getItem("teacherProfile") || "{}",
+        );
+        if (
+          password === "demo" ||
+          (stored.email === email && stored._pw === password)
+        ) {
+          setStatus("loginStatus", "Login successful! Redirecting…", "success");
+          setTimeout(() => {
+            window.location.href = "teacher_dashboard.html";
+          }, 900);
+        } else {
+          setStatus(
+            "loginStatus",
+            'Invalid email or password. (Use password "demo" for preview.)',
+            "error",
+          );
+          setLoading(loginBtn, false, "Sign In");
+        }
+      }
 
-  if (!email)    { setStatus('loginStatus','Please enter your email.','error'); return; }
-  if (!password) { setStatus('loginStatus','Please enter your password.','error'); return; }
+      /* ── 12. FORGOT PASSWORD ───────────────────────────────── */
+      const forgotBtn = document.getElementById("forgotBtn");
+      forgotBtn.addEventListener("click", async () => {
+        const email = document.getElementById("loginEmail").value.trim();
+        if (!email) {
+          setStatus("loginStatus", "Enter your email above first.", "error");
+          return;
+        }
 
-  setLoading(loginBtn, true, 'Sign In');
-  setStatus('loginStatus','Signing in…','info');
+        forgotBtn.disabled = true;
+        forgotBtn.textContent = "Sending…";
+        clearStatus("loginStatus");
+        await new Promise((r) => setTimeout(r, 1000));
+        setStatus(
+          "loginStatus",
+          "Password reset link sent! Check your inbox.",
+          "success",
+        );
+        forgotBtn.disabled = false;
+        forgotBtn.textContent = "Forgot password?";
+      });
 
-  await new Promise(r => setTimeout(r, 1200)); // demo delay
+      /* ── 13. SOCIAL BUTTONS ────────────────────────────────── */
+      function socialMsg(id) {
+        setStatus(id, "Social login: connect Supabase to enable this.", "info");
+      }
+      document
+        .getElementById("googleLoginBtn")
+        .addEventListener("click", () => socialMsg("loginStatus"));
+      document
+        .getElementById("microsoftLoginBtn")
+        .addEventListener("click", () => socialMsg("loginStatus"));
+      document
+        .getElementById("googleSignupBtn")
+        .addEventListener("click", () => socialMsg("signupStatus"));
+      document
+        .getElementById("microsoftSignupBtn")
+        .addEventListener("click", () => socialMsg("signupStatus"));
 
-  // Demo: any email + password "demo" → login
-  // In production replace this block with Supabase signInWithPassword
-  const stored = JSON.parse(localStorage.getItem('teacherProfile') || '{}');
-  if (password === 'demo' || (stored.email === email && stored._pw === password)) {
-    setStatus('loginStatus','Login successful! Redirecting…','success');
-    setTimeout(() => { window.location.href = 'teacher_dashboard.html'; }, 900);
-  } else {
-    setStatus('loginStatus','Invalid email or password. (Use password "demo" for preview.)','error');
-    setLoading(loginBtn, false, 'Sign In');
-  }
-}
+      /* ── 14. CREATE ACCOUNT ────────────────────────────────── */
+      const createBtn = document.getElementById("createAccountBtn");
+      createBtn.addEventListener("click", handleCreateAccount);
 
+      async function handleCreateAccount() {
+        clearStatus("signupStatus");
 
-/* ── 12. FORGOT PASSWORD ───────────────────────────────── */
-const forgotBtn = document.getElementById('forgotBtn');
-forgotBtn.addEventListener('click', async () => {
-  const email = document.getElementById('loginEmail').value.trim();
-  if (!email) { setStatus('loginStatus','Enter your email above first.','error'); return; }
+        const fullName = document.getElementById("fullName").value.trim();
+        const email = document.getElementById("workEmail").value.trim();
+        const phone =
+          document.getElementById("countryPrefix").value +
+          " " +
+          document.getElementById("phone").value.trim();
+        const institution = document.getElementById("institution").value.trim();
+        const experience = document.getElementById("experience").value;
+        const password = document.getElementById("signupPassword").value;
+        const file = fileInput.files[0];
 
-  forgotBtn.disabled = true; forgotBtn.textContent = 'Sending…';
-  clearStatus('loginStatus');
-  await new Promise(r => setTimeout(r, 1000));
-  setStatus('loginStatus','Password reset link sent! Check your inbox.','success');
-  forgotBtn.disabled = false; forgotBtn.textContent = 'Forgot password?';
-});
+        // Validate
+        if (!fullName) {
+          setStatus("signupStatus", "Please enter your full name.", "error");
+          document.getElementById("fullName").focus();
+          return;
+        }
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(email)) {
+          setStatus(
+            "signupStatus",
+            "Please enter a valid work email.",
+            "error",
+          );
+          document.getElementById("workEmail").focus();
+          return;
+        }
+        if (
+          document.getElementById("phone").value.replace(/\D/, "").length < 7
+        ) {
+          setStatus(
+            "signupStatus",
+            "Please enter a valid phone number.",
+            "error",
+          );
+          return;
+        }
+        if (!institution) {
+          setStatus(
+            "signupStatus",
+            "Please enter your institution name.",
+            "error",
+          );
+          document.getElementById("institution").focus();
+          return;
+        }
+        if (!file) {
+          setStatus(
+            "signupStatus",
+            "Please upload your teaching certification.",
+            "error",
+          );
+          return;
+        }
 
+        const pwVal = password;
+        if (
+          pwVal.length < 8 ||
+          !/[A-Z]/.test(pwVal) ||
+          !/[a-z]/.test(pwVal) ||
+          !/[^A-Za-z0-9]/.test(pwVal)
+        ) {
+          setStatus(
+            "signupStatus",
+            "Password needs 8+ chars, uppercase, lowercase, and a special character.",
+            "error",
+          );
+          document.getElementById("signupPassword").focus();
+          return;
+        }
 
-/* ── 13. SOCIAL BUTTONS ────────────────────────────────── */
-function socialMsg(id) {
-  setStatus(id, 'Social login: connect Supabase to enable this.', 'info');
-}
-document.getElementById('googleLoginBtn').addEventListener('click',   () => socialMsg('loginStatus'));
-document.getElementById('microsoftLoginBtn').addEventListener('click', () => socialMsg('loginStatus'));
-document.getElementById('googleSignupBtn').addEventListener('click',   () => socialMsg('signupStatus'));
-document.getElementById('microsoftSignupBtn').addEventListener('click',() => socialMsg('signupStatus'));
+        const assignment = getAssignment();
+        if (!validateAssignment(assignment)) return;
 
+        setLoading(createBtn, true, "Create Account");
+        setStatus("signupStatus", "Creating your account…", "info");
 
-/* ── 14. CREATE ACCOUNT ────────────────────────────────── */
-const createBtn = document.getElementById('createAccountBtn');
-createBtn.addEventListener('click', handleCreateAccount);
+        await new Promise((r) => setTimeout(r, 1400)); // demo delay
 
-async function handleCreateAccount() {
-  clearStatus('signupStatus');
+        const staffId = generateStaffId();
+        document.getElementById("staffId").value = staffId;
 
-  const fullName   = document.getElementById('fullName').value.trim();
-  const email      = document.getElementById('workEmail').value.trim();
-  const phone      = document.getElementById('countryPrefix').value + ' ' + document.getElementById('phone').value.trim();
-  const institution= document.getElementById('institution').value.trim();
-  const experience = document.getElementById('experience').value;
-  const password   = document.getElementById('signupPassword').value;
-  const file       = fileInput.files[0];
+        const profile = {
+          fullName,
+          email,
+          phone,
+          institution,
+          experience: experience ? Number(experience) : null,
+          staffId,
+          certificationFile: file.name,
+          teachingAssignment: assignment,
+          _pw: password, // demo only — remove when Supabase is connected
+          createdAt: new Date().toISOString(),
+        };
 
-  // Validate
-  if (!fullName) { setStatus('signupStatus','Please enter your full name.','error'); document.getElementById('fullName').focus(); return; }
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(email)) { setStatus('signupStatus','Please enter a valid work email.','error'); document.getElementById('workEmail').focus(); return; }
-  if (document.getElementById('phone').value.replace(/\D/,'').length < 7) { setStatus('signupStatus','Please enter a valid phone number.','error'); return; }
-  if (!institution) { setStatus('signupStatus','Please enter your institution name.','error'); document.getElementById('institution').focus(); return; }
-  if (!file) { setStatus('signupStatus','Please upload your teaching certification.','error'); return; }
+        localStorage.setItem("teacherProfile", JSON.stringify(profile));
 
-  const pwVal = password;
-  if (pwVal.length < 8 || !/[A-Z]/.test(pwVal) || !/[a-z]/.test(pwVal) || !/[^A-Za-z0-9]/.test(pwVal)) {
-    setStatus('signupStatus','Password needs 8+ chars, uppercase, lowercase, and a special character.','error');
-    document.getElementById('signupPassword').focus(); return;
-  }
+        setStatus(
+          "signupStatus",
+          "Account created! Redirecting to your dashboard…",
+          "success",
+        );
 
-  const assignment = getAssignment();
-  if (!validateAssignment(assignment)) return;
+        setTimeout(() => {
+          window.location.href = "teacher_dashboard.html";
+        }, 1200);
+      }
 
-  setLoading(createBtn, true, 'Create Account');
-  setStatus('signupStatus','Creating your account…','info');
+      // Enter key on last field
+      document
+        .getElementById("signupPassword")
+        .addEventListener("keydown", (e) => {
+          if (e.key === "Enter") handleCreateAccount();
+        });
 
-  await new Promise(r => setTimeout(r, 1400)); // demo delay
-
-  const staffId = generateStaffId();
-  document.getElementById('staffId').value = staffId;
-
-  const profile = {
-    fullName, email, phone, institution,
-    experience: experience ? Number(experience) : null,
-    staffId,
-    certificationFile: file.name,
-    teachingAssignment: assignment,
-    _pw: password, // demo only — remove when Supabase is connected
-    createdAt: new Date().toISOString()
-  };
-
-  localStorage.setItem('teacherProfile', JSON.stringify(profile));
-
-  setStatus('signupStatus','Account created! Redirecting to your dashboard…','success');
-
-  setTimeout(() => {
-    window.location.href = 'teacher_dashboard.html';
-  }, 1200);
-}
-
-// Enter key on last field
-document.getElementById('signupPassword').addEventListener('keydown', e => {
-  if (e.key === 'Enter') handleCreateAccount();
-});
-
-// Init teaching mode panel
-updateTeachingMode();
-</script>
-</body>
+      // Init teaching mode panel
+      updateTeachingMode();
+    </script>
+  </body>
 </html>

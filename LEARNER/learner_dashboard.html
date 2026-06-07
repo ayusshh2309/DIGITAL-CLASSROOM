@@ -1,851 +1,1432 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Smart Learning DC — Learner Dashboard</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Learning DC — Learner Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Playfair+Display:wght@700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
-  <script>
-    (function () {
-      const t = localStorage.getItem('sl-theme') || 'light';
-      document.documentElement.setAttribute('data-theme', t);
-    })();
-  </script>
+    <script>
+      (function () {
+        const t = localStorage.getItem("sl-theme") || "light";
+        document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
 
-  <style>
-    /* ── TOKENS ─────────────────────────────────────────── */
-    :root {
-      --bg:       #f0f4fb;
-      --surface:  #ffffff;
-      --surf2:    #f5f8ff;
-      --surf3:    #edf2ff;
-      --text:     #0f172a;
-      --muted:    #64748b;
-      --border:   rgba(15,23,42,0.08);
-      --primary:  #6366f1;
-      --pri-soft: rgba(99,102,241,0.12);
-      --pri-glow: rgba(99,102,241,0.20);
-      --success:  #22c55e;
-      --warning:  #f59e0b;
-      --danger:   #ef4444;
-      --radius:   22px;
-      --shadow:   0 4px 24px rgba(15,23,42,0.08);
-      --shadow-lg:0 20px 60px rgba(15,23,42,0.10);
-      --font:     'DM Sans', sans-serif;
-      --font-d:   'Playfair Display', serif;
-      --nav-h:    72px;
-    }
-    [data-theme="dark"] {
-      --bg:       #07101f;
-      --surface:  #0d1a2e;
-      --surf2:    #111f35;
-      --surf3:    #162540;
-      --text:     #e2e8f0;
-      --muted:    #94a3b8;
-      --border:   rgba(148,163,184,0.12);
-      --primary:  #818cf8;
-      --pri-soft: rgba(129,140,248,0.14);
-      --pri-glow: rgba(129,140,248,0.22);
-      --success:  #4ade80;
-      --warning:  #fbbf24;
-      --danger:   #f87171;
-      --shadow:   0 4px 24px rgba(0,0,0,0.35);
-      --shadow-lg:0 20px 60px rgba(0,0,0,0.45);
-    }
+    <style>
+      /* ── TOKENS ─────────────────────────────────────────── */
+      :root {
+        --bg: #f0f4fb;
+        --surface: #ffffff;
+        --surf2: #f5f8ff;
+        --surf3: #edf2ff;
+        --text: #0f172a;
+        --muted: #64748b;
+        --border: rgba(15, 23, 42, 0.08);
+        --primary: #6366f1;
+        --pri-soft: rgba(99, 102, 241, 0.12);
+        --pri-glow: rgba(99, 102, 241, 0.2);
+        --success: #22c55e;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --radius: 22px;
+        --shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+        --shadow-lg: 0 20px 60px rgba(15, 23, 42, 0.1);
+        --font: "DM Sans", sans-serif;
+        --font-d: "Playfair Display", serif;
+        --nav-h: 72px;
+      }
+      [data-theme="dark"] {
+        --bg: #07101f;
+        --surface: #0d1a2e;
+        --surf2: #111f35;
+        --surf3: #162540;
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+        --border: rgba(148, 163, 184, 0.12);
+        --primary: #818cf8;
+        --pri-soft: rgba(129, 140, 248, 0.14);
+        --pri-glow: rgba(129, 140, 248, 0.22);
+        --success: #4ade80;
+        --warning: #fbbf24;
+        --danger: #f87171;
+        --shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+        --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.45);
+      }
 
-    /* ── RESET ──────────────────────────────────────────── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { font-size: 16px; scroll-behavior: smooth; }
-    body {
-      font-family: var(--font);
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      transition: background 200ms, color 200ms;
-    }
-    a { text-decoration: none; color: inherit; }
-    button { font-family: inherit; cursor: pointer; border: none; background: none; }
+      /* ── RESET ──────────────────────────────────────────── */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html {
+        font-size: 16px;
+        scroll-behavior: smooth;
+      }
+      body {
+        font-family: var(--font);
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        transition:
+          background 200ms,
+          color 200ms;
+      }
+      a {
+        text-decoration: none;
+        color: inherit;
+      }
+      button {
+        font-family: inherit;
+        cursor: pointer;
+        border: none;
+        background: none;
+      }
 
-    /* ── NAVBAR ─────────────────────────────────────────── */
-    .navbar {
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      height: var(--nav-h);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 0 28px;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      box-shadow: var(--shadow);
-    }
+      /* ── NAVBAR ─────────────────────────────────────────── */
+      .navbar {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        height: var(--nav-h);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 0 28px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        box-shadow: var(--shadow);
+      }
 
-    .nav-left  { display: flex; align-items: center; gap: 20px; }
-    .nav-right { display: flex; align-items: center; gap: 12px; }
+      .nav-left {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+      .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
 
-    .brand {
-      display: flex; align-items: center; gap: 10px;
-      font-weight: 700; font-size: 1.05rem; letter-spacing: -0.01em;
-    }
-    .brand-mark {
-      width: 34px; height: 34px; border-radius: 10px;
-      background: var(--primary); display: grid; place-items: center;
-    }
-    .brand-mark svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        font-size: 1.05rem;
+        letter-spacing: -0.01em;
+      }
+      .brand-mark {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        background: var(--primary);
+        display: grid;
+        place-items: center;
+      }
+      .brand-mark svg {
+        width: 18px;
+        height: 18px;
+        fill: none;
+        stroke: #fff;
+        stroke-width: 2;
+        stroke-linecap: round;
+      }
 
-    /* Notification bell */
-    .notif-wrap { position: relative; }
-    .btn-notif {
-      width: 40px; height: 40px; border-radius: 12px;
-      background: var(--surf2); border: 1px solid var(--border);
-      display: grid; place-items: center; font-size: 1.1rem;
-      transition: background 180ms;
-      position: relative;
-    }
-    .btn-notif:hover { background: var(--surf3); }
-    .notif-badge {
-      position: absolute; top: -4px; right: -4px;
-      min-width: 18px; height: 18px; border-radius: 999px;
-      background: var(--danger); color: #fff;
-      font-size: 0.7rem; font-weight: 700;
-      display: flex; align-items: center; justify-content: center;
-      padding: 0 4px;
-      display: none;
-    }
-    .notif-panel {
-      position: absolute; top: 52px; right: 0;
-      width: min(360px, calc(100vw - 32px));
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 18px; box-shadow: var(--shadow-lg);
-      display: none; overflow: hidden; z-index: 60;
-    }
-    .notif-panel.open { display: block; }
-    .notif-head {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 18px; border-bottom: 1px solid var(--border);
-      background: var(--surf2);
-    }
-    .notif-head strong { font-size: 0.9rem; }
-    .btn-clear {
-      font-size: 0.8rem; color: var(--primary); font-weight: 700;
-      padding: 4px 10px; border-radius: 8px;
-      transition: background 180ms;
-    }
-    .btn-clear:hover { background: var(--pri-soft); }
-    .notif-list { max-height: 300px; overflow-y: auto; }
-    .notif-item {
-      padding: 12px 18px; border-bottom: 1px solid var(--border);
-      cursor: pointer; transition: background 180ms;
-    }
-    .notif-item:hover { background: var(--surf2); }
-    .notif-item:last-child { border-bottom: none; }
-    .notif-item strong { display: block; font-size: 0.875rem; margin-bottom: 2px; }
-    .notif-item span   { color: var(--muted); font-size: 0.8rem; }
-    .notif-empty { padding: 20px 18px; color: var(--muted); font-size: 0.9rem; text-align: center; }
+      /* Notification bell */
+      .notif-wrap {
+        position: relative;
+      }
+      .btn-notif {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: var(--surf2);
+        border: 1px solid var(--border);
+        display: grid;
+        place-items: center;
+        font-size: 1.1rem;
+        transition: background 180ms;
+        position: relative;
+      }
+      .btn-notif:hover {
+        background: var(--surf3);
+      }
+      .notif-badge {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        min-width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        background: var(--danger);
+        color: #fff;
+        font-size: 0.7rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 4px;
+        display: none;
+      }
+      .notif-panel {
+        position: absolute;
+        top: 52px;
+        right: 0;
+        width: min(360px, calc(100vw - 32px));
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        box-shadow: var(--shadow-lg);
+        display: none;
+        overflow: hidden;
+        z-index: 60;
+      }
+      .notif-panel.open {
+        display: block;
+      }
+      .notif-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surf2);
+      }
+      .notif-head strong {
+        font-size: 0.9rem;
+      }
+      .btn-clear {
+        font-size: 0.8rem;
+        color: var(--primary);
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 8px;
+        transition: background 180ms;
+      }
+      .btn-clear:hover {
+        background: var(--pri-soft);
+      }
+      .notif-list {
+        max-height: 300px;
+        overflow-y: auto;
+      }
+      .notif-item {
+        padding: 12px 18px;
+        border-bottom: 1px solid var(--border);
+        cursor: pointer;
+        transition: background 180ms;
+      }
+      .notif-item:hover {
+        background: var(--surf2);
+      }
+      .notif-item:last-child {
+        border-bottom: none;
+      }
+      .notif-item strong {
+        display: block;
+        font-size: 0.875rem;
+        margin-bottom: 2px;
+      }
+      .notif-item span {
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+      .notif-empty {
+        padding: 20px 18px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        text-align: center;
+      }
 
-    /* Profile pill */
-    .profile-pill {
-      display: flex; align-items: center; gap: 10px;
-      padding: 6px 14px 6px 6px;
-      border-radius: 999px; border: 1px solid var(--border);
-      background: var(--surf2);
-    }
-    .avatar {
-      width: 38px; height: 38px; border-radius: 50%;
-      background: var(--primary); color: #fff;
-      display: grid; place-items: center;
-      font-weight: 700; font-size: 1rem;
-      flex-shrink: 0;
-    }
-    .profile-name  { font-weight: 700; font-size: 0.9rem; }
-    .profile-role  { color: var(--muted); font-size: 0.78rem; }
+      /* Profile pill */
+      .profile-pill {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 6px 14px 6px 6px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: var(--surf2);
+      }
+      .avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: var(--primary);
+        color: #fff;
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+        font-size: 1rem;
+        flex-shrink: 0;
+      }
+      .profile-name {
+        font-weight: 700;
+        font-size: 0.9rem;
+      }
+      .profile-role {
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
 
-    .btn-icon {
-      width: 38px; height: 38px; border-radius: 50%;
-      background: var(--surf2); border: 1px solid var(--border);
-      display: grid; place-items: center; font-size: 1rem;
-      transition: background 180ms, transform 200ms;
-    }
-    .btn-icon:hover { background: var(--surf3); }
-    #themeBtn:hover { transform: rotate(20deg); }
+      .btn-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: var(--surf2);
+        border: 1px solid var(--border);
+        display: grid;
+        place-items: center;
+        font-size: 1rem;
+        transition:
+          background 180ms,
+          transform 200ms;
+      }
+      .btn-icon:hover {
+        background: var(--surf3);
+      }
+      #themeBtn:hover {
+        transform: rotate(20deg);
+      }
 
-    .btn-logout {
-      padding: 8px 16px; border-radius: 999px;
-      font-size: 0.85rem; font-weight: 700;
-      color: var(--danger); border: 1px solid rgba(239,68,68,0.25);
-      background: rgba(239,68,68,0.07);
-      transition: background 180ms;
-    }
-    .btn-logout:hover { background: rgba(239,68,68,0.14); }
+      .btn-logout {
+        padding: 8px 16px;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--danger);
+        border: 1px solid rgba(239, 68, 68, 0.25);
+        background: rgba(239, 68, 68, 0.07);
+        transition: background 180ms;
+      }
+      .btn-logout:hover {
+        background: rgba(239, 68, 68, 0.14);
+      }
 
-    /* ── PAGE WRAPPER ───────────────────────────────────── */
-    .page {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 28px 24px 60px;
-      display: grid;
-      gap: 24px;
-    }
+      /* ── PAGE WRAPPER ───────────────────────────────────── */
+      .page {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 28px 24px 60px;
+        display: grid;
+        gap: 24px;
+      }
 
-    /* ── CARDS ──────────────────────────────────────────── */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 28px;
-    }
+      /* ── CARDS ──────────────────────────────────────────── */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 28px;
+      }
 
-    .card-title {
-      font-size: 0.75rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.08em;
-      color: var(--muted); margin-bottom: 6px;
-    }
-    .card-heading {
-      font-family: var(--font-d);
-      font-size: clamp(1.2rem, 1.8vw, 1.6rem);
-      font-weight: 800; line-height: 1.1;
-    }
+      .card-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+      .card-heading {
+        font-family: var(--font-d);
+        font-size: clamp(1.2rem, 1.8vw, 1.6rem);
+        font-weight: 800;
+        line-height: 1.1;
+      }
 
-    /* ── WELCOME CARD ───────────────────────────────────── */
-    .welcome-card {
-      background: linear-gradient(135deg, var(--pri-soft), transparent 60%), var(--surface);
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 24px;
-      align-items: start;
-    }
-    .welcome-card h1 {
-      font-family: var(--font-d);
-      font-size: clamp(1.4rem, 2.5vw, 2rem);
-      font-weight: 800; line-height: 1.1; margin: 6px 0 10px;
-    }
-    .welcome-card p { color: var(--muted); font-size: 0.93rem; line-height: 1.7; font-weight: 300; }
+      /* ── WELCOME CARD ───────────────────────────────────── */
+      .welcome-card {
+        background:
+          linear-gradient(135deg, var(--pri-soft), transparent 60%),
+          var(--surface);
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 24px;
+        align-items: start;
+      }
+      .welcome-card h1 {
+        font-family: var(--font-d);
+        font-size: clamp(1.4rem, 2.5vw, 2rem);
+        font-weight: 800;
+        line-height: 1.1;
+        margin: 6px 0 10px;
+      }
+      .welcome-card p {
+        color: var(--muted);
+        font-size: 0.93rem;
+        line-height: 1.7;
+        font-weight: 300;
+      }
 
-    .meta-chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
-    .chip {
-      display: inline-flex; align-items: center; gap: 7px;
-      padding: 8px 14px; border-radius: 999px;
-      background: var(--surf2); border: 1px solid var(--border);
-      font-size: 0.85rem; font-weight: 600;
-    }
-    .chip-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); }
+      .meta-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 18px;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: var(--surf2);
+        border: 1px solid var(--border);
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+      .chip-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--primary);
+      }
 
-    .clock-box {
-      background: var(--surf2); border: 1px solid var(--border);
-      border-radius: 18px; padding: 18px 22px;
-      text-align: right; min-width: 200px; flex-shrink: 0;
-    }
-    .clock-time { font-size: 1.8rem; font-weight: 700; letter-spacing: -0.02em; }
-    .clock-date { color: var(--muted); font-size: 0.83rem; margin-top: 4px; }
-    .clock-study { color: var(--primary); font-size: 0.82rem; font-weight: 600; margin-top: 6px; }
+      .clock-box {
+        background: var(--surf2);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 18px 22px;
+        text-align: right;
+        min-width: 200px;
+        flex-shrink: 0;
+      }
+      .clock-time {
+        font-size: 1.8rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      .clock-date {
+        color: var(--muted);
+        font-size: 0.83rem;
+        margin-top: 4px;
+      }
+      .clock-study {
+        color: var(--primary);
+        font-size: 0.82rem;
+        font-weight: 600;
+        margin-top: 6px;
+      }
 
-    /* ── STATS ROW ──────────────────────────────────────── */
-    .stats-row {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-    }
-    .stat-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 18px; padding: 20px;
-      box-shadow: var(--shadow);
-    }
-    .stat-label { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 8px; }
-    .stat-value { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.02em; }
-    .stat-sub   { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
-    .stat-card.s-primary .stat-value { color: var(--primary); }
-    .stat-card.s-success .stat-value { color: var(--success); }
-    .stat-card.s-warning .stat-value { color: var(--warning); }
-    .stat-card.s-danger  .stat-value { color: var(--danger); }
+      /* ── STATS ROW ──────────────────────────────────────── */
+      .stats-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+      }
+      .stat-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 20px;
+        box-shadow: var(--shadow);
+      }
+      .stat-label {
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      .stat-value {
+        font-size: 1.8rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+      .stat-sub {
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin-top: 4px;
+      }
+      .stat-card.s-primary .stat-value {
+        color: var(--primary);
+      }
+      .stat-card.s-success .stat-value {
+        color: var(--success);
+      }
+      .stat-card.s-warning .stat-value {
+        color: var(--warning);
+      }
+      .stat-card.s-danger .stat-value {
+        color: var(--danger);
+      }
 
-    /* ── MAIN GRID ──────────────────────────────────────── */
-    .main-grid {
-      display: grid;
-      grid-template-columns: 1fr 340px;
-      gap: 24px;
-      align-items: start;
-    }
+      /* ── MAIN GRID ──────────────────────────────────────── */
+      .main-grid {
+        display: grid;
+        grid-template-columns: 1fr 340px;
+        gap: 24px;
+        align-items: start;
+      }
 
-    /* ── SUBJECTS ───────────────────────────────────────── */
-    .subject-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 14px;
-      margin-top: 20px;
-    }
-    .subject-card {
-      background: var(--surf2); border: 1px solid var(--border);
-      border-radius: 18px; padding: 20px;
-      display: flex; flex-direction: column; gap: 14px;
-      transition: transform 180ms, box-shadow 180ms, border-color 180ms;
-    }
-    .subject-card:hover { transform: translateY(-2px); box-shadow: 0 12px 32px var(--pri-glow); border-color: var(--primary); }
-    .subj-icon {
-      width: 44px; height: 44px; border-radius: 13px;
-      background: var(--pri-soft); display: grid; place-items: center;
-      font-size: 1.3rem;
-    }
-    .subj-name { font-weight: 700; font-size: 0.97rem; }
-    .subj-desc { color: var(--muted); font-size: 0.82rem; line-height: 1.5; font-weight: 300; }
-    .subj-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
-    .subj-btn {
-      padding: 9px 6px; border-radius: 11px;
-      font-size: 0.78rem; font-weight: 700;
-      background: var(--surface); border: 1px solid var(--border);
-      color: var(--text);
-      transition: background 180ms, border-color 180ms, color 180ms, transform 120ms;
-      display: flex; align-items: center; justify-content: center; gap: 4px;
-    }
-    .subj-btn:hover { background: var(--primary); border-color: var(--primary); color: #fff; transform: translateY(-1px); }
-    .subj-progress { margin-top: 4px; }
-    .prog-bar { height: 5px; border-radius: 999px; background: var(--border); overflow: hidden; }
-    .prog-fill { height: 100%; border-radius: 999px; background: var(--primary); transition: width 600ms ease; }
-    .prog-label { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+      /* ── SUBJECTS ───────────────────────────────────────── */
+      .subject-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 14px;
+        margin-top: 20px;
+      }
+      .subject-card {
+        background: var(--surf2);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        transition:
+          transform 180ms,
+          box-shadow 180ms,
+          border-color 180ms;
+      }
+      .subject-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 32px var(--pri-glow);
+        border-color: var(--primary);
+      }
+      .subj-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 13px;
+        background: var(--pri-soft);
+        display: grid;
+        place-items: center;
+        font-size: 1.3rem;
+      }
+      .subj-name {
+        font-weight: 700;
+        font-size: 0.97rem;
+      }
+      .subj-desc {
+        color: var(--muted);
+        font-size: 0.82rem;
+        line-height: 1.5;
+        font-weight: 300;
+      }
+      .subj-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 7px;
+      }
+      .subj-btn {
+        padding: 9px 6px;
+        border-radius: 11px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        color: var(--text);
+        transition:
+          background 180ms,
+          border-color 180ms,
+          color 180ms,
+          transform 120ms;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+      }
+      .subj-btn:hover {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: #fff;
+        transform: translateY(-1px);
+      }
+      .subj-progress {
+        margin-top: 4px;
+      }
+      .prog-bar {
+        height: 5px;
+        border-radius: 999px;
+        background: var(--border);
+        overflow: hidden;
+      }
+      .prog-fill {
+        height: 100%;
+        border-radius: 999px;
+        background: var(--primary);
+        transition: width 600ms ease;
+      }
+      .prog-label {
+        font-size: 0.75rem;
+        color: var(--muted);
+        margin-top: 4px;
+      }
 
-    /* ── CHARTS GRID ────────────────────────────────────── */
-    .charts-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-      margin-top: 20px;
-    }
-    .chart-card {
-      background: var(--surf2); border: 1px solid var(--border);
-      border-radius: 18px; padding: 18px;
-    }
-    .chart-card .chart-title { font-size: 0.82rem; font-weight: 700; color: var(--muted); margin-bottom: 14px; }
-    .chart-wrap { position: relative; height: 200px; }
+      /* ── CHARTS GRID ────────────────────────────────────── */
+      .charts-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-top: 20px;
+      }
+      .chart-card {
+        background: var(--surf2);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 18px;
+      }
+      .chart-card .chart-title {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--muted);
+        margin-bottom: 14px;
+      }
+      .chart-wrap {
+        position: relative;
+        height: 200px;
+      }
 
-    /* ── RIGHT SIDEBAR ──────────────────────────────────── */
-    .sidebar { display: grid; gap: 18px; }
+      /* ── RIGHT SIDEBAR ──────────────────────────────────── */
+      .sidebar {
+        display: grid;
+        gap: 18px;
+      }
 
-    /* Tasks */
-    .task-list { display: grid; gap: 10px; margin-top: 16px; }
-    .task-row {
-      display: flex; align-items: center; gap: 12px;
-      padding: 13px 16px; border-radius: 14px;
-      background: var(--surf2); border: 1px solid var(--border);
-      transition: opacity 200ms;
-    }
-    .task-row.done { opacity: 0.55; }
-    .task-check {
-      width: 20px; height: 20px; border-radius: 6px;
-      border: 2px solid var(--border); cursor: pointer;
-      display: grid; place-items: center; flex-shrink: 0;
-      transition: background 180ms, border-color 180ms;
-    }
-    .task-row.done .task-check { background: var(--success); border-color: var(--success); }
-    .task-check-icon { color: #fff; font-size: 0.7rem; display: none; }
-    .task-row.done .task-check-icon { display: block; }
-    .task-text { flex: 1; font-size: 0.875rem; }
-    .task-row.done .task-text { text-decoration: line-through; color: var(--muted); }
+      /* Tasks */
+      .task-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 16px;
+      }
+      .task-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 13px 16px;
+        border-radius: 14px;
+        background: var(--surf2);
+        border: 1px solid var(--border);
+        transition: opacity 200ms;
+      }
+      .task-row.done {
+        opacity: 0.55;
+      }
+      .task-check {
+        width: 20px;
+        height: 20px;
+        border-radius: 6px;
+        border: 2px solid var(--border);
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        transition:
+          background 180ms,
+          border-color 180ms;
+      }
+      .task-row.done .task-check {
+        background: var(--success);
+        border-color: var(--success);
+      }
+      .task-check-icon {
+        color: #fff;
+        font-size: 0.7rem;
+        display: none;
+      }
+      .task-row.done .task-check-icon {
+        display: block;
+      }
+      .task-text {
+        flex: 1;
+        font-size: 0.875rem;
+      }
+      .task-row.done .task-text {
+        text-decoration: line-through;
+        color: var(--muted);
+      }
 
-    .goal-bar-wrap { margin-top: 14px; }
-    .goal-row { display: flex; justify-content: space-between; font-size: 0.83rem; color: var(--muted); margin-bottom: 6px; }
-    .goal-row strong { color: var(--text); }
+      .goal-bar-wrap {
+        margin-top: 14px;
+      }
+      .goal-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.83rem;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+      .goal-row strong {
+        color: var(--text);
+      }
 
-    /* Live class */
-    .live-card {
-      background: linear-gradient(135deg, var(--pri-soft), transparent 70%), var(--surf2);
-      border: 1px solid var(--border); border-radius: 18px;
-      padding: 20px; display: grid; gap: 14px;
-    }
-    .live-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 5px 12px; border-radius: 999px;
-      background: rgba(239,68,68,0.12); color: var(--danger);
-      font-size: 0.75rem; font-weight: 700; width: fit-content;
-    }
-    .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--danger); animation: pulse 1.4s ease infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    .live-title { font-weight: 700; font-size: 0.97rem; }
-    .live-sub   { color: var(--muted); font-size: 0.83rem; margin-top: 2px; }
-    .countdown  { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.01em; color: var(--primary); }
-    .btn-join {
-      width: 100%; padding: 12px; border-radius: 14px;
-      background: var(--primary); color: #fff;
-      font-size: 0.9rem; font-weight: 700;
-      box-shadow: 0 6px 20px var(--pri-glow);
-      transition: opacity 180ms, transform 150ms;
-    }
-    .btn-join:hover { opacity: 0.9; transform: translateY(-1px); }
+      /* Live class */
+      .live-card {
+        background:
+          linear-gradient(135deg, var(--pri-soft), transparent 70%),
+          var(--surf2);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 20px;
+        display: grid;
+        gap: 14px;
+      }
+      .live-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        border-radius: 999px;
+        background: rgba(239, 68, 68, 0.12);
+        color: var(--danger);
+        font-size: 0.75rem;
+        font-weight: 700;
+        width: fit-content;
+      }
+      .live-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--danger);
+        animation: pulse 1.4s ease infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+      .live-title {
+        font-weight: 700;
+        font-size: 0.97rem;
+      }
+      .live-sub {
+        color: var(--muted);
+        font-size: 0.83rem;
+        margin-top: 2px;
+      }
+      .countdown {
+        font-size: 1.5rem;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        color: var(--primary);
+      }
+      .btn-join {
+        width: 100%;
+        padding: 12px;
+        border-radius: 14px;
+        background: var(--primary);
+        color: #fff;
+        font-size: 0.9rem;
+        font-weight: 700;
+        box-shadow: 0 6px 20px var(--pri-glow);
+        transition:
+          opacity 180ms,
+          transform 150ms;
+      }
+      .btn-join:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+      }
 
-    /* Achievements */
-    .achievement-list { display: grid; gap: 10px; margin-top: 16px; }
-    .ach-row {
-      display: flex; align-items: center; gap: 12px;
-      padding: 13px 16px; border-radius: 14px;
-      background: var(--surf2); border: 1px solid var(--border);
-    }
-    .ach-icon {
-      width: 38px; height: 38px; border-radius: 11px;
-      background: var(--pri-soft); display: grid; place-items: center; font-size: 1.1rem;
-      flex-shrink: 0;
-    }
-    .ach-name  { font-size: 0.875rem; font-weight: 700; }
-    .ach-desc  { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
-    .ach-locked { opacity: 0.45; }
+      /* Achievements */
+      .achievement-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 16px;
+      }
+      .ach-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 13px 16px;
+        border-radius: 14px;
+        background: var(--surf2);
+        border: 1px solid var(--border);
+      }
+      .ach-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 11px;
+        background: var(--pri-soft);
+        display: grid;
+        place-items: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+      }
+      .ach-name {
+        font-size: 0.875rem;
+        font-weight: 700;
+      }
+      .ach-desc {
+        font-size: 0.78rem;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+      .ach-locked {
+        opacity: 0.45;
+      }
 
-    /* ── TOAST ──────────────────────────────────────────── */
-    .toast {
-      position: fixed; bottom: 24px; right: 24px;
-      padding: 13px 20px; border-radius: 14px;
-      background: var(--text); color: var(--surface);
-      font-size: 0.875rem; font-weight: 600;
-      box-shadow: var(--shadow-lg);
-      opacity: 0; transform: translateY(10px);
-      transition: opacity 200ms, transform 200ms;
-      z-index: 200; pointer-events: none;
-      max-width: 300px;
-    }
-    .toast.show { opacity: 1; transform: translateY(0); }
+      /* ── TOAST ──────────────────────────────────────────── */
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        padding: 13px 20px;
+        border-radius: 14px;
+        background: var(--text);
+        color: var(--surface);
+        font-size: 0.875rem;
+        font-weight: 600;
+        box-shadow: var(--shadow-lg);
+        opacity: 0;
+        transform: translateY(10px);
+        transition:
+          opacity 200ms,
+          transform 200ms;
+        z-index: 200;
+        pointer-events: none;
+        max-width: 300px;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
 
-    /* ── SECTION HEADER ─────────────────────────────────── */
-    .sec-head {
-      display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    }
+      /* ── SECTION HEADER ─────────────────────────────────── */
+      .sec-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
 
-    /* ── RESPONSIVE ─────────────────────────────────────── */
-    @media (max-width: 1100px) {
-      .main-grid { grid-template-columns: 1fr; }
-      .stats-row { grid-template-columns: repeat(2,1fr); }
-      .charts-grid { grid-template-columns: 1fr 1fr; }
-    }
-    @media (max-width: 760px) {
-      .navbar { padding: 0 16px; }
-      .page   { padding: 18px 14px 48px; }
-      .welcome-card { grid-template-columns: 1fr; }
-      .stats-row { grid-template-columns: 1fr 1fr; }
-      .charts-grid { grid-template-columns: 1fr; }
-      .subject-grid { grid-template-columns: 1fr 1fr; }
-      .nav-left .brand span:last-child { display: none; }
-    }
-    @media (max-width: 480px) {
-      .stats-row { grid-template-columns: 1fr; }
-      .subject-grid { grid-template-columns: 1fr; }
-      .profile-name, .profile-role { display: none; }
-    }
-  </style>
-</head>
+      /* ── RESPONSIVE ─────────────────────────────────────── */
+      @media (max-width: 1100px) {
+        .main-grid {
+          grid-template-columns: 1fr;
+        }
+        .stats-row {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .charts-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      @media (max-width: 760px) {
+        .navbar {
+          padding: 0 16px;
+        }
+        .page {
+          padding: 18px 14px 48px;
+        }
+        .welcome-card {
+          grid-template-columns: 1fr;
+        }
+        .stats-row {
+          grid-template-columns: 1fr 1fr;
+        }
+        .charts-grid {
+          grid-template-columns: 1fr;
+        }
+        .subject-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+        .nav-left .brand span:last-child {
+          display: none;
+        }
+      }
+      @media (max-width: 480px) {
+        .stats-row {
+          grid-template-columns: 1fr;
+        }
+        .subject-grid {
+          grid-template-columns: 1fr;
+        }
+        .profile-name,
+        .profile-role {
+          display: none;
+        }
+      }
+    </style>
+  </head>
 
-<body>
-
-<!-- ── NAVBAR ──────────────────────────────────────────── -->
-<nav class="navbar">
-  <div class="nav-left">
-    <a href="index.html" class="brand">
-      <div class="brand-mark">
-        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-      </div>
-      <span>Smart Learning DC</span>
-    </a>
-
-    <!-- Notifications -->
-    <div class="notif-wrap">
-      <button class="btn-notif" id="notifBtn" aria-label="Notifications">
-        🔔
-        <span class="notif-badge" id="notifBadge"></span>
-      </button>
-      <div class="notif-panel" id="notifPanel">
-        <div class="notif-head">
-          <strong>Notifications</strong>
-          <button class="btn-clear" id="clearNotif">Clear all</button>
-        </div>
-        <div class="notif-list" id="notifList">
-          <div class="notif-empty">No notifications yet.</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="nav-right">
-    <button class="btn-icon" id="themeBtn" aria-label="Toggle theme">🌙</button>
-
-    <div class="profile-pill">
-      <div class="avatar" id="avatarEl">A</div>
-      <div>
-        <div class="profile-name" id="profileNameEl">Learner</div>
-        <div class="profile-role">Student</div>
-      </div>
-    </div>
-
-    <button class="btn-logout" id="logoutBtn">Log out</button>
-  </div>
-</nav>
-
-<!-- ── PAGE ────────────────────────────────────────────── -->
-<div class="page">
-
-  <!-- WELCOME CARD -->
-  <div class="card welcome-card">
-    <div>
-      <div class="card-title">Welcome back</div>
-      <h1 id="greetingEl">Good morning 👋</h1>
-      <p>Here's your learning summary. Stay focused and keep hitting your daily targets.</p>
-      <div class="meta-chips">
-        <span class="chip"><span class="chip-dot"></span><span id="gradeChip">Grade —</span></span>
-        <span class="chip" id="streamChip" style="display:none;"><span class="chip-dot"></span><span id="streamLabel">—</span></span>
-        <span class="chip">🎓 Learner</span>
-      </div>
-    </div>
-    <div class="clock-box">
-      <div class="clock-time" id="clockTime">00:00:00</div>
-      <div class="clock-date" id="clockDate">—</div>
-      <div class="clock-study" id="studyTimeEl">Study today: 0m</div>
-    </div>
-  </div>
-
-  <!-- STATS ROW -->
-  <div class="stats-row">
-    <div class="stat-card s-primary">
-      <div class="stat-label">Quizzes taken</div>
-      <div class="stat-value" id="statQuizzes">0</div>
-      <div class="stat-sub">All time</div>
-    </div>
-    <div class="stat-card s-success">
-      <div class="stat-label">Videos watched</div>
-      <div class="stat-value" id="statVideos">0</div>
-      <div class="stat-sub">All time</div>
-    </div>
-    <div class="stat-card s-warning">
-      <div class="stat-label">Notes read</div>
-      <div class="stat-value" id="statNotes">0</div>
-      <div class="stat-sub">All time</div>
-    </div>
-    <div class="stat-card s-danger">
-      <div class="stat-label">Study time</div>
-      <div class="stat-value" id="statStudy">0m</div>
-      <div class="stat-sub">Today</div>
-    </div>
-  </div>
-
-  <!-- SUBJECTS -->
-  <div class="card">
-    <div class="sec-head">
-      <div>
-        <div class="card-title">Subjects</div>
-        <div class="card-heading">Your active subjects</div>
-      </div>
-    </div>
-    <div class="subject-grid" id="subjectGrid"></div>
-  </div>
-
-  <!-- ANALYTICS -->
-  <div class="card">
-    <div class="sec-head">
-      <div>
-        <div class="card-title">Analytics</div>
-        <div class="card-heading">Real performance insights</div>
-      </div>
-    </div>
-    <div class="charts-grid">
-      <div class="chart-card">
-        <div class="chart-title">Subject performance</div>
-        <div class="chart-wrap"><canvas id="chartSubject"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">Daily study time (mins)</div>
-        <div class="chart-wrap"><canvas id="chartStudy"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">Activity breakdown</div>
-        <div class="chart-wrap"><canvas id="chartActivity"></canvas></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- MAIN GRID: Left content + Right sidebar -->
-  <div class="main-grid">
-
-    <!-- LEFT: nothing extra needed here, sidebar is right -->
-    <div style="display:grid;gap:24px;">
-      <!-- Placeholder for future content like recent activity feed -->
-      <div class="card">
-        <div class="card-title">Recent Activity</div>
-        <div class="card-heading" style="margin-bottom:16px;">What you've been up to</div>
-        <div id="activityFeed" style="display:grid;gap:10px;">
-          <div style="color:var(--muted);font-size:0.9rem;">No activity yet. Start exploring subjects above!</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- RIGHT SIDEBAR -->
-    <div class="sidebar">
-
-      <!-- Daily Goals -->
-      <div class="card">
-        <div class="card-title">Daily goals</div>
-        <div class="card-heading">Today's checklist</div>
-        <div class="goal-bar-wrap">
-          <div class="goal-row">
-            <span>Progress</span>
-            <strong id="goalPct">0%</strong>
+  <body>
+    <!-- ── NAVBAR ──────────────────────────────────────────── -->
+    <nav class="navbar">
+      <div class="nav-left">
+        <a href="index.html" class="brand">
+          <div class="brand-mark">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M2 17l10 5 10-5" />
+              <path d="M2 12l10 5 10-5" />
+            </svg>
           </div>
-          <div class="prog-bar"><div class="prog-fill" id="goalFill" style="width:0%"></div></div>
+          <span>Smart Learning DC</span>
+        </a>
+
+        <!-- Notifications -->
+        <div class="notif-wrap">
+          <button class="btn-notif" id="notifBtn" aria-label="Notifications">
+            🔔
+            <span class="notif-badge" id="notifBadge"></span>
+          </button>
+          <div class="notif-panel" id="notifPanel">
+            <div class="notif-head">
+              <strong>Notifications</strong>
+              <button class="btn-clear" id="clearNotif">Clear all</button>
+            </div>
+            <div class="notif-list" id="notifList">
+              <div class="notif-empty">No notifications yet.</div>
+            </div>
+          </div>
         </div>
-        <div class="task-list" id="taskList"></div>
       </div>
 
-      <!-- Live Class -->
-      <div class="live-card">
-        <div class="live-badge"><span class="live-dot"></span>Live soon</div>
+      <div class="nav-right">
+        <button class="btn-icon" id="themeBtn" aria-label="Toggle theme">
+          🌙
+        </button>
+
+        <div class="profile-pill">
+          <div class="avatar" id="avatarEl">A</div>
+          <div>
+            <div class="profile-name" id="profileNameEl">Learner</div>
+            <div class="profile-role">Student</div>
+          </div>
+        </div>
+
+        <button class="btn-logout" id="logoutBtn">Log out</button>
+      </div>
+    </nav>
+
+    <!-- ── PAGE ────────────────────────────────────────────── -->
+    <div class="page">
+      <!-- WELCOME CARD -->
+      <div class="card welcome-card">
         <div>
-          <div class="live-title">Geometry Practice</div>
-          <div class="live-sub">with Ms. Sharma</div>
+          <div class="card-title">Welcome back</div>
+          <h1 id="greetingEl">Good morning 👋</h1>
+          <p>
+            Here's your learning summary. Stay focused and keep hitting your
+            daily targets.
+          </p>
+          <div class="meta-chips">
+            <span class="chip"
+              ><span class="chip-dot"></span
+              ><span id="gradeChip">Grade —</span></span
+            >
+            <span class="chip" id="streamChip" style="display: none"
+              ><span class="chip-dot"></span
+              ><span id="streamLabel">—</span></span
+            >
+            <span class="chip">🎓 Learner</span>
+          </div>
         </div>
-        <div class="countdown" id="countdownEl">00:34:00</div>
-        <button class="btn-join" onclick="showToast('Joining class… feature coming soon!')">Join Class</button>
+        <div class="clock-box">
+          <div class="clock-time" id="clockTime">00:00:00</div>
+          <div class="clock-date" id="clockDate">—</div>
+          <div class="clock-study" id="studyTimeEl">Study today: 0m</div>
+        </div>
       </div>
 
-      <!-- Achievements -->
+      <!-- STATS ROW -->
+      <div class="stats-row">
+        <div class="stat-card s-primary">
+          <div class="stat-label">Quizzes taken</div>
+          <div class="stat-value" id="statQuizzes">0</div>
+          <div class="stat-sub">All time</div>
+        </div>
+        <div class="stat-card s-success">
+          <div class="stat-label">Videos watched</div>
+          <div class="stat-value" id="statVideos">0</div>
+          <div class="stat-sub">All time</div>
+        </div>
+        <div class="stat-card s-warning">
+          <div class="stat-label">Notes read</div>
+          <div class="stat-value" id="statNotes">0</div>
+          <div class="stat-sub">All time</div>
+        </div>
+        <div class="stat-card s-danger">
+          <div class="stat-label">Study time</div>
+          <div class="stat-value" id="statStudy">0m</div>
+          <div class="stat-sub">Today</div>
+        </div>
+      </div>
+
+      <!-- SUBJECTS -->
       <div class="card">
-        <div class="card-title">Achievements</div>
-        <div class="card-heading">Badges & milestones</div>
-        <div class="achievement-list" id="achievementList"></div>
+        <div class="sec-head">
+          <div>
+            <div class="card-title">Subjects</div>
+            <div class="card-heading">Your active subjects</div>
+          </div>
+        </div>
+        <div class="subject-grid" id="subjectGrid"></div>
       </div>
 
+      <!-- ANALYTICS -->
+      <div class="card">
+        <div class="sec-head">
+          <div>
+            <div class="card-title">Analytics</div>
+            <div class="card-heading">Real performance insights</div>
+          </div>
+        </div>
+        <div class="charts-grid">
+          <div class="chart-card">
+            <div class="chart-title">Subject performance</div>
+            <div class="chart-wrap"><canvas id="chartSubject"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Daily study time (mins)</div>
+            <div class="chart-wrap"><canvas id="chartStudy"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Activity breakdown</div>
+            <div class="chart-wrap"><canvas id="chartActivity"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN GRID: Left content + Right sidebar -->
+      <div class="main-grid">
+        <!-- LEFT: nothing extra needed here, sidebar is right -->
+        <div style="display: grid; gap: 24px">
+          <!-- Placeholder for future content like recent activity feed -->
+          <div class="card">
+            <div class="card-title">Recent Activity</div>
+            <div class="card-heading" style="margin-bottom: 16px">
+              What you've been up to
+            </div>
+            <div id="activityFeed" style="display: grid; gap: 10px">
+              <div style="color: var(--muted); font-size: 0.9rem">
+                No activity yet. Start exploring subjects above!
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT SIDEBAR -->
+        <div class="sidebar">
+          <!-- Daily Goals -->
+          <div class="card">
+            <div class="card-title">Daily goals</div>
+            <div class="card-heading">Today's checklist</div>
+            <div class="goal-bar-wrap">
+              <div class="goal-row">
+                <span>Progress</span>
+                <strong id="goalPct">0%</strong>
+              </div>
+              <div class="prog-bar">
+                <div class="prog-fill" id="goalFill" style="width: 0%"></div>
+              </div>
+            </div>
+            <div class="task-list" id="taskList"></div>
+          </div>
+
+          <!-- Live Class -->
+          <div class="live-card">
+            <div class="live-badge">
+              <span class="live-dot"></span>Live soon
+            </div>
+            <div>
+              <div class="live-title">Geometry Practice</div>
+              <div class="live-sub">with Ms. Sharma</div>
+            </div>
+            <div class="countdown" id="countdownEl">00:34:00</div>
+            <button
+              class="btn-join"
+              onclick="showToast('Joining class… feature coming soon!')"
+            >
+              Join Class
+            </button>
+          </div>
+
+          <!-- Achievements -->
+          <div class="card">
+            <div class="card-title">Achievements</div>
+            <div class="card-heading">Badges & milestones</div>
+            <div class="achievement-list" id="achievementList"></div>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
 
-</div>
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
 
-<!-- TOAST -->
-<div class="toast" id="toast"></div>
-
-<script>
-/* ═══════════════════════════════════════════════════════════
+    <script>
+      /* ═══════════════════════════════════════════════════════════
    SMART LEARNING DC — learner_dashboard.html
    100% localStorage-based. No Supabase. Fully dynamic.
    ═══════════════════════════════════════════════════════════ */
 
-/* ── 1. SUBJECT DATA BY GRADE ──────────────────────────── */
-const SUBJECTS = {
-  '5':  [{n:'Mathematics',i:'➗'},{n:'English',i:'📖'},{n:'Science',i:'🔬'},{n:'Social Studies',i:'🌍'},{n:'Hindi',i:'🅱️'},{n:'Computer',i:'💻'}],
-  '6':  [{n:'Mathematics',i:'➗'},{n:'English',i:'📖'},{n:'Science',i:'🔬'},{n:'Social Studies',i:'🌍'},{n:'Hindi',i:'🅱️'},{n:'Computer',i:'💻'}],
-  '7':  [{n:'Mathematics',i:'➗'},{n:'English',i:'📖'},{n:'Science',i:'🔬'},{n:'Social Studies',i:'🌍'},{n:'Hindi',i:'🅱️'},{n:'Sanskrit',i:'📜'}],
-  '8':  [{n:'Mathematics',i:'➗'},{n:'English',i:'📖'},{n:'Science',i:'🔬'},{n:'Social Studies',i:'🌍'},{n:'Hindi',i:'🅱️'},{n:'Sanskrit',i:'📜'}],
-  '9':  [{n:'Mathematics',i:'➗'},{n:'English',i:'📖'},{n:'Science',i:'🔬'},{n:'Social Science',i:'🌍'},{n:'Hindi',i:'🅱️'},{n:'IT',i:'💻'}],
-  '10': [{n:'Mathematics',i:'➗'},{n:'English',i:'📖'},{n:'Science',i:'🔬'},{n:'Social Science',i:'🌍'},{n:'Hindi',i:'🅱️'},{n:'IT',i:'💻'}],
-  'PCM':      [{n:'Physics',i:'⚡'},{n:'Chemistry',i:'⚗️'},{n:'Mathematics',i:'➗'},{n:'English',i:'📖'},{n:'Physical Ed.',i:'🏃'}],
-  'PCB':      [{n:'Physics',i:'⚡'},{n:'Chemistry',i:'⚗️'},{n:'Biology',i:'🧬'},{n:'English',i:'📖'},{n:'Physical Ed.',i:'🏃'}],
-  'Commerce': [{n:'Accountancy',i:'📊'},{n:'Business Studies',i:'💼'},{n:'Economics',i:'📈'},{n:'English',i:'📖'},{n:'Mathematics',i:'➗'}],
-  'Humanities':[{n:'History',i:'🏛️'},{n:'Geography',i:'🗺️'},{n:'Political Science',i:'⚖️'},{n:'English',i:'📖'},{n:'Sociology',i:'👥'}],
-};
+      /* ── 1. SUBJECT DATA BY GRADE ──────────────────────────── */
+      const SUBJECTS = {
+        5: [
+          { n: "Mathematics", i: "➗" },
+          { n: "English", i: "📖" },
+          { n: "Science", i: "🔬" },
+          { n: "Social Studies", i: "🌍" },
+          { n: "Hindi", i: "🅱️" },
+          { n: "Computer", i: "💻" },
+        ],
+        6: [
+          { n: "Mathematics", i: "➗" },
+          { n: "English", i: "📖" },
+          { n: "Science", i: "🔬" },
+          { n: "Social Studies", i: "🌍" },
+          { n: "Hindi", i: "🅱️" },
+          { n: "Computer", i: "💻" },
+        ],
+        7: [
+          { n: "Mathematics", i: "➗" },
+          { n: "English", i: "📖" },
+          { n: "Science", i: "🔬" },
+          { n: "Social Studies", i: "🌍" },
+          { n: "Hindi", i: "🅱️" },
+          { n: "Sanskrit", i: "📜" },
+        ],
+        8: [
+          { n: "Mathematics", i: "➗" },
+          { n: "English", i: "📖" },
+          { n: "Science", i: "🔬" },
+          { n: "Social Studies", i: "🌍" },
+          { n: "Hindi", i: "🅱️" },
+          { n: "Sanskrit", i: "📜" },
+        ],
+        9: [
+          { n: "Mathematics", i: "➗" },
+          { n: "English", i: "📖" },
+          { n: "Science", i: "🔬" },
+          { n: "Social Science", i: "🌍" },
+          { n: "Hindi", i: "🅱️" },
+          { n: "IT", i: "💻" },
+        ],
+        10: [
+          { n: "Mathematics", i: "➗" },
+          { n: "English", i: "📖" },
+          { n: "Science", i: "🔬" },
+          { n: "Social Science", i: "🌍" },
+          { n: "Hindi", i: "🅱️" },
+          { n: "IT", i: "💻" },
+        ],
+        PCM: [
+          { n: "Physics", i: "⚡" },
+          { n: "Chemistry", i: "⚗️" },
+          { n: "Mathematics", i: "➗" },
+          { n: "English", i: "📖" },
+          { n: "Physical Ed.", i: "🏃" },
+        ],
+        PCB: [
+          { n: "Physics", i: "⚡" },
+          { n: "Chemistry", i: "⚗️" },
+          { n: "Biology", i: "🧬" },
+          { n: "English", i: "📖" },
+          { n: "Physical Ed.", i: "🏃" },
+        ],
+        Commerce: [
+          { n: "Accountancy", i: "📊" },
+          { n: "Business Studies", i: "💼" },
+          { n: "Economics", i: "📈" },
+          { n: "English", i: "📖" },
+          { n: "Mathematics", i: "➗" },
+        ],
+        Humanities: [
+          { n: "History", i: "🏛️" },
+          { n: "Geography", i: "🗺️" },
+          { n: "Political Science", i: "⚖️" },
+          { n: "English", i: "📖" },
+          { n: "Sociology", i: "👥" },
+        ],
+      };
 
-function getSubjects(grade, stream) {
-  const g = String(grade);
-  if (g === '11' || g === '12') return SUBJECTS[stream] || SUBJECTS['PCM'];
-  return SUBJECTS[g] || SUBJECTS['10'];
-}
+      function getSubjects(grade, stream) {
+        const g = String(grade);
+        if (g === "11" || g === "12")
+          return SUBJECTS[stream] || SUBJECTS["PCM"];
+        return SUBJECTS[g] || SUBJECTS["10"];
+      }
 
+      /* ── 2. STORAGE HELPERS ────────────────────────────────── */
+      const STORE_KEY = "sl_analytics";
+      const PROFILE_KEY = "learnerProfile";
+      const TASKS_KEY = "sl_tasks";
 
-/* ── 2. STORAGE HELPERS ────────────────────────────────── */
-const STORE_KEY    = 'sl_analytics';
-const PROFILE_KEY  = 'learnerProfile';
-const TASKS_KEY    = 'sl_tasks';
+      function loadData() {
+        try {
+          return JSON.parse(localStorage.getItem(STORE_KEY) || "{}");
+        } catch {
+          return {};
+        }
+      }
+      function saveData(d) {
+        localStorage.setItem(STORE_KEY, JSON.stringify(d));
+      }
 
-function loadData() {
-  try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch { return {}; }
-}
-function saveData(d) { localStorage.setItem(STORE_KEY, JSON.stringify(d)); }
+      function getData() {
+        const d = loadData();
+        d.subjects = d.subjects || {};
+        d.dailyStudy = d.dailyStudy || {};
+        d.totals = d.totals || { videos: 0, notes: 0, images: 0, quizzes: 0 };
+        d.activity = d.activity || [];
+        d.notifications = d.notifications || [];
+        return d;
+      }
 
-function getData() {
-  const d = loadData();
-  d.subjects     = d.subjects     || {};
-  d.dailyStudy   = d.dailyStudy   || {};
-  d.totals       = d.totals       || { videos:0, notes:0, images:0, quizzes:0 };
-  d.activity     = d.activity     || [];
-  d.notifications= d.notifications|| [];
-  return d;
-}
+      function getProfile() {
+        try {
+          return JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}");
+        } catch {
+          return {};
+        }
+      }
 
-function getProfile() {
-  try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}'); } catch { return {}; }
-}
+      function todayKey() {
+        return new Date().toISOString().split("T")[0];
+      }
 
-function todayKey() { return new Date().toISOString().split('T')[0]; }
+      function fmtTime(secs) {
+        const m = Math.floor(secs / 60),
+          h = Math.floor(m / 60);
+        return h > 0 ? `${h}h ${m % 60}m` : `${m}m`;
+      }
 
-function fmtTime(secs) {
-  const m = Math.floor(secs / 60), h = Math.floor(m / 60);
-  return h > 0 ? `${h}h ${m % 60}m` : `${m}m`;
-}
+      /* ── 3. TRACK ACTION (called when learner clicks subject btns) */
+      function trackAction(subject, action) {
+        const d = getData();
+        d.subjects[subject] = d.subjects[subject] || {
+          videos: 0,
+          notes: 0,
+          images: 0,
+          quizzes: 0,
+          studySecs: 0,
+        };
+        d.subjects[subject][action] = (d.subjects[subject][action] || 0) + 1;
+        d.totals[action] = (d.totals[action] || 0) + 1;
 
+        // Activity feed entry
+        const labels = {
+          videos: "watched a video",
+          notes: "read notes",
+          images: "viewed images",
+          quizzes: "took a quiz",
+        };
+        d.activity.unshift({
+          subject,
+          action,
+          label: labels[action] || action,
+          ts: new Date().toISOString(),
+        });
+        if (d.activity.length > 30) d.activity.length = 30;
 
-/* ── 3. TRACK ACTION (called when learner clicks subject btns) */
-function trackAction(subject, action) {
-  const d = getData();
-  d.subjects[subject] = d.subjects[subject] || { videos:0, notes:0, images:0, quizzes:0, studySecs:0 };
-  d.subjects[subject][action] = (d.subjects[subject][action] || 0) + 1;
-  d.totals[action] = (d.totals[action] || 0) + 1;
+        // Notification
+        const msgs = {
+          videos: `📹 Video viewed in ${subject}`,
+          notes: `📝 Notes read for ${subject}`,
+          images: `🖼️ Images explored in ${subject}`,
+          quizzes: `✅ Quiz completed in ${subject}`,
+        };
+        addNotification(msgs[action] || `Activity in ${subject}`);
 
-  // Activity feed entry
-  const labels = { videos:'watched a video', notes:'read notes', images:'viewed images', quizzes:'took a quiz' };
-  d.activity.unshift({ subject, action, label: labels[action] || action, ts: new Date().toISOString() });
-  if (d.activity.length > 30) d.activity.length = 30;
+        saveData(d);
+        refreshAll();
+        showToast(`Logged: ${labels[action]} in ${subject}`);
+      }
 
-  // Notification
-  const msgs = { videos:`📹 Video viewed in ${subject}`, notes:`📝 Notes read for ${subject}`, images:`🖼️ Images explored in ${subject}`, quizzes:`✅ Quiz completed in ${subject}` };
-  addNotification(msgs[action] || `Activity in ${subject}`);
+      function addNotification(msg) {
+        const d = getData();
+        d.notifications.unshift({
+          msg,
+          ts: new Date().toISOString(),
+          id: Date.now(),
+        });
+        if (d.notifications.length > 20) d.notifications.length = 20;
+        saveData(d);
+        renderNotifications();
+      }
 
-  saveData(d);
-  refreshAll();
-  showToast(`Logged: ${labels[action]} in ${subject}`);
-}
+      /* ── 4. SUBJECT SCORE (0-100 based on real activity) ─────── */
+      function subjectScore(name) {
+        const d = getData();
+        const s = d.subjects[name] || {};
+        return Math.min(
+          100,
+          Math.round(
+            (s.videos || 0) * 20 +
+              (s.notes || 0) * 16 +
+              (s.images || 0) * 10 +
+              (s.quizzes || 0) * 30,
+          ),
+        );
+      }
 
-function addNotification(msg) {
-  const d = getData();
-  d.notifications.unshift({ msg, ts: new Date().toISOString(), id: Date.now() });
-  if (d.notifications.length > 20) d.notifications.length = 20;
-  saveData(d);
-  renderNotifications();
-}
+      /* ── 5. THEME ──────────────────────────────────────────── */
+      const themeBtn = document.getElementById("themeBtn");
 
+      function getTheme() {
+        return localStorage.getItem("sl-theme") || "light";
+      }
+      function applyTheme(t) {
+        document.documentElement.setAttribute("data-theme", t);
+        themeBtn.textContent = t === "dark" ? "☀️" : "🌙";
+        localStorage.setItem("sl-theme", t);
+        if (chartSubject) updateChartTheme();
+      }
+      themeBtn.addEventListener("click", () =>
+        applyTheme(getTheme() === "dark" ? "light" : "dark"),
+      );
 
-/* ── 4. SUBJECT SCORE (0-100 based on real activity) ─────── */
-function subjectScore(name) {
-  const d = getData();
-  const s = d.subjects[name] || {};
-  return Math.min(100, Math.round(
-    (s.videos  || 0) * 20 +
-    (s.notes   || 0) * 16 +
-    (s.images  || 0) * 10 +
-    (s.quizzes || 0) * 30
-  ));
-}
+      /* ── 6. CLOCK ──────────────────────────────────────────── */
+      const clockTimeEl = document.getElementById("clockTime");
+      const clockDateEl = document.getElementById("clockDate");
 
+      function updateClock() {
+        const now = new Date();
+        clockTimeEl.textContent = now.toLocaleTimeString([], { hour12: false });
+        clockDateEl.textContent = now.toLocaleDateString([], {
+          weekday: "long",
+          month: "short",
+          day: "numeric",
+        });
+      }
+      setInterval(updateClock, 1000);
+      updateClock();
 
-/* ── 5. THEME ──────────────────────────────────────────── */
-const themeBtn = document.getElementById('themeBtn');
+      /* ── 7. STUDY TIMER (counts real seconds on this page) ──── */
+      const studyTimeEl = document.getElementById("studyTimeEl");
+      const statStudyEl = document.getElementById("statStudy");
 
-function getTheme() { return localStorage.getItem('sl-theme') || 'light'; }
-function applyTheme(t) {
-  document.documentElement.setAttribute('data-theme', t);
-  themeBtn.textContent = t === 'dark' ? '☀️' : '🌙';
-  localStorage.setItem('sl-theme', t);
-  if (chartSubject) updateChartTheme();
-}
-themeBtn.addEventListener('click', () => applyTheme(getTheme() === 'dark' ? 'light' : 'dark'));
+      setInterval(() => {
+        if (document.visibilityState !== "visible") return;
+        const d = getData();
+        const key = todayKey();
+        d.dailyStudy[key] = (d.dailyStudy[key] || 0) + 1;
+        saveData(d);
+        const secs = d.dailyStudy[key];
+        const label = fmtTime(secs);
+        studyTimeEl.textContent = `Study today: ${label}`;
+        statStudyEl.textContent = label;
+        if (chartStudy) updateStudyChart();
+      }, 1000);
 
+      /* ── 8. PROFILE ────────────────────────────────────────── */
+      function loadProfile() {
+        const p = getProfile();
+        const name = (p.fullName || p.fullname || "Learner").trim();
+        const grade = String(p.grade || "10");
+        const stream = p.stream || null;
 
-/* ── 6. CLOCK ──────────────────────────────────────────── */
-const clockTimeEl = document.getElementById('clockTime');
-const clockDateEl = document.getElementById('clockDate');
+        document.getElementById("profileNameEl").textContent = name;
+        document.getElementById("avatarEl").textContent = name
+          .charAt(0)
+          .toUpperCase();
 
-function updateClock() {
-  const now = new Date();
-  clockTimeEl.textContent = now.toLocaleTimeString([], { hour12: false });
-  clockDateEl.textContent = now.toLocaleDateString([], { weekday:'long', month:'short', day:'numeric' });
-}
-setInterval(updateClock, 1000);
-updateClock();
+        const hour = new Date().getHours();
+        const greet =
+          hour < 12
+            ? "Good morning"
+            : hour < 17
+              ? "Good afternoon"
+              : "Good evening";
+        document.getElementById("greetingEl").textContent =
+          `${greet}, ${name.split(" ")[0]} 👋`;
 
+        document.getElementById("gradeChip").textContent = `Grade ${grade}`;
+        const streamChip = document.getElementById("streamChip");
+        if ((grade === "11" || grade === "12") && stream) {
+          streamChip.style.display = "inline-flex";
+          document.getElementById("streamLabel").textContent = stream;
+        }
 
-/* ── 7. STUDY TIMER (counts real seconds on this page) ──── */
-const studyTimeEl = document.getElementById('studyTimeEl');
-const statStudyEl = document.getElementById('statStudy');
+        return { name, grade, stream };
+      }
 
-setInterval(() => {
-  if (document.visibilityState !== 'visible') return;
-  const d = getData();
-  const key = todayKey();
-  d.dailyStudy[key] = (d.dailyStudy[key] || 0) + 1;
-  saveData(d);
-  const secs = d.dailyStudy[key];
-  const label = fmtTime(secs);
-  studyTimeEl.textContent = `Study today: ${label}`;
-  statStudyEl.textContent = label;
-  if (chartStudy) updateStudyChart();
-}, 1000);
-
-
-/* ── 8. PROFILE ────────────────────────────────────────── */
-function loadProfile() {
-  const p = getProfile();
-  const name = (p.fullName || p.fullname || 'Learner').trim();
-  const grade = String(p.grade || '10');
-  const stream = p.stream || null;
-
-  document.getElementById('profileNameEl').textContent = name;
-  document.getElementById('avatarEl').textContent = name.charAt(0).toUpperCase();
-
-  const hour = new Date().getHours();
-  const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-  document.getElementById('greetingEl').textContent = `${greet}, ${name.split(' ')[0]} 👋`;
-
-  document.getElementById('gradeChip').textContent  = `Grade ${grade}`;
-  const streamChip = document.getElementById('streamChip');
-  if ((grade === '11' || grade === '12') && stream) {
-    streamChip.style.display = 'inline-flex';
-    document.getElementById('streamLabel').textContent = stream;
-  }
-
-  return { name, grade, stream };
-}
-
-
-/* ── 9. SUBJECTS ───────────────────────────────────────── */
-function renderSubjects(grade, stream) {
-  const subjects = getSubjects(grade, stream);
-  const grid = document.getElementById('subjectGrid');
-  grid.innerHTML = subjects.map(({ n, i }) => {
-    const score = subjectScore(n);
-    const d = getData();
-    const s = d.subjects[n] || {};
-    return `
+      /* ── 9. SUBJECTS ───────────────────────────────────────── */
+      function renderSubjects(grade, stream) {
+        const subjects = getSubjects(grade, stream);
+        const grid = document.getElementById("subjectGrid");
+        grid.innerHTML = subjects
+          .map(({ n, i }) => {
+            const score = subjectScore(n);
+            const d = getData();
+            const s = d.subjects[n] || {};
+            return `
       <div class="subject-card">
         <div class="subj-icon">${i}</div>
         <div>
           <div class="subj-name">${n}</div>
-          <div class="subj-desc">Tap an action to explore and track your progress.</div>
+          <div class="subj-desc">${(() => {
+            try {
+              const tc = JSON.parse(localStorage.getItem("tc_content") || "[]");
+              const count = tc.filter(
+                (c) => c.subject === n && (!grade || c.grade === grade),
+              ).length;
+              return count > 0
+                ? `<span style="color:var(--success);font-weight:600;">✅ ${count} teacher resource${count > 1 ? "s" : ""} available</span>`
+                : "Tap an action to explore and track your progress.";
+            } catch {
+              return "Tap an action to explore and track your progress.";
+            }
+          })()}</div>
         </div>
         <div class="subj-actions">
-          <button class="subj-btn" onclick="handleSubjectAction('${n}','videos')">▶ Videos<br><small style='opacity:.7'>${s.videos||0}</small></button>
-          <button class="subj-btn" onclick="handleSubjectAction('${n}','notes')">📝 Notes<br><small style='opacity:.7'>${s.notes||0}</small></button>
-          <button class="subj-btn" onclick="handleSubjectAction('${n}','quizzes')">🎯 Quiz<br><small style='opacity:.7'>${s.quizzes||0}</small></button>
-          <button class="subj-btn" onclick="handleSubjectAction('${n}','images')">🖼 Images<br><small style='opacity:.7'>${s.images||0}</small></button>
+          <button class="subj-btn" onclick="handleSubjectAction('${n}','videos')">▶ Videos<br><small style='opacity:.7'>${s.videos || 0}</small></button>
+          <button class="subj-btn" onclick="handleSubjectAction('${n}','notes')">📝 Notes<br><small style='opacity:.7'>${s.notes || 0}</small></button>
+          <button class="subj-btn" onclick="handleSubjectAction('${n}','quizzes')">🎯 Quiz<br><small style='opacity:.7'>${s.quizzes || 0}</small></button>
+          <button class="subj-btn" onclick="handleSubjectAction('${n}','images')">🖼 Images<br><small style='opacity:.7'>${s.images || 0}</small></button>
         </div>
         <div class="subj-progress">
           <div class="prog-bar"><div class="prog-fill" style="width:${score}%"></div></div>
           <div class="prog-label">Performance: ${score}%</div>
         </div>
       </div>`;
-  }).join('');
-}
+          })
+          .join("");
+      }
 
-function handleSubjectAction(subject, action) {
-  trackAction(subject, action);
-  // Navigate to subject resource page
-  window.location.href = `subject_resource.html?subject=${encodeURIComponent(subject)}&action=${encodeURIComponent(action)}`;
-}
+      function handleSubjectAction(subject, action) {
+        trackAction(subject, action);
+        // Navigate to subject resource page
+        window.location.href = `subject_resource.html?subject=${encodeURIComponent(subject)}&action=${encodeURIComponent(action)}`;
+      }
 
+      /* ── 10. STATS ROW ─────────────────────────────────────── */
+      function updateStats() {
+        const d = getData();
+        document.getElementById("statQuizzes").textContent =
+          d.totals.quizzes || 0;
+        document.getElementById("statVideos").textContent =
+          d.totals.videos || 0;
+        document.getElementById("statNotes").textContent = d.totals.notes || 0;
+      }
 
-/* ── 10. STATS ROW ─────────────────────────────────────── */
-function updateStats() {
-  const d = getData();
-  document.getElementById('statQuizzes').textContent = d.totals.quizzes || 0;
-  document.getElementById('statVideos').textContent  = d.totals.videos  || 0;
-  document.getElementById('statNotes').textContent   = d.totals.notes   || 0;
-}
-
-
-/* ── 11. ACTIVITY FEED ─────────────────────────────────── */
-function renderActivityFeed() {
-  const d = getData();
-  const feed = document.getElementById('activityFeed');
-  if (!d.activity.length) {
-    feed.innerHTML = `<div style="color:var(--muted);font-size:0.9rem;">No activity yet. Start exploring subjects above!</div>`;
-    return;
-  }
-  feed.innerHTML = d.activity.slice(0,10).map(a => {
-    const time = new Date(a.ts).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
-    return `<div style="display:flex;align-items:center;gap:12px;padding:11px 14px;background:var(--surf2);border:1px solid var(--border);border-radius:12px;">
+      /* ── 11. ACTIVITY FEED ─────────────────────────────────── */
+      function renderActivityFeed() {
+        const d = getData();
+        const feed = document.getElementById("activityFeed");
+        if (!d.activity.length) {
+          feed.innerHTML = `<div style="color:var(--muted);font-size:0.9rem;">No activity yet. Start exploring subjects above!</div>`;
+          return;
+        }
+        feed.innerHTML = d.activity
+          .slice(0, 10)
+          .map((a) => {
+            const time = new Date(a.ts).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+            return `<div style="display:flex;align-items:center;gap:12px;padding:11px 14px;background:var(--surf2);border:1px solid var(--border);border-radius:12px;">
       <div style="width:36px;height:36px;border-radius:10px;background:var(--pri-soft);display:grid;place-items:center;font-size:1rem;flex-shrink:0">📌</div>
       <div style="flex:1;">
         <div style="font-size:0.875rem;font-weight:600">${a.subject}</div>
@@ -853,315 +1434,434 @@ function renderActivityFeed() {
       </div>
       <div style="font-size:0.75rem;color:var(--muted)">${time}</div>
     </div>`;
-  }).join('');
-}
+          })
+          .join("");
+      }
 
+      /* ── 12. TASKS ─────────────────────────────────────────── */
+      const DEFAULT_TASKS = [
+        "Complete one quiz today",
+        "Watch a subject video",
+        "Read notes for any subject",
+        "Review yesterday's material",
+      ];
 
-/* ── 12. TASKS ─────────────────────────────────────────── */
-const DEFAULT_TASKS = [
-  'Complete one quiz today',
-  'Watch a subject video',
-  'Read notes for any subject',
-  'Review yesterday\'s material',
-];
+      function loadTasks() {
+        try {
+          return (
+            JSON.parse(localStorage.getItem(TASKS_KEY)) ||
+            DEFAULT_TASKS.map((t, i) => ({ id: i, text: t, done: false }))
+          );
+        } catch {
+          return DEFAULT_TASKS.map((t, i) => ({ id: i, text: t, done: false }));
+        }
+      }
+      function saveTasks(tasks) {
+        localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
+      }
 
-function loadTasks() {
-  try { return JSON.parse(localStorage.getItem(TASKS_KEY)) || DEFAULT_TASKS.map((t,i) => ({ id:i, text:t, done:false })); }
-  catch { return DEFAULT_TASKS.map((t,i) => ({ id:i, text:t, done:false })); }
-}
-function saveTasks(tasks) { localStorage.setItem(TASKS_KEY, JSON.stringify(tasks)); }
+      let tasks = loadTasks();
 
-let tasks = loadTasks();
-
-function renderTasks() {
-  const list = document.getElementById('taskList');
-  list.innerHTML = tasks.map(t => `
-    <div class="task-row ${t.done ? 'done' : ''}" onclick="toggleTask(${t.id})">
+      function renderTasks() {
+        const list = document.getElementById("taskList");
+        list.innerHTML = tasks
+          .map(
+            (t) => `
+    <div class="task-row ${t.done ? "done" : ""}" onclick="toggleTask(${t.id})">
       <div class="task-check"><span class="task-check-icon">✓</span></div>
       <div class="task-text">${t.text}</div>
-    </div>`).join('');
+    </div>`,
+          )
+          .join("");
 
-  const done = tasks.filter(t => t.done).length;
-  const pct  = Math.round((done / tasks.length) * 100);
-  document.getElementById('goalPct').textContent  = `${pct}%`;
-  document.getElementById('goalFill').style.width = `${pct}%`;
-}
+        const done = tasks.filter((t) => t.done).length;
+        const pct = Math.round((done / tasks.length) * 100);
+        document.getElementById("goalPct").textContent = `${pct}%`;
+        document.getElementById("goalFill").style.width = `${pct}%`;
+      }
 
-function toggleTask(id) {
-  tasks = tasks.map(t => t.id === id ? { ...t, done: !t.done } : t);
-  saveTasks(tasks);
-  renderTasks();
-  const t = tasks.find(t => t.id === id);
-  if (t.done) showToast('Task completed! 🎉');
-}
+      function toggleTask(id) {
+        tasks = tasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
+        saveTasks(tasks);
+        renderTasks();
+        const t = tasks.find((t) => t.id === id);
+        if (t.done) showToast("Task completed! 🎉");
+      }
 
+      /* ── 13. COUNTDOWN TIMER ───────────────────────────────── */
+      let countdownSecs = 34 * 60;
+      const countdownEl = document.getElementById("countdownEl");
 
-/* ── 13. COUNTDOWN TIMER ───────────────────────────────── */
-let countdownSecs = 34 * 60;
-const countdownEl = document.getElementById('countdownEl');
+      setInterval(() => {
+        if (countdownSecs > 0) countdownSecs--;
+        const h = Math.floor(countdownSecs / 3600);
+        const m = Math.floor((countdownSecs % 3600) / 60);
+        const s = countdownSecs % 60;
+        countdownEl.textContent = [h, m, s]
+          .map((v) => String(v).padStart(2, "0"))
+          .join(":");
+      }, 1000);
 
-setInterval(() => {
-  if (countdownSecs > 0) countdownSecs--;
-  const h = Math.floor(countdownSecs / 3600);
-  const m = Math.floor((countdownSecs % 3600) / 60);
-  const s = countdownSecs % 60;
-  countdownEl.textContent = [h, m, s].map(v => String(v).padStart(2,'0')).join(':');
-}, 1000);
+      /* ── 14. NOTIFICATIONS ─────────────────────────────────── */
+      const notifBtn = document.getElementById("notifBtn");
+      const notifPanel = document.getElementById("notifPanel");
+      const notifBadge = document.getElementById("notifBadge");
+      const notifList = document.getElementById("notifList");
+      const clearNotif = document.getElementById("clearNotif");
 
+      notifBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        notifPanel.classList.toggle("open");
+      });
+      document.addEventListener("click", (e) => {
+        if (!notifPanel.contains(e.target) && e.target !== notifBtn) {
+          notifPanel.classList.remove("open");
+        }
+      });
+      clearNotif.addEventListener("click", () => {
+        const d = getData();
+        d.notifications = [];
+        saveData(d);
+        renderNotifications();
+      });
 
-/* ── 14. NOTIFICATIONS ─────────────────────────────────── */
-const notifBtn   = document.getElementById('notifBtn');
-const notifPanel = document.getElementById('notifPanel');
-const notifBadge = document.getElementById('notifBadge');
-const notifList  = document.getElementById('notifList');
-const clearNotif = document.getElementById('clearNotif');
+      function renderNotifications() {
+        const d = getData();
+        const items = d.notifications || [];
+        notifBadge.textContent = items.length;
+        notifBadge.style.display = items.length ? "flex" : "none";
 
-notifBtn.addEventListener('click', e => {
-  e.stopPropagation();
-  notifPanel.classList.toggle('open');
-});
-document.addEventListener('click', e => {
-  if (!notifPanel.contains(e.target) && e.target !== notifBtn) {
-    notifPanel.classList.remove('open');
-  }
-});
-clearNotif.addEventListener('click', () => {
-  const d = getData();
-  d.notifications = [];
-  saveData(d);
-  renderNotifications();
-});
-
-function renderNotifications() {
-  const d = getData();
-  const items = d.notifications || [];
-  notifBadge.textContent = items.length;
-  notifBadge.style.display = items.length ? 'flex' : 'none';
-
-  if (!items.length) {
-    notifList.innerHTML = `<div class="notif-empty">You're all caught up! 🎉</div>`;
-    return;
-  }
-  notifList.innerHTML = items.map(n => `
+        if (!items.length) {
+          notifList.innerHTML = `<div class="notif-empty">You're all caught up! 🎉</div>`;
+          return;
+        }
+        notifList.innerHTML = items
+          .map(
+            (n) => `
     <div class="notif-item" onclick="dismissNotif(${n.id})">
       <strong>${n.msg}</strong>
-      <span>${new Date(n.ts).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })} — tap to dismiss</span>
-    </div>`).join('');
-}
+      <span>${new Date(n.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} — tap to dismiss</span>
+    </div>`,
+          )
+          .join("");
+      }
 
-function dismissNotif(id) {
-  const d = getData();
-  d.notifications = d.notifications.filter(n => n.id !== id);
-  saveData(d);
-  renderNotifications();
-  showToast('Notification dismissed');
-}
+      function dismissNotif(id) {
+        const d = getData();
+        d.notifications = d.notifications.filter((n) => n.id !== id);
+        saveData(d);
+        renderNotifications();
+        showToast("Notification dismissed");
+      }
 
+      /* ── 15. ACHIEVEMENTS ──────────────────────────────────── */
+      function renderAchievements() {
+        const d = getData();
+        const t = d.totals;
+        const all = [
+          {
+            icon: "🎯",
+            name: "Quiz Starter",
+            desc: "Take your first quiz",
+            unlocked: t.quizzes >= 1,
+          },
+          {
+            icon: "🏆",
+            name: "Quiz Master",
+            desc: "Take 10 quizzes",
+            unlocked: t.quizzes >= 10,
+          },
+          {
+            icon: "📹",
+            name: "Video Learner",
+            desc: "Watch 5 videos",
+            unlocked: t.videos >= 5,
+          },
+          {
+            icon: "📝",
+            name: "Note Taker",
+            desc: "Read 5 sets of notes",
+            unlocked: t.notes >= 5,
+          },
+          {
+            icon: "🔥",
+            name: "On Fire",
+            desc: "Use 3 different action types",
+            unlocked:
+              [t.videos, t.notes, t.images, t.quizzes].filter((v) => v > 0)
+                .length >= 3,
+          },
+          {
+            icon: "⭐",
+            name: "All-Rounder",
+            desc: "Use all 4 action types",
+            unlocked: [t.videos, t.notes, t.images, t.quizzes].every(
+              (v) => v > 0,
+            ),
+          },
+          {
+            icon: "📅",
+            name: "Daily Scholar",
+            desc: "Study for 10+ minutes today",
+            unlocked: (d.dailyStudy[todayKey()] || 0) >= 600,
+          },
+          {
+            icon: "🚀",
+            name: "Rocket Start",
+            desc: "Complete all daily goals",
+            unlocked: tasks.every((t) => t.done),
+          },
+        ];
 
-/* ── 15. ACHIEVEMENTS ──────────────────────────────────── */
-function renderAchievements() {
-  const d = getData();
-  const t = d.totals;
-  const all = [
-    { icon:'🎯', name:'Quiz Starter',    desc:'Take your first quiz',         unlocked: t.quizzes >= 1 },
-    { icon:'🏆', name:'Quiz Master',     desc:'Take 10 quizzes',              unlocked: t.quizzes >= 10 },
-    { icon:'📹', name:'Video Learner',   desc:'Watch 5 videos',               unlocked: t.videos >= 5 },
-    { icon:'📝', name:'Note Taker',      desc:'Read 5 sets of notes',         unlocked: t.notes >= 5 },
-    { icon:'🔥', name:'On Fire',         desc:'Use 3 different action types', unlocked: [t.videos,t.notes,t.images,t.quizzes].filter(v=>v>0).length >= 3 },
-    { icon:'⭐', name:'All-Rounder',     desc:'Use all 4 action types',       unlocked: [t.videos,t.notes,t.images,t.quizzes].every(v=>v>0) },
-    { icon:'📅', name:'Daily Scholar',   desc:'Study for 10+ minutes today',  unlocked: (d.dailyStudy[todayKey()] || 0) >= 600 },
-    { icon:'🚀', name:'Rocket Start',    desc:'Complete all daily goals',      unlocked: tasks.every(t=>t.done) },
-  ];
-
-  document.getElementById('achievementList').innerHTML = all.map(a => `
-    <div class="ach-row ${a.unlocked ? '' : 'ach-locked'}">
-      <div class="ach-icon">${a.unlocked ? a.icon : '🔒'}</div>
+        document.getElementById("achievementList").innerHTML = all
+          .map(
+            (a) => `
+    <div class="ach-row ${a.unlocked ? "" : "ach-locked"}">
+      <div class="ach-icon">${a.unlocked ? a.icon : "🔒"}</div>
       <div>
         <div class="ach-name">${a.name}</div>
         <div class="ach-desc">${a.desc}</div>
       </div>
-    </div>`).join('');
-}
-
-
-/* ── 16. CHARTS ────────────────────────────────────────── */
-let chartSubject, chartStudy, chartActivity;
-
-function chartColors(isDark) {
-  return {
-    grid: isDark ? 'rgba(148,163,184,0.12)' : 'rgba(15,23,42,0.07)',
-    text: isDark ? '#94a3b8' : '#64748b',
-  };
-}
-
-function initCharts(subjects) {
-  const isDark = getTheme() === 'dark';
-  const c = chartColors(isDark);
-  const subjectNames = subjects.map(s => s.n);
-
-  // Subject performance bar chart
-  chartSubject = new Chart(document.getElementById('chartSubject'), {
-    type: 'bar',
-    data: {
-      labels: subjectNames,
-      datasets: [{ label: 'Score %', data: subjectNames.map(n => subjectScore(n)), backgroundColor: 'rgba(99,102,241,0.75)', borderRadius: 8, maxBarThickness: 36 }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { beginAtZero:true, max:100, grid:{ color:c.grid }, ticks:{ color:c.text } },
-        x: { grid:{ display:false }, ticks:{ color:c.text, font:{ size:11 } } }
+    </div>`,
+          )
+          .join("");
       }
-    }
-  });
 
-  // Daily study time line chart
-  const labels = [], values = [];
-  for (let i = 6; i >= 0; i--) {
-    const d2 = new Date(); d2.setDate(d2.getDate() - i);
-    const key = d2.toISOString().split('T')[0];
-    labels.push(d2.toLocaleDateString([], { weekday:'short' }));
-    values.push(Math.round((getData().dailyStudy[key] || 0) / 60));
-  }
-  chartStudy = new Chart(document.getElementById('chartStudy'), {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{ label:'Minutes', data:values, borderColor:'#6366f1', tension:0.35, fill:true, backgroundColor:'rgba(99,102,241,0.1)', pointBackgroundColor:'#6366f1', pointRadius:4 }]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ display:false } },
-      scales:{
-        y:{ beginAtZero:true, grid:{ color:c.grid }, ticks:{ color:c.text } },
-        x:{ grid:{ display:false }, ticks:{ color:c.text, font:{ size:11 } } }
+      /* ── 16. CHARTS ────────────────────────────────────────── */
+      let chartSubject, chartStudy, chartActivity;
+
+      function chartColors(isDark) {
+        return {
+          grid: isDark ? "rgba(148,163,184,0.12)" : "rgba(15,23,42,0.07)",
+          text: isDark ? "#94a3b8" : "#64748b",
+        };
       }
-    }
-  });
 
-  // Activity doughnut chart
-  const t2 = getData().totals;
-  chartActivity = new Chart(document.getElementById('chartActivity'), {
-    type: 'doughnut',
-    data: {
-      labels: ['Videos','Notes','Images','Quizzes'],
-      datasets: [{ data:[t2.videos,t2.notes,t2.images,t2.quizzes], backgroundColor:['#6366f1','#22c55e','#f59e0b','#ec4899'], hoverOffset:6 }]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false, cutout:'65%',
-      plugins:{ legend:{ position:'bottom', labels:{ color:c.text, font:{ size:11 }, padding:12 } } }
-    }
-  });
-}
+      function initCharts(subjects) {
+        const isDark = getTheme() === "dark";
+        const c = chartColors(isDark);
+        const subjectNames = subjects.map((s) => s.n);
 
-function updateStudyChart() {
-  if (!chartStudy) return;
-  const labels = [], values = [];
-  for (let i = 6; i >= 0; i--) {
-    const d2 = new Date(); d2.setDate(d2.getDate() - i);
-    const key = d2.toISOString().split('T')[0];
-    labels.push(d2.toLocaleDateString([], { weekday:'short' }));
-    values.push(Math.round((getData().dailyStudy[key] || 0) / 60));
-  }
-  chartStudy.data.labels = labels;
-  chartStudy.data.datasets[0].data = values;
-  chartStudy.update('none');
-}
+        // Subject performance bar chart
+        chartSubject = new Chart(document.getElementById("chartSubject"), {
+          type: "bar",
+          data: {
+            labels: subjectNames,
+            datasets: [
+              {
+                label: "Score %",
+                data: subjectNames.map((n) => subjectScore(n)),
+                backgroundColor: "rgba(99,102,241,0.75)",
+                borderRadius: 8,
+                maxBarThickness: 36,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 100,
+                grid: { color: c.grid },
+                ticks: { color: c.text },
+              },
+              x: {
+                grid: { display: false },
+                ticks: { color: c.text, font: { size: 11 } },
+              },
+            },
+          },
+        });
 
-function updateChartTheme() {
-  const isDark = getTheme() === 'dark';
-  const c = chartColors(isDark);
-  [chartSubject, chartStudy].forEach(ch => {
-    if (!ch) return;
-    Object.values(ch.options.scales).forEach(ax => {
-      if (ax.ticks) ax.ticks.color = c.text;
-      if (ax.grid)  ax.grid.color  = c.grid;
-    });
-    ch.update();
-  });
-  if (chartActivity) {
-    chartActivity.options.plugins.legend.labels.color = c.text;
-    chartActivity.update();
-  }
-}
+        // Daily study time line chart
+        const labels = [],
+          values = [];
+        for (let i = 6; i >= 0; i--) {
+          const d2 = new Date();
+          d2.setDate(d2.getDate() - i);
+          const key = d2.toISOString().split("T")[0];
+          labels.push(d2.toLocaleDateString([], { weekday: "short" }));
+          values.push(Math.round((getData().dailyStudy[key] || 0) / 60));
+        }
+        chartStudy = new Chart(document.getElementById("chartStudy"), {
+          type: "line",
+          data: {
+            labels,
+            datasets: [
+              {
+                label: "Minutes",
+                data: values,
+                borderColor: "#6366f1",
+                tension: 0.35,
+                fill: true,
+                backgroundColor: "rgba(99,102,241,0.1)",
+                pointBackgroundColor: "#6366f1",
+                pointRadius: 4,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: {
+                beginAtZero: true,
+                grid: { color: c.grid },
+                ticks: { color: c.text },
+              },
+              x: {
+                grid: { display: false },
+                ticks: { color: c.text, font: { size: 11 } },
+              },
+            },
+          },
+        });
 
-function refreshCharts(subjects) {
-  if (!chartSubject) return;
-  const names = subjects.map(s => s.n);
-  chartSubject.data.labels = names;
-  chartSubject.data.datasets[0].data = names.map(n => subjectScore(n));
-  chartSubject.update();
+        // Activity doughnut chart
+        const t2 = getData().totals;
+        chartActivity = new Chart(document.getElementById("chartActivity"), {
+          type: "doughnut",
+          data: {
+            labels: ["Videos", "Notes", "Images", "Quizzes"],
+            datasets: [
+              {
+                data: [t2.videos, t2.notes, t2.images, t2.quizzes],
+                backgroundColor: ["#6366f1", "#22c55e", "#f59e0b", "#ec4899"],
+                hoverOffset: 6,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "65%",
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: { color: c.text, font: { size: 11 }, padding: 12 },
+              },
+            },
+          },
+        });
+      }
 
-  const t2 = getData().totals;
-  chartActivity.data.datasets[0].data = [t2.videos, t2.notes, t2.images, t2.quizzes];
-  chartActivity.update();
-}
+      function updateStudyChart() {
+        if (!chartStudy) return;
+        const labels = [],
+          values = [];
+        for (let i = 6; i >= 0; i--) {
+          const d2 = new Date();
+          d2.setDate(d2.getDate() - i);
+          const key = d2.toISOString().split("T")[0];
+          labels.push(d2.toLocaleDateString([], { weekday: "short" }));
+          values.push(Math.round((getData().dailyStudy[key] || 0) / 60));
+        }
+        chartStudy.data.labels = labels;
+        chartStudy.data.datasets[0].data = values;
+        chartStudy.update("none");
+      }
 
+      function updateChartTheme() {
+        const isDark = getTheme() === "dark";
+        const c = chartColors(isDark);
+        [chartSubject, chartStudy].forEach((ch) => {
+          if (!ch) return;
+          Object.values(ch.options.scales).forEach((ax) => {
+            if (ax.ticks) ax.ticks.color = c.text;
+            if (ax.grid) ax.grid.color = c.grid;
+          });
+          ch.update();
+        });
+        if (chartActivity) {
+          chartActivity.options.plugins.legend.labels.color = c.text;
+          chartActivity.update();
+        }
+      }
 
-/* ── 17. TOAST ─────────────────────────────────────────── */
-const toastEl = document.getElementById('toast');
-let toastTimer;
-function showToast(msg) {
-  toastEl.textContent = msg;
-  toastEl.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2500);
-}
-window.showToast = showToast; // make globally accessible
+      function refreshCharts(subjects) {
+        if (!chartSubject) return;
+        const names = subjects.map((s) => s.n);
+        chartSubject.data.labels = names;
+        chartSubject.data.datasets[0].data = names.map((n) => subjectScore(n));
+        chartSubject.update();
 
+        const t2 = getData().totals;
+        chartActivity.data.datasets[0].data = [
+          t2.videos,
+          t2.notes,
+          t2.images,
+          t2.quizzes,
+        ];
+        chartActivity.update();
+      }
 
-/* ── 18. REFRESH ALL ───────────────────────────────────── */
-let currentSubjects = [];
+      /* ── 17. TOAST ─────────────────────────────────────────── */
+      const toastEl = document.getElementById("toast");
+      let toastTimer;
+      function showToast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2500);
+      }
+      window.showToast = showToast; // make globally accessible
 
-function refreshAll() {
-  updateStats();
-  renderActivityFeed();
-  renderAchievements();
-  renderNotifications();
-  if (currentSubjects.length) {
-    renderSubjects(currentProfile.grade, currentProfile.stream);
-    refreshCharts(currentSubjects);
-  }
-}
+      /* ── 18. REFRESH ALL ───────────────────────────────────── */
+      let currentSubjects = [];
 
+      function refreshAll() {
+        updateStats();
+        renderActivityFeed();
+        renderAchievements();
+        renderNotifications();
+        if (currentSubjects.length) {
+          renderSubjects(currentProfile.grade, currentProfile.stream);
+          refreshCharts(currentSubjects);
+        }
+      }
 
-/* ── 19. LOGOUT ────────────────────────────────────────── */
-document.getElementById('logoutBtn').addEventListener('click', () => {
-  // Clear session data (keep analytics for when they log back in)
-  showToast('Logging out…');
-  setTimeout(() => {
-    window.location.href = 'learner_login.html';
-  }, 800);
-});
+      /* ── 19. LOGOUT ────────────────────────────────────────── */
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        // Clear session data (keep analytics for when they log back in)
+        showToast("Logging out…");
+        setTimeout(() => {
+          window.location.href = "learner_login.html";
+        }, 800);
+      });
 
+      /* ── 20. INIT ──────────────────────────────────────────── */
+      let currentProfile = {};
 
-/* ── 20. INIT ──────────────────────────────────────────── */
-let currentProfile = {};
+      document.addEventListener("DOMContentLoaded", () => {
+        applyTheme(getTheme());
 
-document.addEventListener('DOMContentLoaded', () => {
-  applyTheme(getTheme());
+        // Load profile
+        currentProfile = loadProfile();
+        currentSubjects = getSubjects(
+          currentProfile.grade,
+          currentProfile.stream,
+        );
 
-  // Load profile
-  currentProfile = loadProfile();
-  currentSubjects = getSubjects(currentProfile.grade, currentProfile.stream);
+        // Render everything
+        renderSubjects(currentProfile.grade, currentProfile.stream);
+        updateStats();
+        renderTasks();
+        renderNotifications();
+        renderActivityFeed();
+        renderAchievements();
 
-  // Render everything
-  renderSubjects(currentProfile.grade, currentProfile.stream);
-  updateStats();
-  renderTasks();
-  renderNotifications();
-  renderActivityFeed();
-  renderAchievements();
+        // Init charts AFTER DOM is ready and Chart.js is loaded
+        initCharts(currentSubjects);
+      });
 
-  // Init charts AFTER DOM is ready and Chart.js is loaded
-  initCharts(currentSubjects);
-});
-
-// Expose trackAction globally (called from inline onclick)
-window.handleSubjectAction = handleSubjectAction;
-window.toggleTask = toggleTask;
-window.dismissNotif = dismissNotif;
-</script>
-</body>
+      // Expose trackAction globally (called from inline onclick)
+      window.handleSubjectAction = handleSubjectAction;
+      window.toggleTask = toggleTask;
+      window.dismissNotif = dismissNotif;
+    </script>
+  </body>
 </html>
