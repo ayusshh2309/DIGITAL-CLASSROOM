@@ -11,6 +11,8 @@
       rel="stylesheet"
     />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../js/supabase-client.js"></script>
 
     <script>
       (function () {
@@ -1356,29 +1358,34 @@
       function renderSubjects(grade, stream) {
         const subjects = getSubjects(grade, stream);
         const grid = document.getElementById("subjectGrid");
+        const tcContent = (() => {
+          try {
+            return JSON.parse(localStorage.getItem("tc_content") || "[]");
+          } catch {
+            return [];
+          }
+        })();
+
         grid.innerHTML = subjects
           .map(({ n, i }) => {
             const score = subjectScore(n);
             const d = getData();
             const s = d.subjects[n] || {};
+            const tcCount = tcContent.filter(
+              (c) =>
+                c.subject === n &&
+                (!grade || String(c.grade) === String(grade)),
+            ).length;
+            const descHtml =
+              tcCount > 0
+                ? `<span style="color:var(--success);font-weight:600;font-size:0.82rem;">✅ ${tcCount} teacher resource${tcCount > 1 ? "s" : ""} available</span>`
+                : "Tap an action to explore and track your progress.";
             return `
       <div class="subject-card">
         <div class="subj-icon">${i}</div>
         <div>
           <div class="subj-name">${n}</div>
-          <div class="subj-desc">${(() => {
-            try {
-              const tc = JSON.parse(localStorage.getItem("tc_content") || "[]");
-              const count = tc.filter(
-                (c) => c.subject === n && (!grade || c.grade === grade),
-              ).length;
-              return count > 0
-                ? `<span style="color:var(--success);font-weight:600;">✅ ${count} teacher resource${count > 1 ? "s" : ""} available</span>`
-                : "Tap an action to explore and track your progress.";
-            } catch {
-              return "Tap an action to explore and track your progress.";
-            }
-          })()}</div>
+          <div class="subj-desc">${descHtml}</div>
         </div>
         <div class="subj-actions">
           <button class="subj-btn" onclick="handleSubjectAction('${n}','videos')">▶ Videos<br><small style='opacity:.7'>${s.videos || 0}</small></button>
@@ -1397,8 +1404,9 @@
 
       function handleSubjectAction(subject, action) {
         trackAction(subject, action);
-        // Navigate to subject resource page
-        window.location.href = `subject_resource.html?subject=${encodeURIComponent(subject)}&action=${encodeURIComponent(action)}`;
+        // Pass grade in URL so subject_resource can filter teacher content correctly
+        const grade = currentProfile.grade || "";
+        window.location.href = `subject_resource.html?subject=${encodeURIComponent(subject)}&action=${encodeURIComponent(action)}&grade=${encodeURIComponent(grade)}`;
       }
 
       /* ── 10. STATS ROW ─────────────────────────────────────── */

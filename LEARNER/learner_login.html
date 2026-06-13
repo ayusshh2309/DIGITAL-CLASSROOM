@@ -1,886 +1,1146 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Smart Learning DC — Learner Registration</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Learning DC — Learner Registration</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=Playfair+Display:wght@700;800&display=swap"
+      rel="stylesheet"
+    />
 
-  <!-- Supabase SDK — loaded ONCE -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <!-- Supabase SDK — loaded ONCE -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../js/supabase-client.js"></script>
 
-  <script>
-    /* Apply saved theme instantly — no flash */
-    (function () {
-      const t = localStorage.getItem('sl-theme') || 'dark';
-      document.documentElement.setAttribute('data-theme', t);
-    })();
-  </script>
+    <script>
+      /* Apply saved theme instantly — no flash */
+      (function () {
+        const t = localStorage.getItem("sl-theme") || "dark";
+        document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
+    <style>
+      /* ── TOKENS ─────────────────────────────────────────── */
+      :root {
+        --bg: #0b0f1a;
+        --surface: #111827;
+        --surf2: #161e2e;
+        --surf3: #1c2540;
+        --border: rgba(148, 163, 184, 0.12);
+        --text: #e8edf5;
+        --muted: #7e8fa8;
+        --primary: #4f8ef7;
+        --pri-hover: #3b7de8;
+        --pri-soft: rgba(79, 142, 247, 0.13);
+        --pri-glow: rgba(79, 142, 247, 0.22);
+        --success: #3fb950;
+        --danger: #f85149;
+        --radius: 14px;
+        --shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+        --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.3);
+        --transition: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+        --font: "DM Sans", sans-serif;
+        --font-display: "Playfair Display", serif;
+      }
+      [data-theme="light"] {
+        --bg: #f0f4fa;
+        --surface: #ffffff;
+        --surf2: #f7f9fd;
+        --surf3: #eef3fb;
+        --border: rgba(13, 17, 23, 0.09);
+        --text: #0d1117;
+        --muted: #5a6478;
+        --primary: #2563eb;
+        --pri-hover: #1d4ed8;
+        --pri-soft: #dbeafe;
+        --pri-glow: rgba(37, 99, 235, 0.18);
+        --success: #16a34a;
+        --danger: #dc2626;
+        --shadow: 0 20px 60px rgba(13, 17, 23, 0.1);
+        --shadow-sm: 0 4px 16px rgba(13, 17, 23, 0.07);
+      }
 
-  <style>
-    /* ── TOKENS ─────────────────────────────────────────── */
-    :root {
-      --bg:         #0b0f1a;
-      --surface:    #111827;
-      --surf2:      #161e2e;
-      --surf3:      #1c2540;
-      --border:     rgba(148,163,184,0.12);
-      --text:       #e8edf5;
-      --muted:      #7e8fa8;
-      --primary:    #4f8ef7;
-      --pri-hover:  #3b7de8;
-      --pri-soft:   rgba(79,142,247,0.13);
-      --pri-glow:   rgba(79,142,247,0.22);
-      --success:    #3fb950;
-      --danger:     #f85149;
-      --radius:     14px;
-      --shadow:     0 20px 60px rgba(0,0,0,0.45);
-      --shadow-sm:  0 4px 16px rgba(0,0,0,0.3);
-      --transition: 180ms cubic-bezier(0.4,0,0.2,1);
-      --font:       'DM Sans', sans-serif;
-      --font-display: 'Playfair Display', serif;
-    }
-    [data-theme="light"] {
-      --bg:        #f0f4fa;
-      --surface:   #ffffff;
-      --surf2:     #f7f9fd;
-      --surf3:     #eef3fb;
-      --border:    rgba(13,17,23,0.09);
-      --text:      #0d1117;
-      --muted:     #5a6478;
-      --primary:   #2563eb;
-      --pri-hover: #1d4ed8;
-      --pri-soft:  #dbeafe;
-      --pri-glow:  rgba(37,99,235,0.18);
-      --success:   #16a34a;
-      --danger:    #dc2626;
-      --shadow:    0 20px 60px rgba(13,17,23,0.10);
-      --shadow-sm: 0 4px 16px rgba(13,17,23,0.07);
-    }
+      /* ── RESET ──────────────────────────────────────────── */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html {
+        font-size: 16px;
+      }
+      body {
+        font-family: var(--font);
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 40px 20px 60px;
+        transition:
+          background var(--transition),
+          color var(--transition);
+      }
+      a {
+        text-decoration: none;
+        color: inherit;
+      }
+      button {
+        font-family: inherit;
+        cursor: pointer;
+        border: none;
+        background: none;
+      }
+      input,
+      select {
+        font-family: inherit;
+      }
 
-    /* ── RESET ──────────────────────────────────────────── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { font-size: 16px; }
-    body {
-      font-family: var(--font);
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      padding: 40px 20px 60px;
-      transition: background var(--transition), color var(--transition);
-    }
-    a { text-decoration: none; color: inherit; }
-    button { font-family: inherit; cursor: pointer; border: none; background: none; }
-    input, select { font-family: inherit; }
+      /* ── LAYOUT ─────────────────────────────────────────── */
+      .layout {
+        width: min(1100px, 100%);
+        display: grid;
+        grid-template-columns: 1fr 1.15fr;
+        gap: 28px;
+        align-items: start;
+      }
 
-    /* ── LAYOUT ─────────────────────────────────────────── */
-    .layout {
-      width: min(1100px, 100%);
-      display: grid;
-      grid-template-columns: 1fr 1.15fr;
-      gap: 28px;
-      align-items: start;
-    }
+      /* ── LEFT PANEL ─────────────────────────────────────── */
+      .left-panel {
+        position: sticky;
+        top: 40px;
+        background: var(--surface);
+        border-radius: 24px;
+        border: 1px solid var(--border);
+        padding: 40px 36px;
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+        box-shadow: var(--shadow);
+      }
 
-    /* ── LEFT PANEL ─────────────────────────────────────── */
-    .left-panel {
-      position: sticky;
-      top: 40px;
-      background: var(--surface);
-      border-radius: 24px;
-      border: 1px solid var(--border);
-      padding: 40px 36px;
-      display: flex;
-      flex-direction: column;
-      gap: 28px;
-      box-shadow: var(--shadow);
-    }
+      .brand-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
 
-    .brand-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
+      .brand-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 14px;
+        border-radius: 999px;
+        background: var(--pri-soft);
+        color: var(--primary);
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .brand-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--primary);
+      }
 
-    .brand-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 7px 14px;
-      border-radius: 999px;
-      background: var(--pri-soft);
-      color: var(--primary);
-      font-size: 0.78rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-    .brand-dot {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: var(--primary);
-    }
+      .btn-theme {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 1px solid var(--border);
+        background: var(--surf2);
+        display: grid;
+        place-items: center;
+        font-size: 1rem;
+        transition:
+          background var(--transition),
+          transform 200ms;
+        flex-shrink: 0;
+      }
+      .btn-theme:hover {
+        background: var(--surf3);
+        transform: rotate(20deg);
+      }
 
-    .btn-theme {
-      width: 36px; height: 36px;
-      border-radius: 50%;
-      border: 1px solid var(--border);
-      background: var(--surf2);
-      display: grid; place-items: center;
-      font-size: 1rem;
-      transition: background var(--transition), transform 200ms;
-      flex-shrink: 0;
-    }
-    .btn-theme:hover { background: var(--surf3); transform: rotate(20deg); }
+      .left-panel h1 {
+        font-family: var(--font-display);
+        font-size: clamp(1.7rem, 2.4vw, 2.3rem);
+        line-height: 1.1;
+        font-weight: 800;
+      }
+      .left-panel h1 em {
+        font-style: italic;
+        color: var(--primary);
+      }
 
-    .left-panel h1 {
-      font-family: var(--font-display);
-      font-size: clamp(1.7rem, 2.4vw, 2.3rem);
-      line-height: 1.1;
-      font-weight: 800;
-    }
-    .left-panel h1 em {
-      font-style: italic;
-      color: var(--primary);
-    }
+      .left-panel .subtitle {
+        color: var(--muted);
+        line-height: 1.75;
+        font-size: 0.95rem;
+        font-weight: 300;
+        margin-top: 10px;
+      }
 
-    .left-panel .subtitle {
-      color: var(--muted);
-      line-height: 1.75;
-      font-size: 0.95rem;
-      font-weight: 300;
-      margin-top: 10px;
-    }
+      /* Illustration card */
+      .ill-card {
+        border-radius: 18px;
+        background: var(--surf2);
+        border: 1px solid var(--border);
+        padding: 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .ill-avatar {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        background: var(--pri-soft);
+        display: grid;
+        place-items: center;
+        font-size: 1.6rem;
+        flex-shrink: 0;
+        border: 1px solid var(--border);
+      }
+      .ill-text h3 {
+        font-size: 0.97rem;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      .ill-text p {
+        color: var(--muted);
+        font-size: 0.875rem;
+        line-height: 1.55;
+        font-weight: 300;
+      }
 
-    /* Illustration card */
-    .ill-card {
-      border-radius: 18px;
-      background: var(--surf2);
-      border: 1px solid var(--border);
-      padding: 24px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-    .ill-avatar {
-      width: 56px; height: 56px;
-      border-radius: 16px;
-      background: var(--pri-soft);
-      display: grid; place-items: center;
-      font-size: 1.6rem;
-      flex-shrink: 0;
-      border: 1px solid var(--border);
-    }
-    .ill-text h3 { font-size: 0.97rem; font-weight: 700; margin-bottom: 4px; }
-    .ill-text p  { color: var(--muted); font-size: 0.875rem; line-height: 1.55; font-weight: 300; }
+      /* Features */
+      .features {
+        display: grid;
+        gap: 10px;
+      }
+      .feature {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 14px 16px;
+        border-radius: 14px;
+        background: var(--surf2);
+        border: 1px solid var(--border);
+      }
+      .feat-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: var(--pri-soft);
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        font-size: 1rem;
+      }
+      .feat-text strong {
+        display: block;
+        font-size: 0.9rem;
+        font-weight: 700;
+        margin-bottom: 2px;
+      }
+      .feat-text span {
+        color: var(--muted);
+        font-size: 0.845rem;
+        line-height: 1.5;
+      }
 
-    /* Features */
-    .features { display: grid; gap: 10px; }
-    .feature {
-      display: flex;
-      align-items: flex-start;
-      gap: 14px;
-      padding: 14px 16px;
-      border-radius: 14px;
-      background: var(--surf2);
-      border: 1px solid var(--border);
-    }
-    .feat-icon {
-      width: 36px; height: 36px;
-      border-radius: 10px;
-      background: var(--pri-soft);
-      display: grid; place-items: center;
-      flex-shrink: 0;
-      font-size: 1rem;
-    }
-    .feat-text strong { display: block; font-size: 0.9rem; font-weight: 700; margin-bottom: 2px; }
-    .feat-text span   { color: var(--muted); font-size: 0.845rem; line-height: 1.5; }
+      /* ── FORM PANEL ─────────────────────────────────────── */
+      .form-panel {
+        background: var(--surface);
+        border-radius: 24px;
+        border: 1px solid var(--border);
+        padding: 40px 38px;
+        box-shadow: var(--shadow);
+      }
 
-    /* ── FORM PANEL ─────────────────────────────────────── */
-    .form-panel {
-      background: var(--surface);
-      border-radius: 24px;
-      border: 1px solid var(--border);
-      padding: 40px 38px;
-      box-shadow: var(--shadow);
-    }
+      .form-header {
+        margin-bottom: 28px;
+      }
+      .eyebrow {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--primary);
+        margin-bottom: 8px;
+      }
+      .form-header h2 {
+        font-family: var(--font-display);
+        font-size: clamp(1.5rem, 2vw, 1.9rem);
+        font-weight: 800;
+        line-height: 1.1;
+        margin-bottom: 8px;
+      }
+      .form-header p {
+        color: var(--muted);
+        font-size: 0.92rem;
+        line-height: 1.65;
+        font-weight: 300;
+      }
 
-    .form-header { margin-bottom: 28px; }
-    .eyebrow {
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--primary);
-      margin-bottom: 8px;
-    }
-    .form-header h2 {
-      font-family: var(--font-display);
-      font-size: clamp(1.5rem, 2vw, 1.9rem);
-      font-weight: 800;
-      line-height: 1.1;
-      margin-bottom: 8px;
-    }
-    .form-header p { color: var(--muted); font-size: 0.92rem; line-height: 1.65; font-weight: 300; }
+      /* ── FIELDS ─────────────────────────────────────────── */
+      .fields {
+        display: grid;
+        gap: 16px;
+      }
 
-    /* ── FIELDS ─────────────────────────────────────────── */
-    .fields { display: grid; gap: 16px; }
+      .field-group {
+        display: grid;
+        gap: 7px;
+      }
+      .field-group label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text);
+      }
 
-    .field-group { display: grid; gap: 7px; }
-    .field-group label {
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: var(--text);
-    }
+      .input-wrap {
+        position: relative;
+      }
+      .input-wrap input {
+        padding-right: 44px;
+      }
+      .input-icon {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--muted);
+        font-size: 0.95rem;
+        pointer-events: none;
+      }
 
-    .input-wrap { position: relative; }
-    .input-wrap input { padding-right: 44px; }
-    .input-icon {
-      position: absolute;
-      right: 14px; top: 50%;
-      transform: translateY(-50%);
-      color: var(--muted);
-      font-size: 0.95rem;
-      pointer-events: none;
-    }
+      input,
+      select {
+        width: 100%;
+        padding: 13px 16px;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--surf2);
+        color: var(--text);
+        font-size: 0.93rem;
+        outline: none;
+        transition:
+          border-color var(--transition),
+          box-shadow var(--transition),
+          background var(--transition);
+      }
+      input::placeholder {
+        color: var(--muted);
+        opacity: 0.6;
+      }
+      input:focus,
+      select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--pri-glow);
+        background: var(--surface);
+      }
+      input.valid {
+        border-color: var(--success);
+      }
+      input.invalid {
+        border-color: var(--danger);
+      }
 
-    input, select {
-      width: 100%;
-      padding: 13px 16px;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius);
-      background: var(--surf2);
-      color: var(--text);
-      font-size: 0.93rem;
-      outline: none;
-      transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
-    }
-    input::placeholder { color: var(--muted); opacity: 0.6; }
-    input:focus, select:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px var(--pri-glow);
-      background: var(--surface);
-    }
-    input.valid   { border-color: var(--success); }
-    input.invalid { border-color: var(--danger); }
+      select {
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%237e8fa8' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 14px center;
+        padding-right: 38px;
+      }
+      select option {
+        background: var(--surf2);
+        color: var(--text);
+      }
 
-    select {
-      cursor: pointer;
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%237e8fa8' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 14px center;
-      padding-right: 38px;
-    }
-    select option { background: var(--surf2); color: var(--text); }
+      /* Stream field — hidden until grade 11/12 */
+      .stream-field {
+        display: none;
+        gap: 7px;
+        animation: slideDown 0.22s ease;
+      }
+      .stream-field.visible {
+        display: grid;
+      }
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
 
-    /* Stream field — hidden until grade 11/12 */
-    .stream-field {
-      display: none;
-      gap: 7px;
-      animation: slideDown 0.22s ease;
-    }
-    .stream-field.visible { display: grid; }
-    @keyframes slideDown {
-      from { opacity: 0; transform: translateY(-6px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
+      /* Phone row */
+      .phone-row {
+        display: grid;
+        grid-template-columns: 110px 1fr;
+        gap: 10px;
+      }
+      .phone-prefix {
+        padding: 13px 10px;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--surf2);
+        color: var(--text);
+        font-size: 0.88rem;
+        font-weight: 600;
+        cursor: pointer;
+        outline: none;
+        appearance: none;
+        text-align: center;
+        transition:
+          border-color var(--transition),
+          box-shadow var(--transition);
+      }
+      .phone-prefix:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--pri-glow);
+      }
 
-    /* Phone row */
-    .phone-row { display: grid; grid-template-columns: 110px 1fr; gap: 10px; }
-    .phone-prefix {
-      padding: 13px 10px;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius);
-      background: var(--surf2);
-      color: var(--text);
-      font-size: 0.88rem;
-      font-weight: 600;
-      cursor: pointer;
-      outline: none;
-      appearance: none;
-      text-align: center;
-      transition: border-color var(--transition), box-shadow var(--transition);
-    }
-    .phone-prefix:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px var(--pri-glow);
-    }
+      /* Password */
+      .pw-wrap {
+        position: relative;
+      }
+      .pw-wrap input {
+        padding-right: 78px;
+      }
+      .btn-show-hide {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--primary);
+        font-size: 0.83rem;
+        font-weight: 700;
+        padding: 4px 6px;
+        border-radius: 6px;
+        transition: background var(--transition);
+      }
+      .btn-show-hide:hover {
+        background: var(--pri-soft);
+      }
 
-    /* Password */
-    .pw-wrap { position: relative; }
-    .pw-wrap input { padding-right: 78px; }
-    .btn-show-hide {
-      position: absolute;
-      right: 14px; top: 50%;
-      transform: translateY(-50%);
-      color: var(--primary);
-      font-size: 0.83rem;
-      font-weight: 700;
-      padding: 4px 6px;
-      border-radius: 6px;
-      transition: background var(--transition);
-    }
-    .btn-show-hide:hover { background: var(--pri-soft); }
+      /* Password strength */
+      .strength-box {
+        background: var(--surf2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 12px 14px;
+      }
+      .strength-lbl {
+        font-size: 0.8rem;
+        color: var(--muted);
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+      .strength-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+      }
+      .pill {
+        padding: 5px 11px;
+        border-radius: 999px;
+        background: var(--surf3);
+        border: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 600;
+        transition:
+          background var(--transition),
+          color var(--transition),
+          border-color var(--transition);
+      }
+      .pill.active {
+        background: rgba(63, 185, 80, 0.12);
+        border-color: rgba(63, 185, 80, 0.35);
+        color: var(--success);
+      }
 
-    /* Password strength */
-    .strength-box {
-      background: var(--surf2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 12px 14px;
-    }
-    .strength-lbl { font-size: 0.8rem; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
-    .strength-pills { display: flex; flex-wrap: wrap; gap: 7px; }
-    .pill {
-      padding: 5px 11px;
-      border-radius: 999px;
-      background: var(--surf3);
-      border: 1px solid var(--border);
-      color: var(--muted);
-      font-size: 0.78rem;
-      font-weight: 600;
-      transition: background var(--transition), color var(--transition), border-color var(--transition);
-    }
-    .pill.active {
-      background: rgba(63,185,80,0.12);
-      border-color: rgba(63,185,80,0.35);
-      color: var(--success);
-    }
+      /* ── DIVIDER ────────────────────────────────────────── */
+      .divider {
+        height: 1px;
+        background: var(--border);
+      }
 
-    /* ── DIVIDER ────────────────────────────────────────── */
-    .divider {
-      height: 1px;
-      background: var(--border);
-    }
+      /* ── CHECKBOXES ─────────────────────────────────────── */
+      .check-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .check-row input[type="checkbox"] {
+        width: 17px;
+        height: 17px;
+        accent-color: var(--primary);
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+      .check-row label {
+        font-size: 0.9rem;
+        color: var(--muted);
+        cursor: pointer;
+        font-weight: 400;
+      }
+      .check-row label a {
+        color: var(--primary);
+        font-weight: 600;
+      }
+      .check-row label a:hover {
+        text-decoration: underline;
+      }
 
-    /* ── CHECKBOXES ─────────────────────────────────────── */
-    .check-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .check-row input[type="checkbox"] {
-      width: 17px; height: 17px;
-      accent-color: var(--primary);
-      cursor: pointer;
-      flex-shrink: 0;
-    }
-    .check-row label {
-      font-size: 0.9rem;
-      color: var(--muted);
-      cursor: pointer;
-      font-weight: 400;
-    }
-    .check-row label a { color: var(--primary); font-weight: 600; }
-    .check-row label a:hover { text-decoration: underline; }
+      .remember-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .forgot-link {
+        color: var(--primary);
+        font-size: 0.875rem;
+        font-weight: 600;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        font-family: inherit;
+      }
+      .forgot-link:hover {
+        text-decoration: underline;
+      }
 
-    .remember-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-    .forgot-link {
-      color: var(--primary);
-      font-size: 0.875rem;
-      font-weight: 600;
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 0;
-      font-family: inherit;
-    }
-    .forgot-link:hover { text-decoration: underline; }
+      /* ── SOCIAL ─────────────────────────────────────────── */
+      .social-lbl {
+        text-align: center;
+        font-size: 0.83rem;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .social-lbl::before,
+      .social-lbl::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
 
-    /* ── SOCIAL ─────────────────────────────────────────── */
-    .social-lbl {
-      text-align: center;
-      font-size: 0.83rem;
-      color: var(--muted);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .social-lbl::before, .social-lbl::after {
-      content: ''; flex: 1; height: 1px; background: var(--border);
-    }
+      .social-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
 
-    .social-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .btn-social {
+        padding: 12px;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--surf2);
+        color: var(--text);
+        font-size: 0.875rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition:
+          background var(--transition),
+          border-color var(--transition),
+          transform 150ms;
+      }
+      .btn-social:hover {
+        background: var(--surf3);
+        border-color: var(--primary);
+        transform: translateY(-1px);
+      }
+      .btn-social svg {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+      }
 
-    .btn-social {
-      padding: 12px;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius);
-      background: var(--surf2);
-      color: var(--text);
-      font-size: 0.875rem;
-      font-weight: 700;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      transition: background var(--transition), border-color var(--transition), transform 150ms;
-    }
-    .btn-social:hover { background: var(--surf3); border-color: var(--primary); transform: translateY(-1px); }
-    .btn-social svg { width: 18px; height: 18px; flex-shrink: 0; }
+      /* ── STATUS MESSAGE ─────────────────────────────────── */
+      .status-msg {
+        font-size: 0.875rem;
+        min-height: 20px;
+        padding: 0 2px;
+        text-align: center;
+        transition: color var(--transition);
+      }
+      .status-msg.error {
+        color: var(--danger);
+      }
+      .status-msg.success {
+        color: var(--success);
+      }
+      .status-msg.info {
+        color: var(--muted);
+      }
 
-    /* ── STATUS MESSAGE ─────────────────────────────────── */
-    .status-msg {
-      font-size: 0.875rem;
-      min-height: 20px;
-      padding: 0 2px;
-      text-align: center;
-      transition: color var(--transition);
-    }
-    .status-msg.error   { color: var(--danger); }
-    .status-msg.success { color: var(--success); }
-    .status-msg.info    { color: var(--muted); }
+      /* ── SUBMIT BUTTON ──────────────────────────────────── */
+      .btn-submit {
+        width: 100%;
+        padding: 15px;
+        border-radius: var(--radius);
+        background: var(--primary);
+        color: #fff;
+        font-size: 0.97rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        box-shadow: 0 8px 24px var(--pri-glow);
+        transition:
+          background var(--transition),
+          transform 150ms,
+          box-shadow var(--transition),
+          opacity var(--transition);
+      }
+      .btn-submit:hover {
+        background: var(--pri-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 12px 28px var(--pri-glow);
+      }
+      .btn-submit:active {
+        transform: translateY(0);
+      }
+      .btn-submit:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        transform: none;
+      }
 
-    /* ── SUBMIT BUTTON ──────────────────────────────────── */
-    .btn-submit {
-      width: 100%;
-      padding: 15px;
-      border-radius: var(--radius);
-      background: var(--primary);
-      color: #fff;
-      font-size: 0.97rem;
-      font-weight: 700;
-      letter-spacing: 0.01em;
-      box-shadow: 0 8px 24px var(--pri-glow);
-      transition: background var(--transition), transform 150ms, box-shadow var(--transition), opacity var(--transition);
-    }
-    .btn-submit:hover  { background: var(--pri-hover); transform: translateY(-1px); box-shadow: 0 12px 28px var(--pri-glow); }
-    .btn-submit:active { transform: translateY(0); }
-    .btn-submit:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+      /* Spinner */
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .spinner {
+        display: inline-block;
+        width: 15px;
+        height: 15px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        vertical-align: middle;
+        margin-right: 7px;
+      }
 
-    /* Spinner */
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .spinner {
-      display: inline-block;
-      width: 15px; height: 15px;
-      border: 2px solid rgba(255,255,255,0.3);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      vertical-align: middle;
-      margin-right: 7px;
-    }
+      /* Login prompt */
+      .login-prompt {
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .login-prompt a {
+        color: var(--primary);
+        font-weight: 700;
+      }
+      .login-prompt a:hover {
+        text-decoration: underline;
+      }
 
-    /* Login prompt */
-    .login-prompt {
-      text-align: center;
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
-    .login-prompt a { color: var(--primary); font-weight: 700; }
-    .login-prompt a:hover { text-decoration: underline; }
+      /* ── RESPONSIVE ─────────────────────────────────────── */
+      @media (max-width: 880px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        .left-panel {
+          position: static;
+        }
+      }
+      @media (max-width: 520px) {
+        body {
+          padding: 16px 14px 40px;
+        }
+        .left-panel,
+        .form-panel {
+          padding: 26px 20px;
+        }
+        .social-grid {
+          grid-template-columns: 1fr;
+        }
+        .phone-row {
+          grid-template-columns: 90px 1fr;
+        }
+      }
+    </style>
+  </head>
 
-    /* ── RESPONSIVE ─────────────────────────────────────── */
-    @media (max-width: 880px) {
-      .layout { grid-template-columns: 1fr; }
-      .left-panel { position: static; }
-    }
-    @media (max-width: 520px) {
-      body { padding: 16px 14px 40px; }
-      .left-panel, .form-panel { padding: 26px 20px; }
-      .social-grid { grid-template-columns: 1fr; }
-      .phone-row { grid-template-columns: 90px 1fr; }
-    }
-  </style>
-</head>
-
-<body>
-<div class="layout">
-
-  <!-- ── LEFT PANEL ──────────────────────────────────── -->
-  <div class="left-panel">
-
-    <div class="brand-row">
-      <span class="brand-tag">
-        <span class="brand-dot"></span>
-        Smart Learning DC
-      </span>
-      <button class="btn-theme" id="themeBtn" aria-label="Toggle theme">🌙</button>
-    </div>
-
-    <div>
-      <h1>Join <em>Smart Learning</em> and Begin Your Journey</h1>
-      <p class="subtitle">
-        A modern learning experience with smart tools, personalized support, and real-time progress tracking from day one.
-      </p>
-    </div>
-
-    <div class="ill-card">
-      <div class="ill-avatar">🎓</div>
-      <div class="ill-text">
-        <h3>Built for learners like you</h3>
-        <p>Track progress, explore subjects, attend live classes, and grow with every lesson.</p>
-      </div>
-    </div>
-
-    <div class="features">
-      <div class="feature">
-        <div class="feat-icon">📚</div>
-        <div class="feat-text">
-          <strong>Subject Resources</strong>
-          <span>Videos, notes, quizzes and materials for every subject.</span>
+  <body>
+    <div class="layout">
+      <!-- ── LEFT PANEL ──────────────────────────────────── -->
+      <div class="left-panel">
+        <div class="brand-row">
+          <span class="brand-tag">
+            <span class="brand-dot"></span>
+            Smart Learning DC
+          </span>
+          <button class="btn-theme" id="themeBtn" aria-label="Toggle theme">
+            🌙
+          </button>
         </div>
-      </div>
-      <div class="feature">
-        <div class="feat-icon">📊</div>
-        <div class="feat-text">
-          <strong>Progress Tracking</strong>
-          <span>Real-time analytics to see how you're improving.</span>
+
+        <div>
+          <h1>Join <em>Smart Learning</em> and Begin Your Journey</h1>
+          <p class="subtitle">
+            A modern learning experience with smart tools, personalized support,
+            and real-time progress tracking from day one.
+          </p>
         </div>
-      </div>
-      <div class="feature">
-        <div class="feat-icon">🎯</div>
-        <div class="feat-text">
-          <strong>Daily Goals</strong>
-          <span>Set targets and complete your learning checklist.</span>
+
+        <div class="ill-card">
+          <div class="ill-avatar">🎓</div>
+          <div class="ill-text">
+            <h3>Built for learners like you</h3>
+            <p>
+              Track progress, explore subjects, attend live classes, and grow
+              with every lesson.
+            </p>
+          </div>
         </div>
-      </div>
-    </div>
 
-  </div>
-
-  <!-- ── FORM PANEL ───────────────────────────────────── -->
-  <div class="form-panel">
-
-    <div class="form-header">
-      <div class="eyebrow">Learner Onboarding</div>
-      <h2>Create Your Account</h2>
-      <p>Fill in your details to register on the Smart Learning platform.</p>
-    </div>
-
-    <div class="fields">
-
-      <!-- Full Name -->
-      <div class="field-group">
-        <label for="fullName">Full Name</label>
-        <div class="input-wrap">
-          <input id="fullName" type="text" placeholder="e.g. Jane Doe" autocomplete="name" />
-          <span class="input-icon">👤</span>
-        </div>
-      </div>
-
-      <!-- Class / Grade -->
-      <div class="field-group">
-        <label for="classGrade">Class / Grade</label>
-        <select id="classGrade">
-          <option value="">Select your grade</option>
-          <option value="5">Grade 5</option>
-          <option value="6">Grade 6</option>
-          <option value="7">Grade 7</option>
-          <option value="8">Grade 8</option>
-          <option value="9">Grade 9</option>
-          <option value="10">Grade 10</option>
-          <option value="11">Grade 11</option>
-          <option value="12">Grade 12</option>
-        </select>
-      </div>
-
-      <!-- Stream — only visible for Grade 11 & 12 -->
-      <div class="field-group stream-field" id="streamField">
-        <label for="stream">Stream</label>
-        <select id="stream">
-          <option value="">Select stream</option>
-          <option value="PCM">PCM — Physics, Chemistry, Maths</option>
-          <option value="PCB">PCB — Physics, Chemistry, Biology</option>
-          <option value="Commerce">Commerce</option>
-          <option value="Humanities">Humanities</option>
-        </select>
-      </div>
-
-      <!-- Date of Birth -->
-      <div class="field-group">
-        <label for="dob">Date of Birth</label>
-        <input id="dob" type="date" />
-      </div>
-
-      <!-- Email -->
-      <div class="field-group">
-        <label for="email">Email Address</label>
-        <div class="input-wrap">
-          <input id="email" type="email" placeholder="you@example.com" autocomplete="email" />
-          <span class="input-icon">✉</span>
-        </div>
-      </div>
-
-      <!-- Phone -->
-      <div class="field-group">
-        <label for="phone">Phone Number</label>
-        <div class="phone-row">
-          <select id="countryCode" class="phone-prefix">
-            <option value="+91">🇮🇳 +91</option>
-            <option value="+1">🇺🇸 +1</option>
-            <option value="+44">🇬🇧 +44</option>
-            <option value="+61">🇦🇺 +61</option>
-            <option value="+81">🇯🇵 +81</option>
-            <option value="+971">🇦🇪 +971</option>
-          </select>
-          <input id="phone" type="tel" placeholder="98765 43210" autocomplete="tel" />
-        </div>
-      </div>
-
-      <!-- Password -->
-      <div class="field-group">
-        <label for="password">Password</label>
-        <div class="pw-wrap">
-          <input id="password" type="password" placeholder="Create a strong password" autocomplete="new-password" />
-          <button type="button" class="btn-show-hide" id="togglePassword">Show</button>
-        </div>
-        <!-- Strength indicator -->
-        <div class="strength-box">
-          <div class="strength-lbl">Password strength</div>
-          <div class="strength-pills">
-            <span class="pill" id="pill8">8+ chars</span>
-            <span class="pill" id="pillUpper">Uppercase</span>
-            <span class="pill" id="pillLower">Lowercase</span>
-            <span class="pill" id="pillSpecial">Special char</span>
+        <div class="features">
+          <div class="feature">
+            <div class="feat-icon">📚</div>
+            <div class="feat-text">
+              <strong>Subject Resources</strong>
+              <span
+                >Videos, notes, quizzes and materials for every subject.</span
+              >
+            </div>
+          </div>
+          <div class="feature">
+            <div class="feat-icon">📊</div>
+            <div class="feat-text">
+              <strong>Progress Tracking</strong>
+              <span>Real-time analytics to see how you're improving.</span>
+            </div>
+          </div>
+          <div class="feature">
+            <div class="feat-icon">🎯</div>
+            <div class="feat-text">
+              <strong>Daily Goals</strong>
+              <span>Set targets and complete your learning checklist.</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Remember me + Forgot password -->
-      <div class="remember-row">
-        <div class="check-row">
-          <input type="checkbox" id="rememberMe" checked />
-          <label for="rememberMe">Remember me</label>
+      <!-- ── FORM PANEL ───────────────────────────────────── -->
+      <div class="form-panel">
+        <div class="form-header">
+          <div class="eyebrow">Learner Onboarding</div>
+          <h2>Create Your Account</h2>
+          <p>
+            Fill in your details to register on the Smart Learning platform.
+          </p>
         </div>
-        <button type="button" class="forgot-link" id="forgotBtn">Forgot password?</button>
+
+        <div class="fields">
+          <!-- Full Name -->
+          <div class="field-group">
+            <label for="fullName">Full Name</label>
+            <div class="input-wrap">
+              <input
+                id="fullName"
+                type="text"
+                placeholder="e.g. Jane Doe"
+                autocomplete="name"
+              />
+              <span class="input-icon">👤</span>
+            </div>
+          </div>
+
+          <!-- Class / Grade -->
+          <div class="field-group">
+            <label for="classGrade">Class / Grade</label>
+            <select id="classGrade">
+              <option value="">Select your grade</option>
+              <option value="5">Grade 5</option>
+              <option value="6">Grade 6</option>
+              <option value="7">Grade 7</option>
+              <option value="8">Grade 8</option>
+              <option value="9">Grade 9</option>
+              <option value="10">Grade 10</option>
+              <option value="11">Grade 11</option>
+              <option value="12">Grade 12</option>
+            </select>
+          </div>
+
+          <!-- Stream — only visible for Grade 11 & 12 -->
+          <div class="field-group stream-field" id="streamField">
+            <label for="stream">Stream</label>
+            <select id="stream">
+              <option value="">Select stream</option>
+              <option value="PCM">PCM — Physics, Chemistry, Maths</option>
+              <option value="PCB">PCB — Physics, Chemistry, Biology</option>
+              <option value="Commerce">Commerce</option>
+              <option value="Humanities">Humanities</option>
+            </select>
+          </div>
+
+          <!-- Date of Birth -->
+          <div class="field-group">
+            <label for="dob">Date of Birth</label>
+            <input id="dob" type="date" />
+          </div>
+
+          <!-- Email -->
+          <div class="field-group">
+            <label for="email">Email Address</label>
+            <div class="input-wrap">
+              <input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                autocomplete="email"
+              />
+              <span class="input-icon">✉</span>
+            </div>
+          </div>
+
+          <!-- Phone -->
+          <div class="field-group">
+            <label for="phone">Phone Number</label>
+            <div class="phone-row">
+              <select id="countryCode" class="phone-prefix">
+                <option value="+91">🇮🇳 +91</option>
+                <option value="+1">🇺🇸 +1</option>
+                <option value="+44">🇬🇧 +44</option>
+                <option value="+61">🇦🇺 +61</option>
+                <option value="+81">🇯🇵 +81</option>
+                <option value="+971">🇦🇪 +971</option>
+              </select>
+              <input
+                id="phone"
+                type="tel"
+                placeholder="98765 43210"
+                autocomplete="tel"
+              />
+            </div>
+          </div>
+
+          <!-- Password -->
+          <div class="field-group">
+            <label for="password">Password</label>
+            <div class="pw-wrap">
+              <input
+                id="password"
+                type="password"
+                placeholder="Create a strong password"
+                autocomplete="new-password"
+              />
+              <button type="button" class="btn-show-hide" id="togglePassword">
+                Show
+              </button>
+            </div>
+            <!-- Strength indicator -->
+            <div class="strength-box">
+              <div class="strength-lbl">Password strength</div>
+              <div class="strength-pills">
+                <span class="pill" id="pill8">8+ chars</span>
+                <span class="pill" id="pillUpper">Uppercase</span>
+                <span class="pill" id="pillLower">Lowercase</span>
+                <span class="pill" id="pillSpecial">Special char</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Remember me + Forgot password -->
+          <div class="remember-row">
+            <div class="check-row">
+              <input type="checkbox" id="rememberMe" checked />
+              <label for="rememberMe">Remember me</label>
+            </div>
+            <button type="button" class="forgot-link" id="forgotBtn">
+              Forgot password?
+            </button>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- Social signup -->
+          <div class="social-lbl">or sign up with</div>
+          <div class="social-grid">
+            <button class="btn-social" id="googleBtn" type="button">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M21.8 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.5a4.7 4.7 0 01-2 3.1v2.5h3.3c1.9-1.8 3-4.3 3-7.4z"
+                  fill="#4285F4"
+                />
+                <path
+                  d="M12 22c2.7 0 5-.9 6.7-2.4l-3.3-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3v2.6A10 10 0 0012 22z"
+                  fill="#34A853"
+                />
+                <path
+                  d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3A10 10 0 002 12c0 1.6.4 3.2 1 4.6L6.4 14z"
+                  fill="#FBBC05"
+                />
+                <path
+                  d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9C16.9 2.9 14.6 2 12 2A10 10 0 003 7.4L6.4 10c.8-2.3 3-4.1 5.6-4.1z"
+                  fill="#EA4335"
+                />
+              </svg>
+              Google
+            </button>
+
+            <button class="btn-social" id="microsoftBtn" type="button">
+              <svg viewBox="0 0 24 24" fill="none">
+                <rect x="2" y="2" width="9.5" height="9.5" fill="#F25022" />
+                <rect x="12.5" y="2" width="9.5" height="9.5" fill="#7FBA00" />
+                <rect x="2" y="12.5" width="9.5" height="9.5" fill="#00A4EF" />
+                <rect
+                  x="12.5"
+                  y="12.5"
+                  width="9.5"
+                  height="9.5"
+                  fill="#FFB900"
+                />
+              </svg>
+              Microsoft
+            </button>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- Terms -->
+          <div class="check-row">
+            <input type="checkbox" id="agreeTerms" />
+            <label for="agreeTerms">
+              I agree to the <a href="#">Terms of Service</a> and
+              <a href="#">Privacy Policy</a>
+            </label>
+          </div>
+
+          <!-- Status -->
+          <p class="status-msg" id="statusMsg"></p>
+
+          <!-- Submit -->
+          <button class="btn-submit" id="createAccountBtn" type="button">
+            Create Account
+          </button>
+
+          <!-- Already have account -->
+          <p class="login-prompt">
+            Already have an account? <a href="index.html#login">Log in here</a>
+          </p>
+        </div>
       </div>
-
-      <div class="divider"></div>
-
-      <!-- Social signup -->
-      <div class="social-lbl">or sign up with</div>
-      <div class="social-grid">
-
-        <button class="btn-social" id="googleBtn" type="button">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path d="M21.8 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.5a4.7 4.7 0 01-2 3.1v2.5h3.3c1.9-1.8 3-4.3 3-7.4z" fill="#4285F4"/>
-            <path d="M12 22c2.7 0 5-.9 6.7-2.4l-3.3-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3v2.6A10 10 0 0012 22z" fill="#34A853"/>
-            <path d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3A10 10 0 002 12c0 1.6.4 3.2 1 4.6L6.4 14z" fill="#FBBC05"/>
-            <path d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9C16.9 2.9 14.6 2 12 2A10 10 0 003 7.4L6.4 10c.8-2.3 3-4.1 5.6-4.1z" fill="#EA4335"/>
-          </svg>
-          Google
-        </button>
-
-        <button class="btn-social" id="microsoftBtn" type="button">
-          <svg viewBox="0 0 24 24" fill="none">
-            <rect x="2"    y="2"    width="9.5" height="9.5" fill="#F25022"/>
-            <rect x="12.5" y="2"    width="9.5" height="9.5" fill="#7FBA00"/>
-            <rect x="2"    y="12.5" width="9.5" height="9.5" fill="#00A4EF"/>
-            <rect x="12.5" y="12.5" width="9.5" height="9.5" fill="#FFB900"/>
-          </svg>
-          Microsoft
-        </button>
-
-      </div>
-
-      <div class="divider"></div>
-
-      <!-- Terms -->
-      <div class="check-row">
-        <input type="checkbox" id="agreeTerms" />
-        <label for="agreeTerms">
-          I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
-        </label>
-      </div>
-
-      <!-- Status -->
-      <p class="status-msg" id="statusMsg"></p>
-
-      <!-- Submit -->
-      <button class="btn-submit" id="createAccountBtn" type="button">Create Account</button>
-
-      <!-- Already have account -->
-      <p class="login-prompt">
-        Already have an account? <a href="index.html#login">Log in here</a>
-      </p>
-
     </div>
-  </div>
 
-</div>
-
-<script>
-/* ═══════════════════════════════════════════════════════════
+    <script>
+      /* ═══════════════════════════════════════════════════════════
    SMART LEARNING DC — learner_login.html
    Complete self-contained logic. Supabase calls are clearly
    marked — uncomment when supabase-client.js is ready.
    ═══════════════════════════════════════════════════════════ */
 
-/* ── 1. THEME ──────────────────────────────────────────── */
-const themeBtn = document.getElementById('themeBtn');
+      /* ── 1. THEME ──────────────────────────────────────────── */
+      const themeBtn = document.getElementById("themeBtn");
 
-function getTheme()  { return localStorage.getItem('sl-theme') || 'dark'; }
-function applyTheme(t) {
-  document.documentElement.setAttribute('data-theme', t);
-  themeBtn.textContent = t === 'dark' ? '☀️' : '🌙';
-  themeBtn.setAttribute('aria-label', t === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
-  localStorage.setItem('sl-theme', t);
-}
+      function getTheme() {
+        return localStorage.getItem("sl-theme") || "dark";
+      }
+      function applyTheme(t) {
+        document.documentElement.setAttribute("data-theme", t);
+        themeBtn.textContent = t === "dark" ? "☀️" : "🌙";
+        themeBtn.setAttribute(
+          "aria-label",
+          t === "dark" ? "Switch to light mode" : "Switch to dark mode",
+        );
+        localStorage.setItem("sl-theme", t);
+      }
 
-themeBtn.addEventListener('click', () => {
-  applyTheme(getTheme() === 'dark' ? 'light' : 'dark');
-});
-applyTheme(getTheme());
+      themeBtn.addEventListener("click", () => {
+        applyTheme(getTheme() === "dark" ? "light" : "dark");
+      });
+      applyTheme(getTheme());
 
+      /* ── 2. ELEMENTS ───────────────────────────────────────── */
+      const fullNameInput = document.getElementById("fullName");
+      const classGradeSelect = document.getElementById("classGrade");
+      const streamField = document.getElementById("streamField");
+      const streamSelect = document.getElementById("stream");
+      const dobInput = document.getElementById("dob");
+      const emailInput = document.getElementById("email");
+      const countryCode = document.getElementById("countryCode");
+      const phoneInput = document.getElementById("phone");
+      const passwordInput = document.getElementById("password");
+      const togglePassword = document.getElementById("togglePassword");
+      const rememberMe = document.getElementById("rememberMe");
+      const agreeTerms = document.getElementById("agreeTerms");
+      const createAccountBtn = document.getElementById("createAccountBtn");
+      const statusMsg = document.getElementById("statusMsg");
 
-/* ── 2. ELEMENTS ───────────────────────────────────────── */
-const fullNameInput   = document.getElementById('fullName');
-const classGradeSelect= document.getElementById('classGrade');
-const streamField     = document.getElementById('streamField');
-const streamSelect    = document.getElementById('stream');
-const dobInput        = document.getElementById('dob');
-const emailInput      = document.getElementById('email');
-const countryCode     = document.getElementById('countryCode');
-const phoneInput      = document.getElementById('phone');
-const passwordInput   = document.getElementById('password');
-const togglePassword  = document.getElementById('togglePassword');
-const rememberMe      = document.getElementById('rememberMe');
-const agreeTerms      = document.getElementById('agreeTerms');
-const createAccountBtn= document.getElementById('createAccountBtn');
-const statusMsg       = document.getElementById('statusMsg');
+      /* ── 3. STREAM FIELD — Grade 11 & 12 only ─────────────── */
+      classGradeSelect.addEventListener("change", () => {
+        const grade = classGradeSelect.value;
+        const show = grade === "11" || grade === "12";
+        streamField.classList.toggle("visible", show);
+        if (!show) streamSelect.value = "";
+      });
 
+      /* ── 4. SHOW / HIDE PASSWORD ───────────────────────────── */
+      togglePassword.addEventListener("click", () => {
+        const hidden = passwordInput.type === "password";
+        passwordInput.type = hidden ? "text" : "password";
+        togglePassword.textContent = hidden ? "Hide" : "Show";
+      });
 
-/* ── 3. STREAM FIELD — Grade 11 & 12 only ─────────────── */
-classGradeSelect.addEventListener('change', () => {
-  const grade = classGradeSelect.value;
-  const show  = grade === '11' || grade === '12';
-  streamField.classList.toggle('visible', show);
-  if (!show) streamSelect.value = '';
-});
+      /* ── 5. PASSWORD STRENGTH ──────────────────────────────── */
+      const pill8 = document.getElementById("pill8");
+      const pillUpper = document.getElementById("pillUpper");
+      const pillLower = document.getElementById("pillLower");
+      const pillSpec = document.getElementById("pillSpecial");
 
+      passwordInput.addEventListener("input", () => {
+        const v = passwordInput.value;
+        pill8.classList.toggle("active", v.length >= 8);
+        pillUpper.classList.toggle("active", /[A-Z]/.test(v));
+        pillLower.classList.toggle("active", /[a-z]/.test(v));
+        pillSpec.classList.toggle("active", /[^A-Za-z0-9]/.test(v));
+      });
 
-/* ── 4. SHOW / HIDE PASSWORD ───────────────────────────── */
-togglePassword.addEventListener('click', () => {
-  const hidden = passwordInput.type === 'password';
-  passwordInput.type      = hidden ? 'text' : 'password';
-  togglePassword.textContent = hidden ? 'Hide' : 'Show';
-});
+      /* ── 6. STATUS HELPERS ─────────────────────────────────── */
+      function setStatus(msg, type = "info") {
+        statusMsg.textContent = msg;
+        statusMsg.className = "status-msg " + type;
+      }
+      function clearStatus() {
+        setStatus("", "info");
+      }
 
+      function setLoading(on) {
+        if (on) {
+          createAccountBtn.dataset.orig = createAccountBtn.innerHTML;
+          createAccountBtn.innerHTML =
+            '<span class="spinner"></span>Creating account…';
+          createAccountBtn.disabled = true;
+        } else {
+          createAccountBtn.innerHTML =
+            createAccountBtn.dataset.orig || "Create Account";
+          createAccountBtn.disabled = false;
+        }
+      }
 
-/* ── 5. PASSWORD STRENGTH ──────────────────────────────── */
-const pill8     = document.getElementById('pill8');
-const pillUpper = document.getElementById('pillUpper');
-const pillLower = document.getElementById('pillLower');
-const pillSpec  = document.getElementById('pillSpecial');
+      /* ── 7. VALIDATION ─────────────────────────────────────── */
+      function validate() {
+        const fullName = fullNameInput.value.trim();
+        const grade = classGradeSelect.value;
+        const stream = streamSelect.value;
+        const dob = dobInput.value;
+        const email = emailInput.value.trim();
+        const phone = phoneInput.value.trim();
+        const password = passwordInput.value;
+        const agreed = agreeTerms.checked;
 
-passwordInput.addEventListener('input', () => {
-  const v = passwordInput.value;
-  pill8.classList.toggle    ('active', v.length >= 8);
-  pillUpper.classList.toggle('active', /[A-Z]/.test(v));
-  pillLower.classList.toggle('active', /[a-z]/.test(v));
-  pillSpec.classList.toggle ('active', /[^A-Za-z0-9]/.test(v));
-});
+        if (!fullName) {
+          setStatus("Please enter your full name.", "error");
+          fullNameInput.focus();
+          return false;
+        }
+        if (!grade) {
+          setStatus("Please select your class / grade.", "error");
+          classGradeSelect.focus();
+          return false;
+        }
+        if ((grade === "11" || grade === "12") && !stream) {
+          setStatus("Please select your stream for Grade 11/12.", "error");
+          streamSelect.focus();
+          return false;
+        }
+        if (!dob) {
+          setStatus("Please enter your date of birth.", "error");
+          dobInput.focus();
+          return false;
+        }
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(email)) {
+          setStatus("Please enter a valid email address.", "error");
+          emailInput.focus();
+          return false;
+        }
+        if (!phone || phone.length < 7) {
+          setStatus("Please enter a valid phone number.", "error");
+          phoneInput.focus();
+          return false;
+        }
+        if (
+          password.length < 8 ||
+          !/[A-Z]/.test(password) ||
+          !/[a-z]/.test(password) ||
+          !/[^A-Za-z0-9]/.test(password)
+        ) {
+          setStatus(
+            "Password needs 8+ chars, uppercase, lowercase, and a special character.",
+            "error",
+          );
+          passwordInput.focus();
+          return false;
+        }
+        if (!agreed) {
+          setStatus(
+            "Please agree to the Terms of Service to continue.",
+            "error",
+          );
+          return false;
+        }
+        return true;
+      }
 
+      /* ── 8. CREATE ACCOUNT ─────────────────────────────────── */
+      createAccountBtn.addEventListener("click", handleCreateAccount);
 
-/* ── 6. STATUS HELPERS ─────────────────────────────────── */
-function setStatus(msg, type = 'info') {
-  statusMsg.textContent = msg;
-  statusMsg.className   = 'status-msg ' + type;
-}
-function clearStatus() { setStatus('', 'info'); }
+      /* Allow Enter key only from text inputs — not selects */
+      document
+        .querySelectorAll(
+          'input[type="text"], input[type="email"], input[type="password"], input[type="tel"], input[type="date"]',
+        )
+        .forEach((inp) => {
+          inp.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") handleCreateAccount();
+          });
+        });
 
-function setLoading(on) {
-  if (on) {
-    createAccountBtn.dataset.orig = createAccountBtn.innerHTML;
-    createAccountBtn.innerHTML = '<span class="spinner"></span>Creating account…';
-    createAccountBtn.disabled  = true;
-  } else {
-    createAccountBtn.innerHTML = createAccountBtn.dataset.orig || 'Create Account';
-    createAccountBtn.disabled  = false;
-  }
-}
+      async function handleCreateAccount() {
+        clearStatus();
+        if (!validate()) return;
 
+        const fullName = fullNameInput.value.trim();
+        const grade = classGradeSelect.value;
+        const stream = streamSelect.value || null;
+        const dob = dobInput.value;
+        const email = emailInput.value.trim();
+        const prefix = countryCode.value;
+        const phone = prefix + " " + phoneInput.value.trim();
+        const password = passwordInput.value;
 
-/* ── 7. VALIDATION ─────────────────────────────────────── */
-function validate() {
-  const fullName = fullNameInput.value.trim();
-  const grade    = classGradeSelect.value;
-  const stream   = streamSelect.value;
-  const dob      = dobInput.value;
-  const email    = emailInput.value.trim();
-  const phone    = phoneInput.value.trim();
-  const password = passwordInput.value;
-  const agreed   = agreeTerms.checked;
+        setLoading(true);
 
-  if (!fullName) {
-    setStatus('Please enter your full name.', 'error');
-    fullNameInput.focus(); return false;
-  }
-  if (!grade) {
-    setStatus('Please select your class / grade.', 'error');
-    classGradeSelect.focus(); return false;
-  }
-  if ((grade === '11' || grade === '12') && !stream) {
-    setStatus('Please select your stream for Grade 11/12.', 'error');
-    streamSelect.focus(); return false;
-  }
-  if (!dob) {
-    setStatus('Please enter your date of birth.', 'error');
-    dobInput.focus(); return false;
-  }
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(email)) {
-    setStatus('Please enter a valid email address.', 'error');
-    emailInput.focus(); return false;
-  }
-  if (!phone || phone.length < 7) {
-    setStatus('Please enter a valid phone number.', 'error');
-    phoneInput.focus(); return false;
-  }
-  if (
-    password.length < 8 ||
-    !/[A-Z]/.test(password) ||
-    !/[a-z]/.test(password) ||
-    !/[^A-Za-z0-9]/.test(password)
-  ) {
-    setStatus('Password needs 8+ chars, uppercase, lowercase, and a special character.', 'error');
-    passwordInput.focus(); return false;
-  }
-  if (!agreed) {
-    setStatus('Please agree to the Terms of Service to continue.', 'error');
-    return false;
-  }
-  return true;
-}
-
-
-/* ── 8. CREATE ACCOUNT ─────────────────────────────────── */
-createAccountBtn.addEventListener('click', handleCreateAccount);
-
-/* Allow Enter key only from text inputs — not selects */
-document.querySelectorAll('input[type="text"], input[type="email"], input[type="password"], input[type="tel"], input[type="date"]')
-  .forEach(inp => {
-    inp.addEventListener('keydown', e => {
-      if (e.key === 'Enter') handleCreateAccount();
-    });
-  });
-
-async function handleCreateAccount() {
-  clearStatus();
-  if (!validate()) return;
-
-  const fullName = fullNameInput.value.trim();
-  const grade    = classGradeSelect.value;
-  const stream   = streamSelect.value || null;
-  const dob      = dobInput.value;
-  const email    = emailInput.value.trim();
-  const prefix   = countryCode.value;
-  const phone    = prefix + ' ' + phoneInput.value.trim();
-  const password = passwordInput.value;
-
-  setLoading(true);
-
-  try {
-    /* ── SUPABASE STEP 1: Auth signup ───────────────────────
+        try {
+          /* ── SUPABASE STEP 1: Auth signup ───────────────────────
        const { data, error: authError } = await window.supabaseClient
          .auth.signUp({ email, password });
        if (authError) throw authError;
@@ -894,7 +1154,7 @@ async function handleCreateAccount() {
        const userId = data.user.id;
     ─────────────────────────────────────────────────────── */
 
-    /* ── SUPABASE STEP 2: Insert into learners table ────────
+          /* ── SUPABASE STEP 2: Insert into learners table ────────
        const { error: dbError } = await window.supabaseClient
          .from('learners')
          .insert({
@@ -910,107 +1170,123 @@ async function handleCreateAccount() {
        if (dbError) throw dbError;
     ─────────────────────────────────────────────────────── */
 
-    /* ── SUPABASE STEP 3: Insert role ───────────────────────
+          /* ── SUPABASE STEP 3: Insert role ───────────────────────
        await window.supabaseClient
          .from('user_roles')
          .insert({ auth_user_id: userId, role: 'learner' });
     ─────────────────────────────────────────────────────── */
 
-    // ── DEMO (remove when Supabase is connected) ───────────
-    await new Promise(r => setTimeout(r, 1400));
-    // ───────────────────────────────────────────────────────
+          // ── DEMO (remove when Supabase is connected) ───────────
+          await new Promise((r) => setTimeout(r, 1400));
+          // ───────────────────────────────────────────────────────
 
-    // Save minimal profile to localStorage for dashboard use
-    localStorage.setItem('learnerProfile', JSON.stringify({
-      fullName, grade, stream, email,
-      phone,
-      // authUserId: userId   ← uncomment with Supabase
-    }));
+          // Save minimal profile to localStorage for dashboard use
+          localStorage.setItem(
+            "learnerProfile",
+            JSON.stringify({
+              fullName,
+              grade,
+              stream,
+              email,
+              phone,
+              // authUserId: userId   ← uncomment with Supabase
+            }),
+          );
 
-    setStatus('Account created! Redirecting to your dashboard…', 'success');
+          setStatus(
+            "Account created! Redirecting to your dashboard…",
+            "success",
+          );
 
-    setTimeout(() => {
-      window.location.href = 'learner_dashboard.html';
-    }, 1200);
+          setTimeout(() => {
+            window.location.href = "learner_dashboard.html";
+          }, 1200);
+        } catch (err) {
+          console.error("Signup error:", err);
+          const msg = /rate/i.test(err?.message || "")
+            ? "Too many attempts. Please wait a moment and try again."
+            : err?.message || "Something went wrong. Please try again.";
+          setStatus(msg, "error");
+          setLoading(false);
+        }
+      }
 
-  } catch (err) {
-    console.error('Signup error:', err);
-    const msg = /rate/i.test(err?.message || '')
-      ? 'Too many attempts. Please wait a moment and try again.'
-      : err?.message || 'Something went wrong. Please try again.';
-    setStatus(msg, 'error');
-    setLoading(false);
-  }
-}
+      /* ── 9. FORGOT PASSWORD ────────────────────────────────── */
+      document
+        .getElementById("forgotBtn")
+        .addEventListener("click", async () => {
+          const email = emailInput.value.trim();
+          if (!email) {
+            setStatus("Enter your email address above first.", "error");
+            emailInput.focus();
+            return;
+          }
 
+          const btn = document.getElementById("forgotBtn");
+          btn.disabled = true;
+          btn.textContent = "Sending…";
+          clearStatus();
 
-/* ── 9. FORGOT PASSWORD ────────────────────────────────── */
-document.getElementById('forgotBtn').addEventListener('click', async () => {
-  const email = emailInput.value.trim();
-  if (!email) {
-    setStatus('Enter your email address above first.', 'error');
-    emailInput.focus();
-    return;
-  }
-
-  const btn = document.getElementById('forgotBtn');
-  btn.disabled    = true;
-  btn.textContent = 'Sending…';
-  clearStatus();
-
-  try {
-    /* ── SUPABASE FORGOT PASSWORD ───────────────────────────
+          try {
+            /* ── SUPABASE FORGOT PASSWORD ───────────────────────────
        const { error } = await window.supabaseClient
          .auth.resetPasswordForEmail(email, {
            redirectTo: window.location.origin + '/reset-password.html'
          });
        if (error) throw error;
     ─────────────────────────────────────────────────────── */
-    await new Promise(r => setTimeout(r, 1000)); // demo delay
-    setStatus('Password reset link sent! Check your inbox.', 'success');
-  } catch (err) {
-    setStatus(err?.message || 'Could not send reset link.', 'error');
-  } finally {
-    btn.disabled    = false;
-    btn.textContent = 'Forgot password?';
-  }
-});
+            await new Promise((r) => setTimeout(r, 1000)); // demo delay
+            setStatus("Password reset link sent! Check your inbox.", "success");
+          } catch (err) {
+            setStatus(err?.message || "Could not send reset link.", "error");
+          } finally {
+            btn.disabled = false;
+            btn.textContent = "Forgot password?";
+          }
+        });
 
-
-/* ── 10. GOOGLE LOGIN ──────────────────────────────────── */
-document.getElementById('googleBtn').addEventListener('click', async () => {
-  try {
-    /* ── SUPABASE GOOGLE OAUTH ──────────────────────────────
+      /* ── 10. GOOGLE LOGIN ──────────────────────────────────── */
+      document
+        .getElementById("googleBtn")
+        .addEventListener("click", async () => {
+          try {
+            /* ── SUPABASE GOOGLE OAUTH ──────────────────────────────
        await window.supabaseClient.auth.signInWithOAuth({
          provider: 'google',
          options: { redirectTo: window.location.origin + '/LEARNER/learner_dashboard.html' }
        });
     ─────────────────────────────────────────────────────── */
-    setStatus('Google login: connect your Supabase client to enable.', 'info');
-  } catch (err) {
-    setStatus(err?.message, 'error');
-  }
-});
+            setStatus(
+              "Google login: connect your Supabase client to enable.",
+              "info",
+            );
+          } catch (err) {
+            setStatus(err?.message, "error");
+          }
+        });
 
-
-/* ── 11. MICROSOFT LOGIN ───────────────────────────────── */
-document.getElementById('microsoftBtn').addEventListener('click', async () => {
-  try {
-    /* ── SUPABASE MICROSOFT OAUTH ───────────────────────────
+      /* ── 11. MICROSOFT LOGIN ───────────────────────────────── */
+      document
+        .getElementById("microsoftBtn")
+        .addEventListener("click", async () => {
+          try {
+            /* ── SUPABASE MICROSOFT OAUTH ───────────────────────────
        await window.supabaseClient.auth.signInWithOAuth({
          provider: 'azure',
          options: { redirectTo: window.location.origin + '/LEARNER/learner_dashboard.html' }
        });
     ─────────────────────────────────────────────────────── */
-    setStatus('Microsoft login: connect your Supabase client to enable.', 'info');
-  } catch (err) {
-    setStatus(err?.message, 'error');
-  }
-});
+            setStatus(
+              "Microsoft login: connect your Supabase client to enable.",
+              "info",
+            );
+          } catch (err) {
+            setStatus(err?.message, "error");
+          }
+        });
 
-
-/* ── 12. SESSION CHECK — redirect if already logged in ─── */
-/*
+      /* ── 12. SESSION CHECK — redirect if already logged in ─── */
+      /*
   Uncomment when Supabase is connected:
 
   (async () => {
@@ -1021,9 +1297,8 @@ document.getElementById('microsoftBtn').addEventListener('click', async () => {
   })();
 */
 
-
-/* ── 13. OAUTH REDIRECT HANDLER ────────────────────────── */
-/*
+      /* ── 13. OAUTH REDIRECT HANDLER ────────────────────────── */
+      /*
   Handles Google/Microsoft redirect back to this page.
   Uncomment when Supabase is connected:
 
@@ -1062,7 +1337,6 @@ document.getElementById('microsoftBtn').addEventListener('click', async () => {
     window.location.href = 'learner_dashboard.html';
   });
 */
-
-</script>
-</body>
+    </script>
+  </body>
 </html>

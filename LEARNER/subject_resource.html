@@ -18,6 +18,9 @@
       })();
     </script>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../js/supabase-client.js"></script>
+
     <style>
       /* ── TOKENS ─────────────────────────────────────────── */
       :root {
@@ -905,12 +908,13 @@
         return {
           subject: decodeURIComponent(p.get("subject") || "Mathematics"),
           action: p.get("action") || "overview",
+          grade: p.get("grade") || "",
         };
       }
-      const { subject, action: initAction } = getParams();
+      const { subject, action: initAction, grade: urlGrade } = getParams();
       let currentAction = initAction;
 
-      // Get learner grade from localStorage profile
+      // Get learner grade — URL param first (most reliable), then localStorage
       const learnerProfile = (() => {
         try {
           return JSON.parse(localStorage.getItem("learnerProfile") || "{}");
@@ -919,20 +923,57 @@
         }
       })();
       const learnerGrade = String(
-        learnerProfile.grade || learnerProfile.class_grade || "",
+        urlGrade || learnerProfile.grade || learnerProfile.class_grade || "",
+      );
+
+      // Debug: log what we have
+      console.log(
+        "[GRADE DEBUG] urlGrade:",
+        urlGrade,
+        "| profileGrade:",
+        learnerProfile.grade,
+        "| finalGrade:",
+        learnerGrade,
+        "| subject:",
+        subject,
       );
 
       // Get teacher-uploaded content for this subject + grade
       function getTeacherContent(type) {
         try {
           const all = JSON.parse(localStorage.getItem("tc_content") || "[]");
-          return all.filter(
+          console.log(
+            "[TC_CONTENT] Total items in storage:",
+            all.length,
+            "| Filtering for subject:",
+            subject,
+            "| type:",
+            type,
+            "| grade:",
+            learnerGrade,
+          );
+          all.forEach((c) =>
+            console.log(
+              "  →",
+              c.title,
+              "| subject:",
+              c.subject,
+              "| type:",
+              c.type,
+              "| grade:",
+              c.grade,
+            ),
+          );
+          const filtered = all.filter(
             (c) =>
               c.subject === subject &&
               c.type === type &&
-              (!learnerGrade || c.grade === learnerGrade),
+              (!learnerGrade || String(c.grade) === String(learnerGrade)),
           );
-        } catch {
+          console.log("[TC_CONTENT] Matched:", filtered.length);
+          return filtered;
+        } catch (e) {
+          console.error("[TC_CONTENT] Error:", e);
           return [];
         }
       }
@@ -1365,6 +1406,50 @@
 
       /* ── 6. RENDER FUNCTIONS ───────────────────────────────── */
 
+      function renderOverview() {
+        const d = getData();
+        const s = d.subjects && d.subjects[subject] ? d.subjects[subject] : {};
+        return `
+    <div class="card">
+      <div class="card-title">Overview</div>
+      <div class="card-heading">${subject} — All Resources</div>
+      <div class="overview-grid">
+        <div class="ov-card" onclick="switchTab('videos')">
+          <div class="ov-icon">▶️</div>
+          <div>
+            <div class="ov-name">Video Lessons</div>
+            <div class="ov-desc">Watch concept videos and walkthroughs for ${subject}.</div>
+            <span class="ov-count">${s.videos || 0} watched</span>
+          </div>
+        </div>
+        <div class="ov-card" onclick="switchTab('notes')">
+          <div class="ov-icon">📝</div>
+          <div>
+            <div class="ov-name">Study Notes</div>
+            <div class="ov-desc">Read chapter notes, formulas, and key concepts.</div>
+            <span class="ov-count">${s.notes || 0} read</span>
+          </div>
+        </div>
+        <div class="ov-card" onclick="switchTab('quizzes')">
+          <div class="ov-icon">🎯</div>
+          <div>
+            <div class="ov-name">Practice Quizzes</div>
+            <div class="ov-desc">Test your knowledge with timed topic quizzes.</div>
+            <span class="ov-count">${s.quizzes || 0} taken</span>
+          </div>
+        </div>
+        <div class="ov-card" onclick="switchTab('images')">
+          <div class="ov-icon">🖼</div>
+          <div>
+            <div class="ov-name">Visual Library</div>
+            <div class="ov-desc">Explore diagrams, charts, and illustrated examples.</div>
+            <span class="ov-count">${s.images || 0} viewed</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
+      }
+
       function renderVideos() {
         const videos = getVideos(subject);
         const tcVideos = getTeacherContent("video");
@@ -1372,7 +1457,6 @@
           localStorage.getItem(`sl_viewed_videos_${subject}`) || "[]",
         );
 
-        // Teacher-uploaded video cards
         const teacherCards = tcVideos
           .map((c, i) => {
             const key = `tc_${i}`;
@@ -1397,7 +1481,6 @@
           })
           .join("");
 
-        // Hardcoded fallback cards
         const defaultCards = videos
           .map((v, i) => {
             const done = viewed.includes(i);
@@ -1428,6 +1511,7 @@
       <div class="res-grid">${teacherCards}${defaultCards}</div>
     </div>`;
       }
+
       function renderNotes() {
         const chapters = getNotes(subject);
         const tcNotes = getTeacherContent("pdf");
@@ -1435,7 +1519,6 @@
           localStorage.getItem(`sl_read_notes_${subject}`) || "[]",
         );
 
-        // Teacher-uploaded notes
         const teacherNotes = tcNotes
           .map((c, i) => {
             const key = `tc_${i}`;
@@ -1460,7 +1543,6 @@
           })
           .join("");
 
-        // Hardcoded chapters
         const defaultNotes = chapters
           .map((ch, i) => {
             const done = readChapters.includes(i);
@@ -1602,7 +1684,6 @@
           localStorage.getItem(`sl_viewed_images_${subject}`) || "[]",
         );
 
-        // Teacher-uploaded image cards
         const teacherImgs = tcImages
           .map((c, i) => {
             const key = `tc_${i}`;
@@ -1618,7 +1699,6 @@
           })
           .join("");
 
-        // Hardcoded images
         const defaultImgs = imgs
           .map((img, i) => {
             const done = viewed.includes(i);
