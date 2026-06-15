@@ -1,1071 +1,1363 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Smart Learning DC</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Learning DC</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=Playfair+Display:wght@700;800&display=swap"
+      rel="stylesheet"
+    />
 
-  <script>
-    /* Apply theme instantly to avoid flash */
-    (function () {
-      const t = localStorage.getItem('sl-theme') || 'light';
-      document.documentElement.setAttribute('data-theme', t);
-    })();
-  </script>
+    <script>
+      /* Apply theme instantly to avoid flash */
+      (function () {
+        const t = localStorage.getItem("sl-theme") || "light";
+        document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
 
-  <style>
-    /* ── TOKENS ─────────────────────────────────────────── */
-    :root {
-      --bg:        #f0f4fa;
-      --surface:   #ffffff;
-      --surf2:     #f7f9fd;
-      --surf3:     #eef3fb;
-      --text:      #0d1117;
-      --muted:     #5a6478;
-      --border:    rgba(13,17,23,0.09);
-      --primary:   #2563eb;
-      --pri-soft:  #dbeafe;
-      --pri-glow:  rgba(37,99,235,0.18);
-      --radius:    24px;
-      --shadow:    0 20px 60px rgba(13,17,23,0.10);
-      --shadow-sm: 0 4px 16px rgba(13,17,23,0.07);
-      --font-body: 'DM Sans', sans-serif;
-      --font-display: 'Playfair Display', serif;
-      --transition: 200ms cubic-bezier(0.4,0,0.2,1);
-    }
-    [data-theme="dark"] {
-      --bg:       #080e1a;
-      --surface:  #0d1424;
-      --surf2:    #111c30;
-      --surf3:    #162036;
-      --text:     #e8edf5;
-      --muted:    #8899b4;
-      --border:   rgba(232,237,245,0.08);
-      --primary:  #60a5fa;
-      --pri-soft: rgba(96,165,250,0.12);
-      --pri-glow: rgba(96,165,250,0.20);
-      --shadow:   0 20px 60px rgba(0,0,0,0.45);
-      --shadow-sm:0 4px 16px rgba(0,0,0,0.3);
-    }
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../js/supabase-client.js"></script>
 
-    /* ── RESET ──────────────────────────────────────────── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { font-size: 16px; }
-    body {
-      font-family: var(--font-body);
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      transition: background var(--transition), color var(--transition);
-      line-height: 1.6;
-    }
-    a { text-decoration: none; color: inherit; }
-    button { font-family: inherit; cursor: pointer; border: none; background: none; }
+    <style>
+      /* ── TOKENS ─────────────────────────────────────────── */
+      :root {
+        --bg: #f0f4fa;
+        --surface: #ffffff;
+        --surf2: #f7f9fd;
+        --surf3: #eef3fb;
+        --text: #0d1117;
+        --muted: #5a6478;
+        --border: rgba(13, 17, 23, 0.09);
+        --primary: #2563eb;
+        --pri-soft: #dbeafe;
+        --pri-glow: rgba(37, 99, 235, 0.18);
+        --radius: 24px;
+        --shadow: 0 20px 60px rgba(13, 17, 23, 0.1);
+        --shadow-sm: 0 4px 16px rgba(13, 17, 23, 0.07);
+        --font-body: "DM Sans", sans-serif;
+        --font-display: "Playfair Display", serif;
+        --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      [data-theme="dark"] {
+        --bg: #080e1a;
+        --surface: #0d1424;
+        --surf2: #111c30;
+        --surf3: #162036;
+        --text: #e8edf5;
+        --muted: #8899b4;
+        --border: rgba(232, 237, 245, 0.08);
+        --primary: #60a5fa;
+        --pri-soft: rgba(96, 165, 250, 0.12);
+        --pri-glow: rgba(96, 165, 250, 0.2);
+        --shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+        --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.3);
+      }
 
-    /* ── PAGE WRAPPER ───────────────────────────────────── */
-    .page {
-      max-width: 1180px;
-      margin: 0 auto;
-      padding: 20px 24px 48px;
-    }
+      /* ── RESET ──────────────────────────────────────────── */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html {
+        font-size: 16px;
+      }
+      body {
+        font-family: var(--font-body);
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        transition:
+          background var(--transition),
+          color var(--transition);
+        line-height: 1.6;
+      }
+      a {
+        text-decoration: none;
+        color: inherit;
+      }
+      button {
+        font-family: inherit;
+        cursor: pointer;
+        border: none;
+        background: none;
+      }
 
-    /* ── FADE TRANSITION ────────────────────────────────── */
-    .page-exit {
-      opacity: 0;
-      transform: translateY(8px) scale(0.99);
-      transition: opacity 220ms ease, transform 220ms ease;
-    }
+      /* ── PAGE WRAPPER ───────────────────────────────────── */
+      .page {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 20px 24px 48px;
+      }
 
-    /* ── TOPBAR ─────────────────────────────────────────── */
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 14px 0;
-    }
+      /* ── FADE TRANSITION ────────────────────────────────── */
+      .page-exit {
+        opacity: 0;
+        transform: translateY(8px) scale(0.99);
+        transition:
+          opacity 220ms ease,
+          transform 220ms ease;
+      }
 
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 700;
-      font-size: 1.05rem;
-      letter-spacing: -0.01em;
-    }
-    .brand-mark {
-      width: 34px; height: 34px;
-      border-radius: 10px;
-      background: var(--primary);
-      display: grid; place-items: center;
-      flex-shrink: 0;
-    }
-    .brand-mark svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; }
+      /* ── TOPBAR ─────────────────────────────────────────── */
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 14px 0;
+      }
 
-    .topbar-right {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        font-size: 1.05rem;
+        letter-spacing: -0.01em;
+      }
+      .brand-mark {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        background: var(--primary);
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+      }
+      .brand-mark svg {
+        width: 18px;
+        height: 18px;
+        fill: none;
+        stroke: #fff;
+        stroke-width: 2;
+        stroke-linecap: round;
+      }
 
-    .btn-ghost {
-      padding: 9px 18px;
-      border-radius: 999px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: var(--muted);
-      border: 1px solid var(--border);
-      background: var(--surface);
-      transition: background var(--transition), color var(--transition), border-color var(--transition);
-    }
-    .btn-ghost:hover { background: var(--surf3); color: var(--text); }
+      .topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
 
-    .btn-theme {
-      width: 38px; height: 38px;
-      border-radius: 50%;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      display: grid; place-items: center;
-      font-size: 1rem;
-      transition: background var(--transition), border-color var(--transition), transform 150ms;
-    }
-    .btn-theme:hover { background: var(--surf3); transform: rotate(20deg); }
+      .btn-ghost {
+        padding: 9px 18px;
+        border-radius: 999px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--muted);
+        border: 1px solid var(--border);
+        background: var(--surface);
+        transition:
+          background var(--transition),
+          color var(--transition),
+          border-color var(--transition);
+      }
+      .btn-ghost:hover {
+        background: var(--surf3);
+        color: var(--text);
+      }
 
-    /* ── HERO GRID ──────────────────────────────────────── */
-    .hero {
-      display: grid;
-      grid-template-columns: 1.15fr 0.85fr;
-      gap: 24px;
-      margin-top: 24px;
-    }
-    @media (max-width: 900px) {
-      .hero { grid-template-columns: 1fr; }
-    }
+      .btn-theme {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        display: grid;
+        place-items: center;
+        font-size: 1rem;
+        transition:
+          background var(--transition),
+          border-color var(--transition),
+          transform 150ms;
+      }
+      .btn-theme:hover {
+        background: var(--surf3);
+        transform: rotate(20deg);
+      }
 
-    /* ── LEFT CARD ──────────────────────────────────────── */
-    .left-card {
-      background: var(--surface);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 40px;
-      display: flex;
-      flex-direction: column;
-      gap: 32px;
-      border: 1px solid var(--border);
-    }
+      /* ── HERO GRID ──────────────────────────────────────── */
+      .hero {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 24px;
+        margin-top: 24px;
+      }
+      @media (max-width: 900px) {
+        .hero {
+          grid-template-columns: 1fr;
+        }
+      }
 
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
-      border-radius: 999px;
-      background: var(--pri-soft);
-      color: var(--primary);
-      font-size: 0.82rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      width: fit-content;
-    }
-    .badge-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: var(--primary);
-    }
+      /* ── LEFT CARD ──────────────────────────────────────── */
+      .left-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 40px;
+        display: flex;
+        flex-direction: column;
+        gap: 32px;
+        border: 1px solid var(--border);
+      }
 
-    .hero-headline {
-      font-family: var(--font-display);
-      font-size: clamp(2.2rem, 3.5vw, 3.4rem);
-      line-height: 1.05;
-      letter-spacing: -0.02em;
-      color: var(--text);
-    }
-    .hero-headline em {
-      font-style: italic;
-      color: var(--primary);
-    }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 999px;
+        background: var(--pri-soft);
+        color: var(--primary);
+        font-size: 0.82rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        width: fit-content;
+      }
+      .badge-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--primary);
+      }
 
-    .hero-sub {
-      color: var(--muted);
-      font-size: 1.05rem;
-      line-height: 1.75;
-      font-weight: 300;
-      max-width: 480px;
-    }
+      .hero-headline {
+        font-family: var(--font-display);
+        font-size: clamp(2.2rem, 3.5vw, 3.4rem);
+        line-height: 1.05;
+        letter-spacing: -0.02em;
+        color: var(--text);
+      }
+      .hero-headline em {
+        font-style: italic;
+        color: var(--primary);
+      }
 
-    /* ── ILLUSTRATION ───────────────────────────────────── */
-    .illustration {
-      position: relative;
-      border-radius: 20px;
-      overflow: hidden;
-      background: linear-gradient(145deg, var(--surf3) 0%, var(--surf2) 100%);
-      border: 1px solid var(--border);
-      min-height: 260px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+      .hero-sub {
+        color: var(--muted);
+        font-size: 1.05rem;
+        line-height: 1.75;
+        font-weight: 300;
+        max-width: 480px;
+      }
 
-    .ill-inner {
-      position: relative;
-      width: 100%;
-      height: 260px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+      /* ── ILLUSTRATION ───────────────────────────────────── */
+      .illustration {
+        position: relative;
+        border-radius: 20px;
+        overflow: hidden;
+        background: linear-gradient(145deg, var(--surf3) 0%, var(--surf2) 100%);
+        border: 1px solid var(--border);
+        min-height: 260px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
 
-    /* Floating stat cards */
-    .stat-card {
-      position: absolute;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 12px 16px;
-      box-shadow: var(--shadow-sm);
-      animation: float 4s ease-in-out infinite;
-    }
-    .stat-card:nth-child(2) { animation-delay: -1.3s; }
-    .stat-card:nth-child(3) { animation-delay: -2.6s; }
-    .stat-card .stat-num { font-size: 1.4rem; font-weight: 700; color: var(--primary); }
-    .stat-card .stat-lbl { font-size: 0.75rem; color: var(--muted); font-weight: 500; margin-top: 2px; }
+      .ill-inner {
+        position: relative;
+        width: 100%;
+        height: 260px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
 
-    .stat-card.a { top: 16px; left: 20px; }
-    .stat-card.b { bottom: 24px; left: 30px; }
-    .stat-card.c { top: 30px; right: 20px; }
+      /* Floating stat cards */
+      .stat-card {
+        position: absolute;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 12px 16px;
+        box-shadow: var(--shadow-sm);
+        animation: float 4s ease-in-out infinite;
+      }
+      .stat-card:nth-child(2) {
+        animation-delay: -1.3s;
+      }
+      .stat-card:nth-child(3) {
+        animation-delay: -2.6s;
+      }
+      .stat-card .stat-num {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: var(--primary);
+      }
+      .stat-card .stat-lbl {
+        font-size: 0.75rem;
+        color: var(--muted);
+        font-weight: 500;
+        margin-top: 2px;
+      }
 
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50%       { transform: translateY(-8px); }
-    }
+      .stat-card.a {
+        top: 16px;
+        left: 20px;
+      }
+      .stat-card.b {
+        bottom: 24px;
+        left: 30px;
+      }
+      .stat-card.c {
+        top: 30px;
+        right: 20px;
+      }
 
-    /* Centre illustration graphic */
-    .ill-graphic {
-      width: 120px; height: 120px;
-      border-radius: 50%;
-      background: var(--pri-soft);
-      display: grid; place-items: center;
-      border: 3px solid rgba(37,99,235,0.15);
-    }
-    .ill-graphic svg { width: 56px; height: 56px; }
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-8px);
+        }
+      }
 
-    /* Dots decoration */
-    .ill-dots {
-      position: absolute;
-      bottom: 12px; right: 12px;
-      display: grid;
-      grid-template-columns: repeat(5, 6px);
-      gap: 5px;
-    }
-    .ill-dots span {
-      width: 5px; height: 5px;
-      border-radius: 50%;
-      background: var(--border);
-    }
-    .ill-dots span:nth-child(3n+1) { background: var(--pri-soft); }
+      /* Centre illustration graphic */
+      .ill-graphic {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: var(--pri-soft);
+        display: grid;
+        place-items: center;
+        border: 3px solid rgba(37, 99, 235, 0.15);
+      }
+      .ill-graphic svg {
+        width: 56px;
+        height: 56px;
+      }
 
-    /* ── RIGHT CARD ─────────────────────────────────────── */
-    .right-card {
-      background: var(--surface);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 40px 36px;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-      border: 1px solid var(--border);
-    }
+      /* Dots decoration */
+      .ill-dots {
+        position: absolute;
+        bottom: 12px;
+        right: 12px;
+        display: grid;
+        grid-template-columns: repeat(5, 6px);
+        gap: 5px;
+      }
+      .ill-dots span {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--border);
+      }
+      .ill-dots span:nth-child(3n + 1) {
+        background: var(--pri-soft);
+      }
 
-    .right-card h2 {
-      font-family: var(--font-display);
-      font-size: clamp(1.6rem, 2vw, 2rem);
-      line-height: 1.15;
-      letter-spacing: -0.02em;
-    }
-    .right-card > p {
-      color: var(--muted);
-      font-size: 0.97rem;
-      line-height: 1.7;
-      font-weight: 300;
-      margin-top: -10px;
-    }
+      /* ── RIGHT CARD ─────────────────────────────────────── */
+      .right-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 40px 36px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        border: 1px solid var(--border);
+      }
 
-    /* ── ROLE CARDS ─────────────────────────────────────── */
-    .role-list { display: flex; flex-direction: column; gap: 14px; }
+      .right-card h2 {
+        font-family: var(--font-display);
+        font-size: clamp(1.6rem, 2vw, 2rem);
+        line-height: 1.15;
+        letter-spacing: -0.02em;
+      }
+      .right-card > p {
+        color: var(--muted);
+        font-size: 0.97rem;
+        line-height: 1.7;
+        font-weight: 300;
+        margin-top: -10px;
+      }
 
-    .role-card {
-      display: flex;
-      align-items: center;
-      gap: 18px;
-      padding: 20px 22px;
-      border-radius: 18px;
-      border: 1.5px solid var(--border);
-      background: var(--surf2);
-      cursor: pointer;
-      transition: border-color var(--transition), background var(--transition), box-shadow var(--transition), transform 150ms;
-      position: relative;
-      overflow: hidden;
-    }
-    .role-card::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, var(--pri-glow), transparent 60%);
-      opacity: 0;
-      transition: opacity var(--transition);
-    }
-    .role-card:hover,
-    .role-card.active {
-      border-color: var(--primary);
-      background: var(--surf3);
-      box-shadow: 0 0 0 3px var(--pri-glow);
-      transform: translateY(-2px);
-    }
-    .role-card:hover::before,
-    .role-card.active::before { opacity: 1; }
+      /* ── ROLE CARDS ─────────────────────────────────────── */
+      .role-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
 
-    .role-icon {
-      width: 48px; height: 48px;
-      border-radius: 14px;
-      background: var(--pri-soft);
-      display: grid; place-items: center;
-      flex-shrink: 0;
-      position: relative; z-index: 1;
-      transition: background var(--transition);
-    }
-    .role-card:hover .role-icon,
-    .role-card.active .role-icon { background: var(--primary); }
-    .role-icon svg { width: 22px; height: 22px; stroke: var(--primary); fill: none; stroke-width: 1.8; stroke-linecap: round; transition: stroke var(--transition); }
-    .role-card:hover .role-icon svg,
-    .role-card.active .role-icon svg { stroke: #fff; }
+      .role-card {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding: 20px 22px;
+        border-radius: 18px;
+        border: 1.5px solid var(--border);
+        background: var(--surf2);
+        cursor: pointer;
+        transition:
+          border-color var(--transition),
+          background var(--transition),
+          box-shadow var(--transition),
+          transform 150ms;
+        position: relative;
+        overflow: hidden;
+      }
+      .role-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, var(--pri-glow), transparent 60%);
+        opacity: 0;
+        transition: opacity var(--transition);
+      }
+      .role-card:hover,
+      .role-card.active {
+        border-color: var(--primary);
+        background: var(--surf3);
+        box-shadow: 0 0 0 3px var(--pri-glow);
+        transform: translateY(-2px);
+      }
+      .role-card:hover::before,
+      .role-card.active::before {
+        opacity: 1;
+      }
 
-    .role-info { flex: 1; position: relative; z-index: 1; }
-    .role-title { font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; }
-    .role-desc  { font-size: 0.875rem; color: var(--muted); margin-top: 3px; font-weight: 400; }
+      .role-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: var(--pri-soft);
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        position: relative;
+        z-index: 1;
+        transition: background var(--transition);
+      }
+      .role-card:hover .role-icon,
+      .role-card.active .role-icon {
+        background: var(--primary);
+      }
+      .role-icon svg {
+        width: 22px;
+        height: 22px;
+        stroke: var(--primary);
+        fill: none;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        transition: stroke var(--transition);
+      }
+      .role-card:hover .role-icon svg,
+      .role-card.active .role-icon svg {
+        stroke: #fff;
+      }
 
-    .role-arrow {
-      width: 34px; height: 34px;
-      border-radius: 50%;
-      background: var(--primary);
-      display: grid; place-items: center;
-      position: relative; z-index: 1;
-      opacity: 0;
-      transform: translateX(-8px);
-      transition: opacity var(--transition), transform var(--transition);
-    }
-    .role-arrow svg { width: 16px; height: 16px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; }
-    .role-card:hover .role-arrow,
-    .role-card.active .role-arrow { opacity: 1; transform: translateX(0); }
+      .role-info {
+        flex: 1;
+        position: relative;
+        z-index: 1;
+      }
+      .role-title {
+        font-weight: 700;
+        font-size: 1rem;
+        letter-spacing: -0.01em;
+      }
+      .role-desc {
+        font-size: 0.875rem;
+        color: var(--muted);
+        margin-top: 3px;
+        font-weight: 400;
+      }
 
-    /* ── DIVIDER ────────────────────────────────────────── */
-    .divider {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      color: var(--muted);
-      font-size: 0.85rem;
-    }
-    .divider::before,
-    .divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
+      .role-arrow {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: var(--primary);
+        display: grid;
+        place-items: center;
+        position: relative;
+        z-index: 1;
+        opacity: 0;
+        transform: translateX(-8px);
+        transition:
+          opacity var(--transition),
+          transform var(--transition);
+      }
+      .role-arrow svg {
+        width: 16px;
+        height: 16px;
+        stroke: #fff;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+      }
+      .role-card:hover .role-arrow,
+      .role-card.active .role-arrow {
+        opacity: 1;
+        transform: translateX(0);
+      }
 
-    /* ── LOGIN LINK ROW ─────────────────────────────────── */
-    .login-hint {
-      text-align: center;
-      font-size: 0.9rem;
-      color: var(--muted);
-    }
-    .login-hint a {
-      color: var(--primary);
-      font-weight: 600;
-    }
-    .login-hint a:hover { text-decoration: underline; }
+      /* ── DIVIDER ────────────────────────────────────────── */
+      .divider {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+      .divider::before,
+      .divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
 
-    .small-note {
-      font-size: 0.82rem;
-      color: var(--muted);
-      line-height: 1.65;
-      font-weight: 300;
-    }
+      /* ── LOGIN LINK ROW ─────────────────────────────────── */
+      .login-hint {
+        text-align: center;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+      .login-hint a {
+        color: var(--primary);
+        font-weight: 600;
+      }
+      .login-hint a:hover {
+        text-decoration: underline;
+      }
 
-    /* ── MODAL ──────────────────────────────────────────── */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(8, 14, 26, 0.70);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-      display: grid;
-      place-items: center;
-      padding: 20px;
-      z-index: 100;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity var(--transition);
-    }
-    .modal-overlay.open {
-      opacity: 1;
-      pointer-events: all;
-    }
+      .small-note {
+        font-size: 0.82rem;
+        color: var(--muted);
+        line-height: 1.65;
+        font-weight: 300;
+      }
 
-    .modal {
-      background: var(--surface);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 40px;
-      width: min(480px, 100%);
-      border: 1px solid var(--border);
-      transform: translateY(16px) scale(0.98);
-      transition: transform var(--transition);
-      position: relative;
-    }
-    .modal-overlay.open .modal { transform: translateY(0) scale(1); }
+      /* ── MODAL ──────────────────────────────────────────── */
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(8, 14, 26, 0.7);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        z-index: 100;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity var(--transition);
+      }
+      .modal-overlay.open {
+        opacity: 1;
+        pointer-events: all;
+      }
 
-    .modal-close {
-      position: absolute;
-      top: 16px; right: 16px;
-      width: 36px; height: 36px;
-      border-radius: 50%;
-      background: var(--surf3);
-      border: 1px solid var(--border);
-      display: grid; place-items: center;
-      font-size: 1.1rem;
-      color: var(--muted);
-      transition: background var(--transition), color var(--transition);
-    }
-    .modal-close:hover { background: var(--surf2); color: var(--text); }
+      .modal {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 40px;
+        width: min(480px, 100%);
+        border: 1px solid var(--border);
+        transform: translateY(16px) scale(0.98);
+        transition: transform var(--transition);
+        position: relative;
+      }
+      .modal-overlay.open .modal {
+        transform: translateY(0) scale(1);
+      }
 
-    .modal h2 {
-      font-family: var(--font-display);
-      font-size: 1.6rem;
-      letter-spacing: -0.02em;
-      margin-bottom: 6px;
-    }
-    .modal-sub {
-      color: var(--muted);
-      font-size: 0.9rem;
-      margin-bottom: 28px;
-      font-weight: 300;
-    }
+      .modal-close {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--surf3);
+        border: 1px solid var(--border);
+        display: grid;
+        place-items: center;
+        font-size: 1.1rem;
+        color: var(--muted);
+        transition:
+          background var(--transition),
+          color var(--transition);
+      }
+      .modal-close:hover {
+        background: var(--surf2);
+        color: var(--text);
+      }
 
-    /* ── FORM FIELDS ────────────────────────────────────── */
-    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-    .field label { font-size: 0.85rem; font-weight: 600; color: var(--muted); letter-spacing: 0.02em; }
+      .modal h2 {
+        font-family: var(--font-display);
+        font-size: 1.6rem;
+        letter-spacing: -0.02em;
+        margin-bottom: 6px;
+      }
+      .modal-sub {
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin-bottom: 28px;
+        font-weight: 300;
+      }
 
-    .field input {
-      width: 100%;
-      padding: 13px 16px;
-      border-radius: 14px;
-      border: 1.5px solid var(--border);
-      background: var(--surf2);
-      color: var(--text);
-      font-size: 0.97rem;
-      font-family: inherit;
-      transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
-      outline: none;
-    }
-    .field input:focus {
-      border-color: var(--primary);
-      background: var(--surface);
-      box-shadow: 0 0 0 3px var(--pri-glow);
-    }
-    .field input::placeholder { color: var(--muted); opacity: 0.6; }
+      /* ── FORM FIELDS ────────────────────────────────────── */
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 14px;
+      }
+      .field label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--muted);
+        letter-spacing: 0.02em;
+      }
 
-    /* ── BUTTONS ────────────────────────────────────────── */
-    .btn-primary {
-      width: 100%;
-      padding: 14px;
-      border-radius: 14px;
-      background: var(--primary);
-      color: #fff;
-      font-size: 0.97rem;
-      font-weight: 700;
-      letter-spacing: 0.01em;
-      transition: opacity var(--transition), transform 150ms, box-shadow var(--transition);
-      box-shadow: 0 8px 24px var(--pri-glow);
-      margin-bottom: 10px;
-    }
-    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 12px 28px var(--pri-glow); }
-    .btn-primary:active { transform: translateY(0); }
+      .field input {
+        width: 100%;
+        padding: 13px 16px;
+        border-radius: 14px;
+        border: 1.5px solid var(--border);
+        background: var(--surf2);
+        color: var(--text);
+        font-size: 0.97rem;
+        font-family: inherit;
+        transition:
+          border-color var(--transition),
+          background var(--transition),
+          box-shadow var(--transition);
+        outline: none;
+      }
+      .field input:focus {
+        border-color: var(--primary);
+        background: var(--surface);
+        box-shadow: 0 0 0 3px var(--pri-glow);
+      }
+      .field input::placeholder {
+        color: var(--muted);
+        opacity: 0.6;
+      }
 
-    .btn-secondary {
-      width: 100%;
-      padding: 13px;
-      border-radius: 14px;
-      background: transparent;
-      color: var(--primary);
-      font-size: 0.93rem;
-      font-weight: 600;
-      border: 1.5px solid rgba(37,99,235,0.28);
-      transition: background var(--transition), border-color var(--transition), transform 150ms;
-      margin-bottom: 10px;
-    }
-    .btn-secondary:hover { background: var(--pri-soft); border-color: var(--primary); transform: translateY(-1px); }
+      /* ── BUTTONS ────────────────────────────────────────── */
+      .btn-primary {
+        width: 100%;
+        padding: 14px;
+        border-radius: 14px;
+        background: var(--primary);
+        color: #fff;
+        font-size: 0.97rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        transition:
+          opacity var(--transition),
+          transform 150ms,
+          box-shadow var(--transition);
+        box-shadow: 0 8px 24px var(--pri-glow);
+        margin-bottom: 10px;
+      }
+      .btn-primary:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+        box-shadow: 0 12px 28px var(--pri-glow);
+      }
+      .btn-primary:active {
+        transform: translateY(0);
+      }
 
-    /* ── SOCIAL BUTTONS ─────────────────────────────────── */
-    .social-label {
-      display: flex; align-items: center; gap: 10px;
-      color: var(--muted); font-size: 0.83rem;
-      margin: 18px 0 12px;
-    }
-    .social-label::before, .social-label::after {
-      content: ''; flex: 1; height: 1px; background: var(--border);
-    }
+      .btn-secondary {
+        width: 100%;
+        padding: 13px;
+        border-radius: 14px;
+        background: transparent;
+        color: var(--primary);
+        font-size: 0.93rem;
+        font-weight: 600;
+        border: 1.5px solid rgba(37, 99, 235, 0.28);
+        transition:
+          background var(--transition),
+          border-color var(--transition),
+          transform 150ms;
+        margin-bottom: 10px;
+      }
+      .btn-secondary:hover {
+        background: var(--pri-soft);
+        border-color: var(--primary);
+        transform: translateY(-1px);
+      }
 
-    .social-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 6px;
-    }
+      /* ── SOCIAL BUTTONS ─────────────────────────────────── */
+      .social-label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--muted);
+        font-size: 0.83rem;
+        margin: 18px 0 12px;
+      }
+      .social-label::before,
+      .social-label::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
 
-    .btn-social {
-      padding: 12px;
-      border-radius: 12px;
-      border: 1.5px solid var(--border);
-      background: var(--surf2);
-      color: var(--text);
-      font-size: 0.875rem;
-      font-weight: 600;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      transition: background var(--transition), border-color var(--transition), transform 150ms;
-    }
-    .btn-social:hover { background: var(--surf3); border-color: var(--primary); transform: translateY(-1px); }
-    .btn-social svg { width: 18px; height: 18px; flex-shrink: 0; }
+      .social-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 6px;
+      }
 
-    /* ── STATUS MESSAGE ─────────────────────────────────── */
-    .status-msg {
-      font-size: 0.875rem;
-      min-height: 20px;
-      margin-top: 4px;
-      padding: 0 2px;
-      transition: color var(--transition);
-    }
-    .status-msg.error   { color: #ef4444; }
-    .status-msg.success { color: #22c55e; }
-    .status-msg.info    { color: var(--muted); }
+      .btn-social {
+        padding: 12px;
+        border-radius: 12px;
+        border: 1.5px solid var(--border);
+        background: var(--surf2);
+        color: var(--text);
+        font-size: 0.875rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition:
+          background var(--transition),
+          border-color var(--transition),
+          transform 150ms;
+      }
+      .btn-social:hover {
+        background: var(--surf3);
+        border-color: var(--primary);
+        transform: translateY(-1px);
+      }
+      .btn-social svg {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+      }
 
-    /* ── FOOTER NOTE ────────────────────────────────────── */
-    .modal-footer-note {
-      font-size: 0.82rem;
-      color: var(--muted);
-      text-align: center;
-      margin-top: 12px;
-      line-height: 1.6;
-      font-weight: 300;
-    }
+      /* ── STATUS MESSAGE ─────────────────────────────────── */
+      .status-msg {
+        font-size: 0.875rem;
+        min-height: 20px;
+        margin-top: 4px;
+        padding: 0 2px;
+        transition: color var(--transition);
+      }
+      .status-msg.error {
+        color: #ef4444;
+      }
+      .status-msg.success {
+        color: #22c55e;
+      }
+      .status-msg.info {
+        color: var(--muted);
+      }
 
-    /* ── LOADING SPINNER ────────────────────────────────── */
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .spinner {
-      display: inline-block;
-      width: 16px; height: 16px;
-      border: 2px solid rgba(255,255,255,0.3);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      vertical-align: middle;
-      margin-right: 8px;
-    }
+      /* ── FOOTER NOTE ────────────────────────────────────── */
+      .modal-footer-note {
+        font-size: 0.82rem;
+        color: var(--muted);
+        text-align: center;
+        margin-top: 12px;
+        line-height: 1.6;
+        font-weight: 300;
+      }
 
-    /* ── RESPONSIVE ─────────────────────────────────────── */
-    @media (max-width: 600px) {
-      .page { padding: 16px 16px 36px; }
-      .left-card, .right-card { padding: 28px 22px; }
-      .modal { padding: 28px 22px; }
-      .topbar-right { gap: 8px; }
-      .social-grid { grid-template-columns: 1fr; }
-    }
-  </style>
-</head>
+      /* ── LOADING SPINNER ────────────────────────────────── */
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        vertical-align: middle;
+        margin-right: 8px;
+      }
 
-<body>
-<div class="page">
+      /* ── RESPONSIVE ─────────────────────────────────────── */
+      @media (max-width: 600px) {
+        .page {
+          padding: 16px 16px 36px;
+        }
+        .left-card,
+        .right-card {
+          padding: 28px 22px;
+        }
+        .modal {
+          padding: 28px 22px;
+        }
+        .topbar-right {
+          gap: 8px;
+        }
+        .social-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
 
-  <!-- ── TOPBAR ─────────────────────────────────────── -->
-  <header class="topbar">
-    <a href="#" class="brand">
-      <span class="brand-mark">
-        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-      </span>
-      Smart Learning DC
-    </a>
+  <body>
+    <div class="page">
+      <!-- ── TOPBAR ─────────────────────────────────────── -->
+      <header class="topbar">
+        <a href="#" class="brand">
+          <span class="brand-mark">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M2 17l10 5 10-5" />
+              <path d="M2 12l10 5 10-5" />
+            </svg>
+          </span>
+          Smart Learning DC
+        </a>
 
-    <div class="topbar-right">
-      <button class="btn-theme" id="themeBtn" aria-label="Toggle theme">🌙</button>
-      <button class="btn-ghost" id="navLoginBtn">Log in</button>
+        <div class="topbar-right">
+          <button class="btn-theme" id="themeBtn" aria-label="Toggle theme">
+            🌙
+          </button>
+          <button class="btn-ghost" id="navLoginBtn">Log in</button>
+        </div>
+      </header>
+
+      <!-- ── HERO ───────────────────────────────────────── -->
+      <section class="hero">
+        <!-- LEFT: Info + Illustration -->
+        <article class="left-card">
+          <div>
+            <span class="badge"
+              ><span class="badge-dot"></span>Smart Learning DC</span
+            >
+            <h1 class="hero-headline" style="margin-top: 20px">
+              Your <em>Smartest</em><br />Learning Journey.
+            </h1>
+            <p class="hero-sub" style="margin-top: 16px">
+              A tailored platform for learners and teachers — with courses,
+              quizzes, progress tracking, and materials built for real growth.
+            </p>
+          </div>
+
+          <!-- Illustration -->
+          <div class="illustration">
+            <div class="ill-inner">
+              <div class="stat-card a">
+                <div class="stat-num">2.4k+</div>
+                <div class="stat-lbl">Active learners</div>
+              </div>
+
+              <div class="stat-card b">
+                <div class="stat-num">98%</div>
+                <div class="stat-lbl">Pass rate</div>
+              </div>
+
+              <div class="stat-card c">
+                <div class="stat-num">150+</div>
+                <div class="stat-lbl">Courses</div>
+              </div>
+
+              <div class="ill-graphic">
+                <svg
+                  viewBox="0 0 56 56"
+                  fill="none"
+                  stroke="var(--primary)"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                >
+                  <circle cx="28" cy="28" r="22" stroke-opacity="0.2" />
+                  <path d="M16 28l8 8 16-16" stroke-width="2.5" />
+                  <circle cx="28" cy="28" r="10" stroke-opacity="0.15" />
+                </svg>
+              </div>
+
+              <div class="ill-dots">
+                <span></span><span></span><span></span><span></span
+                ><span></span> <span></span><span></span><span></span
+                ><span></span><span></span> <span></span><span></span
+                ><span></span><span></span><span></span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- RIGHT: Role Selection -->
+        <aside class="right-card">
+          <div>
+            <h2>Choose your path.</h2>
+            <p>
+              Select your role to get a personalised experience crafted for your
+              goals.
+            </p>
+          </div>
+
+          <div class="role-list">
+            <!-- Learner -->
+            <div
+              class="role-card active"
+              data-role="learner"
+              tabindex="0"
+              role="button"
+              aria-label="I am a Learner"
+            >
+              <div class="role-icon">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                  <path d="M2 17l10 5 10-5" />
+                  <path d="M2 12l10 5 10-5" />
+                </svg>
+              </div>
+              <div class="role-info">
+                <div class="role-title">I am a Learner</div>
+                <div class="role-desc">
+                  Explore lessons, track progress &amp; ace quizzes.
+                </div>
+              </div>
+              <div class="role-arrow">
+                <svg viewBox="0 0 24 24">
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+
+            <!-- Teacher -->
+            <div
+              class="role-card"
+              data-role="teacher"
+              tabindex="0"
+              role="button"
+              aria-label="I am a Teacher"
+            >
+              <div class="role-icon">
+                <svg viewBox="0 0 24 24">
+                  <rect x="2" y="3" width="20" height="14" rx="2" />
+                  <path d="M8 21h8M12 17v4" />
+                </svg>
+              </div>
+              <div class="role-info">
+                <div class="role-title">I am a Teacher</div>
+                <div class="role-desc">
+                  Create classes, assign quizzes &amp; mentor students.
+                </div>
+              </div>
+              <div class="role-arrow">
+                <svg viewBox="0 0 24 24">
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="divider">or</div>
+
+          <div class="login-hint">
+            Already have an account?
+            <a href="#" id="inlineLoginBtn">Log in here</a>
+          </div>
+
+          <p class="small-note">
+            Clicking a role above takes you to the sign-up page for that role.
+            You can always switch later from your account settings.
+          </p>
+        </aside>
+      </section>
     </div>
-  </header>
 
-  <!-- ── HERO ───────────────────────────────────────── -->
-  <section class="hero">
+    <!-- ── LOGIN MODAL ──────────────────────────────────────── -->
+    <div
+      class="modal-overlay"
+      id="modalOverlay"
+      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modalTitle"
+    >
+      <div class="modal" id="modal">
+        <button class="modal-close" id="modalClose" aria-label="Close">
+          ✕
+        </button>
 
-    <!-- LEFT: Info + Illustration -->
-    <article class="left-card">
-      <div>
-        <span class="badge"><span class="badge-dot"></span>Smart Learning DC</span>
-        <h1 class="hero-headline" style="margin-top:20px;">
-          Your <em>Smartest</em><br>Learning Journey.
-        </h1>
-        <p class="hero-sub" style="margin-top:16px;">
-          A tailored platform for learners and teachers — with courses, quizzes, progress tracking, and materials built for real growth.
+        <h2 id="modalTitle">Welcome back.</h2>
+        <p class="modal-sub">Sign in to continue to Smart Learning DC.</p>
+
+        <!-- Email field -->
+        <div class="field">
+          <label for="loginEmail">Email address</label>
+          <input
+            type="email"
+            id="loginEmail"
+            placeholder="you@school.edu"
+            autocomplete="email"
+          />
+        </div>
+
+        <!-- Password field -->
+        <div class="field">
+          <label for="loginPassword">Password</label>
+          <input
+            type="password"
+            id="loginPassword"
+            placeholder="Your password"
+            autocomplete="current-password"
+          />
+        </div>
+
+        <!-- Status -->
+        <p class="status-msg info" id="statusMsg"></p>
+
+        <!-- Actions -->
+        <button class="btn-primary" id="loginBtn">Sign in</button>
+        <button class="btn-secondary" id="forgotBtn">Forgot password?</button>
+
+        <!-- Social -->
+        <div class="social-label">or continue with</div>
+        <div class="social-grid">
+          <button class="btn-social" id="googleBtn">
+            <!-- Google icon -->
+            <svg viewBox="0 0 24 24" fill="none">
+              <path
+                d="M21.8 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.5a4.7 4.7 0 01-2 3.1v2.5h3.3c1.9-1.8 3-4.3 3-7.4z"
+                fill="#4285F4"
+              />
+              <path
+                d="M12 22c2.7 0 5-0.9 6.7-2.4l-3.3-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3v2.6A10 10 0 0012 22z"
+                fill="#34A853"
+              />
+              <path
+                d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3A10 10 0 002 12c0 1.6.4 3.2 1 4.6L6.4 14z"
+                fill="#FBBC05"
+              />
+              <path
+                d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9C16.9 2.9 14.6 2 12 2A10 10 0 003 7.4L6.4 10c.8-2.3 3-4.1 5.6-4.1z"
+                fill="#EA4335"
+              />
+            </svg>
+            Google
+          </button>
+          <button class="btn-social" id="microsoftBtn">
+            <!-- Microsoft icon -->
+            <svg viewBox="0 0 24 24" fill="none">
+              <rect x="2" y="2" width="9.5" height="9.5" fill="#F25022" />
+              <rect x="12.5" y="2" width="9.5" height="9.5" fill="#7FBA00" />
+              <rect x="2" y="12.5" width="9.5" height="9.5" fill="#00A4EF" />
+              <rect x="12.5" y="12.5" width="9.5" height="9.5" fill="#FFB900" />
+            </svg>
+            Microsoft
+          </button>
+        </div>
+
+        <p class="modal-footer-note">
+          No account yet? Select your role above to sign up through the learner
+          or teacher page.
         </p>
       </div>
-
-      <!-- Illustration -->
-      <div class="illustration">
-        <div class="ill-inner">
-
-          <div class="stat-card a">
-            <div class="stat-num">2.4k+</div>
-            <div class="stat-lbl">Active learners</div>
-          </div>
-
-          <div class="stat-card b">
-            <div class="stat-num">98%</div>
-            <div class="stat-lbl">Pass rate</div>
-          </div>
-
-          <div class="stat-card c">
-            <div class="stat-num">150+</div>
-            <div class="stat-lbl">Courses</div>
-          </div>
-
-          <div class="ill-graphic">
-            <svg viewBox="0 0 56 56" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round">
-              <circle cx="28" cy="28" r="22" stroke-opacity="0.2"/>
-              <path d="M16 28l8 8 16-16" stroke-width="2.5"/>
-              <circle cx="28" cy="28" r="10" stroke-opacity="0.15"/>
-            </svg>
-          </div>
-
-          <div class="ill-dots">
-            <span></span><span></span><span></span><span></span><span></span>
-            <span></span><span></span><span></span><span></span><span></span>
-            <span></span><span></span><span></span><span></span><span></span>
-          </div>
-        </div>
-      </div>
-    </article>
-
-    <!-- RIGHT: Role Selection -->
-    <aside class="right-card">
-      <div>
-        <h2>Choose your path.</h2>
-        <p>Select your role to get a personalised experience crafted for your goals.</p>
-      </div>
-
-      <div class="role-list">
-
-        <!-- Learner -->
-        <div class="role-card active" data-role="learner" tabindex="0" role="button" aria-label="I am a Learner">
-          <div class="role-icon">
-            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-          </div>
-          <div class="role-info">
-            <div class="role-title">I am a Learner</div>
-            <div class="role-desc">Explore lessons, track progress &amp; ace quizzes.</div>
-          </div>
-          <div class="role-arrow">
-            <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </div>
-        </div>
-
-        <!-- Teacher -->
-        <div class="role-card" data-role="teacher" tabindex="0" role="button" aria-label="I am a Teacher">
-          <div class="role-icon">
-            <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-          </div>
-          <div class="role-info">
-            <div class="role-title">I am a Teacher</div>
-            <div class="role-desc">Create classes, assign quizzes &amp; mentor students.</div>
-          </div>
-          <div class="role-arrow">
-            <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </div>
-        </div>
-
-      </div>
-
-      <div class="divider">or</div>
-
-      <div class="login-hint">
-        Already have an account? <a href="#" id="inlineLoginBtn">Log in here</a>
-      </div>
-
-      <p class="small-note">
-        Clicking a role above takes you to the sign-up page for that role. You can always switch later from your account settings.
-      </p>
-    </aside>
-
-  </section>
-</div>
-
-<!-- ── LOGIN MODAL ──────────────────────────────────────── -->
-<div class="modal-overlay" id="modalOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-
-  <div class="modal" id="modal">
-    <button class="modal-close" id="modalClose" aria-label="Close">✕</button>
-
-    <h2 id="modalTitle">Welcome back.</h2>
-    <p class="modal-sub">Sign in to continue to Smart Learning DC.</p>
-
-    <!-- Email field -->
-    <div class="field">
-      <label for="loginEmail">Email address</label>
-      <input type="email" id="loginEmail" placeholder="you@school.edu" autocomplete="email" />
     </div>
 
-    <!-- Password field -->
-    <div class="field">
-      <label for="loginPassword">Password</label>
-      <input type="password" id="loginPassword" placeholder="Your password" autocomplete="current-password" />
-    </div>
-
-    <!-- Status -->
-    <p class="status-msg info" id="statusMsg"></p>
-
-    <!-- Actions -->
-    <button class="btn-primary" id="loginBtn">Sign in</button>
-    <button class="btn-secondary" id="forgotBtn">Forgot password?</button>
-
-    <!-- Social -->
-    <div class="social-label">or continue with</div>
-    <div class="social-grid">
-      <button class="btn-social" id="googleBtn">
-        <!-- Google icon -->
-        <svg viewBox="0 0 24 24" fill="none">
-          <path d="M21.8 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.5a4.7 4.7 0 01-2 3.1v2.5h3.3c1.9-1.8 3-4.3 3-7.4z" fill="#4285F4"/>
-          <path d="M12 22c2.7 0 5-0.9 6.7-2.4l-3.3-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3v2.6A10 10 0 0012 22z" fill="#34A853"/>
-          <path d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3A10 10 0 002 12c0 1.6.4 3.2 1 4.6L6.4 14z" fill="#FBBC05"/>
-          <path d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9C16.9 2.9 14.6 2 12 2A10 10 0 003 7.4L6.4 10c.8-2.3 3-4.1 5.6-4.1z" fill="#EA4335"/>
-        </svg>
-        Google
-      </button>
-      <button class="btn-social" id="microsoftBtn">
-        <!-- Microsoft icon -->
-        <svg viewBox="0 0 24 24" fill="none">
-          <rect x="2" y="2" width="9.5" height="9.5" fill="#F25022"/>
-          <rect x="12.5" y="2" width="9.5" height="9.5" fill="#7FBA00"/>
-          <rect x="2" y="12.5" width="9.5" height="9.5" fill="#00A4EF"/>
-          <rect x="12.5" y="12.5" width="9.5" height="9.5" fill="#FFB900"/>
-        </svg>
-        Microsoft
-      </button>
-    </div>
-
-    <p class="modal-footer-note">
-      No account yet? Select your role above to sign up through the learner or teacher page.
-    </p>
-  </div>
-</div>
-
-<script>
-/* ═══════════════════════════════════════════════════════════
+    <script>
+      /* ═══════════════════════════════════════════════════════════
    SMART LEARNING DC — index.html
    All logic self-contained. Supabase calls are clearly marked
    so you can plug in your supabase-client.js later.
    ═══════════════════════════════════════════════════════════ */
 
-/* ── 1. THEME ──────────────────────────────────────────── */
-const themeBtn  = document.getElementById('themeBtn');
-const html      = document.documentElement;
+      /* ── 1. THEME ──────────────────────────────────────────── */
+      const themeBtn = document.getElementById("themeBtn");
+      const html = document.documentElement;
 
-function getTheme()  { return localStorage.getItem('sl-theme') || 'light'; }
-function applyTheme(t) {
-  html.setAttribute('data-theme', t);
-  themeBtn.textContent = t === 'dark' ? '☀️' : '🌙';
-  themeBtn.setAttribute('aria-label', t === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
-  localStorage.setItem('sl-theme', t);
-}
+      function getTheme() {
+        return localStorage.getItem("sl-theme") || "light";
+      }
+      function applyTheme(t) {
+        html.setAttribute("data-theme", t);
+        themeBtn.textContent = t === "dark" ? "☀️" : "🌙";
+        themeBtn.setAttribute(
+          "aria-label",
+          t === "dark" ? "Switch to light mode" : "Switch to dark mode",
+        );
+        localStorage.setItem("sl-theme", t);
+      }
 
-themeBtn.addEventListener('click', () => {
-  applyTheme(getTheme() === 'dark' ? 'light' : 'dark');
-});
+      themeBtn.addEventListener("click", () => {
+        applyTheme(getTheme() === "dark" ? "light" : "dark");
+      });
 
-// Apply on load
-applyTheme(getTheme());
+      // Apply on load
+      applyTheme(getTheme());
 
+      /* ── 2. ROLE CARDS → REDIRECT ──────────────────────────── */
+      const roleTargets = {
+        learner: "learner_login.html",
+        teacher: "../TEACHER/teacher_login.html",
+      };
 
-/* ── 2. ROLE CARDS → REDIRECT ──────────────────────────── */
-const roleTargets = {
-  learner: 'learner_login.html',
-  teacher: '../TEACHER/teacher_login.html'
-};
+      const roleCards = document.querySelectorAll(".role-card");
 
-const roleCards = document.querySelectorAll('.role-card');
+      roleCards.forEach((card) => {
+        // Click handler
+        card.addEventListener("click", () => goToRole(card));
 
-roleCards.forEach(card => {
-  // Click handler
-  card.addEventListener('click', () => goToRole(card));
+        // Keyboard: Enter or Space
+        card.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            goToRole(card);
+          }
+        });
+      });
 
-  // Keyboard: Enter or Space
-  card.addEventListener('keydown', e => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      goToRole(card);
-    }
-  });
-});
+      function goToRole(card) {
+        // Highlight selected card
+        roleCards.forEach((c) => c.classList.remove("active"));
+        card.classList.add("active");
 
-function goToRole(card) {
-  // Highlight selected card
-  roleCards.forEach(c => c.classList.remove('active'));
-  card.classList.add('active');
+        const role = card.dataset.role;
+        const target = roleTargets[role] || "learner_login.html";
 
-  const role = card.dataset.role;
-  const target = roleTargets[role] || 'learner_login.html';
+        // Smooth page exit
+        document.body.style.transition =
+          "opacity 220ms ease, transform 220ms ease";
+        document.body.style.opacity = "0";
+        document.body.style.transform = "translateY(8px)";
 
-  // Smooth page exit
-  document.body.style.transition = 'opacity 220ms ease, transform 220ms ease';
-  document.body.style.opacity    = '0';
-  document.body.style.transform  = 'translateY(8px)';
+        setTimeout(() => {
+          window.location.href = target;
+        }, 230);
+      }
 
-  setTimeout(() => { window.location.href = target; }, 230);
-}
+      /* ── 3. MODAL OPEN / CLOSE ─────────────────────────────── */
+      const overlay = document.getElementById("modalOverlay");
+      const modalClose = document.getElementById("modalClose");
+      const navLoginBtn = document.getElementById("navLoginBtn");
+      const inlineLoginBtn = document.getElementById("inlineLoginBtn");
+      const emailInput = document.getElementById("loginEmail");
 
+      function openModal() {
+        overlay.classList.add("open");
+        overlay.setAttribute("aria-hidden", "false");
+        setTimeout(() => emailInput.focus(), 50);
+      }
 
-/* ── 3. MODAL OPEN / CLOSE ─────────────────────────────── */
-const overlay      = document.getElementById('modalOverlay');
-const modalClose   = document.getElementById('modalClose');
-const navLoginBtn  = document.getElementById('navLoginBtn');
-const inlineLoginBtn = document.getElementById('inlineLoginBtn');
-const emailInput   = document.getElementById('loginEmail');
+      function closeModal() {
+        overlay.classList.remove("open");
+        overlay.setAttribute("aria-hidden", "true");
+        clearStatus();
+      }
 
-function openModal() {
-  overlay.classList.add('open');
-  overlay.setAttribute('aria-hidden', 'false');
-  setTimeout(() => emailInput.focus(), 50);
-}
+      navLoginBtn.addEventListener("click", openModal);
+      inlineLoginBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        openModal();
+      });
 
-function closeModal() {
-  overlay.classList.remove('open');
-  overlay.setAttribute('aria-hidden', 'true');
-  clearStatus();
-}
+      // Close on backdrop click
+      overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) closeModal();
+      });
 
-navLoginBtn.addEventListener('click', openModal);
-inlineLoginBtn.addEventListener('click', e => { e.preventDefault(); openModal(); });
+      // Close on ESC
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && overlay.classList.contains("open"))
+          closeModal();
+      });
 
-// Close on backdrop click
-overlay.addEventListener('click', e => {
-  if (e.target === overlay) closeModal();
-});
+      modalClose.addEventListener("click", closeModal);
 
-// Close on ESC
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && overlay.classList.contains('open')) closeModal();
-});
+      // Auto-open if URL has #login
+      if (window.location.hash === "#login") openModal();
+      window.addEventListener("hashchange", () => {
+        if (window.location.hash === "#login") openModal();
+      });
 
-modalClose.addEventListener('click', closeModal);
+      /* ── 4. STATUS HELPERS ─────────────────────────────────── */
+      const statusMsg = document.getElementById("statusMsg");
 
-// Auto-open if URL has #login
-if (window.location.hash === '#login') openModal();
-window.addEventListener('hashchange', () => {
-  if (window.location.hash === '#login') openModal();
-});
+      function setStatus(msg, type = "info") {
+        statusMsg.textContent = msg;
+        statusMsg.className = "status-msg " + type;
+      }
+      function clearStatus() {
+        statusMsg.textContent = "";
+        statusMsg.className = "status-msg info";
+      }
 
+      function setLoading(btn, loading) {
+        if (loading) {
+          btn.dataset.original = btn.innerHTML;
+          btn.innerHTML = '<span class="spinner"></span>Signing in…';
+          btn.disabled = true;
+        } else {
+          btn.innerHTML = btn.dataset.original || "Sign in";
+          btn.disabled = false;
+        }
+      }
 
-/* ── 4. STATUS HELPERS ─────────────────────────────────── */
-const statusMsg = document.getElementById('statusMsg');
+      /* ── 5. LOGIN WITH EMAIL / PASSWORD ────────────────────── */
+      const loginBtn = document.getElementById("loginBtn");
+      const passwordInput = document.getElementById("loginPassword");
 
-function setStatus(msg, type = 'info') {
-  statusMsg.textContent = msg;
-  statusMsg.className = 'status-msg ' + type;
-}
-function clearStatus() {
-  statusMsg.textContent = '';
-  statusMsg.className = 'status-msg info';
-}
+      loginBtn.addEventListener("click", handleLogin);
+      passwordInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") handleLogin();
+      });
 
-function setLoading(btn, loading) {
-  if (loading) {
-    btn.dataset.original = btn.innerHTML;
-    btn.innerHTML = '<span class="spinner"></span>Signing in…';
-    btn.disabled = true;
-  } else {
-    btn.innerHTML = btn.dataset.original || 'Sign in';
-    btn.disabled = false;
-  }
-}
+      async function handleLogin() {
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
 
+        if (!email) {
+          setStatus("Please enter your email address.", "error");
+          emailInput.focus();
+          return;
+        }
+        if (!password) {
+          setStatus("Please enter your password.", "error");
+          passwordInput.focus();
+          return;
+        }
 
-/* ── 5. LOGIN WITH EMAIL / PASSWORD ────────────────────── */
-/*
-  NOTE: Replace the body of handleLogin() with real Supabase code.
-  The structure (error handling, role redirect) stays the same.
-  Example Supabase version is shown in the comments below.
-*/
+        setLoading(loginBtn, true);
+        clearStatus();
 
-const loginBtn      = document.getElementById('loginBtn');
-const passwordInput = document.getElementById('loginPassword');
+        try {
+          // STEP 1 — Sign in with Supabase
+          const { data, error } = await window.sb.auth.signInWithPassword({
+            email,
+            password,
+          });
+          if (error) throw error;
 
-loginBtn.addEventListener('click', handleLogin);
-passwordInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter') handleLogin();
-});
+          // STEP 2 — Get role from user_roles table
+          const { data: roleData, error: roleErr } = await window.sb
+            .from("user_roles")
+            .select("role")
+            .eq("auth_user_id", data.user.id)
+            .single();
 
-async function handleLogin() {
-  const email    = emailInput.value.trim();
-  const password = passwordInput.value;
+          if (roleErr)
+            throw new Error("Account found but role not set. Contact support.");
 
-  if (!email)    { setStatus('Please enter your email address.', 'error'); emailInput.focus(); return; }
-  if (!password) { setStatus('Please enter your password.', 'error'); passwordInput.focus(); return; }
+          const role = roleData?.role || "learner";
+          redirectAfterLogin(role);
+        } catch (err) {
+          setStatus(err.message || "Login failed. Please try again.", "error");
+          setLoading(loginBtn, false);
+        }
+      }
 
-  setLoading(loginBtn, true);
-  clearStatus();
+      function redirectAfterLogin(role) {
+        setStatus("Login successful! Redirecting…", "success");
+        setTimeout(() => {
+          if (role === "teacher") {
+            window.location.href = "../TEACHER/teacher_dashboard.html";
+          } else {
+            window.location.href = "learner_dashboard.html";
+          }
+        }, 800);
+      }
 
-  try {
-    /* ── SUPABASE LOGIN ─────────────────────────────────
-       Uncomment and use when supabase-client.js is ready:
+      /* ── 6. FORGOT PASSWORD ─────────────────────────────────── */
+      const forgotBtn = document.getElementById("forgotBtn");
 
-       const { data, error } = await window.supabaseClient
-         .auth.signInWithPassword({ email, password });
+      forgotBtn.addEventListener("click", async () => {
+        const email = emailInput.value.trim();
 
-       if (error) throw error;
+        if (!email) {
+          setStatus(
+            "Enter your email above first, then click Forgot password.",
+            "error",
+          );
+          emailInput.focus();
+          return;
+        }
 
-       const { data: roleData } = await window.supabaseClient
-         .from('user_roles')
-         .select('role')
-         .eq('auth_user_id', data.user.id)
-         .single();
+        forgotBtn.disabled = true;
+        forgotBtn.textContent = "Sending reset link…";
+        clearStatus();
 
-       const role = roleData?.role || 'learner';
-       redirectAfterLogin(role);
-    ─────────────────────────────────────────────────── */
+        try {
+          const { error } = await window.sb.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin + "/reset-password.html",
+          });
+          if (error) throw error;
+          setStatus("Password reset link sent! Check your email.", "success");
+        } catch (err) {
+          setStatus(err.message || "Could not send reset link.", "error");
+        } finally {
+          forgotBtn.disabled = false;
+          forgotBtn.textContent = "Forgot password?";
+        }
+      });
 
-    // ── DEMO (remove when Supabase is connected) ───────
-    await new Promise(r => setTimeout(r, 1200)); // simulate network
+      /* ── 7. GOOGLE LOGIN ─────────────────────────────────────── */
+      document
+        .getElementById("googleBtn")
+        .addEventListener("click", async () => {
+          try {
+            const { error } = await window.sb.auth.signInWithOAuth({
+              provider: "google",
+              options: {
+                redirectTo:
+                  window.location.origin + "/LEARNER/learner_dashboard.html",
+              },
+            });
+            if (error) throw error;
+          } catch (err) {
+            setStatus(err.message || "Google login failed.", "error");
+          }
+        });
 
-    // Demo: teacher@demo.com → teacher dashboard
-    //       anything else → learner dashboard
-    if (email === 'teacher@demo.com' && password === 'demo') {
-      redirectAfterLogin('teacher');
-    } else if (password === 'demo') {
-      redirectAfterLogin('learner');
-    } else {
-      throw new Error('Invalid email or password. (Use password "demo" for the preview.)');
-    }
-    // ──────────────────────────────────────────────────
+      /* ── 8. MICROSOFT LOGIN ──────────────────────────────────── */
+      document
+        .getElementById("microsoftBtn")
+        .addEventListener("click", async () => {
+          try {
+            const { error } = await window.sb.auth.signInWithOAuth({
+              provider: "azure",
+              options: {
+                redirectTo:
+                  window.location.origin + "/LEARNER/learner_dashboard.html",
+              },
+            });
+            if (error) throw error;
+          } catch (err) {
+            setStatus(err.message || "Microsoft login failed.", "error");
+          }
+        });
 
-  } catch (err) {
-    setStatus(err.message || 'Login failed. Please try again.', 'error');
-    setLoading(loginBtn, false);
-  }
-}
+      /* ── 9. AUTO SESSION CHECK ───────────────────────────────── */
+      // If user is already logged in → skip this page and go to dashboard
+      (async () => {
+        try {
+          const {
+            data: { session },
+          } = await window.sb.auth.getSession();
+          if (!session) return;
 
-function redirectAfterLogin(role) {
-  setStatus('Login successful! Redirecting…', 'success');
-  setTimeout(() => {
-    if (role === 'teacher') {
-      window.location.href = '../TEACHER/teacher_dashboard.html';
-    } else {
-      window.location.href = 'learner_dashboard.html';
-    }
-  }, 800);
-}
+          const { data: roleData } = await window.sb
+            .from("user_roles")
+            .select("role")
+            .eq("auth_user_id", session.user.id)
+            .single();
 
-
-/* ── 6. FORGOT PASSWORD ────────────────────────────────── */
-const forgotBtn = document.getElementById('forgotBtn');
-
-forgotBtn.addEventListener('click', async () => {
-  const email = emailInput.value.trim();
-
-  if (!email) {
-    setStatus('Enter your email above first, then click Forgot password.', 'error');
-    emailInput.focus();
-    return;
-  }
-
-  forgotBtn.disabled = true;
-  forgotBtn.textContent = 'Sending reset link…';
-  clearStatus();
-
-  try {
-    /* ── SUPABASE FORGOT PASSWORD ───────────────────────
-       const { error } = await window.supabaseClient
-         .auth.resetPasswordForEmail(email, {
-           redirectTo: window.location.origin + '/reset-password.html'
-         });
-       if (error) throw error;
-    ─────────────────────────────────────────────────── */
-
-    await new Promise(r => setTimeout(r, 1000)); // demo delay
-    setStatus('Password reset link sent! Check your email.', 'success');
-
-  } catch (err) {
-    setStatus(err.message || 'Could not send reset link.', 'error');
-  } finally {
-    forgotBtn.disabled = false;
-    forgotBtn.textContent = 'Forgot password?';
-  }
-});
-
-
-/* ── 7. GOOGLE LOGIN ────────────────────────────────────── */
-const googleBtn = document.getElementById('googleBtn');
-
-googleBtn.addEventListener('click', async () => {
-  try {
-    /* ── SUPABASE GOOGLE OAUTH ──────────────────────────
-       await window.supabaseClient.auth.signInWithOAuth({
-         provider: 'google',
-         options: { redirectTo: window.location.origin + '/LEARNER/learner_dashboard.html' }
-       });
-    ─────────────────────────────────────────────────── */
-    setStatus('Google login not connected yet. Add your Supabase client.', 'info');
-  } catch (err) {
-    setStatus(err.message, 'error');
-  }
-});
-
-
-/* ── 8. MICROSOFT LOGIN ─────────────────────────────────── */
-const microsoftBtn = document.getElementById('microsoftBtn');
-
-microsoftBtn.addEventListener('click', async () => {
-  try {
-    /* ── SUPABASE MICROSOFT OAUTH ───────────────────────
-       await window.supabaseClient.auth.signInWithOAuth({
-         provider: 'azure',
-         options: { redirectTo: window.location.origin + '/LEARNER/learner_dashboard.html' }
-       });
-    ─────────────────────────────────────────────────── */
-    setStatus('Microsoft login not connected yet. Add your Supabase client.', 'info');
-  } catch (err) {
-    setStatus(err.message, 'error');
-  }
-});
-
-
-/* ── 9. AUTO SESSION CHECK ──────────────────────────────── */
-/*
-  When Supabase is connected, check if user is already logged in
-  and redirect them straight to their dashboard:
-
-  (async () => {
-    const { data: { session } } = await window.supabaseClient.auth.getSession();
-    if (!session) return;
-
-    const { data: roleData } = await window.supabaseClient
-      .from('user_roles')
-      .select('role')
-      .eq('auth_user_id', session.user.id)
-      .single();
-
-    redirectAfterLogin(roleData?.role || 'learner');
-  })();
-*/
-
-</script>
-</body>
+          redirectAfterLogin(roleData?.role || "learner");
+        } catch (_) {}
+      })();
+    </script>
+  </body>
 </html>
