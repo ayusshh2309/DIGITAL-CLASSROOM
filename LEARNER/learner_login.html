@@ -14,6 +14,7 @@
     <!-- Supabase SDK — loaded ONCE -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="../js/supabase-client.js"></script>
+    <script src="../js/learner-auth.js" defer></script>
 
     <script>
       /* Apply saved theme instantly — no flash */
@@ -453,6 +454,24 @@
         font-weight: 600;
         margin-bottom: 8px;
       }
+      .strength-track {
+        width: 100%;
+        height: 8px;
+        background: rgba(148, 163, 184, 0.15);
+        border-radius: 999px;
+        overflow: hidden;
+        margin-bottom: 10px;
+      }
+      .strength-bar {
+        display: block;
+        width: 0%;
+        height: 100%;
+        border-radius: 999px;
+        background: #f85149;
+        transition:
+          width 180ms ease,
+          background 180ms ease;
+      }
       .strength-pills {
         display: flex;
         flex-wrap: wrap;
@@ -860,6 +879,9 @@
             <!-- Strength indicator -->
             <div class="strength-box">
               <div class="strength-lbl">Password strength</div>
+              <div class="strength-track">
+                <span id="strengthBar" class="strength-bar"></span>
+              </div>
               <div class="strength-pills">
                 <span class="pill" id="pill8">8+ chars</span>
                 <span class="pill" id="pillUpper">Uppercase</span>
@@ -950,393 +972,5 @@
         </div>
       </div>
     </div>
-
-    <script>
-      /* ═══════════════════════════════════════════════════════════
-   SMART LEARNING DC — learner_login.html
-   Complete self-contained logic. Supabase calls are clearly
-   marked — uncomment when supabase-client.js is ready.
-   ═══════════════════════════════════════════════════════════ */
-
-      /* ── 1. THEME ──────────────────────────────────────────── */
-      const themeBtn = document.getElementById("themeBtn");
-
-      function getTheme() {
-        return localStorage.getItem("sl-theme") || "dark";
-      }
-      function applyTheme(t) {
-        document.documentElement.setAttribute("data-theme", t);
-        themeBtn.textContent = t === "dark" ? "☀️" : "🌙";
-        themeBtn.setAttribute(
-          "aria-label",
-          t === "dark" ? "Switch to light mode" : "Switch to dark mode",
-        );
-        localStorage.setItem("sl-theme", t);
-      }
-
-      themeBtn.addEventListener("click", () => {
-        applyTheme(getTheme() === "dark" ? "light" : "dark");
-      });
-      applyTheme(getTheme());
-
-      /* ── 2. ELEMENTS ───────────────────────────────────────── */
-      const fullNameInput = document.getElementById("fullName");
-      const classGradeSelect = document.getElementById("classGrade");
-      const streamField = document.getElementById("streamField");
-      const streamSelect = document.getElementById("stream");
-      const dobInput = document.getElementById("dob");
-      const emailInput = document.getElementById("email");
-      const countryCode = document.getElementById("countryCode");
-      const phoneInput = document.getElementById("phone");
-      const passwordInput = document.getElementById("password");
-      const togglePassword = document.getElementById("togglePassword");
-      const rememberMe = document.getElementById("rememberMe");
-      const agreeTerms = document.getElementById("agreeTerms");
-      const createAccountBtn = document.getElementById("createAccountBtn");
-      const statusMsg = document.getElementById("statusMsg");
-
-      /* ── 3. STREAM FIELD — Grade 11 & 12 only ─────────────── */
-      classGradeSelect.addEventListener("change", () => {
-        const grade = classGradeSelect.value;
-        const show = grade === "11" || grade === "12";
-        streamField.classList.toggle("visible", show);
-        if (!show) streamSelect.value = "";
-      });
-
-      /* ── 4. SHOW / HIDE PASSWORD ───────────────────────────── */
-      togglePassword.addEventListener("click", () => {
-        const hidden = passwordInput.type === "password";
-        passwordInput.type = hidden ? "text" : "password";
-        togglePassword.textContent = hidden ? "Hide" : "Show";
-      });
-
-      /* ── 5. PASSWORD STRENGTH ──────────────────────────────── */
-      const pill8 = document.getElementById("pill8");
-      const pillUpper = document.getElementById("pillUpper");
-      const pillLower = document.getElementById("pillLower");
-      const pillSpec = document.getElementById("pillSpecial");
-
-      passwordInput.addEventListener("input", () => {
-        const v = passwordInput.value;
-        pill8.classList.toggle("active", v.length >= 8);
-        pillUpper.classList.toggle("active", /[A-Z]/.test(v));
-        pillLower.classList.toggle("active", /[a-z]/.test(v));
-        pillSpec.classList.toggle("active", /[^A-Za-z0-9]/.test(v));
-      });
-
-      /* ── 6. STATUS HELPERS ─────────────────────────────────── */
-      function setStatus(msg, type = "info") {
-        statusMsg.textContent = msg;
-        statusMsg.className = "status-msg " + type;
-      }
-      function clearStatus() {
-        setStatus("", "info");
-      }
-
-      function setLoading(on) {
-        if (on) {
-          createAccountBtn.dataset.orig = createAccountBtn.innerHTML;
-          createAccountBtn.innerHTML =
-            '<span class="spinner"></span>Creating account…';
-          createAccountBtn.disabled = true;
-        } else {
-          createAccountBtn.innerHTML =
-            createAccountBtn.dataset.orig || "Create Account";
-          createAccountBtn.disabled = false;
-        }
-      }
-
-      /* ── 7. VALIDATION ─────────────────────────────────────── */
-      function validate() {
-        const fullName = fullNameInput.value.trim();
-        const grade = classGradeSelect.value;
-        const stream = streamSelect.value;
-        const dob = dobInput.value;
-        const email = emailInput.value.trim();
-        const phone = phoneInput.value.trim();
-        const password = passwordInput.value;
-        const agreed = agreeTerms.checked;
-
-        if (!fullName) {
-          setStatus("Please enter your full name.", "error");
-          fullNameInput.focus();
-          return false;
-        }
-        if (!grade) {
-          setStatus("Please select your class / grade.", "error");
-          classGradeSelect.focus();
-          return false;
-        }
-        if ((grade === "11" || grade === "12") && !stream) {
-          setStatus("Please select your stream for Grade 11/12.", "error");
-          streamSelect.focus();
-          return false;
-        }
-        if (!dob) {
-          setStatus("Please enter your date of birth.", "error");
-          dobInput.focus();
-          return false;
-        }
-        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(email)) {
-          setStatus("Please enter a valid email address.", "error");
-          emailInput.focus();
-          return false;
-        }
-        if (!phone || phone.length < 7) {
-          setStatus("Please enter a valid phone number.", "error");
-          phoneInput.focus();
-          return false;
-        }
-        if (
-          password.length < 8 ||
-          !/[A-Z]/.test(password) ||
-          !/[a-z]/.test(password) ||
-          !/[^A-Za-z0-9]/.test(password)
-        ) {
-          setStatus(
-            "Password needs 8+ chars, uppercase, lowercase, and a special character.",
-            "error",
-          );
-          passwordInput.focus();
-          return false;
-        }
-        if (!agreed) {
-          setStatus(
-            "Please agree to the Terms of Service to continue.",
-            "error",
-          );
-          return false;
-        }
-        return true;
-      }
-
-      /* ── 8. CREATE ACCOUNT ─────────────────────────────────── */
-      createAccountBtn.addEventListener("click", handleCreateAccount);
-
-      /* Allow Enter key only from text inputs — not selects */
-      document
-        .querySelectorAll(
-          'input[type="text"], input[type="email"], input[type="password"], input[type="tel"], input[type="date"]',
-        )
-        .forEach((inp) => {
-          inp.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") handleCreateAccount();
-          });
-        });
-
-      async function handleCreateAccount() {
-        clearStatus();
-        if (!validate()) return;
-
-        const fullName = fullNameInput.value.trim();
-        const grade = classGradeSelect.value;
-        const stream = streamSelect.value || null;
-        const dob = dobInput.value;
-        const email = emailInput.value.trim();
-        const prefix = countryCode.value;
-        const phone = prefix + " " + phoneInput.value.trim();
-        const password = passwordInput.value;
-
-        setLoading(true);
-
-        try {
-          /* ── SUPABASE STEP 1: Auth signup ───────────────────────
-       const { data, error: authError } = await window.supabaseClient
-         .auth.signUp({ email, password });
-       if (authError) throw authError;
-
-       // Email confirmation required — inform user and stop
-       if (!data?.user?.id) {
-         setStatus('Account created! Check your email to confirm before signing in.', 'success');
-         setLoading(false);
-         return;
-       }
-       const userId = data.user.id;
-    ─────────────────────────────────────────────────────── */
-
-          /* ── SUPABASE STEP 2: Insert into learners table ────────
-       const { error: dbError } = await window.supabaseClient
-         .from('learners')
-         .insert({
-           auth_user_id:   userId,
-           full_name:      fullName,
-           class_grade:    grade,
-           date_of_birth:  dob,
-           email:          email,
-           phone_number:   phone,
-           agreed_to_terms: true,
-           auth_provider:  'email'
-         });
-       if (dbError) throw dbError;
-    ─────────────────────────────────────────────────────── */
-
-          /* ── SUPABASE STEP 3: Insert role ───────────────────────
-       await window.supabaseClient
-         .from('user_roles')
-         .insert({ auth_user_id: userId, role: 'learner' });
-    ─────────────────────────────────────────────────────── */
-
-          // ── DEMO (remove when Supabase is connected) ───────────
-          await new Promise((r) => setTimeout(r, 1400));
-          // ───────────────────────────────────────────────────────
-
-          // Save minimal profile to localStorage for dashboard use
-          localStorage.setItem(
-            "learnerProfile",
-            JSON.stringify({
-              fullName,
-              grade,
-              stream,
-              email,
-              phone,
-              // authUserId: userId   ← uncomment with Supabase
-            }),
-          );
-
-          setStatus(
-            "Account created! Redirecting to your dashboard…",
-            "success",
-          );
-
-          setTimeout(() => {
-            window.location.href = "learner_dashboard.html";
-          }, 1200);
-        } catch (err) {
-          console.error("Signup error:", err);
-          const msg = /rate/i.test(err?.message || "")
-            ? "Too many attempts. Please wait a moment and try again."
-            : err?.message || "Something went wrong. Please try again.";
-          setStatus(msg, "error");
-          setLoading(false);
-        }
-      }
-
-      /* ── 9. FORGOT PASSWORD ────────────────────────────────── */
-      document
-        .getElementById("forgotBtn")
-        .addEventListener("click", async () => {
-          const email = emailInput.value.trim();
-          if (!email) {
-            setStatus("Enter your email address above first.", "error");
-            emailInput.focus();
-            return;
-          }
-
-          const btn = document.getElementById("forgotBtn");
-          btn.disabled = true;
-          btn.textContent = "Sending…";
-          clearStatus();
-
-          try {
-            /* ── SUPABASE FORGOT PASSWORD ───────────────────────────
-       const { error } = await window.supabaseClient
-         .auth.resetPasswordForEmail(email, {
-           redirectTo: window.location.origin + '/reset-password.html'
-         });
-       if (error) throw error;
-    ─────────────────────────────────────────────────────── */
-            await new Promise((r) => setTimeout(r, 1000)); // demo delay
-            setStatus("Password reset link sent! Check your inbox.", "success");
-          } catch (err) {
-            setStatus(err?.message || "Could not send reset link.", "error");
-          } finally {
-            btn.disabled = false;
-            btn.textContent = "Forgot password?";
-          }
-        });
-
-      /* ── 10. GOOGLE LOGIN ──────────────────────────────────── */
-      document
-        .getElementById("googleBtn")
-        .addEventListener("click", async () => {
-          try {
-            /* ── SUPABASE GOOGLE OAUTH ──────────────────────────────
-       await window.supabaseClient.auth.signInWithOAuth({
-         provider: 'google',
-         options: { redirectTo: window.location.origin + '/LEARNER/learner_dashboard.html' }
-       });
-    ─────────────────────────────────────────────────────── */
-            setStatus(
-              "Google login: connect your Supabase client to enable.",
-              "info",
-            );
-          } catch (err) {
-            setStatus(err?.message, "error");
-          }
-        });
-
-      /* ── 11. MICROSOFT LOGIN ───────────────────────────────── */
-      document
-        .getElementById("microsoftBtn")
-        .addEventListener("click", async () => {
-          try {
-            /* ── SUPABASE MICROSOFT OAUTH ───────────────────────────
-       await window.supabaseClient.auth.signInWithOAuth({
-         provider: 'azure',
-         options: { redirectTo: window.location.origin + '/LEARNER/learner_dashboard.html' }
-       });
-    ─────────────────────────────────────────────────────── */
-            setStatus(
-              "Microsoft login: connect your Supabase client to enable.",
-              "info",
-            );
-          } catch (err) {
-            setStatus(err?.message, "error");
-          }
-        });
-
-      /* ── 12. SESSION CHECK — redirect if already logged in ─── */
-      /*
-  Uncomment when Supabase is connected:
-
-  (async () => {
-    try {
-      const { data: { user } } = await window.supabaseClient.auth.getUser();
-      if (user) window.location.href = 'learner_dashboard.html';
-    } catch (_) {}
-  })();
-*/
-
-      /* ── 13. OAUTH REDIRECT HANDLER ────────────────────────── */
-      /*
-  Handles Google/Microsoft redirect back to this page.
-  Uncomment when Supabase is connected:
-
-  window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
-    if (event !== 'SIGNED_IN' || !session?.user) return;
-    const user     = session.user;
-    const provider = user.app_metadata?.provider || 'oauth';
-
-    // Check if learner record already exists
-    const { data: existing } = await window.supabaseClient
-      .from('learners')
-      .select('id')
-      .eq('auth_user_id', user.id)
-      .single();
-
-    if (!existing) {
-      await window.supabaseClient.from('learners').insert({
-        auth_user_id:    user.id,
-        full_name:       user.user_metadata?.full_name || user.email,
-        email:           user.email,
-        auth_provider:   provider,
-        agreed_to_terms: true
-      });
-      await window.supabaseClient.from('user_roles').insert({
-        auth_user_id: user.id,
-        role: 'learner'
-      });
-    }
-
-    localStorage.setItem('learnerProfile', JSON.stringify({
-      fullName:   user.user_metadata?.full_name || user.email,
-      email:      user.email,
-      authUserId: user.id
-    }));
-
-    window.location.href = 'learner_dashboard.html';
-  });
-*/
-    </script>
   </body>
 </html>
