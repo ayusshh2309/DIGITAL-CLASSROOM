@@ -26,8 +26,12 @@
       pillLo: document.getElementById('pillLower'),
       pillSp: document.getElementById('pillSpecial'),
       gradeGroup: document.getElementById('gradeGroup'),
+      gradeGroupField: document.getElementById('gradeGroupField'),
+      streamField: document.getElementById('streamField'),
       stream: document.getElementById('stream'),
+      specialistField: document.getElementById('specialistField'),
       subjectChecklist: document.getElementById('subjectChecklist'),
+      classMapContainer: document.getElementById('classMapContainer'),
       classMapGrid: document.getElementById('classMapGrid'),
       institution: document.getElementById('institution'),
       experience: document.getElementById('experience'),
@@ -37,6 +41,7 @@
       signupStatus: document.getElementById('signupStatus'),
       createAccountBtn: document.getElementById('createAccountBtn'),
       fileInput: document.getElementById('fileInput'),
+      uploadBox: document.getElementById('uploadBox'),
       uploadName: document.getElementById('uploadName'),
     };
 
@@ -62,6 +67,147 @@
       });
     }
     applyTheme(getTheme());
+
+    function showLogin() {
+      const loginSection = document.getElementById('loginSection');
+      const signupSection = document.getElementById('signupSection');
+      if (el.loginTab) el.loginTab.classList.add('active');
+      if (el.signupTab) el.signupTab.classList.remove('active');
+      if (loginSection) loginSection.classList.add('active');
+      if (signupSection) signupSection.classList.remove('active');
+      if (el.loginEmail) el.loginEmail.focus();
+    }
+
+    function showSignup() {
+      const loginSection = document.getElementById('loginSection');
+      const signupSection = document.getElementById('signupSection');
+      if (el.signupTab) el.signupTab.classList.add('active');
+      if (el.loginTab) el.loginTab.classList.remove('active');
+      if (signupSection) signupSection.classList.add('active');
+      if (loginSection) loginSection.classList.remove('active');
+      if (el.fullName) el.fullName.focus();
+    }
+
+    if (el.loginTab) el.loginTab.addEventListener('click', showLogin);
+    if (el.signupTab) el.signupTab.addEventListener('click', showSignup);
+
+    const goSignupLink = document.getElementById('goSignup');
+    if (goSignupLink) {
+      goSignupLink.addEventListener('click', function (event) {
+        event.preventDefault();
+        showSignup();
+      });
+    }
+
+    const goLoginLink = document.getElementById('goLogin');
+    if (goLoginLink) {
+      goLoginLink.addEventListener('click', function (event) {
+        event.preventDefault();
+        showLogin();
+      });
+    }
+
+    showLogin();
+
+    const SUBJECT_OPTIONS = [
+      'Mathematics',
+      'Science',
+      'Physics',
+      'Chemistry',
+      'Biology',
+      'English',
+      'Hindi',
+      'Social Science',
+      'Computer Science',
+      'History',
+      'Geography',
+    ];
+    const CLASS_OPTIONS = ['5', '6', '7', '8', '9', '10', '11', '12'];
+
+    function getSelectedTeachMode() {
+      return document.querySelector('input[name="teachMode"]:checked')?.value || 'teachAll';
+    }
+
+    function renderSubjectChecklist() {
+      if (!el.subjectChecklist) return;
+
+      el.subjectChecklist.innerHTML = SUBJECT_OPTIONS.map(function (subject) {
+        return `
+          <label class="check-card">
+            <input type="checkbox" value="${subject}" data-subject="${subject}" />
+            <span>${subject}</span>
+          </label>
+        `;
+      }).join('');
+    }
+
+    function renderClassMapGrid() {
+      if (!el.classMapGrid) return;
+
+      const selectedSubjects = Array.from(
+        el.subjectChecklist.querySelectorAll('input[type="checkbox"]:checked')
+      );
+
+      if (!selectedSubjects.length) {
+        el.classMapGrid.innerHTML = '<div class="empty-state">Select one or more subjects to assign classes.</div>';
+        return;
+      }
+
+      const html = selectedSubjects.map(function (checkbox) {
+        const subject = checkbox.value;
+        return `
+          <div class="class-map-row">
+            <strong>${subject}</strong>
+            <div class="class-row">
+              ${CLASS_OPTIONS.map(function (grade) {
+                return `
+                  <label class="class-chip">
+                    <input
+                      type="checkbox"
+                      value="${grade}"
+                      data-subject="${subject}"
+                    />
+                    <span>${grade}</span>
+                  </label>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      el.classMapGrid.innerHTML = html;
+    }
+
+    function syncTeachingModeUI() {
+      const mode = getSelectedTeachMode();
+      const isSpecialist = mode === 'specialist';
+
+      if (el.gradeGroupField) {
+        el.gradeGroupField.style.display = isSpecialist ? 'none' : 'grid';
+      }
+      if (el.streamField) {
+        const shouldShowStream = !isSpecialist && el.gradeGroup && el.gradeGroup.value === '11-12';
+        el.streamField.style.display = shouldShowStream ? 'grid' : 'none';
+      }
+      if (el.specialistField) {
+        el.specialistField.style.display = isSpecialist ? 'grid' : 'none';
+      }
+      if (el.classMapContainer) {
+        el.classMapContainer.style.display = isSpecialist ? 'grid' : 'none';
+      }
+
+      if (isSpecialist) {
+        renderSubjectChecklist();
+        renderClassMapGrid();
+      }
+    }
+
+    function showUploadedFileName(name) {
+      if (!el.uploadName) return;
+      el.uploadName.textContent = `✓ ${name}`;
+      el.uploadName.style.display = 'block';
+    }
 
     function setStatus(targetId, msg, type) {
       const target = document.getElementById(targetId);
@@ -105,6 +251,63 @@
         togglePassword('signupPassword', this);
       });
     }
+
+    document.querySelectorAll('input[name="teachMode"]').forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        syncTeachingModeUI();
+      });
+    });
+
+    if (el.gradeGroup) {
+      el.gradeGroup.addEventListener('change', function () {
+        if (el.streamField) {
+          const showStream = this.value === '11-12';
+          el.streamField.style.display = showStream ? 'grid' : 'none';
+        }
+      });
+    }
+
+    if (el.subjectChecklist) {
+      el.subjectChecklist.addEventListener('change', function (event) {
+        const target = event.target;
+        if (!target || target.type !== 'checkbox') return;
+        renderClassMapGrid();
+      });
+    }
+
+    if (el.uploadBox && el.fileInput) {
+      el.uploadBox.addEventListener('click', function () {
+        el.fileInput.click();
+      });
+      el.uploadBox.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          el.fileInput.click();
+        }
+      });
+      el.uploadBox.addEventListener('dragover', function (event) {
+        event.preventDefault();
+        el.uploadBox.classList.add('dragover');
+      });
+      el.uploadBox.addEventListener('dragleave', function () {
+        el.uploadBox.classList.remove('dragover');
+      });
+      el.uploadBox.addEventListener('drop', function (event) {
+        event.preventDefault();
+        el.uploadBox.classList.remove('dragover');
+        const file = event.dataTransfer?.files?.[0];
+        if (!file) return;
+        el.fileInput.files = event.dataTransfer.files;
+        showUploadedFileName(file.name);
+      });
+      el.fileInput.addEventListener('change', function () {
+        if (this.files && this.files[0]) {
+          showUploadedFileName(this.files[0].name);
+        }
+      });
+    }
+
+    syncTeachingModeUI();
 
     function generateStaffId() {
       const used = JSON.parse(localStorage.getItem('sl_used_staff_ids') || '[]');
