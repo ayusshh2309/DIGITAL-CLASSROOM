@@ -2215,7 +2215,7 @@
         <div class="ci-meta">${c.type.toUpperCase()} • ${c.chapter || "—"} ${c.file ? `• ${c.file}` : ""}</div>
       </div>
       <div class="ci-time">${new Date(c.ts).toLocaleDateString()}</div>
-      <button class="ci-del" onclick="deleteContent('${c.id}')">Delete</button>
+      <button class="ci-del" onclick="deleteContent('${c.id}','${(c.storage_path || "").replace(/'/g, "\\'")}','${(c.storage_bucket || "").replace(/'/g, "\\'")}')">Delete</button>
     </div>`,
           )
           .join("");
@@ -2223,15 +2223,45 @@
 
       window.showSubjectContent = showSubjectContent;
 
-      window.deleteContent = (id) => {
-        const items = getContent().filter((c) => c.id !== id);
-        saveContent(items);
-        showToast("Content deleted");
-        addNotif("Content item removed");
-        updateStats();
-        renderSubjectCards();
-        refreshCharts();
-        if (selectedSubject) showSubjectContent(selectedSubject);
+      window.deleteContent = async (id, storagePath = "", bucketName = "") => {
+        if (!id) return;
+
+        try {
+          if (window.sb) {
+            if (storagePath && bucketName) {
+              const { error: storageErr } = await window.sb.storage
+                .from(bucketName)
+                .remove([storagePath]);
+
+              if (storageErr) {
+                console.warn("[Storage delete warning]", storageErr);
+              }
+            }
+
+            const { error: dbErr } = await window.sb
+              .from("course_materials")
+              .delete()
+              .eq("id", id);
+
+            if (dbErr) throw dbErr;
+          } else {
+            const items = getContent().filter((c) => c.id !== id);
+            saveContent(items);
+          }
+
+          showToast("Content deleted successfully");
+          addNotif("Content item removed");
+          updateStats();
+          renderSubjectCards();
+          refreshCharts();
+          if (selectedSubject) showSubjectContent(selectedSubject);
+        } catch (err) {
+          console.error("[Delete Error]", err);
+
+          const items = getContent().filter((c) => c.id !== id);
+          saveContent(items);
+          showToast("Delete failed: " + (err?.message || "Unknown error"));
+        }
       };
 
       document.getElementById("closePanelBtn").addEventListener("click", () => {
