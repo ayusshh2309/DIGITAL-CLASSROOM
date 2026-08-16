@@ -938,44 +938,149 @@
         subject,
       );
 
-      // Get teacher-uploaded content for this subject + grade
-      function getTeacherContent(type) {
+      /* ── GET LEARNER GRADE FROM SUPABASE ────────────────────── */
+      async function getLearnerGrade() {
         try {
-          const all = JSON.parse(localStorage.getItem("tc_content") || "[]");
-          console.log(
-            "[TC_CONTENT] Total items in storage:",
-            all.length,
-            "| Filtering for subject:",
-            subject,
-            "| type:",
-            type,
-            "| grade:",
-            learnerGrade,
-          );
-          all.forEach((c) =>
-            console.log(
-              "  →",
-              c.title,
-              "| subject:",
-              c.subject,
-              "| type:",
-              c.type,
-              "| grade:",
-              c.grade,
-            ),
-          );
-          const filtered = all.filter(
-            (c) =>
-              c.subject === subject &&
-              c.type === type &&
-              (!learnerGrade || String(c.grade) === String(learnerGrade)),
-          );
-          console.log("[TC_CONTENT] Matched:", filtered.length);
-          return filtered;
-        } catch (e) {
-          console.error("[TC_CONTENT] Error:", e);
+          if (!window.sb || !window.sb.auth) return learnerGrade || "";
+          const {
+            data: { user },
+          } = await window.sb.auth.getUser();
+          if (!user) return learnerGrade || "";
+          const { data, error } = await window.sb
+            .from("learners")
+            .select("class_grade")
+            .eq("auth_user_id", user.id)
+            .maybeSingle();
+
+          if (error) throw error;
+          return (data?.class_grade || learnerGrade || "").toString();
+        } catch (err) {
+          console.error("[Grade fetch error]", err);
+          return learnerGrade || "";
+        }
+      }
+
+      /* ── FETCH TEACHER CONTENT FROM CORRECT BUCKET ──────────── */
+      async function getTeacherContent(materialType) {
+        try {
+          if (!window.sb) return [];
+          const grade = await getLearnerGrade();
+          const { data, error } = await window.sb
+            .from("course_materials")
+            .select("*")
+            .eq("subject", subject)
+            .eq("material_type", materialType)
+            .eq("is_published", true)
+            .order("created_at", { ascending: false });
+
+          if (error) throw error;
+
+          if (!grade) return data || [];
+          return (data || []).filter((c) => {
+            const val = c.class_level ?? c.grade ?? c.class_grade;
+            return String(val) === String(grade);
+          });
+        } catch (err) {
+          console.error("[Fetch Content Error]", err);
           return [];
         }
+      }
+
+      /* ── RENDER TEACHER VIDEO ───────────────────────────────── */
+      function renderTeacherVideo(c) {
+        return `
+          <div class="res-card" style="border-color:rgba(34,197,94,0.35);">
+            <video controls preload="metadata"
+              style="width:100%;border-radius:14px;max-height:220px;background:#000;"
+              src="${c.file_url}">
+              Your browser does not support this video.
+            </video>
+            <div class="res-meta">
+              <span class="res-tag" style="background:rgba(34,197,94,0.12);color:var(--success);">📤 Teacher Upload</span>
+              ${c.chapter ? `<span class="res-tag">${c.chapter}</span>` : ""}
+            </div>
+            <div style="font-weight:700;font-size:0.97rem;">${c.title}</div>
+            <div class="res-desc">${c.description || "Video uploaded by your teacher."}</div>
+          </div>`;
+      }
+
+      /* ── RENDER TEACHER PDF ─────────────────────────────────── */
+      function renderTeacherPDF(c) {
+        return `
+          <div style="display:grid;gap:12px;padding-bottom:20px;border-bottom:1px solid var(--border);">
+            <div style="display:flex;align-items:center;gap:14px;padding:16px;
+              background:rgba(34,197,94,0.07);border-radius:14px;
+              border:1px solid rgba(34,197,94,0.2);">
+              <div style="font-size:2.5rem;">📄</div>
+              <div style="flex:1;">
+                <div style="font-weight:700;font-size:0.97rem;">${c.title}</div>
+                ${c.chapter ? `<div style="font-size:0.8rem;color:var(--muted);">📌 ${c.chapter}</div>` : ""}
+                <div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">
+                  📎 ${c.file_name || "document"}
+                  ${c.file_size ? ` · ${(c.file_size / 1024 / 1024).toFixed(1)}MB` : ""}
+                </div>
+              </div>
+              <span style="background:rgba(34,197,94,0.12);color:var(--success);
+                padding:4px 10px;border-radius:999px;font-size:0.75rem;font-weight:700;">
+                📤 Teacher
+              </span>
+            </div>
+            ${c.description ? `<div class="notes-content"><p>${c.description}</p></div>` : ""}
+            <a href="${c.file_url}" target="_blank" rel="noopener"
+              class="btn-res"
+              style="display:block;text-align:center;text-decoration:none;">
+              📂 Open PDF
+            </a>
+          </div>`;
+      }
+
+      /* ── RENDER TEACHER IMAGE ───────────────────────────────── */
+      function renderTeacherImage(c) {
+        return `
+          <div class="img-card" style="border:1.5px solid rgba(34,197,94,0.35);">
+            <img
+              src="${c.file_url}"
+              alt="${c.title}"
+              loading="lazy"
+              style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:12px 12px 0 0;"
+              onerror="this.parentElement.querySelector('.img-fallback').style.display='grid';this.style.display='none';"
+            />
+            <div class="img-fallback" style="display:none;aspect-ratio:4/3;
+              background:var(--pri-soft);place-items:center;font-size:3rem;
+              border-radius:12px 12px 0 0;">🖼️</div>
+            <div class="img-caption">
+              <div style="font-weight:700;font-size:0.82rem;margin-bottom:2px;">${c.title}</div>
+              ${c.chapter ? `<div style="font-size:0.72rem;color:var(--muted);">📌 ${c.chapter}</div>` : ""}
+              <div style="font-size:0.72rem;color:var(--success);font-weight:600;margin-top:3px;">
+                📤 Teacher upload
+              </div>
+            </div>
+          </div>`;
+      }
+
+      /* ── RENDER TEACHER QUIZ ─────────────────────────────────── */
+      function renderTeacherQuiz(c) {
+        return `
+          <div class="res-card" style="border-color:rgba(34,197,94,0.35);">
+            <div style="display:flex;align-items:center;gap:14px;padding:16px;
+              background:rgba(34,197,94,0.07);border-radius:14px;">
+              <div style="font-size:2rem;">🎯</div>
+              <div style="flex:1;">
+                <div style="font-weight:700;font-size:0.97rem;">${c.title}</div>
+                ${c.chapter ? `<div style="font-size:0.8rem;color:var(--muted);">📌 ${c.chapter}</div>` : ""}
+              </div>
+              <span style="background:rgba(34,197,94,0.12);color:var(--success);
+                padding:4px 10px;border-radius:999px;font-size:0.75rem;font-weight:700;">
+                📤 Teacher
+              </span>
+            </div>
+            ${c.description ? `<div class="res-desc">${c.description}</div>` : ""}
+            <a href="${c.file_url}" target="_blank" rel="noopener"
+              class="btn-res"
+              style="display:block;text-align:center;text-decoration:none;">
+              🎯 Open Quiz
+            </a>
+          </div>`;
       }
 
       /* ── 2. THEME ──────────────────────────────────────────── */
@@ -1450,9 +1555,9 @@
     </div>`;
       }
 
-      function renderVideos() {
+      async function renderVideos() {
         const videos = getVideos(subject);
-        const tcVideos = getTeacherContent("video");
+        const tcVideos = await getTeacherContent("video");
         const viewed = JSON.parse(
           localStorage.getItem(`sl_viewed_videos_${subject}`) || "[]",
         );
@@ -1473,7 +1578,7 @@
           ${c.chapter ? `<span class="res-tag">${c.chapter}</span>` : ""}
           ${done ? '<span class="res-tag green">✓ Watched</span>' : ""}
         </div>
-        <div class="res-desc">${c.desc || "Uploaded by your teacher for this subject."}</div>
+        <div class="res-desc">${c.description || "Uploaded by your teacher for this subject."}</div>
         <button class="btn-res ${done ? "done" : ""}" onclick="watchVideo('${subject}','${key}')">
           ${done ? "✓ Watched" : "▶ Watch now"}
         </button>
@@ -1512,9 +1617,9 @@
     </div>`;
       }
 
-      function renderNotes() {
+      async function renderNotes() {
         const chapters = getNotes(subject);
-        const tcNotes = getTeacherContent("pdf");
+        const tcNotes = await getTeacherContent("pdf");
         const readChapters = JSON.parse(
           localStorage.getItem(`sl_read_notes_${subject}`) || "[]",
         );
@@ -1534,7 +1639,7 @@
           </div>
         </div>
         <div class="notes-content">
-          <p>${c.desc || "Notes uploaded by your teacher. Review and mark as read when done."}</p>
+          <p>${c.description || "Notes uploaded by your teacher. Review and mark as read when done."}</p>
         </div>
         <button class="btn-res ${done ? "done" : ""}" onclick="markNoteRead('${subject}','${key}')">
           ${done ? "✓ Marked as read" : "📌 Mark as read"}
@@ -1677,9 +1782,9 @@
         document.getElementById("quizWrap").innerHTML = buildQuestion();
       }
 
-      function renderImages() {
+      async function renderImages() {
         const imgs = getImages(subject);
-        const tcImages = getTeacherContent("image");
+        const tcImages = await getTeacherContent("image");
         const viewed = JSON.parse(
           localStorage.getItem(`sl_viewed_images_${subject}`) || "[]",
         );
@@ -1798,7 +1903,7 @@
         renderContent();
       }
 
-      function renderContent() {
+      async function renderContent() {
         const area = document.getElementById("contentArea");
         const renderers = {
           overview: renderOverview,
@@ -1807,7 +1912,9 @@
           quizzes: renderQuiz,
           images: renderImages,
         };
-        area.innerHTML = (renderers[currentAction] || renderOverview)();
+        const renderer = renderers[currentAction] || renderOverview;
+        const html = await renderer();
+        area.innerHTML = html;
       }
 
       /* ── 9. INIT ───────────────────────────────────────────── */

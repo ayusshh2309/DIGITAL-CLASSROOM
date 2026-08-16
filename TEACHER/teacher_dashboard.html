@@ -2274,6 +2274,44 @@
         .getElementById("uType")
         .addEventListener("change", updateUploadFields);
 
+      /* ── BUCKET MAP ─────────────────────────────────────────── */
+      const BUCKET_MAP = {
+        video: "videos",
+        pdf: "pdfs",
+        image: "photos",
+        quiz: "quizzes",
+        live: null,
+      };
+
+      /* ── ACCEPTED FILE TYPES PER BUCKET ─────────────────────── */
+      const ACCEPT_MAP = {
+        video: [
+          "video/mp4",
+          "video/mov",
+          "video/avi",
+          "video/webm",
+          "video/quicktime",
+        ],
+        pdf: [
+          "application/pdf",
+          "application/msword",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ],
+        image: [
+          "image/jpeg",
+          "image/jpg",
+          "image/png",
+          "image/gif",
+          "image/webp",
+        ],
+        quiz: [
+          "application/pdf",
+          "application/json",
+          "application/msword",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ],
+      };
+
       // File browse
       const uUploadBox = document.getElementById("uUploadBox");
       const uFile = document.getElementById("uFile");
@@ -2306,76 +2344,201 @@
         uFileName.style.display = "block";
       }
 
-      document.getElementById("uploadSaveBtn").addEventListener("click", () => {
-        const type = document.getElementById("uType").value;
-        const subject = document.getElementById("uSubject").value;
-        const grade = document.getElementById("uGrade").value;
-        const chapter = document.getElementById("uChapter").value.trim();
-        const title = document.getElementById("uTitle").value.trim();
-        const desc = document.getElementById("uDesc").value.trim();
-        const file = uFile.files[0];
-        const date = document.getElementById("uDate").value;
+      document
+        .getElementById("uploadSaveBtn")
+        .addEventListener("click", async () => {
+          const type = document.getElementById("uType").value;
+          const subject = document.getElementById("uSubject").value;
+          const grade = document.getElementById("uGrade").value;
+          const chapter = document.getElementById("uChapter").value.trim();
+          const title = document.getElementById("uTitle").value.trim();
+          const desc = document.getElementById("uDesc").value.trim();
+          const file = uFile.files[0];
+          const date = document.getElementById("uDate")?.value || null;
 
-        if (!subject) {
-          setStatus("uploadStatus", "Please select a subject.", "error");
-          return;
-        }
-        if (!grade) {
-          setStatus("uploadStatus", "Please select a grade.", "error");
-          return;
-        }
-        if (!title) {
-          setStatus("uploadStatus", "Please enter a title.", "error");
-          return;
-        }
-        if (type !== "live" && !file) {
-          setStatus("uploadStatus", "Please attach a file.", "error");
-          return;
-        }
-        if (type === "live" && !date) {
-          setStatus("uploadStatus", "Please set a schedule date.", "error");
-          return;
-        }
+          if (!subject) {
+            setStatus("uploadStatus", "Please select a subject.", "error");
+            return;
+          }
+          if (!grade) {
+            setStatus("uploadStatus", "Please select a grade.", "error");
+            return;
+          }
+          if (!title) {
+            setStatus("uploadStatus", "Please enter a title.", "error");
+            return;
+          }
+          if (type !== "live" && !file) {
+            setStatus("uploadStatus", "Please attach a file.", "error");
+            return;
+          }
+          if (type === "live" && !date) {
+            setStatus("uploadStatus", "Please set a schedule date.", "error");
+            return;
+          }
 
-        const item = {
-          id: Date.now().toString(36) + Math.random().toString(36).slice(2),
-          staffId: profile.staffId || "unknown",
-          type,
-          subject,
-          grade,
-          chapter,
-          title,
-          desc,
-          file: file ? file.name : null,
-          date: date || null,
-          ts: new Date().toISOString(),
-        };
+          if (file && ACCEPT_MAP[type]) {
+            if (!ACCEPT_MAP[type].includes(file.type)) {
+              const typeNames = {
+                video: "MP4, MOV, AVI or WEBM",
+                pdf: "PDF or Word document",
+                image: "JPG, PNG, GIF or WEBP",
+                quiz: "PDF, JSON or Word document",
+              };
+              setStatus(
+                "uploadStatus",
+                `Please upload a ${typeNames[type]} file.`,
+                "error",
+              );
+              return;
+            }
+          }
 
-        const items = getContent();
-        items.unshift(item);
-        saveContent(items);
+          if (file) {
+            const maxSize =
+              type === "video" ? 100 * 1024 * 1024 : 20 * 1024 * 1024;
+            if (file.size > maxSize) {
+              const limit = type === "video" ? "100MB" : "20MB";
+              setStatus(
+                "uploadStatus",
+                `File too large. Maximum size is ${limit}.`,
+                "error",
+              );
+              return;
+            }
+          }
 
-        // Track daily uploads
-        const dl = JSON.parse(localStorage.getItem("tc_daily_uploads") || "{}");
-        dl[todayKey()] = (dl[todayKey()] || 0) + 1;
-        localStorage.setItem("tc_daily_uploads", JSON.stringify(dl));
+          const uploadBtn = document.getElementById("uploadSaveBtn");
+          uploadBtn.disabled = true;
+          uploadBtn.innerHTML = '<span class="spinner"></span>Uploading…';
+          setStatus("uploadStatus", "Uploading to Supabase…", "info");
 
-        addNotif(
-          `📤 Uploaded: ${title} (${type.toUpperCase()}) for ${subject} Grade ${grade}`,
-        );
-        showToast(`Content published: ${title}`);
-        closeModal("uploadModal");
-        updateStats();
-        renderSubjectCards();
-        refreshCharts();
-        // Reset form
-        document.getElementById("uTitle").value = "";
-        document.getElementById("uChapter").value = "";
-        document.getElementById("uDesc").value = "";
-        uFile.value = "";
-        uFileName.style.display = "none";
-        clearStatus("uploadStatus");
-      });
+          try {
+            const {
+              data: { user },
+              error: userError,
+            } = await window.sb.auth.getUser();
+
+            if (userError || !user) {
+              throw new Error("Session expired. Please log in again.");
+            }
+
+            let fileUrl = null;
+            let storagePath = null;
+            let fileName = null;
+            let fileSize = null;
+            const bucketName = BUCKET_MAP[type];
+
+            if (file && bucketName) {
+              fileName = file.name;
+              fileSize = file.size;
+              const cleanName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+              storagePath = `${user.id}/${grade}/${subject}/${cleanName}`;
+
+              const { error: storageError } = await window.sb.storage
+                .from(bucketName)
+                .upload(storagePath, file, {
+                  cacheControl: "3600",
+                  upsert: false,
+                });
+
+              if (storageError) throw storageError;
+
+              const { data: urlData } = window.sb.storage
+                .from(bucketName)
+                .getPublicUrl(storagePath);
+
+              fileUrl = urlData?.publicUrl || null;
+            }
+
+            const { error: dbError } = await window.sb
+              .from("course_materials")
+              .insert({
+                teacher_auth_id: user.id,
+                teacher_name: user.user_metadata?.full_name || user.email,
+                subject,
+                class_level: grade,
+                chapter: chapter || null,
+                title,
+                description: desc || null,
+                material_type: type,
+                file_name: fileName,
+                file_size: fileSize,
+                storage_path: storagePath,
+                storage_bucket: bucketName,
+                file_url: fileUrl,
+                scheduled_date: date || null,
+                is_published: true,
+              });
+
+            if (dbError) throw dbError;
+
+            const item = {
+              id: Date.now().toString(36) + Math.random().toString(36).slice(2),
+              staffId: profile.staffId || user.id,
+              type,
+              subject,
+              grade,
+              chapter,
+              title,
+              desc,
+              file: file ? file.name : null,
+              date: date || null,
+              ts: new Date().toISOString(),
+            };
+
+            const items = getContent();
+            items.unshift(item);
+            saveContent(items);
+
+            const dl = JSON.parse(
+              localStorage.getItem("tc_daily_uploads") || "{}",
+            );
+            const today = new Date().toISOString().slice(0, 10);
+            dl[today] = (dl[today] || 0) + 1;
+            localStorage.setItem("tc_daily_uploads", JSON.stringify(dl));
+
+            addNotif(
+              `📤 Uploaded: ${title} (${type.toUpperCase()}) for ${subject} Grade ${grade}`,
+            );
+            setStatus(
+              "uploadStatus",
+              "✅ Content published successfully!",
+              "success",
+            );
+            showToast(`✅ Published: ${title}`);
+            closeModal("uploadModal");
+
+            updateStats();
+            renderSubjectCards();
+            refreshCharts();
+
+            document.getElementById("uTitle").value = "";
+            document.getElementById("uChapter").value = "";
+            document.getElementById("uDesc").value = "";
+            uFile.value = "";
+            uFileName.textContent = "";
+            uFileName.style.display = "none";
+          } catch (err) {
+            console.error("[Upload Error]", err);
+
+            let msg = err?.message || "Upload failed. Please try again.";
+            if (/duplicate/i.test(msg))
+              msg = "A file with this name already exists. Please rename it.";
+            if (/size/i.test(msg))
+              msg = "File is too large. Please compress it and try again.";
+            if (/mime/i.test(msg))
+              msg = "Invalid file type for this content category.";
+            if (/unauthorized|session expired|log in again/i.test(msg)) {
+              msg = "Session expired. Please log in again.";
+            }
+
+            setStatus("uploadStatus", msg, "error");
+          } finally {
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = "Publish Content";
+          }
+        });
 
       document
         .getElementById("uploadCancelBtn")

@@ -467,6 +467,89 @@
       return true;
     }
 
+    function buildTeacherSubjectRows(teacherId, selectedMode, assignment) {
+      const rows = [];
+      const subjectList = Array.isArray(assignment?.subject_expertise) ? assignment.subject_expertise : [];
+
+      if (selectedMode === 'specialist') {
+        const selectedSubjects = Array.from(
+          document.querySelectorAll('#subjectChecklist input[type="checkbox"]:checked')
+        );
+
+        for (const subjectCheck of selectedSubjects) {
+          const subject = subjectCheck.value;
+          const grades = Array.from(
+            el.classMapGrid.querySelectorAll(`input[data-subject="${subject}"]:checked`)
+          ).map((input) => input.value);
+
+          if (!grades.length) continue;
+
+          rows.push({
+            teacher_id: teacherId,
+            subject,
+            grade: grades.join(','),
+            grades: grades,
+            classes: grades,
+          });
+        }
+
+        return rows;
+      }
+
+      const defaultGrades = Array.isArray(assignment?.class_map)
+        ? assignment.class_map.map(String)
+        : [];
+
+      for (const subject of subjectList) {
+        rows.push({
+          teacher_id: teacherId,
+          subject,
+          grade: defaultGrades.join(','),
+          grades: defaultGrades,
+          classes: defaultGrades,
+        });
+      }
+
+      return rows;
+    }
+
+    async function saveTeacherSubjectRows(teacherId, selectedMode, assignment) {
+      const rows = buildTeacherSubjectRows(teacherId, selectedMode, assignment);
+      if (!rows.length) return;
+
+      const candidatePayloads = [
+        rows.map((row) => ({
+          teacher_id: row.teacher_id,
+          subject: row.subject,
+          grades: row.grades,
+        })),
+        rows.map((row) => ({
+          teacher_id: row.teacher_id,
+          subject: row.subject,
+          classes: row.classes,
+        })),
+        rows.map((row) => ({
+          teacher_id: row.teacher_id,
+          subject: row.subject,
+          grade: row.grade,
+        })),
+      ];
+
+      let lastError = null;
+
+      for (const payload of candidatePayloads) {
+        try {
+          const { error } = await window.sb.from('teacher_subjects').insert(payload);
+          if (!error) return;
+          lastError = error;
+        } catch (err) {
+          lastError = err;
+        }
+      }
+
+      throw lastError || new Error('Failed to save teacher subject data.');
+    }
+
     async function handleCreateAccount() {
       clearStatus('signupStatus');
       if (!validateTeacherSignup()) return;
@@ -523,6 +606,7 @@
           subject_expertise: assignment.subject_expertise,
           teaching_mode: assignment.teaching_mode,
           grade_group: assignment.grade_group,
+          stream: assignment.stream,
           institution_name: institutionName,
           years_of_experience: yearsOfExperience,
           certification_url: el.fileInput && el.fileInput.files[0] ? el.fileInput.files[0].name : null,
@@ -539,39 +623,18 @@
         });
         if (roleError) throw roleError;
 
-        if (selectedMode === 'specialist') {
-          const teacherRow = await window.sb
-            .from('teachers')
-            .select('id')
-            .eq('auth_user_id', authUserId)
-            .single();
+        const { data: teacherRow, error: teacherFetchError } = await window.sb
+          .from('teachers')
+          .select('id')
+          .eq('auth_user_id', authUserId)
+          .single();
 
-          if (teacherRow?.data?.id) {
-            const insertedSubjects = [];
-            const subjectChecks = Array.from(
-              document.querySelectorAll('#subjectChecklist input[type="checkbox"]:checked')
-            );
-            for (const subjectCheck of subjectChecks) {
-              const subject = subjectCheck.value;
-              const classValues = Array.from(
-                el.classMapGrid.querySelectorAll(`input[data-subject="${subject}"]:checked`)
-              ).map((input) => Number(input.value));
-              if (!classValues.length) continue;
-              insertedSubjects.push({
-                teacher_id: teacherRow.data.id,
-                subject,
-                classes: classValues,
-              });
-            }
-
-            if (insertedSubjects.length) {
-              const { error: subjectError } = await window.sb
-                .from('teacher_subjects')
-                .insert(insertedSubjects);
-              if (subjectError) throw subjectError;
-            }
-          }
+        if (teacherFetchError) throw teacherFetchError;
+        if (!teacherRow?.id) {
+          throw new Error('Teacher profile was created, but the teacher ID could not be found.');
         }
+
+        await saveTeacherSubjectRows(teacherRow.id, selectedMode, assignment);
 
         localStorage.setItem(
           'teacherProfile',
@@ -600,6 +663,10 @@
         setStatus('signupStatus', msg, 'error');
         setLoading(el.createAccountBtn, false, 'Create Account');
       }
+    }
+
+    if (el.createAccountBtn) {
+      el.createAccountBtn.addEventListener('click', handleCreateAccount);
     }
 
     if (el.createAccountBtn) {
@@ -822,6 +889,7 @@
             subject_expertise: [],
             teaching_mode: 'teach_all',
             grade_group: 'grades_5_6',
+            stream: null,
             institution_name: 'To be updated',
             staff_id: generateStaffId(),
             auth_provider: provider,
