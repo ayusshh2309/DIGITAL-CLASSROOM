@@ -2570,6 +2570,168 @@
           }
         });
 
+      async function uploadCourseMaterial() {
+        const publishBtn =
+          document.getElementById("publishContentBtn") ||
+          document.getElementById("uploadSaveBtn");
+
+        try {
+          if (publishBtn) {
+            publishBtn.disabled = true;
+            publishBtn.textContent = "Publishing...";
+          }
+
+          const {
+            data: { user },
+            error: userError,
+          } = await window.sb.auth.getUser();
+
+          if (userError) throw userError;
+          if (!user) throw new Error("You must be logged in as a teacher.");
+
+          const contentTypeEl =
+            document.getElementById("contentType") ||
+            document.getElementById("uType");
+          const chapterEl =
+            document.getElementById("chapter") ||
+            document.getElementById("uChapter");
+          const titleEl =
+            document.getElementById("materialTitle") ||
+            document.getElementById("uTitle");
+          const descriptionEl =
+            document.getElementById("description") ||
+            document.getElementById("uDesc");
+          const fileEl =
+            document.getElementById("materialFile") ||
+            document.getElementById("uFile");
+          const gradeEl =
+            document.getElementById("grade") ||
+            document.getElementById("uGrade");
+          const subjectEl =
+            document.getElementById("subject") ||
+            document.getElementById("uSubject");
+
+          const contentType = (contentTypeEl && contentTypeEl.value) || "pdf";
+          const chapter = (chapterEl && chapterEl.value.trim()) || "";
+          const title = (titleEl && titleEl.value.trim()) || "";
+          const description =
+            (descriptionEl && descriptionEl.value.trim()) || "";
+          const file = fileEl && fileEl.files ? fileEl.files[0] : null;
+          const grade = (gradeEl && gradeEl.value) || selectedGrade || "";
+          const subject =
+            (subjectEl && subjectEl.value) || selectedSubject || "";
+
+          if (!chapter) {
+            throw new Error("Please enter a chapter/topic.");
+          }
+          if (!title) {
+            throw new Error("Please enter a material title.");
+          }
+          if (!file) {
+            throw new Error("Please select a file.");
+          }
+          if (!grade || !subject) {
+            throw new Error(
+              "Please select a subject and grade before publishing.",
+            );
+          }
+
+          const normalizedType =
+            contentType === "document" ? "pdf" : contentType;
+          const bucketName = BUCKET_MAP[normalizedType] || BUCKET_MAP.pdf;
+
+          const safeFileName = file.name
+            .replace(/\s+/g, "_")
+            .replace(/[^a-zA-Z0-9._-]/g, "");
+          const storagePath = `${user.id}/${grade}/${subject}/${Date.now()}_${safeFileName}`;
+
+          const { error: uploadError } = await window.sb.storage
+            .from(bucketName)
+            .upload(storagePath, file, {
+              cacheControl: "3600",
+              upsert: false,
+              contentType: file.type,
+            });
+
+          if (uploadError) throw uploadError;
+
+          const { data: urlData } = window.sb.storage
+            .from(bucketName)
+            .getPublicUrl(storagePath);
+
+          const fileUrl = urlData?.publicUrl || "";
+
+          const { error: materialError } = await window.sb
+            .from("course_materials")
+            .insert([
+              {
+                teacher_auth_id: user.id,
+                teacher_name: user.user_metadata?.full_name || user.email,
+                subject,
+                class_level: grade,
+                chapter: chapter || null,
+                title,
+                description: description || null,
+                material_type: normalizedType,
+                file_name: file.name,
+                file_size: file.size,
+                storage_path: storagePath,
+                storage_bucket: bucketName,
+                file_url: fileUrl,
+                is_published: true,
+              },
+            ]);
+
+          if (materialError) {
+            await window.sb.storage.from(bucketName).remove([storagePath]);
+            throw materialError;
+          }
+
+          showToast("✅ Course material published successfully!");
+          addNotif(
+            `📤 Uploaded: ${title} (${normalizedType.toUpperCase()}) for ${subject} Grade ${grade}`,
+          );
+
+          if (chapterEl) chapterEl.value = "";
+          if (titleEl) titleEl.value = "";
+          if (descriptionEl) descriptionEl.value = "";
+          if (fileEl) fileEl.value = "";
+          if (document.getElementById("uFileName")) {
+            document.getElementById("uFileName").textContent = "";
+            document.getElementById("uFileName").style.display = "none";
+          }
+
+          updateStats();
+          renderSubjectCards();
+          refreshCharts();
+          if (subject) showSubjectContent(subject);
+        } catch (error) {
+          console.error("[Upload Error]", error);
+          showToast(
+            error?.message ||
+              "Something went wrong while publishing the material.",
+          );
+        } finally {
+          if (publishBtn) {
+            publishBtn.disabled = false;
+            publishBtn.textContent =
+              publishBtn.id === "publishContentBtn"
+                ? "Publish Content"
+                : "Publish Content";
+          }
+        }
+      }
+
+      window.uploadCourseMaterial = uploadCourseMaterial;
+
+      const publishContentBtn = document.getElementById("publishContentBtn");
+      if (publishContentBtn) {
+        publishContentBtn.addEventListener("click", (event) => {
+          event.preventDefault();
+          uploadCourseMaterial();
+        });
+      }
+
       document
         .getElementById("uploadCancelBtn")
         .addEventListener("click", () => closeModal("uploadModal"));
