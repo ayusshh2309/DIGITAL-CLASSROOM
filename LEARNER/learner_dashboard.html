@@ -319,11 +319,11 @@
 
       /* ── PAGE WRAPPER ───────────────────────────────────── */
       .page {
-        max-width: 1400px;
+        width: min(92%, 1450px);
         margin: 0 auto;
         padding: 28px 24px 60px;
         display: grid;
-        gap: 24px;
+        gap: 22px;
       }
 
       /* ── CARDS ──────────────────────────────────────────── */
@@ -332,7 +332,14 @@
         border: 1px solid var(--border);
         border-radius: var(--radius);
         box-shadow: var(--shadow);
-        padding: 28px;
+        padding: 24px;
+        transition:
+          transform 180ms ease,
+          box-shadow 180ms ease,
+          border-color 180ms ease;
+      }
+      .card:hover {
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
       }
 
       .card-title {
@@ -358,7 +365,9 @@
         display: grid;
         grid-template-columns: 1fr auto;
         gap: 24px;
-        align-items: start;
+        align-items: center;
+        padding: 28px;
+        min-height: 180px;
       }
       .welcome-card h1 {
         font-family: var(--font-d);
@@ -404,7 +413,7 @@
         border-radius: 18px;
         padding: 18px 22px;
         text-align: right;
-        min-width: 200px;
+        min-width: 210px;
         flex-shrink: 0;
       }
       .clock-time {
@@ -427,15 +436,25 @@
       /* ── STATS ROW ──────────────────────────────────────── */
       .stats-row {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 16px;
       }
       .stat-card {
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: 18px;
-        padding: 20px;
+        padding: 22px;
+        min-height: 120px;
         box-shadow: var(--shadow);
+        transition:
+          transform 180ms ease,
+          box-shadow 180ms ease,
+          border-color 180ms ease;
+      }
+      .stat-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(99, 102, 241, 0.3);
+        box-shadow: 0 12px 28px rgba(99, 102, 241, 0.12);
       }
       .stat-label {
         font-size: 0.78rem;
@@ -471,7 +490,7 @@
       /* ── MAIN GRID ──────────────────────────────────────── */
       .main-grid {
         display: grid;
-        grid-template-columns: 1fr 340px;
+        grid-template-columns: minmax(0, 1fr) 340px;
         gap: 24px;
         align-items: start;
       }
@@ -479,8 +498,8 @@
       /* ── SUBJECTS ───────────────────────────────────────── */
       .subject-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 14px;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
         margin-top: 20px;
       }
       .subject-card {
@@ -491,10 +510,11 @@
         display: flex;
         flex-direction: column;
         gap: 14px;
+        min-height: 315px;
         transition:
-          transform 180ms,
-          box-shadow 180ms,
-          border-color 180ms;
+          transform 180ms ease,
+          box-shadow 180ms ease,
+          border-color 180ms ease;
       }
       .subject-card:hover {
         transform: translateY(-2px);
@@ -522,11 +542,11 @@
       }
       .subj-actions {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 7px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
       }
       .subj-btn {
-        padding: 9px 6px;
+        padding: 10px 8px;
         border-radius: 11px;
         font-size: 0.78rem;
         font-weight: 700;
@@ -550,10 +570,10 @@
         transform: translateY(-1px);
       }
       .subj-progress {
-        margin-top: 4px;
+        margin-top: auto;
       }
       .prog-bar {
-        height: 5px;
+        height: 6px;
         border-radius: 999px;
         background: var(--border);
         overflow: hidden;
@@ -561,19 +581,107 @@
       .prog-fill {
         height: 100%;
         border-radius: 999px;
-        background: var(--primary);
+        background: linear-gradient(90deg, var(--primary), #8b5cf6);
         transition: width 600ms ease;
       }
       .prog-label {
         font-size: 0.75rem;
         color: var(--muted);
+        margin-top: 6px;
+      }
+
+      /* ── CONTINUE LEARNING ───────────────────────────────── */
+      .continue-card {
+        background: linear-gradient(
+          135deg,
+          rgba(99, 102, 241, 0.12),
+          rgba(99, 102, 241, 0.04)
+        );
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 20px 22px;
+        min-height: 140px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        transition:
+          transform 180ms ease,
+          box-shadow 180ms ease,
+          border-color 180ms ease;
+      }
+      .continue-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 26px rgba(99, 102, 241, 0.12);
+      }
+      .continue-meta {
+        display: grid;
+        gap: 10px;
+        min-width: 0;
+      }
+      .continue-kicker {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .continue-title {
+        font-weight: 700;
+        font-size: clamp(1.05rem, 1.5vw, 1.45rem);
+        letter-spacing: -0.02em;
+      }
+      .continue-sub {
+        color: var(--muted);
+        font-size: 0.86rem;
+      }
+      .continue-progress-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
         margin-top: 4px;
+      }
+      .continue-progress-row .prog-bar {
+        width: min(260px, 100%);
+      }
+      .continue-percent {
+        font-size: 0.8rem;
+        color: var(--primary);
+        font-weight: 700;
+      }
+      .continue-meta .continue-time {
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+      .btn-continue {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--primary);
+        color: white;
+        padding: 11px 18px;
+        border-radius: 12px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        min-width: 150px;
+        transition:
+          filter 180ms ease,
+          transform 180ms ease;
+      }
+      .btn-continue:hover {
+        filter: brightness(1.08);
+        transform: translateY(-1px);
+      }
+      .continue-empty {
+        color: var(--muted);
+        font-size: 0.9rem;
       }
 
       /* ── CHARTS GRID ────────────────────────────────────── */
       .charts-grid {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 16px;
         margin-top: 20px;
       }
@@ -610,14 +718,21 @@
         display: flex;
         align-items: center;
         gap: 12px;
+        min-height: 52px;
         padding: 13px 16px;
         border-radius: 14px;
         background: var(--surf2);
         border: 1px solid var(--border);
-        transition: opacity 200ms;
+        transition:
+          opacity 200ms ease,
+          transform 200ms ease,
+          background 200ms ease;
+      }
+      .task-row:hover {
+        transform: translateY(-1px);
       }
       .task-row.done {
-        opacity: 0.55;
+        opacity: 0.6;
       }
       .task-check {
         width: 20px;
@@ -629,12 +744,14 @@
         place-items: center;
         flex-shrink: 0;
         transition:
-          background 180ms,
-          border-color 180ms;
+          background 180ms ease,
+          border-color 180ms ease,
+          transform 180ms ease;
       }
       .task-row.done .task-check {
         background: var(--success);
         border-color: var(--success);
+        transform: scale(1.02);
       }
       .task-check-icon {
         color: #fff;
@@ -690,12 +807,19 @@
         font-weight: 700;
         width: fit-content;
       }
+      .live-badge.live-okay {
+        background: rgba(34, 197, 94, 0.12);
+        color: var(--success);
+      }
       .live-dot {
         width: 6px;
         height: 6px;
         border-radius: 50%;
         background: var(--danger);
         animation: pulse 1.4s ease infinite;
+      }
+      .live-badge.live-okay .live-dot {
+        background: var(--success);
       }
       @keyframes pulse {
         0%,
@@ -731,12 +855,19 @@
         font-weight: 700;
         box-shadow: 0 6px 20px var(--pri-glow);
         transition:
-          opacity 180ms,
-          transform 150ms;
+          opacity 180ms ease,
+          transform 150ms ease,
+          filter 180ms ease;
       }
       .btn-join:hover {
-        opacity: 0.9;
+        opacity: 0.95;
         transform: translateY(-1px);
+        filter: brightness(1.05);
+      }
+      .btn-join:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
       }
 
       /* Achievements */
@@ -777,6 +908,50 @@
         opacity: 0.45;
       }
 
+      /* Recent activity */
+      .activity-feed {
+        display: grid;
+        gap: 10px;
+      }
+      .activity-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        background: var(--surf2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        min-height: 64px;
+      }
+      .activity-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: var(--pri-soft);
+        display: grid;
+        place-items: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+      }
+      .activity-main {
+        flex: 1;
+        min-width: 0;
+      }
+      .activity-subject {
+        font-size: 0.875rem;
+        font-weight: 700;
+        margin-bottom: 2px;
+      }
+      .activity-type {
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+      .activity-time {
+        font-size: 0.75rem;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+
       /* ── TOAST ──────────────────────────────────────────── */
       .toast {
         position: fixed;
@@ -792,8 +967,8 @@
         opacity: 0;
         transform: translateY(10px);
         transition:
-          opacity 200ms,
-          transform 200ms;
+          opacity 200ms ease,
+          transform 200ms ease;
         z-index: 200;
         pointer-events: none;
         max-width: 300px;
@@ -817,7 +992,7 @@
           grid-template-columns: 1fr;
         }
         .stats-row {
-          grid-template-columns: repeat(2, 1fr);
+          grid-template-columns: repeat(2, minmax(0, 1fr));
         }
         .charts-grid {
           grid-template-columns: 1fr 1fr;
@@ -828,6 +1003,7 @@
           padding: 0 16px;
         }
         .page {
+          width: min(94%, 1450px);
           padding: 18px 14px 48px;
         }
         .welcome-card {
@@ -841,6 +1017,13 @@
         }
         .subject-grid {
           grid-template-columns: 1fr 1fr;
+        }
+        .continue-card {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .btn-continue {
+          width: 100%;
         }
         .nav-left .brand span:last-child {
           display: none;
@@ -976,6 +1159,8 @@
         <div class="subject-grid" id="subjectGrid"></div>
       </div>
 
+      <div id="continueLearning"></div>
+
       <!-- ANALYTICS -->
       <div class="card">
         <div class="sec-head">
@@ -1002,25 +1187,21 @@
 
       <!-- MAIN GRID: Left content + Right sidebar -->
       <div class="main-grid">
-        <!-- LEFT: nothing extra needed here, sidebar is right -->
         <div style="display: grid; gap: 24px">
-          <!-- Placeholder for future content like recent activity feed -->
           <div class="card">
             <div class="card-title">Recent Activity</div>
             <div class="card-heading" style="margin-bottom: 16px">
               What you've been up to
             </div>
-            <div id="activityFeed" style="display: grid; gap: 10px">
+            <div id="activityFeed" class="activity-feed">
               <div style="color: var(--muted); font-size: 0.9rem">
-                No activity yet. Start exploring subjects above!
+                No recent activity.
               </div>
             </div>
           </div>
         </div>
 
-        <!-- RIGHT SIDEBAR -->
         <div class="sidebar">
-          <!-- Daily Goals -->
           <div class="card">
             <div class="card-title">Daily goals</div>
             <div class="card-heading">Today's checklist</div>
@@ -1036,25 +1217,21 @@
             <div class="task-list" id="taskList"></div>
           </div>
 
-          <!-- Live Class -->
           <div class="live-card">
-            <div class="live-badge">
-              <span class="live-dot"></span>Live soon
+            <div class="live-badge" id="liveBadge">
+              <span class="live-dot"></span>
+              <span id="liveBadgeText">Live soon</span>
             </div>
             <div>
-              <div class="live-title">Geometry Practice</div>
-              <div class="live-sub">with Ms. Sharma</div>
+              <div class="live-title" id="liveTitle">Geometry Practice</div>
+              <div class="live-sub" id="liveInstructor">with Ms. Sharma</div>
             </div>
             <div class="countdown" id="countdownEl">00:34:00</div>
-            <button
-              class="btn-join"
-              onclick="showToast('Joining class… feature coming soon!')"
-            >
+            <button class="btn-join" id="joinClassBtn" type="button">
               Join Class
             </button>
           </div>
 
-          <!-- Achievements -->
           <div class="card">
             <div class="card-title">Achievements</div>
             <div class="card-heading">Badges & milestones</div>
@@ -1191,6 +1368,38 @@
           return JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}");
         } catch {
           return {};
+        }
+      }
+
+      async function loadSupabaseProfile() {
+        try {
+          if (!window.sb || !window.sb.auth) return null;
+          const {
+            data: { user },
+            error: userError,
+          } = await window.sb.auth.getUser();
+          if (userError || !user) return null;
+
+          const { data, error } = await window.sb
+            .from("learners")
+            .select("full_name, class_grade, stream, email, phone_number")
+            .eq("auth_user_id", user.id)
+            .maybeSingle();
+
+          if (error || !data) return null;
+
+          const profile = {
+            fullName: data.full_name || data.fullName || "Learner",
+            grade: data.class_grade || data.grade || "10",
+            stream: data.stream || "",
+            email: data.email || user.email || "",
+            phone: data.phone_number || "",
+          };
+          localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+          return profile;
+        } catch (err) {
+          console.warn("[Profile sync failed]", err);
+          return null;
         }
       }
 
@@ -1420,30 +1629,142 @@
       }
 
       /* ── 11. ACTIVITY FEED ─────────────────────────────────── */
+      function normalizeActivityEntry(item) {
+        const subject = item.subject || item.topic || "General";
+        const label =
+          item.label ||
+          item.action ||
+          item.activity_type ||
+          "Learning activity";
+        const timestamp =
+          item.ts ||
+          item.created_at ||
+          item.timestamp ||
+          new Date().toISOString();
+        return {
+          subject,
+          label,
+          ts: timestamp,
+          icon: item.icon || "📌",
+        };
+      }
+
+      function getActivityFeedData() {
+        const d = getData();
+        const saved = Array.isArray(d.activity) ? d.activity : [];
+        const normalized = saved.map(normalizeActivityEntry);
+        return normalized.filter((a) => a.subject && a.label);
+      }
+
+      function getContinueLearning() {
+        const activities = getActivityFeedData();
+        if (!activities.length) return null;
+        const recent = activities[0];
+        const subject = recent.subject || "General";
+        const title = recent.label.includes("video")
+          ? "Lesson recap"
+          : recent.label.includes("quiz")
+            ? "Practice set"
+            : recent.label.includes("notes")
+              ? "Study notes"
+              : "Learning material";
+        const progress = Math.min(98, Math.max(12, subjectScore(subject)));
+        const ts = new Date(recent.ts);
+        const minutesAgo = Math.max(
+          1,
+          Math.round((Date.now() - ts.getTime()) / 60000),
+        );
+        return {
+          subject,
+          title,
+          progress,
+          minutesAgo,
+        };
+      }
+
+      function renderContinueLearning() {
+        const container = document.getElementById("continueLearning");
+        const item = getContinueLearning();
+        if (!item) {
+          container.innerHTML = `
+            <div class="card continue-empty">
+              <div class="card-title">Continue Learning</div>
+              <div class="card-heading" style="margin-bottom: 8px">No active learning path yet</div>
+              <div>Start a lesson to keep your progress moving.</div>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = `
+          <div class="continue-card">
+            <div class="continue-meta">
+              <div class="continue-kicker">Continue learning</div>
+              <div class="continue-title">${item.subject}</div>
+              <div class="continue-sub">${item.title}</div>
+              <div class="continue-progress-row">
+                <div class="prog-bar"><div class="prog-fill" style="width: ${item.progress}%"></div></div>
+                <span class="continue-percent">${item.progress}%</span>
+              </div>
+              <div class="continue-time">Last studied ${item.minutesAgo} minutes ago</div>
+            </div>
+            <button class="btn-continue" type="button">Continue Learning →</button>
+          </div>
+        `;
+      }
+
       function renderActivityFeed() {
         const d = getData();
         const feed = document.getElementById("activityFeed");
-        if (!d.activity.length) {
-          feed.innerHTML = `<div style="color:var(--muted);font-size:0.9rem;">No activity yet. Start exploring subjects above!</div>`;
+        const items = getActivityFeedData();
+        if (!items.length && !d.activity?.length) {
+          feed.innerHTML = `<div style="color: var(--muted); font-size: 0.9rem">No recent activity.<br><span style="display:block;margin-top:8px;">Start learning to see your activity here.</span></div>`;
           return;
         }
-        feed.innerHTML = d.activity
-          .slice(0, 10)
+
+        const out = (items.length ? items : d.activity || [])
+          .slice(0, 5)
           .map((a) => {
-            const time = new Date(a.ts).toLocaleTimeString([], {
+            const entry = normalizeActivityEntry(a);
+            const iconMap = {
+              videos: "▶",
+              notes: "📝",
+              images: "🖼️",
+              quizzes: "🎯",
+              achievement: "🏆",
+              default: "📌",
+            };
+            const icon =
+              iconMap[
+                entry.label?.toLowerCase().includes("video")
+                  ? "videos"
+                  : entry.label?.toLowerCase().includes("notes")
+                    ? "notes"
+                    : entry.label?.toLowerCase().includes("quiz")
+                      ? "quizzes"
+                      : entry.label?.toLowerCase().includes("image")
+                        ? "images"
+                        : entry.subject?.toLowerCase().includes("achievement")
+                          ? "achievement"
+                          : "default"
+              ] || "📌";
+            const time = new Date(entry.ts).toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
             });
-            return `<div style="display:flex;align-items:center;gap:12px;padding:11px 14px;background:var(--surf2);border:1px solid var(--border);border-radius:12px;">
-      <div style="width:36px;height:36px;border-radius:10px;background:var(--pri-soft);display:grid;place-items:center;font-size:1rem;flex-shrink:0">📌</div>
-      <div style="flex:1;">
-        <div style="font-size:0.875rem;font-weight:600">${a.subject}</div>
-        <div style="font-size:0.8rem;color:var(--muted)">${a.label}</div>
-      </div>
-      <div style="font-size:0.75rem;color:var(--muted)">${time}</div>
-    </div>`;
+            return `
+            <div class="activity-item">
+              <div class="activity-icon">${icon}</div>
+              <div class="activity-main">
+                <div class="activity-subject">${entry.subject}</div>
+                <div class="activity-type">${entry.label}</div>
+              </div>
+              <div class="activity-time">${time}</div>
+            </div>
+          `;
           })
           .join("");
+        feed.innerHTML = out;
       }
 
       /* ── 12. TASKS ─────────────────────────────────────────── */
@@ -1492,6 +1813,7 @@
         tasks = tasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
         saveTasks(tasks);
         renderTasks();
+        renderAchievements();
         const t = tasks.find((t) => t.id === id);
         if (t.done) showToast("Task completed! 🎉");
       }
@@ -1499,16 +1821,44 @@
       /* ── 13. COUNTDOWN TIMER ───────────────────────────────── */
       let countdownSecs = 34 * 60;
       const countdownEl = document.getElementById("countdownEl");
+      const liveBadge = document.getElementById("liveBadge");
+      const liveBadgeText = document.getElementById("liveBadgeText");
+      const joinClassBtn = document.getElementById("joinClassBtn");
+      const liveTitle = document.getElementById("liveTitle");
+      const liveInstructor = document.getElementById("liveInstructor");
 
-      setInterval(() => {
+      function updateCountdown() {
         if (countdownSecs > 0) countdownSecs--;
         const h = Math.floor(countdownSecs / 3600);
         const m = Math.floor((countdownSecs % 3600) / 60);
         const s = countdownSecs % 60;
-        countdownEl.textContent = [h, m, s]
-          .map((v) => String(v).padStart(2, "0"))
-          .join(":");
-      }, 1000);
+        const isLive = countdownSecs <= 0;
+        countdownEl.textContent = isLive
+          ? "Live now"
+          : [h, m, s].map((v) => String(v).padStart(2, "0")).join(":");
+        liveBadge.classList.toggle("live-okay", isLive);
+        liveBadgeText.textContent = isLive ? "Live now" : "Live soon";
+        joinClassBtn.disabled = !isLive;
+        if (isLive) {
+          liveTitle.textContent = "Geometry Practice";
+          liveInstructor.textContent = "with Ms. Sharma";
+          countdownEl.style.color = "var(--success)";
+          joinClassBtn.textContent = "Join Live Class";
+        } else {
+          countdownEl.style.color = "var(--primary)";
+          joinClassBtn.textContent = "Join Class";
+        }
+      }
+
+      setInterval(updateCountdown, 1000);
+      updateCountdown();
+      joinClassBtn.addEventListener("click", () => {
+        if (countdownSecs <= 0) {
+          showToast("Joining live class now…");
+          return;
+        }
+        showToast("Class starts soon. You’ll be redirected when it begins.");
+      });
 
       /* ── 14. NOTIFICATIONS ─────────────────────────────────── */
       const notifBtn = document.getElementById("notifBtn");
@@ -1645,12 +1995,24 @@
         };
       }
 
+      function getStudyChartScale(values) {
+        const maxVal = Math.max(...values, 0);
+        if (maxVal <= 1) return { max: 5, stepSize: 1 };
+        if (maxVal <= 10) return { max: 15, stepSize: 5 };
+        if (maxVal <= 30) return { max: 40, stepSize: 10 };
+        if (maxVal <= 60) return { max: 80, stepSize: 20 };
+        const rounded = Math.ceil((maxVal * 1.25) / 20) * 20;
+        return {
+          max: rounded,
+          stepSize: Math.max(10, Math.ceil(rounded / 4 / 10) * 10),
+        };
+      }
+
       function initCharts(subjects) {
         const isDark = getTheme() === "dark";
         const c = chartColors(isDark);
         const subjectNames = subjects.map((s) => s.n);
 
-        // Subject performance bar chart
         chartSubject = new Chart(document.getElementById("chartSubject"), {
           type: "bar",
           data: {
@@ -1684,7 +2046,6 @@
           },
         });
 
-        // Daily study time line chart
         const labels = [],
           values = [];
         for (let i = 6; i >= 0; i--) {
@@ -1694,6 +2055,7 @@
           labels.push(d2.toLocaleDateString([], { weekday: "short" }));
           values.push(Math.round((getData().dailyStudy[key] || 0) / 60));
         }
+        const scale = getStudyChartScale(values);
         chartStudy = new Chart(document.getElementById("chartStudy"), {
           type: "line",
           data: {
@@ -1718,8 +2080,10 @@
             scales: {
               y: {
                 beginAtZero: true,
+                max: scale.max,
+                suggestedMax: scale.max,
+                ticks: { color: c.text, stepSize: scale.stepSize },
                 grid: { color: c.grid },
-                ticks: { color: c.text },
               },
               x: {
                 grid: { display: false },
@@ -1729,7 +2093,6 @@
           },
         });
 
-        // Activity doughnut chart
         const t2 = getData().totals;
         chartActivity = new Chart(document.getElementById("chartActivity"), {
           type: "doughnut",
@@ -1768,8 +2131,12 @@
           labels.push(d2.toLocaleDateString([], { weekday: "short" }));
           values.push(Math.round((getData().dailyStudy[key] || 0) / 60));
         }
+        const scale = getStudyChartScale(values);
         chartStudy.data.labels = labels;
         chartStudy.data.datasets[0].data = values;
+        chartStudy.options.scales.y.max = scale.max;
+        chartStudy.options.scales.y.suggestedMax = scale.max;
+        chartStudy.options.scales.y.ticks.stepSize = scale.stepSize;
         chartStudy.update("none");
       }
 
@@ -1824,6 +2191,7 @@
       function refreshAll() {
         updateStats();
         renderActivityFeed();
+        renderContinueLearning();
         renderAchievements();
         renderNotifications();
         if (currentSubjects.length) {
@@ -1844,25 +2212,29 @@
       /* ── 20. INIT ──────────────────────────────────────────── */
       let currentProfile = {};
 
-      document.addEventListener("DOMContentLoaded", () => {
+      document.addEventListener("DOMContentLoaded", async () => {
         applyTheme(getTheme());
 
-        // Load profile
-        currentProfile = loadProfile();
+        const synced = await loadSupabaseProfile();
+        if (synced) {
+          currentProfile = synced;
+        } else {
+          currentProfile = loadProfile();
+        }
+
         currentSubjects = getSubjects(
           currentProfile.grade,
           currentProfile.stream,
         );
 
-        // Render everything
         renderSubjects(currentProfile.grade, currentProfile.stream);
         updateStats();
         renderTasks();
         renderNotifications();
         renderActivityFeed();
+        renderContinueLearning();
         renderAchievements();
 
-        // Init charts AFTER DOM is ready and Chart.js is loaded
         initCharts(currentSubjects);
       });
 
