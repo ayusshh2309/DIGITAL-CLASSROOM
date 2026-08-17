@@ -1194,7 +1194,7 @@
         const { data: authData, error: authError } = await sb.auth.getUser();
         if (authError || !authData.user) {
           toast("Please log in to view your dashboard.");
-          setTimeout(() => (location.href = "login.html"), 900);
+          setTimeout(() => (location.href = "C:login.html"), 900);
           return;
         }
         currentUser = authData.user;

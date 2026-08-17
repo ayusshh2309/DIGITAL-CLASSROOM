@@ -1,0 +1,1358 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Smart Learning DC — Quizzes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        font-family: Inter, Arial, sans-serif;
+        background: #061224;
+        color: #edf2ff;
+      }
+      body {
+        overflow-x: hidden;
+      }
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+      .sidebar {
+        position: fixed;
+        inset: 0 auto 0 0;
+        width: 238px;
+        background: linear-gradient(180deg, #061427, #041021);
+        border-right: 1px solid #172943;
+        padding: 22px 12px;
+        z-index: 20;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        font-weight: 700;
+        font-size: 17px;
+        margin: 0 10px 28px;
+      }
+      .brand-mark {
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, #7357ff, #4c35d8);
+        font-size: 22px;
+      }
+      .nav {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .nav a {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        height: 45px;
+        padding: 0 12px;
+        border-radius: 10px;
+        color: #aebbd0;
+        text-decoration: none;
+        font-size: 14px;
+      }
+      .nav a:hover {
+        background: #101e37;
+        color: #fff;
+      }
+      .nav a.active {
+        background: linear-gradient(100deg, #6240e8, #5130d0);
+        color: #fff;
+        box-shadow: 0 8px 24px #4d32d533;
+      }
+      .nav a.logout {
+        color: #ff5d68;
+      }
+      .divider {
+        height: 1px;
+        background: #172943;
+        margin: 12px 7px;
+      }
+      .main {
+        margin-left: 238px;
+        min-height: 100vh;
+        padding: 0 28px 20px;
+      }
+      .topbar {
+        height: 72px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 18px;
+        border-bottom: 1px solid #15263e;
+      }
+      .search-box {
+        width: 510px;
+        height: 44px;
+        border: 1px solid #203450;
+        background: #0b1a30;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        padding: 0 14px;
+        gap: 10px;
+      }
+      .search-box span {
+        font-size: 25px;
+        color: #aebbd0;
+      }
+      .search-box input {
+        width: 100%;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: #fff;
+        font-size: 13px;
+      }
+      .search-box input::placeholder {
+        color: #8190a7;
+      }
+      .notification {
+        position: relative;
+        border: 0;
+        background: transparent;
+        color: #edf2ff;
+        font-size: 23px;
+        cursor: pointer;
+      }
+      .notification b {
+        position: absolute;
+        right: -6px;
+        top: -8px;
+        background: #ef4654;
+        color: #fff;
+        border-radius: 20px;
+        font-size: 10px;
+        padding: 3px 5px;
+      }
+      .mini-profile {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding-left: 13px;
+        border-left: 1px solid #182a43;
+        min-width: 185px;
+      }
+      .avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, #7447ef, #4c36d4);
+        font-weight: 700;
+      }
+      .mini-profile strong,
+      .mini-profile small {
+        display: block;
+      }
+      .mini-profile strong {
+        font-size: 13px;
+      }
+      .mini-profile small {
+        font-size: 11px;
+        color: #8fa0bb;
+        margin-top: 3px;
+      }
+      .mini-profile > span {
+        margin-left: auto;
+        color: #aebbd0;
+      }
+      .mobile-menu {
+        display: none;
+        background: transparent;
+        border: 0;
+        color: #fff;
+        font-size: 22px;
+      }
+      .page-heading {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px 2px 20px;
+      }
+      .heading-icon {
+        width: 82px;
+        height: 82px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, #7048f0, #4933ca);
+        font-size: 38px;
+        box-shadow: 0 10px 30px #5034d433;
+      }
+      .eyebrow {
+        font-size: 10px;
+        letter-spacing: 1px;
+        color: #6598e5;
+        font-weight: 700;
+        margin: 0 0 5px;
+      }
+      .page-heading h1,
+      .section-heading h2,
+      .right-column h2 {
+        font-family: "Playfair Display", Georgia, serif;
+        margin: 0;
+      }
+      .page-heading h1 {
+        font-size: 31px;
+      }
+      .page-heading p:not(.eyebrow) {
+        margin: 4px 0 8px;
+        color: #8b9ab1;
+        font-size: 13px;
+      }
+      .context-pill {
+        display: inline-flex;
+        padding: 5px 9px;
+        border-radius: 6px;
+        background: #182745;
+        color: #b6c3d8;
+        font-size: 10px;
+        border: 1px solid #263b5a;
+      }
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+      .stat-card {
+        min-height: 106px;
+        border: 1px solid #1b304c;
+        background: linear-gradient(145deg, #0d1d35, #0b192d);
+        border-radius: 12px;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 13px;
+      }
+      .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 11px;
+        display: grid;
+        place-items: center;
+        font-size: 23px;
+      }
+      .purple {
+        background: #5429a944;
+        color: #a98cff;
+      }
+      .blue {
+        background: #1670d844;
+        color: #62b7ff;
+      }
+      .green {
+        background: #0c9a5844;
+        color: #48e094;
+      }
+      .orange {
+        background: #b96d1044;
+        color: #ffb34d;
+      }
+      .stat-card strong {
+        display: block;
+        font-size: 22px;
+      }
+      .stat-card span {
+        display: block;
+        font-size: 12px;
+        margin-top: 3px;
+      }
+      .stat-card small {
+        display: block;
+        color: #71839e;
+        font-size: 10px;
+        margin-top: 4px;
+      }
+      .content-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 316px;
+        gap: 18px;
+      }
+      .main-column {
+        min-width: 0;
+      }
+      .panel {
+        background: #0a192f;
+        border: 1px solid #1a304c;
+        border-radius: 12px;
+      }
+      .filter-panel {
+        min-height: 66px;
+        padding: 10px 14px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 17px;
+      }
+      .tabs {
+        display: flex;
+        gap: 3px;
+      }
+      .tab {
+        border: 0;
+        background: transparent;
+        color: #a9b6cb;
+        padding: 10px 14px;
+        border-radius: 7px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .tab.active {
+        background: #5939df;
+        color: #fff;
+      }
+      .filters {
+        display: flex;
+        gap: 8px;
+      }
+      .filters select {
+        min-width: 132px;
+        border: 1px solid #203550;
+        background: #0d1e35;
+        color: #b9c6d9;
+        border-radius: 8px;
+        padding: 9px 10px;
+        outline: none;
+        font-size: 11px;
+      }
+      .section-heading {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        margin: 0 2px 11px;
+      }
+      .section-heading h2 {
+        font-size: 22px;
+      }
+      .section-heading > span {
+        font-size: 11px;
+        color: #7d8da8;
+      }
+      .quiz-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 11px;
+      }
+      .quiz-card {
+        min-height: 216px;
+        padding: 15px;
+        background: linear-gradient(145deg, #0e2039, #0a192e);
+        border: 1px solid #1d3451;
+        border-radius: 11px;
+        transition: 0.2s;
+      }
+      .quiz-card:hover {
+        transform: translateY(-2px);
+        border-color: #5a45d9;
+        box-shadow: 0 14px 35px #0005;
+      }
+      .quiz-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+      .quiz-icon {
+        width: 39px;
+        height: 39px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        font-size: 20px;
+      }
+      .quiz-icon.physics {
+        background: #5429a944;
+        color: #b18cff;
+      }
+      .quiz-icon.chemistry {
+        background: #0c9a5844;
+        color: #50df96;
+      }
+      .quiz-icon.math {
+        background: #1670d844;
+        color: #65b9ff;
+      }
+      .quiz-icon.english {
+        background: #b96d1044;
+        color: #ffbe5a;
+      }
+      .quiz-icon.biology {
+        background: #742e9744;
+        color: #d28cff;
+      }
+      .quiz-icon.cs {
+        background: #0e9ba644;
+        color: #66e6e7;
+      }
+      .quiz-icon.default {
+        background: #4c3c9444;
+        color: #b49cff;
+      }
+      .difficulty {
+        font-size: 9px;
+        padding: 5px 8px;
+        border-radius: 6px;
+      }
+      .difficulty.easy {
+        background: #145f4140;
+        color: #62df9a;
+      }
+      .difficulty.medium {
+        background: #653cb944;
+        color: #c0a5ff;
+      }
+      .difficulty.hard {
+        background: #1b478044;
+        color: #6dbaff;
+      }
+      .quiz-card h3 {
+        font-size: 15px;
+        margin: 12px 0 4px;
+        line-height: 1.3;
+      }
+      .quiz-subject {
+        font-size: 11px;
+        color: #8999b1;
+      }
+      .quiz-meta {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 17px;
+        padding-top: 10px;
+        border-top: 1px solid #1a3049;
+        color: #b5c2d4;
+        font-size: 10px;
+      }
+      .quiz-actions {
+        margin-top: 12px;
+      }
+      .start-btn {
+        width: 100%;
+        border: 0;
+        border-radius: 7px;
+        padding: 9px;
+        background: linear-gradient(100deg, #6840ef, #5630d7);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .start-btn.completed {
+        background: #172943;
+        color: #92a2b9;
+        cursor: default;
+      }
+      .status-label {
+        display: inline-block;
+        margin-top: 7px;
+        font-size: 9px;
+        color: #6cdb98;
+      }
+      .empty-state {
+        border: 1px dashed #263c5b;
+        border-radius: 12px;
+        text-align: center;
+        padding: 55px 20px;
+        color: #8394ad;
+        background: #09182b;
+      }
+      .empty-icon {
+        font-size: 34px;
+        color: #7d5cff;
+      }
+      .empty-state h3 {
+        margin: 9px 0 5px;
+        color: #e7edfb;
+      }
+      .empty-state p {
+        font-size: 11px;
+        margin: 0;
+      }
+      .hidden {
+        display: none !important;
+      }
+      .no-more {
+        margin-top: 12px;
+        min-height: 84px;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 13px;
+        text-align: center;
+      }
+      .no-more > span {
+        font-size: 25px;
+        color: #8b9ab0;
+      }
+      .no-more strong {
+        font-size: 12px;
+      }
+      .no-more p {
+        margin: 5px 0 0;
+        color: #7587a1;
+        font-size: 10px;
+      }
+      .right-column {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .quick-actions {
+        padding: 16px;
+      }
+      .quick-actions h2 {
+        font-size: 20px;
+        margin: 0 0 10px;
+      }
+      .quick-item {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: transparent;
+        border: 0;
+        border-top: 1px solid #1b3049;
+        padding: 11px 0;
+        color: #fff;
+        text-align: left;
+        cursor: pointer;
+      }
+      .quick-item:first-of-type {
+        border-top: 0;
+      }
+      .quick-icon {
+        width: 33px;
+        height: 33px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        font-size: 16px;
+      }
+      .purple-bg {
+        background: #5b39df;
+        color: #fff;
+      }
+      .green-bg {
+        background: #0b9b5a;
+        color: #fff;
+      }
+      .orange-bg {
+        background: #a96917;
+        color: #fff;
+      }
+      .quick-item div {
+        flex: 1;
+      }
+      .quick-item strong,
+      .quick-item small {
+        display: block;
+      }
+      .quick-item strong {
+        font-size: 11px;
+      }
+      .quick-item small {
+        font-size: 9px;
+        color: #71839e;
+        margin-top: 3px;
+      }
+      .quick-item > b {
+        color: #8191aa;
+        font-size: 18px;
+      }
+      .performance {
+        padding: 16px;
+        text-align: center;
+      }
+      .performance h2,
+      .recent h2 {
+        font-size: 17px;
+        text-align: left;
+      }
+      .donut {
+        width: 105px;
+        height: 105px;
+        margin: 14px auto 10px;
+        border-radius: 50%;
+        background: conic-gradient(#6941ed 0deg, #26344d 0deg 360deg);
+        display: grid;
+        place-items: center;
+        position: relative;
+      }
+      .donut:after {
+        content: "";
+        position: absolute;
+        width: 79px;
+        height: 79px;
+        border-radius: 50%;
+        background: #0a192f;
+      }
+      .donut span {
+        position: relative;
+        z-index: 2;
+        font-size: 20px;
+        font-weight: 700;
+      }
+      .performance p {
+        font-size: 11px;
+        color: #8a9ab1;
+        line-height: 1.5;
+        margin: 0;
+      }
+      .recent {
+        padding: 16px;
+      }
+      .recent-item {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 10px 0;
+        border-bottom: 1px solid #1b3049;
+      }
+      .recent-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        font-size: 16px;
+      }
+      .recent-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .recent-info strong,
+      .recent-info small {
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .recent-info strong {
+        font-size: 10px;
+      }
+      .recent-info small {
+        font-size: 9px;
+        color: #7587a0;
+        margin-top: 3px;
+      }
+      .recent-score {
+        font-size: 11px;
+        font-weight: 700;
+        color: #4be093;
+      }
+      .results-link {
+        border: 0;
+        background: transparent;
+        color: #8d70ff;
+        font-size: 11px;
+        padding: 13px 0 0;
+        cursor: pointer;
+      }
+      footer {
+        text-align: center;
+        border-top: 1px solid #142740;
+        margin-top: 18px;
+        padding: 17px;
+        color: #6e7f9a;
+        font-size: 11px;
+      }
+      .toast {
+        position: fixed;
+        right: 25px;
+        bottom: 25px;
+        background: #132541;
+        border: 1px solid #2a4263;
+        color: #eaf0fc;
+        border-radius: 9px;
+        padding: 12px 15px;
+        font-size: 12px;
+        opacity: 0;
+        transform: translateY(10px);
+        pointer-events: none;
+        transition: 0.25s;
+        z-index: 50;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      @media (max-width: 1200px) {
+        .quiz-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .content-layout {
+          grid-template-columns: 1fr;
+        }
+        .right-column {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+      @media (max-width: 900px) {
+        .sidebar {
+          transform: translateX(-100%);
+          transition: 0.25s;
+        }
+        .sidebar.open {
+          transform: translateX(0);
+        }
+        .main {
+          margin-left: 0;
+          padding: 0 15px;
+        }
+        .mobile-menu {
+          display: block;
+          margin-right: auto;
+        }
+        .topbar {
+          gap: 10px;
+        }
+        .search-box {
+          width: min(510px, 55vw);
+        }
+        .stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .right-column {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      @media (max-width: 650px) {
+        .page-heading {
+          align-items: flex-start;
+        }
+        .heading-icon {
+          width: 62px;
+          height: 62px;
+          font-size: 28px;
+        }
+        .page-heading h1 {
+          font-size: 26px;
+        }
+        .filter-panel {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 10px;
+        }
+        .tabs {
+          overflow: auto;
+        }
+        .filters {
+          width: 100%;
+        }
+        .filters select {
+          flex: 1;
+        }
+        .quiz-grid {
+          grid-template-columns: 1fr;
+        }
+        .right-column {
+          grid-template-columns: 1fr;
+        }
+        .mini-profile div:not(.avatar),
+        .mini-profile > span {
+          display: none;
+        }
+        .search-box {
+          width: 58vw;
+        }
+      }
+      @media (max-width: 450px) {
+        .stats-grid {
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+        }
+        .stat-card {
+          padding: 11px;
+        }
+        .stat-card small {
+          display: none;
+        }
+        .stat-icon {
+          width: 40px;
+          height: 40px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark">⌁</div>
+        <span>Smart Learning DC</span>
+      </div>
+      <nav class="nav">
+        <a href="dashboard.html">⌂ <span>Dashboard</span></a
+        ><a href="subjects.html">▣ <span>Subjects</span></a
+        ><a href="live-classes.html">▷ <span>Live Classes</span></a
+        ><a class="active" href="quizzes.html">◎ <span>Quizzes</span></a
+        ><a href="notes.html">▤ <span>Notes</span></a
+        ><a href="videos.html">▷ <span>Videos</span></a
+        ><a href="study-time.html">◷ <span>Study Time</span></a
+        ><a href="downloads.html">⇩ <span>Downloads</span></a
+        ><a href="calendar.html">▦ <span>Calendar</span></a>
+        <div class="divider"></div>
+        <a href="profile.html">♙ <span>My Profile</span></a
+        ><a href="settings.html">⚙ <span>Settings</span></a
+        ><a href="#">? <span>Help &amp; Support</span></a
+        ><a class="logout" href="#" id="logoutBtn">↪ <span>Log out</span></a>
+      </nav>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobileMenu">☰</button>
+        <div class="search-box">
+          <span>⌕</span
+          ><input
+            id="searchInput"
+            type="search"
+            placeholder="Search quizzes, subjects, topics..."
+          />
+        </div>
+        <button class="notification">♧<b>3</b></button>
+        <div class="mini-profile">
+          <div class="avatar" id="avatar">A</div>
+          <div>
+            <strong id="studentName">Student</strong
+            ><small id="studentContext">Class —</small>
+          </div>
+          <span>⌄</span>
+        </div>
+      </header>
+      <section class="page-heading">
+        <div class="heading-icon">◎</div>
+        <div>
+          <p class="eyebrow">TEST YOUR KNOWLEDGE</p>
+          <h1>Quizzes</h1>
+          <p>
+            Practice, test your understanding, and improve your performance.
+          </p>
+          <span class="context-pill" id="gradeStreamPill">Loading...</span>
+        </div>
+      </section>
+      <section class="stats-grid">
+        <article class="stat-card">
+          <div class="stat-icon purple">◎</div>
+          <div>
+            <strong id="quizzesTaken">0</strong><span>Quizzes Taken</span
+            ><small>Your attempts</small>
+          </div>
+        </article>
+        <article class="stat-card">
+          <div class="stat-icon blue">▤</div>
+          <div>
+            <strong id="availableCount">0</strong><span>Available</span
+            ><small>Ready to attempt</small>
+          </div>
+        </article>
+        <article class="stat-card">
+          <div class="stat-icon green">↗</div>
+          <div>
+            <strong id="averageScore">0%</strong><span>Average Score</span
+            ><small>Across your attempts</small>
+          </div>
+        </article>
+        <article class="stat-card">
+          <div class="stat-icon orange">◷</div>
+          <div>
+            <strong id="pendingCount">0</strong><span>Pending</span
+            ><small>Not attempted</small>
+          </div>
+        </article>
+      </section>
+      <section class="content-layout">
+        <div class="main-column">
+          <section class="filter-panel panel">
+            <div class="tabs">
+              <button class="tab active" data-status="all">All Quizzes</button
+              ><button class="tab" data-status="available">Available</button
+              ><button class="tab" data-status="completed">Completed</button>
+            </div>
+            <div class="filters">
+              <select id="subjectFilter">
+                <option value="all">All Subjects</option></select
+              ><select id="difficultyFilter">
+                <option value="all">All Levels</option>
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+          </section>
+          <section class="quiz-section">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">YOUR PRACTICE</p>
+                <h2>Available Quizzes</h2>
+              </div>
+              <span id="quizCount">0 quizzes</span>
+            </div>
+            <div id="quizGrid" class="quiz-grid"></div>
+            <div id="emptyState" class="empty-state hidden">
+              <div class="empty-icon">◎</div>
+              <h3>No quizzes found</h3>
+              <p>
+                New quizzes published by your teachers will appear here
+                automatically.
+              </p>
+            </div>
+          </section>
+          <section class="no-more panel" id="noMore">
+            <span>▤</span>
+            <div>
+              <strong>No more quizzes to show</strong>
+              <p>
+                New quizzes will appear here when published by your teachers.
+              </p>
+            </div>
+          </section>
+        </div>
+        <aside class="right-column">
+          <section class="panel quick-actions">
+            <p class="eyebrow">QUICK ACTIONS</p>
+            <h2>Explore faster</h2>
+            <button class="quick-item" id="allQuizzesAction">
+              <span class="quick-icon purple-bg">◎</span>
+              <div>
+                <strong>All Quizzes</strong
+                ><small>Explore available tests</small>
+              </div>
+              <b>›</b></button
+            ><button class="quick-item" id="resultsAction">
+              <span class="quick-icon green-bg">✓</span>
+              <div>
+                <strong>My Results</strong><small>Review your attempts</small>
+              </div>
+              <b>›</b></button
+            ><button class="quick-item" id="subjectsAction">
+              <span class="quick-icon orange-bg">▤</span>
+              <div>
+                <strong>Browse Subjects</strong
+                ><small>Practice by subject</small>
+              </div>
+              <b>›</b>
+            </button>
+          </section>
+          <section class="panel performance">
+            <h2>Your Performance</h2>
+            <div class="donut" id="performanceDonut">
+              <span id="donutScore">0%</span>
+            </div>
+            <p>Average score from<br />your completed quizzes.</p>
+          </section>
+          <section class="panel recent">
+            <h2>Recent Attempts</h2>
+            <div id="recentAttempts"></div>
+            <button class="results-link" id="viewResults">
+              View All Results →
+            </button>
+          </section>
+        </aside>
+      </section>
+      <footer>
+        “The beautiful thing about learning is that no one can take it away from
+        you.” — B.B. King
+      </footer>
+    </main>
+    <div class="toast" id="toast"></div>
+    <script>
+      const CONFIG = {
+        SUPABASE_URL: "YOUR_SUPABASE_URL",
+        SUPABASE_ANON_KEY: "YOUR_SUPABASE_ANON_KEY",
+        tables: {
+          learner: "learners",
+          quizzes: "quizzes",
+          attempts: "quiz_attempts",
+        },
+        columns: {
+          learner: {
+            authUserId: "auth_user_id",
+            fullName: "full_name",
+            grade: "grade",
+            stream: "stream",
+          },
+          quiz: {
+            id: "id",
+            title: "title",
+            subject: "subject",
+            topic: "topic",
+            difficulty: "difficulty",
+            questionCount: "question_count",
+            duration: "duration_minutes",
+            grade: "grade",
+            stream: "stream",
+            published: "is_published",
+            createdAt: "created_at",
+          },
+          attempt: {
+            quizId: "quiz_id",
+            studentId: "student_id",
+            score: "score",
+            totalMarks: "total_marks",
+            completedAt: "completed_at",
+          },
+        },
+      };
+      const state = {
+        supabase: null,
+        user: null,
+        learner: null,
+        quizzes: [],
+        attempts: [],
+        activeStatus: "all",
+        search: "",
+        subject: "all",
+        difficulty: "all",
+      };
+      const $ = (id) => document.getElementById(id);
+      document.addEventListener("DOMContentLoaded", init);
+      async function init() {
+        setupUI();
+        if (
+          CONFIG.SUPABASE_URL === "YOUR_SUPABASE_URL" ||
+          CONFIG.SUPABASE_ANON_KEY === "YOUR_SUPABASE_ANON_KEY"
+        ) {
+          showToast("Add your Supabase URL and anon key in quizzes.html");
+          return;
+        }
+        state.supabase = window.supabase.createClient(
+          CONFIG.SUPABASE_URL,
+          CONFIG.SUPABASE_ANON_KEY,
+        );
+        try {
+          const {
+            data: { user },
+            error,
+          } = await state.supabase.auth.getUser();
+          if (error) throw error;
+          if (!user) {
+            showToast("Please log in first.");
+            return;
+          }
+          state.user = user;
+          await loadLearner();
+          await loadQuizzes();
+          await loadAttempts();
+          renderAll();
+        } catch (e) {
+          console.error(e);
+          showToast(
+            "Could not load quiz data. Check Supabase table names and RLS.",
+          );
+        }
+      }
+      function setupUI() {
+        $("mobileMenu").onclick = () => $("sidebar").classList.toggle("open");
+        $("searchInput").oninput = (e) => {
+          state.search = e.target.value.toLowerCase().trim();
+          renderQuizzes();
+        };
+        document.querySelectorAll(".tab").forEach(
+          (b) =>
+            (b.onclick = () => {
+              document
+                .querySelectorAll(".tab")
+                .forEach((x) => x.classList.remove("active"));
+              b.classList.add("active");
+              state.activeStatus = b.dataset.status;
+              renderQuizzes();
+            }),
+        );
+        $("subjectFilter").onchange = (e) => {
+          state.subject = e.target.value;
+          renderQuizzes();
+        };
+        $("difficultyFilter").onchange = (e) => {
+          state.difficulty = e.target.value;
+          renderQuizzes();
+        };
+        $("allQuizzesAction").onclick = () => {
+          state.activeStatus = "all";
+          document
+            .querySelectorAll(".tab")
+            .forEach((b) =>
+              b.classList.toggle("active", b.dataset.status === "all"),
+            );
+          renderQuizzes();
+        };
+        $("subjectsAction").onclick = () => (location.href = "subjects.html");
+        $("resultsAction").onclick = () =>
+          $("viewResults").scrollIntoView({ behavior: "smooth" });
+        $("viewResults").onclick = () =>
+          showToast("Connect this button to your results page.");
+        $("logoutBtn").onclick = async (e) => {
+          e.preventDefault();
+          if (state.supabase) await state.supabase.auth.signOut();
+          location.href = "login.html";
+        };
+      }
+      async function loadLearner() {
+        const c = CONFIG.columns.learner;
+        const { data, error } = await state.supabase
+          .from(CONFIG.tables.learner)
+          .select("*")
+          .eq(c.authUserId, state.user.id)
+          .maybeSingle();
+        if (error) throw error;
+        state.learner = data || {};
+        const name =
+            state.learner[c.fullName] ||
+            state.user.user_metadata?.full_name ||
+            "Student",
+          grade = state.learner[c.grade] || state.user.user_metadata?.grade,
+          stream = state.learner[c.stream] || state.user.user_metadata?.stream;
+        $("studentName").textContent = name;
+        $("avatar").textContent = name[0].toUpperCase();
+        $("studentContext").textContent = grade
+          ? `Class ${grade}${stream ? " • " + stream : ""}`
+          : "Class —";
+        $("gradeStreamPill").textContent = $("studentContext").textContent;
+      }
+      async function loadQuizzes() {
+        const q = CONFIG.columns.quiz,
+          grade = state.learner?.[CONFIG.columns.learner.grade],
+          stream = state.learner?.[CONFIG.columns.learner.stream];
+        let query = state.supabase
+          .from(CONFIG.tables.quizzes)
+          .select("*")
+          .eq(q.published, true)
+          .order(q.createdAt, { ascending: false });
+        if (grade) query = query.eq(q.grade, Number(grade));
+        const { data, error } = await query;
+        if (error) throw error;
+        state.quizzes = (data || []).filter((x) => {
+          if (!stream) return true;
+          const s = x[q.stream];
+          return !s || String(s).toLowerCase() === String(stream).toLowerCase();
+        });
+      }
+      async function loadAttempts() {
+        const a = CONFIG.columns.attempt,
+          studentId = state.learner?.id || state.user.id;
+        const { data, error } = await state.supabase
+          .from(CONFIG.tables.attempts)
+          .select("*")
+          .eq(a.studentId, studentId)
+          .order(a.completedAt, { ascending: false });
+        if (error) throw error;
+        state.attempts = data || [];
+      }
+      function renderAll() {
+        renderSubjects();
+        renderStats();
+        renderQuizzes();
+        renderPerformance();
+        renderRecent();
+      }
+      function renderSubjects() {
+        const q = CONFIG.columns.quiz,
+          sel = $("subjectFilter"),
+          subjects = [
+            ...new Set(state.quizzes.map((x) => x[q.subject]).filter(Boolean)),
+          ].sort();
+        sel.innerHTML =
+          '<option value="all">All Subjects</option>' +
+          subjects
+            .map((s) => `<option value="${esc(s)}">${esc(s)}</option>`)
+            .join("");
+        sel.value = state.subject;
+      }
+      function renderStats() {
+        const q = CONFIG.columns.quiz,
+          a = CONFIG.columns.attempt,
+          done = new Set(state.attempts.map((x) => String(x[a.quizId]))),
+          available = state.quizzes.filter(
+            (x) => !done.has(String(x[q.id])),
+          ).length,
+          avg = state.attempts.length
+            ? Math.round(
+                state.attempts
+                  .map((x) => pct(x[a.score], x[a.totalMarks]))
+                  .reduce((a, b) => a + b, 0) / state.attempts.length,
+              )
+            : 0;
+        $("quizzesTaken").textContent = state.attempts.length;
+        $("availableCount").textContent = available;
+        $("pendingCount").textContent = available;
+        $("averageScore").textContent = avg + "%";
+      }
+      function filtered() {
+        const q = CONFIG.columns.quiz,
+          a = CONFIG.columns.attempt,
+          done = new Set(state.attempts.map((x) => String(x[a.quizId])));
+        return state.quizzes.filter((x) => {
+          const id = String(x[q.id]),
+            title = String(x[q.title] || "").toLowerCase(),
+            sub = String(x[q.subject] || "").toLowerCase(),
+            topic = String(x[q.topic] || "").toLowerCase(),
+            dif = String(x[q.difficulty] || "").toLowerCase(),
+            complete = done.has(id);
+          return (
+            (!state.search ||
+              title.includes(state.search) ||
+              sub.includes(state.search) ||
+              topic.includes(state.search)) &&
+            (state.subject === "all" || sub === state.subject.toLowerCase()) &&
+            (state.difficulty === "all" || dif === state.difficulty) &&
+            (state.activeStatus === "all" ||
+              (state.activeStatus === "completed" && complete) ||
+              (state.activeStatus === "available" && !complete))
+          );
+        });
+      }
+      function renderQuizzes() {
+        const q = CONFIG.columns.quiz,
+          a = CONFIG.columns.attempt,
+          list = filtered();
+        $("quizCount").textContent =
+          list.length + " " + (list.length === 1 ? "quiz" : "quizzes");
+        $("emptyState").classList.toggle("hidden", list.length > 0);
+        $("noMore").classList.toggle("hidden", !list.length);
+        $("quizGrid").innerHTML = list
+          .map((x) => {
+            const id = x[q.id],
+              title = x[q.title] || "Untitled Quiz",
+              sub = x[q.subject] || "General",
+              dif = String(x[q.difficulty] || "medium").toLowerCase(),
+              attempt = state.attempts.find(
+                (y) => String(y[a.quizId]) === String(id),
+              );
+            return `<article class="quiz-card"><div class="quiz-top"><div class="quiz-icon ${iconClass(sub)}">${icon(sub)}</div><span class="difficulty ${dif}">${cap(dif)}</span></div><h3>${esc(title)}</h3><div class="quiz-subject">${esc(sub)}</div><div class="quiz-meta"><span>▤ ${esc(x[q.questionCount] ?? "—")} Questions</span><span>◷ ${esc(x[q.duration] ?? "—")} min</span></div><div class="quiz-actions">${attempt ? '<button class="start-btn completed" disabled>Completed ✓</button><span class="status-label">Attempt recorded</span>' : `<button class="start-btn" onclick="startQuiz('${String(id).replaceAll("'", "\\'")}')">Start Quiz →</button>`}</div></article>`;
+          })
+          .join("");
+      }
+      function renderPerformance() {
+        const a = CONFIG.columns.attempt,
+          avg = state.attempts.length
+            ? Math.round(
+                state.attempts
+                  .map((x) => pct(x[a.score], x[a.totalMarks]))
+                  .reduce((a, b) => a + b, 0) / state.attempts.length,
+              )
+            : 0;
+        $("donutScore").textContent = avg + "%";
+        const d = avg * 3.6;
+        $("performanceDonut").style.background =
+          `conic-gradient(#6941ed 0deg ${d}deg,#26344d ${d}deg 360deg)`;
+      }
+      function renderRecent() {
+        const a = CONFIG.columns.attempt,
+          q = CONFIG.columns.quiz,
+          box = $("recentAttempts");
+        if (!state.attempts.length) {
+          box.innerHTML =
+            '<div style="padding:20px 0;color:#7c8ca4;font-size:11px">No quiz attempts yet.</div>';
+          return;
+        }
+        box.innerHTML = state.attempts
+          .slice(0, 3)
+          .map((x) => {
+            const quiz = state.quizzes.find(
+                (y) => String(y[q.id]) === String(x[a.quizId]),
+              ),
+              sub = quiz?.[q.subject] || "Subject";
+            return `<div class="recent-item"><div class="recent-icon quiz-icon ${iconClass(sub)}">${icon(sub)}</div><div class="recent-info"><strong>${esc(quiz?.[q.title] || "Quiz")}</strong><small>${esc(sub)} • ${date(x[a.completedAt])}</small></div><span class="recent-score">${pct(x[a.score], x[a.totalMarks])}%</span></div>`;
+          })
+          .join("");
+      }
+      function startQuiz(id) {
+        location.href = `quiz-attempt.html?quiz_id=${encodeURIComponent(id)}`;
+      }
+      function pct(s, t) {
+        s = Number(s || 0);
+        t = Number(t || 100);
+        return t ? Math.round((s / t) * 100) : 0;
+      }
+      function date(v) {
+        if (!v) return "Recently";
+        const d = new Date(v),
+          days = Math.floor((Date.now() - d) / 86400000);
+        return days <= 0
+          ? "Today"
+          : days === 1
+            ? "Yesterday"
+            : days < 7
+              ? days + " days ago"
+              : d.toLocaleDateString(undefined, {
+                  day: "numeric",
+                  month: "short",
+                });
+      }
+      function cap(s) {
+        return s.charAt(0).toUpperCase() + s.slice(1);
+      }
+      function iconClass(s) {
+        s = s.toLowerCase();
+        return s.includes("physics")
+          ? "physics"
+          : s.includes("chem")
+            ? "chemistry"
+            : s.includes("math")
+              ? "math"
+              : s.includes("english")
+                ? "english"
+                : s.includes("biology")
+                  ? "biology"
+                  : s.includes("computer") || s.includes("cs")
+                    ? "cs"
+                    : "default";
+      }
+      function icon(s) {
+        s = s.toLowerCase();
+        return s.includes("physics")
+          ? "⚛"
+          : s.includes("chem")
+            ? "⚗"
+            : s.includes("math")
+              ? "Σ"
+              : s.includes("english")
+                ? "A"
+                : s.includes("biology")
+                  ? "🧬"
+                  : s.includes("computer") || s.includes("cs")
+                    ? "▣"
+                    : "◎";
+      }
+      function esc(v) {
+        return String(v)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+      function showToast(m) {
+        const t = $("toast");
+        t.textContent = m;
+        t.classList.add("show");
+        clearTimeout(window.tt);
+        window.tt = setTimeout(() => t.classList.remove("show"), 3200);
+      }
+    </script>
+  </body>
+</html>
