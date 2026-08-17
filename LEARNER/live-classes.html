@@ -1,0 +1,2539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Smart Learning DC — Live Classes</title>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    /* =========================================================
+       GLOBAL
+    ========================================================= */
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      font-family: Inter, Arial, sans-serif;
+      background: #061224;
+      color: #edf2ff;
+    }
+
+    body {
+      overflow-x: hidden;
+    }
+
+    a {
+      color: #a78bfa;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    button {
+      font-family: inherit;
+    }
+
+    /* =========================================================
+       SIDEBAR
+    ========================================================= */
+    .sidebar {
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: 238px;
+      height: 100vh;
+      padding: 22px 16px;
+      background: linear-gradient(180deg, #061427, #041021);
+      border-right: 1px solid #172943;
+      z-index: 20;
+      overflow-y: auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      font-weight: 700;
+      font-size: 17px;
+      margin-bottom: 28px;
+      color: #fff;
+      white-space: nowrap;
+    }
+
+    .brand-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, #7357ff, #4c35d8);
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+    }
+
+    .sidebar nav {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .sidebar nav a {
+      height: 45px;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #aebbd0;
+      border-radius: 10px;
+      transition: 0.2s;
+      font-size: 14px;
+    }
+
+    .sidebar nav a:hover {
+      background: #101e37;
+      color: #fff;
+    }
+
+    .sidebar nav a.active {
+      background: linear-gradient(100deg, #6240e8, #5130d0);
+      color: white;
+      box-shadow: 0 8px 24px #4d32d533;
+    }
+
+    .sidebar nav hr {
+      width: 100%;
+      border: 0;
+      border-top: 1px solid #172943;
+      margin: 12px 0;
+    }
+
+    .logout {
+      color: #ff5d68 !important;
+    }
+
+    /* =========================================================
+       MAIN
+    ========================================================= */
+    main {
+      margin-left: 238px;
+      min-height: 100vh;
+      padding: 0 28px 20px;
+    }
+
+    /* =========================================================
+       TOPBAR
+    ========================================================= */
+    header {
+      height: 72px;
+      border-bottom: 1px solid #15263e;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 18px;
+    }
+
+    .search {
+      width: 390px;
+      height: 44px;
+      border: 1px solid #203450;
+      background: #0b1a30;
+      border-radius: 11px;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      gap: 10px;
+    }
+
+    .search-icon {
+      font-size: 22px;
+      color: #b9c5d9;
+    }
+
+    .search input {
+      background: transparent;
+      border: 0;
+      outline: 0;
+      color: white;
+      width: 100%;
+      font-size: 13px;
+    }
+
+    .search input::placeholder {
+      color: #8b99b0;
+    }
+
+    .bell {
+      font-size: 23px;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .bell b {
+      position: absolute;
+      top: -7px;
+      right: -7px;
+      background: #ef4654;
+      border-radius: 20px;
+      font-size: 10px;
+      padding: 3px 5px;
+      color: white;
+    }
+
+    .profile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-left: 1px solid #182a43;
+      padding-left: 12px;
+    }
+
+    .profile-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #5b4de5;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+    }
+
+    .profile small,
+    .profile strong {
+      display: block;
+    }
+
+    .profile small {
+      color: #8fa0bb;
+      margin-top: 3px;
+      font-size: 11px;
+    }
+
+    .profile strong {
+      font-size: 14px;
+    }
+
+    /* =========================================================
+       PAGE HEADING
+    ========================================================= */
+    .heading {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      padding: 25px 2px 20px;
+    }
+
+    .heading-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #7048f0, #4933ca);
+      display: grid;
+      place-items: center;
+      font-size: 25px;
+      box-shadow: 0 10px 30px #5034d433;
+    }
+
+    .heading small {
+      color: #6f9fe2;
+      font-weight: 700;
+      letter-spacing: 1px;
+      font-size: 10px;
+    }
+
+    .heading h1 {
+      font-family: Georgia, serif;
+      font-size: 30px;
+      margin: 5px 0;
+    }
+
+    .heading p {
+      color: #8494ae;
+      margin: 0;
+      font-size: 13px;
+    }
+
+    /* =========================================================
+       LAYOUT
+    ========================================================= */
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 18px;
+    }
+
+    .card {
+      background: #0a192f;
+      border: 1px solid #1a304c;
+      border-radius: 13px;
+    }
+
+    /* =========================================================
+       LIVE NOW
+    ========================================================= */
+    .live {
+      padding: 18px;
+    }
+
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .live .top strong {
+      color: #ff4651;
+      font-size: 12px;
+    }
+
+    .livebody {
+      display: grid;
+      grid-template-columns: 42% 1fr;
+      gap: 22px;
+      padding-top: 18px;
+    }
+
+    .preview {
+      min-height: 235px;
+      border: 1px solid #744cff;
+      border-radius: 12px;
+      background:
+        radial-gradient(circle at 50% 40%, #38256c 0%, transparent 40%),
+        linear-gradient(145deg, #0a171b, #13251f);
+      position: relative;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 25px;
+      font: 20px Georgia, serif;
+      overflow: hidden;
+    }
+
+    .preview::before {
+      content: "";
+      position: absolute;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      border: 1px solid #754cff33;
+      animation: pulse 2.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(0.8);
+        opacity: 0.2;
+      }
+
+      50% {
+        transform: scale(1.1);
+        opacity: 0.5;
+      }
+
+      100% {
+        transform: scale(0.8);
+        opacity: 0.2;
+      }
+    }
+
+    .preview > span {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: #ef3944;
+      border-radius: 6px;
+      padding: 6px 9px;
+      font: 700 10px Arial;
+      z-index: 2;
+    }
+
+    .preview small {
+      font-size: 15px;
+    }
+
+    .preview em {
+      position: absolute;
+      bottom: 12px;
+      left: 15px;
+      font: 11px Inter;
+      color: #d5dfef;
+    }
+
+    .info label {
+      background: #5c3cd6;
+      padding: 5px 8px;
+      border-radius: 7px;
+      font-size: 10px;
+    }
+
+    .info h2 {
+      font: 700 25px Georgia, serif;
+      margin: 12px 0;
+    }
+
+    .info p {
+      color: #8d9bb2;
+      line-height: 1.6;
+      font-size: 13px;
+    }
+
+    .meta {
+      color: #a9b7cb;
+      font-size: 11px;
+      margin: 18px 0;
+    }
+
+    .info button,
+    .class button,
+    .reminder button {
+      border-radius: 8px;
+      padding: 10px 17px;
+      font-weight: 600;
+      font-size: 11px;
+      cursor: pointer;
+      background: #0c1c32;
+      border: 1px solid #354c70;
+      color: #d4dded;
+    }
+
+    .info .primary {
+      border: 0;
+      background: linear-gradient(100deg, #6840ef, #5630d7);
+      color: #fff;
+      margin-right: 8px;
+    }
+
+    /* =========================================================
+       UPCOMING CLASSES
+    ========================================================= */
+    .section {
+      margin-top: 18px;
+    }
+
+    .section h2 {
+      font-size: 18px;
+      margin: 0;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .class {
+      min-height: 250px;
+      padding: 16px;
+      background: linear-gradient(145deg, #0e2039, #0a192e);
+    }
+
+    .class:hover {
+      border-color: #5a45d9;
+      transform: translateY(-2px);
+      transition: 0.2s;
+    }
+
+    .class-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 11px;
+      background: #5138d855;
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+
+    .class h3 {
+      margin: 0 0 5px;
+      font-size: 15px;
+    }
+
+    .class small {
+      display: block;
+      color: #8999b1;
+      line-height: 2;
+      font-size: 10px;
+    }
+
+    .class .actions {
+      display: flex;
+      gap: 7px;
+      margin-top: 10px;
+    }
+
+    .class button {
+      flex: 1;
+      padding: 8px 4px;
+    }
+
+    .class button:last-child {
+      color: #aa91ff;
+      border-color: #6545df;
+    }
+
+    /* =========================================================
+       SCHEDULE TABLE
+    ========================================================= */
+    .schedule {
+      margin-top: 18px;
+      padding: 16px;
+    }
+
+    .tablewrap {
+      overflow-x: auto;
+      margin-top: 12px;
+    }
+
+    table {
+      width: 100%;
+      min-width: 700px;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 11px 8px;
+      text-align: left;
+      border-bottom: 1px solid #172b45;
+      font-size: 10px;
+    }
+
+    th {
+      color: #71839e;
+      background: #0d1d35;
+    }
+
+    td button {
+      background: #0d1e35;
+      border: 1px solid #354c70;
+      color: #a995ff;
+      border-radius: 6px;
+      padding: 6px 9px;
+      cursor: pointer;
+      font-size: 10px;
+    }
+
+    /* =========================================================
+       RIGHT COLUMN
+    ========================================================= */
+    .right {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .calendar,
+    .reminder,
+    .help {
+      padding: 16px;
+    }
+
+    .calendar h3,
+    .reminder h3,
+    .help h3 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    #date {
+      color: #71839e;
+      font-size: 10px;
+      margin: 10px 0;
+    }
+
+    .week {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+      border-bottom: 1px solid #1b304a;
+      padding-bottom: 12px;
+    }
+
+    .week span {
+      font-size: 9px;
+      color: #72839e;
+      text-align: center;
+      line-height: 2;
+      padding: 4px 0;
+    }
+
+    .week .today {
+      background: #5637d9;
+      border-radius: 8px;
+      color: #fff;
+    }
+
+    .mini p {
+      position: relative;
+      border-bottom: 1px solid #182c45;
+      padding: 10px 70px 10px 0;
+      margin: 0;
+    }
+
+    .mini b,
+    .mini strong,
+    .mini small {
+      display: block;
+    }
+
+    .mini b {
+      font-size: 10px;
+      color: #8798b1;
+    }
+
+    .mini strong {
+      font-size: 12px;
+      margin-top: 3px;
+    }
+
+    .mini small {
+      font-size: 9px;
+      color: #71839e;
+    }
+
+    .mini i {
+      position: absolute;
+      right: 0;
+      top: 17px;
+      font-size: 9px;
+      color: #65b7ff;
+      font-style: normal;
+    }
+
+    .mini .live {
+      color: #46dc8b;
+    }
+
+    /* =========================================================
+       REMINDER
+    ========================================================= */
+    .reminder {
+      text-align: center;
+    }
+
+    .reminder > div {
+      font-size: 40px;
+      margin: 12px;
+    }
+
+    .reminder p {
+      color: #8798b0;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .reminder button {
+      width: 100%;
+      background: #5838dc;
+      color: white;
+      border: 0;
+    }
+
+    /* =========================================================
+       HELP
+    ========================================================= */
+    .help {
+      background: linear-gradient(145deg, #1a164a, #0c1c35);
+    }
+
+    .help ol {
+      padding-left: 20px;
+    }
+
+    .help li {
+      color: #9aa9bf;
+      font-size: 11px;
+      line-height: 2;
+    }
+
+    .help p {
+      font-size: 11px;
+      color: #8292aa;
+    }
+
+    /* =========================================================
+       EMPTY STATE
+    ========================================================= */
+    .dynamic-empty {
+      padding: 28px 18px;
+      text-align: center;
+      color: #8394ad;
+    }
+
+    .dynamic-empty h3 {
+      margin: 0 0 7px;
+      color: #e7edfb;
+      font-size: 15px;
+    }
+
+    .dynamic-empty p {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    /* =========================================================
+       FOOTER
+    ========================================================= */
+    footer {
+      text-align: center;
+      border-top: 1px solid #142740;
+      margin-top: 20px;
+      padding: 17px;
+      color: #6e7f9a;
+      font-size: 11px;
+    }
+
+    /* =========================================================
+       RESPONSIVE
+    ========================================================= */
+    @media (max-width: 1150px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .right {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .help {
+        grid-column: span 2;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .sidebar {
+        width: 220px;
+      }
+
+      main {
+        margin-left: 220px;
+      }
+
+      .cards {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .livebody {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 800px) {
+      .sidebar {
+        display: none;
+      }
+
+      main {
+        margin-left: 0;
+        padding: 0 15px;
+      }
+
+      .livebody {
+        grid-template-columns: 1fr;
+      }
+
+      .cards {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .right {
+        grid-template-columns: 1fr;
+      }
+
+      .help {
+        grid-column: auto;
+      }
+
+      .search {
+        width: 45vw;
+      }
+    }
+
+    @media (max-width: 550px) {
+      .cards {
+        grid-template-columns: 1fr;
+      }
+
+      .profile div {
+        display: none;
+      }
+
+      .search {
+        width: 55vw;
+      }
+
+      .live .info h2 {
+        font-size: 21px;
+      }
+
+      .heading h1 {
+        font-size: 25px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- =======================================================
+       SIDEBAR
+  ======================================================== -->
+  <aside class="sidebar">
+
+    <div class="brand">
+      <div class="brand-icon">▱</div>
+      <span>Smart Learning DC</span>
+    </div>
+
+    <nav>
+      <a href="dashboard.html">⌂ <span>Dashboard</span></a>
+
+      <a href="subjects.html">
+        ▣ <span>Subjects</span>
+      </a>
+
+      <a class="active" href="live-classes.html">
+        ▷ <span>Live Classes</span>
+      </a>
+
+      <a href="quizzes.html">
+        ◎ <span>Quizzes</span>
+      </a>
+
+      <a href="notes.html">
+        ▤ <span>Notes</span>
+      </a>
+
+      <a href="videos.html">
+        ▷ <span>Videos</span>
+      </a>
+
+      <a href="study-time.html">
+        ◷ <span>Study Time</span>
+      </a>
+
+      <a href="downloads.html">
+        ⇩ <span>Downloads</span>
+      </a>
+
+      <a href="calendar.html">
+        ▣ <span>Calendar</span>
+      </a>
+
+      <hr>
+
+      <a href="profile.html">
+        ♙ <span>My Profile</span>
+      </a>
+
+      <a href="settings.html">
+        ⚙ <span>Settings</span>
+      </a>
+
+      <a href="#">
+        ? <span>Help & Support</span>
+      </a>
+
+      <a class="logout" href="#">
+        ↪ <span>Log out</span>
+      </a>
+    </nav>
+
+  </aside>
+
+
+  <!-- =======================================================
+       MAIN
+  ======================================================== -->
+  <main>
+
+    <!-- TOP BAR -->
+    <header>
+
+      <div class="search">
+        <span class="search-icon">⌕</span>
+
+        <input
+          id="search"
+          type="search"
+          placeholder="Search classes, teachers, topics..."
+        >
+      </div>
+
+      <span class="bell">
+        ♧
+        <b>3</b>
+      </span>
+
+      <div class="profile">
+
+        <div class="profile-avatar" id="avatar">
+          A
+        </div>
+
+        <div>
+          <strong id="name">Student</strong>
+          <small id="class">Class —</small>
+        </div>
+
+      </div>
+
+    </header>
+
+
+    <!-- PAGE HEADING -->
+    <section class="heading">
+
+      <div class="heading-icon">
+        ◉
+      </div>
+
+      <div>
+        <small>LIVE LEARNING</small>
+
+        <h1>Live Classes</h1>
+
+        <p>
+          Join your scheduled live learning sessions.
+        </p>
+      </div>
+
+    </section>
+
+
+    <!-- MAIN CONTENT -->
+    <section class="layout">
+
+      <!-- =================================================
+           LEFT COLUMN
+      ================================================== -->
+      <div>
+
+
+        <!-- LIVE NOW -->
+        <article class="live card">
+
+          <div class="top">
+
+            <strong>
+              🔴 LIVE NOW
+            </strong>
+
+            <a href="#">
+              View All
+            </a>
+
+          </div>
+
+          <!-- JavaScript will insert live class here -->
+          <div id="liveNow">
+            <div class="dynamic-empty">
+              <h3>Loading live classes...</h3>
+              <p>Please wait.</p>
+            </div>
+          </div>
+
+        </article>
+
+
+        <!-- UPCOMING CLASSES -->
+        <section class="section">
+
+          <div class="top">
+
+            <h2>
+              Upcoming Classes
+            </h2>
+
+            <a href="#">
+              View All
+            </a>
+
+          </div>
+
+          <!-- JavaScript inserts teacher-created classes -->
+          <div
+            id="upcoming"
+            class="cards"
+          >
+            <div class="dynamic-empty">
+              <h3>Loading...</h3>
+              <p>Getting your upcoming classes.</p>
+            </div>
+          </div>
+
+          <span id="classCount"></span>
+
+        </section>
+
+
+        <!-- SCHEDULE -->
+        <section class="card schedule">
+
+          <div class="top">
+
+            <h2>
+              My Schedule
+            </h2>
+
+            <a href="calendar.html">
+              View Full Schedule →
+            </a>
+
+          </div>
+
+          <div class="tablewrap">
+
+            <table>
+
+              <thead>
+
+                <tr>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Subject</th>
+                  <th>Topic</th>
+                  <th>Teacher</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+
+              </thead>
+
+              <tbody id="schedule">
+
+                <tr>
+                  <td colspan="7">
+
+                    <div class="dynamic-empty">
+                      <h3>Loading schedule...</h3>
+                      <p>Please wait.</p>
+                    </div>
+
+                  </td>
+                </tr>
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </section>
+
+      </div>
+
+
+      <!-- =================================================
+           RIGHT COLUMN
+      ================================================== -->
+      <aside class="right">
+
+
+        <!-- TODAY'S SCHEDULE -->
+        <section class="card calendar">
+
+          <div class="top">
+
+            <h3>
+              Today's Schedule
+            </h3>
+
+            <a href="calendar.html">
+              View Calendar
+            </a>
+
+          </div>
+
+          <p id="date">
+            Loading date...
+          </p>
+
+
+          <!-- Calendar days -->
+          <div class="week">
+
+            <span>
+              Mon<br>15
+            </span>
+
+            <span>
+              Tue<br>16
+            </span>
+
+            <span class="today">
+              Wed<br>17
+            </span>
+
+            <span>
+              Thu<br>18
+            </span>
+
+            <span>
+              Fri<br>19
+            </span>
+
+            <span>
+              Sat<br>20
+            </span>
+
+            <span>
+              Sun<br>21
+            </span>
+
+          </div>
+
+
+          <!-- Today's classes from Supabase -->
+          <div id="todayClasses">
+
+            <div class="dynamic-empty">
+              <h3>Loading...</h3>
+              <p>Getting today's classes.</p>
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <!-- REMINDER -->
+        <section class="card reminder">
+
+          <h3>
+            Class Reminders
+          </h3>
+
+          <div>
+            🔔
+          </div>
+
+          <p>
+            Your upcoming live classes are shown here automatically.
+          </p>
+
+          <button onclick="alert('Reminder list')">
+            View Reminders
+          </button>
+
+        </section>
+
+
+        <!-- HELP -->
+        <section class="card help">
+
+          <h3>
+            How to Join Live Class
+          </h3>
+
+          <ol>
+
+            <li>
+              Click <b>Join Class</b> when live.
+            </li>
+
+            <li>
+              Allow camera and microphone permissions.
+            </li>
+
+            <li>
+              Interact with your teacher and classmates.
+            </li>
+
+          </ol>
+
+          <p>
+            Need help?
+            <a href="#">
+              Help & Support
+            </a>
+          </p>
+
+        </section>
+
+      </aside>
+
+    </section>
+
+
+    <!-- FOOTER -->
+    <footer>
+      “The beautiful thing about learning is that no one can take it away from you.”
+      — B.B. King
+    </footer>
+
+  </main>
+
+
+  <!-- =======================================================
+       JAVASCRIPT + SUPABASE LOGIC
+  ======================================================== -->
+  <script>
+
+    /*
+      =========================================================
+      LIVE CLASSES — DYNAMIC SUPABASE VERSION
+
+      This page does NOT hardcode live-class information.
+
+      It:
+      1. Gets the logged-in learner.
+      2. Gets learner grade + stream.
+      3. Gets teacher-created live classes.
+      4. Filters classes according to learner grade/stream.
+      5. Displays them dynamically.
+    =========================================================
+    */
+
+
+    /* =========================================================
+       SUPABASE CONFIG
+    ========================================================= */
+
+    const SUPABASE_URL =
+      window.SUPABASE_URL || 'YOUR_SUPABASE_URL';
+
+    const SUPABASE_ANON_KEY =
+      window.SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY';
+
+
+    let db =
+      window.supabaseClient || null;
+
+    let learnerProfile = null;
+
+    let allClasses = [];
+
+
+    /* =========================================================
+       GET SUPABASE CLIENT
+    ========================================================= */
+
+    async function getSupabaseClient() {
+
+      if (db) {
+        return db;
+      }
+
+      if (!window.supabase) {
+
+        throw new Error(
+          'Supabase JS is not loaded.'
+        );
+
+      }
+
+      if (
+        !SUPABASE_URL ||
+        SUPABASE_URL === 'YOUR_SUPABASE_URL' ||
+        !SUPABASE_ANON_KEY ||
+        SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY'
+      ) {
+
+        throw new Error(
+          'Connect this page to your Supabase URL and anon key.'
+        );
+
+      }
+
+      db =
+        window.supabase.createClient(
+          SUPABASE_URL,
+          SUPABASE_ANON_KEY
+        );
+
+      return db;
+    }
+
+
+    /* =========================================================
+       SECURITY — ESCAPE HTML
+    ========================================================= */
+
+    function escapeHTML(value = '') {
+
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+
+    }
+
+
+    /* =========================================================
+       GRADE NUMBER
+    ========================================================= */
+
+    function getClassNumber(grade) {
+
+      const match =
+        String(grade ?? '').match(/\d+/);
+
+      return match
+        ? Number(match[0])
+        : null;
+
+    }
+
+
+    /* =========================================================
+       NORMALIZE
+    ========================================================= */
+
+    function normalize(value) {
+
+      return String(value ?? '')
+        .trim()
+        .toLowerCase();
+
+    }
+
+
+    /* =========================================================
+       CHECK WHETHER LEARNER CAN SEE CLASS
+    ========================================================= */
+
+    function learnerCanSeeClass(liveClass) {
+
+      if (!learnerProfile) {
+        return false;
+      }
+
+
+      const learnerGrade =
+        getClassNumber(
+          learnerProfile.grade
+        );
+
+      const classGrade =
+        getClassNumber(
+          liveClass.grade
+        );
+
+
+      /*
+        Grade must match.
+      */
+
+      if (
+        !learnerGrade ||
+        !classGrade ||
+        learnerGrade !== classGrade
+      ) {
+
+        return false;
+
+      }
+
+
+      /*
+        Classes 5–10:
+        Stream does not matter.
+      */
+
+      if (learnerGrade <= 10) {
+        return true;
+      }
+
+
+      /*
+        Classes 11–12:
+        Stream must match.
+
+        If teacher selected:
+        "all"
+        or no stream
+
+        → class is visible to all streams.
+      */
+
+      const classStream =
+        normalize(
+          liveClass.stream
+        );
+
+      const learnerStream =
+        normalize(
+          learnerProfile.stream
+        );
+
+
+      return (
+        !classStream ||
+        classStream === 'all' ||
+        classStream === learnerStream
+      );
+
+    }
+
+
+    /* =========================================================
+       STATUS
+    ========================================================= */
+
+    function getStatus(item) {
+
+      const now = Date.now();
+
+      const start =
+        new Date(
+          item.scheduled_at
+        ).getTime();
+
+      const duration =
+        Number(
+          item.duration_minutes || 60
+        );
+
+      const end =
+        start +
+        duration * 60 * 1000;
+
+
+      if (item.status === 'cancelled') {
+        return 'cancelled';
+      }
+
+
+      if (
+        item.status === 'live' ||
+        (start <= now && now < end)
+      ) {
+
+        return 'live';
+
+      }
+
+
+      if (start > now) {
+        return 'upcoming';
+      }
+
+
+      return 'ended';
+
+    }
+
+
+    /* =========================================================
+       DATE FORMAT
+    ========================================================= */
+
+    function formatDate(dateValue) {
+
+      if (!dateValue) {
+        return '—';
+      }
+
+      return new Intl.DateTimeFormat(
+        'en-IN',
+        {
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric'
+        }
+      ).format(
+        new Date(dateValue)
+      );
+
+    }
+
+
+    /* =========================================================
+       TIME FORMAT
+    ========================================================= */
+
+    function formatTime(dateValue) {
+
+      if (!dateValue) {
+        return '—';
+      }
+
+      return new Intl.DateTimeFormat(
+        'en-IN',
+        {
+          hour: 'numeric',
+          minute: '2-digit'
+        }
+      ).format(
+        new Date(dateValue)
+      );
+
+    }
+
+
+    /* =========================================================
+       TIME RANGE
+    ========================================================= */
+
+    function formatTimeRange(item) {
+
+      const start =
+        new Date(
+          item.scheduled_at
+        );
+
+      const end =
+        new Date(
+          start.getTime() +
+          Number(
+            item.duration_minutes || 60
+          ) * 60000
+        );
+
+      return `${formatTime(start)} – ${formatTime(end)}`;
+
+    }
+
+
+    /* =========================================================
+       SUBJECT ICON
+    ========================================================= */
+
+    function subjectIcon(subject) {
+
+      const s =
+        normalize(subject);
+
+
+      if (s.includes('physics')) {
+        return '⚛';
+      }
+
+      if (s.includes('chem')) {
+        return '⚗';
+      }
+
+      if (s.includes('math')) {
+        return '∑';
+      }
+
+      if (s.includes('biology')) {
+        return '🧬';
+      }
+
+      if (s.includes('computer')) {
+        return '</>';
+      }
+
+      if (s.includes('english')) {
+        return '📖';
+      }
+
+      return '📚';
+
+    }
+
+
+    /* =========================================================
+       TEACHER NAME
+    ========================================================= */
+
+    function teacherName(item) {
+
+      return (
+        item.teachers?.full_name ||
+        item.teacher_name ||
+        'Teacher'
+      );
+
+    }
+
+
+    /* =========================================================
+       EMPTY MESSAGE
+    ========================================================= */
+
+    function emptyMessage(
+      title,
+      message
+    ) {
+
+      return `
+        <div class="dynamic-empty">
+
+          <h3>
+            ${escapeHTML(title)}
+          </h3>
+
+          <p>
+            ${escapeHTML(message)}
+          </p>
+
+        </div>
+      `;
+
+    }
+
+
+    /* =========================================================
+       RENDER LIVE NOW
+    ========================================================= */
+
+    function renderLiveNow(classes) {
+
+      const live =
+        classes
+          .filter(
+            c => getStatus(c) === 'live'
+          )
+          .sort(
+            (a, b) =>
+              new Date(a.scheduled_at) -
+              new Date(b.scheduled_at)
+          )[0];
+
+
+      const container =
+        document.getElementById(
+          'liveNow'
+        );
+
+
+      if (!live) {
+
+        container.innerHTML =
+          emptyMessage(
+            'No live class right now',
+            'Your teacher has not started a class for your grade yet.'
+          );
+
+        return;
+
+      }
+
+
+      const teacher =
+        teacherName(live);
+
+
+      container.innerHTML = `
+
+        <article class="livebody">
+
+          <div class="preview">
+
+            <span>
+              ● LIVE
+            </span>
+
+            <div>
+              ${escapeHTML(
+                live.title ||
+                live.topic ||
+                'Live Class'
+              )}
+            </div>
+
+            <em>
+              👨🏻‍🏫
+              ${escapeHTML(teacher)}
+            </em>
+
+          </div>
+
+
+          <div class="info">
+
+            <label>
+              ${escapeHTML(
+                live.subject ||
+                'Subject'
+              )}
+            </label>
+
+            <h2>
+              ${escapeHTML(
+                live.topic ||
+                live.title ||
+                'Live Class'
+              )}
+            </h2>
+
+            <p>
+              ${escapeHTML(
+                live.description ||
+                'Join the live session with your teacher.'
+              )}
+            </p>
+
+            <div class="meta">
+
+              ◷ Started
+              &nbsp;&nbsp;
+              ♙
+              ${Number(
+                live.student_count || 0
+              )}
+              Students
+
+            </div>
+
+            <button
+              class="primary"
+              onclick="joinClass('${escapeHTML(live.id)}')"
+            >
+              ▷ Join Class
+            </button>
+
+            <button
+              onclick="showDetails('${escapeHTML(live.id)}')"
+            >
+              View Details
+            </button>
+
+          </div>
+
+        </article>
+
+      `;
+
+    }
+
+
+    /* =========================================================
+       RENDER UPCOMING
+    ========================================================= */
+
+    function renderUpcoming(classes) {
+
+      const upcoming =
+        classes
+          .filter(
+            c => getStatus(c) === 'upcoming'
+          )
+          .sort(
+            (a, b) =>
+              new Date(a.scheduled_at) -
+              new Date(b.scheduled_at)
+          );
+
+
+      const container =
+        document.getElementById(
+          'upcoming'
+        );
+
+
+      if (!upcoming.length) {
+
+        container.innerHTML =
+          emptyMessage(
+            'No upcoming classes',
+            'Your teacher has not scheduled another live class yet.'
+          );
+
+        return;
+
+      }
+
+
+      container.innerHTML =
+        upcoming.map(item => `
+
+          <article class="class">
+
+            <div class="class-icon">
+              ${subjectIcon(item.subject)}
+            </div>
+
+            <h3>
+              ${escapeHTML(
+                item.subject ||
+                'Subject'
+              )}
+            </h3>
+
+            <small>
+              ${escapeHTML(
+                item.topic ||
+                item.title ||
+                'Live Class'
+              )}
+            </small>
+
+            <small>
+              ♙
+              ${escapeHTML(
+                teacherName(item)
+              )}
+            </small>
+
+            <small>
+              ▣
+              ${escapeHTML(
+                formatDate(
+                  item.scheduled_at
+                )
+              )}
+            </small>
+
+            <small>
+              ◷
+              ${escapeHTML(
+                formatTimeRange(item)
+              )}
+            </small>
+
+            <div class="actions">
+
+              <button
+                onclick="showDetails('${escapeHTML(item.id)}')"
+              >
+                View Details
+              </button>
+
+              <button
+                onclick="setReminder('${escapeHTML(item.id)}', this)"
+              >
+                ♧ Reminder
+              </button>
+
+            </div>
+
+          </article>
+
+        `).join('');
+
+    }
+
+
+    /* =========================================================
+       RENDER SCHEDULE
+    ========================================================= */
+
+    function renderSchedule(classes) {
+
+      const sorted =
+        [...classes].sort(
+          (a, b) =>
+            new Date(a.scheduled_at) -
+            new Date(b.scheduled_at)
+        );
+
+
+      const tbody =
+        document.getElementById(
+          'schedule'
+        );
+
+
+      if (!sorted.length) {
+
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7">
+              ${emptyMessage(
+                'No classes scheduled',
+                'Your teacher has not created a live class for your grade yet.'
+              )}
+            </td>
+          </tr>
+        `;
+
+        return;
+
+      }
+
+
+      tbody.innerHTML =
+        sorted.map(item => {
+
+          const status =
+            getStatus(item);
+
+
+          const label =
+            status === 'live'
+              ? 'Live Now'
+              : status === 'upcoming'
+                ? 'Upcoming'
+                : status === 'cancelled'
+                  ? 'Cancelled'
+                  : 'Ended';
+
+
+          const color =
+            status === 'live'
+              ? '#46dc8b'
+              : status === 'upcoming'
+                ? '#ffb84e'
+                : '#65b7ff';
+
+
+          const action =
+            status === 'live'
+
+              ? `
+                <button
+                  onclick="joinClass('${escapeHTML(item.id)}')"
+                >
+                  Join Now
+                </button>
+              `
+
+              : `
+                <button
+                  onclick="showDetails('${escapeHTML(item.id)}')"
+                >
+                  View Details
+                </button>
+              `;
+
+
+          return `
+
+            <tr>
+
+              <td>
+                ${escapeHTML(
+                  formatDate(
+                    item.scheduled_at
+                  )
+                )}
+              </td>
+
+              <td>
+                ${escapeHTML(
+                  formatTimeRange(item)
+                )}
+              </td>
+
+              <td>
+                ${escapeHTML(
+                  item.subject || '—'
+                )}
+              </td>
+
+              <td>
+                ${escapeHTML(
+                  item.topic ||
+                  item.title ||
+                  '—'
+                )}
+              </td>
+
+              <td>
+                ${escapeHTML(
+                  teacherName(item)
+                )}
+              </td>
+
+              <td
+                style="color:${color}"
+              >
+                ● ${label}
+              </td>
+
+              <td>
+                ${action}
+              </td>
+
+            </tr>
+
+          `;
+
+        }).join('');
+
+    }
+
+
+    /* =========================================================
+       RENDER TODAY
+    ========================================================= */
+
+    function renderToday(classes) {
+
+      const today =
+        new Date();
+
+
+      const sameDay =
+        classes
+          .filter(item => {
+
+            const d =
+              new Date(
+                item.scheduled_at
+              );
+
+            return (
+              d.toDateString() ===
+              today.toDateString()
+            );
+
+          })
+          .sort(
+            (a, b) =>
+              new Date(a.scheduled_at) -
+              new Date(b.scheduled_at)
+          );
+
+
+      document.getElementById(
+        'date'
+      ).textContent =
+        new Intl.DateTimeFormat(
+          'en-IN',
+          {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          }
+        ).format(today);
+
+
+      const mini =
+        document.getElementById(
+          'todayClasses'
+        );
+
+
+      if (!sameDay.length) {
+
+        mini.innerHTML =
+          emptyMessage(
+            'Nothing scheduled today',
+            'Check back when your teacher schedules a class.'
+          );
+
+        return;
+
+      }
+
+
+      mini.innerHTML =
+        sameDay.map(item => {
+
+          const status =
+            getStatus(item);
+
+
+          const label =
+            status === 'live'
+              ? 'Live Now'
+              : status === 'upcoming'
+                ? 'Upcoming'
+                : 'Ended';
+
+
+          return `
+
+            <p>
+
+              <b>
+                ${escapeHTML(
+                  formatTime(
+                    item.scheduled_at
+                  )
+                )}
+              </b>
+
+              <strong>
+                ${escapeHTML(
+                  item.subject ||
+                  'Subject'
+                )}
+              </strong>
+
+              <small>
+                ${escapeHTML(
+                  item.topic ||
+                  item.title ||
+                  'Live Class'
+                )}
+              </small>
+
+              <i
+                class="${status === 'live' ? 'live' : ''}"
+              >
+                ${label}
+              </i>
+
+            </p>
+
+          `;
+
+        }).join('');
+
+    }
+
+
+    /* =========================================================
+       RENDER EVERYTHING
+    ========================================================= */
+
+    function renderAll() {
+
+      renderLiveNow(
+        allClasses
+      );
+
+      renderUpcoming(
+        allClasses
+      );
+
+      renderSchedule(
+        allClasses
+      );
+
+      renderToday(
+        allClasses
+      );
+
+
+      const count =
+        document.getElementById(
+          'classCount'
+        );
+
+
+      if (count) {
+
+        count.textContent =
+          `${allClasses.length} class${
+            allClasses.length === 1
+              ? ''
+              : 'es'
+          }`;
+
+      }
+
+    }
+
+
+    /* =========================================================
+       LOAD LEARNER PROFILE
+    ========================================================= */
+
+    async function loadLearnerProfile(client) {
+
+      const {
+        data: {
+          user
+        },
+        error: authError
+      } =
+        await client.auth.getUser();
+
+
+      if (authError) {
+        throw authError;
+      }
+
+
+      if (!user) {
+
+        throw new Error(
+          'No authenticated learner found.'
+        );
+
+      }
+
+
+      /*
+        This must match your existing
+        learners table.
+      */
+
+      const {
+        data,
+        error
+      } =
+        await client
+
+          .from('learners')
+
+          .select(
+            'id, auth_user_id, full_name, grade, stream'
+          )
+
+          .eq(
+            'auth_user_id',
+            user.id
+          )
+
+          .single();
+
+
+      if (error) {
+        throw error;
+      }
+
+
+      learnerProfile =
+        data;
+
+
+      const name =
+        learnerProfile.full_name ||
+        'Student';
+
+
+      document.getElementById(
+        'name'
+      ).textContent =
+        name;
+
+
+      document.getElementById(
+        'avatar'
+      ).textContent =
+        name
+          .charAt(0)
+          .toUpperCase();
+
+
+      document.getElementById(
+        'class'
+      ).textContent =
+        `Class ${
+          learnerProfile.grade || '—'
+        }${
+          learnerProfile.stream
+            ? ' • ' +
+              learnerProfile.stream
+            : ''
+        }`;
+
+    }
+
+
+    /* =========================================================
+       LOAD LIVE CLASSES FROM SUPABASE
+    ========================================================= */
+
+    async function loadLiveClasses(client) {
+
+      /*
+        Teachers create live-class records
+        inside live_classes.
+
+        Nothing is hardcoded here.
+      */
+
+      const {
+        data,
+        error
+      } =
+        await client
+
+          .from('live_classes')
+
+          .select(`
+
+            id,
+
+            teacher_id,
+
+            subject,
+
+            title,
+
+            topic,
+
+            description,
+
+            grade,
+
+            stream,
+
+            scheduled_at,
+
+            duration_minutes,
+
+            meeting_url,
+
+            status,
+
+            student_count,
+
+            teachers:teacher_id (
+              full_name
+            )
+
+          `)
+
+          .order(
+            'scheduled_at',
+            {
+              ascending: true
+            }
+          );
+
+
+      if (error) {
+        throw error;
+      }
+
+
+      /*
+        Only classes applicable
+        to this learner are shown.
+      */
+
+      allClasses =
+        (data || [])
+          .filter(
+            learnerCanSeeClass
+          );
+
+
+      renderAll();
+
+    }
+
+
+    /* =========================================================
+       INITIALIZE PAGE
+    ========================================================= */
+
+    async function init() {
+
+      try {
+
+        const client =
+          await getSupabaseClient();
+
+
+        await loadLearnerProfile(
+          client
+        );
+
+
+        await loadLiveClasses(
+          client
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          'Live Classes:',
+          error
+        );
+
+
+        document.getElementById(
+          'upcoming'
+        ).innerHTML =
+          emptyMessage(
+            'Live classes could not be loaded',
+            error.message ||
+            'Please check your Supabase connection and table names.'
+          );
+
+      }
+
+    }
+
+
+    /* =========================================================
+       JOIN CLASS
+    ========================================================= */
+
+    async function joinClass(id) {
+
+      const item =
+        allClasses.find(
+          c =>
+            String(c.id) ===
+            String(id)
+        );
+
+
+      if (!item) {
+
+        alert(
+          'This class is no longer available.'
+        );
+
+        return;
+
+      }
+
+
+      if (!item.meeting_url) {
+
+        alert(
+          'The teacher has not added the live meeting link yet.'
+        );
+
+        return;
+
+      }
+
+
+      /*
+        Open teacher's meeting URL.
+      */
+
+      window.open(
+        item.meeting_url,
+        '_blank',
+        'noopener,noreferrer'
+      );
+
+    }
+
+
+    /* =========================================================
+       SHOW DETAILS
+    ========================================================= */
+
+    function showDetails(id) {
+
+      const item =
+        allClasses.find(
+          c =>
+            String(c.id) ===
+            String(id)
+        );
+
+
+      if (!item) {
+        return;
+      }
+
+
+      const details = [
+
+        `Subject: ${
+          item.subject || '—'
+        }`,
+
+        `Topic: ${
+          item.topic ||
+          item.title ||
+          '—'
+        }`,
+
+        `Teacher: ${
+          teacherName(item)
+        }`,
+
+        `Date: ${
+          formatDate(
+            item.scheduled_at
+          )
+        }`,
+
+        `Time: ${
+          formatTimeRange(item)
+        }`,
+
+        item.description
+          ? `\n${item.description}`
+          : ''
+
+      ]
+        .filter(Boolean)
+        .join('\n');
+
+
+      alert(details);
+
+    }
+
+
+    /* =========================================================
+       REMINDER
+    ========================================================= */
+
+    async function setReminder(
+      id,
+      button
+    ) {
+
+      /*
+        Temporary UI/localStorage
+        fallback.
+
+        Later you can replace this
+        with a Supabase reminders table.
+      */
+
+      const key =
+        `live-class-reminder-${id}`;
+
+
+      localStorage.setItem(
+        key,
+        '1'
+      );
+
+
+      button.textContent =
+        '✓ Reminder Set';
+
+
+      button.disabled =
+        true;
+
+    }
+
+
+    /* =========================================================
+       SEARCH
+    ========================================================= */
+
+    document
+      .getElementById('search')
+      .addEventListener(
+        'input',
+        event => {
+
+          const query =
+            normalize(
+              event.target.value
+            );
+
+
+          /*
+            Search currently filters
+            dynamically loaded upcoming
+            classes.
+          */
+
+          document
+            .querySelectorAll(
+              '.class'
+            )
+            .forEach(card => {
+
+              card.style.display =
+                !query ||
+                normalize(
+                  card.textContent
+                ).includes(query)
+                  ? ''
+                  : 'none';
+
+            });
+
+        }
+      );
+
+
+    /* =========================================================
+       START
+    ========================================================= */
+
+    init();
+
+  </script>
+
+</body>
+</html>
