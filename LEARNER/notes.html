@@ -1,0 +1,1210 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Learning DC — Notes</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      :root {
+        --bg: #061224;
+        --panel: #0a192f;
+        --panel2: #0d1d35;
+        --border: #1a304c;
+        --text: #edf2ff;
+        --muted: #8798b1;
+        --purple: #6240e8;
+        --purple2: #7a57ff;
+      }
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        font-family: Inter, Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+      body {
+        overflow-x: hidden;
+      }
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+      button {
+        cursor: pointer;
+      }
+      a {
+        text-decoration: none;
+        color: inherit;
+        cursor: pointer;
+      }
+      .sidebar {
+        position: fixed;
+        inset: 0 auto 0 0;
+        width: 248px;
+        background: linear-gradient(180deg, #061427, #041021);
+        border-right: 1px solid #172943;
+        padding: 22px 16px;
+        z-index: 20;
+      }
+      .brand {
+        height: 42px;
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        font-weight: 700;
+        font-size: 17px;
+        margin-bottom: 25px;
+        white-space: nowrap;
+      }
+      .brand-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        background: linear-gradient(135deg, #7357ff, #4c35d8);
+        display: grid;
+        place-items: center;
+        font-size: 21px;
+      }
+      .nav {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .nav a {
+        height: 51px;
+        padding: 0 12px;
+        border-radius: 11px;
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        color: #aebbd0;
+        font-size: 14px;
+        transition: 0.2s;
+      }
+      .nav a:hover {
+        background: #101e37;
+        color: #fff;
+      }
+      .nav a.active {
+        background: linear-gradient(100deg, #6240e8, #5130d0);
+        color: #fff;
+        box-shadow: 0 8px 24px #4d32d533;
+      }
+      .divider {
+        height: 1px;
+        background: #172943;
+        margin: 12px 7px;
+      }
+      .logout {
+        color: #ff5d68 !important;
+      }
+      .main {
+        margin-left: 248px;
+        min-height: 100vh;
+        padding: 0 24px 22px;
+      }
+      .topbar {
+        height: 72px;
+        border-bottom: 1px solid #15263e;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 17px;
+      }
+      .search {
+        width: 420px;
+        height: 44px;
+        border: 1px solid #203450;
+        background: #0b1a30;
+        border-radius: 11px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 14px;
+      }
+      .search input {
+        width: 100%;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: #fff;
+        font-size: 13px;
+      }
+      .search input::placeholder {
+        color: #7f8da5;
+      }
+      .bell {
+        position: relative;
+        border: 0;
+        background: transparent;
+        color: #e8edfa;
+        font-size: 22px;
+      }
+      .bell b {
+        position: absolute;
+        top: -7px;
+        right: -7px;
+        background: #ef4654;
+        border-radius: 20px;
+        font-size: 10px;
+        padding: 3px 5px;
+      }
+      .profile {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-left: 1px solid #182a43;
+        padding-left: 14px;
+      }
+      .avatar {
+        width: 39px;
+        height: 39px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #6547e8, #3f2cb4);
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+      }
+      .profile strong,
+      .profile small {
+        display: block;
+      }
+      .profile strong {
+        font-size: 14px;
+      }
+      .profile small {
+        color: #8fa0bb;
+        font-size: 11px;
+        margin-top: 3px;
+      }
+      .heading {
+        padding: 24px 0 18px;
+        display: flex;
+        gap: 14px;
+        align-items: center;
+      }
+      .heading-icon {
+        width: 54px;
+        height: 54px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #7048f0, #4933ca);
+        display: grid;
+        place-items: center;
+        font-size: 26px;
+      }
+      .eyebrow {
+        margin: 0 0 6px;
+        color: #6f9fe2;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 1.1px;
+      }
+      .heading h1 {
+        font-family: Georgia, serif;
+        font-size: 30px;
+        margin: 0 0 4px;
+      }
+      .heading p {
+        color: #8494ae;
+        font-size: 13px;
+        margin: 0;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .stat {
+        min-height: 92px;
+        border: 1px solid var(--border);
+        background: linear-gradient(145deg, #0d1d35, #0a192d);
+        border-radius: 12px;
+        padding: 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .stat-icon {
+        width: 43px;
+        height: 43px;
+        border-radius: 11px;
+        display: grid;
+        place-items: center;
+        font-size: 20px;
+      }
+      .purple {
+        background: #5429a944;
+        color: #aa92ff;
+      }
+      .blue {
+        background: #1670d844;
+        color: #5fb7ff;
+      }
+      .green {
+        background: #0c9a5844;
+        color: #48df94;
+      }
+      .orange {
+        background: #b96d1044;
+        color: #ffb34d;
+      }
+      .stat strong {
+        display: block;
+        font-size: 20px;
+      }
+      .stat span {
+        display: block;
+        font-size: 12px;
+        margin-top: 3px;
+      }
+      .stat small {
+        display: block;
+        color: #73849f;
+        font-size: 10px;
+        margin-top: 4px;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 270px;
+        gap: 16px;
+        align-items: start;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+      }
+      .toolbar {
+        padding: 12px;
+        display: flex;
+        gap: 9px;
+        align-items: center;
+        margin-bottom: 15px;
+      }
+      .inside-search {
+        height: 42px;
+        flex: 1;
+        min-width: 180px;
+        background: #0d1e35;
+        border: 1px solid #213652;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 12px;
+      }
+      .inside-search input {
+        width: 100%;
+        background: transparent;
+        border: 0;
+        outline: 0;
+        color: #fff;
+        font-size: 12px;
+      }
+      .toolbar select {
+        height: 42px;
+        background: #0d1e35;
+        border: 1px solid #213652;
+        color: #b9c6d9;
+        border-radius: 9px;
+        padding: 0 10px;
+        font-size: 11px;
+        outline: 0;
+      }
+      .new-btn {
+        height: 42px;
+        border: 0;
+        border-radius: 9px;
+        background: linear-gradient(100deg, #6840ef, #5630d7);
+        color: #fff;
+        padding: 0 16px;
+        font-weight: 600;
+        font-size: 11px;
+        white-space: nowrap;
+      }
+      .notes-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        margin: 0 2px 10px;
+      }
+      .notes-head h2 {
+        font:
+          700 21px Georgia,
+          serif;
+        margin: 0;
+      }
+      .notes-head span {
+        font-size: 11px;
+        color: #7f90aa;
+      }
+      .view-buttons {
+        display: flex;
+        gap: 5px;
+      }
+      .view-buttons button {
+        width: 34px;
+        height: 32px;
+        border: 1px solid #203550;
+        background: #0d1e35;
+        color: #8c9bb1;
+        border-radius: 7px;
+      }
+      .view-buttons .active {
+        background: #5439db;
+        color: #fff;
+        border-color: #5439db;
+      }
+      .notes-list {
+        overflow: hidden;
+      }
+      .note {
+        min-height: 82px;
+        padding: 13px 14px;
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr) 110px 28px 26px;
+        gap: 12px;
+        align-items: center;
+        border-bottom: 1px solid #172b45;
+      }
+      .note:last-child {
+        border-bottom: 0;
+      }
+      .file-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+        font-size: 10px;
+      }
+      .pdf {
+        background: #b72c3c;
+        color: #fff;
+      }
+      .doc {
+        background: #1976d2;
+        color: #fff;
+      }
+      .ppt {
+        background: #d47b16;
+        color: #fff;
+      }
+      .txt {
+        background: #246dcc;
+        color: #fff;
+      }
+      .note h3 {
+        font-size: 13px;
+        margin: 0 0 5px;
+      }
+      .note-meta {
+        font-size: 10px;
+        color: #8c9ab0;
+      }
+      .tag {
+        justify-self: start;
+        background: #4330a855;
+        color: #b7a7ff;
+        border-radius: 6px;
+        padding: 5px 8px;
+        font-size: 9px;
+      }
+      .date {
+        font-size: 10px;
+        color: #8798b1;
+        text-align: right;
+      }
+      .bookmark,
+      .more {
+        border: 0;
+        background: transparent;
+        color: #a6b3c8;
+        font-size: 18px;
+        padding: 0;
+      }
+      .bookmark.saved {
+        color: #ffb21e;
+      }
+      .more {
+        font-size: 20px;
+      }
+      .right {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .storage {
+        padding: 16px;
+      }
+      .right h3 {
+        margin: 0 0 13px;
+        font-size: 14px;
+      }
+      .circle {
+        width: 108px;
+        height: 108px;
+        margin: 5px auto 12px;
+        border-radius: 50%;
+        background: conic-gradient(#6942ed 0 62%, #182945 62%);
+        display: grid;
+        place-items: center;
+        position: relative;
+      }
+      .circle:after {
+        content: "";
+        position: absolute;
+        width: 78px;
+        height: 78px;
+        border-radius: 50%;
+        background: #0a192f;
+      }
+      .circle strong {
+        position: relative;
+        z-index: 1;
+        font-size: 18px;
+      }
+      .storage p {
+        text-align: center;
+        color: #8292aa;
+        font-size: 10px;
+        margin: 0 0 12px;
+      }
+      .storage-bar {
+        height: 7px;
+        background: #1b2c45;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .storage-bar i {
+        display: block;
+        width: 62%;
+        height: 100%;
+        background: #6840ef;
+        border-radius: 10px;
+      }
+      .manage {
+        width: 100%;
+        margin-top: 12px;
+        height: 36px;
+        border: 1px solid #293f5f;
+        background: #0d1e35;
+        color: #d6deed;
+        border-radius: 8px;
+        font-size: 10px;
+      }
+      .quick {
+        padding: 16px;
+      }
+      .quick-item {
+        height: 43px;
+        width: 100%;
+        border: 0;
+        border-bottom: 1px solid #182d47;
+        background: transparent;
+        color: #dce4f2;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 11px;
+      }
+      .quick-item:last-child {
+        border-bottom: 0;
+      }
+      .quick-item span {
+        font-size: 16px;
+        color: #a993ff;
+      }
+      .quick-item b {
+        margin-left: auto;
+        color: #70829c;
+      }
+      .recent {
+        padding: 16px;
+      }
+      .recent-item {
+        display: flex;
+        gap: 9px;
+        align-items: center;
+        padding: 9px 0;
+        border-bottom: 1px solid #182d47;
+      }
+      .recent-item:last-child {
+        border: 0;
+      }
+      .mini-file {
+        width: 29px;
+        height: 29px;
+        border-radius: 6px;
+        display: grid;
+        place-items: center;
+        font-size: 8px;
+        color: #fff;
+      }
+      .recent-item strong,
+      .recent-item small {
+        display: block;
+      }
+      .recent-item strong {
+        font-size: 10px;
+      }
+      .recent-item small {
+        font-size: 9px;
+        color: #788aa5;
+        margin-top: 3px;
+      }
+      .recent-title {
+        display: flex;
+        justify-content: space-between;
+      }
+      .recent-title a {
+        font-size: 10px;
+        color: #a88fff;
+      }
+      .empty {
+        text-align: center;
+        padding: 50px 20px;
+        color: #8292aa;
+      }
+      .empty h3 {
+        color: #e7edfb;
+        margin: 0 0 6px;
+      }
+      .empty p {
+        font-size: 11px;
+      }
+      footer {
+        text-align: center;
+        border-top: 1px solid #142740;
+        margin-top: 17px;
+        padding: 15px;
+        color: #6e7f9a;
+        font-size: 11px;
+      }
+      .toast {
+        position: fixed;
+        right: 25px;
+        bottom: 25px;
+        background: #172944;
+        border: 1px solid #315078;
+        color: #fff;
+        padding: 11px 15px;
+        border-radius: 9px;
+        font-size: 11px;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: 0.2s;
+        z-index: 50;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: none;
+      }
+      .mobile-menu {
+        display: none;
+      }
+      @media (max-width: 1150px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        .right {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+      @media (max-width: 900px) {
+        .sidebar {
+          transform: translateX(-100%);
+          transition: 0.25s;
+        }
+        .sidebar.open {
+          transform: none;
+        }
+        .main {
+          margin-left: 0;
+          padding: 0 15px;
+        }
+        .mobile-menu {
+          display: block;
+          position: absolute;
+          left: 14px;
+          top: 20px;
+          background: transparent;
+          border: 0;
+          color: #fff;
+          font-size: 22px;
+        }
+        .topbar {
+          padding-left: 40px;
+        }
+        .stats {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .right {
+          grid-template-columns: 1fr 1fr;
+        }
+        .note {
+          grid-template-columns: 44px minmax(0, 1fr) 30px 25px;
+        }
+        .note .tag,
+        .note .date {
+          display: none;
+        }
+      }
+      @media (max-width: 600px) {
+        .stats {
+          grid-template-columns: 1fr 1fr;
+        }
+        .toolbar {
+          flex-wrap: wrap;
+        }
+        .inside-search {
+          flex-basis: 100%;
+        }
+        .toolbar select {
+          flex: 1;
+        }
+        .new-btn {
+          flex: 1;
+        }
+        .right {
+          grid-template-columns: 1fr;
+        }
+        .note {
+          grid-template-columns: 40px minmax(0, 1fr) 25px;
+        }
+        .note h3 {
+          font-size: 12px;
+        }
+        .heading h1 {
+          font-size: 25px;
+        }
+        .search {
+          width: 45vw;
+        }
+        .profile div {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <div class="brand">
+          <div class="brand-icon">▱</div>
+          <span>Smart Learning DC</span>
+        </div>
+        <nav class="nav">
+          <a href="dashboard.html">⌂ <span>Dashboard</span></a>
+          <a href="subjects.html">▣ <span>Subjects</span></a>
+          <a href="live-classes.html">▷ <span>Live Classes</span></a>
+          <a href="quizzes.html">◎ <span>Quizzes</span></a>
+          <a class="active" href="notes.html">▤ <span>Notes</span></a>
+          <a href="videos.html">▷ <span>Videos</span></a>
+          <a href="study-time.html">◷ <span>Study Time</span></a>
+          <a href="downloads.html">⇩ <span>Downloads</span></a>
+          <a href="calendar.html">▣ <span>Calendar</span></a>
+          <div class="divider"></div>
+          <a href="profile.html">♙ <span>My Profile</span></a>
+          <a href="settings.html">⚙ <span>Settings</span></a>
+          <a href="#">? <span>Help & Support</span></a>
+          <a class="logout" href="#" id="logout">↪ <span>Log out</span></a>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <button class="mobile-menu" id="menu">☰</button>
+          <div class="search">
+            ⌕
+            <input
+              id="globalSearch"
+              placeholder="Search notes, subjects, topics..."
+            />
+          </div>
+          <button class="bell">♧<b>3</b></button>
+          <div class="profile">
+            <div class="avatar" id="avatar">A</div>
+            <div>
+              <strong id="studentName">Ayush Kumar</strong
+              ><small id="studentClass">Class 12 • PCM</small>
+            </div>
+          </div>
+        </header>
+
+        <section class="heading">
+          <div class="heading-icon">▤</div>
+          <div>
+            <p class="eyebrow">LEARNING MATERIAL</p>
+            <h1>My Notes</h1>
+            <p>
+              Access your notes anytime, anywhere. Stay organized and study
+              smarter.
+            </p>
+          </div>
+        </section>
+
+        <section class="stats">
+          <article class="stat">
+            <div class="stat-icon purple">▤</div>
+            <div>
+              <strong id="totalNotes">0</strong><span>Total Notes</span
+              ><small>Available to you</small>
+            </div>
+          </article>
+          <article class="stat">
+            <div class="stat-icon blue">▣</div>
+            <div>
+              <strong id="subjectCount">0</strong><span>Subjects</span
+              ><small>Notes available</small>
+            </div>
+          </article>
+          <article class="stat">
+            <div class="stat-icon green">🔖</div>
+            <div>
+              <strong id="importantCount">0</strong><span>Important Notes</span
+              ><small>Bookmarked</small>
+            </div>
+          </article>
+          <article class="stat">
+            <div class="stat-icon orange">⇩</div>
+            <div>
+              <strong id="downloadCount">0</strong><span>Downloaded</span
+              ><small>Available offline</small>
+            </div>
+          </article>
+        </section>
+
+        <section class="layout">
+          <div>
+            <div class="panel toolbar">
+              <div class="inside-search">
+                ⌕ <input id="noteSearch" placeholder="Search within notes..." />
+              </div>
+              <select id="subjectFilter">
+                <option value="">All Subjects</option>
+              </select>
+              <select id="typeFilter">
+                <option value="">All Types</option>
+                <option>PDF</option>
+                <option>DOC</option>
+                <option>PPT</option>
+                <option>TXT</option>
+              </select>
+              <select id="sortFilter">
+                <option value="latest">Latest First</option>
+                <option value="name">Name</option>
+              </select>
+              <button class="new-btn" id="newNote">＋ New Note</button>
+            </div>
+
+            <div class="notes-head">
+              <div>
+                <p class="eyebrow">YOUR MATERIAL</p>
+                <h2>All Notes <span id="countLabel">(0)</span></h2>
+              </div>
+              <div class="view-buttons">
+                <button>▦</button><button class="active">☷</button>
+              </div>
+            </div>
+
+            <div class="panel notes-list" id="notesList"></div>
+            <div class="panel empty" id="empty" style="display: none">
+              <h3>No notes found</h3>
+              <p>Try another search or filter.</p>
+            </div>
+          </div>
+
+          <aside class="right">
+            <section class="panel storage">
+              <h3>Storage Usage</h3>
+              <div class="circle"><strong>62%</strong></div>
+              <p id="storageText">3.1 GB of 5 GB used</p>
+              <div class="storage-bar"><i></i></div>
+              <button class="manage" onclick="toast('Storage manager opened')">
+                ▱ &nbsp; Manage Storage
+              </button>
+            </section>
+
+            <section class="panel quick">
+              <h3>Quick Actions</h3>
+              <button class="quick-item" onclick="toast('Create Note')">
+                <span>＋</span> Create New Note <b>›</b>
+              </button>
+              <button class="quick-item" onclick="toast('Upload Notes')">
+                <span>⇧</span> Upload Notes <b>›</b>
+              </button>
+              <button class="quick-item" onclick="showBookmarks()">
+                <span>🔖</span> My Bookmarks <b>›</b>
+              </button>
+              <button class="quick-item" onclick="toast('Recent downloads')">
+                <span>⇩</span> Recent Downloads <b>›</b>
+              </button>
+            </section>
+
+            <section class="panel recent">
+              <div class="recent-title">
+                <h3>Recent Notes</h3>
+                <a onclick="resetFilters()">View all</a>
+              </div>
+              <div id="recentList"></div>
+            </section>
+          </aside>
+        </section>
+
+        <footer>
+          “The beautiful thing about learning is that no one can take it away
+          from you.” — B.B. King
+        </footer>
+      </main>
+    </div>
+    <div class="toast" id="toast"></div>
+
+    <script>
+      /* ================= SUPABASE =================
+   Replace these with your existing project values.
+   This page does not require changing your existing
+   Supabase authentication logic.
+*/
+      const SUPABASE_URL = "YOUR_SUPABASE_URL";
+      const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+      let supabaseClient = null;
+      if (
+        SUPABASE_URL !== "YOUR_SUPABASE_URL" &&
+        SUPABASE_ANON_KEY !== "YOUR_SUPABASE_ANON_KEY"
+      ) {
+        supabaseClient = window.supabase.createClient(
+          SUPABASE_URL,
+          SUPABASE_ANON_KEY,
+        );
+      }
+
+      /* Change only this table/column mapping if your existing
+   learning-material table uses different names. */
+      const TABLES = {
+        learners: "learners",
+        materials: "learning_materials",
+        downloads: "downloads",
+      };
+
+      let allNotes = [];
+      let bookmarked = new Set();
+
+      const sampleNotes = [
+        {
+          id: 1,
+          title: "Electromagnetic Waves – Complete Notes",
+          subject: "Physics",
+          class_name: "Class 12",
+          type: "PDF",
+          size: "2.4 MB",
+          date: "2026-05-16",
+          bookmarked: true,
+          url: "#",
+        },
+        {
+          id: 2,
+          title: "Chemical Bonding – Short Notes",
+          subject: "Chemistry",
+          class_name: "Class 12",
+          type: "DOC",
+          size: "1.1 MB",
+          date: "2026-05-15",
+          bookmarked: false,
+          url: "#",
+        },
+        {
+          id: 3,
+          title: "Matrices – Important Formulas",
+          subject: "Mathematics",
+          class_name: "Class 12",
+          type: "PDF",
+          size: "1.8 MB",
+          date: "2026-05-14",
+          bookmarked: true,
+          url: "#",
+        },
+        {
+          id: 4,
+          title: "Biology Diagrams – Plant Kingdom",
+          subject: "Biology",
+          class_name: "Class 11",
+          type: "PPT",
+          size: "3.2 MB",
+          date: "2026-05-13",
+          bookmarked: false,
+          url: "#",
+        },
+        {
+          id: 5,
+          title: "English Grammar – Quick Revision",
+          subject: "English",
+          class_name: "Class 12",
+          type: "TXT",
+          size: "560 KB",
+          date: "2026-05-12",
+          bookmarked: false,
+          url: "#",
+        },
+        {
+          id: 6,
+          title: "Computer Networks – Layer Model",
+          subject: "Computer Science",
+          class_name: "Class 12",
+          type: "PDF",
+          size: "2.7 MB",
+          date: "2026-05-11",
+          bookmarked: true,
+          url: "#",
+        },
+      ];
+
+      function escapeHTML(v) {
+        return String(v ?? "").replace(
+          /[&<>"']/g,
+          (m) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#039;",
+            })[m],
+        );
+      }
+      function toast(message) {
+        const el = document.getElementById("toast");
+        el.textContent = message;
+        el.classList.add("show");
+        clearTimeout(window.__toast);
+        window.__toast = setTimeout(() => el.classList.remove("show"), 1800);
+      }
+      function fileClass(type) {
+        return (
+          { PDF: "pdf", DOC: "doc", PPT: "ppt", TXT: "txt" }[type] || "pdf"
+        );
+      }
+      function normalizeMaterial(row) {
+        return {
+          id: row.id,
+          title: row.title || row.name || row.file_name || "Untitled Note",
+          subject: row.subject || row.subject_name || "General",
+          class_name: row.class_name || row.class || "",
+          type: (row.file_type || row.type || "PDF").toString().toUpperCase(),
+          size: row.file_size || row.size || "—",
+          date: row.created_at || row.uploaded_at || row.date || "",
+          bookmarked: !!row.bookmarked,
+          url: row.file_url || row.url || "#",
+        };
+      }
+      async function loadStudent() {
+        if (!supabaseClient) return;
+        try {
+          const {
+            data: { user },
+          } = await supabaseClient.auth.getUser();
+          if (!user) return;
+          const { data } = await supabaseClient
+            .from(TABLES.learners)
+            .select("*")
+            .eq("auth_user_id", user.id)
+            .maybeSingle();
+          if (data) {
+            const name = data.full_name || data.name || "Student";
+            document.getElementById("studentName").textContent = name;
+            document.getElementById("avatar").textContent = name
+              .trim()
+              .charAt(0)
+              .toUpperCase();
+            let context =
+              data.grade_group || data.grade || data.class_name || "";
+            if (
+              (data.grade == 11 ||
+                data.grade == 12 ||
+                data.class_name === "Class 11" ||
+                data.class_name === "Class 12") &&
+              data.stream
+            )
+              context += (context ? " • " : "") + data.stream;
+            document.getElementById("studentClass").textContent =
+              context || "Student";
+          }
+        } catch (e) {
+          console.warn("Student profile could not be loaded:", e);
+        }
+      }
+      async function loadNotes() {
+        if (!supabaseClient) {
+          allNotes = sampleNotes;
+          render();
+          return;
+        }
+        try {
+          const { data, error } = await supabaseClient
+            .from(TABLES.materials)
+            .select("*")
+            .order("created_at", { ascending: false });
+          if (error) throw error;
+          allNotes = (data || [])
+            .map(normalizeMaterial)
+            .filter((x) => ["PDF", "DOC", "PPT", "TXT"].includes(x.type));
+          if (!allNotes.length) allNotes = sampleNotes;
+        } catch (e) {
+          console.warn("Notes could not be loaded:", e);
+          allNotes = sampleNotes;
+        }
+        render();
+      }
+      function render() {
+        const q = document
+          .getElementById("noteSearch")
+          .value.trim()
+          .toLowerCase();
+        const subject = document.getElementById("subjectFilter").value;
+        const type = document.getElementById("typeFilter").value;
+        const sort = document.getElementById("sortFilter").value;
+        let notes = allNotes.filter(
+          (n) =>
+            (!q ||
+              `${n.title} ${n.subject} ${n.class_name}`
+                .toLowerCase()
+                .includes(q)) &&
+            (!subject || n.subject === subject) &&
+            (!type || n.type === type),
+        );
+        notes.sort((a, b) =>
+          sort === "name"
+            ? a.title.localeCompare(b.title)
+            : String(b.date).localeCompare(String(a.date)),
+        );
+        document.getElementById("totalNotes").textContent = allNotes.length;
+        document.getElementById("subjectCount").textContent = new Set(
+          allNotes.map((n) => n.subject),
+        ).size;
+        document.getElementById("importantCount").textContent = allNotes.filter(
+          (n) => n.bookmarked || bookmarked.has(n.id),
+        ).length;
+        document.getElementById("countLabel").textContent = `(${notes.length})`;
+        const list = document.getElementById("notesList");
+        const empty = document.getElementById("empty");
+        if (!notes.length) {
+          list.style.display = "none";
+          empty.style.display = "block";
+        } else {
+          list.style.display = "block";
+          empty.style.display = "none";
+        }
+        list.innerHTML = notes
+          .map(
+            (n) => `
+  <article class="note">
+   <div class="file-icon ${fileClass(n.type)}">${escapeHTML(n.type)}</div>
+   <div><h3>${escapeHTML(n.title)}</h3><div class="note-meta">${escapeHTML(n.subject)} &nbsp;•&nbsp; ${escapeHTML(n.class_name)} &nbsp;•&nbsp; ${escapeHTML(n.size)}</div></div>
+   <span class="tag">${escapeHTML(n.subject)}</span>
+   <span class="date">${n.date ? escapeHTML(new Date(n.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })) : "—"}</span>
+   <button class="bookmark ${n.bookmarked || bookmarked.has(n.id) ? "saved" : ""}" onclick="toggleBookmark('${String(n.id).replace(/'/g, "\\'")}')">🔖</button>
+   <button class="more" onclick="openNote('${String(n.id).replace(/'/g, "\\'")}')">•••</button>
+  </article>`,
+          )
+          .join("");
+        renderRecent(notes.slice(0, 4));
+      }
+      function renderRecent(notes) {
+        document.getElementById("recentList").innerHTML = notes
+          .map(
+            (n) => `
+ <div class="recent-item"><div class="mini-file ${fileClass(n.type)}">${escapeHTML(n.type)}</div>
+ <div><strong>${escapeHTML(n.title.length > 25 ? n.title.slice(0, 25) + "…" : n.title)}</strong><small>${escapeHTML(n.subject)} • ${n.date ? new Date(n.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }) : "Recently"}</small></div></div>`,
+          )
+          .join("");
+      }
+      function populateSubjects() {
+        const subjects = [...new Set(allNotes.map((n) => n.subject))].sort();
+        document.getElementById("subjectFilter").innerHTML =
+          '<option value="">All Subjects</option>' +
+          subjects.map((s) => `<option>${escapeHTML(s)}</option>`).join("");
+      }
+      function toggleBookmark(id) {
+        const n = allNotes.find((x) => String(x.id) === String(id));
+        if (!n) return;
+        if (bookmarked.has(n.id)) bookmarked.delete(n.id);
+        else bookmarked.add(n.id);
+        n.bookmarked = bookmarked.has(n.id);
+        render();
+        toast(n.bookmarked ? "Added to bookmarks" : "Removed from bookmarks");
+      }
+      function showBookmarks() {
+        const list = allNotes.filter(
+          (n) => n.bookmarked || bookmarked.has(n.id),
+        );
+        document.getElementById("subjectFilter").value = "";
+        document.getElementById("typeFilter").value = "";
+        document.getElementById("noteSearch").value = "";
+        document.getElementById("notesList").style.display = "block";
+        document.getElementById("empty").style.display = list.length
+          ? "none"
+          : "block";
+        document.getElementById("countLabel").textContent = `(${list.length})`;
+        document.getElementById("notesList").innerHTML = list
+          .map(
+            (n) => `
+ <article class="note"><div class="file-icon ${fileClass(n.type)}">${escapeHTML(n.type)}</div>
+ <div><h3>${escapeHTML(n.title)}</h3><div class="note-meta">${escapeHTML(n.subject)} • ${escapeHTML(n.class_name)} • ${escapeHTML(n.size)}</div></div>
+ <span class="tag">${escapeHTML(n.subject)}</span><span class="date">${n.date ? escapeHTML(new Date(n.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })) : "—"}</span>
+ <button class="bookmark saved">🔖</button><button class="more" onclick="openNote('${String(n.id).replace(/'/g, "\\'")}')">•••</button></article>`,
+          )
+          .join("");
+        toast("Showing bookmarked notes");
+      }
+      function resetFilters() {
+        document.getElementById("noteSearch").value = "";
+        document.getElementById("subjectFilter").value = "";
+        document.getElementById("typeFilter").value = "";
+        render();
+      }
+      function openNote(id) {
+        const n = allNotes.find((x) => String(x.id) === String(id));
+        if (!n) return;
+        if (n.url && n.url !== "#") window.open(n.url, "_blank");
+        else toast("Note selected: " + n.title);
+      }
+      document.getElementById("noteSearch").addEventListener("input", render);
+      document.getElementById("globalSearch").addEventListener("input", (e) => {
+        document.getElementById("noteSearch").value = e.target.value;
+        render();
+      });
+      document
+        .getElementById("subjectFilter")
+        .addEventListener("change", render);
+      document.getElementById("typeFilter").addEventListener("change", render);
+      document.getElementById("sortFilter").addEventListener("change", render);
+      document.getElementById("newNote").onclick = () =>
+        toast(
+          "Create-note UI can be connected to your existing upload/material logic",
+        );
+      document.getElementById("menu").onclick = () =>
+        document.getElementById("sidebar").classList.toggle("open");
+      document.getElementById("logout").onclick = async (e) => {
+        e.preventDefault();
+        if (supabaseClient) await supabaseClient.auth.signOut();
+        location.href = "login.html";
+      };
+      (async () => {
+        await loadStudent();
+        await loadNotes();
+        populateSubjects();
+        render();
+      })();
+    </script>
+  </body>
+</html>
