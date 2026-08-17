@@ -94,76 +94,238 @@
         background: none;
       }
 
-      /* ── NAVBAR ─────────────────────────────────────────── */
-      .navbar {
-        position: sticky;
-        top: 0;
-        z-index: 50;
-        height: var(--nav-h);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        padding: 0 28px;
-        background: var(--surface);
-        border-bottom: 1px solid var(--border);
-        box-shadow: var(--shadow);
+      /* ── APP SHELL / SIDEBAR ─────────────────────────────── */
+      body {
+        background: #07172d;
       }
 
-      .nav-left {
+      .app-shell {
+        min-height: 100vh;
         display: flex;
-        align-items: center;
-        gap: 20px;
+        background: #07172d;
       }
+
+      .navbar {
+        position: fixed;
+        inset: 0 auto 0 0;
+        width: 160px;
+        background: rgba(11, 22, 38, 0.96);
+        border-right: 1px solid rgba(148, 163, 184, 0.12);
+        padding: 16px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        z-index: 40;
+        overflow-y: auto;
+      }
+
+      .nav-left,
       .nav-right {
         display: flex;
         align-items: center;
+      }
+
+      .nav-left {
+        gap: 12px;
+      }
+      .nav-right {
         gap: 12px;
       }
 
       .brand {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
+        padding: 6px 8px 12px;
         font-weight: 700;
-        font-size: 1.05rem;
+        font-size: 0.85rem;
         letter-spacing: -0.01em;
+        color: #f8fbff;
       }
       .brand-mark {
-        width: 34px;
-        height: 34px;
+        width: 32px;
+        height: 32px;
         border-radius: 10px;
-        background: var(--primary);
+        background: linear-gradient(135deg, #6d6afc, #8b5cf6);
         display: grid;
         place-items: center;
+        box-shadow: 0 10px 24px rgba(109, 106, 252, 0.45);
       }
       .brand-mark svg {
-        width: 18px;
-        height: 18px;
+        width: 16px;
+        height: 16px;
         fill: none;
         stroke: #fff;
         stroke-width: 2;
         stroke-linecap: round;
       }
 
-      /* Notification bell */
+      .sidebar-nav {
+        display: grid;
+        gap: 6px;
+        margin-top: 4px;
+      }
+      .sidebar-nav .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 11px 12px;
+        border-radius: 11px;
+        color: rgba(226, 232, 240, 0.8);
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: all 180ms ease;
+      }
+      .sidebar-nav .nav-item:hover {
+        background: rgba(148, 163, 184, 0.08);
+        color: #fff;
+      }
+      .sidebar-nav .nav-item.active {
+        background: linear-gradient(135deg, rgba(109, 106, 252, 0.3), rgba(139, 92, 246, 0.2));
+        border: 1px solid rgba(129, 140, 248, 0.22);
+        color: #fff;
+        box-shadow: inset 0 0 0 1px rgba(129, 140, 248, 0.05);
+      }
+      .nav-icon {
+        width: 18px;
+        height: 18px;
+        display: inline-grid;
+        place-items: center;
+        opacity: 0.9;
+      }
+
+      .sidebar-section {
+        margin-top: 8px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(148, 163, 184, 0.12);
+      }
+
+      .sidebar-footer {
+        margin-top: auto;
+        display: grid;
+        gap: 6px;
+      }
+      .sidebar-footer .nav-item {
+        padding-left: 12px;
+      }
+
+      /* ── STREAK WIDGET ──────────────────────────────────── */
+      .streak-widget {
+        background: linear-gradient(135deg, rgba(236, 72, 153, 0.12), rgba(245, 158, 11, 0.08));
+        border: 1px solid rgba(236, 72, 153, 0.2);
+        border-radius: 14px;
+        padding: 14px 12px;
+        margin-bottom: 8px;
+        text-align: center;
+      }
+      .streak-flame {
+        font-size: 2rem;
+        margin-bottom: 6px;
+      }
+      .streak-days {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #fff;
+        line-height: 1;
+      }
+      .streak-label {
+        font-size: 0.7rem;
+        color: rgba(226, 232, 240, 0.7);
+        font-weight: 600;
+        margin-top: 4px;
+      }
+      .streak-dots {
+        display: flex;
+        justify-content: center;
+        gap: 4px;
+        margin-top: 10px;
+        font-size: 0.7rem;
+        color: rgba(226, 232, 240, 0.6);
+      }
+      .streak-dot {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: rgba(34, 197, 94, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .streak-dot.active {
+        background: #22c55e;
+        color: #fff;
+        font-size: 0.6rem;
+        font-weight: 700;
+      }
+
+      .content-shell {
+        margin-left: 160px;
+        width: calc(100% - 160px);
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        min-height: 78px;
+        padding: 16px 28px;
+        background: rgba(7, 23, 45, 0.92);
+        border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+        backdrop-filter: blur(12px);
+      }
+
+      .search-box {
+        flex: 1;
+        max-width: 620px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(148, 163, 184, 0.06);
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        border-radius: 14px;
+        padding: 12px 14px;
+        color: rgba(226, 232, 240, 0.7);
+      }
+      .search-box input {
+        width: 100%;
+        background: transparent;
+        border: none;
+        color: #e2e8f0;
+        font-size: 0.95rem;
+        outline: none;
+      }
+      .search-box input::placeholder {
+        color: rgba(148, 163, 184, 0.8);
+      }
+
+      .topbar-tools {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
       .notif-wrap {
         position: relative;
       }
       .btn-notif {
-        width: 40px;
-        height: 40px;
+        width: 42px;
+        height: 42px;
         border-radius: 12px;
-        background: var(--surf2);
-        border: 1px solid var(--border);
+        background: rgba(148, 163, 184, 0.06);
+        border: 1px solid rgba(148, 163, 184, 0.12);
         display: grid;
         place-items: center;
         font-size: 1.1rem;
-        transition: background 180ms;
+        transition: background 180ms ease;
         position: relative;
+        color: #e2e8f0;
       }
       .btn-notif:hover {
-        background: var(--surf3);
+        background: rgba(148, 163, 184, 0.1);
       }
       .notif-badge {
         position: absolute;
@@ -172,7 +334,7 @@
         min-width: 18px;
         height: 18px;
         border-radius: 999px;
-        background: var(--danger);
+        background: #ef4444;
         color: #fff;
         font-size: 0.7rem;
         font-weight: 700;
@@ -184,13 +346,13 @@
       }
       .notif-panel {
         position: absolute;
-        top: 52px;
+        top: 54px;
         right: 0;
-        width: min(360px, calc(100vw - 32px));
-        background: var(--surface);
-        border: 1px solid var(--border);
+        width: min(350px, calc(100vw - 32px));
+        background: rgba(15, 23, 42, 0.98);
+        border: 1px solid rgba(148, 163, 184, 0.12);
         border-radius: 18px;
-        box-shadow: var(--shadow-lg);
+        box-shadow: 0 18px 42px rgba(0, 0, 0, 0.35);
         display: none;
         overflow: hidden;
         z-index: 60;
@@ -203,22 +365,22 @@
         align-items: center;
         justify-content: space-between;
         padding: 14px 18px;
-        border-bottom: 1px solid var(--border);
-        background: var(--surf2);
+        border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+        background: rgba(148, 163, 184, 0.04);
       }
       .notif-head strong {
         font-size: 0.9rem;
       }
       .btn-clear {
         font-size: 0.8rem;
-        color: var(--primary);
+        color: #8b5cf6;
         font-weight: 700;
         padding: 4px 10px;
         border-radius: 8px;
         transition: background 180ms;
       }
       .btn-clear:hover {
-        background: var(--pri-soft);
+        background: rgba(139, 92, 246, 0.12);
       }
       .notif-list {
         max-height: 300px;
@@ -226,12 +388,12 @@
       }
       .notif-item {
         padding: 12px 18px;
-        border-bottom: 1px solid var(--border);
+        border-bottom: 1px solid rgba(148, 163, 184, 0.12);
         cursor: pointer;
         transition: background 180ms;
       }
       .notif-item:hover {
-        background: var(--surf2);
+        background: rgba(148, 163, 184, 0.04);
       }
       .notif-item:last-child {
         border-bottom: none;
@@ -252,26 +414,26 @@
         text-align: center;
       }
 
-      /* Profile pill */
       .profile-pill {
         display: flex;
         align-items: center;
         gap: 10px;
         padding: 6px 14px 6px 6px;
         border-radius: 999px;
-        border: 1px solid var(--border);
-        background: var(--surf2);
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        background: rgba(148, 163, 184, 0.04);
+        color: #f8fbff;
       }
       .avatar {
         width: 38px;
         height: 38px;
         border-radius: 50%;
-        background: var(--primary);
+        background: linear-gradient(135deg, #7c3aed, #4f46e5);
         color: #fff;
         display: grid;
         place-items: center;
         font-weight: 700;
-        font-size: 1rem;
+        font-size: 0.9rem;
         flex-shrink: 0;
       }
       .profile-name {
@@ -279,7 +441,7 @@
         font-size: 0.9rem;
       }
       .profile-role {
-        color: var(--muted);
+        color: rgba(148, 163, 184, 0.9);
         font-size: 0.78rem;
       }
 
@@ -287,31 +449,32 @@
         width: 38px;
         height: 38px;
         border-radius: 50%;
-        background: var(--surf2);
-        border: 1px solid var(--border);
+        background: rgba(148, 163, 184, 0.06);
+        border: 1px solid rgba(148, 163, 184, 0.12);
         display: grid;
         place-items: center;
         font-size: 1rem;
+        color: #e2e8f0;
         transition:
           background 180ms,
           transform 200ms;
       }
       .btn-icon:hover {
-        background: var(--surf3);
+        background: rgba(148, 163, 184, 0.12);
       }
       #themeBtn:hover {
         transform: rotate(20deg);
       }
 
       .btn-logout {
-        padding: 8px 16px;
+        padding: 8px 14px;
         border-radius: 999px;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         font-weight: 700;
-        color: var(--danger);
-        border: 1px solid rgba(239, 68, 68, 0.25);
-        background: rgba(239, 68, 68, 0.07);
-        transition: background 180ms;
+        color: rgba(248, 113, 113, 0.95);
+        border: 1px solid rgba(248, 113, 113, 0.18);
+        background: rgba(239, 68, 68, 0.08);
+        transition: background 180ms ease;
       }
       .btn-logout:hover {
         background: rgba(239, 68, 68, 0.14);
@@ -319,9 +482,9 @@
 
       /* ── PAGE WRAPPER ───────────────────────────────────── */
       .page {
-        width: min(92%, 1450px);
+        width: min(94%, 1420px);
         margin: 0 auto;
-        padding: 28px 24px 60px;
+        padding: 24px 18px 50px;
         display: grid;
         gap: 22px;
       }
@@ -437,19 +600,41 @@
       .stats-row {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 16px;
+        gap: 18px;
       }
       .stat-card {
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: 18px;
-        padding: 22px;
-        min-height: 120px;
+        padding: 20px;
+        min-height: 160px;
         box-shadow: var(--shadow);
         transition:
           transform 180ms ease,
           box-shadow 180ms ease,
           border-color 180ms ease;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+        overflow: hidden;
+      }
+      .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, rgba(99,102,241,0.3), transparent);
+      }
+      .stat-sparkline {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        width: 80px;
+        height: 40px;
+        opacity: 0.75;
       }
       .stat-card:hover {
         transform: translateY(-2px);
@@ -457,60 +642,69 @@
         box-shadow: 0 12px 28px rgba(99, 102, 241, 0.12);
       }
       .stat-label {
-        font-size: 0.78rem;
+        font-size: 0.75rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.06em;
         color: var(--muted);
-        margin-bottom: 8px;
+        margin-bottom: 6px;
       }
       .stat-value {
-        font-size: 1.8rem;
+        font-size: 2rem;
         font-weight: 800;
         letter-spacing: -0.02em;
+        line-height: 1;
       }
       .stat-sub {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         color: var(--muted);
-        margin-top: 4px;
+        margin-top: 8px;
+      }
+      .stat-chart {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        width: 60px;
+        height: 40px;
+        opacity: 0.8;
       }
       .stat-card.s-primary .stat-value {
-        color: var(--primary);
+        color: #6366f1;
       }
       .stat-card.s-success .stat-value {
-        color: var(--success);
+        color: #22c55e;
       }
       .stat-card.s-warning .stat-value {
-        color: var(--warning);
+        color: #f59e0b;
       }
       .stat-card.s-danger .stat-value {
-        color: var(--danger);
+        color: #ef4444;
       }
 
       /* ── MAIN GRID ──────────────────────────────────────── */
       .main-grid {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 340px;
-        gap: 24px;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 22px;
         align-items: start;
       }
 
-      /* ── SUBJECTS ───────────────────────────────────────── */
+      /* ── SUBJECTS ───────────────────────────────────────– */
       .subject-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 16px;
-        margin-top: 20px;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 14px;
+        margin-top: 16px;
       }
       .subject-card {
-        background: var(--surf2);
+        background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 18px;
-        padding: 20px;
+        border-radius: 16px;
+        padding: 16px;
         display: flex;
         flex-direction: column;
-        gap: 14px;
-        min-height: 315px;
+        gap: 12px;
+        min-height: 280px;
         transition:
           transform 180ms ease,
           box-shadow 180ms ease,
@@ -522,35 +716,36 @@
         border-color: var(--primary);
       }
       .subj-icon {
-        width: 44px;
-        height: 44px;
-        border-radius: 13px;
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
         background: var(--pri-soft);
         display: grid;
         place-items: center;
-        font-size: 1.3rem;
+        font-size: 1.2rem;
       }
       .subj-name {
         font-weight: 700;
-        font-size: 0.97rem;
+        font-size: 0.95rem;
+        line-height: 1.2;
       }
       .subj-desc {
         color: var(--muted);
-        font-size: 0.82rem;
-        line-height: 1.5;
+        font-size: 0.78rem;
+        line-height: 1.4;
         font-weight: 300;
       }
       .subj-actions {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 8px;
+        gap: 6px;
       }
       .subj-btn {
-        padding: 10px 8px;
-        border-radius: 11px;
-        font-size: 0.78rem;
+        padding: 8px 6px;
+        border-radius: 10px;
+        font-size: 0.7rem;
         font-weight: 700;
-        background: var(--surface);
+        background: var(--surf2);
         border: 1px solid var(--border);
         color: var(--text);
         transition:
@@ -559,9 +754,11 @@
           color 180ms,
           transform 120ms;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 4px;
+        gap: 2px;
+        line-height: 1.3;
       }
       .subj-btn:hover {
         background: var(--primary);
@@ -573,7 +770,7 @@
         margin-top: auto;
       }
       .prog-bar {
-        height: 6px;
+        height: 5px;
         border-radius: 999px;
         background: var(--border);
         overflow: hidden;
@@ -585,26 +782,22 @@
         transition: width 600ms ease;
       }
       .prog-label {
-        font-size: 0.75rem;
+        font-size: 0.72rem;
         color: var(--muted);
         margin-top: 6px;
+        font-weight: 600;
       }
 
       /* ── CONTINUE LEARNING ───────────────────────────────── */
       .continue-card {
-        background: linear-gradient(
-          135deg,
-          rgba(99, 102, 241, 0.12),
-          rgba(99, 102, 241, 0.04)
-        );
+        background: var(--surface);
         border: 1px solid var(--border);
         border-radius: 18px;
-        padding: 20px 22px;
-        min-height: 140px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 20px;
+        padding: 0;
+        min-height: 160px;
+        display: grid;
+        grid-template-columns: 140px 1fr;
+        overflow: hidden;
         transition:
           transform 180ms ease,
           box-shadow 180ms ease,
@@ -614,13 +807,32 @@
         transform: translateY(-2px);
         box-shadow: 0 12px 26px rgba(99, 102, 241, 0.12);
       }
-      .continue-meta {
+      .continue-thumb {
+        background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.15));
         display: grid;
-        gap: 10px;
-        min-width: 0;
+        place-items: center;
+        font-size: 2.5rem;
+        position: relative;
+        overflow: hidden;
+      }
+      .continue-thumb::before {
+        content: '';
+        position: absolute;
+        width: 50px;
+        height: 50px;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+      }
+      .continue-meta {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 16px 20px;
       }
       .continue-kicker {
-        font-size: 0.72rem;
+        font-size: 0.7rem;
         font-weight: 700;
         letter-spacing: 0.09em;
         text-transform: uppercase;
@@ -628,31 +840,35 @@
       }
       .continue-title {
         font-weight: 700;
-        font-size: clamp(1.05rem, 1.5vw, 1.45rem);
-        letter-spacing: -0.02em;
+        font-size: 1.1rem;
+        letter-spacing: -0.01em;
+        margin-top: 2px;
       }
       .continue-sub {
         color: var(--muted);
-        font-size: 0.86rem;
+        font-size: 0.8rem;
+        margin-top: 2px;
       }
       .continue-progress-row {
         display: flex;
         align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
-        margin-top: 4px;
+        gap: 10px;
+        margin-top: 8px;
       }
       .continue-progress-row .prog-bar {
-        width: min(260px, 100%);
+        flex: 1;
+        height: 5px;
       }
       .continue-percent {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         color: var(--primary);
         font-weight: 700;
+        min-width: 38px;
       }
       .continue-meta .continue-time {
         color: var(--muted);
-        font-size: 0.8rem;
+        font-size: 0.75rem;
+        margin-top: 4px;
       }
       .btn-continue {
         display: inline-flex;
@@ -660,11 +876,12 @@
         justify-content: center;
         background: var(--primary);
         color: white;
-        padding: 11px 18px;
-        border-radius: 12px;
-        font-size: 0.82rem;
+        padding: 9px 16px;
+        border-radius: 10px;
+        font-size: 0.78rem;
         font-weight: 700;
-        min-width: 150px;
+        align-self: flex-start;
+        margin-top: 8px;
         transition:
           filter 180ms ease,
           transform 180ms ease;
@@ -786,40 +1003,38 @@
 
       /* Live class */
       .live-card {
-        background:
-          linear-gradient(135deg, var(--pri-soft), transparent 70%),
-          var(--surf2);
+        background: linear-gradient(135deg, var(--pri-soft), transparent 70%), var(--surface);
         border: 1px solid var(--border);
-        border-radius: 18px;
-        padding: 20px;
+        border-radius: 16px;
+        padding: 16px;
         display: grid;
-        gap: 14px;
+        gap: 12px;
       }
       .live-badge {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        padding: 5px 12px;
+        gap: 5px;
+        padding: 4px 10px;
         border-radius: 999px;
         background: rgba(239, 68, 68, 0.12);
-        color: var(--danger);
-        font-size: 0.75rem;
+        color: #ef4444;
+        font-size: 0.7rem;
         font-weight: 700;
         width: fit-content;
       }
       .live-badge.live-okay {
         background: rgba(34, 197, 94, 0.12);
-        color: var(--success);
+        color: #22c55e;
       }
       .live-dot {
-        width: 6px;
-        height: 6px;
+        width: 5px;
+        height: 5px;
         border-radius: 50%;
-        background: var(--danger);
+        background: #ef4444;
         animation: pulse 1.4s ease infinite;
       }
       .live-badge.live-okay .live-dot {
-        background: var(--success);
+        background: #22c55e;
       }
       @keyframes pulse {
         0%,
@@ -832,26 +1047,27 @@
       }
       .live-title {
         font-weight: 700;
-        font-size: 0.97rem;
+        font-size: 0.95rem;
       }
       .live-sub {
         color: var(--muted);
-        font-size: 0.83rem;
-        margin-top: 2px;
+        font-size: 0.8rem;
+        margin-top: 0px;
       }
       .countdown {
-        font-size: 1.5rem;
+        font-size: 1.4rem;
         font-weight: 800;
         letter-spacing: -0.01em;
         color: var(--primary);
+        font-family: 'Courier New', monospace;
       }
       .btn-join {
         width: 100%;
-        padding: 12px;
-        border-radius: 14px;
+        padding: 10px 12px;
+        border-radius: 12px;
         background: var(--primary);
         color: #fff;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         font-weight: 700;
         box-shadow: 0 6px 20px var(--pri-glow);
         transition:
@@ -981,6 +1197,46 @@
       /* ── SECTION HEADER ─────────────────────────────────── */
       .sec-head {
         display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      /* ── SCHEDULE LIST ──────────────────────────────────── */
+      .schedule-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .schedule-item {
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: var(--surf2);
+        border: 1px solid var(--border);
+        display: grid;
+        gap: 4px;
+      }
+      .schedule-item-subject {
+        font-weight: 700;
+        font-size: 0.85rem;
+      }
+      .schedule-item-time {
+        font-size: 0.75rem;
+        color: var(--muted);
+      }
+      .schedule-item-badge {
+        font-size: 0.7rem;
+        color: var(--success);
+        font-weight: 700;
+        margin-top: 2px;
+      }
+
+      /* ── STREAK CARD ────────────────────────────────────– */
+      .streak-card {
+        background: linear-gradient(135deg, rgba(236,72,153,0.08), rgba(245,158,11,0.06));
+      }
+      .sec-head {
+        display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 12px;
@@ -1045,9 +1301,8 @@
   </head>
 
   <body>
-    <!-- ── NAVBAR ──────────────────────────────────────────── -->
-    <nav class="navbar">
-      <div class="nav-left">
+    <div class="app-shell">
+      <aside class="navbar" aria-label="Sidebar navigation">
         <a href="index.html" class="brand">
           <div class="brand-mark">
             <svg viewBox="0 0 24 24">
@@ -1059,43 +1314,79 @@
           <span>Smart Learning DC</span>
         </a>
 
-        <!-- Notifications -->
-        <div class="notif-wrap">
-          <button class="btn-notif" id="notifBtn" aria-label="Notifications">
-            🔔
-            <span class="notif-badge" id="notifBadge"></span>
-          </button>
-          <div class="notif-panel" id="notifPanel">
-            <div class="notif-head">
-              <strong>Notifications</strong>
-              <button class="btn-clear" id="clearNotif">Clear all</button>
-            </div>
-            <div class="notif-list" id="notifList">
-              <div class="notif-empty">No notifications yet.</div>
+        <nav class="sidebar-nav" aria-label="Main navigation">
+          <a href="#" class="nav-item active"><span class="nav-icon">🏠</span> Dashboard</a>
+          <a href="#" class="nav-item"><span class="nav-icon">📚</span> Subjects</a>
+          <a href="#" class="nav-item"><span class="nav-icon">🎥</span> Live Classes</a>
+          <a href="#" class="nav-item"><span class="nav-icon">📝</span> Quizzes</a>
+          <a href="#" class="nav-item"><span class="nav-icon">📄</span> Notes</a>
+          <a href="#" class="nav-item"><span class="nav-icon">🎬</span> Videos</a>
+          <a href="#" class="nav-item"><span class="nav-icon">⏱️</span> Study Time</a>
+          <a href="#" class="nav-item"><span class="nav-icon">⬇️</span> Downloads</a>
+          <a href="#" class="nav-item"><span class="nav-icon">📅</span> Calendar</a>
+        </nav>
+
+        <div class="sidebar-section sidebar-footer">
+          <div class="streak-widget">
+            <div class="streak-flame">🔥</div>
+            <div class="streak-days">7 Days</div>
+            <div class="streak-label">Keep it up</div>
+            <div class="streak-dots">
+              <div class="streak-dot active">M</div>
+              <div class="streak-dot active">T</div>
+              <div class="streak-dot active">W</div>
+              <div class="streak-dot active">T</div>
+              <div class="streak-dot active">F</div>
+              <div class="streak-dot">S</div>
+              <div class="streak-dot">S</div>
             </div>
           </div>
+
+          <a href="#" class="nav-item"><span class="nav-icon">👤</span> My Profile</a>
+          <a href="#" class="nav-item"><span class="nav-icon">⚙️</span> Settings</a>
+          <a href="#" class="nav-item"><span class="nav-icon">❔</span> Help &amp; Support</a>
+          <a href="#" id="logoutBtn" class="nav-item" style="color: rgba(248,113,113,0.9);"><span class="nav-icon">↩️</span> Log out</a>
         </div>
-      </div>
+      </aside>
 
-      <div class="nav-right">
-        <button class="btn-icon" id="themeBtn" aria-label="Toggle theme">
-          🌙
-        </button>
+      <div class="content-shell">
+        <header class="topbar">
+          <label class="search-box" aria-label="Search">
+            <span>🔎</span>
+            <input type="text" placeholder="Search anything..." />
+          </label>
 
-        <div class="profile-pill">
-          <div class="avatar" id="avatarEl">A</div>
-          <div>
-            <div class="profile-name" id="profileNameEl">Learner</div>
-            <div class="profile-role">Student</div>
+          <div class="topbar-tools">
+            <div class="notif-wrap">
+              <button class="btn-notif" id="notifBtn" aria-label="Notifications">
+                🔔
+                <span class="notif-badge" id="notifBadge"></span>
+              </button>
+              <div class="notif-panel" id="notifPanel">
+                <div class="notif-head">
+                  <strong>Notifications</strong>
+                  <button class="btn-clear" id="clearNotif">Clear all</button>
+                </div>
+                <div class="notif-list" id="notifList">
+                  <div class="notif-empty">No notifications yet.</div>
+                </div>
+              </div>
+            </div>
+
+            <button class="btn-icon" id="themeBtn" aria-label="Toggle theme">🌙</button>
+
+            <div class="profile-pill">
+              <div class="avatar" id="avatarEl">A</div>
+              <div>
+                <div class="profile-name" id="profileNameEl">Learner</div>
+                <div class="profile-role">Grade <span id="gradeChipTop">—</span> · <span id="streamLabelTop">—</span></div>
+              </div>
+            </div>
           </div>
-        </div>
+        </header>
 
-        <button class="btn-logout" id="logoutBtn">Log out</button>
-      </div>
-    </nav>
-
-    <!-- ── PAGE ────────────────────────────────────────────── -->
-    <div class="page">
+        <!-- ── PAGE ────────────────────────────────────────────── -->
+        <div class="page">
       <!-- WELCOME CARD -->
       <div class="card welcome-card">
         <div>
@@ -1127,21 +1418,25 @@
       <!-- STATS ROW -->
       <div class="stats-row">
         <div class="stat-card s-primary">
+          <canvas class="stat-sparkline" id="sparkQuiz"></canvas>
           <div class="stat-label">Quizzes taken</div>
           <div class="stat-value" id="statQuizzes">0</div>
           <div class="stat-sub">All time</div>
         </div>
         <div class="stat-card s-success">
+          <canvas class="stat-sparkline" id="sparkVideo"></canvas>
           <div class="stat-label">Videos watched</div>
           <div class="stat-value" id="statVideos">0</div>
           <div class="stat-sub">All time</div>
         </div>
         <div class="stat-card s-warning">
+          <canvas class="stat-sparkline" id="sparkNotes"></canvas>
           <div class="stat-label">Notes read</div>
           <div class="stat-value" id="statNotes">0</div>
           <div class="stat-sub">All time</div>
         </div>
         <div class="stat-card s-danger">
+          <canvas class="stat-sparkline" id="sparkStudy"></canvas>
           <div class="stat-label">Study time</div>
           <div class="stat-value" id="statStudy">0m</div>
           <div class="stat-sub">Today</div>
@@ -1153,21 +1448,24 @@
         <div class="sec-head">
           <div>
             <div class="card-title">Subjects</div>
-            <div class="card-heading">Your active subjects</div>
+            <div class="card-heading">Your Subjects</div>
           </div>
+          <a href="#" style="font-size:0.8rem;color:var(--primary);font-weight:700;text-decoration:none;">View all →</a>
         </div>
         <div class="subject-grid" id="subjectGrid"></div>
       </div>
 
+      <!-- CONTINUE LEARNING -->
       <div id="continueLearning"></div>
 
       <!-- ANALYTICS -->
       <div class="card">
         <div class="sec-head">
           <div>
-            <div class="card-title">Analytics</div>
-            <div class="card-heading">Real performance insights</div>
+            <div class="card-title">Performance</div>
+            <div class="card-heading">Performance Insights</div>
           </div>
+          <a href="#" style="font-size:0.8rem;color:var(--primary);font-weight:700;text-decoration:none;">View full analytics →</a>
         </div>
         <div class="charts-grid">
           <div class="chart-card">
@@ -1175,7 +1473,7 @@
             <div class="chart-wrap"><canvas id="chartSubject"></canvas></div>
           </div>
           <div class="chart-card">
-            <div class="chart-title">Daily study time (mins)</div>
+            <div class="chart-title">Weekly study time (mins)</div>
             <div class="chart-wrap"><canvas id="chartStudy"></canvas></div>
           </div>
           <div class="chart-card">
@@ -1187,10 +1485,10 @@
 
       <!-- MAIN GRID: Left content + Right sidebar -->
       <div class="main-grid">
-        <div style="display: grid; gap: 24px">
+        <div style="display: grid; gap: 22px">
           <div class="card">
             <div class="card-title">Recent Activity</div>
-            <div class="card-heading" style="margin-bottom: 16px">
+            <div class="card-heading" style="margin-bottom: 14px">
               What you've been up to
             </div>
             <div id="activityFeed" class="activity-feed">
@@ -1202,8 +1500,36 @@
         </div>
 
         <div class="sidebar">
+          <!-- Today's Schedule -->
           <div class="card">
-            <div class="card-title">Daily goals</div>
+            <div class="card-title">Schedule</div>
+            <div class="card-heading" style="margin-bottom: 12px">Today's classes</div>
+            <div id="scheduleList" class="schedule-list"></div>
+          </div>
+
+          <!-- Upcoming Live Class -->
+          <div class="card">
+            <div class="card-title">Live Class</div>
+            <div class="card-heading" style="margin-bottom: 10px">Upcoming</div>
+            <div class="live-card">
+              <div class="live-badge" id="liveBadge">
+                <span class="live-dot"></span>
+                <span id="liveBadgeText">Live soon</span>
+              </div>
+              <div>
+                <div class="live-title" id="liveTitle">Geometry Practice</div>
+                <div class="live-sub" id="liveInstructor">with Ms. Sharma</div>
+              </div>
+              <div style="margin-top: 8px; text-align: center;">
+                <div class="countdown" id="countdownEl" style="font-size:1.2rem;margin-bottom:8px;">00:34:00</div>
+                <button class="btn-join" id="joinClassBtn" type="button">Join Class</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Daily Goals -->
+          <div class="card">
+            <div class="card-title">Goals</div>
             <div class="card-heading">Today's checklist</div>
             <div class="goal-bar-wrap">
               <div class="goal-row">
@@ -1217,28 +1543,33 @@
             <div class="task-list" id="taskList"></div>
           </div>
 
-          <div class="live-card">
-            <div class="live-badge" id="liveBadge">
-              <span class="live-dot"></span>
-              <span id="liveBadgeText">Live soon</span>
-            </div>
-            <div>
-              <div class="live-title" id="liveTitle">Geometry Practice</div>
-              <div class="live-sub" id="liveInstructor">with Ms. Sharma</div>
-            </div>
-            <div class="countdown" id="countdownEl">00:34:00</div>
-            <button class="btn-join" id="joinClassBtn" type="button">
-              Join Class
-            </button>
-          </div>
-
+          <!-- Achievements -->
           <div class="card">
             <div class="card-title">Achievements</div>
             <div class="card-heading">Badges & milestones</div>
             <div class="achievement-list" id="achievementList"></div>
           </div>
+
+          <!-- Streak Section -->
+          <div class="card streak-card">
+            <div style="text-align:center;">
+              <div style="font-size:1.8rem;margin-bottom:6px;">🔥</div>
+              <div class="card-heading" style="margin-bottom:4px;" id="streakDays">7 Days</div>
+              <div class="card-title" style="margin-bottom:10px;">Keep it up</div>
+              <div class="goal-bar-wrap" style="margin-top:0;">
+                <div class="prog-bar" style="margin-top:12px;">
+                  <div class="prog-fill" style="width:100%;background:linear-gradient(90deg,#ec4899,#f59e0b);"></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+    </div>
+
+    <!-- QUOTE FOOTER -->
+    <div style="text-align:center;padding:20px 16px;color:var(--muted);font-size:0.8rem;font-style:italic;">
+      "The beautiful thing about learning is that no one can take it away from you." — B.B. King
     </div>
 
     <!-- TOAST -->
@@ -1626,6 +1957,63 @@
         document.getElementById("statVideos").textContent =
           d.totals.videos || 0;
         document.getElementById("statNotes").textContent = d.totals.notes || 0;
+        drawSparklines();
+      }
+
+      /* ── 10.5 SPARKLINE CHARTS ────────────────────────────── */
+      function drawSparkline(canvasId, dataPoints, color) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+        
+        ctx.clearRect(0, 0, w, h);
+        if (dataPoints.length < 2) return;
+        
+        const max = Math.max(...dataPoints, 1);
+        const min = Math.min(...dataPoints, 0);
+        const range = max - min || 1;
+        
+        // Draw area
+        ctx.beginPath();
+        ctx.moveTo(0, h);
+        dataPoints.forEach((val, i) => {
+          const x = (i / (dataPoints.length - 1)) * w;
+          const y = h - ((val - min) / range) * (h - 4);
+          ctx.lineTo(x, y);
+        });
+        ctx.lineTo(w, h);
+        ctx.fillStyle = color + '30';
+        ctx.fill();
+        
+        // Draw line
+        ctx.beginPath();
+        dataPoints.forEach((val, i) => {
+          const x = (i / (dataPoints.length - 1)) * w;
+          const y = h - ((val - min) / range) * (h - 4);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+
+      function drawSparklines() {
+        const d = getData();
+        const t = d.totals;
+        
+        // Generate sample data (normally would come from historical data)
+        const quizData = [2, 4, 6, 5, 8, 12, 15, 18, 22, 24];
+        const videoData = [3, 5, 8, 7, 10, 13, 15, 17, 18, 18];
+        const notesData = [1, 3, 5, 4, 7, 9, 11, 12, 12, 12];
+        const studyData = [15, 25, 30, 28, 40, 50, 55, 60, 70, 85];
+        
+        drawSparkline('sparkQuiz', quizData, '#6366f1');
+        drawSparkline('sparkVideo', videoData, '#22c55e');
+        drawSparkline('sparkNotes', notesData, '#f59e0b');
+        drawSparkline('sparkStudy', studyData, '#ef4444');
       }
 
       /* ── 11. ACTIVITY FEED ─────────────────────────────────── */
@@ -1697,18 +2085,22 @@
         }
 
         container.innerHTML = `
-          <div class="continue-card">
-            <div class="continue-meta">
-              <div class="continue-kicker">Continue learning</div>
-              <div class="continue-title">${item.subject}</div>
-              <div class="continue-sub">${item.title}</div>
-              <div class="continue-progress-row">
-                <div class="prog-bar"><div class="prog-fill" style="width: ${item.progress}%"></div></div>
-                <span class="continue-percent">${item.progress}%</span>
+          <div class="card">
+            <div class="continue-card">
+              <div class="continue-thumb">📚</div>
+              <div class="continue-meta">
+                <div class="continue-kicker">Continue learning</div>
+                <div class="continue-title">${item.subject}</div>
+                <div class="continue-sub">${item.title}</div>
+                <div class="continue-progress-row">
+                  <div class="prog-bar"><div class="prog-fill" style="width: ${item.progress}%"></div></div>
+                  <span class="continue-percent">${item.progress}%</span>
+                </div>
+                <div class="continue-time">Last studied ${item.minutesAgo} minutes ago</div>
+                <button class="btn-continue" type="button">Continue Learning →</button>
               </div>
-              <div class="continue-time">Last studied ${item.minutesAgo} minutes ago</div>
             </div>
-            <button class="btn-continue" type="button">Continue Learning →</button>
+          </div>
           </div>
         `;
       }
@@ -1985,6 +2377,28 @@
           .join("");
       }
 
+      /* ── 15.5 SCHEDULE ─────────────────────────────────────– */
+      function renderSchedule() {
+        const scheduleList = document.getElementById("scheduleList");
+        const schedule = [
+          { subject: "Physics", time: "10:00 AM – 11:00 AM", badge: "Live Class" },
+          { subject: "Mathematics", time: "11:15 AM – 12:15 PM", badge: "Live Class" },
+          { subject: "Chemistry", time: "02:00 PM – 03:00 PM", badge: "Quiz" },
+          { subject: "English", time: "04:00 PM – 05:00 PM", badge: "Notes" },
+        ];
+
+        scheduleList.innerHTML = schedule
+          .map(
+            (item) => `
+          <div class="schedule-item">
+            <div class="schedule-item-subject">${item.subject}</div>
+            <div class="schedule-item-time">${item.time}</div>
+            <div class="schedule-item-badge">${item.badge}</div>
+          </div>`,
+          )
+          .join("");
+      }
+
       /* ── 16. CHARTS ────────────────────────────────────────── */
       let chartSubject, chartStudy, chartActivity;
 
@@ -2193,6 +2607,7 @@
         renderActivityFeed();
         renderContinueLearning();
         renderAchievements();
+        renderSchedule();
         renderNotifications();
         if (currentSubjects.length) {
           renderSubjects(currentProfile.grade, currentProfile.stream);
@@ -2234,6 +2649,7 @@
         renderActivityFeed();
         renderContinueLearning();
         renderAchievements();
+        renderSchedule();
 
         initCharts(currentSubjects);
       });
