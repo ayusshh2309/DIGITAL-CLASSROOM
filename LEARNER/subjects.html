@@ -1,10 +1,11 @@
-<!doctype html>
+?<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>Smart Learning DC — Subjects</title>
+
 
     <!-- =========================
        GOOGLE FONTS
@@ -1047,7 +1048,8 @@
         }
       }
     </style>
-  </head>
+    <link rel="stylesheet" href="../css/layout.css" />
+</head>
 
   <body>
     <!-- =====================================================
@@ -1152,7 +1154,7 @@
       <header class="topbar">
         <button class="mobile-menu" id="mobileMenu">☰</button>
 
-        <div class="search-wrap">
+        <div class="search">
           <span> ⌕ </span>
 
           <input
@@ -1162,13 +1164,13 @@
           />
         </div>
 
-        <button class="icon-btn" aria-label="Notifications">
+        <button class="bell" aria-label="Notifications">
           ♧
 
           <b> 3 </b>
         </button>
 
-        <div class="profile-mini">
+        <div class="profile">
           <div class="avatar" id="avatar">A</div>
 
           <div>
@@ -1180,6 +1182,8 @@
           <span> ⌄ </span>
         </div>
       </header>
+
+      <div class="dashboard-scroll-area">
 
       <!-- =====================================================
        PAGE HEADER
@@ -1412,8 +1416,9 @@
           </div>
         </aside>
       </section>
+      </div>
 
-      <footer>
+      <footer class="quote">
         “The beautiful thing about learning is that no one can take it away from
         you.” — B.B. King
       </footer>

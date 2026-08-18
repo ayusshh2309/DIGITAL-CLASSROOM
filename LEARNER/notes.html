@@ -1,9 +1,10 @@
-<!doctype html>
+?<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Smart Learning DC — Notes</title>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
       * {
@@ -696,10 +697,10 @@
         }
       }
     </style>
-  </head>
+    <link rel="stylesheet" href="../css/layout.css" />
+</head>
   <body>
-    <div class="app">
-      <aside class="sidebar" id="sidebar">
+    <aside class="sidebar" id="sidebar">
         <div class="brand">
           <div class="brand-icon">▱</div>
           <span>Smart Learning DC</span>
@@ -741,6 +742,8 @@
             </div>
           </div>
         </header>
+
+      <div class="dashboard-scroll-area">
 
         <section class="heading">
           <div class="heading-icon">▤</div>
@@ -861,13 +864,13 @@
             </section>
           </aside>
         </section>
+      </div>
 
-        <footer>
+        <footer class="quote">
           “The beautiful thing about learning is that no one can take it away
           from you.” — B.B. King
         </footer>
       </main>
-    </div>
     <div class="toast" id="toast"></div>
 
     <script>

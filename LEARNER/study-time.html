@@ -1,9 +1,10 @@
-<!doctype html>
+?<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Smart Learning DC — Study Time</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
@@ -666,11 +667,11 @@
         }
       }
     </style>
-  </head>
+    <link rel="stylesheet" href="../css/layout.css" />
+</head>
   <body>
     <aside class="sidebar" id="sidebar">
-      <div class="brand">
-        <div class="brand"><i>▱</i><span>Smart Learning DC</span></div>
+      <div class="brand"><i>▱</i><span>Smart Learning DC</span></div>
       </div>
       <nav class="nav">
         <a href="dashboard.html">⌂ <span>Dashboard</span></a>
@@ -695,9 +696,9 @@
       </div>
     </aside>
 
-    <main>
+    <main class="main">
       <header class="topbar">
-        <button class="mobile" onclick="sidebar.classList.toggle('open')">
+        <button class="mobile-menu" onclick="sidebar.classList.toggle('open')">
           ☰
         </button>
         <div class="search">⌕<input placeholder="Search anything..." /></div>
@@ -709,6 +710,8 @@
           </div>
         </div>
       </header>
+
+      <div class="dashboard-scroll-area">
 
       <section class="heading">
         <div class="heading-left">
@@ -872,7 +875,8 @@
           </section>
         </aside>
       </section>
-      <footer>
+      </div>
+      <footer class="quote">
         “The beautiful thing about learning is that no one can take it away from
         you.” — B.B. King
       </footer>

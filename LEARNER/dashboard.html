@@ -1,9 +1,10 @@
-<!doctype html>
+﻿?<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
     <title>Smart Learning DC — Student Dashboard</title>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
       * {
@@ -21,15 +22,22 @@
         --green: #23c878;
         --blue: #3191ed;
         --orange: #f39a16;
+        --sidebar-width: 260px;
+        --topbar-height: 90px;
+        --footer-height: 60px;
       }
       html,
       body {
         margin: 0;
-        min-height: 100%;
+        padding: 0;
+        height: 100vh;
+        width: 100vw;
+        overflow: hidden;
         background: var(--bg);
         color: var(--text);
         font-family: Inter, Arial, sans-serif;
       }
+
       body {
         overflow-x: hidden;
       }
@@ -45,11 +53,13 @@
         left: 0;
         top: 0;
         bottom: 0;
-        width: 248px;
+        width: var(--sidebar-width);
         padding: 22px 14px;
         background: linear-gradient(180deg, #061427, #041021);
         border-right: 1px solid #172943;
         z-index: 20;
+        display: flex;
+        flex-direction: column;
       }
       .brand {
         height: 45px;
@@ -75,6 +85,9 @@
         display: flex;
         flex-direction: column;
         gap: 6px;
+        overflow-y: auto;
+        flex: 1;
+        padding-bottom: 120px;
       }
       .nav a {
         height: 51px;
@@ -161,18 +174,23 @@
         font-size: 9px;
       }
       .main {
-        margin-left: 248px;
-        min-height: 100vh;
-        padding: 0 14px 18px;
-        width: calc(100% - 248px);
+        margin-left: var(--sidebar-width);
+        width: calc(100vw - var(--sidebar-width));
+        height: 100vh;
+        display: grid;
+        grid-template-rows: var(--topbar-height) 1fr var(--footer-height);
+        padding: 0;
       }
       .topbar {
-        height: 70px;
+        height: var(--topbar-height);
         border-bottom: 1px solid #15263e;
         display: flex;
         align-items: center;
         justify-content: flex-end;
-        gap: 16px;
+        gap: 20px;
+        padding: 0 32px;
+        background: var(--bg);
+        z-index: 10;
       }
       .search {
         width: 322px;
@@ -195,7 +213,8 @@
         outline: 0;
         background: transparent;
         color: #fff;
-        font-size: 12px;
+        padding: 12px 16px 12px 42px;
+        font-size: 15px;
       }
       .search input::placeholder {
         color: #8797ae;
@@ -219,29 +238,30 @@
       .profile {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
         border-left: 1px solid #182a43;
         padding-left: 13px;
       }
       .avatar {
-        width: 39px;
-        height: 39px;
+        width: 44px;
+        height: 44px;
         border-radius: 50%;
         background: linear-gradient(135deg, #7054df, #33247c);
         display: grid;
         place-items: center;
         font-weight: 700;
+        font-size: 18px;
       }
       .profile strong,
       .profile small {
         display: block;
       }
       .profile strong {
-        font-size: 14px;
+        font-size: 16px;
       }
       .profile small {
         color: #8fa0bb;
-        font-size: 11px;
+        font-size: 13px;
         margin-top: 3px;
       }
       .profile .chevron {
@@ -760,13 +780,22 @@
         background: #15985a;
         color: #fff;
       }
+
+      .dashboard-scroll-area {
+        overflow-y: auto;
+        padding: 0 32px 32px;
+      }
       .quote {
-        text-align: center;
+        height: var(--footer-height);
+        display: flex;
+        align-items: center;
+        justify-content: center;
         color: #6f809a;
         border-top: 1px solid #142740;
-        margin-top: 12px;
-        padding: 13px;
-        font-size: 11px;
+        margin: 0;
+        padding: 0 16px;
+        font-size: 14px;
+        background: var(--bg);
       }
       .empty {
         padding: 25px;
@@ -879,6 +908,7 @@
         }
       }
     </style>
+    <link rel="stylesheet" href="../css/layout.css" />
   </head>
   <body>
     <aside class="sidebar" id="sidebar">
@@ -919,176 +949,181 @@
     </aside>
 
     <main class="main">
+      <!-- 1. FIXED TOPBAR HEADER -->
       <header class="topbar">
         <button class="mobile-menu" id="menu">☰</button>
         <div class="search">
-          <span>⌕</span
-          ><input id="search" type="search" placeholder="Search anything..." />
+          <span>⌕</span>
+          <input id="search" type="search" placeholder="Search anything..." />
         </div>
         <button class="bell">♧<b>3</b></button>
         <div class="profile">
           <div class="avatar" id="avatar">A</div>
           <div>
-            <strong id="studentName">Student</strong
-            ><small id="studentClass">Class —</small>
+            <strong id="studentName">Student</strong>
+            <small id="studentClass">Class —</small>
           </div>
           <span class="chevron">⌄</span>
         </div>
       </header>
 
-      <section class="greeting">
-        <h1>Good morning, <span id="greetingName">Student</span>! 👋</h1>
-        <p>Let's continue your learning journey today.</p>
-      </section>
+      <!-- 2. SCROLLABLE INNER BODY CONTENT -->
+      <div class="dashboard-scroll-area">
+        <section class="greeting">
+          <h1>Good morning, <span id="greetingName">Student</span>! 👋</h1>
+          <p>Let's continue your learning journey today.</p>
+        </section>
 
-      <section class="grid-stats">
-        <article class="stat">
-          <div class="stat-icon purple">▣</div>
-          <div>
-            <strong id="quizCount">0</strong><span>Quizzes Taken</span
-            ><small id="quizChange">Loading...</small>
-          </div>
-        </article>
-        <article class="stat">
-          <div class="stat-icon green">▷</div>
-          <div>
-            <strong id="videoCount">0</strong><span>Videos Watched</span
-            ><small id="videoChange">From your learning activity</small>
-          </div>
-        </article>
-        <article class="stat">
-          <div class="stat-icon orange">▤</div>
-          <div>
-            <strong id="noteCount">0</strong><span>Notes Read</span
-            ><small id="noteChange">From your saved activity</small>
-          </div>
-        </article>
-        <article class="stat">
-          <div class="stat-icon blue">◷</div>
-          <div>
-            <strong id="studyTime">0h 00m</strong><span>Study Time</span
-            ><small>This week</small>
-          </div>
-        </article>
-      </section>
-
-      <section class="content">
-        <div>
-          <article class="panel continue">
-            <div class="panel-head">
-              <h2>Continue Learning</h2>
-              <a href="videos.html">View all</a>
+        <section class="grid-stats">
+          <article class="stat">
+            <div class="stat-icon purple">▣</div>
+            <div>
+              <strong id="quizCount">0</strong><span>Quizzes Taken</span>
+              <small id="quizChange">Loading...</small>
             </div>
-            <div class="continue-body" id="continueLearning">
-              <div class="video-thumb"><div class="play">▶</div></div>
-              <div>
-                <div class="course-subject">Loading...</div>
-                <div class="course-title">
-                  Loading your latest learning material...
-                </div>
+          </article>
+          <article class="stat">
+            <div class="stat-icon green">▷</div>
+            <div>
+              <strong id="videoCount">0</strong><span>Videos Watched</span>
+              <small id="videoChange">From your learning activity</small>
+            </div>
+          </article>
+          <article class="stat">
+            <div class="stat-icon orange">▤</div>
+            <div>
+              <strong id="noteCount">0</strong><span>Notes Read</span>
+              <small id="noteChange">From your saved activity</small>
+            </div>
+          </article>
+          <article class="stat">
+            <div class="stat-icon blue">◷</div>
+            <div>
+              <strong id="studyTime">0h 00m</strong><span>Study Time</span>
+              <small>This week</small>
+            </div>
+          </article>
+        </section>
+
+        <section class="content">
+          <div>
+            <article class="panel continue">
+              <div class="panel-head">
+                <h2>Continue Learning</h2>
+                <a href="videos.html">View all</a>
+              </div>
+              <div class="continue-body" id="continueLearning">
+                <div class="video-thumb"><div class="play">▶</div></div>
                 <div>
-                  <span class="progress-line"><i style="width: 0"></i></span
-                  ><span class="progress-percent">0%</span>
+                  <div class="course-subject">Loading...</div>
+                  <div class="course-title">
+                    Loading your latest learning material...
+                  </div>
+                  <div>
+                    <span class="progress-line"><i style="width: 0"></i></span>
+                    <span class="progress-percent">0%</span>
+                  </div>
+                  <div class="last-studied">Loading...</div>
                 </div>
-                <div class="last-studied">Loading...</div>
+                <button class="primary" onclick="location.href = 'videos.html'">
+                  Continue Learning →
+                </button>
               </div>
-              <button class="primary" onclick="location.href = 'videos.html'">
-                Continue Learning →
-              </button>
-            </div>
-          </article>
+            </article>
 
-          <article class="panel subjects">
-            <div class="panel-head">
-              <h2>Your Subjects</h2>
-              <a href="subjects.html">View all</a>
-            </div>
-            <div class="subject-grid" id="subjects">
-              <div class="empty">Loading subjects...</div>
-            </div>
-          </article>
-
-          <article class="panel performance">
-            <div class="panel-head">
-              <h2>Performance Insights</h2>
-              <a href="study-time.html">View full analytics</a>
-            </div>
-            <div class="performance-grid">
-              <div class="chart">
-                <h4>Subject Performance</h4>
-                <div class="bars" id="bars"></div>
+            <article class="panel subjects">
+              <div class="panel-head">
+                <h2>Your Subjects</h2>
+                <a href="subjects.html">View all</a>
               </div>
-              <div class="chart">
-                <h4>Weekly Study Time</h4>
-                <div class="linechart">
-                  <svg
-                    class="line-svg"
-                    viewBox="0 0 300 130"
-                    preserveAspectRatio="none"
-                  >
-                    <polyline
-                      id="studyLine"
-                      fill="none"
-                      stroke="#7651ff"
-                      stroke-width="3"
-                      points="0,105 45,80 90,98 135,65 180,77 225,45 270,70 300,48"
-                    />
-                  </svg>
+              <div class="subject-grid" id="subjects">
+                <div class="empty">Loading subjects...</div>
+              </div>
+            </article>
+
+            <article class="panel performance">
+              <div class="panel-head">
+                <h2>Performance Insights</h2>
+                <a href="study-time.html">View full analytics</a>
+              </div>
+              <div class="performance-grid">
+                <div class="chart">
+                  <h4>Subject Performance</h4>
+                  <div class="bars" id="bars"></div>
                 </div>
-              </div>
-              <div class="chart">
-                <h4>Activity Breakdown</h4>
-                <div class="donut-wrap">
-                  <div class="donut"></div>
-                  <div class="legend">
-                    <div><b style="background: #7651ff"></b>Videos 35%</div>
-                    <div><b style="background: #23c878"></b>Notes 25%</div>
-                    <div><b style="background: #f39a16"></b>Quizzes 20%</div>
-                    <div>
-                      <b style="background: #3191ed"></b>Live Classes 10%
+                <div class="chart">
+                  <h4>Weekly Study Time</h4>
+                  <div class="linechart">
+                    <svg
+                      class="line-svg"
+                      viewBox="0 0 300 130"
+                      preserveAspectRatio="none"
+                    >
+                      <polyline
+                        id="studyLine"
+                        fill="none"
+                        stroke="#7651ff"
+                        stroke-width="3"
+                        points="0,105 45,80 90,98 135,65 180,77 225,45 270,70 300,48"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <div class="chart">
+                  <h4>Activity Breakdown</h4>
+                  <div class="donut-wrap">
+                    <div class="donut"></div>
+                    <div class="legend">
+                      <div><b style="background: #7651ff"></b>Videos 35%</div>
+                      <div><b style="background: #23c878"></b>Notes 25%</div>
+                      <div><b style="background: #f39a16"></b>Quizzes 20%</div>
+                      <div>
+                        <b style="background: #3191ed"></b>Live Classes 10%
+                      </div>
+                      <div><b style="background: #43536a"></b>Others 10%</div>
                     </div>
-                    <div><b style="background: #43536a"></b>Others 10%</div>
                   </div>
                 </div>
               </div>
-            </div>
-          </article>
-        </div>
+            </article>
+          </div>
 
-        <aside class="right">
-          <article class="panel schedule">
-            <div class="panel-head">
-              <h3>Today's Schedule</h3>
-              <a href="calendar.html">View full schedule</a>
-            </div>
-            <div class="schedule-list" id="scheduleList">
-              <div class="empty">Loading schedule...</div>
-            </div>
-          </article>
+          <aside class="right">
+            <article class="panel schedule">
+              <div class="panel-head">
+                <h3>Today's Schedule</h3>
+                <a href="calendar.html">View full schedule</a>
+              </div>
+              <div class="schedule-list" id="scheduleList">
+                <div class="empty">Loading schedule...</div>
+              </div>
+            </article>
 
-          <article class="panel live-card">
-            <div class="panel-head">
-              <h3>Upcoming Live Class</h3>
-              <a href="live-classes.html">View all</a>
-            </div>
-            <div class="live-box" id="liveBox">
-              <span class="live-label">UPCOMING</span>
-              <h4>Loading...</h4>
-              <p>Checking your scheduled classes...</p>
-            </div>
-          </article>
+            <article class="panel live-card">
+              <div class="panel-head">
+                <h3>Upcoming Live Class</h3>
+                <a href="live-classes.html">View all</a>
+              </div>
+              <div class="live-box" id="liveBox">
+                <span class="live-label">UPCOMING</span>
+                <h4>Loading...</h4>
+                <p>Checking your scheduled classes...</p>
+              </div>
+            </article>
 
-          <article class="panel goals">
-            <div class="goal-head">
-              <h3>Today's Goals</h3>
-              <span id="goalStatus">0/4 Completed</span>
-            </div>
-            <div class="goalbar"><i id="goalBar" style="width: 0"></i></div>
-            <div class="goal-list" id="goalList"></div>
-          </article>
-        </aside>
-      </section>
+            <article class="panel goals">
+              <div class="goal-head">
+                <h3>Today's Goals</h3>
+                <span id="goalStatus">0/4 Completed</span>
+              </div>
+              <div class="goalbar"><i id="goalBar" style="width: 0"></i></div>
+              <div class="goal-list" id="goalList"></div>
+            </article>
+          </aside>
+        </section>
+      </div>
 
+      <!-- 3. FIXED FOOTER -->
       <footer class="quote">
         “The beautiful thing about learning is that no one can take it away from
         you.” — B.B. King
