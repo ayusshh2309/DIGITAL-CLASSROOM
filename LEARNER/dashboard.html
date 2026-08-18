@@ -1,4 +1,4 @@
-﻿?<!doctype html>
+﻿<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -6,6 +6,7 @@
     <title>Smart Learning DC — Student Dashboard</title>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
       * {
         box-sizing: border-box;
@@ -22,8 +23,8 @@
         --green: #23c878;
         --blue: #3191ed;
         --orange: #f39a16;
-        --sidebar-width: 260px;
-        --topbar-height: 90px;
+        --sidebar-width: 224px;
+        --topbar-height: 68px;
         --footer-height: 60px;
       }
       html,
@@ -35,7 +36,11 @@
         overflow: hidden;
         background: var(--bg);
         color: var(--text);
-        font-family: Inter, Arial, sans-serif;
+        font-family: Inter, "Segoe UI", sans-serif;
+      }
+      #app,
+      body > * {
+        box-sizing: border-box;
       }
 
       body {
@@ -54,51 +59,62 @@
         top: 0;
         bottom: 0;
         width: var(--sidebar-width);
-        padding: 22px 14px;
-        background: linear-gradient(180deg, #061427, #041021);
+        height: 100vh;
+        padding: 20px 16px;
+        background: linear-gradient(180deg, #071528, #030c1a);
         border-right: 1px solid #172943;
         z-index: 20;
         display: flex;
         flex-direction: column;
       }
       .brand {
-        height: 45px;
+        height: 40px;
         display: flex;
         align-items: center;
-        gap: 11px;
-        padding: 0 9px;
+        gap: 10px;
+        padding: 0 2px;
         font-weight: 700;
-        font-size: 17px;
+        font-size: 14.5px;
         white-space: nowrap;
+        flex: 0 0 auto;
       }
       .brand-icon {
-        width: 31px;
-        height: 31px;
+        width: 32px;
+        height: 32px;
         border-radius: 9px;
         background: linear-gradient(135deg, #7357ff, #4933d5);
         display: grid;
         place-items: center;
-        font-size: 20px;
+        font-size: 16px;
+        box-shadow: 0 6px 16px #4933d555;
+      }
+      .brand-icon svg {
+        width: 18px;
+        height: 18px;
       }
       .nav {
-        margin-top: 18px;
+        margin-top: 22px;
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 4px;
         overflow-y: auto;
         flex: 1;
-        padding-bottom: 120px;
+        padding-bottom: 210px;
+        scrollbar-width: none;
+      }
+      .nav::-webkit-scrollbar {
+        display: none;
       }
       .nav a {
-        height: 51px;
+        height: 48px;
         display: flex;
         align-items: center;
-        gap: 14px;
-        padding: 0 14px;
+        gap: 13px;
+        padding: 0 13px;
         border-radius: 11px;
-        color: #b6c2d5;
+        color: #aebbd2;
         text-decoration: none;
-        font-size: 14px;
+        font-size: 13.5px;
         font-weight: 500;
         border: 1px solid transparent;
         transition: 0.2s ease;
@@ -116,15 +132,21 @@
         border-color: #765cf0;
       }
       .nav .icon {
-        width: 22px;
+        width: 20px;
         text-align: center;
-        font-size: 20px;
-        flex: 0 0 22px;
+        font-size: 17px;
+        flex: 0 0 20px;
+      }
+      .nav .icon svg {
+        width: 18px;
+        height: 18px;
+        stroke-width: 1.8;
+        vertical-align: middle;
       }
       .divider {
         height: 1px;
         background: #172943;
-        margin: 14px 9px;
+        margin: 16px 10px;
       }
       .logout {
         color: #ff5d68 !important;
@@ -133,36 +155,38 @@
         position: absolute;
         left: 16px;
         right: 16px;
-        bottom: 18px;
-        padding: 18px 16px;
+        bottom: 16px;
+        padding: 16px;
         background: linear-gradient(145deg, #101e38, #0b172b);
         border: 1px solid #1c304e;
-        border-radius: 12px;
+        border-radius: 14px;
       }
       .streak h4 {
         margin: 0 0 10px;
-        font-size: 13px;
+        font-size: 13.5px;
       }
       .streak .days {
-        font-size: 25px;
+        font-size: 20px;
         font-weight: 700;
         margin-bottom: 9px;
       }
       .streak p {
         font-size: 11px;
         color: #8292ad;
-        margin: 0 0 13px;
+        margin: 0 0 14px;
       }
       .dots {
         display: flex;
-        gap: 9px;
-        margin-bottom: 5px;
+        justify-content: space-between;
+        margin-bottom: 6px;
       }
       .dot {
-        width: 10px;
-        height: 10px;
+        width: 20px;
+        height: 20px;
+        flex: 0 0 20px;
         border-radius: 50%;
         background: #1b3448;
+        display: block;
       }
       .dot.on {
         background: #20bb6c;
@@ -173,13 +197,22 @@
         color: #74859f;
         font-size: 9px;
       }
+      .daylabels span {
+        width: 20px;
+        flex: 0 0 20px;
+        text-align: center;
+      }
       .main {
         margin-left: var(--sidebar-width);
         width: calc(100vw - var(--sidebar-width));
         height: 100vh;
         display: grid;
-        grid-template-rows: var(--topbar-height) 1fr var(--footer-height);
+        grid-template-rows: var(--topbar-height) minmax(0, 1fr) var(
+            --footer-height
+          );
+        grid-template-columns: 100%;
         padding: 0;
+        overflow: hidden;
       }
       .topbar {
         height: var(--topbar-height);
@@ -188,23 +221,24 @@
         align-items: center;
         justify-content: flex-end;
         gap: 20px;
-        padding: 0 32px;
+        padding: 0 28px;
         background: var(--bg);
         z-index: 10;
+        flex: 0 0 auto;
       }
       .search {
-        width: 322px;
-        height: 43px;
+        width: 242px;
+        height: 32px;
         border: 1px solid #203450;
         background: #0b1a30;
-        border-radius: 11px;
+        border-radius: 8px;
         display: flex;
         align-items: center;
         padding: 0 14px;
         gap: 10px;
       }
       .search span {
-        font-size: 23px;
+        font-size: 18px;
         color: #bdc8da;
       }
       .search input {
@@ -213,8 +247,8 @@
         outline: 0;
         background: transparent;
         color: #fff;
-        padding: 12px 16px 12px 42px;
-        font-size: 15px;
+        padding: 8px;
+        font-size: 10px;
       }
       .search input::placeholder {
         color: #8797ae;
@@ -224,7 +258,7 @@
         border: 0;
         background: transparent;
         color: #eef3ff;
-        font-size: 23px;
+        font-size: 19px;
       }
       .bell b {
         position: absolute;
@@ -243,25 +277,29 @@
         padding-left: 13px;
       }
       .avatar {
-        width: 44px;
-        height: 44px;
+        width: 38px;
+        height: 38px;
         border-radius: 50%;
         background: linear-gradient(135deg, #7054df, #33247c);
+        background-size: cover;
+        background-position: center;
         display: grid;
         place-items: center;
         font-weight: 700;
-        font-size: 18px;
+        font-size: 14px;
+        border: 2px solid #24365a;
+        flex: 0 0 auto;
       }
       .profile strong,
       .profile small {
         display: block;
       }
       .profile strong {
-        font-size: 16px;
+        font-size: 11px;
       }
       .profile small {
         color: #8fa0bb;
-        font-size: 13px;
+        font-size: 10px;
         margin-top: 3px;
       }
       .profile .chevron {
@@ -296,6 +334,17 @@
         gap: 12px;
         align-items: center;
         overflow: hidden;
+      }
+      .stat-graph {
+        margin-left: auto;
+        flex: 0 0 56px;
+        width: 56px;
+        height: 30px;
+      }
+      .stat-graph svg {
+        width: 100%;
+        height: 100%;
+        overflow: visible;
       }
       .stat-icon {
         width: 43px;
@@ -340,8 +389,16 @@
       .content {
         display: grid;
         grid-template-columns: minmax(0, 1fr) 340px;
+        align-items: stretch;
         gap: 14px;
         width: 100%;
+      }
+      .content > div {
+        display: flex;
+        flex-direction: column;
+      }
+      .content > div .performance {
+        flex: 1;
       }
       .panel {
         background: #0a192f;
@@ -533,26 +590,37 @@
       }
       .performance {
         padding: 16px 17px;
+        display: flex;
+        flex-direction: column;
       }
       .performance-grid {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
         gap: 10px;
         margin-top: 12px;
+        flex: 1;
       }
       .chart {
-        height: 190px;
+        height: 100%;
+        min-height: 190px;
         border: 1px solid #1b314d;
         border-radius: 10px;
         padding: 13px;
         background: #0b1a30;
+        display: flex;
+        flex-direction: column;
+      }
+      .chart .bars,
+      .chart .linechart,
+      .chart .donut-wrap {
+        flex: 1;
       }
       .chart h4 {
         font-size: 11px;
         margin: 0 0 15px;
       }
       .bars {
-        height: 130px;
+        min-height: 130px;
         display: flex;
         align-items: end;
         gap: 12px;
@@ -583,7 +651,8 @@
         margin-bottom: 4px;
       }
       .linechart {
-        height: 130px;
+        min-height: 130px;
+        height: 100%;
         position: relative;
         border-bottom: 1px solid #263851;
         background: repeating-linear-gradient(
@@ -601,7 +670,8 @@
         display: flex;
         align-items: center;
         gap: 15px;
-        height: 135px;
+        min-height: 135px;
+        height: 100%;
       }
       .donut {
         width: 105px;
@@ -639,6 +709,11 @@
         display: flex;
         flex-direction: column;
         gap: 12px;
+      }
+      .right > *:last-child {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
       }
       .schedule {
         padding: 16px;
@@ -768,6 +843,8 @@
       .goal {
         font-size: 9px;
         color: #9aabc0;
+        display: flex;
+        align-items: center;
       }
       .goal:before {
         content: "✓";
@@ -779,23 +856,52 @@
         border-radius: 50%;
         background: #15985a;
         color: #fff;
+        flex: 0 0 15px;
+      }
+      .goal.pending {
+        color: #5f7290;
+      }
+      .goal.pending:before {
+        content: "";
+        background: transparent;
+        border: 1.5px solid #2c4467;
       }
 
       .dashboard-scroll-area {
         overflow-y: auto;
-        padding: 0 32px 32px;
+        overflow-x: hidden;
+        height: 100%;
+        min-height: 0;
+        padding: 0 28px 28px;
+        display: flex;
+        flex-direction: column;
+      }
+      .dashboard-scroll-area .greeting {
+        flex: 0 0 auto;
+      }
+      .dashboard-scroll-area .grid-stats {
+        flex: 0 0 auto;
+      }
+      .dashboard-scroll-area .content {
+        flex: 1;
+      }
+      .right {
+        height: 100%;
       }
       .quote {
         height: var(--footer-height);
+        flex: 0 0 auto;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #6f809a;
-        border-top: 1px solid #142740;
+        color: #8496b3;
+        border-top: 1px solid #17293f;
         margin: 0;
-        padding: 0 16px;
-        font-size: 14px;
-        background: var(--bg);
+        padding: 0 20px;
+        font-size: 14.5px;
+        font-style: italic;
+        letter-spacing: 0.2px;
+        background: #071527;
       }
       .empty {
         padding: 25px;
@@ -908,32 +1014,57 @@
         }
       }
     </style>
-    <link rel="stylesheet" href="../css/layout.css" />
   </head>
   <body>
     <aside class="sidebar" id="sidebar">
       <div class="brand">
-        <div class="brand-icon">▱</div>
+        <div class="brand-icon"><i data-lucide="layers"></i></div>
         Smart Learning DC
       </div>
       <nav class="nav">
         <a class="active" href="dashboard.html"
-          ><span class="icon">⌂</span>Dashboard</a
+          ><span class="icon"><i data-lucide="layout-dashboard"></i></span
+          >Dashboard</a
         >
-        <a href="subjects.html"><span class="icon">▣</span>Subjects</a>
-        <a href="live-classes.html"><span class="icon">▷</span>Live Classes</a>
-        <a href="quizzes.html"><span class="icon">◎</span>Quizzes</a>
-        <a href="notes.html"><span class="icon">▤</span>Notes</a>
-        <a href="videos.html"><span class="icon">▷</span>Videos</a>
-        <a href="study-time.html"><span class="icon">◷</span>Study Time</a>
-        <a href="downloads.html"><span class="icon">⇩</span>Downloads</a>
-        <a href="calendar.html"><span class="icon">▣</span>Calendar</a>
+        <a href="subjects.html"
+          ><span class="icon"><i data-lucide="book-open"></i></span>Subjects</a
+        >
+        <a href="live-classes.html"
+          ><span class="icon"><i data-lucide="video"></i></span>Live Classes</a
+        >
+        <a href="quizzes.html"
+          ><span class="icon"><i data-lucide="target"></i></span>Quizzes</a
+        >
+        <a href="notes.html"
+          ><span class="icon"><i data-lucide="notebook-tabs"></i></span>Notes</a
+        >
+        <a href="videos.html"
+          ><span class="icon"><i data-lucide="play-square"></i></span>Videos</a
+        >
+        <a href="study-time.html"
+          ><span class="icon"><i data-lucide="clock-3"></i></span>Study Time</a
+        >
+        <a href="downloads.html"
+          ><span class="icon"><i data-lucide="download"></i></span>Downloads</a
+        >
+        <a href="calendar.html"
+          ><span class="icon"><i data-lucide="calendar-days"></i></span
+          >Calendar</a
+        >
         <div class="divider"></div>
-        <a href="profile.html"><span class="icon">♙</span>My Profile</a>
-        <a href="settings.html"><span class="icon">⚙</span>Settings</a>
-        <a href="#"><span class="icon">?</span>Help & Support</a>
+        <a href="profile.html"
+          ><span class="icon"><i data-lucide="user-round"></i></span>My
+          Profile</a
+        >
+        <a href="settings.html"
+          ><span class="icon"><i data-lucide="settings"></i></span>Settings</a
+        >
+        <a href="#"
+          ><span class="icon"><i data-lucide="circle-help"></i></span>Help &
+          Support</a
+        >
         <a class="logout" href="#" id="logout"
-          ><span class="icon">↪</span>Log out</a
+          ><span class="icon"><i data-lucide="log-out"></i></span>Log out</a
         >
       </nav>
       <div class="streak">
@@ -951,19 +1082,23 @@
     <main class="main">
       <!-- 1. FIXED TOPBAR HEADER -->
       <header class="topbar">
-        <button class="mobile-menu" id="menu">☰</button>
+        <button class="mobile-menu" id="menu" aria-label="Open navigation">
+          <i data-lucide="menu"></i>
+        </button>
         <div class="search">
-          <span>⌕</span>
+          <span><i data-lucide="search"></i></span>
           <input id="search" type="search" placeholder="Search anything..." />
         </div>
-        <button class="bell">♧<b>3</b></button>
+        <button class="bell" aria-label="Notifications">
+          <i data-lucide="bell"></i><b>3</b>
+        </button>
         <div class="profile">
           <div class="avatar" id="avatar">A</div>
           <div>
             <strong id="studentName">Student</strong>
             <small id="studentClass">Class —</small>
           </div>
-          <span class="chevron">⌄</span>
+          <span class="chevron"><i data-lucide="chevron-down"></i></span>
         </div>
       </header>
 
@@ -976,31 +1111,81 @@
 
         <section class="grid-stats">
           <article class="stat">
-            <div class="stat-icon purple">▣</div>
+            <div class="stat-icon purple">
+              <i data-lucide="clipboard-check"></i>
+            </div>
             <div>
               <strong id="quizCount">0</strong><span>Quizzes Taken</span>
               <small id="quizChange">Loading...</small>
             </div>
+            <div class="stat-graph">
+              <svg viewBox="0 0 56 30" preserveAspectRatio="none">
+                <polyline
+                  points="0,24 9,20 18,22 27,13 36,16 45,7 56,10"
+                  fill="none"
+                  stroke="#a98cff"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
           </article>
           <article class="stat">
-            <div class="stat-icon green">▷</div>
+            <div class="stat-icon green"><i data-lucide="circle-play"></i></div>
             <div>
               <strong id="videoCount">0</strong><span>Videos Watched</span>
               <small id="videoChange">From your learning activity</small>
             </div>
+            <div class="stat-graph">
+              <svg viewBox="0 0 56 30" preserveAspectRatio="none">
+                <polyline
+                  points="0,22 9,23 18,15 27,18 36,10 45,13 56,6"
+                  fill="none"
+                  stroke="#48e094"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
           </article>
           <article class="stat">
-            <div class="stat-icon orange">▤</div>
+            <div class="stat-icon orange"><i data-lucide="file-text"></i></div>
             <div>
               <strong id="noteCount">0</strong><span>Notes Read</span>
               <small id="noteChange">From your saved activity</small>
             </div>
+            <div class="stat-graph">
+              <svg viewBox="0 0 56 30" preserveAspectRatio="none">
+                <polyline
+                  points="0,12 9,18 18,9 27,20 36,14 45,17 56,8"
+                  fill="none"
+                  stroke="#ffb34d"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
           </article>
           <article class="stat">
-            <div class="stat-icon blue">◷</div>
+            <div class="stat-icon blue"><i data-lucide="clock-3"></i></div>
             <div>
               <strong id="studyTime">0h 00m</strong><span>Study Time</span>
               <small>This week</small>
+            </div>
+            <div class="stat-graph">
+              <svg viewBox="0 0 56 30" preserveAspectRatio="none">
+                <polyline
+                  points="0,20 9,15 18,17 27,9 36,12 45,4 56,9"
+                  fill="none"
+                  stroke="#5fb7ff"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
             </div>
           </article>
         </section>
@@ -1118,6 +1303,17 @@
               </div>
               <div class="goalbar"><i id="goalBar" style="width: 0"></i></div>
               <div class="goal-list" id="goalList"></div>
+              <div
+                id="goalCelebrate"
+                style="
+                  display: none;
+                  margin-top: 12px;
+                  font-size: 10.5px;
+                  color: #ffc857;
+                "
+              >
+                🌟 Great job! All goals completed! 🎉
+              </div>
             </article>
           </aside>
         </section>
@@ -1125,8 +1321,8 @@
 
       <!-- 3. FIXED FOOTER -->
       <footer class="quote">
-        “The beautiful thing about learning is that no one can take it away from
-        you.” — B.B. King
+        "The beautiful thing about learning is that no one can take it away from
+        you." — B.B. King
       </footer>
     </main>
     <div class="toast" id="toast"></div>
@@ -1144,6 +1340,8 @@
         !SUPABASE_ANON_KEY.startsWith("YOUR_")
           ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
           : null;
+
+      if (window.lucide) window.lucide.createIcons();
 
       /*
   Expected data sources. The dashboard is intentionally tolerant:
@@ -1274,7 +1472,16 @@
         const stream = learner.stream ? ` • ${learner.stream}` : "";
         $("studentName").textContent = name;
         $("greetingName").textContent = titleName(name);
-        $("avatar").textContent = titleName(name).charAt(0).toUpperCase();
+        const avatarUrl =
+          learner.avatar_url || currentUser?.user_metadata?.avatar_url || "";
+        const avatarEl = $("avatar");
+        if (avatarUrl) {
+          avatarEl.style.backgroundImage = `url('${avatarUrl}')`;
+          avatarEl.textContent = "";
+        } else {
+          avatarEl.style.backgroundImage = "";
+          avatarEl.textContent = titleName(name).charAt(0).toUpperCase();
+        }
         $("studentClass").textContent = `Grade ${grade}${stream}`;
       }
 
@@ -1565,8 +1772,12 @@
         $("goalStatus").textContent = `${done}/4 Completed`;
         $("goalBar").style.width = `${done * 25}%`;
         $("goalList").innerHTML = goals
-          .map((g) => `<div class="goal">${esc(g.label)}</div>`)
+          .map(
+            (g) =>
+              `<div class="goal${g.done ? "" : " pending"}">${esc(g.label)}</div>`,
+          )
           .join("");
+        $("goalCelebrate").style.display = done === goals.length ? "" : "none";
       }
 
       function renderStreak(study) {

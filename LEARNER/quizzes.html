@@ -801,7 +801,7 @@
       }
     </style>
     <link rel="stylesheet" href="../css/layout.css" />
-</head>
+  </head>
   <body>
     <aside class="sidebar" id="sidebar">
       <div class="brand">
@@ -848,136 +848,136 @@
       </header>
 
       <div class="dashboard-scroll-area">
-      <section class="page-heading">
-        <div class="heading-icon">◎</div>
-        <div>
-          <p class="eyebrow">TEST YOUR KNOWLEDGE</p>
-          <h1>Quizzes</h1>
-          <p>
-            Practice, test your understanding, and improve your performance.
-          </p>
-          <span class="context-pill" id="gradeStreamPill">Loading...</span>
-        </div>
-      </section>
-      <section class="stats-grid">
-        <article class="stat-card">
-          <div class="stat-icon purple">◎</div>
+        <section class="page-heading">
+          <div class="heading-icon">◎</div>
           <div>
-            <strong id="quizzesTaken">0</strong><span>Quizzes Taken</span
-            ><small>Your attempts</small>
+            <p class="eyebrow">TEST YOUR KNOWLEDGE</p>
+            <h1>Quizzes</h1>
+            <p>
+              Practice, test your understanding, and improve your performance.
+            </p>
+            <span class="context-pill" id="gradeStreamPill">Loading...</span>
           </div>
-        </article>
-        <article class="stat-card">
-          <div class="stat-icon blue">▤</div>
-          <div>
-            <strong id="availableCount">0</strong><span>Available</span
-            ><small>Ready to attempt</small>
-          </div>
-        </article>
-        <article class="stat-card">
-          <div class="stat-icon green">↗</div>
-          <div>
-            <strong id="averageScore">0%</strong><span>Average Score</span
-            ><small>Across your attempts</small>
-          </div>
-        </article>
-        <article class="stat-card">
-          <div class="stat-icon orange">◷</div>
-          <div>
-            <strong id="pendingCount">0</strong><span>Pending</span
-            ><small>Not attempted</small>
-          </div>
-        </article>
-      </section>
-      <section class="content-layout">
-        <div class="main-column">
-          <section class="filter-panel panel">
-            <div class="tabs">
-              <button class="tab active" data-status="all">All Quizzes</button
-              ><button class="tab" data-status="available">Available</button
-              ><button class="tab" data-status="completed">Completed</button>
-            </div>
-            <div class="filters">
-              <select id="subjectFilter">
-                <option value="all">All Subjects</option></select
-              ><select id="difficultyFilter">
-                <option value="all">All Levels</option>
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
-              </select>
-            </div>
-          </section>
-          <section class="quiz-section">
-            <div class="section-heading">
-              <div>
-                <p class="eyebrow">YOUR PRACTICE</p>
-                <h2>Available Quizzes</h2>
-              </div>
-              <span id="quizCount">0 quizzes</span>
-            </div>
-            <div id="quizGrid" class="quiz-grid"></div>
-            <div id="emptyState" class="empty-state hidden">
-              <div class="empty-icon">◎</div>
-              <h3>No quizzes found</h3>
-              <p>
-                New quizzes published by your teachers will appear here
-                automatically.
-              </p>
-            </div>
-          </section>
-          <section class="no-more panel" id="noMore">
-            <span>▤</span>
+        </section>
+        <section class="stats-grid">
+          <article class="stat-card">
+            <div class="stat-icon purple">◎</div>
             <div>
-              <strong>No more quizzes to show</strong>
-              <p>
-                New quizzes will appear here when published by your teachers.
-              </p>
+              <strong id="quizzesTaken">0</strong><span>Quizzes Taken</span
+              ><small>Your attempts</small>
             </div>
-          </section>
-        </div>
-        <aside class="right-column">
-          <section class="panel quick-actions">
-            <p class="eyebrow">QUICK ACTIONS</p>
-            <h2>Explore faster</h2>
-            <button class="quick-item" id="allQuizzesAction">
-              <span class="quick-icon purple-bg">◎</span>
-              <div>
-                <strong>All Quizzes</strong
-                ><small>Explore available tests</small>
-              </div>
-              <b>›</b></button
-            ><button class="quick-item" id="resultsAction">
-              <span class="quick-icon green-bg">✓</span>
-              <div>
-                <strong>My Results</strong><small>Review your attempts</small>
-              </div>
-              <b>›</b></button
-            ><button class="quick-item" id="subjectsAction">
-              <span class="quick-icon orange-bg">▤</span>
-              <div>
-                <strong>Browse Subjects</strong
-                ><small>Practice by subject</small>
-              </div>
-              <b>›</b>
-            </button>
-          </section>
-          <section class="panel performance">
-            <h2>Your Performance</h2>
-            <div class="donut" id="performanceDonut">
-              <span id="donutScore">0%</span>
+          </article>
+          <article class="stat-card">
+            <div class="stat-icon blue">▤</div>
+            <div>
+              <strong id="availableCount">0</strong><span>Available</span
+              ><small>Ready to attempt</small>
             </div>
-            <p>Average score from<br />your completed quizzes.</p>
-          </section>
-          <section class="panel recent">
-            <h2>Recent Attempts</h2>
-            <div id="recentAttempts"></div>
-            <button class="results-link" id="viewResults">
-              View All Results →
-            </button>
-          </section>
-        </aside>
-      </section>
+          </article>
+          <article class="stat-card">
+            <div class="stat-icon green">↗</div>
+            <div>
+              <strong id="averageScore">0%</strong><span>Average Score</span
+              ><small>Across your attempts</small>
+            </div>
+          </article>
+          <article class="stat-card">
+            <div class="stat-icon orange">◷</div>
+            <div>
+              <strong id="pendingCount">0</strong><span>Pending</span
+              ><small>Not attempted</small>
+            </div>
+          </article>
+        </section>
+        <section class="content-layout">
+          <div class="main-column">
+            <section class="filter-panel panel">
+              <div class="tabs">
+                <button class="tab active" data-status="all">All Quizzes</button
+                ><button class="tab" data-status="available">Available</button
+                ><button class="tab" data-status="completed">Completed</button>
+              </div>
+              <div class="filters">
+                <select id="subjectFilter">
+                  <option value="all">All Subjects</option></select
+                ><select id="difficultyFilter">
+                  <option value="all">All Levels</option>
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+            </section>
+            <section class="quiz-section">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">YOUR PRACTICE</p>
+                  <h2>Available Quizzes</h2>
+                </div>
+                <span id="quizCount">0 quizzes</span>
+              </div>
+              <div id="quizGrid" class="quiz-grid"></div>
+              <div id="emptyState" class="empty-state hidden">
+                <div class="empty-icon">◎</div>
+                <h3>No quizzes found</h3>
+                <p>
+                  New quizzes published by your teachers will appear here
+                  automatically.
+                </p>
+              </div>
+            </section>
+            <section class="no-more panel" id="noMore">
+              <span>▤</span>
+              <div>
+                <strong>No more quizzes to show</strong>
+                <p>
+                  New quizzes will appear here when published by your teachers.
+                </p>
+              </div>
+            </section>
+          </div>
+          <aside class="right-column">
+            <section class="panel quick-actions">
+              <p class="eyebrow">QUICK ACTIONS</p>
+              <h2>Explore faster</h2>
+              <button class="quick-item" id="allQuizzesAction">
+                <span class="quick-icon purple-bg">◎</span>
+                <div>
+                  <strong>All Quizzes</strong
+                  ><small>Explore available tests</small>
+                </div>
+                <b>›</b></button
+              ><button class="quick-item" id="resultsAction">
+                <span class="quick-icon green-bg">✓</span>
+                <div>
+                  <strong>My Results</strong><small>Review your attempts</small>
+                </div>
+                <b>›</b></button
+              ><button class="quick-item" id="subjectsAction">
+                <span class="quick-icon orange-bg">▤</span>
+                <div>
+                  <strong>Browse Subjects</strong
+                  ><small>Practice by subject</small>
+                </div>
+                <b>›</b>
+              </button>
+            </section>
+            <section class="panel performance">
+              <h2>Your Performance</h2>
+              <div class="donut" id="performanceDonut">
+                <span id="donutScore">0%</span>
+              </div>
+              <p>Average score from<br />your completed quizzes.</p>
+            </section>
+            <section class="panel recent">
+              <h2>Recent Attempts</h2>
+              <div id="recentAttempts"></div>
+              <button class="results-link" id="viewResults">
+                View All Results →
+              </button>
+            </section>
+          </aside>
+        </section>
       </div>
       <footer class="quote">
         “The beautiful thing about learning is that no one can take it away from
