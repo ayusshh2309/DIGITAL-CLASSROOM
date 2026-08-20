@@ -1,0 +1,791 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Learning DC — Login</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+    <style>
+      :root {
+        /* Green Marked Area: Right panel matches dashboard bg */
+        --bg-right: #e8f3f1;
+        --card-bg: #ffffff;
+        --primary-purple: #5538ee;
+        --primary-hover: #4328d8;
+        --dark-text: #0f172a;
+        --muted-text: #64748b;
+        --border-color: #cbd5e1;
+        --font: "Plus Jakarta Sans", sans-serif;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font);
+        min-height: 100vh;
+        display: flex;
+        background-color: var(--bg-right);
+      }
+
+      .login-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        width: 100vw;
+        min-height: 100vh;
+      }
+
+      /* Red Marked Area: Left panel changed to rich deep teal/slate gradient */
+      .left-panel {
+        background: linear-gradient(
+          135deg,
+          #0f2b2c 0%,
+          #163e3f 50%,
+          #1d4e4f 100%
+        );
+        color: #ffffff;
+        padding: 50px 70px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .brand-logo {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .brand-logo-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .brand-logo-container svg {
+        box-shadow: 0 6px 18px rgba(85, 56, 238, 0.3);
+        border-radius: 12px;
+      }
+
+      .brand-text h3 {
+        font-size: 1.4rem;
+        font-weight: 800;
+        letter-spacing: -0.3px;
+      }
+
+      .brand-text p {
+        font-size: 0.9rem;
+        color: #94a3b8;
+      }
+
+      .hero-content {
+        margin-top: 30px;
+      }
+
+      .hero-content h1 {
+        font-size: 3.2rem;
+        font-weight: 800;
+        line-height: 1.15;
+        margin-bottom: 12px;
+      }
+
+      .hero-content h1 span {
+        color: #38bdf8;
+      }
+
+      .hero-content p {
+        font-size: 1.1rem;
+        color: #cbd5e1;
+        max-width: 480px;
+      }
+
+      /* Motivational Image Section */
+      .hero-banner-container {
+        margin: 28px 0;
+        position: relative;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        height: 230px;
+      }
+
+      .hero-banner-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        filter: brightness(0.85);
+      }
+
+      .hero-banner-overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(transparent, rgba(15, 43, 44, 0.95));
+        padding: 20px;
+        display: flex;
+        align-items: flex-end;
+      }
+
+      .banner-text {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #ffffff;
+        line-height: 1.4;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      }
+
+      /* 3 Features Row */
+      .features-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-top: 10px;
+      }
+
+      .feature-card {
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 14px;
+        padding: 16px 12px;
+        text-align: center;
+      }
+
+      .feature-icon-box {
+        width: 40px;
+        height: 40px;
+        background: rgba(56, 189, 248, 0.2);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 10px;
+        font-size: 1.2rem;
+      }
+
+      .feature-card h4 {
+        font-size: 0.92rem;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+
+      .feature-card p {
+        font-size: 0.78rem;
+        color: #cbd5e1;
+        line-height: 1.3;
+      }
+
+      .quote-box {
+        background: rgba(255, 255, 255, 0.08);
+        border-left: 4px solid #38bdf8;
+        border-radius: 0 12px 12px 0;
+        padding: 14px 18px;
+        margin-top: 18px;
+      }
+
+      .quote-box p {
+        font-size: 0.9rem;
+        font-style: italic;
+        color: #e2e8f0;
+      }
+
+      .quote-author {
+        font-style: normal !important;
+        font-weight: 700;
+        margin-top: 4px;
+        font-size: 0.8rem !important;
+        color: #94a3b8 !important;
+      }
+
+      /* Green Marked Area: Right panel background matches dashboard */
+      .right-panel {
+        background-color: var(--bg-right);
+        padding: 50px 70px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+        overflow-y: auto;
+      }
+
+      .top-nav {
+        display: flex;
+        justify-content: flex-end;
+        font-size: 1.05rem;
+        color: var(--muted-text);
+      }
+
+      .top-nav a {
+        color: var(--primary-purple);
+        text-decoration: none;
+        font-weight: 700;
+        margin-left: 6px;
+      }
+
+      .top-nav a:hover {
+        text-decoration: underline;
+      }
+
+      /* Blue Marked Area: Scaled up card and contents */
+      .form-wrapper {
+        max-width: 520px; /* Increased from 440px */
+        width: 100%;
+        margin: auto;
+        background: var(--card-bg);
+        border-radius: 28px;
+        padding: 48px 44px; /* Increased padding */
+        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.06);
+        border: 1px solid #e2e8f0;
+      }
+
+      .card-header-icon {
+        width: 70px; /* Increased from 60px */
+        height: 70px;
+        background: #eef2ff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 18px;
+        font-size: 2.1rem; /* Increased size */
+      }
+
+      .form-header {
+        text-align: center;
+        margin-bottom: 28px;
+      }
+
+      .form-header h2 {
+        font-size: 2.2rem; /* Increased size */
+        font-weight: 800;
+        color: var(--dark-text);
+        margin-bottom: 6px;
+      }
+
+      .form-header p {
+        font-size: 1.05rem; /* Increased size */
+        color: var(--muted-text);
+      }
+
+      .input-group {
+        margin-bottom: 22px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .input-group label {
+        font-size: 1rem; /* Increased size */
+        font-weight: 700;
+        color: var(--dark-text);
+      }
+
+      .input-box {
+        display: flex;
+        align-items: center;
+        border: 1.5px solid var(--border-color);
+        border-radius: 14px;
+        padding: 14px 16px; /* Increased padding */
+        background: #ffffff;
+        transition: all 0.2s ease;
+      }
+
+      .input-box:focus-within {
+        border-color: var(--primary-purple);
+        box-shadow: 0 0 0 3px rgba(85, 56, 238, 0.12);
+      }
+
+      .input-box span {
+        margin-right: 12px;
+        color: #94a3b8;
+        font-size: 1.1rem;
+      }
+
+      .input-box input {
+        border: none;
+        outline: none;
+        width: 100%;
+        font-family: inherit;
+        font-size: 1.05rem; /* Increased font size */
+        color: var(--dark-text);
+      }
+
+      .form-options {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        font-size: 0.95rem; /* Increased size */
+      }
+
+      .remember-me {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted-text);
+        cursor: pointer;
+      }
+
+      .remember-me input {
+        accent-color: var(--primary-purple);
+        width: 18px;
+        height: 18px;
+      }
+
+      .forgot-link {
+        color: var(--primary-purple);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .btn-submit {
+        width: 100%;
+        padding: 16px; /* Increased padding */
+        background: var(--primary-purple);
+        color: #ffffff;
+        border: none;
+        border-radius: 14px;
+        font-family: inherit;
+        font-size: 1.1rem; /* Increased font size */
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        transition: background 0.2s ease;
+      }
+
+      .btn-submit:hover {
+        background: var(--primary-hover);
+      }
+
+      .divider {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        color: var(--muted-text);
+        font-size: 0.9rem;
+        margin: 24px 0;
+      }
+
+      .divider::before,
+      .divider::after {
+        content: "";
+        flex: 1;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .divider span {
+        padding: 0 14px;
+      }
+
+      /* Social OAuth Buttons Scaled Up */
+      .social-btns {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .social-btn {
+        width: 100%;
+        padding: 14px; /* Increased padding */
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        background: #ffffff;
+        font-family: inherit;
+        font-size: 1rem; /* Increased font size */
+        font-weight: 600;
+        color: var(--dark-text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .social-btn:hover {
+        background: #f8fafc;
+        border-color: #94a3b8;
+      }
+
+      .social-btn svg {
+        width: 22px; /* Increased SVG size */
+        height: 22px;
+        flex-shrink: 0;
+      }
+
+      .security-info {
+        text-align: center;
+        font-size: 0.88rem;
+        color: var(--muted-text);
+        margin-top: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+
+      .footer-help {
+        text-align: center;
+        font-size: 0.95rem;
+        color: var(--muted-text);
+        margin-top: 20px;
+      }
+
+      .footer-help a {
+        color: var(--primary-purple);
+        text-decoration: none;
+        font-weight: 700;
+      }
+
+      .alert-box {
+        padding: 12px 14px;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        margin-bottom: 16px;
+        display: none;
+      }
+
+      .alert-error {
+        background: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+      }
+
+      @media (max-width: 1024px) {
+        .login-container {
+          grid-template-columns: 1fr;
+        }
+        .left-panel {
+          display: none;
+        }
+        .right-panel {
+          padding: 40px 20px;
+        }
+        .form-wrapper {
+          max-width: 100%;
+          padding: 36px 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-container">
+      <!-- LEFT PANEL: RICH DEEP TEAL/SLATE GRADIENT -->
+      <div class="left-panel">
+        <div class="brand-logo">
+          <div class="brand-logo-container">
+            <svg
+              width="44"
+              height="44"
+              viewBox="0 0 44 44"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <rect width="44" height="44" rx="12" fill="#5538EE" />
+              <path d="M22 13L11 19.5L22 26L33 19.5L22 13Z" fill="white" />
+              <path
+                d="M14.5 23.2L11 25.25L22 31.75L33 25.25L29.5 23.2L22 27.6L14.5 23.2Z"
+                fill="white"
+                fill-opacity="0.9"
+              />
+              <path
+                d="M14.5 27.2L11 29.25L22 35.75L33 29.25L29.5 27.2L22 31.6L14.5 27.2Z"
+                fill="white"
+                fill-opacity="0.75"
+              />
+            </svg>
+          </div>
+          <div class="brand-text">
+            <h3>Smart Learning DC</h3>
+            <p>Teach. Inspire. Grow.</p>
+          </div>
+        </div>
+
+        <div class="hero-content">
+          <h1>Welcome Back,<br /><span>Educator!</span></h1>
+          <p>Login to access your classes, materials, quizzes and more.</p>
+        </div>
+
+        <!-- MOTIVATIONAL IMAGE SECTION -->
+        <div class="hero-banner-container">
+          <img
+            src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=1200&auto=format&fit=crop"
+            alt="Inspiring Education"
+            class="hero-banner-img"
+          />
+          <div class="hero-banner-overlay">
+            <div class="banner-text">
+              Empowering minds, transforming futures through smart education.
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="features-row">
+            <div class="feature-card">
+              <div class="feature-icon-box">🛡️</div>
+              <h4>Secure & Safe</h4>
+              <p>Your data is protected with top security.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon-box">⏱️</div>
+              <h4>Save Time</h4>
+              <p>Manage everything in one place.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon-box">👥</div>
+              <h4>Engage Students</h4>
+              <p>Create, teach and inspire your students.</p>
+            </div>
+          </div>
+
+          <div class="quote-box">
+            <p>
+              “Education is not the learning of facts, but the training of the
+              mind to think.”
+            </p>
+            <p class="quote-author">— Albert Einstein</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL: DASHBOARD MATCHING BG & SCALED FORM -->
+      <div class="right-panel">
+        <div class="top-nav">
+          New here? <a href="user_role.html">Create Account</a>
+        </div>
+
+        <div class="form-wrapper">
+          <div class="card-header-icon">🎓</div>
+          <div class="form-header">
+            <h2>Welcome Back!</h2>
+            <p>Login to your account</p>
+          </div>
+
+          <div id="alertBox" class="alert-box alert-error"></div>
+
+          <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="input-group">
+              <label for="email">Email Address</label>
+              <div class="input-box">
+                <span>✉️</span>
+                <input
+                  type="email"
+                  id="email"
+                  placeholder="Enter your email address"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label for="password">Password</label>
+              <div class="input-box">
+                <span>🔒</span>
+                <input
+                  type="password"
+                  id="password"
+                  placeholder="Enter your password"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="form-options">
+              <label class="remember-me">
+                <input type="checkbox" id="remember" /> Remember me
+              </label>
+              <a href="#" class="forgot-link">Forgot Password?</a>
+            </div>
+
+            <button type="submit" class="btn-submit" id="submitBtn">
+              <span>Login to Dashboard</span> →
+            </button>
+          </form>
+
+          <div class="divider">
+            <span>or continue with</span>
+          </div>
+
+          <!-- SOCIAL AUTH BUTTONS -->
+          <div class="social-btns">
+            <!-- Google -->
+            <button class="social-btn" onclick="handleOAuthLogin('google')">
+              <svg viewBox="0 0 24 24">
+                <path
+                  fill="#4285F4"
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                />
+              </svg>
+              <span>Continue with Google</span>
+            </button>
+
+            <!-- Microsoft -->
+            <button class="social-btn" onclick="handleOAuthLogin('azure')">
+              <svg viewBox="0 0 23 23">
+                <path fill="#f35325" d="M1 1h10v10H1z" />
+                <path fill="#81bc06" d="M12 1h10v10H12z" />
+                <path fill="#05a6f0" d="M1 12h10v10H1z" />
+                <path fill="#ffba08" d="M12 12h10v10H12z" />
+              </svg>
+              <span>Continue with Microsoft</span>
+            </button>
+
+            <!-- Apple -->
+            <button class="social-btn" onclick="handleOAuthLogin('apple')">
+              <svg viewBox="0 0 170 170">
+                <path
+                  fill="#000000"
+                  d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.33.13-9.14-1.92-14.43-6.14-3.26-2.61-7.11-7.23-11.55-13.86-6.1-9.04-10.9-19.18-14.4-30.41-3.5-11.24-5.25-21.99-5.25-32.26 0-14.92 3.82-27.14 11.46-36.66 7.64-9.52 17.27-14.38 28.89-14.58 4.33 0 9.38 1.13 15.15 3.38 5.77 2.25 9.7 3.38 11.78 3.38 1.86 0 5.88-1.18 12.06-3.54 6.18-2.36 11.25-3.43 15.22-3.22 10.66.54 19.38 4.3 26.16 11.28 3.37 3.5 6.14 7.6 8.31 12.31-23.77 14.37-23.51 35.81.79 49.33zm-32.06-103.1c0 6.64-2.41 13.09-7.23 19.35-5.91 7.5-13.23 11.87-21.08 11.13-.15-.99-.23-2.02-.23-3.08 0-6.68 2.58-13.38 7.74-20.1 5.16-6.72 12.44-11.17 20.2-11.35.13 1.05.6 2.4.6 4.05z"
+                />
+              </svg>
+              <span>Continue with Apple</span>
+            </button>
+          </div>
+
+          <div class="security-info">
+            <span>🔒</span> Your information is secure and will never be shared
+            with anyone.
+          </div>
+        </div>
+
+        <div class="footer-help">
+          Need help? <a href="#">Contact Support</a>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const SUPABASE_URL = "YOUR_SUPABASE_URL_HERE";
+      const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY_HERE";
+
+      const supabaseClient = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY,
+      );
+
+      async function handleOAuthLogin(providerName) {
+        try {
+          const { data, error } = await supabaseClient.auth.signInWithOAuth({
+            provider: providerName,
+            options: {
+              redirectTo: window.location.origin + "/callback.html",
+            },
+          });
+
+          if (error) throw error;
+        } catch (err) {
+          showError(
+            err.message || `Failed to authenticate with ${providerName}.`,
+          );
+        }
+      }
+
+      async function handleLogin(e) {
+        e.preventDefault();
+
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
+        const submitBtn = document.getElementById("submitBtn");
+
+        hideError();
+        submitBtn.innerHTML = "Verifying...";
+        submitBtn.disabled = true;
+
+        try {
+          const { data: authData, error: authError } =
+            await supabaseClient.auth.signInWithPassword({
+              email: email,
+              password: password,
+            });
+
+          if (authError) throw authError;
+
+          const user = authData.user;
+          let role = user?.user_metadata?.role;
+
+          if (!role) {
+            const { data: profileData, error: profileError } =
+              await supabaseClient
+                .from("profiles")
+                .select("role")
+                .eq("id", user.id)
+                .single();
+
+            if (!profileError && profileData) {
+              role = profileData.role;
+            }
+          }
+
+          if (role === "teacher") {
+            window.location.href = "teacher_dashboard.html";
+          } else if (role === "student" || role === "learner") {
+            window.location.href = "student_dashboard.html";
+          } else {
+            const savedRole = localStorage.getItem("selected_role");
+            if (savedRole === "teacher") {
+              window.location.href = "teacher_dashboard.html";
+            } else if (savedRole === "student") {
+              window.location.href = "student_dashboard.html";
+            } else {
+              window.location.href = "user_role.html";
+            }
+          }
+        } catch (err) {
+          showError(
+            err.message ||
+              "Login failed. Please verify your email and password.",
+          );
+          submitBtn.innerHTML = "<span>Login to Dashboard</span> →";
+          submitBtn.disabled = false;
+        }
+      }
+
+      function showError(message) {
+        const alertBox = document.getElementById("alertBox");
+        alertBox.innerText = message;
+        alertBox.style.display = "block";
+      }
+
+      function hideError() {
+        const alertBox = document.getElementById("alertBox");
+        alertBox.style.display = "none";
+      }
+    </script>
+  </body>
+</html>
