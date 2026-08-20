@@ -18,11 +18,10 @@
 
     <style>
       :root {
-        /* Theme color matching your dashboard */
         --bg-page: #e8f3f1;
         --bg-card: #ffffff;
-        --primary-purple: #4f46e5;
-        --primary-purple-hover: #4338ca;
+        --primary-purple: #5538ee;
+        --primary-purple-hover: #4328d8;
         --text-dark: #0f172a;
         --text-muted: #64748b;
         --border-color: #e2e8f0;
@@ -48,7 +47,6 @@
         padding: 40px 60px;
       }
 
-      /* Expanded width & adjusted layout balance */
       .container {
         width: 100%;
         max-width: 1480px;
@@ -58,7 +56,7 @@
         align-items: center;
       }
 
-      /* LEFT PANEL - INCREASED SIZES & SPACING */
+      /* LEFT PANEL */
       .left-panel {
         display: flex;
         flex-direction: column;
@@ -71,23 +69,33 @@
         gap: 16px;
       }
 
-      .brand-logo {
-        width: 52px;
-        height: 52px;
-        background: var(--primary-purple);
-        border-radius: 14px;
+      .brand-logo-container {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #ffffff;
-        font-size: 1.6rem;
-        box-shadow: 0 6px 16px rgba(79, 70, 229, 0.2);
+      }
+
+      .brand-logo-container svg {
+        box-shadow: 0 6px 18px rgba(85, 56, 238, 0.3);
+        border-radius: 12px;
+      }
+
+      .brand-title-wrap {
+        display: flex;
+        flex-direction: column;
       }
 
       .brand-title {
         font-size: 1.6rem;
         font-weight: 800;
         color: var(--text-dark);
+        line-height: 1.1;
+      }
+
+      .brand-subtitle {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        font-weight: 600;
       }
 
       .hero-text h1 {
@@ -171,7 +179,7 @@
         color: var(--text-dark) !important;
       }
 
-      /* RIGHT PANEL CARD - INCREASED PADDING & OPTION SIZES */
+      /* RIGHT PANEL CARD */
       .right-panel {
         background: var(--bg-card);
         border-radius: 28px;
@@ -217,7 +225,7 @@
         gap: 22px;
       }
 
-      /* Role Cards */
+      /* Role Selection Cards */
       .role-card {
         border: 2px solid var(--border-color);
         border-radius: 20px;
@@ -235,7 +243,7 @@
       .role-card:hover {
         border-color: var(--primary-purple);
         background: #ffffff;
-        box-shadow: 0 10px 25px rgba(79, 70, 229, 0.1);
+        box-shadow: 0 10px 25px rgba(85, 56, 238, 0.1);
         transform: translateY(-2px);
       }
 
@@ -315,8 +323,32 @@
       <!-- LEFT PANEL CONTENT -->
       <div class="left-panel">
         <div class="brand-header">
-          <div class="brand-logo">📚</div>
-          <span class="brand-title">Smart Learning DC</span>
+          <div class="brand-logo-container">
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 44 44"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <rect width="44" height="44" rx="12" fill="#5538EE" />
+              <path d="M22 13L11 19.5L22 26L33 19.5L22 13Z" fill="white" />
+              <path
+                d="M14.5 23.2L11 25.25L22 31.75L33 25.25L29.5 23.2L22 27.6L14.5 23.2Z"
+                fill="white"
+                fill-opacity="0.9"
+              />
+              <path
+                d="M14.5 27.2L11 29.25L22 35.75L33 29.25L29.5 27.2L22 31.6L14.5 27.2Z"
+                fill="white"
+                fill-opacity="0.75"
+              />
+            </svg>
+          </div>
+          <div class="brand-title-wrap">
+            <span class="brand-title">Smart Learning DC</span>
+            <span class="brand-subtitle">Teach. Inspire. Grow.</span>
+          </div>
         </div>
 
         <div class="hero-text">
@@ -329,7 +361,7 @@
 
         <div class="feature-list">
           <div class="feature-item">
-            <div class="feature-icon" style="background: #4f46e5">💻</div>
+            <div class="feature-icon" style="background: #5538ee">💻</div>
             <div class="feature-info">
               <h4>One place for every class</h4>
               <p>
@@ -397,7 +429,7 @@
         <div class="roles-container">
           <!-- Teacher Card -->
           <div class="role-card" onclick="selectRole('teacher')">
-            <div class="role-icon" style="background: #6366f1">🎓</div>
+            <div class="role-icon" style="background: #5538ee">🎓</div>
             <div class="role-info">
               <div class="role-title">I'm a Teacher</div>
               <div class="role-desc">
@@ -423,7 +455,7 @@
         </div>
 
         <div class="security-note">
-          <span>🛡️</span> Your information is secure and will never be shared
+          <span>🔒</span> Your information is secure and will never be shared
           with anyone.
         </div>
       </div>
@@ -441,10 +473,8 @@
 
       // 2. SELECTION LOGIC & REDIRECTION
       function selectRole(role) {
-        // Save selected role state to local storage
         localStorage.setItem("selected_role", role);
 
-        // Perform redirection based on selection
         if (role === "teacher") {
           window.location.href = "teacher_registration.html";
         } else if (role === "student") {
