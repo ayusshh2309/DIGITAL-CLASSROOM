@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Learning DC — Role Selection</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+    <style>
+      :root {
+        /* Theme color matching your dashboard */
+        --bg-page: #e8f3f1;
+        --bg-card: #ffffff;
+        --primary-purple: #4f46e5;
+        --primary-purple-hover: #4338ca;
+        --text-dark: #0f172a;
+        --text-muted: #64748b;
+        --border-color: #e2e8f0;
+        --font: "Plus Jakarta Sans", sans-serif;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font);
+        background-color: var(--bg-page);
+        color: var(--text-dark);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 60px;
+      }
+
+      /* Expanded width & adjusted layout balance */
+      .container {
+        width: 100%;
+        max-width: 1480px;
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 60px;
+        align-items: center;
+      }
+
+      /* LEFT PANEL - INCREASED SIZES & SPACING */
+      .left-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 36px;
+      }
+
+      .brand-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .brand-logo {
+        width: 52px;
+        height: 52px;
+        background: var(--primary-purple);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        font-size: 1.6rem;
+        box-shadow: 0 6px 16px rgba(79, 70, 229, 0.2);
+      }
+
+      .brand-title {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: var(--text-dark);
+      }
+
+      .hero-text h1 {
+        font-size: 3.6rem;
+        font-weight: 800;
+        line-height: 1.15;
+        color: var(--text-dark);
+        margin-bottom: 16px;
+      }
+
+      .hero-text p {
+        font-size: 1.35rem;
+        color: var(--text-muted);
+        line-height: 1.5;
+      }
+
+      .accent-bar {
+        width: 50px;
+        height: 5px;
+        background: var(--primary-purple);
+        border-radius: 3px;
+        margin-top: 20px;
+      }
+
+      .feature-list {
+        display: flex;
+        flex-direction: column;
+        gap: 26px;
+      }
+
+      .feature-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 20px;
+      }
+
+      .feature-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        flex-shrink: 0;
+        font-size: 1.5rem;
+      }
+
+      .feature-info h4 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        margin-bottom: 4px;
+      }
+
+      .feature-info p {
+        font-size: 1.05rem;
+        color: var(--text-muted);
+        line-height: 1.45;
+      }
+
+      .quote-card {
+        background: rgba(255, 255, 255, 0.75);
+        border: 1px solid rgba(255, 255, 255, 0.9);
+        border-radius: 18px;
+        padding: 24px 28px;
+      }
+
+      .quote-card p {
+        font-size: 1.1rem;
+        font-style: italic;
+        color: #334155;
+        line-height: 1.5;
+      }
+
+      .quote-author {
+        font-style: normal !important;
+        font-weight: 700;
+        margin-top: 10px;
+        font-size: 0.95rem !important;
+        color: var(--text-dark) !important;
+      }
+
+      /* RIGHT PANEL CARD - INCREASED PADDING & OPTION SIZES */
+      .right-panel {
+        background: var(--bg-card);
+        border-radius: 28px;
+        padding: 56px 48px;
+        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.04);
+        display: flex;
+        flex-direction: column;
+        gap: 32px;
+      }
+
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+
+      .card-header h2 {
+        font-size: 2.3rem;
+        font-weight: 800;
+        color: var(--text-dark);
+      }
+
+      .login-link {
+        font-size: 1.05rem;
+        color: var(--text-muted);
+      }
+
+      .login-link a {
+        color: var(--primary-purple);
+        text-decoration: none;
+        font-weight: 700;
+      }
+
+      .card-sub {
+        font-size: 1.15rem;
+        color: var(--text-muted);
+        margin-top: -18px;
+      }
+
+      .roles-container {
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+      }
+
+      /* Role Cards */
+      .role-card {
+        border: 2px solid var(--border-color);
+        border-radius: 20px;
+        padding: 28px 26px;
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: #fafafa;
+        text-decoration: none;
+        color: inherit;
+      }
+
+      .role-card:hover {
+        border-color: var(--primary-purple);
+        background: #ffffff;
+        box-shadow: 0 10px 25px rgba(79, 70, 229, 0.1);
+        transform: translateY(-2px);
+      }
+
+      .role-icon {
+        width: 62px;
+        height: 62px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        font-size: 1.75rem;
+        flex-shrink: 0;
+      }
+
+      .role-info {
+        flex: 1;
+      }
+
+      .role-title {
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: var(--text-dark);
+        margin-bottom: 4px;
+      }
+
+      .role-desc {
+        font-size: 1.05rem;
+        color: var(--text-muted);
+        line-height: 1.4;
+      }
+
+      .role-arrow {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        border: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        font-size: 1.2rem;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+      }
+
+      .role-card:hover .role-arrow {
+        border-color: var(--primary-purple);
+        background: var(--primary-purple);
+        color: #ffffff;
+      }
+
+      .security-note {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        font-size: 0.95rem;
+        color: var(--text-muted);
+        text-align: center;
+        margin-top: 6px;
+      }
+
+      @media (max-width: 1100px) {
+        body {
+          padding: 30px 20px;
+        }
+        .container {
+          grid-template-columns: 1fr;
+          gap: 40px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- LEFT PANEL CONTENT -->
+      <div class="left-panel">
+        <div class="brand-header">
+          <div class="brand-logo">📚</div>
+          <span class="brand-title">Smart Learning DC</span>
+        </div>
+
+        <div class="hero-text">
+          <h1>Welcome to Smart Learning DC</h1>
+          <p>
+            Tell us who you are so we can set up the right experience for you.
+          </p>
+          <div class="accent-bar"></div>
+        </div>
+
+        <div class="feature-list">
+          <div class="feature-item">
+            <div class="feature-icon" style="background: #4f46e5">💻</div>
+            <div class="feature-info">
+              <h4>One place for every class</h4>
+              <p>
+                Teachers organize lessons and materials; students find
+                everything for their courses in one spot.
+              </p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon" style="background: #2563eb">📤</div>
+            <div class="feature-info">
+              <h4>Learning materials, shared instantly</h4>
+              <p>
+                Videos, PDFs and notes go up in seconds and reach students right
+                away.
+              </p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon" style="background: #10b981">📊</div>
+            <div class="feature-info">
+              <h4>Progress you can see</h4>
+              <p>
+                Teachers track how the class is doing; students see their own
+                growth over time.
+              </p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon" style="background: #f59e0b">📹</div>
+            <div class="feature-info">
+              <h4>Live classes, real engagement</h4>
+              <p>
+                Join or host live sessions and interact in real time, from
+                either side of the classroom.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="quote-card">
+          <p>
+            "A good teacher can inspire hope, ignite the imagination, and
+            instill a love of learning."
+          </p>
+          <p class="quote-author">— Brad Henry</p>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL / SELECTION -->
+      <div class="right-panel">
+        <div class="card-header">
+          <h2>Get Started</h2>
+          <span class="login-link"
+            >Already have an account? <a href="login.html">Login</a></span
+          >
+        </div>
+        <p class="card-sub">
+          Choose how you'll use Smart Learning DC to continue.
+        </p>
+
+        <div class="roles-container">
+          <!-- Teacher Card -->
+          <div class="role-card" onclick="selectRole('teacher')">
+            <div class="role-icon" style="background: #6366f1">🎓</div>
+            <div class="role-info">
+              <div class="role-title">I'm a Teacher</div>
+              <div class="role-desc">
+                Create classes, upload materials, go live and track student
+                progress.
+              </div>
+            </div>
+            <div class="role-arrow">→</div>
+          </div>
+
+          <!-- Student Card -->
+          <div class="role-card" onclick="selectRole('student')">
+            <div class="role-icon" style="background: #0ea5e9">🎓</div>
+            <div class="role-info">
+              <div class="role-title">I'm a Student</div>
+              <div class="role-desc">
+                Join classes, access materials and track your own learning
+                progress.
+              </div>
+            </div>
+            <div class="role-arrow">→</div>
+          </div>
+        </div>
+
+        <div class="security-note">
+          <span>🛡️</span> Your information is secure and will never be shared
+          with anyone.
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // 1. SUPABASE INITIALIZATION
+      const SUPABASE_URL = "YOUR_SUPABASE_URL_HERE";
+      const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY_HERE";
+
+      const supabaseClient = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY,
+      );
+
+      // 2. SELECTION LOGIC & REDIRECTION
+      function selectRole(role) {
+        // Save selected role state to local storage
+        localStorage.setItem("selected_role", role);
+
+        // Perform redirection based on selection
+        if (role === "teacher") {
+          window.location.href = "teacher_registration.html";
+        } else if (role === "student") {
+          window.location.href = "student_registration.html";
+        }
+      }
+    </script>
+  </body>
+</html>
