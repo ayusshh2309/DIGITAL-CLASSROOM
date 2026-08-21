@@ -1,0 +1,1444 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Learning DC — Teacher Dashboard</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../js/supabase-client.js"></script>
+
+    <style>
+      /* ── DESIGN SYSTEM & TOKENS ── */
+      :root {
+        --sidebar-bg: #031b2e;
+        --sidebar-text: #a0aec0;
+        --sidebar-text-active: #ffffff;
+        --sidebar-active-bg: #00818a;
+        --sidebar-hover-bg: #0a2540;
+
+        /* Matching background gradient */
+        --main-bg: linear-gradient(
+          135deg,
+          #e3f2fd 0%,
+          #e0f2f1 50%,
+          #e8f5e9 100%
+        );
+        --surface: #ffffff;
+        --surface-border: #e2e8f0;
+
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+
+        --primary: #0284c7;
+        --primary-teal: #00818a;
+
+        --chip-purple: #8b5cf6;
+        --chip-green: #10b981;
+        --chip-orange: #f59e0b;
+        --chip-blue: #3b82f6;
+
+        --danger: #ef4444;
+        --radius: 18px;
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+        --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.08);
+        --font: "DM Sans", sans-serif;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font);
+        background: var(--main-bg);
+        background-attachment: fixed;
+        color: var(--text-main);
+        display: flex;
+        min-height: 100vh;
+        overflow-x: hidden;
+        font-size: 16px;
+      }
+
+      /* ── FIXED SIDEBAR ── */
+      .sidebar {
+        width: 280px;
+        height: 100vh;
+        background-color: var(--sidebar-bg);
+        color: var(--sidebar-text);
+        position: fixed;
+        top: 0;
+        left: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 24px 18px;
+        z-index: 100;
+        overflow-y: auto;
+      }
+
+      .sidebar-brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 1.35rem;
+        padding: 6px 8px 24px 8px;
+      }
+
+      .brand-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #00818a, #6366f1);
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-weight: bold;
+        font-size: 1.2rem;
+      }
+
+      .nav-menu {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .nav-item a,
+      .nav-item button {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 13px 18px;
+        color: var(--sidebar-text);
+        text-decoration: none;
+        font-size: 1.05rem;
+        font-weight: 600;
+        border-radius: 14px;
+        transition: all 0.2s ease;
+        width: 100%;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .nav-item a:hover,
+      .nav-item button:hover {
+        background: var(--sidebar-hover-bg);
+        color: var(--sidebar-text-active);
+      }
+
+      .nav-item.active a {
+        background: var(--sidebar-active-bg);
+        color: var(--sidebar-text-active);
+        font-weight: 700;
+      }
+
+      .nav-icon {
+        font-size: 1.3rem;
+        width: 26px;
+        display: inline-grid;
+        place-items: center;
+      }
+
+      .nav-divider {
+        height: 1px;
+        background: rgba(255, 255, 255, 0.15);
+        margin: 12px 0;
+      }
+
+      .btn-logout-sidebar {
+        color: #f87171 !important;
+      }
+
+      .btn-logout-sidebar:hover {
+        background: rgba(239, 68, 68, 0.18) !important;
+      }
+
+      /* ── MAIN CONTENT WRAPPER ── */
+      .main-wrapper {
+        margin-left: 280px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        width: calc(100% - 280px);
+      }
+
+      /* Header */
+      .header {
+        height: 76px;
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 0 40px;
+        gap: 20px;
+      }
+
+      .notif-bell {
+        position: relative;
+        background: #fff;
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        box-shadow: var(--shadow-sm);
+        cursor: pointer;
+        font-size: 1.25rem;
+      }
+
+      .notif-badge {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: var(--danger);
+        color: white;
+        font-size: 0.72rem;
+        font-weight: 800;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+      }
+
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: #fff;
+        padding: 6px 18px 6px 8px;
+        border-radius: 30px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .user-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .user-info {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .user-name {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .user-role {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+      }
+
+      /* Main Container */
+      .main-box-container {
+        margin: 0 40px 24px 40px;
+        padding: 32px;
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        border-radius: 24px;
+        border: 1px solid var(--surface-border);
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+      }
+
+      .welcome-banner {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .welcome-text h1 {
+        font-size: 2rem;
+        font-weight: 800;
+        margin-bottom: 6px;
+        color: var(--text-main);
+      }
+
+      .welcome-text p {
+        color: var(--text-muted);
+        font-size: 1.05rem;
+      }
+
+      .banner-actions {
+        display: flex;
+        gap: 14px;
+      }
+
+      .btn-action-primary {
+        background-color: var(--primary-teal);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .btn-action-secondary {
+        background-color: #ffffff;
+        color: var(--text-main);
+        border: 1px solid var(--surface-border);
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* Stats Grid */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 18px;
+      }
+
+      .stat-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 20px;
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--surface-border);
+      }
+
+      .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        font-size: 1.35rem;
+        color: #fff;
+        flex-shrink: 0;
+      }
+
+      .icon-purple {
+        background-color: var(--chip-purple);
+      }
+      .icon-teal {
+        background-color: var(--primary-teal);
+      }
+      .icon-green {
+        background-color: var(--chip-green);
+      }
+      .icon-orange {
+        background-color: var(--chip-orange);
+      }
+      .icon-blue {
+        background-color: var(--chip-blue);
+      }
+
+      .stat-content {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .stat-number {
+        font-size: 1.8rem;
+        font-weight: 800;
+        line-height: 1.1;
+      }
+
+      .stat-label {
+        font-size: 0.88rem;
+        color: var(--text-muted);
+        margin-top: 4px;
+        font-weight: 600;
+      }
+
+      .stat-trend {
+        font-size: 0.8rem;
+        margin-top: 4px;
+        font-weight: 700;
+      }
+      .trend-plus {
+        color: #059669;
+      }
+
+      /* Grid 2-Column Split */
+      .grid-2-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        align-items: stretch;
+      }
+
+      .section-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--surface-border);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .section-title {
+        font-size: 1.2rem;
+        font-weight: 800;
+      }
+
+      .section-link {
+        font-size: 0.92rem;
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 700;
+      }
+
+      /* My Classes Grid */
+      .classes-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+      }
+
+      .class-card {
+        border: 1px solid var(--surface-border);
+        border-radius: 14px;
+        padding: 16px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        background: #fafafa;
+      }
+
+      .class-badge-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        color: white;
+        font-size: 1.1rem;
+      }
+
+      .class-title {
+        font-size: 1rem;
+        font-weight: 800;
+      }
+
+      .class-sub {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+
+      .class-students {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        margin-top: 4px;
+        font-weight: 600;
+      }
+
+      .btn-manage-class {
+        width: 100%;
+        border: 1px solid var(--surface-border);
+        background: #ffffff;
+        padding: 8px;
+        border-radius: 8px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--primary);
+        cursor: pointer;
+        margin-top: 6px;
+      }
+
+      .add-class-btn {
+        grid-column: 1 / -1;
+        border: 2px dashed var(--surface-border);
+        padding: 12px;
+        text-align: center;
+        border-radius: 12px;
+        color: var(--primary-teal);
+        font-size: 0.95rem;
+        font-weight: 700;
+        cursor: pointer;
+        background: #f0fdf4;
+      }
+
+      /* Schedule Timeline */
+      .schedule-timeline {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        flex: 1;
+        position: relative;
+        padding-left: 10px;
+        padding-bottom: 10px;
+      }
+
+      .schedule-timeline::before {
+        content: "";
+        position: absolute;
+        left: 17px;
+        top: 18px;
+        bottom: 28px;
+        width: 2px;
+        background-color: #cbd5e1;
+        z-index: 1;
+      }
+
+      .timeline-item {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        position: relative;
+        z-index: 2;
+        padding: 10px 0;
+      }
+
+      .timeline-dot {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: white;
+        border: 4px solid var(--chip-green);
+        flex-shrink: 0;
+      }
+
+      .dot-green {
+        border-color: #10b981;
+      }
+      .dot-purple {
+        border-color: #8b5cf6;
+      }
+      .dot-blue {
+        border-color: #3b82f6;
+      }
+
+      .time-slot {
+        font-size: 0.95rem;
+        font-weight: 800;
+        width: 80px;
+      }
+
+      .time-green {
+        color: #10b981;
+      }
+      .time-purple {
+        color: #8b5cf6;
+      }
+      .time-blue {
+        color: #3b82f6;
+      }
+
+      .timeline-content {
+        flex: 1;
+      }
+
+      .timeline-title {
+        font-size: 1.02rem;
+        font-weight: 800;
+        color: var(--text-main);
+      }
+
+      .timeline-sub {
+        font-size: 0.88rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+
+      .live-chip-badge {
+        font-size: 0.8rem;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-weight: 700;
+      }
+
+      .badge-green {
+        background: #d1fae5;
+        color: #047857;
+      }
+      .badge-purple {
+        background: #f3e8ff;
+        color: #6b21a8;
+      }
+      .badge-blue {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+
+      /* Recent Materials List */
+      .materials-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .material-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--surface-border);
+      }
+
+      .material-item:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+
+      .material-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .material-thumb {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        color: white;
+        font-size: 1.1rem;
+      }
+
+      .material-title {
+        font-size: 1rem;
+        font-weight: 800;
+      }
+
+      .material-meta {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+
+      .material-right {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        font-weight: 600;
+      }
+
+      /* Quick Actions */
+      .quick-actions-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+      }
+
+      .action-card {
+        border: 1px solid var(--surface-border);
+        border-radius: 14px;
+        padding: 18px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        cursor: pointer;
+        background: #fafafa;
+        transition: all 0.2s ease;
+      }
+
+      .action-card:hover {
+        border-color: var(--primary-teal);
+        background: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .action-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        color: white;
+        font-size: 1.15rem;
+      }
+
+      .action-title {
+        font-size: 0.98rem;
+        font-weight: 800;
+      }
+
+      .action-desc {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+      }
+
+      /* Footer */
+      .dashboard-footer {
+        margin: auto 40px 32px 40px;
+      }
+
+      .quote-card {
+        background: linear-gradient(90deg, #dcfce7, #e0f2fe);
+        border-radius: var(--radius);
+        padding: 24px 32px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border: 1px solid rgba(13, 148, 136, 0.25);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .quote-left {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .quote-icon {
+        width: 50px;
+        height: 50px;
+        background: white;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: 1.5rem;
+        color: var(--primary-teal);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .quote-text h4 {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #0f766e;
+        margin-bottom: 2px;
+      }
+
+      .quote-text p {
+        font-size: 0.92rem;
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+
+      .quote-right {
+        font-style: italic;
+        font-size: 0.95rem;
+        color: #1e293b;
+        text-align: right;
+        line-height: 1.4;
+      }
+
+      /* MODAL */
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(4px);
+        z-index: 200;
+        display: grid;
+        place-items: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+      }
+
+      .modal-overlay.open {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .modal {
+        background: #fff;
+        border-radius: 20px;
+        padding: 28px;
+        width: min(520px, 90vw);
+        box-shadow: var(--shadow-md);
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 18px;
+      }
+
+      .form-group {
+        margin-bottom: 16px;
+      }
+
+      .form-group label {
+        display: block;
+        font-size: 0.9rem;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--surface-border);
+        border-radius: 10px;
+        font-family: inherit;
+        font-size: 0.95rem;
+      }
+
+      @media (max-width: 1200px) {
+        .stats-grid {
+          grid-template-columns: repeat(3, 1fr);
+        }
+        .grid-2-col {
+          grid-template-columns: 1fr;
+        }
+        .classes-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      @media (max-width: 768px) {
+        .sidebar {
+          display: none;
+        }
+        .main-wrapper {
+          margin-left: 0;
+          width: 100%;
+        }
+        .main-box-container {
+          margin: 0 16px 20px 16px;
+          padding: 20px;
+        }
+        .dashboard-footer {
+          margin: 0 16px 20px 16px;
+        }
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+        .classes-grid {
+          grid-template-columns: 1fr;
+        }
+        .quick-actions-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">S</div>
+        <span>Smart Learning DC</span>
+      </div>
+
+      <ul class="nav-menu">
+        <li class="nav-item active">
+          <a href="teacher_dashboard.html">
+            <span class="nav-icon">📊</span> Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="class_management.html">
+            <span class="nav-icon">👥</span> My Classes
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📁</span> Materials</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📝</span> Quizzes</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📹</span> Live Classes</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">🎓</span> Students</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📅</span> Attendance</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📈</span> Student Performance</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📢</span> Announcements</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">🗓️</span> Calendar</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📥</span> Downloads</a>
+        </li>
+
+        <div class="nav-divider"></div>
+
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">⚙️</span> Settings</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">❓</span> Help & Support</a>
+        </li>
+        <li class="nav-item">
+          <button class="btn-logout-sidebar" id="logoutBtn">
+            <span class="nav-icon">🚪</span> Log out
+          </button>
+        </li>
+      </ul>
+    </aside>
+
+    <!-- MAIN WRAPPER -->
+    <div class="main-wrapper">
+      <!-- HEADER BAR -->
+      <header class="header">
+        <div class="notif-bell" id="notifBtn">
+          🔔
+          <span class="notif-badge">3</span>
+        </div>
+        <div class="user-profile">
+          <img
+            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
+            alt="Avatar"
+            class="user-avatar"
+            id="avatarImg"
+          />
+          <div class="user-info">
+            <span class="user-name" id="profileNameEl">Ready</span>
+            <span class="user-role" id="profileRoleEl"
+              >Teacher • Subject Specialist</span
+            >
+          </div>
+        </div>
+      </header>
+
+      <!-- MAIN CONTENT BOX -->
+      <main class="main-box-container">
+        <div class="welcome-banner">
+          <div class="welcome-text">
+            <h1 id="greetingEl">Good morning, Ready! 👋</h1>
+            <p>
+              Let's create an amazing learning experience for your students.
+            </p>
+          </div>
+          <div class="banner-actions">
+            <button class="btn-action-primary" id="createLessonBtn">
+              <span>+</span> Create Lesson
+            </button>
+            <button class="btn-action-secondary" id="uploadMaterialBtn">
+              <span>↑</span> Upload Material ▾
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon icon-purple">📄</div>
+            <div class="stat-content">
+              <span class="stat-number" id="statMaterials">24</span>
+              <span class="stat-label">Materials Uploaded</span>
+              <span class="stat-trend trend-plus">+6 this week</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon icon-teal">📖</div>
+            <div class="stat-content">
+              <span class="stat-number" id="statLessons">12</span>
+              <span class="stat-label">Lessons Created</span>
+              <span class="stat-trend trend-plus">+3 this week</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon icon-green">📋</div>
+            <div class="stat-content">
+              <span class="stat-number" id="statQuizzes">8</span>
+              <span class="stat-label">Quizzes Published</span>
+              <span class="stat-trend trend-plus">+2 this week</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon icon-orange">📹</div>
+            <div class="stat-content">
+              <span class="stat-number" id="statLive">3</span>
+              <span class="stat-label">Live Classes</span>
+              <span class="stat-trend trend-plus">+1 this week</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon icon-blue">👥</div>
+            <div class="stat-content">
+              <span class="stat-number" id="statStudents">156</span>
+              <span class="stat-label">Total Students</span>
+              <span class="stat-trend">Across all classes</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grid Row 1: My Classes & Schedule -->
+        <div class="grid-2-col">
+          <div class="section-card">
+            <div class="section-header">
+              <span class="section-title">My Classes</span>
+              <a href="class_management.html" class="section-link">View all</a>
+            </div>
+            <div class="classes-grid" id="classesGrid">
+              <div class="class-card">
+                <div class="class-badge-icon icon-purple">📖</div>
+                <span class="class-title">Class 9</span>
+                <span class="class-sub">Science</span>
+                <span class="class-students">👥 34 Students</span>
+                <button class="btn-manage-class">Manage Class</button>
+              </div>
+              <div class="class-card">
+                <div class="class-badge-icon icon-green">📋</div>
+                <span class="class-title">Class 10</span>
+                <span class="class-sub">Science</span>
+                <span class="class-students">👥 32 Students</span>
+                <button class="btn-manage-class">Manage Class</button>
+              </div>
+              <div class="class-card">
+                <div class="class-badge-icon icon-orange">∑</div>
+                <span class="class-title">Class 12</span>
+                <span class="class-sub">Physics</span>
+                <span class="class-students">👥 28 Students</span>
+                <button class="btn-manage-class">Manage Class</button>
+              </div>
+              <div class="class-card">
+                <div class="class-badge-icon icon-blue">⚛️</div>
+                <span class="class-title">Class 12</span>
+                <span class="class-sub">Chemistry</span>
+                <span class="class-students">👥 30 Students</span>
+                <button class="btn-manage-class">Manage Class</button>
+              </div>
+              <div class="add-class-btn" id="addClassBtn">+ Add New Class</div>
+            </div>
+          </div>
+
+          <!-- Today's Schedule -->
+          <div class="section-card">
+            <div class="section-header">
+              <span class="section-title">Today's Schedule</span>
+              <a href="#" class="section-link">View full schedule</a>
+            </div>
+            <div class="schedule-timeline">
+              <div class="timeline-item">
+                <div class="timeline-dot dot-green"></div>
+                <span class="time-slot time-green">10:00 AM</span>
+                <div class="timeline-content">
+                  <div class="timeline-title">Class 9 Science</div>
+                  <div class="timeline-sub">
+                    Chapter 2 - Force and Laws of Motion
+                  </div>
+                </div>
+                <span class="live-chip-badge badge-green">Live Class</span>
+              </div>
+
+              <div class="timeline-item">
+                <div class="timeline-dot dot-purple"></div>
+                <span class="time-slot time-purple">12:30 PM</span>
+                <div class="timeline-content">
+                  <div class="timeline-title">Class 10 Social Science</div>
+                  <div class="timeline-sub">
+                    The Rise of Nationalism in Europe
+                  </div>
+                </div>
+                <span class="live-chip-badge badge-purple">Live Class</span>
+              </div>
+
+              <div class="timeline-item">
+                <div class="timeline-dot dot-blue"></div>
+                <span class="time-slot time-blue">02:30 PM</span>
+                <div class="timeline-content">
+                  <div class="timeline-title">Class 6 Science</div>
+                  <div class="timeline-sub">Sorting Materials into Groups</div>
+                </div>
+                <span class="live-chip-badge badge-blue">Live Class</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grid Row 2: Recent Materials & Quick Actions -->
+        <div class="grid-2-col">
+          <div class="section-card">
+            <div class="section-header">
+              <span class="section-title">Recent Materials</span>
+              <a href="#" class="section-link">View all</a>
+            </div>
+            <div class="materials-list" id="materialsList">
+              <div class="material-item">
+                <div class="material-left">
+                  <div class="material-thumb icon-purple">▶</div>
+                  <div>
+                    <div class="material-title">
+                      Electrostatics – Introduction
+                    </div>
+                    <div class="material-meta">Physics • Class 12 • Video</div>
+                  </div>
+                </div>
+                <div class="material-right">
+                  <span>2 hours ago</span>
+                  <span>⋮</span>
+                </div>
+              </div>
+              <div class="material-item">
+                <div class="material-left">
+                  <div
+                    class="material-thumb"
+                    style="background-color: var(--danger)"
+                  >
+                    📄
+                  </div>
+                  <div>
+                    <div class="material-title">Chapter 3 Notes</div>
+                    <div class="material-meta">Chemistry • Class 12 • PDF</div>
+                  </div>
+                </div>
+                <div class="material-right">
+                  <span>Yesterday</span>
+                  <span>⋮</span>
+                </div>
+              </div>
+              <div class="material-item">
+                <div class="material-left">
+                  <div class="material-thumb icon-green">🖼️</div>
+                  <div>
+                    <div class="material-title">Structure of Atom</div>
+                    <div class="material-meta">
+                      Chemistry • Class 11 • Image
+                    </div>
+                  </div>
+                </div>
+                <div class="material-right">
+                  <span>2 days ago</span>
+                  <span>⋮</span>
+                </div>
+              </div>
+              <div class="material-item">
+                <div class="material-left">
+                  <div class="material-thumb icon-orange">❓</div>
+                  <div>
+                    <div class="material-title">Chapter 1 Quiz</div>
+                    <div class="material-meta">Physics • Class 12 • Quiz</div>
+                  </div>
+                </div>
+                <div class="material-right">
+                  <span>3 days ago</span>
+                  <span>⋮</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <div class="section-header">
+              <span class="section-title">Quick Actions</span>
+            </div>
+            <div class="quick-actions-grid">
+              <div class="action-card" id="quickUploadBtn">
+                <div class="action-icon icon-purple">☁️</div>
+                <span class="action-title">Upload Material</span>
+                <span class="action-desc">Videos, PDFs, Images</span>
+              </div>
+              <div class="action-card" id="quickLessonBtn">
+                <div class="action-icon icon-blue">📖</div>
+                <span class="action-title">Create Lesson</span>
+                <span class="action-desc">Add Lesson Plan</span>
+              </div>
+              <div class="action-card" id="quickQuizBtn">
+                <div class="action-icon icon-green">📋</div>
+                <span class="action-title">Create Quiz</span>
+                <span class="action-desc">New Quiz / Assessment</span>
+              </div>
+              <div class="action-card" id="quickLiveBtn">
+                <div class="action-icon icon-orange">📹</div>
+                <span class="action-title">Start Live Class</span>
+                <span class="action-desc">Go Live with Students</span>
+              </div>
+              <div class="action-card">
+                <div class="action-icon icon-purple">📢</div>
+                <span class="action-title">Post Announcement</span>
+                <span class="action-desc">Send to Classes</span>
+              </div>
+              <div class="action-card">
+                <div class="action-icon icon-teal">📅</div>
+                <span class="action-title">View Calendar</span>
+                <span class="action-desc">Manage Schedule</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- FOOTER -->
+      <footer class="dashboard-footer">
+        <div class="quote-card">
+          <div class="quote-left">
+            <div class="quote-icon">💡</div>
+            <div class="quote-text">
+              <h4>Tip of the Day</h4>
+              <p>
+                Keep your lessons engaging and interactive. Small efforts create
+                big impact!
+              </p>
+            </div>
+          </div>
+          <div class="quote-right">
+            “A good teacher can inspire hope, ignite the imagination,<br />and
+            instill a love of learning.” <br /><span
+              style="font-size: 0.85rem; color: #64748b; font-weight: 600"
+              >— Brad Henry</span
+            >
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="uploadModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 id="modalTitle">Upload New Material</h3>
+          <button
+            id="closeModalBtn"
+            style="
+              border: none;
+              background: transparent;
+              font-size: 1.3rem;
+              cursor: pointer;
+            "
+          >
+            ✕
+          </button>
+        </div>
+        <form id="materialForm">
+          <div class="form-group">
+            <label>Title</label>
+            <input
+              type="text"
+              id="matTitle"
+              placeholder="e.g. Chapter 1 Introduction"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label>Subject & Grade</label>
+            <select id="matSubject">
+              <option value="Physics • Class 12">Physics • Class 12</option>
+              <option value="Chemistry • Class 12">Chemistry • Class 12</option>
+              <option value="Science • Class 9">Science • Class 9</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Type</label>
+            <select id="matType">
+              <option value="Video">Video</option>
+              <option value="PDF">PDF</option>
+              <option value="Image">Image</option>
+              <option value="Quiz">Quiz</option>
+            </select>
+          </div>
+          <div
+            style="
+              display: flex;
+              justify-content: flex-end;
+              gap: 12px;
+              margin-top: 24px;
+            "
+          >
+            <button
+              type="button"
+              class="btn-action-secondary"
+              id="cancelModalBtn"
+            >
+              Cancel
+            </button>
+            <button type="submit" class="btn-action-primary">
+              Save Material
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        const supabase =
+          window.supabaseClient ||
+          (window.supabase
+            ? window.supabase.createClient(
+                "YOUR_SUPABASE_URL",
+                "YOUR_SUPABASE_ANON_KEY",
+              )
+            : null);
+
+        const uploadModal = document.getElementById("uploadModal");
+        const closeModalBtn = document.getElementById("closeModalBtn");
+        const cancelModalBtn = document.getElementById("cancelModalBtn");
+        const materialForm = document.getElementById("materialForm");
+        const materialsList = document.getElementById("materialsList");
+
+        const openModal = () => uploadModal.classList.add("open");
+        const closeModal = () => uploadModal.classList.remove("open");
+
+        document
+          .getElementById("uploadMaterialBtn")
+          ?.addEventListener("click", openModal);
+        document
+          .getElementById("quickUploadBtn")
+          ?.addEventListener("click", openModal);
+        document
+          .getElementById("createLessonBtn")
+          ?.addEventListener("click", openModal);
+        document
+          .getElementById("quickLessonBtn")
+          ?.addEventListener("click", openModal);
+
+        closeModalBtn?.addEventListener("click", closeModal);
+        cancelModalBtn?.addEventListener("click", closeModal);
+
+        async function loadUserProfile() {
+          if (!supabase) return;
+          try {
+            const {
+              data: { user },
+            } = await supabase.auth.getUser();
+            if (user) {
+              const { data: profile } = await supabase
+                .from("profiles")
+                .select("*")
+                .eq("id", user.id)
+                .single();
+
+              if (profile) {
+                document.getElementById("profileNameEl").textContent =
+                  profile.full_name || "Ready";
+                document.getElementById("greetingEl").textContent =
+                  `Good morning, ${profile.full_name || "Ready"}! 👋`;
+                if (profile.avatar_url)
+                  document.getElementById("avatarImg").src = profile.avatar_url;
+              }
+            }
+          } catch (err) {
+            console.warn("Supabase context offline or unconfigured.");
+          }
+        }
+
+        async function loadMaterials() {
+          if (!supabase) return;
+          try {
+            const { data: materials, error } = await supabase
+              .from("materials")
+              .select("*")
+              .order("created_at", { ascending: false })
+              .limit(4);
+
+            if (error) throw error;
+
+            if (materials && materials.length > 0) {
+              materialsList.innerHTML = materials
+                .map(
+                  (m) => `
+              <div class="material-item">
+                <div class="material-left">
+                  <div class="material-thumb icon-purple">📄</div>
+                  <div>
+                    <div class="material-title">${m.title}</div>
+                    <div class="material-meta">${m.subject || "General"} • ${m.type || "Document"}</div>
+                  </div>
+                </div>
+                <div class="material-right">
+                  <span>Recently</span>
+                  <span>⋮</span>
+                </div>
+              </div>
+            `,
+                )
+                .join("");
+            }
+          } catch (err) {
+            console.warn(
+              "Could not load materials from Supabase:",
+              err.message,
+            );
+          }
+        }
+
+        materialForm?.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const title = document.getElementById("matTitle").value;
+          const subject = document.getElementById("matSubject").value;
+          const type = document.getElementById("matType").value;
+
+          if (supabase) {
+            try {
+              const {
+                data: { user },
+              } = await supabase.auth.getUser();
+              const { error } = await supabase
+                .from("materials")
+                .insert([{ title, subject, type, teacher_id: user?.id }]);
+
+              if (error) alert("Error uploading to Supabase: " + error.message);
+              else {
+                loadMaterials();
+                const statMat = document.getElementById("statMaterials");
+                if (statMat)
+                  statMat.textContent =
+                    parseInt(statMat.textContent || "0") + 1;
+              }
+            } catch (err) {
+              console.error(err);
+            }
+          }
+
+          closeModal();
+          materialForm.reset();
+        });
+
+        document
+          .getElementById("logoutBtn")
+          ?.addEventListener("click", async () => {
+            if (supabase) {
+              await supabase.auth.signOut();
+            }
+            window.location.href = "index.html";
+          });
+
+        loadUserProfile();
+        loadMaterials();
+      });
+    </script>
+  </body>
+</html>
