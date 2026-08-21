@@ -1,0 +1,2851 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Smart Learning DC — Teacher Registration</title>
+
+    <script>
+      const subjectLabels = {
+        mathematics: "Mathematics",
+        english: "English",
+        physics: "Physics",
+        chemistry: "Chemistry",
+        biology: "Biology",
+        physical_education: "Physical Education",
+        computer_science: "Computer Science",
+        accountancy: "Accountancy",
+        business_studies: "Business Studies",
+        economics: "Economics",
+        history: "History",
+        geography: "Geography",
+        hindi: "Hindi",
+        science: "Science",
+        sst: "SST",
+        gk: "GK",
+      };
+
+      function generateGradeCheckboxes(subject, startGrade, endGrade) {
+        const subjectName = subjectLabels[subject] || subject;
+        let html = "";
+
+        for (let grade = startGrade; grade <= endGrade; grade++) {
+          const id = `specialist_${subject}_grade_${grade}`;
+
+          html += `
+            <div class="checkbox-card">
+              <input
+                type="checkbox"
+                id="${id}"
+                class="specialist-grade-checkbox"
+                data-subject="${subjectName}"
+                data-grade="${grade}"
+                value="${grade}"
+              />
+              <label for="${id}">Class ${grade}</label>
+            </div>
+          `;
+        }
+
+        return html;
+      }
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --bg-dashboard: #e8f3f1;
+        --card-bg: #ffffff;
+        --primary-purple: #5538ee;
+        --primary-hover: #4328d8;
+        --dark-text: #0f172a;
+        --muted-text: #64748b;
+        --border-color: #cbd5e1;
+        --success: #10b981;
+        --font: "Plus Jakarta Sans", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font);
+        min-height: 100vh;
+        background: #f8fafc;
+        color: var(--dark-text);
+      }
+
+      .registration-container {
+        width: 100%;
+        min-height: 100vh;
+      }
+
+      /* ================= SIDEBAR ================= */
+
+      .left-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 460px;
+        height: 100vh;
+        background: var(--bg-dashboard);
+        border-right: 1px solid rgba(0, 0, 0, 0.08);
+        padding: 44px 40px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        overflow-y: auto;
+        z-index: 100;
+      }
+
+      .brand-logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 28px;
+      }
+
+      .brand-text h3 {
+        font-size: 1.3rem;
+        font-weight: 800;
+      }
+
+      .brand-text p {
+        font-size: 0.85rem;
+        color: var(--muted-text);
+      }
+
+      .sidebar-hero h2 {
+        font-size: 2.25rem;
+        font-weight: 800;
+        line-height: 1.18;
+        margin-bottom: 10px;
+      }
+
+      .sidebar-hero p {
+        color: var(--muted-text);
+        font-size: 0.95rem;
+        line-height: 1.5;
+      }
+
+      .feature-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        margin: 26px 0;
+      }
+
+      .feature-item {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .feature-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        color: white;
+        flex-shrink: 0;
+      }
+
+      .bg-purple {
+        background: #6366f1;
+      }
+
+      .bg-blue {
+        background: #3b82f6;
+      }
+
+      .bg-green {
+        background: #10b981;
+      }
+
+      .bg-orange {
+        background: #f97316;
+      }
+
+      .feature-text h4 {
+        font-size: 0.95rem;
+        font-weight: 700;
+      }
+
+      .feature-text p {
+        font-size: 0.82rem;
+        color: var(--muted-text);
+        line-height: 1.3;
+        margin-top: 2px;
+      }
+
+      .sidebar-illustration {
+        width: 100%;
+        margin: 16px 0;
+      }
+
+      .sidebar-illustration img {
+        display: block;
+        width: 100%;
+        height: 155px;
+        object-fit: cover;
+        border-radius: 14px;
+      }
+
+      .sidebar-quote {
+        background: rgba(255, 255, 255, 0.7);
+        border-left: 4px solid var(--primary-purple);
+        padding: 16px 18px;
+        border-radius: 0 12px 12px 0;
+      }
+
+      .sidebar-quote p {
+        font-size: 0.88rem;
+        font-style: italic;
+        line-height: 1.4;
+      }
+
+      .sidebar-quote span {
+        display: block;
+        margin-top: 6px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--muted-text);
+      }
+
+      /* ================= RIGHT CONTENT ================= */
+
+      .right-content {
+        margin-left: 460px;
+        min-height: 100vh;
+        background: #f8fafc;
+        padding: 44px 60px;
+        overflow-y: auto;
+      }
+
+      .top-bar {
+        display: flex;
+        justify-content: flex-end;
+        font-size: 0.95rem;
+        color: var(--muted-text);
+      }
+
+      .top-bar a {
+        color: var(--primary-purple);
+        font-weight: 700;
+        text-decoration: none;
+        margin-left: 6px;
+      }
+
+      .form-header {
+        max-width: 850px;
+        margin: 12px auto 28px;
+      }
+
+      .form-header h1 {
+        font-size: 2.1rem;
+        font-weight: 800;
+      }
+
+      .form-header p {
+        color: var(--muted-text);
+        font-size: 0.95rem;
+        margin-top: 5px;
+      }
+
+      /* ================= STEPPER ================= */
+
+      .stepper {
+        max-width: 650px;
+        width: 100%;
+        margin: 0 auto 36px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: relative;
+      }
+
+      .stepper::before {
+        content: "";
+        position: absolute;
+        top: 18px;
+        left: 40px;
+        right: 40px;
+        height: 2px;
+        background: linear-gradient(
+          to right,
+          var(--success) 0%,
+          var(--success) 50%,
+          #e2e8f0 50%,
+          #e2e8f0 100%
+        );
+        z-index: 0;
+      }
+
+      .step {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        background: #f8fafc;
+        padding: 0 10px;
+      }
+
+      .step-number {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #e2e8f0;
+        color: var(--muted-text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        border: 2px solid #f8fafc;
+      }
+
+      .step.completed .step-number {
+        background: var(--success);
+        color: white;
+        border-color: var(--success);
+      }
+
+      .step.completed .step-label {
+        color: var(--success);
+        font-weight: 700;
+      }
+
+      .step.active .step-number {
+        background: var(--primary-purple);
+        color: white;
+        box-shadow: 0 4px 12px rgba(85, 56, 238, 0.3);
+      }
+
+      .step.active .step-label {
+        color: var(--primary-purple);
+        font-weight: 700;
+      }
+
+      .step-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--muted-text);
+      }
+
+      /* ================= FORM ================= */
+
+      .form-container {
+        max-width: 850px;
+        width: 100%;
+        margin: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+      }
+
+      .form-box {
+        background: white;
+        border-radius: 20px;
+        padding: 32px 36px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+      }
+
+      .section-title {
+        font-size: 1.15rem;
+        font-weight: 800;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px 24px;
+      }
+
+      .full-width {
+        grid-column: span 2;
+      }
+
+      .input-field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .input-field label {
+        font-size: 0.9rem;
+        font-weight: 700;
+      }
+
+      .input-control {
+        display: flex;
+        align-items: center;
+        border: 1.5px solid var(--border-color);
+        border-radius: 12px;
+        padding: 12px 14px;
+        background: white;
+        gap: 10px;
+        transition: 0.2s;
+      }
+
+      .input-control:focus-within {
+        border-color: var(--primary-purple);
+        box-shadow: 0 0 0 3px rgba(85, 56, 238, 0.12);
+      }
+
+      .input-icon {
+        color: #94a3b8;
+      }
+
+      .input-control input,
+      .input-control select {
+        border: none;
+        outline: none;
+        width: 100%;
+        font-family: inherit;
+        font-size: 0.95rem;
+        color: var(--dark-text);
+        background: transparent;
+      }
+
+      /* ================= TOGGLE ================= */
+
+      .toggle-group {
+        display: flex;
+        gap: 12px;
+      }
+
+      .toggle-btn {
+        flex: 1;
+        padding: 12px 16px;
+        border: 1.5px solid var(--border-color);
+        border-radius: 12px;
+        background: white;
+        color: var(--dark-text);
+        font-family: inherit;
+        font-weight: 700;
+        font-size: 0.9rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: 0.2s;
+      }
+
+      .toggle-btn:hover {
+        border-color: var(--primary-purple);
+      }
+
+      .toggle-btn.active {
+        border-color: var(--primary-purple);
+        background: rgba(85, 56, 238, 0.06);
+        color: var(--primary-purple);
+      }
+
+      /* ================= DYNAMIC PANELS ================= */
+
+      .dynamic-panel {
+        display: none;
+      }
+
+      .dynamic-panel.show {
+        display: block;
+      }
+
+      #teachingDetailsPanel.show {
+        display: grid;
+      }
+
+      /* ================= CHECKBOX ================= */
+
+      .checkbox-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 10px;
+      }
+
+      .checkbox-card {
+        position: relative;
+      }
+
+      .checkbox-card input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .checkbox-card label {
+        display: block;
+        padding: 11px 12px;
+        border: 1.5px solid var(--border-color);
+        border-radius: 10px;
+        text-align: center;
+        font-size: 0.86rem;
+        font-weight: 700;
+        color: var(--dark-text);
+        cursor: pointer;
+        background: white;
+        transition: 0.2s;
+      }
+
+      .checkbox-card label:hover {
+        border-color: var(--primary-purple);
+      }
+
+      .checkbox-card input:checked + label {
+        background: var(--primary-purple);
+        color: white;
+        border-color: var(--primary-purple);
+        box-shadow: 0 4px 10px rgba(85, 56, 238, 0.25);
+      }
+
+      /* =========================================================
+         SUBJECT SPECIALIST
+      ========================================================= */
+
+      .subject-box-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        margin-top: 20px;
+      }
+
+      .subject-card {
+        border: 1.5px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 16px 18px;
+        background: #f8fafc;
+        transition: 0.2s ease;
+      }
+
+      .subject-card:hover {
+        border-color: #c7d2fe;
+        background: #fafaff;
+      }
+
+      .subject-header {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-weight: 800;
+        font-size: 1rem;
+        margin-bottom: 12px;
+      }
+
+      /*
+        Description is hidden because the grades themselves
+        already tell the teacher which classes are available.
+      */
+
+      .subject-description {
+        display: none;
+      }
+
+      /*
+        Grades appear directly underneath each subject.
+      */
+
+      .subject-card .checkbox-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .subject-card .checkbox-card {
+        position: relative;
+      }
+
+      .subject-card .checkbox-card label {
+        min-width: 48px;
+        padding: 8px 12px;
+        border: 1.5px solid var(--border-color);
+        border-radius: 9px;
+        text-align: center;
+        font-size: 0.84rem;
+        font-weight: 700;
+        color: var(--dark-text);
+        cursor: pointer;
+        background: white;
+        transition: 0.2s ease;
+      }
+
+      .subject-card .checkbox-card label:hover {
+        border-color: var(--primary-purple);
+        color: var(--primary-purple);
+      }
+
+      .subject-card .checkbox-card input:checked + label {
+        background: var(--primary-purple);
+        color: white;
+        border-color: var(--primary-purple);
+        box-shadow: 0 3px 8px rgba(85, 56, 238, 0.22);
+      }
+
+      /* ================= LANGUAGE TAGS ================= */
+
+      .tags-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .tag {
+        background: rgba(85, 56, 238, 0.1);
+        color: var(--primary-purple);
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .tag span {
+        cursor: pointer;
+        color: #ef4444;
+        font-weight: 800;
+      }
+
+      /* ================= INFO NOTE ================= */
+
+      .info-note {
+        margin-top: 14px;
+        padding: 12px 14px;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 10px;
+        font-size: 0.82rem;
+        line-height: 1.5;
+        color: #166534;
+      }
+
+      /* ================= BUTTONS ================= */
+
+      .action-buttons {
+        display: flex;
+        gap: 16px;
+        margin-top: 10px;
+      }
+
+      .btn-prev,
+      .btn-next {
+        padding: 14px;
+        border-radius: 12px;
+        font-family: inherit;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+
+      .btn-prev {
+        flex: 1;
+        background: white;
+        color: var(--dark-text);
+        border: 1.5px solid var(--border-color);
+      }
+
+      .btn-prev:hover {
+        background: #f1f5f9;
+      }
+
+      .btn-next {
+        flex: 2;
+        background: var(--primary-purple);
+        color: white;
+        border: none;
+      }
+
+      .btn-next:hover {
+        background: var(--primary-hover);
+      }
+
+      .footer-note {
+        max-width: 850px;
+        margin: 24px auto 0;
+        text-align: center;
+        font-size: 0.85rem;
+        color: var(--muted-text);
+      }
+
+      /* ================= RESPONSIVE ================= */
+
+      @media (max-width: 1100px) {
+        .left-sidebar {
+          width: 350px;
+          padding: 35px 28px;
+        }
+
+        .right-content {
+          margin-left: 350px;
+          padding: 35px 30px;
+        }
+
+        .sidebar-hero h2 {
+          font-size: 1.8rem;
+        }
+      }
+
+      @media (max-width: 850px) {
+        .left-sidebar {
+          position: relative;
+          width: 100%;
+          height: auto;
+        }
+
+        .right-content {
+          margin-left: 0;
+          padding: 30px 20px;
+        }
+
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .full-width {
+          grid-column: span 1;
+        }
+      }
+
+      @media (max-width: 600px) {
+        .left-sidebar {
+          padding: 28px 20px;
+        }
+
+        .right-content {
+          padding: 25px 15px;
+        }
+
+        .form-box {
+          padding: 24px 20px;
+        }
+
+        .toggle-group {
+          flex-direction: column;
+        }
+
+        .action-buttons {
+          flex-direction: column;
+        }
+
+        .subject-card .checkbox-grid {
+          gap: 6px;
+        }
+
+        .subject-card .checkbox-card label {
+          min-width: 42px;
+          padding: 7px 9px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="registration-container">
+      <!-- =====================================================
+           SIDEBAR
+      ====================================================== -->
+
+      <aside class="left-sidebar">
+        <div>
+          <div class="brand-logo">
+            <svg width="40" height="40" viewBox="0 0 44 44" fill="none">
+              <rect width="44" height="44" rx="12" fill="#5538EE" />
+
+              <path d="M22 13L11 19.5L22 26L33 19.5L22 13Z" fill="white" />
+
+              <path
+                d="M14.5 23.2L11 25.25L22 31.75L33 25.25L29.5 23.2L22 27.6L14.5 23.2Z"
+                fill="white"
+                fill-opacity="0.9"
+              />
+
+              <path
+                d="M14.5 27.2L11 29.25L22 35.75L33 29.25L29.5 27.2L22 31.6L14.5 27.2Z"
+                fill="white"
+                fill-opacity="0.75"
+              />
+            </svg>
+
+            <div class="brand-text">
+              <h3>Smart Learning DC</h3>
+              <p>Teach. Inspire. Grow.</p>
+            </div>
+          </div>
+
+          <div class="sidebar-hero">
+            <h2>
+              Create Your<br />
+              Teacher Account
+            </h2>
+
+            <p>
+              Join Smart Learning DC and start creating amazing learning
+              experiences for students.
+            </p>
+          </div>
+
+          <div class="feature-list">
+            <div class="feature-item">
+              <div class="feature-icon bg-purple">👥</div>
+
+              <div class="feature-text">
+                <h4>Create & Manage Classes</h4>
+                <p>Organize classes, students, and learning materials.</p>
+              </div>
+            </div>
+
+            <div class="feature-item">
+              <div class="feature-icon bg-blue">☁️</div>
+
+              <div class="feature-text">
+                <h4>Upload & Share Materials</h4>
+                <p>Share videos, PDFs, notes, and more.</p>
+              </div>
+            </div>
+
+            <div class="feature-item">
+              <div class="feature-icon bg-green">📊</div>
+
+              <div class="feature-text">
+                <h4>Track Student Progress</h4>
+                <p>Monitor student performance and progress.</p>
+              </div>
+            </div>
+
+            <div class="feature-item">
+              <div class="feature-icon bg-orange">📹</div>
+
+              <div class="feature-text">
+                <h4>Go Live & Engage</h4>
+                <p>Conduct live classes with students.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="sidebar-illustration">
+            <img
+              src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=800&auto=format&fit=crop"
+              alt="Teacher Workspace"
+            />
+          </div>
+        </div>
+
+        <div class="sidebar-quote">
+          <p>
+            “A good teacher can inspire hope, ignite the imagination, and
+            instill a love of learning.”
+          </p>
+
+          <span>— Brad Henry</span>
+        </div>
+      </aside>
+
+      <!-- ===================================================== 
+           RIGHT CONTENT 
+      ====================================================== -->
+
+      <main class="right-content">
+        <div class="top-bar">
+          Already have an account?
+          <a href="login.html">Login</a>
+        </div>
+
+        <div class="form-header">
+          <h1>Teacher Registration</h1>
+
+          <p>Set up your teaching profile and academic credentials.</p>
+        </div>
+
+        <!-- ================= STEPPER ================= -->
+
+        <div class="stepper">
+          <div class="step completed">
+            <div class="step-number">✓</div>
+
+            <div class="step-label">Personal Info</div>
+          </div>
+
+          <div class="step active">
+            <div class="step-number">2</div>
+
+            <div class="step-label">Professional Info</div>
+          </div>
+
+          <div class="step">
+            <div class="step-number">3</div>
+
+            <div class="step-label">Review & Submit</div>
+          </div>
+        </div>
+
+        <!-- =================================================== 
+             FORM 
+        ==================================================== -->
+
+        <div class="form-container">
+          <form id="profForm">
+            <!-- ================================================= 
+                 CURRENT INSTITUTION 
+            ================================================== -->
+
+            <div class="form-box">
+              <div class="section-title">🏫 Current Institution</div>
+
+              <div class="input-field full-width" style="margin-bottom: 20px">
+                <label> Employment Status </label>
+
+                <div class="toggle-group">
+                  <button
+                    type="button"
+                    class="toggle-btn active"
+                    id="btnFresher"
+                    onclick="setEmploymentStatus('fresher')"
+                  >
+                    🌱 Fresher
+                  </button>
+
+                  <button
+                    type="button"
+                    class="toggle-btn"
+                    id="btnTeaching"
+                    onclick="setEmploymentStatus('teaching')"
+                  >
+                    👩‍🏫 Currently Teaching
+                  </button>
+                </div>
+              </div>
+
+              <div class="form-grid dynamic-panel" id="teachingDetailsPanel">
+                <div class="input-field">
+                  <label for="institutionName">
+                    Institution / School Name
+                  </label>
+
+                  <div class="input-control">
+                    <span class="input-icon">🏢</span>
+
+                    <input
+                      type="text"
+                      id="institutionName"
+                      placeholder="e.g. St. Xavier High School"
+                    />
+                  </div>
+                </div>
+
+                <div class="input-field">
+                  <label for="institutionType"> Institution Type </label>
+
+                  <div class="input-control">
+                    <span class="input-icon">🏛️</span>
+
+                    <select id="institutionType">
+                      <option value="" selected disabled>
+                        Select institution type
+                      </option>
+
+                      <option value="private">Private</option>
+
+                      <option value="government">Government</option>
+
+                      <option value="semi_government">Semi-Government</option>
+
+                      <option value="international">
+                        International / IB School
+                      </option>
+
+                      <option value="coaching">
+                        Coaching Institute / Academy
+                      </option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="input-field full-width">
+                  <label for="experienceYears">
+                    Years of Teaching Experience
+                  </label>
+
+                  <div class="input-control">
+                    <span class="input-icon">⏳</span>
+
+                    <select id="experienceYears">
+                      <option value="" selected disabled>
+                        Select teaching experience
+                      </option>
+
+                      <option value="0-1">Less than 1 Year</option>
+
+                      <option value="1-3">1 - 3 Years</option>
+
+                      <option value="3-5">3 - 5 Years</option>
+
+                      <option value="5-10">5 - 10 Years</option>
+
+                      <option value="10+">10+ Years</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================================================= 
+                 EDUCATION 
+            ================================================== -->
+
+            <div class="form-box">
+              <div class="section-title">🎓 Educational Qualification</div>
+
+              <div class="form-grid">
+                <div class="input-field">
+                  <label for="highestQualification">
+                    Highest Qualification
+                  </label>
+
+                  <div class="input-control">
+                    <span class="input-icon">📜</span>
+
+                    <select id="highestQualification" required>
+                      <option value="" disabled selected>
+                        Select qualification level
+                      </option>
+
+                      <option value="bachelors">Bachelor's Degree</option>
+
+                      <option value="masters">Master's Degree</option>
+
+                      <option value="doctorate">Doctorate / Ph.D.</option>
+
+                      <option value="diploma">Professional Diploma</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="input-field">
+                  <label for="degreeName"> Degree / Course Name </label>
+
+                  <div class="input-control">
+                    <span class="input-icon">🎓</span>
+
+                    <input
+                      type="text"
+                      id="degreeName"
+                      placeholder="e.g. B.Ed, B.Tech, M.Sc"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div class="input-field">
+                  <label for="specialization"> Specialization </label>
+
+                  <div class="input-control">
+                    <span class="input-icon">🔬</span>
+
+                    <input
+                      type="text"
+                      id="specialization"
+                      placeholder="e.g. Mathematics"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div class="input-field">
+                  <label for="university"> University / College </label>
+
+                  <div class="input-control">
+                    <span class="input-icon">🏛️</span>
+
+                    <input
+                      type="text"
+                      id="university"
+                      placeholder="Enter institution name"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div class="input-field full-width">
+                  <label for="gradYear"> Graduation Year </label>
+
+                  <div class="input-control">
+                    <span class="input-icon">📅</span>
+
+                    <select id="gradYear" required>
+                      <option value="" disabled selected>
+                        Select graduation year
+                      </option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================================================= 
+                 TEACHING ASSIGNMENT 
+            ================================================== -->
+
+            <div class="form-box">
+              <div class="section-title">📚 Teaching Assignment</div>
+
+              <!-- TEACHING MODE -->
+
+              <div class="input-field full-width" style="margin-bottom: 22px">
+                <label> Teaching Mode </label>
+
+                <div class="toggle-group">
+                  <button
+                    type="button"
+                    class="toggle-btn active"
+                    id="btnTeachAll"
+                    onclick="setTeachingMode('teach_all')"
+                  >
+                    🌐 Teach All Subjects
+                  </button>
+
+                  <button
+                    type="button"
+                    class="toggle-btn"
+                    id="btnSpecialist"
+                    onclick="setTeachingMode('subject_specialist')"
+                  >
+                    🎯 Subject Specialist
+                  </button>
+                </div>
+              </div>
+
+              <!-- ================================================= 
+                   TEACH ALL 
+              ================================================== -->
+
+              <div id="teachAllPanel" class="dynamic-panel show">
+                <div class="input-field full-width">
+                  <label> Select Grade Group(s) You Want to Teach </label>
+
+                  <div class="checkbox-grid">
+                    <div class="checkbox-card">
+                      <input type="checkbox" id="grades56" value="grades_5_6" />
+
+                      <label for="grades56"> Classes 5–6 </label>
+                    </div>
+
+                    <div class="checkbox-card">
+                      <input type="checkbox" id="grades78" value="grades_7_8" />
+
+                      <label for="grades78"> Classes 7–8 </label>
+                    </div>
+
+                    <div class="checkbox-card">
+                      <input
+                        type="checkbox"
+                        id="grades910"
+                        value="grades_9_10"
+                      />
+
+                      <label for="grades910"> Classes 9–10 </label>
+                    </div>
+
+                    <div class="checkbox-card">
+                      <input
+                        type="checkbox"
+                        id="grades1112"
+                        value="grades_11_12"
+                        onchange="toggleSeniorStreamPanel()"
+                      />
+
+                      <label for="grades1112"> Classes 11–12 </label>
+                    </div>
+                  </div>
+
+                  <div class="info-note">
+                    Classes 5–10 use the standard subjects. If you select
+                    Classes 11–12, you must select one or more streams.
+                  </div>
+                </div>
+
+                <!-- SENIOR STREAM -->
+
+                <div
+                  id="streamSelectPanel"
+                  class="input-field full-width dynamic-panel"
+                  style="margin-top: 20px"
+                >
+                  <label> Select Stream(s) for Classes 11–12 </label>
+
+                  <div class="checkbox-grid">
+                    <div class="checkbox-card">
+                      <input type="checkbox" id="stPCM" value="science_pcm" />
+
+                      <label for="stPCM"> Science (PCM) </label>
+                    </div>
+
+                    <div class="checkbox-card">
+                      <input type="checkbox" id="stPCB" value="science_pcb" />
+
+                      <label for="stPCB"> Science (PCB) </label>
+                    </div>
+
+                    <div class="checkbox-card">
+                      <input type="checkbox" id="stCommerce" value="commerce" />
+
+                      <label for="stCommerce"> Commerce </label>
+                    </div>
+
+                    <div class="checkbox-card">
+                      <input
+                        type="checkbox"
+                        id="stArts"
+                        value="arts_humanities"
+                      />
+
+                      <label for="stArts"> Arts / Humanities </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ================================================= 
+                   SUBJECT SPECIALIST 
+              ================================================== -->
+
+              <div id="subjectSpecialistPanel" class="dynamic-panel">
+                <div class="input-field full-width">
+                  <label>
+                    Select Subject(s) and Classes You Wish to Teach
+                  </label>
+
+                  <div class="info-note">
+                    Select multiple subjects and select multiple classes for
+                    each subject.
+                  </div>
+                </div>
+
+                <div class="subject-box-list">
+                  <!-- MATHEMATICS -->
+
+                  <div class="subject-card">
+                    <div class="subject-header">📐 Mathematics</div>
+
+                    <div class="subject-description">
+                      Mathematics — Classes 5 to 12
+                    </div>
+
+                    <div class="checkbox-grid">
+                      <script>
+                        document.write(
+                          generateGradeCheckboxes("mathematics", 5, 12),
+                        );
+                      </script>
+                    </div>
+                  </div>
+
+                  <!-- ENGLISH -->
+
+                  <div class="subject-card">
+                    <div class="subject-header">📖 English</div>
+
+                    <div class="subject-description">
+                      English — Classes 5 to 12
+                    </div>
+
+                    <div class="checkbox-grid">
+                      <script>
+                        document.write(
+                          generateGradeCheckboxes("english", 5, 12),
+                        );
+                      </script>
+                    </div>
+                  </div>
+
+                  <!-- PHYSICS -->
+
+                  <div class="subject-card">
+                    <div class="subject-header">⚛️ Physics</div>
+
+                    <div class="subject-description">
+                      Physics — Classes 9 to 12
+                    </div>
+
+                    <div class="checkbox-grid">
+                      <script>
+                        document.write(
+                          generateGradeCheckboxes("physics", 9, 12),
+                        );
+                      </script>
+                    </div>
+                  </div>
+
+                  <!-- CHEMISTRY -->
+
+                  <div class="subject-card">
+                    <div class="subject-header">🧪 Chemistry</div>
+
+                    <div class="subject-description">
+                      Chemistry — Classes 9 to 12
+                    </div>
+
+                    <div class="checkbox-grid">
+                      <script>
+                        document.write(
+                          generateGradeCheckboxes("chemistry", 9, 12),
+                        );
+                      </script>
+                    </div>
+                  </div>
+
+                  <!-- BIOLOGY -->
+
+                  <div class="subject-card">
+                    <div class="subject-header">🧬 Biology</div>
+
+                    <div class="subject-description">
+                      Biology — Classes 9 to 12
+                    </div>
+
+                    <div class="checkbox-grid">
+                      <script>
+                        document.write(
+                          generateGradeCheckboxes("biology", 9, 12),
+                        );
+                      </script>
+                    </div>
+                  </div>
+
+                  <!-- PHYSICAL EDUCATION -->
+
+                  <div class="subject-card">
+                    <div class="subject-header">🏃 Physical Education</div>
+
+                    <div class="subject-description">
+                      Physical Education — Classes 11 to 12
+                    </div>
+
+                    <div class="checkbox-grid">
+                      <script>
+                        document.write(
+                          generateGradeCheckboxes("physical_education", 11, 12),
+                        );
+                      </script>
+                    </div>
+                  </div>
+
+                  <!-- COMPUTER SCIENCE -->
+
+                  <div class="subject-card">
+                    <div class="subject-header">💻 Computer Science</div>
+
+                    <div class="subject-description">
+                      Computer Science — Classes 11 to 12
+                    </div>
+
+                    <div class="checkbox-grid">
+                      <script>
+                        document.write(
+                          generateGradeCheckboxes("computer_science", 11, 12),
+                        );
+                      </script>
+                    </div>
+                  </div>
+
+                  <!-- ACCOUNTANCY -->
+
+                  <div class="subject-card">
+                    <div class="subject-header">🧾 Accountancy</div>
+
+                    <div class="subject-description">
+                      Accountancy — Classes 11 to 12
+                    </div>
+
+                    <div class="checkbox-grid">
+                      <script>
+                        document.write(
+                          generateGradeCheckboxes("accountancy", 11, 12),
+                        );
+                      </script>
+                    </div>
+                  </div>
+
+                  <!-- BUSINESS STUDIES -->
+
+                  <div class="subject-card">
+                    <div class="subject-header">📊 Business Studies</div>
+
+                    <div class="subject-description">
+                      Business Studies — Classes 11 to 12
+                    </div>
+
+                    <div class="checkbox-grid">
+                      <script>
+                        document.write(
+                          generateGradeCheckboxes("business_studies", 11, 12),
+                        );
+                      </script>
+                    </div>
+                  </div>
+
+                  <!-- ECONOMICS -->
+
+                  <div class="subject-card">
+                    <div class="subject-header">💰 Economics</div>
+
+                    <div class="subject-description">
+                      Economics — Classes 11 to 12
+                    </div>
+
+                    <div class="checkbox-grid">
+                      <script>
+                        document.write(
+                          generateGradeCheckboxes("economics", 11, 12),
+                        );
+                      </script>
+                    </div>
+                  </div>
+
+                  <!-- HISTORY -->
+
+                  <div class="subject-card">
+                    <div class="subject-header">🏛️ History</div>
+
+                    <div class="subject-description">
+                      History — Classes 11 to 12
+                    </div>
+
+                    <div class="checkbox-grid">
+                      <script>
+                        document.write(
+                          generateGradeCheckboxes("history", 11, 12),
+                        );
+                      </script>
+                    </div>
+                  </div>
+
+                  <!-- GEOGRAPHY -->
+
+                  <div class="subject-card">
+                    <div class="subject-header">🌍 Geography</div>
+
+                    <div class="subject-description">
+                      Geography — Classes 11 to 12
+                    </div>
+
+                    <div class="checkbox-grid">
+                      <script>
+                        document.write(
+                          generateGradeCheckboxes("geography", 11, 12),
+                        );
+                      </script>
+                    </div>
+                  </div>
+
+                  <!-- HINDI -->
+
+                  <div class="subject-card">
+                    <div class="subject-header">🪔 Hindi</div>
+
+                    <div class="subject-description">
+                      Hindi — Classes 5 to 10
+                    </div>
+
+                    <div class="checkbox-grid">
+                      <script>
+                        document.write(generateGradeCheckboxes("hindi", 5, 10));
+                      </script>
+                    </div>
+                  </div>
+
+                  <!-- SCIENCE -->
+
+                  <div class="subject-card">
+                    <div class="subject-header">🔬 Science</div>
+
+                    <div class="subject-description">
+                      General Science — Classes 5 to 10
+                    </div>
+
+                    <div class="checkbox-grid">
+                      <script>
+                        document.write(
+                          generateGradeCheckboxes("science", 5, 10),
+                        );
+                      </script>
+                    </div>
+                  </div>
+
+                  <!-- SOCIAL SCIENCE -->
+
+                  <div class="subject-card">
+                    <div class="subject-header">🌎 Social Science (SST)</div>
+
+                    <div class="subject-description">
+                      Social Science — Classes 5 to 10
+                    </div>
+
+                    <div class="checkbox-grid">
+                      <script>
+                        document.write(generateGradeCheckboxes("sst", 5, 10));
+                      </script>
+                    </div>
+                  </div>
+
+                  <!-- GENERAL KNOWLEDGE -->
+
+                  <div class="subject-card">
+                    <div class="subject-header">🧠 General Knowledge</div>
+
+                    <div class="subject-description">
+                      General Knowledge — Classes 5 to 8
+                    </div>
+
+                    <div class="checkbox-grid">
+                      <script>
+                        document.write(generateGradeCheckboxes("gk", 5, 8));
+                      </script>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================================================= 
+                 LANGUAGES 
+            ================================================== -->
+
+            <div class="form-box">
+              <div class="section-title">🗣️ Languages Spoken</div>
+
+              <div class="input-field full-width">
+                <label for="languageSelect">
+                  Select Languages You Can Teach / Speak In
+                </label>
+
+                <div class="input-control">
+                  <span class="input-icon"> 🗣️ </span>
+
+                  <select id="languageSelect" onchange="addLanguageTag(this)">
+                    <option value="" disabled selected>
+                      Select a language to add...
+                    </option>
+
+                    <option value="English">English</option>
+
+                    <option value="Hindi">Hindi</option>
+
+                    <option value="Bengali">Bengali</option>
+
+                    <option value="Tamil">Tamil</option>
+
+                    <option value="Telugu">Telugu</option>
+
+                    <option value="Marathi">Marathi</option>
+
+                    <option value="Gujarati">Gujarati</option>
+
+                    <option value="Kannada">Kannada</option>
+
+                    <option value="Malayalam">Malayalam</option>
+
+                    <option value="Punjabi">Punjabi</option>
+
+                    <option value="Urdu">Urdu</option>
+
+                    <option value="Spanish">Spanish</option>
+
+                    <option value="French">French</option>
+
+                    <option value="German">German</option>
+                  </select>
+                </div>
+
+                <div class="tags-container" id="languageTags">
+                  <div class="tag">
+                    English
+                    <span onclick="removeTag(this)"> × </span>
+                  </div>
+
+                  <div class="tag">
+                    Hindi
+                    <span onclick="removeTag(this)"> × </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================================================= 
+                 ACTION BUTTONS 
+            ================================================== -->
+
+            <div class="action-buttons">
+              <button
+                type="button"
+                class="btn-prev"
+                onclick="goToPersonalInfo()"
+              >
+                ← Back
+              </button>
+
+              <button type="submit" class="btn-next">Next Step →</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="footer-note">
+          🔒 Your information is secure and will never be shared with anyone.
+        </div>
+      </main>
+    </div>
+    here is the html or css
+    <script>
+      if (false) {
+        /* =========================================================
+         GLOBAL STATE
+      ========================================================== */
+
+        let employmentStatus = "fresher";
+        let teachingMode = "teach_all";
+
+        /* =========================================================
+         GRADE CHECKBOX GENERATOR
+      ========================================================== */
+
+        function generateGradeCheckboxes(subject, startGrade, endGrade) {
+          let html = "";
+
+          for (let grade = startGrade; grade <= endGrade; grade++) {
+            const id = "subject_" + subject + "_class_" + grade;
+
+            html += `
+            <div class="checkbox-card">
+
+              <input
+                type="checkbox"
+                id="${id}"
+                name="subject_grades_${subject}[]"
+                value="${grade}"
+                data-subject="${subject}"
+                data-grade="${grade}"
+              />
+
+              <label for="${id}">
+                ${grade}
+              </label>
+
+            </div>
+          `;
+          }
+
+          return html;
+        }
+
+        /* =========================================================
+         EMPLOYMENT STATUS
+      ========================================================== */
+
+        function setEmploymentStatus(status) {
+          employmentStatus = status;
+
+          const fresherButton = document.getElementById("btnFresher");
+
+          const teachingButton = document.getElementById("btnTeaching");
+
+          const teachingPanel = document.getElementById("teachingDetailsPanel");
+
+          if (status === "fresher") {
+            fresherButton.classList.add("active");
+            teachingButton.classList.remove("active");
+
+            teachingPanel.classList.remove("show");
+          } else {
+            teachingButton.classList.add("active");
+            fresherButton.classList.remove("active");
+
+            teachingPanel.classList.add("show");
+          }
+        }
+
+        /* =========================================================
+         TEACHING MODE
+      ========================================================== */
+
+        function setTeachingMode(mode) {
+          teachingMode = mode;
+
+          const teachAllButton = document.getElementById("btnTeachAll");
+
+          const specialistButton = document.getElementById("btnSpecialist");
+
+          const teachAllPanel = document.getElementById("teachAllPanel");
+
+          const specialistPanel = document.getElementById(
+            "subjectSpecialistPanel",
+          );
+
+          if (mode === "teach_all") {
+            teachAllButton.classList.add("active");
+            specialistButton.classList.remove("active");
+
+            teachAllPanel.classList.add("show");
+            specialistPanel.classList.remove("show");
+          } else {
+            specialistButton.classList.add("active");
+            teachAllButton.classList.remove("active");
+
+            teachAllPanel.classList.remove("show");
+            specialistPanel.classList.add("show");
+          }
+        }
+
+        /* =========================================================
+         SENIOR STREAM PANEL
+      ========================================================== */
+
+        function toggleSeniorStreamPanel() {
+          const grades1112 = document.getElementById("grades1112");
+
+          const streamPanel = document.getElementById("streamSelectPanel");
+
+          if (grades1112.checked) {
+            streamPanel.classList.add("show");
+          } else {
+            streamPanel.classList.remove("show");
+
+            document
+              .querySelectorAll("#streamSelectPanel input[type='checkbox']")
+              .forEach((checkbox) => {
+                checkbox.checked = false;
+              });
+          }
+        }
+
+        /* =========================================================
+         LANGUAGE TAGS
+      ========================================================== */
+
+        function addLanguageTag(select) {
+          const language = select.value;
+
+          if (!language) {
+            return;
+          }
+
+          const tagsContainer = document.getElementById("languageTags");
+
+          const existingTags = Array.from(
+            tagsContainer.querySelectorAll(".tag"),
+          );
+
+          const alreadyExists = existingTags.some(
+            (tag) => tag.textContent.replace("×", "").trim() === language,
+          );
+
+          if (alreadyExists) {
+            select.value = "";
+            return;
+          }
+
+          const tag = document.createElement("div");
+
+          tag.className = "tag";
+
+          tag.innerHTML = `
+          ${language}
+          <span onclick="removeTag(this)">×</span>
+        `;
+
+          tagsContainer.appendChild(tag);
+
+          select.value = "";
+        }
+
+        function removeTag(element) {
+          const tag = element.parentElement;
+
+          tag.remove();
+        }
+
+        /* =========================================================
+         NAVIGATION
+      ========================================================== */
+
+        function goToPersonalInfo() {
+          window.location.href = "teacher-personal.html";
+        }
+
+        /* =========================================================
+         GRADUATION YEAR
+      ========================================================== */
+
+        function populateGraduationYears() {
+          const select = document.getElementById("gradYear");
+
+          const currentYear = new Date().getFullYear();
+
+          for (let year = currentYear; year >= currentYear - 60; year--) {
+            const option = document.createElement("option");
+
+            option.value = year;
+            option.textContent = year;
+
+            select.appendChild(option);
+          }
+        }
+
+        /* =========================================================
+         COLLECT SUBJECT SPECIALIST DATA
+         
+         Example result:
+
+         {
+           mathematics: [5,6,7,8,9,10,11,12],
+           physics: [9,10,11],
+           chemistry: [11,12]
+         }
+      ========================================================== */
+
+        function getSubjectSpecialistAssignments() {
+          const assignments = {};
+
+          document
+            .querySelectorAll(
+              '#subjectSpecialistPanel input[type="checkbox"][data-subject]',
+            )
+            .forEach((checkbox) => {
+              if (!checkbox.checked) {
+                return;
+              }
+
+              const subject = checkbox.dataset.subject;
+
+              const grade = Number(checkbox.dataset.grade);
+
+              if (!assignments[subject]) {
+                assignments[subject] = [];
+              }
+
+              assignments[subject].push(grade);
+            });
+
+          return assignments;
+        }
+
+        /* =========================================================
+         COLLECT TEACH ALL GRADE GROUPS
+      ========================================================== */
+
+        function getTeachAllGradeGroups() {
+          const selectedGroups = [];
+
+          document
+            .querySelectorAll(
+              '#teachAllPanel input[type="checkbox"][value^="grades_"]',
+            )
+            .forEach((checkbox) => {
+              if (checkbox.checked) {
+                selectedGroups.push(checkbox.value);
+              }
+            });
+
+          return selectedGroups;
+        }
+
+        /* =========================================================
+         COLLECT STREAMS
+      ========================================================== */
+
+        function getSelectedStreams() {
+          const streams = [];
+
+          document
+            .querySelectorAll('#streamSelectPanel input[type="checkbox"]')
+            .forEach((checkbox) => {
+              if (checkbox.checked) {
+                streams.push(checkbox.value);
+              }
+            });
+
+          return streams;
+        }
+
+        /* =========================================================
+         FORM SUBMIT
+      ========================================================== */
+
+        document
+          .getElementById("profForm")
+          .addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            const formData = {
+              employmentStatus: employmentStatus,
+
+              teachingMode: teachingMode,
+
+              gradeGroups:
+                teachingMode === "teach_all" ? getTeachAllGradeGroups() : [],
+
+              streams: teachingMode === "teach_all" ? getSelectedStreams() : [],
+
+              subjectAssignments:
+                teachingMode === "subject_specialist"
+                  ? getSubjectSpecialistAssignments()
+                  : {},
+            };
+
+            console.log("Professional Information:", formData);
+
+            /*
+            Your existing next-step logic can go here.
+
+            Example:
+
+            sessionStorage.setItem(
+              "teacherProfessionalInfo",
+              JSON.stringify(formData)
+            );
+
+            window.location.href =
+              "teacher-review.html";
+          */
+
+            alert("Professional information captured successfully.");
+          });
+
+        /* =========================================================
+         INITIALIZE
+      ========================================================== */
+
+        document.addEventListener("DOMContentLoaded", function () {
+          populateGraduationYears();
+
+          setEmploymentStatus("fresher");
+
+          setTeachingMode("teach_all");
+        });
+      }
+    </script>
+  </body>
+</html>
+
+<!-- =========================================================
+     JAVASCRIPT
+========================================================== -->
+<script>
+  /* =========================================================
+   GLOBAL STATE
+========================================================= */
+
+  let employmentStatus = "fresher";
+  let teachingMode = "teach_all";
+
+  /* =========================================================
+   SUBJECT → AVAILABLE GRADES
+========================================================= */
+
+  const SUBJECT_GRADE_OPTIONS = {
+    Mathematics: [5, 6, 7, 8, 9, 10, 11, 12],
+
+    English: [5, 6, 7, 8, 9, 10, 11, 12],
+
+    Physics: [9, 10, 11, 12],
+
+    Chemistry: [9, 10, 11, 12],
+
+    Biology: [9, 10, 11, 12],
+
+    "Physical Education": [11, 12],
+
+    "Computer Science": [11, 12],
+
+    Accountancy: [11, 12],
+
+    "Business Studies": [11, 12],
+
+    Economics: [11, 12],
+
+    History: [11, 12],
+
+    Geography: [11, 12],
+
+    Hindi: [5, 6, 7, 8, 9, 10],
+
+    Science: [5, 6, 7, 8, 9, 10],
+
+    SST: [5, 6, 7, 8, 9, 10],
+
+    GK: [5, 6, 7, 8],
+  };
+
+  /* =========================================================
+   SUBJECT KEY → SUBJECT NAME
+========================================================= */
+
+  const SUBJECT_KEY_TO_NAME = {
+    mathematics: "Mathematics",
+    english: "English",
+    physics: "Physics",
+    chemistry: "Chemistry",
+    biology: "Biology",
+    physical_education: "Physical Education",
+    computer_science: "Computer Science",
+    accountancy: "Accountancy",
+    business_studies: "Business Studies",
+    economics: "Economics",
+    history: "History",
+    geography: "Geography",
+    hindi: "Hindi",
+    science: "Science",
+    sst: "SST",
+    gk: "GK",
+  };
+
+  /* =========================================================
+   GENERATE SUBJECT GRADE CHECKBOXES
+   USED DIRECTLY INSIDE EXISTING SUBJECT CARDS
+========================================================= */
+
+  function generateGradeCheckboxes(subjectKey, startGrade, endGrade) {
+    const subjectName = SUBJECT_KEY_TO_NAME[subjectKey] || subjectKey;
+
+    const availableGrades = SUBJECT_GRADE_OPTIONS[subjectName] || [];
+
+    const grades = availableGrades.filter(
+      (grade) => grade >= startGrade && grade <= endGrade,
+    );
+
+    return grades
+      .map((grade) => {
+        const inputId = `specialist_${subjectKey}_grade_${grade}`;
+
+        return `
+      <div class="checkbox-card">
+        <input
+          type="checkbox"
+          id="${inputId}"
+          class="specialist-grade-checkbox"
+          data-subject="${subjectName}"
+          data-grade="${grade}"
+          value="${grade}"
+        />
+
+        <label for="${inputId}">
+          Class ${grade}
+        </label>
+      </div>
+    `;
+      })
+      .join("");
+  }
+
+  /* =========================================================
+   NAVIGATION
+========================================================= */
+
+  function goToPersonalInfo() {
+    window.location.href = "teacher-personal.html";
+  }
+
+  function goToReview() {
+    if (!validateProfessionalForm()) {
+      return;
+    }
+
+    saveProfessionalData();
+
+    window.location.href = "review.html";
+  }
+
+  /* =========================================================
+   GRADUATION YEARS
+========================================================= */
+
+  function populateGraduationYears() {
+    const select = document.getElementById("gradYear");
+
+    if (!select) return;
+
+    if (select.options.length > 1) return;
+
+    const currentYear = new Date().getFullYear();
+
+    for (let year = currentYear; year >= 1970; year--) {
+      const option = document.createElement("option");
+
+      option.value = year;
+      option.textContent = year;
+
+      select.appendChild(option);
+    }
+  }
+
+  /* =========================================================
+   EMPLOYMENT STATUS
+========================================================= */
+
+  function setEmploymentStatus(type) {
+    const fresherButton = document.getElementById("btnFresher");
+
+    const teachingButton = document.getElementById("btnTeaching");
+
+    const panel = document.getElementById("teachingDetailsPanel");
+
+    const institutionName = document.getElementById("institutionName");
+
+    const institutionType = document.getElementById("institutionType");
+
+    const experienceYears = document.getElementById("experienceYears");
+
+    employmentStatus = type;
+
+    /* ================= TEACHING ================= */
+
+    if (type === "teaching") {
+      fresherButton?.classList.remove("active");
+      teachingButton?.classList.add("active");
+
+      panel?.classList.add("show");
+
+      if (institutionName) {
+        institutionName.disabled = false;
+        institutionName.required = true;
+      }
+
+      if (institutionType) {
+        institutionType.disabled = false;
+        institutionType.required = true;
+      }
+
+      if (experienceYears) {
+        experienceYears.disabled = false;
+        experienceYears.required = true;
+      }
+    } else {
+      /* ================= FRESHER ================= */
+      fresherButton?.classList.add("active");
+      teachingButton?.classList.remove("active");
+
+      panel?.classList.remove("show");
+
+      if (institutionName) {
+        institutionName.disabled = true;
+        institutionName.required = false;
+        institutionName.value = "";
+      }
+
+      if (institutionType) {
+        institutionType.disabled = true;
+        institutionType.required = false;
+        institutionType.value = "";
+      }
+
+      if (experienceYears) {
+        experienceYears.disabled = true;
+        experienceYears.required = false;
+        experienceYears.value = "";
+      }
+    }
+  }
+
+  /* =========================================================
+   TEACHING MODE
+========================================================= */
+
+  function setTeachingMode(mode) {
+    const btnTeachAll = document.getElementById("btnTeachAll");
+
+    const btnSpecialist = document.getElementById("btnSpecialist");
+
+    const teachAllPanel = document.getElementById("teachAllPanel");
+
+    const specialistPanel = document.getElementById("subjectSpecialistPanel");
+
+    /* =======================================================
+     SUBJECT SPECIALIST
+  ======================================================= */
+
+    if (mode === "subject_specialist" || mode === "specialist") {
+      teachingMode = "subject_specialist";
+
+      btnSpecialist?.classList.add("active");
+      btnTeachAll?.classList.remove("active");
+
+      teachAllPanel?.classList.remove("show");
+
+      specialistPanel?.classList.add("show");
+
+      return;
+    }
+
+    /* =======================================================
+     TEACH ALL
+  ======================================================= */
+
+    teachingMode = "teach_all";
+
+    btnTeachAll?.classList.add("active");
+    btnSpecialist?.classList.remove("active");
+
+    teachAllPanel?.classList.add("show");
+
+    specialistPanel?.classList.remove("show");
+
+    toggleSeniorStreamPanel();
+  }
+
+  /* =========================================================
+   TEACH ALL → SENIOR STREAM
+========================================================= */
+
+  function toggleSeniorStreamPanel() {
+    const streamPanel = document.getElementById("streamSelectPanel");
+
+    if (!streamPanel) return;
+
+    const seniorGrade = document.getElementById("grades1112");
+
+    /* =======================================================
+     STANDARD GRADE GROUP SYSTEM
+  ======================================================= */
+
+    if (seniorGrade) {
+      if (seniorGrade.checked) {
+        streamPanel.classList.add("show");
+      } else {
+        streamPanel.classList.remove("show");
+
+        clearStreamSelection();
+      }
+
+      return;
+    }
+
+    /* =======================================================
+     FALLBACK INDIVIDUAL GRADE SYSTEM
+  ======================================================= */
+
+    const g11 = document.getElementById("g11");
+
+    const g12 = document.getElementById("g12");
+
+    if (g11?.checked || g12?.checked) {
+      streamPanel.classList.add("show");
+    } else {
+      streamPanel.classList.remove("show");
+
+      clearStreamSelection();
+    }
+  }
+
+  /* =========================================================
+   CLEAR STREAM SELECTION
+========================================================= */
+
+  function clearStreamSelection() {
+    document
+      .querySelectorAll("#streamSelectPanel input[type='checkbox']")
+      .forEach((checkbox) => {
+        checkbox.checked = false;
+      });
+  }
+
+  /* =========================================================
+   GET SELECTED GRADE GROUPS
+========================================================= */
+
+  function getSelectedGradeGroups() {
+    const ids = ["grades56", "grades78", "grades910", "grades1112"];
+
+    return ids
+
+      .map((id) => document.getElementById(id))
+
+      .filter((input) => input && input.checked)
+
+      .map((input) => input.value);
+  }
+
+  /* =========================================================
+   GET INDIVIDUAL GRADES
+   FALLBACK SUPPORT
+========================================================= */
+
+  function getSelectedGrades() {
+    const ids = ["g5", "g6", "g7", "g8", "g9", "g10", "g11", "g12"];
+
+    return ids
+
+      .map((id) => document.getElementById(id))
+
+      .filter((input) => input && input.checked)
+
+      .map((input) => input.value);
+  }
+
+  /* =========================================================
+   GET SELECTED STREAMS
+========================================================= */
+
+  function getSelectedStreams() {
+    const ids = ["stPCM", "stPCB", "stCommerce", "stArts"];
+
+    return ids
+
+      .map((id) => document.getElementById(id))
+
+      .filter((input) => input && input.checked)
+
+      .map((input) => input.value);
+  }
+
+  /* =========================================================
+   SUBJECT SPECIALIST
+   GET SUBJECT + MULTIPLE GRADES
+========================================================= */
+
+  /*
+   Example result:
+
+   [
+     {
+       subject: "Mathematics",
+       grades: [5, 6, 7, 8, 9, 10]
+     },
+
+     {
+       subject: "Physics",
+       grades: [9, 10, 11, 12]
+     }
+   ]
+*/
+
+  function getSpecialistAssignments() {
+    const assignments = {};
+
+    const checkboxes = document.querySelectorAll(
+      ".specialist-grade-checkbox:checked",
+    );
+
+    checkboxes.forEach((checkbox) => {
+      const subject = checkbox.dataset.subject;
+
+      const grade = Number(checkbox.dataset.grade);
+
+      if (!subject || !grade) return;
+
+      if (!assignments[subject]) {
+        assignments[subject] = [];
+      }
+
+      assignments[subject].push(grade);
+    });
+
+    return Object.entries(assignments).map(([subject, grades]) => {
+      return {
+        subject: subject,
+        grades: grades.sort((a, b) => a - b),
+      };
+    });
+  }
+
+  /* =========================================================
+   GET SPECIALIST SUBJECT NAMES
+========================================================= */
+
+  function getSpecialistSubjects() {
+    return getSpecialistAssignments().map((item) => item.subject);
+  }
+
+  /* =========================================================
+   LANGUAGE TAGS
+========================================================= */
+
+  function addLanguageTag(selectElement) {
+    if (!selectElement) return;
+
+    const value = selectElement.value;
+
+    if (!value) return;
+
+    const container = document.getElementById("languageTags");
+
+    if (!container) return;
+
+    const existingLanguages = Array.from(container.children).map(
+      (tag) => tag.dataset.language || tag.textContent.replace("×", "").trim(),
+    );
+
+    if (!existingLanguages.includes(value)) {
+      const tag = document.createElement("div");
+
+      tag.className = "tag";
+
+      tag.dataset.language = value;
+
+      tag.innerHTML = `
+      ${value}
+      <span onclick="removeTag(this)">×</span>
+    `;
+
+      container.appendChild(tag);
+    }
+
+    selectElement.selectedIndex = 0;
+  }
+
+  function removeTag(spanElement) {
+    if (!spanElement) return;
+
+    spanElement.parentElement.remove();
+  }
+
+  function getSelectedLanguages() {
+    const container = document.getElementById("languageTags");
+
+    if (!container) return [];
+
+    return Array.from(container.children).map(
+      (tag) => tag.dataset.language || tag.textContent.replace("×", "").trim(),
+    );
+  }
+
+  /* =========================================================
+   COLLECT PROFESSIONAL DATA
+========================================================= */
+
+  function collectProfessionalData() {
+    return {
+      /* ================= EMPLOYMENT ================= */
+
+      employment_status: employmentStatus,
+
+      institution_name: document.getElementById("institutionName")?.value || "",
+
+      institution_type: document.getElementById("institutionType")?.value || "",
+
+      experience_years: document.getElementById("experienceYears")?.value || "",
+
+      /* ================= EDUCATION ================= */
+
+      highest_qualification:
+        document.getElementById("highestQualification")?.value || "",
+
+      degree_name: document.getElementById("degreeName")?.value || "",
+
+      specialization: document.getElementById("specialization")?.value || "",
+
+      university: document.getElementById("university")?.value || "",
+
+      graduation_year: document.getElementById("gradYear")?.value || "",
+
+      /* ================= TEACHING ================= */
+
+      teaching_mode: teachingMode,
+
+      /* ================= TEACH ALL ================= */
+
+      selected_grade_groups: getSelectedGradeGroups(),
+
+      selected_grades: getSelectedGrades(),
+
+      selected_streams: getSelectedStreams(),
+
+      /* ================= SUBJECT SPECIALIST ================= */
+
+      specialist_assignments: getSpecialistAssignments(),
+
+      specialist_subjects: getSpecialistSubjects(),
+
+      /* ================= LANGUAGES ================= */
+
+      languages: getSelectedLanguages(),
+    };
+  }
+
+  /* =========================================================
+   VALIDATION
+========================================================= */
+
+  function validateProfessionalForm() {
+    const form = document.getElementById("profForm");
+
+    if (!form) {
+      console.error("Professional form not found.");
+
+      return false;
+    }
+
+    /* =======================================================
+     NORMAL HTML VALIDATION
+  ======================================================= */
+
+    if (!form.checkValidity()) {
+      form.reportValidity();
+
+      return false;
+    }
+
+    /* =======================================================
+     TEACH ALL
+  ======================================================= */
+
+    if (teachingMode === "teach_all") {
+      const gradeGroups = getSelectedGradeGroups();
+
+      /* -----------------------------------------------
+       At least one grade group
+    ------------------------------------------------ */
+
+      if (gradeGroups.length === 0) {
+        const individualGrades = getSelectedGrades();
+
+        if (individualGrades.length === 0) {
+          alert("Please select at least one grade group.");
+
+          return false;
+        }
+      }
+
+      /* -----------------------------------------------
+       Classes 11–12 require stream
+    ------------------------------------------------ */
+
+      const hasSeniorGroup = gradeGroups.includes("grades_11_12");
+
+      const individualSenior = getSelectedGrades().some(
+        (grade) =>
+          grade === "11" ||
+          grade === "12" ||
+          grade === "Grade 11" ||
+          grade === "Grade 12",
+      );
+
+      if (hasSeniorGroup || individualSenior) {
+        const streams = getSelectedStreams();
+
+        if (streams.length === 0) {
+          alert("Please select at least one stream for Classes 11–12.");
+
+          return false;
+        }
+      }
+    }
+
+    /* =======================================================
+     SUBJECT SPECIALIST
+  ======================================================= */
+
+    if (teachingMode === "subject_specialist") {
+      const assignments = getSpecialistAssignments();
+
+      if (assignments.length === 0) {
+        alert("Please select at least one subject and at least one grade.");
+
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /* =========================================================
+   SAVE PROFESSIONAL DATA
+========================================================= */
+
+  function saveProfessionalData() {
+    const data = collectProfessionalData();
+
+    sessionStorage.setItem("teacherProfessionalInfo", JSON.stringify(data));
+
+    console.log("Professional information saved:", data);
+  }
+
+  /* =========================================================
+   FORM SUBMIT
+========================================================= */
+
+  function initializeFormSubmit() {
+    const form = document.getElementById("profForm");
+
+    if (!form) return;
+
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+
+      if (!validateProfessionalForm()) {
+        return;
+      }
+
+      saveProfessionalData();
+
+      window.location.href = "review.html";
+    });
+  }
+
+  /* =========================================================
+   LOAD EXISTING DATA
+========================================================= */
+
+  function loadExistingProfessionalData() {
+    const saved = sessionStorage.getItem("teacherProfessionalInfo");
+
+    if (!saved) return;
+
+    try {
+      const data = JSON.parse(saved);
+
+      /* =====================================================
+       EMPLOYMENT
+    ===================================================== */
+
+      if (data.employment_status) {
+        setEmploymentStatus(data.employment_status);
+      }
+
+      /* =====================================================
+       INSTITUTION
+    ===================================================== */
+
+      const institutionName = document.getElementById("institutionName");
+
+      if (institutionName && data.institution_name) {
+        institutionName.value = data.institution_name;
+      }
+
+      const institutionType = document.getElementById("institutionType");
+
+      if (institutionType && data.institution_type) {
+        institutionType.value = data.institution_type;
+      }
+
+      const experienceYears = document.getElementById("experienceYears");
+
+      if (experienceYears && data.experience_years) {
+        experienceYears.value = data.experience_years;
+      }
+
+      /* =====================================================
+       EDUCATION
+    ===================================================== */
+
+      const highestQualification = document.getElementById(
+        "highestQualification",
+      );
+
+      if (highestQualification && data.highest_qualification) {
+        highestQualification.value = data.highest_qualification;
+      }
+
+      const degreeName = document.getElementById("degreeName");
+
+      if (degreeName && data.degree_name) {
+        degreeName.value = data.degree_name;
+      }
+
+      const specialization = document.getElementById("specialization");
+
+      if (specialization && data.specialization) {
+        specialization.value = data.specialization;
+      }
+
+      const university = document.getElementById("university");
+
+      if (university && data.university) {
+        university.value = data.university;
+      }
+
+      const gradYear = document.getElementById("gradYear");
+
+      if (gradYear && data.graduation_year) {
+        gradYear.value = data.graduation_year;
+      }
+
+      /* =====================================================
+       TEACHING MODE
+    ===================================================== */
+
+      if (data.teaching_mode) {
+        setTeachingMode(data.teaching_mode);
+      }
+
+      /* =====================================================
+       GRADE GROUPS
+    ===================================================== */
+
+      if (Array.isArray(data.selected_grade_groups)) {
+        data.selected_grade_groups.forEach((value) => {
+          const checkbox = document.querySelector(
+            `#teachAllPanel input[value="${CSS.escape(value)}"]`,
+          );
+
+          if (checkbox) {
+            checkbox.checked = true;
+          }
+        });
+      }
+
+      /* =====================================================
+       INDIVIDUAL GRADES
+    ===================================================== */
+
+      if (Array.isArray(data.selected_grades)) {
+        data.selected_grades.forEach((value) => {
+          const checkbox = Array.from(
+            document.querySelectorAll("#teachAllPanel input[type='checkbox']"),
+          ).find((input) => input.value === value);
+
+          if (checkbox) {
+            checkbox.checked = true;
+          }
+        });
+      }
+
+      /* =====================================================
+       STREAMS
+    ===================================================== */
+
+      if (Array.isArray(data.selected_streams)) {
+        data.selected_streams.forEach((value) => {
+          const checkbox = Array.from(
+            document.querySelectorAll(
+              "#streamSelectPanel input[type='checkbox']",
+            ),
+          ).find((input) => input.value === value);
+
+          if (checkbox) {
+            checkbox.checked = true;
+          }
+        });
+      }
+
+      toggleSeniorStreamPanel();
+
+      /* =====================================================
+       SUBJECT SPECIALIST ASSIGNMENTS
+    ===================================================== */
+
+      if (Array.isArray(data.specialist_assignments)) {
+        data.specialist_assignments.forEach((assignment) => {
+          if (!assignment.subject) {
+            return;
+          }
+
+          const grades = assignment.grades || assignment.classes || [];
+
+          grades.forEach((grade) => {
+            const checkbox = document.querySelector(
+              `.specialist-grade-checkbox[data-subject="${CSS.escape(assignment.subject)}"][data-grade="${grade}"]`,
+            );
+
+            if (checkbox) {
+              checkbox.checked = true;
+            }
+          });
+        });
+      }
+
+      /* =====================================================
+       LANGUAGES
+    ===================================================== */
+
+      const languageContainer = document.getElementById("languageTags");
+
+      if (languageContainer && Array.isArray(data.languages)) {
+        languageContainer.innerHTML = "";
+
+        data.languages.forEach((language) => {
+          const tag = document.createElement("div");
+
+          tag.className = "tag";
+
+          tag.dataset.language = language;
+
+          tag.innerHTML = `
+            ${language}
+            <span onclick="removeTag(this)">×</span>
+          `;
+
+          languageContainer.appendChild(tag);
+        });
+      }
+    } catch (error) {
+      console.error("Unable to load professional information:", error);
+    }
+  }
+
+  /* =========================================================
+   INITIALIZATION
+========================================================= */
+
+  document.addEventListener("DOMContentLoaded", function () {
+    /* -----------------------------------------------
+       Graduation years
+    ------------------------------------------------ */
+
+    populateGraduationYears();
+
+    /* -----------------------------------------------
+       Default employment status
+    ------------------------------------------------ */
+
+    setEmploymentStatus("fresher");
+
+    /* -----------------------------------------------
+       Default teaching mode
+    ------------------------------------------------ */
+
+    setTeachingMode("teach_all");
+
+    /* -----------------------------------------------
+       Teach All grade listeners
+    ------------------------------------------------ */
+
+    const gradeCheckboxes = document.querySelectorAll(
+      "#teachAllPanel input[type='checkbox']",
+    );
+
+    gradeCheckboxes.forEach((checkbox) => {
+      checkbox.addEventListener("change", toggleSeniorStreamPanel);
+    });
+
+    /* -----------------------------------------------
+       Initial stream check
+    ------------------------------------------------ */
+
+    toggleSeniorStreamPanel();
+
+    /* -----------------------------------------------
+       Load saved data
+    ------------------------------------------------ */
+
+    loadExistingProfessionalData();
+
+    /* -----------------------------------------------
+       Submit
+    ------------------------------------------------ */
+
+    initializeFormSubmit();
+  });
+</script>
