@@ -1,0 +1,2895 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Smart Learning DC — Review & Submit</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* =========================================================
+         ROOT VARIABLES
+      ========================================================= */
+
+      :root {
+        --bg-dashboard: #e8f3f1;
+        --right-bg: #f8fafc;
+        --card-bg: #ffffff;
+
+        --primary-purple: #5538ee;
+        --primary-hover: #4328d8;
+
+        --dark-text: #0f172a;
+        --muted-text: #64748b;
+
+        --border-color: #cbd5e1;
+        --light-border: #e2e8f0;
+
+        --success: #10b981;
+        --danger: #ef4444;
+
+        --font: "Plus Jakarta Sans", sans-serif;
+
+        --sidebar-width: 460px;
+      }
+
+      /* =========================================================
+         RESET
+      ========================================================= */
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        font-family: var(--font);
+        min-height: 100vh;
+        background: var(--right-bg);
+        color: var(--dark-text);
+      }
+
+      .profile-photo-review {
+        width: 112px;
+        height: 112px;
+        border-radius: 14px;
+        object-fit: cover;
+        border: 1px solid var(--light-border);
+        background: #f1f5f9;
+      }
+
+      button,
+      input {
+        font-family: inherit;
+      }
+
+      /* =========================================================
+         MAIN PAGE
+      ========================================================= */
+
+      .registration-container {
+        width: 100%;
+        min-height: 100vh;
+      }
+
+      /* =========================================================
+         FIXED LEFT SIDEBAR
+      ========================================================= */
+
+      .left-sidebar {
+        position: fixed;
+
+        top: 0;
+        left: 0;
+        bottom: 0;
+
+        width: var(--sidebar-width);
+
+        height: 100vh;
+
+        background: var(--bg-dashboard);
+
+        border-right: 1px solid rgba(0, 0, 0, 0.08);
+
+        padding: 44px 40px;
+
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+
+        overflow-y: auto;
+        overflow-x: hidden;
+
+        z-index: 1000;
+
+        scrollbar-width: thin;
+        scrollbar-color: rgba(100, 116, 139, 0.3) transparent;
+      }
+
+      .left-sidebar::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .left-sidebar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .left-sidebar::-webkit-scrollbar-thumb {
+        background: rgba(100, 116, 139, 0.3);
+        border-radius: 10px;
+      }
+
+      /* =========================================================
+         BRAND
+      ========================================================= */
+
+      .brand-logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        margin-bottom: 30px;
+      }
+
+      .brand-logo svg {
+        flex-shrink: 0;
+      }
+
+      .brand-text h3 {
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: var(--dark-text);
+        line-height: 1.2;
+      }
+
+      .brand-text p {
+        margin-top: 3px;
+
+        font-size: 0.85rem;
+        color: var(--muted-text);
+      }
+
+      /* =========================================================
+         SIDEBAR HERO
+      ========================================================= */
+
+      .sidebar-hero {
+        margin-bottom: 24px;
+      }
+
+      .sidebar-hero h2 {
+        font-size: 2.3rem;
+        font-weight: 800;
+
+        color: var(--dark-text);
+
+        line-height: 1.18;
+
+        margin-bottom: 12px;
+      }
+
+      .sidebar-hero p {
+        color: var(--muted-text);
+
+        font-size: 0.95rem;
+
+        line-height: 1.55;
+
+        max-width: 350px;
+      }
+
+      /* =========================================================
+         FEATURE LIST
+      ========================================================= */
+
+      .feature-list {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+
+        margin: 26px 0;
+      }
+
+      .feature-item {
+        display: flex;
+        align-items: flex-start;
+
+        gap: 14px;
+      }
+
+      .feature-icon {
+        width: 42px;
+        height: 42px;
+
+        border-radius: 10px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        font-size: 1.15rem;
+
+        flex-shrink: 0;
+
+        color: white;
+      }
+
+      .bg-purple {
+        background: #6366f1;
+      }
+
+      .bg-blue {
+        background: #3b82f6;
+      }
+
+      .bg-green {
+        background: #10b981;
+      }
+
+      .bg-orange {
+        background: #f97316;
+      }
+
+      .feature-text {
+        padding-top: 1px;
+      }
+
+      .feature-text h4 {
+        font-size: 0.94rem;
+
+        font-weight: 700;
+
+        color: var(--dark-text);
+
+        line-height: 1.3;
+
+        margin-bottom: 3px;
+      }
+
+      .feature-text p {
+        font-size: 0.81rem;
+
+        color: var(--muted-text);
+
+        line-height: 1.4;
+      }
+
+      /* =========================================================
+         SIDEBAR IMAGE
+      ========================================================= */
+
+      .sidebar-illustration {
+        width: 100%;
+
+        margin: 22px 0 18px;
+
+        text-align: center;
+      }
+
+      .sidebar-illustration img {
+        display: block;
+
+        width: 100%;
+
+        max-height: 185px;
+
+        object-fit: cover;
+
+        border-radius: 14px;
+      }
+
+      /* =========================================================
+         SIDEBAR QUOTE
+      ========================================================= */
+
+      .sidebar-quote {
+        background: rgba(255, 255, 255, 0.7);
+
+        border-left: 4px solid var(--primary-purple);
+
+        padding: 16px 18px;
+
+        border-radius: 0 12px 12px 0;
+
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+
+        margin-top: 18px;
+      }
+
+      .sidebar-quote p {
+        font-size: 0.86rem;
+
+        font-style: italic;
+
+        color: var(--dark-text);
+
+        line-height: 1.5;
+      }
+
+      .sidebar-quote span {
+        display: block;
+
+        margin-top: 7px;
+
+        font-size: 0.78rem;
+
+        font-weight: 700;
+
+        color: var(--muted-text);
+      }
+
+      /* =========================================================
+         RIGHT CONTENT
+      ========================================================= */
+
+      .right-content {
+        margin-left: var(--sidebar-width);
+
+        min-height: 100vh;
+
+        background: var(--right-bg);
+
+        padding: 44px 60px 30px;
+
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* =========================================================
+         TOP BAR
+      ========================================================= */
+
+      .top-bar {
+        width: 100%;
+
+        display: flex;
+
+        justify-content: flex-end;
+
+        font-size: 0.92rem;
+
+        color: var(--muted-text);
+      }
+
+      .top-bar a {
+        color: var(--primary-purple);
+
+        font-weight: 700;
+
+        text-decoration: none;
+
+        margin-left: 6px;
+      }
+
+      .top-bar a:hover {
+        text-decoration: underline;
+      }
+
+      /* =========================================================
+         HEADER
+      ========================================================= */
+
+      .form-header {
+        width: 100%;
+
+        max-width: 1000px;
+
+        margin: 16px auto 30px;
+      }
+
+      .form-header h1 {
+        font-size: 2.1rem;
+
+        font-weight: 800;
+
+        color: var(--dark-text);
+
+        line-height: 1.25;
+      }
+
+      .form-header p {
+        color: var(--muted-text);
+
+        font-size: 0.95rem;
+
+        margin-top: 6px;
+
+        line-height: 1.5;
+      }
+
+      /* =========================================================
+         STEPPER
+      ========================================================= */
+
+      .stepper {
+        display: flex;
+
+        align-items: flex-start;
+
+        justify-content: space-between;
+
+        max-width: 650px;
+
+        width: 100%;
+
+        margin: 0 auto 36px;
+
+        position: relative;
+      }
+
+      .stepper::before {
+        content: "";
+
+        position: absolute;
+
+        top: 18px;
+
+        left: 40px;
+        right: 40px;
+
+        height: 2px;
+
+        background: #e2e8f0;
+
+        z-index: 0;
+      }
+
+      .step {
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: center;
+
+        gap: 8px;
+
+        position: relative;
+
+        z-index: 1;
+
+        background: var(--right-bg);
+
+        padding: 0 10px;
+
+        min-width: 120px;
+      }
+
+      .step-number {
+        width: 36px;
+        height: 36px;
+
+        border-radius: 50%;
+
+        background: #e2e8f0;
+
+        color: var(--muted-text);
+
+        display: flex;
+
+        align-items: center;
+        justify-content: center;
+
+        font-weight: 700;
+
+        font-size: 0.95rem;
+
+        border: 2px solid var(--right-bg);
+      }
+
+      .step.active .step-number {
+        background: var(--primary-purple);
+
+        color: #ffffff;
+
+        box-shadow: 0 4px 12px rgba(85, 56, 238, 0.3);
+      }
+
+      .step.completed .step-number {
+        background: var(--success);
+
+        color: white;
+      }
+
+      .step-label {
+        font-size: 0.83rem;
+
+        font-weight: 600;
+
+        color: var(--muted-text);
+
+        white-space: nowrap;
+      }
+
+      .step.active .step-label {
+        color: var(--primary-purple);
+
+        font-weight: 700;
+      }
+
+      .step.completed .step-label {
+        color: var(--success);
+
+        font-weight: 700;
+      }
+
+      /* =========================================================
+         REVIEW CONTAINER
+      ========================================================= */
+
+      .review-container {
+        max-width: 850px;
+
+        width: 100%;
+
+        margin: 0 auto;
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 20px;
+      }
+
+      /* =========================================================
+         REVIEW BOX
+      ========================================================= */
+
+      .review-box {
+        background: var(--card-bg);
+
+        border-radius: 20px;
+
+        padding: 28px 32px;
+
+        border: 1px solid var(--light-border);
+
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+      }
+
+      .review-header {
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        gap: 15px;
+
+        margin-bottom: 20px;
+
+        padding-bottom: 12px;
+
+        border-bottom: 1px solid #f1f5f9;
+      }
+
+      .review-title {
+        display: flex;
+
+        align-items: center;
+
+        gap: 10px;
+
+        font-size: 1.08rem;
+
+        font-weight: 800;
+
+        color: var(--dark-text);
+      }
+
+      .edit-btn {
+        border: none;
+
+        background: rgba(85, 56, 238, 0.08);
+
+        color: var(--primary-purple);
+
+        padding: 7px 13px;
+
+        border-radius: 8px;
+
+        font-family: inherit;
+
+        font-weight: 700;
+
+        font-size: 0.78rem;
+
+        cursor: pointer;
+
+        transition: 0.2s ease;
+
+        flex-shrink: 0;
+      }
+
+      .edit-btn:hover {
+        background: rgba(85, 56, 238, 0.15);
+      }
+
+      /* =========================================================
+         INFORMATION GRID
+      ========================================================= */
+
+      .info-grid {
+        display: grid;
+
+        grid-template-columns: 1fr 1fr;
+
+        gap: 18px 24px;
+      }
+
+      .info-item {
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 5px;
+
+        min-width: 0;
+      }
+
+      .info-label {
+        font-size: 0.75rem;
+
+        font-weight: 700;
+
+        color: #94a3b8;
+
+        text-transform: uppercase;
+
+        letter-spacing: 0.04em;
+      }
+
+      .info-value {
+        font-size: 0.91rem;
+
+        font-weight: 600;
+
+        color: var(--dark-text);
+
+        word-break: break-word;
+
+        line-height: 1.45;
+      }
+
+      .full-width {
+        grid-column: span 2;
+      }
+
+      /* =========================================================
+         TEACHING ASSIGNMENT
+      ========================================================= */
+
+      .assignment-box {
+        background: #f8fafc;
+
+        border: 1px solid var(--light-border);
+
+        border-radius: 12px;
+
+        padding: 16px;
+
+        margin-bottom: 12px;
+      }
+
+      .assignment-box:last-child {
+        margin-bottom: 0;
+      }
+
+      .assignment-label {
+        font-size: 0.77rem;
+
+        font-weight: 700;
+
+        color: var(--muted-text);
+
+        margin-bottom: 9px;
+      }
+
+      .assignment-value {
+        font-size: 0.92rem;
+
+        font-weight: 700;
+
+        color: var(--dark-text);
+      }
+
+      /* =========================================================
+         TAGS
+      ========================================================= */
+
+      .tag-container {
+        display: flex;
+
+        flex-wrap: wrap;
+
+        gap: 8px;
+
+        min-height: 25px;
+      }
+
+      .tag {
+        display: inline-flex;
+
+        align-items: center;
+
+        padding: 7px 12px;
+
+        border-radius: 20px;
+
+        background: rgba(85, 56, 238, 0.1);
+
+        color: var(--primary-purple);
+
+        font-size: 0.81rem;
+
+        font-weight: 700;
+      }
+
+      /* =========================================================
+         TEACHER ID
+      ========================================================= */
+
+      .teacher-id-box {
+        background: linear-gradient(
+          135deg,
+          rgba(85, 56, 238, 0.08),
+          rgba(99, 102, 241, 0.04)
+        );
+
+        border: 1.5px solid rgba(85, 56, 238, 0.2);
+
+        border-radius: 16px;
+
+        padding: 20px;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        gap: 20px;
+      }
+
+      .teacher-id-left {
+        display: flex;
+
+        align-items: center;
+
+        gap: 14px;
+      }
+
+      .teacher-id-icon {
+        width: 46px;
+        height: 46px;
+
+        border-radius: 12px;
+
+        background: var(--primary-purple);
+
+        color: white;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        font-size: 1.3rem;
+
+        flex-shrink: 0;
+      }
+
+      .teacher-id-label {
+        font-size: 0.75rem;
+
+        font-weight: 700;
+
+        color: var(--muted-text);
+
+        text-transform: uppercase;
+
+        letter-spacing: 0.04em;
+      }
+
+      .teacher-id-value {
+        font-size: 1.1rem;
+
+        font-weight: 800;
+
+        color: var(--primary-purple);
+
+        margin-top: 3px;
+
+        letter-spacing: 0.02em;
+      }
+
+      .auto-generated {
+        font-size: 0.75rem;
+
+        color: var(--success);
+
+        font-weight: 700;
+
+        white-space: nowrap;
+      }
+
+      /* =========================================================
+         CONFIRMATION
+      ========================================================= */
+
+      .confirmation-box {
+        background: #ffffff;
+
+        border: 1px solid var(--light-border);
+
+        border-radius: 16px;
+
+        padding: 20px;
+      }
+
+      .confirmation-title {
+        font-size: 0.95rem;
+
+        font-weight: 800;
+
+        color: var(--dark-text);
+
+        margin-bottom: 14px;
+      }
+
+      .confirmation-item {
+        display: flex;
+
+        align-items: flex-start;
+
+        gap: 10px;
+
+        margin-bottom: 12px;
+
+        cursor: pointer;
+      }
+
+      .confirmation-item:last-child {
+        margin-bottom: 0;
+      }
+
+      .confirmation-item input {
+        width: 17px;
+        height: 17px;
+
+        margin-top: 2px;
+
+        accent-color: var(--primary-purple);
+
+        cursor: pointer;
+
+        flex-shrink: 0;
+      }
+
+      .confirmation-item span {
+        font-size: 0.84rem;
+
+        color: var(--muted-text);
+
+        line-height: 1.5;
+      }
+
+      .confirmation-item strong {
+        color: var(--dark-text);
+      }
+
+      /* =========================================================
+         ACTION BUTTONS
+      ========================================================= */
+
+      .action-buttons {
+        display: flex;
+
+        gap: 16px;
+
+        margin-top: 4px;
+      }
+
+      .btn-prev,
+      .btn-submit {
+        min-height: 52px;
+
+        padding: 14px 20px;
+
+        border-radius: 12px;
+
+        font-family: inherit;
+
+        font-size: 0.95rem;
+
+        font-weight: 700;
+
+        cursor: pointer;
+
+        transition: all 0.2s ease;
+      }
+
+      .btn-prev {
+        flex: 1;
+
+        background: #ffffff;
+
+        color: var(--dark-text);
+
+        border: 1.5px solid var(--border-color);
+      }
+
+      .btn-prev:hover {
+        background: #f1f5f9;
+      }
+
+      .btn-submit {
+        flex: 2;
+
+        background: var(--primary-purple);
+
+        color: white;
+
+        border: none;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        gap: 8px;
+      }
+
+      .btn-submit:hover {
+        background: var(--primary-hover);
+
+        transform: translateY(-1px);
+
+        box-shadow: 0 8px 20px rgba(85, 56, 238, 0.2);
+      }
+
+      .btn-submit:disabled {
+        background: #a5b4fc;
+
+        cursor: not-allowed;
+
+        transform: none;
+
+        box-shadow: none;
+      }
+
+      /* =========================================================
+         FOOTER
+      ========================================================= */
+
+      .footer-note {
+        text-align: center;
+
+        font-size: 0.82rem;
+
+        color: var(--muted-text);
+
+        margin: 24px auto 10px;
+
+        max-width: 850px;
+
+        width: 100%;
+      }
+
+      /* =========================================================
+         EMPTY DATA
+      ========================================================= */
+
+      .empty-value {
+        color: #94a3b8;
+
+        font-style: italic;
+      }
+
+      /* =========================================================
+         TABLET
+      ========================================================= */
+
+      @media (max-width: 1100px) {
+        :root {
+          --sidebar-width: 350px;
+        }
+
+        .left-sidebar {
+          padding: 36px 28px;
+        }
+
+        .right-content {
+          padding: 36px 35px 30px;
+        }
+
+        .sidebar-hero h2 {
+          font-size: 2rem;
+        }
+
+        .feature-list {
+          gap: 15px;
+        }
+
+        .sidebar-illustration img {
+          max-height: 150px;
+        }
+      }
+
+      /* =========================================================
+         MOBILE / SMALL TABLET
+      ========================================================= */
+
+      @media (max-width: 850px) {
+        :root {
+          --sidebar-width: 0px;
+        }
+
+        .left-sidebar {
+          display: none;
+        }
+
+        .right-content {
+          margin-left: 0;
+
+          width: 100%;
+
+          padding: 30px 24px;
+        }
+
+        .form-header {
+          margin-top: 20px;
+        }
+      }
+
+      /* =========================================================
+         MOBILE
+      ========================================================= */
+
+      @media (max-width: 600px) {
+        .right-content {
+          padding: 24px 16px;
+        }
+
+        .top-bar {
+          font-size: 0.82rem;
+        }
+
+        .form-header h1 {
+          font-size: 1.7rem;
+        }
+
+        .form-header p {
+          font-size: 0.86rem;
+        }
+
+        /* Stepper */
+
+        .stepper {
+          margin-bottom: 28px;
+        }
+
+        .step {
+          min-width: auto;
+
+          padding: 0 5px;
+        }
+
+        .step-number {
+          width: 34px;
+          height: 34px;
+        }
+
+        .step-label {
+          font-size: 0.68rem;
+
+          white-space: normal;
+
+          text-align: center;
+        }
+
+        .stepper::before {
+          left: 25px;
+          right: 25px;
+
+          top: 17px;
+        }
+
+        /* Review Cards */
+
+        .review-container {
+          gap: 16px;
+        }
+
+        .review-box {
+          padding: 22px 18px;
+
+          border-radius: 16px;
+        }
+
+        .review-title {
+          font-size: 0.98rem;
+        }
+
+        .review-header {
+          margin-bottom: 18px;
+        }
+
+        /* Information */
+
+        .info-grid {
+          grid-template-columns: 1fr;
+
+          gap: 15px;
+        }
+
+        .full-width {
+          grid-column: span 1;
+        }
+
+        /* Teacher ID */
+
+        .teacher-id-box {
+          flex-direction: column;
+
+          align-items: flex-start;
+        }
+
+        .auto-generated {
+          margin-left: 60px;
+
+          white-space: normal;
+        }
+
+        /* Buttons */
+
+        .action-buttons {
+          flex-direction: column-reverse;
+
+          gap: 10px;
+        }
+
+        .btn-prev,
+        .btn-submit {
+          flex: none;
+
+          width: 100%;
+        }
+      }
+
+      /* =========================================================
+         VERY SMALL DEVICES
+      ========================================================= */
+
+      @media (max-width: 400px) {
+        .right-content {
+          padding: 20px 12px;
+        }
+
+        .review-box {
+          padding: 18px 15px;
+        }
+
+        .teacher-id-value {
+          font-size: 0.95rem;
+        }
+
+        .assignment-box {
+          padding: 14px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="registration-container">
+
+      <!-- =====================================================
+           FIXED LEFT SIDEBAR
+      ====================================================== -->
+
+      <aside class="left-sidebar">
+
+        <div>
+
+          <!-- BRAND -->
+
+          <div class="brand-logo">
+
+            <svg
+              width="40"
+              height="40"
+              viewBox="0 0 44 44"
+              fill="none"
+              aria-hidden="true"
+            >
+              <rect
+                width="44"
+                height="44"
+                rx="12"
+                fill="#5538EE"
+              />
+
+              <path
+                d="M22 13L11 19.5L22 26L33 19.5L22 13Z"
+                fill="white"
+              />
+
+              <path
+                d="M14.5 23.2L11 25.25L22 31.75L33 25.25L29.5 23.2L22 27.6L14.5 23.2Z"
+                fill="white"
+                fill-opacity="0.9"
+              />
+
+              <path
+                d="M14.5 27.2L11 29.25L22 35.75L33 29.25L29.5 27.2L22 31.6L14.5 27.2Z"
+                fill="white"
+                fill-opacity="0.75"
+              />
+            </svg>
+
+            <div class="brand-text">
+              <h3>Smart Learning DC</h3>
+              <p>Teach. Inspire. Grow.</p>
+            </div>
+
+          </div>
+
+          <!-- SIDEBAR HERO -->
+
+          <div class="sidebar-hero">
+
+            <h2>
+              Create Your
+              <br />
+              Teacher Account
+            </h2>
+
+            <p>
+              Join Smart Learning DC and start creating amazing
+              learning experiences.
+            </p>
+
+          </div>
+
+          <!-- FEATURES -->
+
+          <div class="feature-list">
+
+            <div class="feature-item">
+
+              <div class="feature-icon bg-purple">
+                👥
+              </div>
+
+              <div class="feature-text">
+
+                <h4>Create & Manage Classes</h4>
+
+                <p>
+                  Organize classes, students, and learning materials
+                  in one place.
+                </p>
+
+              </div>
+
+            </div>
+
+            <div class="feature-item">
+
+              <div class="feature-icon bg-blue">
+                ☁️
+              </div>
+
+              <div class="feature-text">
+
+                <h4>Upload & Share Materials</h4>
+
+                <p>
+                  Share videos, PDFs, notes, and more with your students.
+                </p>
+
+              </div>
+
+            </div>
+
+            <div class="feature-item">
+
+              <div class="feature-icon bg-green">
+                📊
+              </div>
+
+              <div class="feature-text">
+
+                <h4>Track Student Progress</h4>
+
+                <p>
+                  Monitor performance and help students achieve goals.
+                </p>
+
+              </div>
+
+            </div>
+
+            <div class="feature-item">
+
+              <div class="feature-icon bg-orange">
+                📹
+              </div>
+
+              <div class="feature-text">
+
+                <h4>Go Live & Engage</h4>
+
+                <p>
+                  Conduct live classes and interact effectively.
+                </p>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- SIDEBAR IMAGE -->
+
+          <div class="sidebar-illustration">
+
+            <img
+              src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=800&auto=format&fit=crop"
+              alt="Teacher Workspace"
+            />
+
+          </div>
+
+        </div>
+
+        <!-- QUOTE -->
+
+        <div class="sidebar-quote">
+
+          <p>
+            “A good teacher can inspire hope, ignite the imagination,
+            and instill a love of learning.”
+          </p>
+
+          <span>— Brad Henry</span>
+
+        </div>
+
+      </aside>
+
+
+      <!-- =====================================================
+           RIGHT CONTENT
+      ====================================================== -->
+
+      <main class="right-content">
+
+        <!-- TOP BAR -->
+
+        <div class="top-bar">
+
+          <span>Already have an account?</span>
+
+          <a href="login.html">Login</a>
+
+        </div>
+
+
+        <!-- HEADER -->
+
+        <div class="form-header">
+
+          <h1>Review & Submit</h1>
+
+          <p>
+            Review your information carefully before creating your
+            teacher account.
+          </p>
+
+        </div>
+
+
+        <!-- =================================================
+             STEPPER
+        ================================================== -->
+
+        <div class="stepper">
+
+          <div class="step completed">
+
+            <div class="step-number">
+              ✓
+            </div>
+
+            <div class="step-label">
+              Personal Info
+            </div>
+
+          </div>
+
+
+          <div class="step completed">
+
+            <div class="step-number">
+              ✓
+            </div>
+
+            <div class="step-label">
+              Professional Info
+            </div>
+
+          </div>
+
+
+          <div class="step active">
+
+            <div class="step-number">
+              3
+            </div>
+
+            <div class="step-label">
+              Review & Submit
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- =================================================
+             REVIEW CONTAINER
+        ================================================== -->
+
+        <div class="review-container">
+
+
+          <!-- =================================================
+               PERSONAL INFORMATION
+          ================================================== -->
+
+          <section class="review-box">
+
+            <div class="review-header">
+
+              <div class="review-title">
+                👤 Personal Information
+              </div>
+
+              <button
+                type="button"
+                class="edit-btn"
+                onclick="editPersonalInfo()"
+              >
+                Edit
+              </button>
+
+            </div>
+
+
+            <div class="info-grid">
+
+              <div class="info-item full-width">
+                <div class="info-label">Profile Photo</div>
+                <img
+                  class="profile-photo-review"
+                  id="profilePhotoReview"
+                  alt="Uploaded profile photo"
+                  hidden
+                />
+                <div class="info-value empty-value" id="profilePhotoEmpty">
+                  No profile photo uploaded
+                </div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">
+                  Full Name
+                </div>
+
+                <div
+                  class="info-value"
+                  id="fullNameReview"
+                >
+                  —
+                </div>
+              </div>
+
+
+              <div class="info-item">
+                <div class="info-label">
+                  Email Address
+                </div>
+
+                <div
+                  class="info-value"
+                  id="emailReview"
+                >
+                  —
+                </div>
+              </div>
+
+
+              <div class="info-item">
+                <div class="info-label">
+                  Phone Number
+                </div>
+
+                <div
+                  class="info-value"
+                  id="phoneReview"
+                >
+                  —
+                </div>
+              </div>
+
+
+              <div class="info-item">
+                <div class="info-label">
+                  Date of Birth
+                </div>
+
+                <div
+                  class="info-value"
+                  id="dobReview"
+                >
+                  —
+                </div>
+              </div>
+
+
+              <div class="info-item">
+                <div class="info-label">
+                  Gender
+                </div>
+
+                <div
+                  class="info-value"
+                  id="genderReview"
+                >
+                  —
+                </div>
+              </div>
+
+
+              <div class="info-item">
+                <div class="info-label">
+                  Country
+                </div>
+
+                <div
+                  class="info-value"
+                  id="countryReview"
+                >
+                  —
+                </div>
+              </div>
+
+
+              <div class="info-item">
+                <div class="info-label">
+                  State / Province
+                </div>
+
+                <div
+                  class="info-value"
+                  id="stateReview"
+                >
+                  —
+                </div>
+              </div>
+
+
+              <div class="info-item">
+                <div class="info-label">
+                  City
+                </div>
+
+                <div
+                  class="info-value"
+                  id="cityReview"
+                >
+                  —
+                </div>
+              </div>
+
+
+              <div class="info-item full-width">
+
+                <div class="info-label">
+                  Address
+                </div>
+
+                <div
+                  class="info-value"
+                  id="addressReview"
+                >
+                  —
+                </div>
+
+              </div>
+
+
+              <div class="info-item">
+
+                <div class="info-label">
+                  Password
+                </div>
+
+                <div class="info-value">
+                  ✓ Set
+                </div>
+
+              </div>
+
+            </div>
+
+          </section>
+
+
+          <!-- =================================================
+               PROFESSIONAL INFORMATION
+          ================================================== -->
+
+          <section class="review-box">
+
+            <div class="review-header">
+
+              <div class="review-title">
+                🎓 Professional Information
+              </div>
+
+              <button
+                type="button"
+                class="edit-btn"
+                onclick="editProfessionalInfo()"
+              >
+                Edit
+              </button>
+
+            </div>
+
+
+            <div class="info-grid">
+
+              <div class="info-item">
+
+                <div class="info-label">
+                  Employment Status
+                </div>
+
+                <div
+                  class="info-value"
+                  id="employmentReview"
+                >
+                  —
+                </div>
+
+              </div>
+
+
+              <div class="info-item">
+
+                <div class="info-label">
+                  Institution
+                </div>
+
+                <div
+                  class="info-value"
+                  id="institutionReview"
+                >
+                  —
+                </div>
+
+              </div>
+
+
+              <div class="info-item">
+
+                <div class="info-label">
+                  Institution Type
+                </div>
+
+                <div
+                  class="info-value"
+                  id="institutionTypeReview"
+                >
+                  —
+                </div>
+
+              </div>
+
+
+              <div class="info-item">
+
+                <div class="info-label">
+                  Teaching Experience
+                </div>
+
+                <div
+                  class="info-value"
+                  id="experienceReview"
+                >
+                  —
+                </div>
+
+              </div>
+
+
+              <div class="info-item">
+
+                <div class="info-label">
+                  Highest Qualification
+                </div>
+
+                <div
+                  class="info-value"
+                  id="qualificationReview"
+                >
+                  —
+                </div>
+
+              </div>
+
+
+              <div class="info-item">
+
+                <div class="info-label">
+                  Degree / Course
+                </div>
+
+                <div
+                  class="info-value"
+                  id="degreeReview"
+                >
+                  —
+                </div>
+
+              </div>
+
+
+              <div class="info-item">
+
+                <div class="info-label">
+                  Specialization
+                </div>
+
+                <div
+                  class="info-value"
+                  id="specializationReview"
+                >
+                  —
+                </div>
+
+              </div>
+
+
+              <div class="info-item">
+
+                <div class="info-label">
+                  University / College
+                </div>
+
+                <div
+                  class="info-value"
+                  id="universityReview"
+                >
+                  —
+                </div>
+
+              </div>
+
+
+              <div class="info-item">
+
+                <div class="info-label">
+                  Graduation Year
+                </div>
+
+                <div
+                  class="info-value"
+                  id="gradYearReview"
+                >
+                  —
+                </div>
+
+              </div>
+
+            </div>
+
+          </section>
+
+
+          <!-- =================================================
+               TEACHING ASSIGNMENT
+          ================================================== -->
+
+          <section class="review-box">
+
+            <div class="review-header">
+
+              <div class="review-title">
+                📚 Teaching Assignment
+              </div>
+
+              <button
+                type="button"
+                class="edit-btn"
+                onclick="editProfessionalInfo()"
+              >
+                Edit
+              </button>
+
+            </div>
+
+
+            <div class="assignment-box">
+
+              <div class="assignment-label">
+                Teaching Mode
+              </div>
+
+              <div
+                class="assignment-value"
+                id="teachingModeReview"
+              >
+                —
+              </div>
+
+            </div>
+
+
+            <div class="assignment-box">
+
+              <div class="assignment-label">
+                Grades
+              </div>
+
+              <div
+                class="tag-container"
+                id="gradesReview"
+              >
+                <span class="empty-value">
+                  No grades selected
+                </span>
+              </div>
+
+            </div>
+
+
+            <div class="assignment-box">
+
+              <div class="assignment-label">
+                Streams
+              </div>
+
+              <div
+                class="tag-container"
+                id="streamsReview"
+              >
+                <span class="empty-value">
+                  No streams selected
+                </span>
+              </div>
+
+            </div>
+
+
+            <div class="assignment-box">
+
+              <div class="assignment-label">
+                Subjects
+              </div>
+
+              <div
+                class="tag-container"
+                id="subjectsReview"
+              >
+                <span class="empty-value">
+                  No subject assignments selected
+                </span>
+              </div>
+
+            </div>
+
+          </section>
+
+
+          <!-- =================================================
+               LANGUAGES
+          ================================================== -->
+
+          <section class="review-box">
+
+            <div class="review-header">
+
+              <div class="review-title">
+                🗣️ Languages Spoken
+              </div>
+
+              <button
+                type="button"
+                class="edit-btn"
+                onclick="editProfessionalInfo()"
+              >
+                Edit
+              </button>
+
+            </div>
+
+
+            <div
+              class="tag-container"
+              id="languagesReview"
+            >
+
+              <span class="empty-value">
+                No languages selected
+              </span>
+
+            </div>
+
+          </section>
+
+
+          <!-- =================================================
+               TEACHER ID
+          ================================================== -->
+
+          <section class="teacher-id-box">
+
+            <div class="teacher-id-left">
+
+              <div class="teacher-id-icon">
+                🆔
+              </div>
+
+              <div>
+
+                <div class="teacher-id-label">
+                  Teacher ID
+                </div>
+
+                <div
+                  class="teacher-id-value"
+                  id="teacherId"
+                >
+                  Generating...
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <div class="auto-generated">
+              ✓ Automatically Generated
+            </div>
+
+          </section>
+
+
+          <!-- =================================================
+               FINAL CONFIRMATION
+          ================================================== -->
+
+          <section class="confirmation-box">
+
+            <div class="confirmation-title">
+              Final Confirmation
+            </div>
+
+
+            <label class="confirmation-item">
+
+              <input
+                type="checkbox"
+                id="confirmInformation"
+              />
+
+              <span>
+                I confirm that all the information provided above is
+                <strong>accurate and complete</strong>.
+              </span>
+
+            </label>
+
+
+            <label class="confirmation-item">
+
+              <input
+                type="checkbox"
+                id="confirmTerms"
+              />
+
+              <span>
+                I agree to the Smart Learning DC
+                <strong>Terms & Conditions</strong>
+                and
+                <strong>Privacy Policy</strong>.
+              </span>
+
+            </label>
+
+          </section>
+
+
+          <!-- =================================================
+               ACTION BUTTONS
+          ================================================== -->
+
+          <div class="action-buttons">
+
+            <button
+              type="button"
+              class="btn-prev"
+              onclick="goBack()"
+            >
+              ← Back
+            </button>
+
+
+            <button
+              type="button"
+              class="btn-submit"
+              id="submitBtn"
+              onclick="submitTeacherRegistration()"
+            >
+              Create Teacher Account →
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- FOOTER -->
+
+        <div class="footer-note">
+          🔒 Your information is secure and will never be shared with anyone.
+        </div>
+
+      </main>
+
+    </div>
+
+    <!-- YOUR EXISTING JAVASCRIPT GOES HERE -->
+
+  </body>
+</html>
+    <!-- =========================================
+       JAVASCRIPT
+  ========================================== -->
+
+    <script>
+  /* =========================================================
+     SMART LEARNING DC
+     TEACHER REGISTRATION — REVIEW & SUBMIT
+  ========================================================= */
+
+  /* =========================================================
+     1. GET DATA FROM PREVIOUS STEPS
+  ========================================================= */
+
+  const personalInfo =
+    JSON.parse(sessionStorage.getItem("teacherPersonalInfo")) || {};
+
+  const professionalInfo =
+    JSON.parse(sessionStorage.getItem("teacherProfessionalInfo")) || {};
+
+  const professional = {
+    employmentStatus:
+      professionalInfo.employmentStatus || professionalInfo.employment_status,
+    institutionName:
+      professionalInfo.institutionName || professionalInfo.institution_name,
+    institutionType:
+      professionalInfo.institutionType || professionalInfo.institution_type,
+    experienceYears:
+      professionalInfo.experienceYears || professionalInfo.experience_years,
+    highestQualification:
+      professionalInfo.highestQualification ||
+      professionalInfo.highest_qualification,
+    degreeName:
+      professionalInfo.degreeName || professionalInfo.degree_name,
+    specialization: professionalInfo.specialization,
+    university: professionalInfo.university,
+    gradYear: professionalInfo.gradYear || professionalInfo.graduation_year,
+    teachingMode:
+      professionalInfo.teachingMode ||
+      professionalInfo.teachMode ||
+      professionalInfo.teaching_mode,
+  };
+
+
+  /* =========================================================
+     2. HELPER — SAFE DISPLAY
+  ========================================================= */
+
+  function displayValue(id, value) {
+    const element = document.getElementById(id);
+
+    if (!element) return;
+
+    if (
+      value === undefined ||
+      value === null ||
+      value === "" ||
+      value === "null" ||
+      value === "undefined"
+    ) {
+      element.textContent = "Not provided";
+      element.classList.add("empty-value");
+    } else {
+      element.textContent = value;
+      element.classList.remove("empty-value");
+    }
+  }
+
+
+  /* =========================================================
+     3. FORMAT TEXT
+  ========================================================= */
+
+  function formatText(value) {
+    if (
+      value === undefined ||
+      value === null ||
+      value === ""
+    ) {
+      return "Not provided";
+    }
+
+    return String(value)
+      .replaceAll("_", " ")
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  }
+
+
+  /* =========================================================
+     4. FORMAT TEACHING MODE
+  ========================================================= */
+
+  function formatTeachingMode(value) {
+    switch (value) {
+      case "all":
+      case "teach_all":
+        return "🌐 Teach All Subjects";
+
+      case "specialist":
+      case "subject_specialist":
+        return "🎯 Subject Specialist";
+
+      default:
+        return formatText(value);
+    }
+  }
+
+
+  /* =========================================================
+     5. PERSONAL INFORMATION
+  ========================================================= */
+
+  displayValue(
+    "fullNameReview",
+    personalInfo.fullName || personalInfo.full_name
+  );
+
+  displayValue(
+    "emailReview",
+    personalInfo.email
+  );
+
+  const phoneNumber =
+    (personalInfo.countryCode || personalInfo.country_code) && personalInfo.phone
+      ? `${personalInfo.countryCode || personalInfo.country_code} ${personalInfo.phone}`
+      : personalInfo.phone;
+
+  displayValue(
+    "phoneReview",
+    phoneNumber
+  );
+
+  displayValue(
+    "dobReview",
+    personalInfo.dob
+  );
+
+  displayValue(
+    "genderReview",
+    formatText(personalInfo.gender)
+  );
+
+  displayValue(
+    "countryReview",
+    personalInfo.country
+  );
+
+  displayValue(
+    "stateReview",
+    personalInfo.state
+  );
+
+  displayValue(
+    "cityReview",
+    personalInfo.city
+  );
+
+  displayValue(
+    "addressReview",
+    personalInfo.address
+  );
+
+  const profilePhoto =
+    personalInfo.profile_photo_data || personalInfo.profilePhotoData || "";
+
+  if (profilePhoto) {
+    const photoElement = document.getElementById("profilePhotoReview");
+    const emptyPhoto = document.getElementById("profilePhotoEmpty");
+    photoElement.src = profilePhoto;
+    photoElement.hidden = false;
+    emptyPhoto.hidden = true;
+  }
+
+
+  /* =========================================================
+     6. PROFESSIONAL INFORMATION
+  ========================================================= */
+
+  displayValue(
+    "employmentReview",
+    formatText(
+      professional.employmentStatus
+    )
+  );
+
+  displayValue(
+    "institutionReview",
+    professional.institutionName
+  );
+
+  displayValue(
+    "institutionTypeReview",
+    formatText(
+      professional.institutionType
+    )
+  );
+
+  displayValue(
+    "experienceReview",
+    professional.experienceYears
+  );
+
+  displayValue(
+    "qualificationReview",
+    formatText(
+      professional.highestQualification
+    )
+  );
+
+  displayValue(
+    "degreeReview",
+    professional.degreeName
+  );
+
+  displayValue(
+    "specializationReview",
+    professional.specialization
+  );
+
+  displayValue(
+    "universityReview",
+    professional.university
+  );
+
+  displayValue(
+    "gradYearReview",
+    professional.gradYear
+  );
+
+
+  /* =========================================================
+     7. TEACHING MODE
+  ========================================================= */
+
+  const teachingMode = professional.teachingMode || "";
+
+  displayValue(
+    "teachingModeReview",
+    teachingMode
+      ? formatTeachingMode(teachingMode)
+      : "Not selected"
+  );
+
+
+  /* =========================================================
+     8. GET ASSIGNMENT DATA
+  ========================================================= */
+
+  const grades =
+    Array.isArray(professionalInfo.grades)
+      ? professionalInfo.grades
+      : Array.isArray(professionalInfo.selected_grades)
+        ? professionalInfo.selected_grades
+      : [];
+
+  const gradeGroups = Array.isArray(professionalInfo.selected_grade_groups)
+    ? professionalInfo.selected_grade_groups
+    : [];
+
+  const streams =
+    Array.isArray(professionalInfo.streams)
+      ? professionalInfo.streams
+      : Array.isArray(professionalInfo.selected_streams)
+        ? professionalInfo.selected_streams
+      : [];
+
+  const subjects =
+    Array.isArray(professionalInfo.subjects)
+      ? professionalInfo.subjects
+      : [];
+
+  const specialistAssignments =
+    Array.isArray(professionalInfo.specialist_assignments)
+      ? professionalInfo.specialist_assignments
+      : [];
+
+  const languages =
+    Array.isArray(professionalInfo.languages)
+      ? professionalInfo.languages
+      : [];
+
+
+  /* =========================================================
+     9. RENDER TAGS
+  ========================================================= */
+
+  function renderTags(containerId, values) {
+    const container =
+      document.getElementById(containerId);
+
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    if (
+      !Array.isArray(values) ||
+      values.length === 0
+    ) {
+      const empty =
+        document.createElement("span");
+
+      empty.className = "empty-value";
+
+      empty.textContent =
+        "No information provided";
+
+      container.appendChild(empty);
+
+      return;
+    }
+
+    values.forEach((value) => {
+      const tag =
+        document.createElement("span");
+
+      tag.className = "tag";
+
+      tag.textContent = formatText(value);
+
+      container.appendChild(tag);
+    });
+  }
+
+  function formatGradeGroup(value) {
+    const labels = {
+      grades_5_6: "Classes 5-6",
+      grades_7_8: "Classes 7-8",
+      grades_9_10: "Classes 9-10",
+      grades_11_12: "Classes 11-12",
+    };
+
+    return labels[value] || formatText(value);
+  }
+
+  function renderSpecialistAssignments(assignments) {
+    const container = document.getElementById("subjectsReview");
+
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    if (!Array.isArray(assignments) || assignments.length === 0) {
+      const empty = document.createElement("span");
+      empty.className = "empty-value";
+      empty.textContent = "No subject assignments selected";
+      container.appendChild(empty);
+      return;
+    }
+
+    assignments.forEach((assignment) => {
+      const tag = document.createElement("span");
+      tag.className = "tag";
+      const grades = Array.isArray(assignment.grades)
+        ? assignment.grades.join(", ")
+        : "";
+      tag.textContent = `${assignment.subject}: Classes ${grades}`;
+      container.appendChild(tag);
+    });
+  }
+
+
+  /* =========================================================
+     10. DISPLAY ASSIGNMENT TAGS
+  ========================================================= */
+
+  renderTags(
+    "gradesReview",
+    gradeGroups.length > 0 ? gradeGroups.map(formatGradeGroup) : grades
+  );
+
+  renderTags(
+    "streamsReview",
+    streams
+  );
+
+  if (specialistAssignments.length > 0) {
+    renderSpecialistAssignments(specialistAssignments);
+  } else {
+    renderTags("subjectsReview", subjects);
+  }
+
+  renderTags(
+    "languagesReview",
+    languages
+  );
+
+
+  /* =========================================================
+     11. TEACHER ID
+     
+     IMPORTANT:
+     Generate only once.
+     Refreshing the Review page should NOT create
+     another Teacher ID.
+  ========================================================= */
+
+  function generateTeacherId() {
+    const year =
+      new Date().getFullYear();
+
+    const randomNumber =
+      Math.floor(
+        10000 + Math.random() * 90000
+      );
+
+    return `TCH-${year}-${randomNumber}`;
+  }
+
+
+  let generatedTeacherId =
+    sessionStorage.getItem("teacherId");
+
+
+  if (!generatedTeacherId) {
+    generatedTeacherId =
+      generateTeacherId();
+
+    sessionStorage.setItem(
+      "teacherId",
+      generatedTeacherId
+    );
+  }
+
+
+  const teacherIdElement =
+    document.getElementById("teacherId");
+
+  if (teacherIdElement) {
+    teacherIdElement.textContent =
+      generatedTeacherId;
+  }
+
+
+  /* =========================================================
+     12. EDIT PERSONAL INFORMATION
+  ========================================================= */
+
+  function editPersonalInfo() {
+    window.location.href =
+      "teacher-personal.html";
+  }
+
+
+  /* =========================================================
+     13. EDIT PROFESSIONAL INFORMATION
+  ========================================================= */
+
+  function editProfessionalInfo() {
+    window.location.href =
+      "teacher-professional.html";
+  }
+
+
+  /* =========================================================
+     14. BACK BUTTON
+  ========================================================= */
+
+  function goBack() {
+    window.location.href =
+      "teacher-professional.html";
+  }
+
+
+  /* =========================================================
+     15. VALIDATE REGISTRATION DATA
+  ========================================================= */
+
+  function validateRegistrationData() {
+
+    if (!(personalInfo.fullName || personalInfo.full_name)) {
+      alert(
+        "Personal information is missing. Please go back and complete it."
+      );
+
+      return false;
+    }
+
+    if (!personalInfo.email) {
+      alert(
+        "Email address is missing. Please go back and complete it."
+      );
+
+      return false;
+    }
+
+    const isCurrentlyTeaching =
+      professional.employmentStatus === "teaching";
+
+    if (
+      isCurrentlyTeaching &&
+      (!professional.institutionName ||
+        !professional.institutionType ||
+        !professional.experienceYears)
+    ) {
+      alert(
+        "Please complete your institution and teaching experience details."
+      );
+
+      return false;
+    }
+
+    if (!teachingMode) {
+      alert(
+        "Teaching mode is missing. Please go back and select your teaching mode."
+      );
+
+      return false;
+    }
+
+    return true;
+  }
+
+
+  /* =========================================================
+     16. CREATE FINAL TEACHER DATA OBJECT
+  ========================================================= */
+
+  function buildFinalTeacherData() {
+
+    return {
+
+      /* -----------------------------------------
+         Teacher ID
+      ----------------------------------------- */
+
+      teacherId: generatedTeacherId,
+
+
+      /* -----------------------------------------
+         Personal Information
+      ----------------------------------------- */
+
+      personal: {
+        fullName:
+          personalInfo.fullName || personalInfo.full_name || "",
+
+        email:
+          personalInfo.email || "",
+
+        countryCode:
+          personalInfo.countryCode || personalInfo.country_code || "",
+
+        phone:
+          personalInfo.phone || "",
+
+        dob:
+          personalInfo.dob || "",
+
+        gender:
+          personalInfo.gender || "",
+
+        country:
+          personalInfo.country || "",
+
+        state:
+          personalInfo.state || "",
+
+        city:
+          personalInfo.city || "",
+
+        address:
+          personalInfo.address || personalInfo.address || "",
+
+        profilePhoto:
+          personalInfo.profile_photo_data || personalInfo.profilePhotoData || "",
+      },
+
+
+      /* -----------------------------------------
+         Professional Information
+      ----------------------------------------- */
+
+      professional: {
+
+        employmentStatus:
+          professional.employmentStatus || "",
+
+        institutionName:
+          professional.institutionName || "",
+
+        institutionType:
+          professional.institutionType || "",
+
+        experienceYears:
+          professional.experienceYears || "",
+
+        highestQualification:
+          professional.highestQualification || "",
+
+        degreeName:
+          professional.degreeName || "",
+
+        specialization:
+          professional.specialization || "",
+
+        university:
+          professional.university || "",
+
+        gradYear:
+          professional.gradYear || "",
+
+
+        /* ---------------------------------------
+           Teaching Assignment
+        --------------------------------------- */
+
+        teachingMode:
+          teachingMode,
+
+        grades:
+          grades,
+
+        streams:
+          streams,
+
+        subjects:
+          subjects.length > 0
+            ? subjects
+            : specialistAssignments.map((assignment) => assignment.subject),
+
+        specialistAssignments:
+          specialistAssignments,
+
+        languages:
+          languages
+      },
+
+
+      /* -----------------------------------------
+         Submission Information
+      ----------------------------------------- */
+
+      submittedAt:
+        new Date().toISOString()
+    };
+  }
+
+
+  /* =========================================================
+     17. FINAL SUBMISSION
+  ========================================================= */
+
+  async function submitTeacherRegistration() {
+
+    /* -----------------------------------------
+       Check confirmation
+    ----------------------------------------- */
+
+    const confirmInformation =
+      document.getElementById(
+        "confirmInformation"
+      ).checked;
+
+    const confirmTerms =
+      document.getElementById(
+        "confirmTerms"
+      ).checked;
+
+
+    if (!confirmInformation) {
+
+      alert(
+        "Please confirm that all your information is accurate and complete."
+      );
+
+      return;
+    }
+
+
+    if (!confirmTerms) {
+
+      alert(
+        "Please accept the Terms & Conditions and Privacy Policy."
+      );
+
+      return;
+    }
+
+
+    /* -----------------------------------------
+       Validate stored registration data
+    ----------------------------------------- */
+
+    if (!validateRegistrationData()) {
+      return;
+    }
+
+
+    /* -----------------------------------------
+       Button state
+    ----------------------------------------- */
+
+    const submitBtn =
+      document.getElementById(
+        "submitBtn"
+      );
+
+    submitBtn.disabled = true;
+
+    submitBtn.textContent =
+      "Creating Account...";
+
+
+    /* -----------------------------------------
+       Build final object
+    ----------------------------------------- */
+
+    const finalTeacherData =
+      buildFinalTeacherData();
+
+
+    /* -----------------------------------------
+       Save final registration temporarily
+       
+       This is useful until Supabase
+       submission is connected.
+    ----------------------------------------- */
+
+    sessionStorage.setItem(
+      "finalTeacherRegistration",
+      JSON.stringify(
+        finalTeacherData
+      )
+    );
+
+
+    /* =====================================================
+       SUPABASE CONNECTION GOES HERE
+       
+       Later this section will:
+       
+       1. Create Supabase Auth account
+       2. Insert teacher into teachers table
+       3. Insert subjects into teacher_subjects
+       4. Upload profile photo if applicable
+       5. Clear registration session
+       6. Redirect to teacher dashboard
+    ===================================================== */
+
+
+    try {
+
+      /*
+       ----------------------------------------------------
+       TEMPORARY SUCCESS
+       ----------------------------------------------------
+       
+       Remove this timeout when Supabase is connected.
+      */
+
+      await new Promise(
+        (resolve) =>
+          setTimeout(resolve, 800)
+      );
+
+
+      alert(
+        `Teacher registration completed successfully!\n\nTeacher ID: ${generatedTeacherId}`
+      );
+
+
+      /* -----------------------------------------
+         OPTIONAL:
+         Redirect after successful registration
+      ----------------------------------------- */
+
+      window.location.href = "../teacher/teacher_dashboard.html";
+
+
+    } catch (error) {
+
+      console.error(
+        "Teacher registration error:",
+        error
+      );
+
+      alert(
+        "Something went wrong while creating your account. Please try again."
+      );
+
+    } finally {
+
+      submitBtn.disabled = false;
+
+      submitBtn.textContent =
+        "Create Teacher Account →";
+    }
+  }
+
+
+  /* =========================================================
+     18. PREVENT ACCIDENTAL PAGE LEAVE
+     
+     Only useful if you later add an actual
+     registration request.
+  ========================================================= */
+
+  window.addEventListener(
+    "beforeunload",
+    function (event) {
+
+      const submitBtn =
+        document.getElementById(
+          "submitBtn"
+        );
+
+      if (
+        submitBtn &&
+        submitBtn.disabled
+      ) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    }
+  );
+</script>
+  </body>
+</html>
+```
