@@ -1,0 +1,986 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Learning DC — Materials</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        /* Sidebar Design System */
+        --sidebar-bg: #031b2e;
+        --sidebar-text: #a0aec0;
+        --sidebar-text-active: #ffffff;
+        --sidebar-active-bg: #00818a;
+        --sidebar-hover-bg: #0a2540;
+
+        /* Main Background & Surfaces */
+        --main-bg: linear-gradient(
+          135deg,
+          #e3f2fd 0%,
+          #e0f2f1 50%,
+          #e8f5e9 100%
+        );
+        --surface: #ffffff;
+        --surface-border: #e2e8f0;
+
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+
+        --primary: #0284c7;
+        --primary-teal: #00818a;
+        --danger: #ef4444;
+
+        --radius: 18px;
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+        --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.08);
+        --font: "DM Sans", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font);
+        background: var(--main-bg);
+        background-attachment: fixed;
+        color: var(--text-main);
+        display: flex;
+        min-height: 100vh;
+        overflow-x: hidden;
+        font-size: 16px;
+      }
+
+      /* ── FIXED SIDEBAR (280px Dimensions) ── */
+      .sidebar {
+        width: 280px;
+        height: 100vh;
+        background-color: var(--sidebar-bg);
+        color: var(--sidebar-text);
+        position: fixed;
+        top: 0;
+        left: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 24px 18px;
+        z-index: 100;
+        overflow-y: auto;
+      }
+
+      .sidebar-brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 1.35rem;
+        padding: 6px 8px 24px 8px;
+      }
+
+      .brand-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #00818a, #6366f1);
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-weight: bold;
+        font-size: 1.2rem;
+      }
+
+      .nav-menu {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .nav-item a,
+      .nav-item button {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 13px 18px;
+        color: var(--sidebar-text);
+        text-decoration: none;
+        font-size: 1.05rem;
+        font-weight: 600;
+        border-radius: 14px;
+        transition: all 0.2s ease;
+        width: 100%;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .nav-item a:hover,
+      .nav-item button:hover {
+        background: var(--sidebar-hover-bg);
+        color: var(--sidebar-text-active);
+      }
+
+      .nav-item.active a {
+        background: var(--sidebar-active-bg);
+        color: var(--sidebar-text-active);
+        font-weight: 700;
+      }
+
+      .nav-icon {
+        font-size: 1.3rem;
+        width: 26px;
+        display: inline-grid;
+        place-items: center;
+      }
+
+      .btn-logout-sidebar {
+        color: #f87171 !important;
+      }
+
+      .btn-logout-sidebar:hover {
+        background: rgba(239, 68, 68, 0.18) !important;
+      }
+
+      /* ── MAIN CONTENT WRAPPER ── */
+      .main-wrapper {
+        margin-left: 280px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        width: calc(100% - 280px);
+      }
+
+      /* Header */
+      .header {
+        height: 76px;
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 40px;
+      }
+
+      .global-search {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--surface);
+        padding: 10px 18px;
+        border-radius: 30px;
+        width: 380px;
+        border: 1px solid var(--surface-border);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .global-search input {
+        border: none;
+        outline: none;
+        width: 100%;
+        font-size: 0.95rem;
+        font-family: inherit;
+      }
+
+      .user-profile-bar {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .notif-bell {
+        position: relative;
+        background: #fff;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        box-shadow: var(--shadow-sm);
+        cursor: pointer;
+        font-size: 1.2rem;
+      }
+
+      .notif-badge {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: var(--danger);
+        color: white;
+        font-size: 0.72rem;
+        font-weight: 800;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+      }
+
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #fff;
+        padding: 6px 18px 6px 8px;
+        border-radius: 30px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .user-info {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .user-name {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .user-role {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+      }
+
+      /* Main Container Card */
+      .main-box-container {
+        margin: 0 40px 32px 40px;
+        padding: 32px;
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        border-radius: 24px;
+        border: 1px solid var(--surface-border);
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+      }
+
+      .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+
+      .page-title h1 {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--text-main);
+      }
+
+      .page-title p {
+        color: var(--text-muted);
+        font-size: 1.05rem;
+        margin-top: 4px;
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 12px;
+      }
+
+      .btn-primary {
+        background: var(--primary-teal);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .btn-secondary {
+        background: #ffffff;
+        color: var(--text-main);
+        border: 1px solid var(--surface-border);
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* Stat Cards */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 18px;
+      }
+
+      .stat-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 20px;
+        border: 1px solid var(--surface-border);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        color: white;
+        font-size: 1.35rem;
+      }
+
+      .stat-val {
+        font-size: 1.6rem;
+        font-weight: 800;
+      }
+
+      .stat-lbl {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        font-weight: 600;
+      }
+
+      .stat-trend {
+        font-size: 0.8rem;
+        font-weight: 700;
+        margin-top: 2px;
+      }
+
+      /* Table Section */
+      .table-section {
+        background: var(--surface);
+        border-radius: var(--radius);
+        border: 1px solid var(--surface-border);
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .table-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        border-bottom: 1px solid var(--surface-border);
+        padding-bottom: 16px;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 20px;
+      }
+
+      .tab {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding-bottom: 8px;
+      }
+
+      .tab.active {
+        color: var(--primary-teal);
+        border-bottom: 3px solid var(--primary-teal);
+        font-weight: 700;
+      }
+
+      .filter-controls {
+        display: flex;
+        gap: 12px;
+      }
+
+      .search-input-sm {
+        border: 1px solid var(--surface-border);
+        padding: 8px 14px;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        width: 220px;
+        font-family: inherit;
+      }
+
+      .btn-filter,
+      .select-sort {
+        border: 1px solid var(--surface-border);
+        padding: 8px 14px;
+        border-radius: 10px;
+        background: white;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        font-family: inherit;
+      }
+
+      /* Table */
+      .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+      }
+
+      .data-table th {
+        padding: 12px 16px;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        border-bottom: 1px solid var(--surface-border);
+        font-weight: 700;
+      }
+
+      .data-table td {
+        padding: 16px;
+        font-size: 0.95rem;
+        border-bottom: 1px solid var(--surface-border);
+        vertical-align: middle;
+      }
+
+      .item-name {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 700;
+      }
+
+      .badge-type {
+        padding: 4px 12px;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 700;
+      }
+
+      .type-pdf {
+        background: #e0e7ff;
+        color: #3730a3;
+      }
+      .type-video {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+      .type-image {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      .type-link {
+        background: #f3e8ff;
+        color: #6b21a8;
+      }
+      .type-folder {
+        background: #fef3c7;
+        color: #92400e;
+      }
+
+      .pagination-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+        font-size: 0.9rem;
+        color: var(--text-muted);
+      }
+
+      .page-controls {
+        display: flex;
+        gap: 6px;
+      }
+
+      .page-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        border: 1px solid var(--surface-border);
+        background: white;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      .page-btn.active {
+        background: var(--primary-teal);
+        color: white;
+        border-color: var(--primary-teal);
+      }
+
+      /* Storage Overview Card */
+      .storage-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 24px;
+        border: 1px solid var(--surface-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .storage-left {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+      }
+
+      .radial-chart {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: conic-gradient(
+          var(--primary-teal) 0% 68%,
+          #e2e8f0 68% 100%
+        );
+        display: grid;
+        place-items: center;
+      }
+
+      .radial-chart::before {
+        content: "68%";
+        width: 60px;
+        height: 60px;
+        background: white;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-weight: 800;
+        font-size: 1rem;
+      }
+
+      .storage-breakdown {
+        display: flex;
+        gap: 28px;
+      }
+
+      .breakdown-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .breakdown-label {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        font-weight: 600;
+      }
+
+      .breakdown-value {
+        font-size: 0.98rem;
+        font-weight: 800;
+      }
+
+      @media (max-width: 1200px) {
+        .stats-grid {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+
+      @media (max-width: 768px) {
+        .sidebar {
+          display: none;
+        }
+        .main-wrapper {
+          margin-left: 0;
+          width: 100%;
+        }
+        .main-box-container {
+          margin: 0 16px 20px 16px;
+          padding: 20px;
+        }
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- FIXED SIDEBAR (280px) -->
+    <aside class="sidebar">
+      <div>
+        <div class="sidebar-brand">
+          <div class="brand-icon">🎓</div>
+          <span>Smart Learning DC</span>
+        </div>
+
+        <ul class="nav-menu">
+          <li class="nav-item">
+            <a href="/teacher_content/teacher_dashboard.html"
+              ><span class="nav-icon">📊</span> Dashboard</a
+            >
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/my_classes.html"
+              ><span class="nav-icon">🏫</span> My Classes</a
+            >
+          </li>
+          <li class="nav-item active">
+            <a href="/teacher_content/materials.html"
+              ><span class="nav-icon">📁</span> Materials</a
+            >
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/quizzes.html"
+              ><span class="nav-icon">📝</span> Quizzes</a
+            >
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/live_classes.html"
+              ><span class="nav-icon">📹</span> Live Classes</a
+            >
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/students.html"
+              ><span class="nav-icon">👥</span> Students</a
+            >
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/attendance.html"
+              ><span class="nav-icon">📅</span> Attendance</a
+            >
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/performance.html"
+              ><span class="nav-icon">📈</span> Student Performance</a
+            >
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/announcements.html"
+              ><span class="nav-icon">📢</span> Announcements</a
+            >
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/calendar.html"
+              ><span class="nav-icon">📆</span> Calendar</a
+            >
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/downloads.html"
+              ><span class="nav-icon">📥</span> Downloads</a
+            >
+          </li>
+        </ul>
+      </div>
+
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="/teacher_content/settings.html"
+            ><span class="nav-icon">⚙️</span> Settings</a
+          >
+        </li>
+        <li class="nav-item">
+          <a href="/teacher_content/help.html"
+            ><span class="nav-icon">❓</span> Help & Support</a
+          >
+        </li>
+        <li class="nav-item">
+          <a href="#" class="btn-logout-sidebar"
+            ><span class="nav-icon">🚪</span> Log out</a
+          >
+        </li>
+      </ul>
+    </aside>
+
+    <!-- MAIN WRAPPER -->
+    <div class="main-wrapper">
+      <!-- TOP HEADER -->
+      <header class="header">
+        <div class="global-search">
+          <span>🔍</span>
+          <input type="text" placeholder="Search anything..." />
+        </div>
+
+        <div class="user-profile-bar">
+          <div class="notif-bell">
+            🔔
+            <span class="notif-badge">3</span>
+          </div>
+          <div class="user-profile">
+            <img
+              src="https://i.pravatar.cc/100?img=12"
+              alt="User"
+              class="user-avatar"
+            />
+            <div class="user-info">
+              <span class="user-name">Ready</span>
+              <span class="user-role">Teacher • Subject Specialist</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- CONTENT BODY CONTAINER -->
+      <main class="main-box-container">
+        <!-- PAGE TITLE & ACTIONS -->
+        <div class="page-header">
+          <div class="page-title">
+            <h1>Materials</h1>
+            <p>Upload and manage study materials for your classes.</p>
+          </div>
+          <div class="action-buttons">
+            <button class="btn-primary">📤 Upload Material</button>
+            <button class="btn-secondary">📁 New Folder</button>
+          </div>
+        </div>
+
+        <!-- METRICS GRID -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #8b5cf6">📄</div>
+            <div>
+              <div class="stat-val">142</div>
+              <div class="stat-lbl">Total Materials</div>
+              <div class="stat-trend" style="color: #8b5cf6">+8 this week</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #3b82f6">🎥</div>
+            <div>
+              <div class="stat-val">34</div>
+              <div class="stat-lbl">Videos</div>
+              <div class="stat-trend" style="color: #3b82f6">+3 this week</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #10b981">📑</div>
+            <div>
+              <div class="stat-val">48</div>
+              <div class="stat-lbl">PDFs</div>
+              <div class="stat-trend" style="color: #10b981">+5 this week</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #f59e0b">🖼️</div>
+            <div>
+              <div class="stat-val">36</div>
+              <div class="stat-lbl">Images</div>
+              <div class="stat-trend" style="color: #f59e0b">+2 this week</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #00818a">🗂️</div>
+            <div>
+              <div class="stat-val">12</div>
+              <div class="stat-lbl">Folders</div>
+              <div class="stat-trend" style="color: #00818a">+1 this week</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAIN TABLE SECTION -->
+        <div class="table-section">
+          <div class="table-toolbar">
+            <div class="tabs">
+              <span class="tab active">All Materials</span>
+              <span class="tab">Notes</span>
+              <span class="tab">PDFs</span>
+              <span class="tab">Videos</span>
+              <span class="tab">Images</span>
+              <span class="tab">Links</span>
+              <span class="tab">Folders</span>
+            </div>
+            <div class="filter-controls">
+              <input
+                type="text"
+                placeholder="Search materials..."
+                class="search-input-sm"
+              />
+              <button class="btn-filter">🌪️ Filter</button>
+              <select class="select-sort">
+                <option>Sort by: Recent</option>
+              </select>
+            </div>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Class</th>
+                <th>Subject</th>
+                <th>Uploaded On</th>
+                <th>Size</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div class="item-name">📕 Chapter 3 Notes</div></td>
+                <td><span class="badge-type type-pdf">PDF</span></td>
+                <td>Class 12</td>
+                <td>Chemistry</td>
+                <td>
+                  16 May 2025 <br /><small style="color: var(--text-muted)"
+                    >10:30 AM</small
+                  >
+                </td>
+                <td>2.4 MB</td>
+                <td>📥 &nbsp; 💬</td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="item-name">📹 Electrostatics - Introduction</div>
+                </td>
+                <td><span class="badge-type type-video">Video</span></td>
+                <td>Class 12</td>
+                <td>Physics</td>
+                <td>
+                  15 May 2025 <br /><small style="color: var(--text-muted)"
+                    >02:15 PM</small
+                  >
+                </td>
+                <td>24.5 MB</td>
+                <td>📥 &nbsp; 💬</td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="item-name">🖼️ Structure of Atom Diagram</div>
+                </td>
+                <td><span class="badge-type type-image">Image</span></td>
+                <td>Class 11</td>
+                <td>Chemistry</td>
+                <td>
+                  14 May 2025 <br /><small style="color: var(--text-muted)"
+                    >11:20 AM</small
+                  >
+                </td>
+                <td>1.2 MB</td>
+                <td>📥 &nbsp; 💬</td>
+              </tr>
+              <tr>
+                <td><div class="item-name">📕 Thermodynamics Notes</div></td>
+                <td><span class="badge-type type-pdf">PDF</span></td>
+                <td>Class 12</td>
+                <td>Physics</td>
+                <td>
+                  13 May 2025 <br /><small style="color: var(--text-muted)"
+                    >09:45 AM</small
+                  >
+                </td>
+                <td>2.1 MB</td>
+                <td>📥 &nbsp; 💬</td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="item-name">🔗 Periodic Table (Interactive)</div>
+                </td>
+                <td><span class="badge-type type-link">Link</span></td>
+                <td>Class 10</td>
+                <td>Science</td>
+                <td>
+                  12 May 2025 <br /><small style="color: var(--text-muted)"
+                    >04:30 PM</small
+                  >
+                </td>
+                <td>—</td>
+                <td>🔗 &nbsp; 💬</td>
+              </tr>
+              <tr>
+                <td><div class="item-name">📹 Chemical Bonding Basics</div></td>
+                <td><span class="badge-type type-video">Video</span></td>
+                <td>Class 12</td>
+                <td>Chemistry</td>
+                <td>
+                  12 May 2025 <br /><small style="color: var(--text-muted)"
+                    >10:00 AM</small
+                  >
+                </td>
+                <td>31.2 MB</td>
+                <td>📥 &nbsp; 💬</td>
+              </tr>
+              <tr>
+                <td><div class="item-name">📁 Organic Chemistry</div></td>
+                <td><span class="badge-type type-folder">Folder</span></td>
+                <td>—</td>
+                <td>Chemistry</td>
+                <td>
+                  11 May 2025 <br /><small style="color: var(--text-muted)"
+                    >08:30 AM</small
+                  >
+                </td>
+                <td>—</td>
+                <td>💬</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="pagination-bar">
+            <div>Showing 1 to 7 of 142 materials</div>
+            <div class="page-controls">
+              <span class="page-btn">‹</span>
+              <span class="page-btn active">1</span>
+              <span class="page-btn">2</span>
+              <span class="page-btn">3</span>
+              <span class="page-btn">...</span>
+              <span class="page-btn">21</span>
+              <span class="page-btn">›</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- STORAGE OVERVIEW CARD -->
+        <div class="storage-card">
+          <div class="storage-left">
+            <div class="radial-chart"></div>
+            <div>
+              <h4 style="font-weight: 800">Storage Overview</h4>
+              <div
+                style="font-size: 1.15rem; font-weight: 800; margin-top: 4px"
+              >
+                6.8 GB
+                <span
+                  style="
+                    font-size: 0.88rem;
+                    font-weight: 500;
+                    color: var(--text-muted);
+                  "
+                  >/ 10 GB</span
+                >
+              </div>
+              <div style="font-size: 0.8rem; color: var(--text-muted)">
+                Total Storage
+              </div>
+            </div>
+          </div>
+
+          <div class="storage-breakdown">
+            <div class="breakdown-item">
+              <span class="breakdown-label">🎬 Videos</span>
+              <span class="breakdown-value">2.8 GB</span>
+            </div>
+            <div class="breakdown-item">
+              <span class="breakdown-label">📕 PDFs</span>
+              <span class="breakdown-value">2.1 GB</span>
+            </div>
+            <div class="breakdown-item">
+              <span class="breakdown-label">🖼️ Images</span>
+              <span class="breakdown-value">1.3 GB</span>
+            </div>
+            <div class="breakdown-item">
+              <span class="breakdown-label">📂 Others</span>
+              <span class="breakdown-value">0.6 GB</span>
+            </div>
+          </div>
+
+          <button class="btn-secondary">⚙️ Manage Storage</button>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
