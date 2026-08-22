@@ -1,0 +1,1284 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Learning DC — My Classes</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../js/supabase-client.js"></script>
+
+    <style>
+      /* ── EXACT DASHBOARD DESIGN SYSTEM ── */
+      :root {
+        --sidebar-bg: #031b2e;
+        --sidebar-text: #a0aec0;
+        --sidebar-text-active: #ffffff;
+        --sidebar-active-bg: #00818a;
+        --sidebar-hover-bg: #0a2540;
+
+        --main-bg: linear-gradient(
+          135deg,
+          #e3f2fd 0%,
+          #e0f2f1 50%,
+          #e8f5e9 100%
+        );
+        --surface: #ffffff;
+        --surface-border: #e2e8f0;
+
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+
+        --primary: #2563eb;
+        --primary-teal: #00818a;
+
+        --chip-purple: #8b5cf6;
+        --chip-green: #10b981;
+        --chip-orange: #f59e0b;
+        --chip-blue: #3b82f6;
+        --chip-pink: #ec4899;
+        --chip-cyan: #06b6d4;
+        --chip-amber: #eab308;
+
+        --danger: #ef4444;
+        --radius: 18px;
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+        --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.08);
+        --font: "DM Sans", sans-serif;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font);
+        background: var(--main-bg);
+        background-attachment: fixed;
+        color: var(--text-main);
+        display: flex;
+        min-height: 100vh;
+        overflow-x: hidden;
+        font-size: 16px;
+      }
+
+      /* ── FIXED SIDEBAR ── */
+      .sidebar {
+        width: 280px;
+        height: 100vh;
+        background-color: var(--sidebar-bg);
+        color: var(--sidebar-text);
+        position: fixed;
+        top: 0;
+        left: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 24px 18px;
+        z-index: 100;
+        overflow-y: auto;
+      }
+
+      .sidebar-brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 1.35rem;
+        padding: 6px 8px 24px 8px;
+      }
+
+      .brand-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #00818a, #6366f1);
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-weight: bold;
+        font-size: 1.2rem;
+      }
+
+      .nav-menu {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .nav-item a,
+      .nav-item button {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 13px 18px;
+        color: var(--sidebar-text);
+        text-decoration: none;
+        font-size: 1.05rem;
+        font-weight: 600;
+        border-radius: 14px;
+        transition: all 0.2s ease;
+        width: 100%;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .nav-item a:hover,
+      .nav-item button:hover {
+        background: var(--sidebar-hover-bg);
+        color: var(--sidebar-text-active);
+      }
+
+      .nav-item.active a {
+        background: var(--sidebar-active-bg);
+        color: var(--sidebar-text-active);
+        font-weight: 700;
+      }
+
+      .nav-icon {
+        font-size: 1.3rem;
+        width: 26px;
+        display: inline-grid;
+        place-items: center;
+      }
+
+      .nav-divider {
+        height: 1px;
+        background: rgba(255, 255, 255, 0.15);
+        margin: 12px 0;
+      }
+
+      .btn-logout-sidebar {
+        color: #f87171 !important;
+      }
+
+      .btn-logout-sidebar:hover {
+        background: rgba(239, 68, 68, 0.18) !important;
+      }
+
+      /* ── MAIN CONTENT WRAPPER ── */
+      .main-wrapper {
+        margin-left: 280px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        width: calc(100% - 280px);
+      }
+
+      /* ── HEADER BAR ── */
+      .header {
+        height: 76px;
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 32px;
+        gap: 20px;
+        flex-shrink: 0;
+      }
+
+      .header-search {
+        flex: 1;
+        max-width: 480px;
+        position: relative;
+      }
+
+      .header-search input {
+        width: 100%;
+        padding: 10px 16px 10px 42px;
+        border-radius: 12px;
+        border: 1px solid var(--surface-border);
+        background: rgba(255, 255, 255, 0.85);
+        font-family: inherit;
+        font-size: 0.95rem;
+        outline: none;
+      }
+
+      .header-search::before {
+        content: "🔍";
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.9rem;
+        opacity: 0.5;
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .notif-bell {
+        position: relative;
+        background: #fff;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        box-shadow: var(--shadow-sm);
+        cursor: pointer;
+        font-size: 1.2rem;
+      }
+
+      .notif-badge {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: var(--danger);
+        color: white;
+        font-size: 0.7rem;
+        font-weight: 800;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+      }
+
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #fff;
+        padding: 5px 16px 5px 6px;
+        border-radius: 30px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .user-info {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .user-name {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .user-role {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+      }
+
+      /* ── EXPANDED MAIN CONTAINER (Fills vertical space) ── */
+      .main-box-container {
+        margin: 0 32px 24px 32px;
+        padding: 32px;
+        background: rgba(255, 255, 255, 0.78);
+        backdrop-filter: blur(12px);
+        border-radius: 24px;
+        border: 1px solid var(--surface-border);
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        flex: 1; /* Key change to expand full height */
+      }
+
+      /* Header Actions Row */
+      .page-title-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+
+      .page-title-row h1 {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: var(--text-main);
+      }
+
+      .page-title-row p {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        margin-top: 4px;
+      }
+
+      .title-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .btn-add-class {
+        background: #2563eb;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .view-toggle {
+        display: flex;
+        background: #e2e8f0;
+        padding: 3px;
+        border-radius: 10px;
+        gap: 2px;
+      }
+
+      .toggle-btn {
+        border: none;
+        background: transparent;
+        padding: 8px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1rem;
+        color: var(--text-muted);
+      }
+
+      .toggle-btn.active {
+        background: #ffffff;
+        color: var(--text-main);
+        box-shadow: var(--shadow-sm);
+      }
+
+      /* Filter Tabs & Sort Row */
+      .filters-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .tab-pills {
+        display: flex;
+        gap: 10px;
+      }
+
+      .tab-pill {
+        border: none;
+        padding: 8px 18px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        background: #f1f5f9;
+        color: var(--text-muted);
+      }
+
+      .tab-pill.active {
+        background: #2563eb;
+        color: #ffffff;
+      }
+
+      .sort-dropdown select {
+        border: 1px solid var(--surface-border);
+        padding: 8px 16px;
+        border-radius: 10px;
+        background: #ffffff;
+        font-family: inherit;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--text-main);
+        outline: none;
+        cursor: pointer;
+      }
+
+      /* ── CLASSES GRID (Scaled for higher vertical presence) ── */
+      .classes-main-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+        flex: 1; /* Takes remaining vertical space inside box */
+      }
+
+      .class-card {
+        background: var(--surface);
+        border-radius: 16px;
+        padding: 22px;
+        border: 1px solid var(--surface-border);
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+      }
+
+      .class-card-top {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .class-icon-wrapper {
+        width: 46px;
+        height: 46px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        color: #ffffff;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+      }
+
+      .class-info-header {
+        flex: 1;
+      }
+
+      .class-info-header h3 {
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: var(--text-main);
+        line-height: 1.2;
+      }
+
+      .class-info-header p {
+        font-size: 0.88rem;
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+
+      .class-more-btn {
+        background: transparent;
+        border: none;
+        font-size: 1.2rem;
+        color: var(--text-muted);
+        cursor: pointer;
+      }
+
+      .class-meta-line {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        font-weight: 600;
+        margin: 12px 0;
+      }
+
+      .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .status-dot-active {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #10b981;
+        margin-right: 4px;
+      }
+
+      .progress-section {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+
+      .progress-bar-bg {
+        height: 7px;
+        width: 100%;
+        background: #e2e8f0;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+
+      .progress-bar-fill {
+        height: 100%;
+        border-radius: 10px;
+      }
+
+      .progress-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--text-muted);
+      }
+
+      .btn-view-class {
+        width: 100%;
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        padding: 10px;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #2563eb;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.2s ease;
+      }
+
+      .btn-view-class:hover {
+        background: #f8fafc;
+        border-color: #94a3b8;
+      }
+
+      /* ── TOTAL OVERVIEW BOTTOM BANNER ── */
+      .overview-banner {
+        background: linear-gradient(
+          90deg,
+          #e0f2fe 0%,
+          #ecfeff 50%,
+          #f0fdf4 100%
+        );
+        border-radius: var(--radius);
+        padding: 24px 36px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border: 1px solid rgba(14, 165, 233, 0.2);
+        box-shadow: var(--shadow-sm);
+        margin-top: auto; /* Pushes nicely to bottom of white box */
+      }
+
+      .overview-left {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .overview-3d-icon {
+        width: 56px;
+        height: 56px;
+        background: #ffffff;
+        border-radius: 16px;
+        display: grid;
+        place-items: center;
+        font-size: 1.8rem;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .overview-title h4 {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: var(--text-main);
+      }
+
+      .overview-metrics {
+        display: flex;
+        align-items: center;
+        gap: 48px;
+      }
+
+      .metric-group {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .metric-icon-circle {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.85);
+        display: grid;
+        place-items: center;
+        font-size: 1.15rem;
+        color: #2563eb;
+      }
+
+      .metric-data {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .metric-number {
+        font-size: 1.45rem;
+        font-weight: 800;
+        color: var(--text-main);
+        line-height: 1;
+      }
+
+      .metric-label {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        font-weight: 600;
+        margin-top: 3px;
+      }
+
+      .donut-container {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .donut-chart {
+        width: 54px;
+        height: 54px;
+        border-radius: 50%;
+        background: conic-gradient(#2563eb 0% 72%, #cbd5e1 72% 100%);
+        display: grid;
+        place-items: center;
+        position: relative;
+      }
+
+      .donut-chart::before {
+        content: "72%";
+        position: absolute;
+        width: 42px;
+        height: 42px;
+        background: #ffffff;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: 0.78rem;
+        font-weight: 800;
+        color: var(--text-main);
+      }
+
+      /* RESPONSIVE DESIGN */
+      @media (max-width: 1280px) {
+        .classes-main-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .overview-metrics {
+          gap: 24px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .sidebar {
+          display: none;
+        }
+        .main-wrapper {
+          margin-left: 0;
+          width: 100%;
+        }
+        .main-box-container {
+          margin: 0 16px 20px 16px;
+          padding: 20px;
+        }
+        .classes-main-grid {
+          grid-template-columns: 1fr;
+        }
+        .overview-banner {
+          flex-direction: column;
+          gap: 20px;
+          align-items: flex-start;
+        }
+        .overview-metrics {
+          flex-wrap: wrap;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ── SIDEBAR ── -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">S</div>
+        <span>Smart Learning DC</span>
+      </div>
+
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="teacher_dashboard.html"
+            ><span class="nav-icon">📊</span> Dashboard</a
+          >
+        </li>
+        <li class="nav-item active">
+          <a href="/teacher_content/my_classes.html"
+            ><span class="nav-icon">👥</span> My Classes</a
+          >
+        </li>
+        <li class="nav-item">
+          <a href="/teacher_content/materials.html">
+            <span class="nav-icon">📁</span> Materials
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/teacher_content/quizzes.html">
+            <span class="nav-icon">📝</span> Quizzes
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/teacher_content/live_classes.html">
+            <span class="nav-icon">📹</span> Live Classes
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/teacher_content/students.html">
+            <span class="nav-icon">🎓</span> Students
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📅</span> Attendance</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📈</span> Student Performance</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📢</span> Announcements</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">🗓️</span> Calendar</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📥</span> Downloads</a>
+        </li>
+
+        <div class="nav-divider"></div>
+
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">⚙️</span> Settings</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">❓</span> Help & Support</a>
+        </li>
+        <li class="nav-item">
+          <button class="btn-logout-sidebar" id="logoutBtn">
+            <span class="nav-icon">🚪</span> Log out
+          </button>
+        </li>
+      </ul>
+    </aside>
+
+    <!-- ── MAIN WRAPPER ── -->
+    <div class="main-wrapper">
+      <!-- HEADER BAR -->
+      <header class="header">
+        <div class="header-search">
+          <input
+            type="text"
+            placeholder="Search anything..."
+            id="classSearchInput"
+          />
+        </div>
+
+        <div class="header-right">
+          <div class="notif-bell" id="notifBtn">
+            🔔
+            <span class="notif-badge">3</span>
+          </div>
+          <div class="user-profile">
+            <img
+              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
+              alt="Avatar"
+              class="user-avatar"
+              id="avatarImg"
+            />
+            <div class="user-info">
+              <span class="user-name" id="profileNameEl">Ready</span>
+              <span class="user-role" id="profileRoleEl"
+                >Teacher • Subject Specialist</span
+              >
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- MAIN CONTENT CONTAINER (Expands to fill viewport bottom) -->
+      <main class="main-box-container">
+        <!-- PAGE TITLE ROW -->
+        <div class="page-title-row">
+          <div>
+            <h1>My Classes</h1>
+            <p>Manage all your classes and view their progress.</p>
+          </div>
+          <div class="title-actions">
+            <button class="btn-add-class" id="openAddClassModal">
+              + Add New Class
+            </button>
+            <div class="view-toggle">
+              <button class="toggle-btn active" title="Grid View">⣿</button>
+              <button class="toggle-btn" title="List View">☰</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- FILTERS & SORT ROW -->
+        <div class="filters-row">
+          <div class="tab-pills">
+            <button class="tab-pill active">All Classes</button>
+            <button class="tab-pill">Active Classes</button>
+            <button class="tab-pill">Archived Classes</button>
+          </div>
+          <div class="sort-dropdown">
+            <select id="sortBySelect">
+              <option value="recent">Sort by: Recent</option>
+              <option value="name">Sort by: Name</option>
+              <option value="students">Sort by: Students Count</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 8 CLASSES GRID -->
+        <div class="classes-main-grid" id="classesGrid">
+          <!-- Card 1 -->
+          <div class="class-card">
+            <div class="class-card-top">
+              <div
+                class="class-icon-wrapper"
+                style="background-color: var(--chip-purple)"
+              >
+                📖
+              </div>
+              <div class="class-info-header">
+                <h3>Class 9</h3>
+                <p>Science</p>
+              </div>
+              <button class="class-more-btn">⋮</button>
+            </div>
+            <div class="class-meta-line">
+              <span class="meta-item">👥 34 Students</span>
+              <span class="meta-item">📄 12 Lessons</span>
+              <span class="meta-item"
+                ><span class="status-dot-active"></span> Active</span
+              >
+            </div>
+            <div class="progress-section">
+              <div class="progress-bar-bg">
+                <div
+                  class="progress-bar-fill"
+                  style="width: 78%; background-color: var(--chip-purple)"
+                ></div>
+              </div>
+              <div class="progress-labels">
+                <span>Course Progress</span>
+                <span>78%</span>
+              </div>
+            </div>
+            <button class="btn-view-class">View Class</button>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="class-card">
+            <div class="class-card-top">
+              <div
+                class="class-icon-wrapper"
+                style="background-color: var(--chip-green)"
+              >
+                🌐
+              </div>
+              <div class="class-info-header">
+                <h3>Class 10</h3>
+                <p>Science</p>
+              </div>
+              <button class="class-more-btn">⋮</button>
+            </div>
+            <div class="class-meta-line">
+              <span class="meta-item">👥 32 Students</span>
+              <span class="meta-item">📄 15 Lessons</span>
+              <span class="meta-item"
+                ><span class="status-dot-active"></span> Active</span
+              >
+            </div>
+            <div class="progress-section">
+              <div class="progress-bar-bg">
+                <div
+                  class="progress-bar-fill"
+                  style="width: 72%; background-color: var(--chip-green)"
+                ></div>
+              </div>
+              <div class="progress-labels">
+                <span>Course Progress</span>
+                <span>72%</span>
+              </div>
+            </div>
+            <button class="btn-view-class">View Class</button>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="class-card">
+            <div class="class-card-top">
+              <div
+                class="class-icon-wrapper"
+                style="background-color: var(--chip-orange)"
+              >
+                🧪
+              </div>
+              <div class="class-info-header">
+                <h3>Class 12</h3>
+                <p>Physics</p>
+              </div>
+              <button class="class-more-btn">⋮</button>
+            </div>
+            <div class="class-meta-line">
+              <span class="meta-item">👥 28 Students</span>
+              <span class="meta-item">📄 10 Lessons</span>
+              <span class="meta-item"
+                ><span class="status-dot-active"></span> Active</span
+              >
+            </div>
+            <div class="progress-section">
+              <div class="progress-bar-bg">
+                <div
+                  class="progress-bar-fill"
+                  style="width: 65%; background-color: var(--chip-orange)"
+                ></div>
+              </div>
+              <div class="progress-labels">
+                <span>Course Progress</span>
+                <span>65%</span>
+              </div>
+            </div>
+            <button class="btn-view-class">View Class</button>
+          </div>
+
+          <!-- Card 4 -->
+          <div class="class-card">
+            <div class="class-card-top">
+              <div
+                class="class-icon-wrapper"
+                style="background-color: var(--chip-blue)"
+              >
+                ⚛️
+              </div>
+              <div class="class-info-header">
+                <h3>Class 12</h3>
+                <p>Chemistry</p>
+              </div>
+              <button class="class-more-btn">⋮</button>
+            </div>
+            <div class="class-meta-line">
+              <span class="meta-item">👥 30 Students</span>
+              <span class="meta-item">📄 14 Lessons</span>
+              <span class="meta-item"
+                ><span class="status-dot-active"></span> Active</span
+              >
+            </div>
+            <div class="progress-section">
+              <div class="progress-bar-bg">
+                <div
+                  class="progress-bar-fill"
+                  style="width: 80%; background-color: var(--chip-blue)"
+                ></div>
+              </div>
+              <div class="progress-labels">
+                <span>Course Progress</span>
+                <span>80%</span>
+              </div>
+            </div>
+            <button class="btn-view-class">View Class</button>
+          </div>
+
+          <!-- Card 5 -->
+          <div class="class-card">
+            <div class="class-card-top">
+              <div
+                class="class-icon-wrapper"
+                style="background-color: var(--chip-pink)"
+              >
+                ➗
+              </div>
+              <div class="class-info-header">
+                <h3>Class 9</h3>
+                <p>Mathematics</p>
+              </div>
+              <button class="class-more-btn">⋮</button>
+            </div>
+            <div class="class-meta-line">
+              <span class="meta-item">👥 33 Students</span>
+              <span class="meta-item">📄 11 Lessons</span>
+              <span class="meta-item"
+                ><span class="status-dot-active"></span> Active</span
+              >
+            </div>
+            <div class="progress-section">
+              <div class="progress-bar-bg">
+                <div
+                  class="progress-bar-fill"
+                  style="width: 68%; background-color: var(--chip-pink)"
+                ></div>
+              </div>
+              <div class="progress-labels">
+                <span>Course Progress</span>
+                <span>68%</span>
+              </div>
+            </div>
+            <button class="btn-view-class">View Class</button>
+          </div>
+
+          <!-- Card 6 -->
+          <div class="class-card">
+            <div class="class-card-top">
+              <div
+                class="class-icon-wrapper"
+                style="background-color: var(--chip-cyan)"
+              >
+                🏛️
+              </div>
+              <div class="class-info-header">
+                <h3>Class 10</h3>
+                <p>Social Science</p>
+              </div>
+              <button class="class-more-btn">⋮</button>
+            </div>
+            <div class="class-meta-line">
+              <span class="meta-item">👥 31 Students</span>
+              <span class="meta-item">📄 13 Lessons</span>
+              <span class="meta-item"
+                ><span class="status-dot-active"></span> Active</span
+              >
+            </div>
+            <div class="progress-section">
+              <div class="progress-bar-bg">
+                <div
+                  class="progress-bar-fill"
+                  style="width: 75%; background-color: var(--chip-cyan)"
+                ></div>
+              </div>
+              <div class="progress-labels">
+                <span>Course Progress</span>
+                <span>75%</span>
+              </div>
+            </div>
+            <button class="btn-view-class">View Class</button>
+          </div>
+
+          <!-- Card 7 -->
+          <div class="class-card">
+            <div class="class-card-top">
+              <div
+                class="class-icon-wrapper"
+                style="background-color: var(--chip-purple)"
+              >
+                Aa
+              </div>
+              <div class="class-info-header">
+                <h3>Class 11</h3>
+                <p>English</p>
+              </div>
+              <button class="class-more-btn">⋮</button>
+            </div>
+            <div class="class-meta-line">
+              <span class="meta-item">👥 29 Students</span>
+              <span class="meta-item">📄 9 Lessons</span>
+              <span class="meta-item"
+                ><span class="status-dot-active"></span> Active</span
+              >
+            </div>
+            <div class="progress-section">
+              <div class="progress-bar-bg">
+                <div
+                  class="progress-bar-fill"
+                  style="width: 60%; background-color: var(--chip-purple)"
+                ></div>
+              </div>
+              <div class="progress-labels">
+                <span>Course Progress</span>
+                <span>60%</span>
+              </div>
+            </div>
+            <button class="btn-view-class">View Class</button>
+          </div>
+
+          <!-- Card 8 -->
+          <div class="class-card">
+            <div class="class-card-top">
+              <div
+                class="class-icon-wrapper"
+                style="background-color: var(--chip-amber)"
+              >
+                💻
+              </div>
+              <div class="class-info-header">
+                <h3>Class 12</h3>
+                <p>Computer Science</p>
+              </div>
+              <button class="class-more-btn">⋮</button>
+            </div>
+            <div class="class-meta-line">
+              <span class="meta-item">👥 27 Students</span>
+              <span class="meta-item">📄 16 Lessons</span>
+              <span class="meta-item"
+                ><span class="status-dot-active"></span> Active</span
+              >
+            </div>
+            <div class="progress-section">
+              <div class="progress-bar-bg">
+                <div
+                  class="progress-bar-fill"
+                  style="width: 82%; background-color: var(--chip-amber)"
+                ></div>
+              </div>
+              <div class="progress-labels">
+                <span>Course Progress</span>
+                <span>82%</span>
+              </div>
+            </div>
+            <button class="btn-view-class">View Class</button>
+          </div>
+        </div>
+
+        <!-- TOTAL OVERVIEW BOTTOM BANNER -->
+        <div class="overview-banner">
+          <div class="overview-left">
+            <div class="overview-3d-icon">📚</div>
+            <div class="overview-title">
+              <h4>Total Overview</h4>
+            </div>
+          </div>
+
+          <div class="overview-metrics">
+            <div class="metric-group">
+              <div class="metric-icon-circle">👤</div>
+              <div class="metric-data">
+                <span class="metric-number">8</span>
+                <span class="metric-label">Total Classes</span>
+              </div>
+            </div>
+
+            <div class="metric-group">
+              <div class="metric-icon-circle">👥</div>
+              <div class="metric-data">
+                <span class="metric-number">244</span>
+                <span class="metric-label">Total Students</span>
+              </div>
+            </div>
+
+            <div class="metric-group">
+              <div class="metric-icon-circle">🎖️</div>
+              <div class="metric-data">
+                <span class="metric-number">100</span>
+                <span class="metric-label">Total Lessons</span>
+              </div>
+            </div>
+
+            <div class="donut-container">
+              <div class="donut-chart"></div>
+              <div class="metric-data">
+                <span class="metric-number" style="font-size: 1rem"
+                  >Average Progress</span
+                >
+                <span class="metric-label">Across all classes</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        const registration = JSON.parse(
+          sessionStorage.getItem("finalTeacherRegistration") || "null",
+        );
+        const savedProfessional = JSON.parse(
+          sessionStorage.getItem("teacherProfessionalInfo") || "{}",
+        );
+        const savedPersonal = JSON.parse(
+          sessionStorage.getItem("teacherPersonalInfo") || "{}",
+        );
+        const professional = registration?.professional || savedProfessional;
+        const personal = registration?.personal || savedPersonal;
+        const assignments =
+          professional.specialistAssignments ||
+          professional.specialist_assignments ||
+          [];
+
+        const name = personal.fullName || personal.full_name || "Teacher";
+        document.getElementById("profileNameEl").textContent = name;
+
+        if (personal.profilePhoto) {
+          document.getElementById("avatarImg").src = personal.profilePhoto;
+        }
+
+        if (assignments.length > 0) {
+          const classesGrid = document.getElementById("classesGrid");
+          classesGrid.innerHTML = assignments
+            .flatMap((assignment) =>
+              (assignment.grades || assignment.classes || []).map(
+                (grade) => `
+                  <div class="class-card">
+                    <div class="class-card-top">
+                      <div class="class-icon-wrapper" style="background-color: var(--primary)">📚</div>
+                      <div class="class-info-header">
+                        <h3>Class ${grade}</h3>
+                        <p>${assignment.subject}</p>
+                      </div>
+                    </div>
+                    <div class="class-meta-line">
+                      <span class="meta-item">📚 Registered subject</span>
+                      <span class="meta-item"><span class="status-dot-active"></span> Active</span>
+                    </div>
+                    <div class="progress-section">
+                      <div class="progress-labels">
+                        <span>Teaching assignment</span>
+                        <span>Ready</span>
+                      </div>
+                    </div>
+                    <button class="btn-view-class">View Class</button>
+                  </div>
+                `,
+              ),
+            )
+            .join("");
+        }
+
+        const supabase =
+          window.supabaseClient ||
+          (window.supabase
+            ? window.supabase.createClient(
+                "YOUR_SUPABASE_URL",
+                "YOUR_SUPABASE_ANON_KEY",
+              )
+            : null);
+
+        async function loadUserProfile() {
+          if (!supabase) return;
+          try {
+            const {
+              data: { user },
+            } = await supabase.auth.getUser();
+            if (user) {
+              const { data: profile } = await supabase
+                .from("profiles")
+                .select("*")
+                .eq("id", user.id)
+                .single();
+
+              if (profile) {
+                document.getElementById("profileNameEl").textContent =
+                  profile.full_name || "Ready";
+                if (profile.avatar_url)
+                  document.getElementById("avatarImg").src = profile.avatar_url;
+              }
+            }
+          } catch (err) {
+            console.warn("Supabase context offline.");
+          }
+        }
+
+        document
+          .getElementById("logoutBtn")
+          ?.addEventListener("click", async () => {
+            if (supabase) {
+              await supabase.auth.signOut();
+            }
+            window.location.href = "index.html";
+          });
+
+        loadUserProfile();
+      });
+    </script>
+  </body>
+</html>
