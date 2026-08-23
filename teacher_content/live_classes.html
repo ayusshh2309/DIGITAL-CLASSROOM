@@ -1,0 +1,934 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Learning DC — Live Classes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Supabase JS CDN Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+      :root {
+        /* Sidebar Design System (280px) */
+        --sidebar-bg: #031b2e;
+        --sidebar-text: #a0aec0;
+        --sidebar-text-active: #ffffff;
+        --sidebar-active-bg: #00818a;
+        --sidebar-hover-bg: #0a2540;
+
+        /* Main Background & Surfaces */
+        --main-bg: linear-gradient(
+          135deg,
+          #e3f2fd 0%,
+          #e0f2f1 50%,
+          #e8f5e9 100%
+        );
+        --surface: #ffffff;
+        --surface-border: #e2e8f0;
+
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+
+        --primary: #4f46e5;
+        --primary-hover: #4338ca;
+        --danger: #ef4444;
+
+        --radius: 18px;
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+        --font: "DM Sans", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font);
+        background: var(--main-bg);
+        background-attachment: fixed;
+        color: var(--text-main);
+        display: flex;
+        min-height: 100vh;
+        overflow-x: hidden;
+        font-size: 16px;
+      }
+
+      /* ── FIXED SIDEBAR (280px) ── */
+      .sidebar {
+        width: 280px;
+        height: 100vh;
+        background-color: var(--sidebar-bg);
+        color: var(--sidebar-text);
+        position: fixed;
+        top: 0;
+        left: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 24px 18px;
+        z-index: 100;
+        overflow-y: auto;
+      }
+
+      .sidebar-brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 1.35rem;
+        padding: 6px 8px 24px 8px;
+      }
+
+      .brand-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #00818a, #6366f1);
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-weight: bold;
+        font-size: 1.2rem;
+      }
+
+      .nav-menu {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .nav-item a,
+      .nav-item button {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 13px 18px;
+        color: var(--sidebar-text);
+        text-decoration: none;
+        font-size: 1.05rem;
+        font-weight: 600;
+        border-radius: 14px;
+        transition: all 0.2s ease;
+        width: 100%;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .nav-item a:hover,
+      .nav-item button:hover {
+        background: var(--sidebar-hover-bg);
+        color: var(--sidebar-text-active);
+      }
+
+      .nav-item.active a {
+        background: var(--sidebar-active-bg);
+        color: var(--sidebar-text-active);
+        font-weight: 700;
+      }
+
+      .nav-icon {
+        font-size: 1.3rem;
+        width: 26px;
+        display: inline-grid;
+        place-items: center;
+      }
+
+      .btn-logout-sidebar {
+        color: #f87171 !important;
+      }
+
+      .btn-logout-sidebar:hover {
+        background: rgba(239, 68, 68, 0.18) !important;
+      }
+
+      /* ── MAIN CONTENT WRAPPER ── */
+      .main-wrapper {
+        margin-left: 280px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        width: calc(100% - 280px);
+      }
+
+      /* Header */
+      .header {
+        height: 76px;
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 40px;
+      }
+
+      .global-search {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--surface);
+        padding: 10px 18px;
+        border-radius: 30px;
+        width: 380px;
+        border: 1px solid var(--surface-border);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .global-search input {
+        border: none;
+        outline: none;
+        width: 100%;
+        font-size: 0.95rem;
+        font-family: inherit;
+      }
+
+      .user-profile-bar {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .notif-bell {
+        position: relative;
+        background: #fff;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        box-shadow: var(--shadow-sm);
+        cursor: pointer;
+        font-size: 1.2rem;
+      }
+
+      .notif-badge {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: var(--danger);
+        color: white;
+        font-size: 0.72rem;
+        font-weight: 800;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+      }
+
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #fff;
+        padding: 6px 18px 6px 8px;
+        border-radius: 30px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .user-info {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .user-name {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .user-role {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+      }
+
+      /* Main Container Card */
+      .main-box-container {
+        margin: 0 40px 32px 40px;
+        padding: 32px;
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        border-radius: 24px;
+        border: 1px solid var(--surface-border);
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+      }
+
+      .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+
+      .page-title h1 {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--text-main);
+      }
+
+      .page-title p {
+        color: var(--text-muted);
+        font-size: 1.05rem;
+        margin-top: 4px;
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 12px;
+      }
+
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: var(--shadow-sm);
+        transition: background 0.2s;
+      }
+
+      .btn-primary:hover {
+        background: var(--primary-hover);
+      }
+
+      .btn-secondary {
+        background: #ffffff;
+        color: var(--primary);
+        border: 1px solid var(--surface-border);
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* Stat Cards */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 18px;
+      }
+
+      .stat-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 20px;
+        border: 1px solid var(--surface-border);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        color: white;
+        font-size: 1.35rem;
+      }
+
+      .stat-val {
+        font-size: 1.6rem;
+        font-weight: 800;
+      }
+
+      .stat-lbl {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        font-weight: 600;
+      }
+
+      /* ── LIVE CLASSES SECTION ── */
+      .live-classes-section {
+        background: var(--surface);
+        border-radius: var(--radius);
+        border: 1px solid var(--surface-border);
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .table-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        border-bottom: 1px solid var(--surface-border);
+        padding-bottom: 16px;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 20px;
+      }
+
+      .tab {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding-bottom: 8px;
+      }
+
+      .tab.active {
+        color: var(--primary);
+        border-bottom: 3px solid var(--primary);
+        font-weight: 700;
+      }
+
+      .view-schedule-link {
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .view-schedule-link:hover {
+        text-decoration: underline;
+      }
+
+      /* Live Classes List View */
+      .live-classes-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .class-card {
+        background: #ffffff;
+        border: 1px solid var(--surface-border);
+        border-radius: 16px;
+        padding: 18px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition:
+          transform 0.2s ease,
+          box-shadow 0.2s ease;
+      }
+
+      .class-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+      }
+
+      .class-card-left {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .class-card-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        color: white;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+      }
+
+      .class-card-info h3 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text-main);
+        margin-bottom: 4px;
+      }
+
+      .class-card-info p {
+        font-size: 0.88rem;
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+
+      .class-card-right {
+        display: flex;
+        align-items: center;
+        gap: 32px;
+      }
+
+      .class-time {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        font-weight: 600;
+      }
+
+      .btn-join {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 10px 24px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: background 0.2s ease;
+        text-decoration: none;
+        display: inline-block;
+      }
+
+      .btn-join:hover {
+        background: var(--primary-hover);
+      }
+
+      .btn-recording {
+        background: #e2e8f0;
+        color: #334155;
+      }
+
+      .btn-recording:hover {
+        background: #cbd5e1;
+      }
+
+      @media (max-width: 1200px) {
+        .stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      @media (max-width: 768px) {
+        .sidebar {
+          display: none;
+        }
+        .main-wrapper {
+          margin-left: 0;
+          width: 100%;
+        }
+        .main-box-container {
+          margin: 0 16px 20px 16px;
+          padding: 20px;
+        }
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+        .class-card {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 16px;
+        }
+        .class-card-right {
+          width: 100%;
+          justify-content: space-between;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- FIXED SIDEBAR (280px) -->
+    <aside class="sidebar">
+      <div>
+        <div class="sidebar-brand">
+          <div class="brand-icon">🎓</div>
+          <span>Smart Learning DC</span>
+        </div>
+
+        <ul class="nav-menu">
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📊</span> Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">🏫</span> My Classes</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📁</span> Materials</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📝</span> Quizzes</a>
+          </li>
+          <li class="nav-item active">
+            <a href="#"><span class="nav-icon">📹</span> Live Classes</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">👥</span> Students</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📅</span> Attendance</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📈</span> Student Performance</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📢</span> Announcements</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📆</span> Calendar</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📥</span> Downloads</a>
+          </li>
+        </ul>
+      </div>
+
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">⚙️</span> Settings</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">❓</span> Help & Support</a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="btn-logout-sidebar"
+            ><span class="nav-icon">🚪</span> Log out</a
+          >
+        </li>
+      </ul>
+    </aside>
+
+    <!-- MAIN WRAPPER -->
+    <div class="main-wrapper">
+      <!-- TOP HEADER -->
+      <header class="header">
+        <div class="global-search">
+          <span>🔍</span>
+          <input
+            type="text"
+            id="globalSearchInput"
+            placeholder="Search live classes..."
+            onkeyup="filterLiveClasses()"
+          />
+        </div>
+
+        <div class="user-profile-bar">
+          <div class="notif-bell">
+            🔔
+            <span class="notif-badge">3</span>
+          </div>
+          <div class="user-profile">
+            <img
+              src="https://i.pravatar.cc/100?img=12"
+              alt="User"
+              class="user-avatar"
+            />
+            <div class="user-info">
+              <span class="user-name">Ready</span>
+              <span class="user-role">Teacher • Subject Specialist</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- CONTENT BODY CONTAINER -->
+      <main class="main-box-container">
+        <!-- PAGE TITLE & ACTIONS -->
+        <div class="page-header">
+          <div class="page-title">
+            <h1>Live Classes</h1>
+            <p>
+              Schedule, manage and conduct real-time online sessions for your
+              subjects.
+            </p>
+          </div>
+          <div class="action-buttons">
+            <button class="btn-primary" onclick="scheduleClassPrompt()">
+              ➕ Schedule Class
+            </button>
+            <button class="btn-secondary">📹 Class Recordings</button>
+          </div>
+        </div>
+
+        <!-- METRICS GRID -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #6366f1">📅</div>
+            <div>
+              <div class="stat-val" id="statUpcoming">4</div>
+              <div class="stat-lbl">Upcoming Classes</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #10b981">✅</div>
+            <div>
+              <div class="stat-val" id="statCompleted">24</div>
+              <div class="stat-lbl">Completed Sessions</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #00818a">👥</div>
+            <div>
+              <div class="stat-val" id="statAttendees">310</div>
+              <div class="stat-lbl">Total Attendees</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #f59e0b">⏱️</div>
+            <div>
+              <div class="stat-val" id="statHours">48 hrs</div>
+              <div class="stat-lbl">Stream Time</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAIN LIVE CLASSES SECTION -->
+        <div class="live-classes-section">
+          <div class="table-toolbar">
+            <div class="tabs">
+              <span class="tab active" onclick="filterTab('Upcoming', this)"
+                >Upcoming</span
+              >
+              <span class="tab" onclick="filterTab('Previous', this)"
+                >Previous</span
+              >
+            </div>
+            <a href="#" class="view-schedule-link">View schedule &rarr;</a>
+          </div>
+
+          <div class="live-classes-list" id="classesList">
+            <!-- Live class cards dynamically populated via Supabase / JavaScript -->
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      /* ── SUPABASE CONFIGURATION ── */
+      const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
+      const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+      // Initialize Supabase Client
+      const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      // Initial dataset matching image content
+      const fallbackClasses = [
+        {
+          id: 1,
+          title: "Physics - Electromagnetism",
+          instructor: "Mr. Sharma",
+          datetime: "17 May, 10:00 AM",
+          status: "Upcoming",
+          icon: "⚛️",
+          color: "#3b82f6",
+        },
+        {
+          id: 2,
+          title: "Mathematics - Calculus",
+          instructor: "Mr. Verma",
+          datetime: "18 May, 12:30 PM",
+          status: "Upcoming",
+          icon: "🧪",
+          color: "#10b981",
+        },
+        {
+          id: 3,
+          title: "Chemistry - Organic Chemistry",
+          instructor: "Mr. Mehta",
+          datetime: "19 May, 02:00 PM",
+          status: "Upcoming",
+          icon: "📐",
+          color: "#0ea5e9",
+        },
+        {
+          id: 4,
+          title: "Computer Science - Python",
+          instructor: "Mr. Gupta",
+          datetime: "20 May, 04:00 PM",
+          status: "Upcoming",
+          icon: "</>",
+          color: "#8b5cf6",
+        },
+        {
+          id: 5,
+          title: "Physics - Mechanics",
+          instructor: "Mr. Sharma",
+          datetime: "10 May, 10:00 AM",
+          status: "Previous",
+          icon: "⚛️",
+          color: "#6366f1",
+        },
+      ];
+
+      let currentClasses = [];
+      let currentFilterTab = "Upcoming";
+
+      /* Fetch Classes with Supabase Logic & Fallback */
+      async function loadClasses() {
+        try {
+          let { data: classes, error } = await supabase
+            .from("live_classes")
+            .select("*")
+            .order("id", { ascending: true });
+
+          if (error || !classes || classes.length === 0) {
+            currentClasses = [...fallbackClasses];
+          } else {
+            currentClasses = classes;
+          }
+        } catch (err) {
+          console.warn(
+            "Database connection pending. Using local UI dataset:",
+            err,
+          );
+          currentClasses = [...fallbackClasses];
+        }
+
+        renderClasses();
+        updateMetrics();
+      }
+
+      /* Render Live Class Cards */
+      function renderClasses() {
+        const container = document.getElementById("classesList");
+        const searchQuery = document
+          .getElementById("globalSearchInput")
+          .value.toLowerCase();
+
+        container.innerHTML = "";
+
+        let filtered = currentClasses.filter((c) => {
+          const matchesTab = c.status === currentFilterTab;
+          const matchesQuery =
+            c.title.toLowerCase().includes(searchQuery) ||
+            c.instructor.toLowerCase().includes(searchQuery);
+          return matchesTab && matchesQuery;
+        });
+
+        if (filtered.length === 0) {
+          container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 40px;">No ${currentFilterTab.toLowerCase()} classes found.</div>`;
+          return;
+        }
+
+        filtered.forEach((item) => {
+          const card = document.createElement("div");
+          card.className = "class-card";
+
+          const buttonText =
+            item.status === "Upcoming" ? "Join Class" : "Watch Recording";
+          const buttonClass =
+            item.status === "Upcoming" ? "btn-join" : "btn-join btn-recording";
+
+          card.innerHTML = `
+          <div class="class-card-left">
+            <div class="class-card-icon" style="background: ${item.color || "#4f46e5"};">
+              ${item.icon || "📹"}
+            </div>
+            <div class="class-card-info">
+              <h3>${item.title}</h3>
+              <p>By ${item.instructor}</p>
+            </div>
+          </div>
+          <div class="class-card-right">
+            <div class="class-time">
+              📅 <span>${item.datetime}</span>
+            </div>
+            <button class="${buttonClass}" onclick="handleClassClick('${item.title}')">${buttonText}</button>
+          </div>
+        `;
+          container.appendChild(card);
+        });
+      }
+
+      /* Tab Switcher */
+      function filterTab(tabName, element) {
+        currentFilterTab = tabName;
+        document
+          .querySelectorAll(".tabs .tab")
+          .forEach((t) => t.classList.remove("active"));
+        element.classList.add("active");
+        renderClasses();
+      }
+
+      /* Search Filter */
+      function filterLiveClasses() {
+        renderClasses();
+      }
+
+      /* Update Metrics */
+      function updateMetrics() {
+        const upcoming = currentClasses.filter(
+          (c) => c.status === "Upcoming",
+        ).length;
+        const completed = currentClasses.filter(
+          (c) => c.status === "Previous",
+        ).length;
+
+        document.getElementById("statUpcoming").innerText = upcoming;
+        document.getElementById("statCompleted").innerText = completed;
+      }
+
+      /* Prompt to Schedule Class */
+      async function scheduleClassPrompt() {
+        const title = prompt(
+          "Enter Class Title:",
+          "Physics - Quantum Mechanics",
+        );
+        if (!title) return;
+
+        const instructor = prompt("Enter Instructor Name:", "Mr. Sharma");
+        const datetime = prompt("Enter Date & Time:", "21 May, 11:00 AM");
+
+        const newClass = {
+          title: title,
+          instructor: instructor || "Instructor",
+          datetime: datetime || "TBD",
+          status: "Upcoming",
+          icon: "⚛️",
+          color: "#3b82f6",
+        };
+
+        try {
+          const { data, error } = await supabase
+            .from("live_classes")
+            .insert([newClass])
+            .select();
+          if (error) throw error;
+          if (data && data[0]) currentClasses.push(data[0]);
+          else currentClasses.push(newClass);
+        } catch (err) {
+          console.warn("Supabase insert fallback active:", err);
+          newClass.id = Date.now();
+          currentClasses.push(newClass);
+        }
+
+        renderClasses();
+        updateMetrics();
+      }
+
+      function handleClassClick(title) {
+        alert(`Action triggered for: ${title}`);
+      }
+
+      // Initialize Page
+      document.addEventListener("DOMContentLoaded", () => {
+        loadClasses();
+      });
+    </script>
+  </body>
+</html>
