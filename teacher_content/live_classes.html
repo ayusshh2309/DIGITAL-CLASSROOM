@@ -551,129 +551,20 @@
         }
       }
     </style>
+      <link rel="stylesheet" href="../css/layout.css" />
   </head>
   <body>
-    <!-- FIXED SIDEBAR (280px) -->
-    <aside class="sidebar">
-      <div>
-        <div class="sidebar-brand">
-          <div class="brand-icon">🎓</div>
-          <span>Smart Learning DC</span>
-        </div>
+    <div id="layout"></div>
+<!-- FIXED SIDEBAR (280px) -->
+    
 
-        <ul class="nav-menu">
-          <li class="nav-item">
-            <a href="/teacher_content/teacher_dashboard.html"
-              ><span class="nav-icon">📊</span> Dashboard</a
-            >
-          </li>
-          <li class="nav-item">
-            <a href="/teacher_content/my_classes.html"
-              ><span class="nav-icon">🏫</span> My Classes</a
-            >
-          </li>
-          <li class="nav-item">
-            <a href="/teacher_content/materials.html"
-              ><span class="nav-icon">📁</span> Materials</a
-            >
-          </li>
-          <li class="nav-item">
-            <a href="/teacher_content/quizzes.html"
-              ><span class="nav-icon">📝</span> Quizzes</a
-            >
-          </li>
-          <li class="nav-item active">
-            <a href="/teacher_content/live_classes.html"
-              ><span class="nav-icon">📹</span> Live Classes</a
-            >
-          </li>
-          <li class="nav-item">
-            <a href="/teacher_content/students.html"
-              ><span class="nav-icon">👥</span> Students</a
-            >
-          </li>
-          <li class="nav-item">
-            <a href="/teacher_content/attendance.html"
-              ><span class="nav-icon">📅</span> Attendance</a
-            >
-          </li>
-          <li class="nav-item">
-            <a href="/teacher_content/student_performance.html"
-              ><span class="nav-icon">📈</span> Student Performance</a
-            >
-          </li>
-          <li class="nav-item">
-            <a href="/teacher_content/announcements.html"
-              ><span class="nav-icon">📢</span> Announcements</a
-            >
-          </li>
-          <li class="nav-item">
-            <a href="/teacher_content/calendar.html"
-              ><span class="nav-icon">📆</span> Calendar</a
-            >
-          </li>
-          <li class="nav-item">
-            <a href="/teacher_content/downloads.html"
-              ><span class="nav-icon">📥</span> Downloads</a
-            >
-          </li>
-        </ul>
-      </div>
-
-      <ul class="nav-menu">
-        <li class="nav-item">
-          <a href="/teacher_content/settings.html"
-            ><span class="nav-icon">⚙️</span> Settings</a
-          >
-        </li>
-        <li class="nav-item">
-          <a href="/teacher_content/help_support.html"
-            ><span class="nav-icon">❓</span> Help & Support</a
-          >
-        </li>
-        <li class="nav-item">
-          <a href="#" class="btn-logout-sidebar"
-            ><span class="nav-icon">🚪</span> Log out</a
-          >
-        </li>
-      </ul>
-    </aside>
-
-    <!-- MAIN WRAPPER -->
-    <div class="main-wrapper">
+    
+    
       <!-- TOP HEADER -->
-      <header class="header">
-        <div class="global-search">
-          <span>🔍</span>
-          <input
-            type="text"
-            id="globalSearchInput"
-            placeholder="Search live classes..."
-            onkeyup="filterLiveClasses()"
-          />
-        </div>
-
-        <div class="user-profile-bar">
-          <div class="notif-bell">
-            🔔
-            <span class="notif-badge">3</span>
-          </div>
-          <div class="user-profile">
-            <img
-              src="https://i.pravatar.cc/100?img=12"
-              alt="User"
-              class="user-avatar"
-            />
-            <div class="user-info">
-              <span class="user-name">Ready</span>
-              <span class="user-role">Teacher • Subject Specialist</span>
-            </div>
-          </div>
-        </div>
-      </header>
+      
 
       <!-- CONTENT BODY CONTAINER -->
-      <main class="main-box-container">
+      <main class="page-content main-box-container">
         <!-- PAGE TITLE & ACTIONS -->
         <div class="page-header">
           <div class="page-title">
@@ -956,5 +847,8 @@
         loadClasses();
       });
     </script>
+    <script src="../js/layout.js"></script>
   </body>
 </html>
+
+

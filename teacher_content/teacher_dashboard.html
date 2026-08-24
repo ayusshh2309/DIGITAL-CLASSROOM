@@ -850,118 +850,20 @@
         }
       }
     </style>
+      <link rel="stylesheet" href="../css/layout.css" />
   </head>
   <body>
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-      <div class="sidebar-brand">
-        <div class="brand-icon">S</div>
-        <span>Smart Learning DC</span>
-      </div>
+    <div id="layout"></div>
 
-      <ul class="nav-menu">
-        <li class="nav-item active">
-          <a href="/teacher_content/teacher_dashboard.html">
-            <span class="nav-icon">📊</span> Dashboard
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="/teacher_content/my_classes.html">
-            <span class="nav-icon">👥</span> My Classes
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="/teacher_content/materials.html">
-            <span class="nav-icon">📁</span> Materials
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="/teacher_content/quizzes.html">
-            <span class="nav-icon">📝</span> Quizzes
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="/teacher_content/live_classes.html">
-            <span class="nav-icon">📹</span> Live Classes
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="/teacher_content/students.html">
-            <span class="nav-icon">🎓</span> Students
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="/teacher_content/attendance.html">
-            <span class="nav-icon">📅</span> Attendance
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="/teacher_content/student_performance.html">
-            <span class="nav-icon">📈</span> Student Performance
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="/teacher_content/announcements.html">
-            <span class="nav-icon">📢</span> Announcements
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="/teacher_content/calendar.html">
-            <span class="nav-icon">🗓️</span> Calendar
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="/teacher_content/downloads.html">
-            <span class="nav-icon">📥</span> Downloads
-          </a>
-        </li>
+    
 
-        <div class="nav-divider"></div>
+    
+    
+      
+      
 
-        <li class="nav-item">
-          <a href="/teacher_content/settings.html">
-            <span class="nav-icon">⚙️</span> Settings
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="/teacher_content/help.html">
-            <span class="nav-icon">❓</span> Help & Support
-          </a>
-        </li>
-        <li class="nav-item">
-          <button class="btn-logout-sidebar" id="logoutBtn">
-            <span class="nav-icon">🚪</span> Log out
-          </button>
-        </li>
-      </ul>
-    </aside>
-
-    <!-- MAIN WRAPPER -->
-    <div class="main-wrapper">
-      <!-- HEADER BAR -->
-      <header class="header">
-        <div class="notif-bell" id="notifBtn">
-          🔔
-          <span class="notif-badge">3</span>
-        </div>
-        <div class="user-profile">
-          <img
-            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
-            alt="Avatar"
-            class="user-avatar"
-            id="avatarImg"
-          />
-          <div class="user-info">
-            <span class="user-name" id="profileNameEl">Ready</span>
-            <span class="user-role" id="profileRoleEl"
-              >Teacher • Subject Specialist</span
-            >
-          </div>
-        </div>
-      </header>
-
-      <!-- MAIN CONTENT BOX -->
-      <main class="main-box-container">
+      
+      <main class="page-content main-box-container">
         <div class="welcome-banner">
           <div class="welcome-text">
             <h1 id="greetingEl">Good morning, Ready! 👋</h1>
@@ -1225,28 +1127,7 @@
         </div>
       </main>
 
-      <!-- FOOTER -->
-      <footer class="dashboard-footer">
-        <div class="quote-card">
-          <div class="quote-left">
-            <div class="quote-icon">💡</div>
-            <div class="quote-text">
-              <h4>Tip of the Day</h4>
-              <p>
-                Keep your lessons engaging and interactive. Small efforts create
-                big impact!
-              </p>
-            </div>
-          </div>
-          <div class="quote-right">
-            “A good teacher can inspire hope, ignite the imagination,<br />and
-            instill a love of learning.” <br /><span
-              style="font-size: 0.85rem; color: #64748b; font-weight: 600"
-              >— Brad Henry</span
-            >
-          </div>
-        </div>
-      </footer>
+      
     </div>
 
     <!-- MODAL -->
@@ -1464,5 +1345,8 @@
         loadMaterials();
       });
     </script>
+    <script src="../js/layout.js"></script>
   </body>
 </html>
+
+
