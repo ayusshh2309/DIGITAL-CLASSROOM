@@ -1,0 +1,1101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Learning DC — Settings</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../js/supabase-client.js"></script>
+
+    <style>
+      /* ── DESIGN SYSTEM & TOKENS ── */
+      :root {
+        --sidebar-bg: #031b2e;
+        --sidebar-text: #a0aec0;
+        --sidebar-text-active: #ffffff;
+        --sidebar-active-bg: #6366f1; /* Matching active menu tone */
+        --sidebar-hover-bg: #0a2540;
+
+        --main-bg: linear-gradient(
+          135deg,
+          #e3f2fd 0%,
+          #e0f2f1 50%,
+          #e8f5e9 100%
+        );
+        --surface: #ffffff;
+        --surface-border: #e2e8f0;
+
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+
+        --primary: #0284c7;
+        --primary-teal: #00818a;
+        --primary-indigo: #6366f1;
+
+        --danger: #ef4444;
+        --radius: 18px;
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+        --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.08);
+        --font: "DM Sans", sans-serif;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font);
+        background: var(--main-bg);
+        background-attachment: fixed;
+        color: var(--text-main);
+        display: flex;
+        min-height: 100vh;
+        overflow-x: hidden;
+        font-size: 15px;
+      }
+
+      /* ── FIXED SIDEBAR (Strictly 280px) ── */
+      .sidebar {
+        width: 280px;
+        height: 100vh;
+        background-color: var(--sidebar-bg);
+        color: var(--sidebar-text);
+        position: fixed;
+        top: 0;
+        left: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 24px 18px;
+        z-index: 100;
+        overflow-y: auto;
+      }
+
+      .sidebar-brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 1.35rem;
+        padding: 6px 8px 24px 8px;
+      }
+
+      .brand-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #00818a, #6366f1);
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-weight: bold;
+        font-size: 1.2rem;
+      }
+
+      .nav-menu {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .nav-item a,
+      .nav-item button {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 11px 16px;
+        color: var(--sidebar-text);
+        text-decoration: none;
+        font-size: 0.98rem;
+        font-weight: 600;
+        border-radius: 12px;
+        transition: all 0.2s ease;
+        width: 100%;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .nav-item a:hover,
+      .nav-item button:hover {
+        background: var(--sidebar-hover-bg);
+        color: var(--sidebar-text-active);
+      }
+
+      .nav-item.active a {
+        background: var(--sidebar-active-bg);
+        color: var(--sidebar-text-active);
+        font-weight: 700;
+      }
+
+      .nav-icon {
+        font-size: 1.2rem;
+        width: 24px;
+        display: inline-grid;
+        place-items: center;
+      }
+
+      .nav-divider {
+        height: 1px;
+        background: rgba(255, 255, 255, 0.15);
+        margin: 10px 0;
+      }
+
+      .btn-logout-sidebar {
+        color: #f87171 !important;
+      }
+
+      .btn-logout-sidebar:hover {
+        background: rgba(239, 68, 68, 0.18) !important;
+      }
+
+      /* ── MAIN CONTENT WRAPPER ── */
+      .main-wrapper {
+        margin-left: 280px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        width: calc(100% - 280px);
+      }
+
+      /* Header */
+      .header {
+        height: 76px;
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 0 40px;
+        gap: 20px;
+      }
+
+      .notif-bell {
+        position: relative;
+        background: #fff;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        box-shadow: var(--shadow-sm);
+        cursor: pointer;
+        font-size: 1.2rem;
+      }
+
+      .notif-badge {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: var(--danger);
+        color: white;
+        font-size: 0.7rem;
+        font-weight: 800;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+      }
+
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: #fff;
+        padding: 6px 18px 6px 8px;
+        border-radius: 30px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .user-info {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .user-name {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .user-role {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+      }
+
+      /* Page Banner */
+      .page-banner {
+        margin: 0 40px 24px 40px;
+      }
+
+      .page-banner h1 {
+        font-size: 1.85rem;
+        font-weight: 800;
+        margin-bottom: 4px;
+        color: var(--text-main);
+      }
+
+      .page-banner p {
+        color: var(--text-muted);
+        font-size: 1rem;
+      }
+
+      /* Settings Layout Grid */
+      .settings-layout {
+        margin: 0 40px 40px 40px;
+        display: grid;
+        grid-template-columns: 260px 1fr 320px;
+        gap: 24px;
+        align-items: start;
+      }
+
+      /* Column 1: Settings Navigation Sub-Sidebar */
+      .settings-nav-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 14px;
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--surface-border);
+      }
+
+      .settings-nav-title {
+        font-size: 1.1rem;
+        font-weight: 800;
+        padding: 10px 12px 14px 12px;
+        color: var(--text-main);
+      }
+
+      .settings-menu {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .settings-menu-item a {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 0.92rem;
+        font-weight: 600;
+        border-radius: 10px;
+        transition: all 0.2s ease;
+      }
+
+      .settings-menu-item a:hover {
+        background: #f8fafc;
+        color: var(--text-main);
+      }
+
+      .settings-menu-item.active a {
+        background: #ede9fe;
+        color: #6d28d9;
+        font-weight: 700;
+      }
+
+      .settings-menu-icon {
+        font-size: 1.1rem;
+        width: 20px;
+        display: inline-grid;
+        place-items: center;
+      }
+
+      /* Column 2: Main Settings Content Form */
+      .settings-main-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 28px;
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--surface-border);
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .settings-section-title h3 {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: var(--text-main);
+        margin-bottom: 4px;
+      }
+
+      .settings-section-title p {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+      }
+
+      .setting-item-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--surface-border);
+      }
+
+      .setting-item-row:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+
+      .setting-label-group {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .setting-icon-box {
+        width: 38px;
+        height: 38px;
+        background: #f1f5f9;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        color: var(--text-main);
+        font-size: 1.1rem;
+      }
+
+      .setting-label-text h4 {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .setting-label-text p {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+
+      .setting-control select {
+        padding: 10px 14px;
+        border: 1px solid var(--surface-border);
+        border-radius: 10px;
+        background: #fff;
+        font-family: inherit;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-main);
+        cursor: pointer;
+        min-width: 200px;
+      }
+
+      /* Radio Toggle Group */
+      .radio-group-inline {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+      }
+
+      .radio-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      /* Toggle Switch */
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 46px;
+        height: 24px;
+      }
+
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #cbd5e1;
+        transition: 0.3s;
+        border-radius: 24px;
+      }
+
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.3s;
+        border-radius: 50%;
+      }
+
+      input:checked + .slider {
+        background-color: #7c3aed;
+      }
+
+      input:checked + .slider:before {
+        transform: translateX(22px);
+      }
+
+      .divider-line {
+        height: 1px;
+        background: var(--surface-border);
+        margin: 8px 0;
+      }
+
+      .btn-save-container {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 10px;
+      }
+
+      .btn-save {
+        background: #7c3aed;
+        color: white;
+        border: none;
+        padding: 12px 28px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        box-shadow: var(--shadow-sm);
+      }
+
+      /* Column 3: Account Info & Quick Links */
+      .right-column {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .card-box {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 22px;
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--surface-border);
+      }
+
+      .account-mini-profile {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--surface-border);
+      }
+
+      .account-avatar {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-bottom: 12px;
+      }
+
+      .account-name {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: var(--text-main);
+      }
+
+      .account-email {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+
+      .account-phone {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+
+      .role-pill {
+        margin-top: 10px;
+        display: inline-block;
+        background: #ede9fe;
+        color: #6d28d9;
+        font-size: 0.78rem;
+        font-weight: 700;
+        padding: 4px 12px;
+        border-radius: 20px;
+      }
+
+      .btn-edit-profile {
+        width: 100%;
+        margin-top: 16px;
+        background: #fff;
+        border: 1px solid var(--surface-border);
+        padding: 10px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: var(--text-main);
+        cursor: pointer;
+      }
+
+      .storage-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        font-size: 0.9rem;
+        font-weight: 700;
+      }
+
+      .storage-link {
+        font-size: 0.8rem;
+        color: var(--primary);
+        text-decoration: none;
+      }
+
+      .progress-bar-bg {
+        width: 100%;
+        height: 8px;
+        background: #e2e8f0;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 8px;
+      }
+
+      .progress-bar-fill {
+        width: 98%;
+        height: 100%;
+        background: #7c3aed;
+        border-radius: 4px;
+      }
+
+      .storage-sub {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+      }
+
+      .quick-links-title {
+        font-size: 0.95rem;
+        font-weight: 800;
+        margin-bottom: 12px;
+      }
+
+      .quick-link-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--surface-border);
+        text-decoration: none;
+        color: var(--text-main);
+        font-size: 0.9rem;
+        font-weight: 600;
+      }
+
+      .quick-link-item:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+        color: var(--danger);
+      }
+
+      .quick-link-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .tips-card {
+        background: #ede9fe;
+        border: 1px solid rgba(124, 58, 237, 0.2);
+        border-radius: var(--radius);
+        padding: 20px;
+      }
+
+      .tips-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+        font-weight: 800;
+        color: #5b21b6;
+      }
+
+      .tips-card p {
+        font-size: 0.85rem;
+        color: #4c1d95;
+        line-height: 1.4;
+      }
+
+      .tips-link {
+        display: inline-block;
+        margin-top: 10px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #7c3aed;
+        text-decoration: none;
+      }
+
+      @media (max-width: 1400px) {
+        .settings-layout {
+          grid-template-columns: 240px 1fr;
+        }
+        .right-column {
+          grid-column: 1 / -1;
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 20px;
+        }
+      }
+
+      @media (max-width: 900px) {
+        .sidebar {
+          display: none;
+        }
+        .main-wrapper {
+          margin-left: 0;
+          width: 100%;
+        }
+        .settings-layout {
+          grid-template-columns: 1fr;
+          margin: 0 16px 30px 16px;
+        }
+        .page-banner {
+          margin: 0 16px 20px 16px;
+        }
+        .right-column {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- SIDEBAR (Size strictly maintained at 280px) -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">S</div>
+        <span>Smart Learning DC</span>
+      </div>
+
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="/teacher_content/teacher_dashboard.html">
+            <span class="nav-icon">📊</span> Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/teacher_content/class_management.html">
+            <span class="nav-icon">👥</span> My Classes
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">🎓</span> Students</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📹</span> Live Classes</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📁</span> Materials</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📝</span> Quizzes</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📋</span> Assignments</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📅</span> Attendance</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📈</span> Student Performance</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📢</span> Announcements</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">🗓️</span> Calendar</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📥</span> Downloads</a>
+        </li>
+
+        <div class="nav-divider"></div>
+
+        <li class="nav-item active">
+          <a href="settings.html"><span class="nav-icon">⚙️</span> Settings</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">❓</span> Help & Support</a>
+        </li>
+        <li class="nav-item">
+          <button class="btn-logout-sidebar" id="logoutBtn">
+            <span class="nav-icon">🚪</span> Log out
+          </button>
+        </li>
+      </ul>
+    </aside>
+
+    <!-- MAIN WRAPPER -->
+    <div class="main-wrapper">
+      <!-- HEADER BAR -->
+      <header class="header">
+        <div class="notif-bell" id="notifBtn">
+          🔔
+          <span class="notif-badge">3</span>
+        </div>
+        <div class="user-profile">
+          <img
+            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
+            alt="Avatar"
+            class="user-avatar"
+            id="avatarImg"
+          />
+          <div class="user-info">
+            <span class="user-name" id="profileNameEl">Ayush Kumar</span>
+            <span class="user-role" id="profileRoleEl"
+              >Teacher • Subject Specialist</span
+            >
+          </div>
+        </div>
+      </header>
+
+      <!-- PAGE BANNER -->
+      <div class="page-banner">
+        <h1>Good morning, Ayush! 👋</h1>
+        <p>Manage your account settings and preferences.</p>
+      </div>
+
+      <!-- SETTINGS LAYOUT CONTAINER -->
+      <div class="settings-layout">
+        <!-- Col 1: Settings Navigation Sub-menu -->
+        <div class="settings-nav-card">
+          <div class="settings-nav-title">Settings</div>
+          <ul class="settings-menu">
+            <li class="settings-menu-item active">
+              <a href="#">
+                <span class="settings-menu-icon">⚙️</span> General
+              </a>
+            </li>
+            <li class="settings-menu-item">
+              <a href="#">
+                <span class="settings-menu-icon">👤</span> Account
+              </a>
+            </li>
+            <li class="settings-menu-item">
+              <a href="#">
+                <span class="settings-menu-icon">🎛️</span> Preferences
+              </a>
+            </li>
+            <li class="settings-menu-item">
+              <a href="#">
+                <span class="settings-menu-icon">🔔</span> Notifications
+              </a>
+            </li>
+            <li class="settings-menu-item">
+              <a href="#">
+                <span class="settings-menu-icon">🔒</span> Privacy
+              </a>
+            </li>
+            <li class="settings-menu-item">
+              <a href="#">
+                <span class="settings-menu-icon">🛡️</span> Security
+              </a>
+            </li>
+            <li class="settings-menu-item">
+              <a href="#">
+                <span class="settings-menu-icon">⏰</span> Study Reminders
+              </a>
+            </li>
+            <li class="settings-menu-item">
+              <a href="#">
+                <span class="settings-menu-icon">🎨</span> Appearance
+              </a>
+            </li>
+            <li class="settings-menu-item">
+              <a href="#">
+                <span class="settings-menu-icon">🔌</span> Integrations
+              </a>
+            </li>
+            <li class="settings-menu-item">
+              <a href="#">
+                <span class="settings-menu-icon">💾</span> Data & Storage
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Col 2: Main Settings Panel -->
+        <div class="settings-main-card">
+          <div class="settings-section-title">
+            <h3>General Settings</h3>
+            <p>Manage your basic account and application settings.</p>
+          </div>
+
+          <div class="setting-item-row">
+            <div class="setting-label-group">
+              <div class="setting-icon-box">🌐</div>
+              <div class="setting-label-text">
+                <h4>Language</h4>
+                <p>Choose your preferred language</p>
+              </div>
+            </div>
+            <div class="setting-control">
+              <select>
+                <option>English</option>
+                <option>Spanish</option>
+                <option>French</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="setting-item-row">
+            <div class="setting-label-group">
+              <div class="setting-icon-box">🕒</div>
+              <div class="setting-label-text">
+                <h4>Time Zone</h4>
+                <p>Select your current time zone</p>
+              </div>
+            </div>
+            <div class="setting-control">
+              <select>
+                <option>(GMT+05:30) Asia/Kolkata</option>
+                <option>(GMT+00:00) UTC</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="setting-item-row">
+            <div class="setting-label-group">
+              <div class="setting-icon-box">📅</div>
+              <div class="setting-label-text">
+                <h4>Date Format</h4>
+                <p>Choose your preferred date format</p>
+              </div>
+            </div>
+            <div class="setting-control">
+              <select>
+                <option>17 May 2026 (DD MMM YYYY)</option>
+                <option>YYYY-MM-DD</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="setting-item-row">
+            <div class="setting-label-group">
+              <div class="setting-icon-box">🕒</div>
+              <div class="setting-label-text">
+                <h4>Time Format</h4>
+                <p>Choose your preferred time format</p>
+              </div>
+            </div>
+            <div class="setting-control">
+              <div class="radio-group-inline">
+                <label class="radio-label">
+                  <input type="radio" name="timeFormat" checked /> 12 Hours
+                </label>
+                <label class="radio-label">
+                  <input type="radio" name="timeFormat" /> 24 Hours
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="setting-item-row">
+            <div class="setting-label-group">
+              <div class="setting-icon-box">📅</div>
+              <div class="setting-label-text">
+                <h4>Week Start Day</h4>
+                <p>Choose the first day of the week</p>
+              </div>
+            </div>
+            <div class="setting-control">
+              <select>
+                <option>Monday</option>
+                <option>Sunday</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="divider-line"></div>
+
+          <div class="settings-section-title" style="margin-top: 10px">
+            <h3>Other Settings</h3>
+          </div>
+
+          <div class="setting-item-row">
+            <div class="setting-label-group">
+              <div class="setting-icon-box">☁️</div>
+              <div class="setting-label-text">
+                <h4>Auto Save</h4>
+                <p>Automatically save changes in forms and documents</p>
+              </div>
+            </div>
+            <div class="setting-control">
+              <label class="switch">
+                <input type="checkbox" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="setting-item-row">
+            <div class="setting-label-group">
+              <div class="setting-icon-box">✉️</div>
+              <div class="setting-label-text">
+                <h4>Email Notifications</h4>
+                <p>Receive important updates on your email</p>
+              </div>
+            </div>
+            <div class="setting-control">
+              <label class="switch">
+                <input type="checkbox" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="setting-item-row">
+            <div class="setting-label-group">
+              <div class="setting-icon-box">🔊</div>
+              <div class="setting-label-text">
+                <h4>Sound Notifications</h4>
+                <p>Play sounds for notifications and alerts</p>
+              </div>
+            </div>
+            <div class="setting-control">
+              <label class="switch">
+                <input type="checkbox" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="setting-item-row">
+            <div class="setting-label-group">
+              <div class="setting-icon-box">🖥️</div>
+              <div class="setting-label-text">
+                <h4>Compact View</h4>
+                <p>Show more content in less space</p>
+              </div>
+            </div>
+            <div class="setting-control">
+              <label class="switch">
+                <input type="checkbox" />
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="setting-item-row">
+            <div class="setting-label-group">
+              <div class="setting-icon-box">💡</div>
+              <div class="setting-label-text">
+                <h4>Show Tips</h4>
+                <p>Show helpful tips and suggestions</p>
+              </div>
+            </div>
+            <div class="setting-control">
+              <label class="switch">
+                <input type="checkbox" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="btn-save-container">
+            <button class="btn-save">Save Changes</button>
+          </div>
+        </div>
+
+        <!-- Col 3: Right Profile, Storage & Quick Links Column -->
+        <div class="right-column">
+          <!-- Account Card -->
+          <div class="card-box">
+            <div class="account-mini-profile">
+              <img
+                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
+                alt="Avatar"
+                class="account-avatar"
+              />
+              <div class="account-name">Ayush Kumar</div>
+              <div class="account-email">ayush.kumar@smartdc.com</div>
+              <div class="account-phone">+91 98765 43210</div>
+              <span class="role-pill">Teacher • Subject Specialist</span>
+            </div>
+            <button class="btn-edit-profile">Edit Profile</button>
+          </div>
+
+          <!-- Storage Usage Card -->
+          <div class="card-box">
+            <div class="storage-header">
+              <span>Storage Usage</span>
+              <a href="#" class="storage-link">View Details</a>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill"></div>
+            </div>
+            <div class="storage-sub">4.9 GB of 5 GB used (98%)</div>
+          </div>
+
+          <!-- Quick Links Card -->
+          <div class="card-box">
+            <div class="quick-links-title">Quick Links</div>
+            <a href="#" class="quick-link-item">
+              <div class="quick-link-left">🔒 Change Password</div>
+              <span>›</span>
+            </a>
+            <a href="#" class="quick-link-item">
+              <div class="quick-link-left">📥 Download My Data</div>
+              <span>›</span>
+            </a>
+            <a href="#" class="quick-link-item">
+              <div class="quick-link-left">💻 Connected Devices</div>
+              <span>›</span>
+            </a>
+            <a href="#" class="quick-link-item">
+              <div class="quick-link-left">🗑️ Delete Account</div>
+              <span>›</span>
+            </a>
+          </div>
+
+          <!-- Tips Card -->
+          <div class="tips-card">
+            <div class="tips-header"><span>💡</span> Tips</div>
+            <p>
+              Keep your account secure by using a strong password and enabling
+              two-factor authentication.
+            </p>
+            <a href="#" class="tips-link">Learn more →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
