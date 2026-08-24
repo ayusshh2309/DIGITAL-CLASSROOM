@@ -1,0 +1,1765 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Learning DC — Real-Time Calendar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Supabase JS CDN Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+      :root {
+        /* Sidebar Colors */
+        --sidebar-bg: #031b2e;
+        --sidebar-text: #a0aec0;
+        --sidebar-text-active: #ffffff;
+        --sidebar-active-bg: #4f46e5;
+        --sidebar-hover-bg: #0a2540;
+
+        /* Main Page Gradient Background matching Announcement UI */
+        --main-bg: linear-gradient(
+          135deg,
+          #e3f2fd 0%,
+          #e0f2f1 50%,
+          #e8f5e9 100%
+        );
+        --surface: #ffffff;
+        --surface-border: #e2e8f0;
+
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+
+        /* Event Category Colors */
+        --cat-class-bg: #e0e7ff;
+        --cat-class-text: #4338ca;
+        --cat-class-dot: #6366f1;
+
+        --cat-assessment-bg: #d1fae5;
+        --cat-assessment-text: #047857;
+        --cat-assessment-dot: #10b981;
+
+        --cat-assignment-bg: #ffedd5;
+        --cat-assignment-text: #c2410c;
+        --cat-assignment-dot: #f97316;
+
+        --cat-meeting-bg: #fae8ff;
+        --cat-meeting-text: #86198f;
+        --cat-meeting-dot: #d946ef;
+
+        --cat-holiday-bg: #ccfbf1;
+        --cat-holiday-text: #0f766e;
+        --cat-holiday-dot: #14b8a6;
+
+        --primary: #6366f1;
+        --primary-hover: #4f46e5;
+        --danger: #ef4444;
+
+        --radius: 18px;
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+        --font: "DM Sans", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font);
+        background: var(--main-bg);
+        background-attachment: fixed;
+        color: var(--text-main);
+        display: flex;
+        min-height: 100vh;
+        overflow-x: hidden;
+        font-size: 16px;
+      }
+
+      /* Fixed Sidebar (280px) */
+      .sidebar {
+        width: 280px;
+        height: 100vh;
+        background-color: var(--sidebar-bg);
+        color: var(--sidebar-text);
+        position: fixed;
+        top: 0;
+        left: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 24px 18px;
+        z-index: 100;
+        overflow-y: auto;
+      }
+
+      .sidebar-brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 1.35rem;
+        padding: 6px 8px 24px 8px;
+      }
+
+      .brand-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #00818a, #6366f1);
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-weight: bold;
+        font-size: 1.2rem;
+      }
+
+      .nav-menu {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .nav-item a {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 13px 18px;
+        color: var(--sidebar-text);
+        text-decoration: none;
+        font-size: 1.05rem;
+        font-weight: 600;
+        border-radius: 14px;
+        transition: all 0.2s ease;
+        width: 100%;
+      }
+
+      .nav-item a:hover {
+        background: var(--sidebar-hover-bg);
+        color: var(--sidebar-text-active);
+      }
+
+      .nav-item.active a {
+        background: var(--sidebar-active-bg);
+        color: var(--sidebar-text-active);
+        font-weight: 700;
+      }
+
+      .nav-icon {
+        font-size: 1.3rem;
+        width: 26px;
+        display: inline-grid;
+        place-items: center;
+      }
+
+      .btn-logout-sidebar {
+        color: #f87171 !important;
+      }
+
+      .btn-logout-sidebar:hover {
+        background: rgba(239, 68, 68, 0.18) !important;
+      }
+
+      /* Main Content Wrapper */
+      .main-wrapper {
+        margin-left: 280px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        width: calc(100% - 280px);
+      }
+
+      /* Top Navigation Header */
+      .header {
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 0 40px;
+      }
+
+      .user-profile-bar {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .notif-bell {
+        position: relative;
+        background: #fff;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        box-shadow: var(--shadow-sm);
+        cursor: pointer;
+        font-size: 1.2rem;
+      }
+
+      .notif-badge {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: var(--danger);
+        color: white;
+        font-size: 0.72rem;
+        font-weight: 800;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+      }
+
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #fff;
+        padding: 6px 18px 6px 8px;
+        border-radius: 30px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .user-info {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .user-name {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .user-role {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+      }
+
+      /* Glassmorphic Canvas Container */
+      .main-box-container {
+        margin: 0 40px 32px 40px;
+        padding: 32px;
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(12px);
+        border-radius: 24px;
+        border: 1px solid var(--surface-border);
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .page-title h1 {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--text-main);
+      }
+
+      .page-title p {
+        color: var(--text-muted);
+        font-size: 1.05rem;
+        margin-top: 4px;
+      }
+
+      .btn-primary-action {
+        background: var(--primary);
+        color: #ffffff;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        transition: all 0.2s ease;
+        font-family: inherit;
+      }
+
+      .btn-primary-action:hover {
+        background: var(--primary-hover);
+        transform: translateY(-1px);
+      }
+
+      /* Metric Cards Grid */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 16px;
+      }
+
+      .stat-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 20px;
+        border: 1px solid var(--surface-border);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        color: white;
+        font-size: 1.4rem;
+        flex-shrink: 0;
+      }
+
+      .stat-val {
+        font-size: 1.7rem;
+        font-weight: 800;
+        line-height: 1.1;
+      }
+
+      .stat-lbl {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        font-weight: 600;
+        margin-top: 2px;
+      }
+
+      .stat-sub {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-weight: 700;
+        margin-top: 2px;
+      }
+
+      /* Content Layout Split */
+      .content-layout {
+        display: flex;
+        gap: 24px;
+      }
+
+      .left-section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .calendar-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        border: 1px solid var(--surface-border);
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      /* Calendar Toolbar Controls */
+      .calendar-controls {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .calendar-nav-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .btn-icon-nav {
+        background: white;
+        border: 1px solid var(--surface-border);
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        font-weight: 800;
+        color: var(--text-main);
+      }
+
+      .btn-icon-nav:hover {
+        background: #f8fafc;
+      }
+
+      .btn-today {
+        background: white;
+        border: 1px solid var(--surface-border);
+        padding: 8px 16px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        cursor: pointer;
+        color: var(--text-main);
+      }
+
+      .current-month-display {
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: var(--text-main);
+      }
+
+      .calendar-nav-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .select-dropdown {
+        background: #ffffff;
+        color: var(--text-main);
+        border: 1px solid var(--surface-border);
+        padding: 8px 14px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        outline: none;
+        font-family: inherit;
+      }
+
+      /* Calendar Grid Structure */
+      .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        border-top: 1px solid var(--surface-border);
+        border-left: 1px solid var(--surface-border);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+
+      .weekday-header {
+        background: #f8fafc;
+        padding: 12px;
+        text-align: center;
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        border-right: 1px solid var(--surface-border);
+        border-bottom: 1px solid var(--surface-border);
+      }
+
+      .day-cell {
+        min-height: 105px;
+        background: white;
+        border-right: 1px solid var(--surface-border);
+        border-bottom: 1px solid var(--surface-border);
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        transition: background 0.15s ease;
+      }
+
+      .day-cell.other-month {
+        background: #fdfdfd;
+      }
+
+      .day-cell.other-month .day-number {
+        color: #cbd5e1;
+      }
+
+      .day-cell-header {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        margin-bottom: 2px;
+      }
+
+      .day-number {
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: var(--text-main);
+        width: 24px;
+        height: 24px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+      }
+
+      .day-cell.is-today .day-number {
+        background: var(--primary);
+        color: white;
+      }
+
+      /* Event Tags Inside Day Cell */
+      .event-pill {
+        padding: 4px 8px;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        cursor: pointer;
+        transition: transform 0.1s ease;
+        line-height: 1.25;
+      }
+
+      .event-pill:hover {
+        transform: scale(1.02);
+      }
+
+      .event-title-line {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+
+      .event-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .event-time {
+        font-size: 0.7rem;
+        font-weight: 600;
+        opacity: 0.85;
+      }
+
+      /* Color Category Badges */
+      .pill-class {
+        background: var(--cat-class-bg);
+        color: var(--cat-class-text);
+      }
+      .pill-class .event-dot {
+        background: var(--cat-class-dot);
+      }
+
+      .pill-assessment {
+        background: var(--cat-assessment-bg);
+        color: var(--cat-assessment-text);
+      }
+      .pill-assessment .event-dot {
+        background: var(--cat-assessment-dot);
+      }
+
+      .pill-assignment {
+        background: var(--cat-assignment-bg);
+        color: var(--cat-assignment-text);
+      }
+      .pill-assignment .event-dot {
+        background: var(--cat-assignment-dot);
+      }
+
+      .pill-meeting {
+        background: var(--cat-meeting-bg);
+        color: var(--cat-meeting-text);
+      }
+      .pill-meeting .event-dot {
+        background: var(--cat-meeting-dot);
+      }
+
+      .pill-holiday {
+        background: var(--cat-holiday-bg);
+        color: var(--cat-holiday-text);
+      }
+      .pill-holiday .event-dot {
+        background: var(--cat-holiday-dot);
+      }
+
+      .event-more-link {
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        font-weight: 700;
+        margin-top: 1px;
+        cursor: pointer;
+      }
+
+      /* Calendar Legend Footer */
+      .calendar-legend-bar {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding-top: 6px;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--text-muted);
+      }
+
+      .legend-dot-circle {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+
+      /* Promotional Banner Box */
+      .bottom-banner-card {
+        background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+        border: 1px solid #c7d2fe;
+        border-radius: var(--radius);
+        padding: 24px 32px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      .banner-left {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+      }
+
+      .banner-icon-bg {
+        width: 60px;
+        height: 60px;
+        background: #818cf8;
+        border-radius: 18px;
+        display: grid;
+        place-items: center;
+        color: white;
+        font-size: 1.8rem;
+      }
+
+      .banner-text h3 {
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: #1e1b4b;
+      }
+
+      .banner-text p {
+        font-size: 0.9rem;
+        color: #4338ca;
+        margin-top: 4px;
+      }
+
+      /* Right Sidebar Widgets */
+      .right-sidebar {
+        width: 320px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .widget-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        border: 1px solid var(--surface-border);
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .widget-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .widget-head h3 {
+        font-size: 1.05rem;
+        font-weight: 800;
+      }
+
+      .widget-head-link {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--primary);
+        text-decoration: none;
+      }
+
+      /* Mini Calendar */
+      .mini-cal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
+        font-size: 0.9rem;
+        font-weight: 800;
+      }
+
+      .mini-cal-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        text-align: center;
+        gap: 4px;
+      }
+
+      .mini-weekday {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        padding: 4px 0;
+      }
+
+      .mini-day {
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 6px 0;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+
+      .mini-day:hover {
+        background: #f1f5f9;
+      }
+
+      .mini-day.other {
+        color: #cbd5e1;
+      }
+
+      .mini-day.active {
+        background: var(--primary);
+        color: white;
+        font-weight: 800;
+      }
+
+      /* Upcoming Activity Feed */
+      .upcoming-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .upcoming-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+      }
+
+      .upcoming-icon-box {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        font-size: 1.2rem;
+        color: white;
+        flex-shrink: 0;
+      }
+
+      .upcoming-info h4 {
+        font-size: 0.9rem;
+        font-weight: 800;
+        color: var(--text-main);
+      }
+
+      .upcoming-info p {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+
+      .upcoming-time {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-weight: 700;
+        margin-top: 3px;
+      }
+
+      /* Quick Guidance Box */
+      .tips-card {
+        background: linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 100%);
+        border: 1px solid #ddd6fe;
+        border-radius: var(--radius);
+        padding: 20px;
+        display: flex;
+        gap: 14px;
+      }
+
+      .tips-icon {
+        width: 40px;
+        height: 40px;
+        background: #a855f7;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        color: white;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+      }
+
+      .tips-content h5 {
+        font-size: 0.9rem;
+        font-weight: 800;
+        color: #581c87;
+      }
+
+      .tips-content p {
+        font-size: 0.8rem;
+        color: #6b21a8;
+        margin-top: 4px;
+        line-height: 1.4;
+      }
+
+      /* Modal Form Popup */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(15, 23, 42, 0.4);
+        backdrop-filter: blur(4px);
+        display: none;
+        place-items: center;
+        z-index: 200;
+      }
+
+      .modal-overlay.open {
+        display: grid;
+      }
+
+      .modal-card {
+        background: white;
+        border-radius: 20px;
+        padding: 28px;
+        width: 440px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .modal-header h3 {
+        font-size: 1.2rem;
+        font-weight: 800;
+      }
+
+      .modal-close-btn {
+        background: transparent;
+        border: none;
+        font-size: 1.2rem;
+        cursor: pointer;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .form-group label {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--text-muted);
+      }
+
+      .form-control {
+        padding: 10px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--surface-border);
+        outline: none;
+        font-size: 0.9rem;
+        font-family: inherit;
+      }
+
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 8px;
+      }
+
+      .btn-modal-cancel {
+        background: #f1f5f9;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .btn-modal-submit {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      @media (max-width: 1200px) {
+        .stats-grid {
+          grid-template-columns: repeat(3, 1fr);
+        }
+        .content-layout {
+          flex-direction: column;
+        }
+        .right-sidebar {
+          width: 100%;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .sidebar {
+          display: none;
+        }
+        .main-wrapper {
+          margin-left: 0;
+          width: 100%;
+        }
+        .main-box-container {
+          margin: 0 16px 20px 16px;
+          padding: 20px;
+        }
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- LEFT NAVIGATION SIDEBAR -->
+    <aside class="sidebar">
+      <div>
+        <div class="sidebar-brand">
+          <div class="brand-icon">🎓</div>
+          <span>Smart Learning DC</span>
+        </div>
+
+        <ul class="nav-menu">
+          <li class="nav-item">
+            <a href="/teacher_content/teacher_dashboard.html"
+              ><span class="nav-icon">📊</span> Dashboard</a
+            >
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/my_classes.html"
+              ><span class="nav-icon">🏫</span> My Classes</a
+            >
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/students.html"
+              ><span class="nav-icon">👥</span> Students</a
+            >
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/live_classes.html"
+              ><span class="nav-icon">📹</span> Live Classes</a
+            >
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/materials.html"
+              ><span class="nav-icon">📁</span> Materials</a
+            >
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/quizzes.html"
+              ><span class="nav-icon">📝</span> Quizzes</a
+            >
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/assignments.html"
+              ><span class="nav-icon">📋</span> Assignments</a
+            >
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/attendance.html"
+              ><span class="nav-icon">📅</span> Attendance</a
+            >
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/student_performance.html"
+              ><span class="nav-icon">📈</span> Student Performance</a
+            >
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/announcements.html"
+              ><span class="nav-icon">📢</span> Announcements</a
+            >
+          </li>
+          <li class="nav-item active">
+            <a href="/teacher_content/calendar.html"
+              ><span class="nav-icon">📆</span> Calendar</a
+            >
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/downloads.html"
+              ><span class="nav-icon">📥</span> Downloads</a
+            >
+          </li>
+        </ul>
+      </div>
+
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="/teacher_content/settings.html"
+            ><span class="nav-icon">⚙️</span> Settings</a
+          >
+        </li>
+        <li class="nav-item">
+          <a href="/teacher_content/help_support.html"
+            ><span class="nav-icon">❓</span> Help & Support</a
+          >
+        </li>
+        <li class="nav-item">
+          <a href="#" class="btn-logout-sidebar"
+            ><span class="nav-icon">🚪</span> Log out</a
+          >
+        </li>
+      </ul>
+    </aside>
+
+    <!-- MAIN WRAPPER -->
+    <div class="main-wrapper">
+      <!-- TOP HEADER BAR -->
+      <header class="header">
+        <div class="user-profile-bar">
+          <div class="notif-bell">
+            🔔
+            <span class="notif-badge">3</span>
+          </div>
+          <div class="user-profile">
+            <img
+              src="https://i.pravatar.cc/100?img=33"
+              alt="Ayush Kumar"
+              class="user-avatar"
+            />
+            <div class="user-info">
+              <span class="user-name">Ayush Kumar ▾</span>
+              <span class="user-role">Teacher • Subject Specialist</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- GLASS CANVAS CONTAINER -->
+      <main class="main-box-container">
+        <!-- HEADING SECTION -->
+        <div class="page-header">
+          <div class="page-title">
+            <h1>Good morning, Ayush! 👋</h1>
+            <p>
+              Plan your schedule, manage important dates, and stay organized.
+            </p>
+          </div>
+          <button class="btn-primary-action" onclick="openAddEventModal()">
+            <span>+</span> Add Event
+          </button>
+        </div>
+
+        <!-- TOP METRIC CARDS -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #6366f1">📅</div>
+            <div>
+              <div class="stat-val">18</div>
+              <div class="stat-lbl">Total Events</div>
+              <div class="stat-sub">This month</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #2563eb">📘</div>
+            <div>
+              <div class="stat-val">6</div>
+              <div class="stat-lbl">Classes Scheduled</div>
+              <div class="stat-sub">This month</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #10b981">👥</div>
+            <div>
+              <div class="stat-val">4</div>
+              <div class="stat-lbl">Assessments</div>
+              <div class="stat-sub">This month</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #f97316">🔔</div>
+            <div>
+              <div class="stat-val">3</div>
+              <div class="stat-lbl">Reminders</div>
+              <div class="stat-sub">This month</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #0f766e">📆</div>
+            <div>
+              <div class="stat-val">2</div>
+              <div class="stat-lbl">Holidays</div>
+              <div class="stat-sub">This month</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAIN SPLIT WORKSPACE -->
+        <div class="content-layout">
+          <!-- LEFT SECTION: MAIN CALENDAR -->
+          <div class="left-section">
+            <div class="calendar-card">
+              <!-- CALENDAR CONTROLS -->
+              <div class="calendar-controls">
+                <div class="calendar-nav-left">
+                  <button class="btn-icon-nav" onclick="changeMonth(-1)">
+                    ‹
+                  </button>
+                  <button class="btn-icon-nav" onclick="changeMonth(1)">
+                    ›
+                  </button>
+                  <button class="btn-today" onclick="goToToday()">Today</button>
+                </div>
+
+                <div class="current-month-display" id="currentMonthYearText">
+                  May 2025 ▾
+                </div>
+
+                <div class="calendar-nav-right">
+                  <select class="select-dropdown">
+                    <option value="Month">Month</option>
+                    <option value="Week">Week</option>
+                    <option value="Day">Day</option>
+                  </select>
+                  <button class="btn-today">🌪️ Filter</button>
+                </div>
+              </div>
+
+              <!-- GRID AREA -->
+              <div class="calendar-grid" id="mainCalendarGrid">
+                <!-- Dynamically Populated by JS -->
+              </div>
+
+              <!-- CATEGORY LEGEND BAR -->
+              <div class="calendar-legend-bar">
+                <div class="legend-item">
+                  <div
+                    class="legend-dot-circle"
+                    style="background: var(--cat-class-dot)"
+                  ></div>
+                  Class
+                </div>
+                <div class="legend-item">
+                  <div
+                    class="legend-dot-circle"
+                    style="background: var(--cat-assessment-dot)"
+                  ></div>
+                  Assessment
+                </div>
+                <div class="legend-item">
+                  <div
+                    class="legend-dot-circle"
+                    style="background: var(--cat-assignment-dot)"
+                  ></div>
+                  Assignment
+                </div>
+                <div class="legend-item">
+                  <div
+                    class="legend-dot-circle"
+                    style="background: var(--cat-meeting-dot)"
+                  ></div>
+                  Meeting / Event
+                </div>
+                <div class="legend-item">
+                  <div
+                    class="legend-dot-circle"
+                    style="background: var(--cat-holiday-dot)"
+                  ></div>
+                  Holiday
+                </div>
+              </div>
+            </div>
+
+            <!-- BOTTOM PROMO BANNER -->
+            <div class="bottom-banner-card">
+              <div class="banner-left">
+                <div class="banner-icon-bg">📅</div>
+                <div class="banner-text">
+                  <h3>Sync & Manage Your Schedule</h3>
+                  <p>
+                    Keep track of live classes, exam dates, assignments, and
+                    school events seamlessly in real time.
+                  </p>
+                </div>
+              </div>
+              <button class="btn-primary-action" onclick="openAddEventModal()">
+                <span>+</span> Add Event
+              </button>
+            </div>
+          </div>
+
+          <!-- RIGHT SIDEBAR SECTION -->
+          <div class="right-sidebar">
+            <!-- MINI CALENDAR WIDGET -->
+            <div class="widget-card">
+              <div class="mini-cal-header">
+                <span>Mini Calendar</span>
+                <div style="display: flex; gap: 8px">
+                  <span style="cursor: pointer" onclick="changeMonth(-1)"
+                    >‹</span
+                  >
+                  <span id="miniCalTitle">May 2025</span>
+                  <span style="cursor: pointer" onclick="changeMonth(1)"
+                    >›</span
+                  >
+                </div>
+              </div>
+
+              <div class="mini-cal-grid" id="miniCalGrid">
+                <!-- Rendered via JS -->
+              </div>
+            </div>
+
+            <!-- UPCOMING EVENTS FEED -->
+            <div class="widget-card">
+              <div class="widget-head">
+                <h3>Upcoming Events</h3>
+                <a href="#" class="widget-head-link">View all</a>
+              </div>
+
+              <div class="upcoming-list" id="upcomingListContainer">
+                <!-- Dynamically Populated -->
+              </div>
+            </div>
+
+            <!-- QUICK TIPS CARD -->
+            <div class="tips-card">
+              <div class="tips-icon">💡</div>
+              <div class="tips-content">
+                <h5>Quick Tips</h5>
+                <p>
+                  <strong>Tip:</strong> Stay organized! Add important dates,
+                  class schedules, and deadlines to keep track of everything in
+                  one place.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- ADD EVENT MODAL DIALOG -->
+    <div class="modal-overlay" id="addEventModal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Create New Event</h3>
+          <button class="modal-close-btn" onclick="closeAddEventModal()">
+            ✕
+          </button>
+        </div>
+
+        <div class="form-group">
+          <label>Event Title</label>
+          <input
+            type="text"
+            id="inputTitle"
+            class="form-control"
+            placeholder="e.g. Science Test"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Category / Type</label>
+          <select id="inputType" class="form-control">
+            <option value="class">Class</option>
+            <option value="assessment">Assessment</option>
+            <option value="assignment">Assignment</option>
+            <option value="meeting">Meeting / Event</option>
+            <option value="holiday">Holiday</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Event Date</label>
+          <input type="date" id="inputDate" class="form-control" />
+        </div>
+
+        <div class="form-group">
+          <label>Event Time</label>
+          <input
+            type="text"
+            id="inputTime"
+            class="form-control"
+            placeholder="e.g. 10:00 AM"
+          />
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn-modal-cancel" onclick="closeAddEventModal()">
+            Cancel
+          </button>
+          <button class="btn-modal-submit" onclick="submitNewEvent()">
+            Save Event
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      /* Supabase Credentials Setup */
+      const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
+      const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+      const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      /* Initial Calendar Event Dataset */
+      const initialEvents = [
+        {
+          id: "1",
+          title: "Class 9 Science",
+          type: "class",
+          date: "2025-05-01",
+          time: "10:00 AM",
+          extraCount: 1,
+        },
+        {
+          id: "2",
+          title: "Quiz - Physics",
+          type: "assessment",
+          date: "2025-05-02",
+          time: "11:30 AM",
+        },
+        {
+          id: "3",
+          title: "Class 10 Social Sci.",
+          type: "class",
+          date: "2025-05-05",
+          time: "12:30 PM",
+        },
+        {
+          id: "4",
+          title: "Assignment Due",
+          type: "assignment",
+          date: "2025-05-07",
+          time: "11:59 PM",
+        },
+        {
+          id: "5",
+          title: "Class 6 Science",
+          type: "class",
+          date: "2025-05-09",
+          time: "02:30 PM",
+        },
+        {
+          id: "6",
+          title: "Mother's Day",
+          type: "holiday",
+          date: "2025-05-11",
+          time: "All Day",
+        },
+        {
+          id: "7",
+          title: "Class 12 Physics",
+          type: "class",
+          date: "2025-05-13",
+          time: "10:00 AM",
+          extraCount: 1,
+        },
+        {
+          id: "8",
+          title: "Project Deadline",
+          type: "assignment",
+          date: "2025-05-15",
+          time: "11:59 PM",
+        },
+        {
+          id: "9",
+          title: "Quiz - Chemistry",
+          type: "assessment",
+          date: "2025-05-16",
+          time: "11:30 AM",
+        },
+        {
+          id: "10",
+          title: "Live Session",
+          type: "meeting",
+          date: "2025-05-17",
+          time: "05:00 PM",
+          extraCount: 1,
+        },
+        {
+          id: "11",
+          title: "Class 11 Math",
+          type: "class",
+          date: "2025-05-19",
+          time: "09:00 AM",
+        },
+        {
+          id: "12",
+          title: "Quiz - Maths",
+          type: "assessment",
+          date: "2025-05-21",
+          time: "11:30 AM",
+        },
+        {
+          id: "13",
+          title: "Class 9 Science",
+          type: "class",
+          date: "2025-05-23",
+          time: "02:30 PM",
+        },
+        {
+          id: "14",
+          title: "Holiday",
+          type: "holiday",
+          date: "2025-05-25",
+          time: "All Day",
+        },
+        {
+          id: "15",
+          title: "Assignment Due",
+          type: "assignment",
+          date: "2025-05-27",
+          time: "11:59 PM",
+        },
+        {
+          id: "16",
+          title: "Class 10 Social Sci.",
+          type: "class",
+          date: "2025-05-29",
+          time: "12:30 PM",
+        },
+        {
+          id: "17",
+          title: "Parent Meeting",
+          type: "assignment",
+          date: "2025-05-30",
+          time: "04:00 PM",
+        },
+      ];
+
+      const upcomingEventsList = [
+        {
+          title: "Class 9 Science",
+          sub: "Chapter 2 - Force and Laws of Motion",
+          time: "17 May 2025 • 10:00 AM",
+          bg: "#2563eb",
+          icon: "📘",
+        },
+        {
+          title: "Project Deadline",
+          sub: "Science Project submission",
+          time: "15 May 2025 • 11:59 PM",
+          bg: "#f97316",
+          icon: "📋",
+        },
+        {
+          title: "Live Session",
+          sub: "Doubt Clearing Session",
+          time: "17 May 2025 • 05:00 PM",
+          bg: "#d946ef",
+          icon: "📹",
+        },
+        {
+          title: "Quiz - Chemistry",
+          sub: "Organic Chemistry Quiz",
+          time: "16 May 2025 • 11:30 AM",
+          bg: "#10b981",
+          icon: "📝",
+        },
+      ];
+
+      let currentDate = new Date(2025, 4, 1);
+      let eventsData = [];
+
+      /* Fetch Events from Supabase or Fallback */
+      async function fetchCalendarEvents() {
+        try {
+          let { data, error } = await supabase
+            .from("calendar_events")
+            .select("*");
+
+          if (error || !data || data.length === 0) {
+            eventsData = initialEvents;
+          } else {
+            eventsData = data;
+          }
+        } catch (err) {
+          eventsData = initialEvents;
+        }
+
+        renderCalendar();
+        renderMiniCalendar();
+        renderUpcomingList();
+      }
+
+      /* Render Main Calendar Grid */
+      function renderCalendar() {
+        const grid = document.getElementById("mainCalendarGrid");
+        grid.innerHTML = "";
+
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+
+        const monthNames = [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
+        ];
+        document.getElementById("currentMonthYearText").innerText =
+          `${monthNames[month]} ${year} ▾`;
+
+        const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+        daysOfWeek.forEach((d) => {
+          const head = document.createElement("div");
+          head.className = "weekday-header";
+          head.innerText = d;
+          grid.appendChild(head);
+        });
+
+        const firstDayIndex = new Date(year, month, 1).getDay();
+        const adjustedFirstDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
+
+        const totalDays = new Date(year, month + 1, 0).getDate();
+        const prevMonthDays = new Date(year, month, 0).getDate();
+
+        /* Fill Previous Month Days */
+        for (let i = adjustedFirstDay; i > 0; i--) {
+          const dayCell = document.createElement("div");
+          dayCell.className = "day-cell other-month";
+          dayCell.innerHTML = `<div class="day-cell-header"><span class="day-number">${prevMonthDays - i + 1}</span></div>`;
+          grid.appendChild(dayCell);
+        }
+
+        /* Fill Current Month Days */
+        for (let day = 1; day <= totalDays; day++) {
+          const dayCell = document.createElement("div");
+          dayCell.className = "day-cell";
+
+          if (day === 17 && month === 4 && year === 2025) {
+            dayCell.classList.add("is-today");
+          }
+
+          const dateFormatted = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+          dayCell.innerHTML = `<div class="day-cell-header"><span class="day-number">${day}</span></div>`;
+
+          const dayEvents = eventsData.filter((e) => e.date === dateFormatted);
+
+          dayEvents.forEach((ev) => {
+            const pill = document.createElement("div");
+            pill.className = `event-pill pill-${ev.type}`;
+            pill.innerHTML = `
+            <div class="event-title-line">
+              <span class="event-dot"></span>
+              <span>${ev.title}</span>
+            </div>
+            <div class="event-time">${ev.time}</div>
+          `;
+            dayCell.appendChild(pill);
+
+            if (ev.extraCount) {
+              const extra = document.createElement("div");
+              extra.className = "event-more-link";
+              extra.innerText = `+ ${ev.extraCount} more`;
+              dayCell.appendChild(extra);
+            }
+          });
+
+          grid.appendChild(dayCell);
+        }
+
+        /* Fill Next Month Days */
+        const totalCellsFilled = adjustedFirstDay + totalDays;
+        const remainingCells = (7 - (totalCellsFilled % 7)) % 7;
+        for (let j = 1; j <= remainingCells; j++) {
+          const dayCell = document.createElement("div");
+          dayCell.className = "day-cell other-month";
+          dayCell.innerHTML = `<div class="day-cell-header"><span class="day-number">${j}</span></div>`;
+          grid.appendChild(dayCell);
+        }
+      }
+
+      /* Render Mini Calendar */
+      function renderMiniCalendar() {
+        const container = document.getElementById("miniCalGrid");
+        container.innerHTML = "";
+
+        const monthNames = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ];
+        document.getElementById("miniCalTitle").innerText =
+          `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+
+        const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+        days.forEach((d) => {
+          const div = document.createElement("div");
+          div.className = "mini-weekday";
+          div.innerText = d;
+          container.appendChild(div);
+        });
+
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+
+        const firstDayIndex = new Date(year, month, 1).getDay();
+        const adjustedFirstDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
+        const totalDays = new Date(year, month + 1, 0).getDate();
+        const prevMonthDays = new Date(year, month, 0).getDate();
+
+        for (let i = adjustedFirstDay; i > 0; i--) {
+          const div = document.createElement("div");
+          div.className = "mini-day other";
+          div.innerText = prevMonthDays - i + 1;
+          container.appendChild(div);
+        }
+
+        for (let day = 1; day <= totalDays; day++) {
+          const div = document.createElement("div");
+          div.className = "mini-day";
+          if (day === 17 && month === 4 && year === 2025)
+            div.classList.add("active");
+          div.innerText = day;
+          container.appendChild(div);
+        }
+      }
+
+      /* Render Upcoming Events Feed */
+      function renderUpcomingList() {
+        const container = document.getElementById("upcomingListContainer");
+        container.innerHTML = "";
+
+        upcomingEventsList.forEach((item) => {
+          const div = document.createElement("div");
+          div.className = "upcoming-item";
+          div.innerHTML = `
+          <div class="upcoming-icon-box" style="background:${item.bg};">
+            ${item.icon}
+          </div>
+          <div class="upcoming-info">
+            <h4>${item.title}</h4>
+            <p>${item.sub}</p>
+            <div class="upcoming-time">${item.time}</div>
+          </div>
+        `;
+          container.appendChild(div);
+        });
+      }
+
+      /* Controls Handlers */
+      function changeMonth(delta) {
+        currentDate.setMonth(currentDate.getMonth() + delta);
+        renderCalendar();
+        renderMiniCalendar();
+      }
+
+      function goToToday() {
+        currentDate = new Date(2025, 4, 1);
+        renderCalendar();
+        renderMiniCalendar();
+      }
+
+      /* Modal Controls */
+      function openAddEventModal() {
+        document.getElementById("addEventModal").classList.add("open");
+      }
+
+      function closeAddEventModal() {
+        document.getElementById("addEventModal").classList.remove("open");
+      }
+
+      async function submitNewEvent() {
+        const title = document.getElementById("inputTitle").value;
+        const type = document.getElementById("inputType").value;
+        const date = document.getElementById("inputDate").value;
+        const time = document.getElementById("inputTime").value;
+
+        if (!title || !date) {
+          alert("Please specify at least title and date.");
+          return;
+        }
+
+        const newEv = { title, type, date, time: time || "All Day" };
+
+        try {
+          const { error } = await supabase
+            .from("calendar_events")
+            .insert([newEv]);
+          if (error) {
+            eventsData.push(newEv);
+          } else {
+            await fetchCalendarEvents();
+          }
+        } catch (err) {
+          eventsData.push(newEv);
+        }
+
+        renderCalendar();
+        closeAddEventModal();
+      }
+
+      /* Real-Time Sync Setup */
+      function setupRealtimeEvents() {
+        supabase
+          .channel("public:calendar_events")
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "calendar_events" },
+            () => {
+              fetchCalendarEvents();
+            },
+          )
+          .subscribe();
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        fetchCalendarEvents();
+        setupRealtimeEvents();
+      });
+    </script>
+  </body>
+</html>
