@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="220" viewBox="0 0 900 220" role="img" aria-labelledby="title desc">
+  <title id="title">Smart Learning DC</title>
+  <desc id="desc">Smart Learning DC. Learn. Grow. Succeed.</desc>
+  <defs>
+    <linearGradient id="top" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9148ff"/>
+      <stop offset="1" stop-color="#6128ed"/>
+    </linearGradient>
+    <linearGradient id="middle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6846ff"/>
+      <stop offset="1" stop-color="#3939ee"/>
+    </linearGradient>
+    <linearGradient id="bottom" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3974ff"/>
+      <stop offset="1" stop-color="#087ee8"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(10 12)">
+    <path d="M0 48 105 0l105 48-105 48z" fill="url(#top)"/>
+    <path d="M0 112 105 64l105 48-105 48z" fill="url(#middle)"/>
+    <path d="M0 176 105 128l105 48-105 48z" fill="url(#bottom)"/>
+  </g>
+  <text x="255" y="92" fill="#fff" font-family="Arial, sans-serif" font-size="48" font-weight="700">Smart Learning DC</text>
+  <text x="257" y="148" fill="#b5c0d0" font-family="Arial, sans-serif" font-size="27" font-weight="400">Learn. Grow. Succeed.</text>
+</svg>
