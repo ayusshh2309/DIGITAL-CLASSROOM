@@ -1,0 +1,1582 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Learning DC — Announcements</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Supabase JS CDN Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+      :root {
+        /* Sidebar Colors */
+        --sidebar-bg: #031b2e;
+        --sidebar-text: #a0aec0;
+        --sidebar-text-active: #ffffff;
+        --sidebar-active-bg: #4f46e5;
+        --sidebar-hover-bg: #0a2540;
+
+        /* Page Colors */
+        --main-bg: linear-gradient(
+          135deg,
+          #e3f2fd 0%,
+          #e0f2f1 50%,
+          #e8f5e9 100%
+        );
+        --surface: #ffffff;
+        --surface-border: #e2e8f0;
+
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+
+        --primary: #6366f1;
+        --primary-hover: #4f46e5;
+        --danger: #ef4444;
+        --success: #10b981;
+        --warning: #f59e0b;
+
+        --radius: 18px;
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+        --font: "DM Sans", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font);
+        background: var(--main-bg);
+        background-attachment: fixed;
+        color: var(--text-main);
+        display: flex;
+        min-height: 100vh;
+        overflow-x: hidden;
+        font-size: 16px;
+      }
+
+      /* Fixed Sidebar (280px) */
+      .sidebar {
+        width: 280px;
+        height: 100vh;
+        background-color: var(--sidebar-bg);
+        color: var(--sidebar-text);
+        position: fixed;
+        top: 0;
+        left: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 24px 18px;
+        z-index: 100;
+        overflow-y: auto;
+      }
+
+      .sidebar-brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 1.35rem;
+        padding: 6px 8px 24px 8px;
+      }
+
+      .brand-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #00818a, #6366f1);
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-weight: bold;
+        font-size: 1.2rem;
+      }
+
+      .nav-menu {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .nav-item a {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 13px 18px;
+        color: var(--sidebar-text);
+        text-decoration: none;
+        font-size: 1.05rem;
+        font-weight: 600;
+        border-radius: 14px;
+        transition: all 0.2s ease;
+        width: 100%;
+      }
+
+      .nav-item a:hover {
+        background: var(--sidebar-hover-bg);
+        color: var(--sidebar-text-active);
+      }
+
+      .nav-item.active a {
+        background: var(--sidebar-active-bg);
+        color: var(--sidebar-text-active);
+        font-weight: 700;
+      }
+
+      .nav-icon {
+        font-size: 1.3rem;
+        width: 26px;
+        display: inline-grid;
+        place-items: center;
+      }
+
+      .btn-logout-sidebar {
+        color: #f87171 !important;
+      }
+
+      .btn-logout-sidebar:hover {
+        background: rgba(239, 68, 68, 0.18) !important;
+      }
+
+      /* Main Container */
+      .main-wrapper {
+        margin-left: 280px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        width: calc(100% - 280px);
+      }
+
+      /* Top Navigation Header */
+      .header {
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 0 40px;
+      }
+
+      .user-profile-bar {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .notif-bell {
+        position: relative;
+        background: #fff;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        box-shadow: var(--shadow-sm);
+        cursor: pointer;
+        font-size: 1.2rem;
+      }
+
+      .notif-badge {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: var(--danger);
+        color: white;
+        font-size: 0.72rem;
+        font-weight: 800;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+      }
+
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #fff;
+        padding: 6px 18px 6px 8px;
+        border-radius: 30px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .user-info {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .user-name {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .user-role {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+      }
+
+      /* Canvas Container */
+      .main-box-container {
+        margin: 0 40px 32px 40px;
+        padding: 32px;
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        border-radius: 24px;
+        border: 1px solid var(--surface-border);
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .page-title h1 {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--text-main);
+      }
+
+      .page-title p {
+        color: var(--text-muted);
+        font-size: 1.05rem;
+        margin-top: 4px;
+      }
+
+      .btn-create-announcement {
+        background: var(--primary);
+        color: #ffffff;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        transition: all 0.2s ease;
+        font-family: inherit;
+      }
+
+      .btn-create-announcement:hover {
+        background: var(--primary-hover);
+        transform: translateY(-1px);
+      }
+
+      /* Top Stats Grid */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+      }
+
+      .stat-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 24px;
+        border: 1px solid var(--surface-border);
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .stat-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
+        display: grid;
+        place-items: center;
+        color: white;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+      }
+
+      .stat-val {
+        font-size: 1.8rem;
+        font-weight: 800;
+        line-height: 1.1;
+      }
+
+      .stat-lbl {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        font-weight: 600;
+        margin-top: 2px;
+      }
+
+      .stat-sub {
+        font-size: 0.78rem;
+        font-weight: 700;
+        margin-top: 4px;
+      }
+
+      /* Main Content Split Area */
+      .content-layout {
+        display: flex;
+        gap: 24px;
+      }
+
+      .left-section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .table-container-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        border: 1px solid var(--surface-border);
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .table-header-title {
+        font-size: 1.25rem;
+        font-weight: 800;
+        margin-bottom: 20px;
+      }
+
+      .filter-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 20px;
+      }
+
+      .filter-group {
+        display: flex;
+        gap: 12px;
+      }
+
+      .select-dropdown {
+        background: #ffffff;
+        color: var(--text-main);
+        border: 1px solid var(--surface-border);
+        padding: 10px 16px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        outline: none;
+        font-family: inherit;
+      }
+
+      .search-box {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--surface-border);
+        padding: 8px 16px;
+        border-radius: 12px;
+        background: #f8fafc;
+        width: 240px;
+      }
+
+      .search-box input {
+        border: none;
+        background: transparent;
+        outline: none;
+        width: 100%;
+        font-size: 0.9rem;
+        font-family: inherit;
+      }
+
+      .btn-filter {
+        border: 1px solid var(--surface-border);
+        padding: 8px 16px;
+        border-radius: 12px;
+        background: white;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      /* Table Styles */
+      .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+      }
+
+      .data-table th {
+        padding: 14px 16px;
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        border-bottom: 1px solid var(--surface-border);
+        font-weight: 700;
+      }
+
+      .data-table td {
+        padding: 16px;
+        font-size: 0.9rem;
+        border-bottom: 1px solid var(--surface-border);
+        vertical-align: middle;
+      }
+
+      .announcement-item-cell {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+      }
+
+      .type-icon-box {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+      }
+
+      .title-text-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .announcement-title {
+        font-size: 0.98rem;
+        font-weight: 800;
+        color: var(--text-main);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .announcement-desc {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        line-height: 1.3;
+      }
+
+      .audience-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .class-label {
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .badge-audience {
+        background: #e0e7ff;
+        color: #4338ca;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        width: fit-content;
+      }
+
+      .badge-type {
+        padding: 4px 12px;
+        border-radius: 8px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        display: inline-block;
+        text-align: center;
+      }
+
+      .type-exam {
+        background: #f3e8ff;
+        color: #7e22ce;
+      }
+      .type-material {
+        background: #d1fae5;
+        color: #047857;
+      }
+      .type-reminder {
+        background: #ffedd5;
+        color: #c2410c;
+      }
+      .type-assignment {
+        background: #dbeafe;
+        color: #1d4ed8;
+      }
+      .type-notice {
+        background: #e0e7ff;
+        color: #4338ca;
+      }
+
+      .read-rate-col {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        width: 100px;
+      }
+
+      .read-rate-val {
+        font-weight: 800;
+        font-size: 0.85rem;
+      }
+
+      .read-rate-bar-bg {
+        width: 100%;
+        height: 6px;
+        background: #e2e8f0;
+        border-radius: 3px;
+        overflow: hidden;
+      }
+
+      .read-rate-bar-fill {
+        height: 100%;
+        background: #10b981;
+        border-radius: 3px;
+      }
+
+      .action-btn {
+        background: transparent;
+        border: none;
+        font-size: 1.2rem;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 6px;
+      }
+
+      .action-btn:hover {
+        background: #f1f5f9;
+        color: var(--text-main);
+      }
+
+      /* Pagination */
+      .pagination-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+      }
+
+      .page-controls {
+        display: flex;
+        gap: 6px;
+      }
+
+      .page-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        border: 1px solid var(--surface-border);
+        background: white;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 0.85rem;
+      }
+
+      .page-btn.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+      }
+
+      /* Bottom Banner Card */
+      .bottom-banner-card {
+        background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+        border: 1px solid #c7d2fe;
+        border-radius: var(--radius);
+        padding: 24px 32px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      .banner-left {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+      }
+
+      .banner-icon-bg {
+        width: 60px;
+        height: 60px;
+        background: #818cf8;
+        border-radius: 18px;
+        display: grid;
+        place-items: center;
+        color: white;
+        font-size: 1.8rem;
+      }
+
+      .banner-text h3 {
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: #1e1b4b;
+      }
+
+      .banner-text p {
+        font-size: 0.9rem;
+        color: #4338ca;
+        margin-top: 4px;
+      }
+
+      /* Right Sidebar Section */
+      .right-sidebar {
+        width: 320px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .widget-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        border: 1px solid var(--surface-border);
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .widget-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .widget-head h3 {
+        font-size: 1.05rem;
+        font-weight: 800;
+      }
+
+      .widget-head-link {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--primary);
+        text-decoration: none;
+      }
+
+      /* Donut Chart Container */
+      .donut-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .chart-svg-large {
+        width: 110px;
+        height: 110px;
+        transform: rotate(-90deg);
+      }
+
+      .donut-center-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+      }
+
+      .donut-legend-col {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        flex: 1;
+      }
+
+      .legend-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.82rem;
+      }
+
+      .legend-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .legend-bullet {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+
+      /* Drafts List */
+      .drafts-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .draft-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .draft-left {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .draft-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+      }
+
+      .draft-title-group {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .draft-title-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .draft-title {
+        font-size: 0.88rem;
+        font-weight: 800;
+      }
+
+      .badge-draft {
+        background: #f1f5f9;
+        color: #64748b;
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 700;
+      }
+
+      .draft-meta {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+      }
+
+      /* Quick Tips Banner Widget */
+      .tips-card {
+        background: linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 100%);
+        border: 1px solid #ddd6fe;
+        border-radius: var(--radius);
+        padding: 20px;
+        display: flex;
+        gap: 14px;
+      }
+
+      .tips-icon {
+        width: 40px;
+        height: 40px;
+        background: #a855f7;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        color: white;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+      }
+
+      .tips-content h5 {
+        font-size: 0.9rem;
+        font-weight: 800;
+        color: #581c87;
+      }
+
+      .tips-content p {
+        font-size: 0.8rem;
+        color: #6b21a8;
+        margin-top: 4px;
+        line-height: 1.4;
+      }
+
+      @media (max-width: 1200px) {
+        .stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .content-layout {
+          flex-direction: column;
+        }
+        .right-sidebar {
+          width: 100%;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .sidebar {
+          display: none;
+        }
+        .main-wrapper {
+          margin-left: 0;
+          width: 100%;
+        }
+        .main-box-container {
+          margin: 0 16px 20px 16px;
+          padding: 20px;
+        }
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar">
+      <div>
+        <div class="sidebar-brand">
+          <div class="brand-icon">🎓</div>
+          <span>Smart Learning DC</span>
+        </div>
+
+        <ul class="nav-menu">
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📊</span> Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">🏫</span> My Classes</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">👥</span> Students</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📹</span> Live Classes</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📁</span> Materials</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📝</span> Quizzes</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📋</span> Assignments</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📅</span> Attendance</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📈</span> Student Performance</a>
+          </li>
+          <li class="nav-item active">
+            <a href="#"><span class="nav-icon">📢</span> Announcements</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📆</span> Calendar</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📥</span> Downloads</a>
+          </li>
+        </ul>
+      </div>
+
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">⚙️</span> Settings</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">❓</span> Help & Support</a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="btn-logout-sidebar"
+            ><span class="nav-icon">🚪</span> Log out</a
+          >
+        </li>
+      </ul>
+    </aside>
+
+    <!-- MAIN PAGE CONTENT -->
+    <div class="main-wrapper">
+      <!-- TOP NAVBAR -->
+      <header class="header">
+        <div class="user-profile-bar">
+          <div class="notif-bell">
+            🔔
+            <span class="notif-badge">6</span>
+          </div>
+          <div class="user-profile">
+            <img
+              src="https://i.pravatar.cc/100?img=33"
+              alt="Ayush Kumar"
+              class="user-avatar"
+            />
+            <div class="user-info">
+              <span class="user-name">Ayush Kumar ▾</span>
+              <span class="user-role">Teacher • Subject Specialist</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- CONTENT WRAPPER -->
+      <main class="main-box-container">
+        <!-- HEADER & CONTROLS -->
+        <div class="page-header">
+          <div class="page-title">
+            <h1>Good morning, Ayush! 👋</h1>
+            <p>
+              Stay connected with your students and share important updates.
+            </p>
+          </div>
+          <button
+            class="btn-create-announcement"
+            onclick="triggerNewAnnouncementModal()"
+          >
+            <span>+</span> New Announcement
+          </button>
+        </div>
+
+        <!-- METRIC STAT CARDS -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #6366f1">📢</div>
+            <div>
+              <div class="stat-val" id="statTotalAnnouncements">24</div>
+              <div class="stat-lbl">Total Announcements</div>
+              <div class="stat-sub" style="color: var(--text-muted)">
+                All time
+              </div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #2563eb">✈️</div>
+            <div>
+              <div class="stat-val" id="statSentThisMonth">8</div>
+              <div class="stat-lbl">Sent This Month</div>
+              <div class="stat-sub" style="color: #10b981">
+                ↑ 3 from last month
+              </div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #10b981">👥</div>
+            <div>
+              <div class="stat-val" id="statTotalReach">156</div>
+              <div class="stat-lbl">Total Reach</div>
+              <div class="stat-sub" style="color: var(--text-muted)">
+                Across all classes
+              </div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #f97316">👁️</div>
+            <div>
+              <div class="stat-val" id="statAvgReadRate">92%</div>
+              <div class="stat-lbl">Average Read Rate</div>
+              <div class="stat-sub" style="color: var(--text-muted)">
+                This month
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAIN SPLIT CONTENT -->
+        <div class="content-layout">
+          <!-- LEFT COLUMN: ANNOUNCEMENTS TABLE & BANNER -->
+          <div class="left-section">
+            <div class="table-container-card">
+              <h2 class="table-header-title">All Announcements</h2>
+
+              <div class="filter-bar">
+                <div class="filter-group">
+                  <select
+                    class="select-dropdown"
+                    id="classFilter"
+                    onchange="applyFilters()"
+                  >
+                    <option value="All Classes">All Classes</option>
+                    <option value="Class 9 (Science)">Class 9 (Science)</option>
+                    <option value="Class 10 (Science)">
+                      Class 10 (Science)
+                    </option>
+                  </select>
+
+                  <select
+                    class="select-dropdown"
+                    id="typeFilter"
+                    onchange="applyFilters()"
+                  >
+                    <option value="All Types">All Types</option>
+                    <option value="Exam">Exam</option>
+                    <option value="Material">Material</option>
+                    <option value="Reminder">Reminder</option>
+                    <option value="Assignment">Assignment</option>
+                    <option value="Notice">Notice</option>
+                  </select>
+                </div>
+
+                <div class="filter-group">
+                  <div class="search-box">
+                    <span>🔍</span>
+                    <input
+                      type="text"
+                      id="searchInput"
+                      placeholder="Search announcements..."
+                      onkeyup="applyFilters()"
+                    />
+                  </div>
+                  <button class="btn-filter">🌪️ Filter</button>
+                </div>
+              </div>
+
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Announcement ▾</th>
+                    <th>Class / Audience</th>
+                    <th>Type</th>
+                    <th>Date</th>
+                    <th>Read Rate</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="announcementsTableBody">
+                  <!-- Dynamic Content Loaded from Supabase -->
+                </tbody>
+              </table>
+
+              <div class="pagination-bar">
+                <div id="paginationText">
+                  Showing 1 to 5 of 24 announcements
+                </div>
+                <div class="page-controls">
+                  <span class="page-btn">‹</span>
+                  <span class="page-btn active">1</span>
+                  <span class="page-btn">2</span>
+                  <span class="page-btn">3</span>
+                  <span class="page-btn">...</span>
+                  <span class="page-btn">5</span>
+                  <span class="page-btn">›</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- BOTTOM PROMO BANNER -->
+            <div class="bottom-banner-card">
+              <div class="banner-left">
+                <div class="banner-icon-bg">✈️</div>
+                <div class="banner-text">
+                  <h3>Send Announcements to Your Classes</h3>
+                  <p>
+                    Share important updates, exam schedules, materials, and more
+                    with your students instantly.
+                  </p>
+                </div>
+              </div>
+              <button
+                class="btn-create-announcement"
+                onclick="triggerNewAnnouncementModal()"
+              >
+                <span>+</span> New Announcement
+              </button>
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN: SIDEBAR WIDGETS -->
+          <div class="right-sidebar">
+            <!-- OVERVIEW CHART WIDGET -->
+            <div class="widget-card">
+              <div class="widget-head">
+                <h3>Announcement Overview</h3>
+                <a href="#" class="widget-head-link">View Report</a>
+              </div>
+
+              <div class="donut-wrapper">
+                <div style="position: relative">
+                  <svg class="chart-svg-large" viewBox="0 0 36 36">
+                    <path
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none"
+                      stroke="#e2e8f0"
+                      stroke-width="4.5"
+                    />
+                    <path
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none"
+                      stroke="#6366f1"
+                      stroke-width="4.5"
+                      stroke-dasharray="33, 100"
+                    />
+                    <path
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none"
+                      stroke="#10b981"
+                      stroke-width="4.5"
+                      stroke-dasharray="25, 100"
+                      stroke-dashoffset="-33"
+                    />
+                    <path
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none"
+                      stroke="#f97316"
+                      stroke-width="4.5"
+                      stroke-dasharray="21, 100"
+                      stroke-dashoffset="-58"
+                    />
+                    <path
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none"
+                      stroke="#2563eb"
+                      stroke-width="4.5"
+                      stroke-dasharray="13, 100"
+                      stroke-dashoffset="-79"
+                    />
+                    <path
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none"
+                      stroke="#94a3b8"
+                      stroke-width="4.5"
+                      stroke-dasharray="8, 100"
+                      stroke-dashoffset="-92"
+                    />
+                  </svg>
+                  <div class="donut-center-text">
+                    <div
+                      style="font-size: 1.1rem; font-weight: 800"
+                      id="donutTotalCount"
+                    >
+                      24
+                    </div>
+                    <div style="font-size: 0.65rem; color: var(--text-muted)">
+                      Total
+                    </div>
+                  </div>
+                </div>
+
+                <div class="donut-legend-col">
+                  <div class="legend-row">
+                    <div class="legend-info">
+                      <div
+                        class="legend-bullet"
+                        style="background: #6366f1"
+                      ></div>
+                      <span>Exams</span>
+                    </div>
+                    <strong>8 (33%)</strong>
+                  </div>
+                  <div class="legend-row">
+                    <div class="legend-info">
+                      <div
+                        class="legend-bullet"
+                        style="background: #10b981"
+                      ></div>
+                      <span>Materials</span>
+                    </div>
+                    <strong>6 (25%)</strong>
+                  </div>
+                  <div class="legend-row">
+                    <div class="legend-info">
+                      <div
+                        class="legend-bullet"
+                        style="background: #f97316"
+                      ></div>
+                      <span>Reminders</span>
+                    </div>
+                    <strong>5 (21%)</strong>
+                  </div>
+                  <div class="legend-row">
+                    <div class="legend-info">
+                      <div
+                        class="legend-bullet"
+                        style="background: #2563eb"
+                      ></div>
+                      <span>Assignments</span>
+                    </div>
+                    <strong>3 (13%)</strong>
+                  </div>
+                  <div class="legend-row">
+                    <div class="legend-info">
+                      <div
+                        class="legend-bullet"
+                        style="background: #94a3b8"
+                      ></div>
+                      <span>Notices</span>
+                    </div>
+                    <strong>2 (8%)</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- RECENT DRAFTS WIDGET -->
+            <div class="widget-card">
+              <div class="widget-head">
+                <h3>Recent Drafts</h3>
+                <a href="#" class="widget-head-link">View all</a>
+              </div>
+
+              <div class="drafts-list" id="draftsContainer">
+                <!-- Dynamic Content -->
+              </div>
+            </div>
+
+            <!-- QUICK TIPS WIDGET -->
+            <div class="tips-card">
+              <div class="tips-icon">💡</div>
+              <div class="tips-content">
+                <h5>Quick Tips</h5>
+                <p>
+                  <strong>Tip:</strong> Keep your students informed! Clear and
+                  timely announcements help improve communication and
+                  engagement.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      /* Supabase Credentials Setup */
+      const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
+      const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+      const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      /* Default Dataset matching screen capture */
+      const defaultAnnouncements = [
+        {
+          id: "1",
+          title: "Unit Test - Science 📌",
+          description: "Unit test for Chapter 2 will be held next week.",
+          class_name: "Class 9 (Science)",
+          audience: "All Students",
+          type: "Exam",
+          date: "17 May 2025",
+          time: "10:30 AM",
+          read_rate: 96,
+          is_pinned: true,
+        },
+        {
+          id: "2",
+          title: "New Study Material",
+          description:
+            "New notes for Photosynthesis chapter are now available.",
+          class_name: "Class 10 (Science)",
+          audience: "All Students",
+          type: "Material",
+          date: "16 May 2025",
+          time: "02:15 PM",
+          read_rate: 92,
+          is_pinned: false,
+        },
+        {
+          id: "3",
+          title: "Live Session Reminder",
+          description:
+            "Reminder: Live doubt clearing session tomorrow at 5 PM.",
+          class_name: "Class 9 (Science)",
+          audience: "All Students",
+          type: "Reminder",
+          date: "15 May 2025",
+          time: "06:00 PM",
+          read_rate: 89,
+          is_pinned: false,
+        },
+        {
+          id: "4",
+          title: "Project Submission",
+          description: "Submit your science project by 25 May.",
+          class_name: "Class 10 (Science)",
+          audience: "All Students",
+          type: "Assignment",
+          date: "14 May 2025",
+          time: "11:45 AM",
+          read_rate: 90,
+          is_pinned: false,
+        },
+        {
+          id: "5",
+          title: "Holiday Notice",
+          description:
+            "School will remain closed on 20 May on account of Buddha Purnima.",
+          class_name: "All Classes",
+          audience: "All Students",
+          type: "Notice",
+          date: "13 May 2025",
+          time: "09:00 AM",
+          read_rate: 98,
+          is_pinned: false,
+        },
+      ];
+
+      const defaultDrafts = [
+        {
+          id: "d1",
+          title: "Summer Vacation Homework",
+          classes: "Class 9, Class 10",
+          saved_time: "Saved 2 hours ago",
+          icon: "📝",
+          bg: "#d1fae5",
+          color: "#047857",
+        },
+        {
+          id: "d2",
+          title: "Science Fair Participation",
+          classes: "Class 9 (Science)",
+          saved_time: "Saved yesterday",
+          icon: "📋",
+          bg: "#ffedd5",
+          color: "#c2410c",
+        },
+        {
+          id: "d3",
+          title: "Chapter 3 - Assignment Update",
+          classes: "Class 10 (Science)",
+          saved_time: "Saved 2 days ago",
+          icon: "👥",
+          bg: "#dbeafe",
+          color: "#1d4ed8",
+        },
+      ];
+
+      let announcementsList = [];
+
+      /* Load Data from Supabase */
+      async function loadAnnouncements() {
+        try {
+          let { data, error } = await supabase
+            .from("announcements")
+            .select("*")
+            .order("id", { ascending: true });
+
+          if (error || !data || data.length === 0) {
+            announcementsList = defaultAnnouncements;
+          } else {
+            announcementsList = data;
+          }
+        } catch (err) {
+          announcementsList = defaultAnnouncements;
+        }
+
+        renderAnnouncementsTable(announcementsList);
+        renderDrafts();
+      }
+
+      /* Render Main Table */
+      function renderAnnouncementsTable(data) {
+        const tbody = document.getElementById("announcementsTableBody");
+        tbody.innerHTML = "";
+
+        data.forEach((item) => {
+          let iconBg = "#f3e8ff";
+          let iconColor = "#7e22ce";
+          let iconSymbol = "📅";
+          let badgeTypeClass = "type-exam";
+
+          if (item.type === "Material") {
+            iconBg = "#d1fae5";
+            iconColor = "#047857";
+            iconSymbol = "📖";
+            badgeTypeClass = "type-material";
+          } else if (item.type === "Reminder") {
+            iconBg = "#ffedd5";
+            iconColor = "#c2410c";
+            iconSymbol = "📢";
+            badgeTypeClass = "type-reminder";
+          } else if (item.type === "Assignment") {
+            iconBg = "#dbeafe";
+            iconColor = "#1d4ed8";
+            iconSymbol = "👥";
+            badgeTypeClass = "type-assignment";
+          } else if (item.type === "Notice") {
+            iconBg = "#e0e7ff";
+            iconColor = "#4338ca";
+            iconSymbol = "📅";
+            badgeTypeClass = "type-notice";
+          }
+
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+          <td>
+            <div class="announcement-item-cell">
+              <div class="type-icon-box" style="background: ${iconBg}; color: ${iconColor};">
+                ${iconSymbol}
+              </div>
+              <div class="title-text-group">
+                <div class="announcement-title">
+                  ${item.title}
+                </div>
+                <div class="announcement-desc">${item.description}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="audience-info">
+              <span class="class-label">${item.class_name}</span>
+              <span class="badge-audience">${item.audience}</span>
+            </div>
+          </td>
+          <td>
+            <span class="badge-type ${badgeTypeClass}">${item.type}</span>
+          </td>
+          <td>
+            <div style="font-weight:700; color:var(--text-main);">${item.date}</div>
+            <div style="font-size:0.78rem; color:var(--text-muted);">${item.time}</div>
+          </td>
+          <td>
+            <div class="read-rate-col">
+              <span class="read-rate-val">${item.read_rate}%</span>
+              <div class="read-rate-bar-bg">
+                <div class="read-rate-bar-fill" style="width: ${item.read_rate}%;"></div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <button class="action-btn">⋮</button>
+          </td>
+        `;
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById("paginationText").innerText =
+          `Showing 1 to ${data.length} of 24 announcements`;
+      }
+
+      /* Render Drafts Widget */
+      function renderDrafts() {
+        const container = document.getElementById("draftsContainer");
+        container.innerHTML = "";
+
+        defaultDrafts.forEach((draft) => {
+          const div = document.createElement("div");
+          div.className = "draft-item";
+          div.innerHTML = `
+          <div class="draft-left">
+            <div class="draft-icon" style="background: ${draft.bg}; color: ${draft.color};">
+              ${draft.icon}
+            </div>
+            <div class="draft-title-group">
+              <div class="draft-title-row">
+                <span class="draft-title">${draft.title}</span>
+                <span class="badge-draft">Draft</span>
+              </div>
+              <div class="draft-meta">${draft.classes} • ${draft.saved_time}</div>
+            </div>
+          </div>
+          <button class="action-btn">⋮</button>
+        `;
+          container.appendChild(div);
+        });
+      }
+
+      /* Filter Handler */
+      function applyFilters() {
+        const classVal = document.getElementById("classFilter").value;
+        const typeVal = document.getElementById("typeFilter").value;
+        const searchQuery = document
+          .getElementById("searchInput")
+          .value.toLowerCase();
+
+        let filtered = announcementsList.filter((item) => {
+          const matchesClass =
+            classVal === "All Classes" || item.class_name === classVal;
+          const matchesType = typeVal === "All Types" || item.type === typeVal;
+          const matchesSearch =
+            item.title.toLowerCase().includes(searchQuery) ||
+            item.description.toLowerCase().includes(searchQuery);
+
+          return matchesClass && matchesType && matchesSearch;
+        });
+
+        renderAnnouncementsTable(filtered);
+      }
+
+      /* Trigger Create Announcement */
+      async function triggerNewAnnouncementModal() {
+        const newTitle = prompt(
+          "Enter Announcement Title:",
+          "Class Quiz Announcement",
+        );
+        if (!newTitle) return;
+
+        const newObj = {
+          title: newTitle,
+          description: "Important update regarding upcoming evaluation.",
+          class_name: "Class 10 (Science)",
+          audience: "All Students",
+          type: "Exam",
+          date: "18 May 2025",
+          time: "11:00 AM",
+          read_rate: 100,
+          is_pinned: false,
+        };
+
+        try {
+          const { data, error } = await supabase
+            .from("announcements")
+            .insert([newObj]);
+
+          if (error) {
+            console.error("Supabase insert error:", error);
+            announcementsList.unshift(newObj);
+            renderAnnouncementsTable(announcementsList);
+          } else {
+            loadAnnouncements();
+          }
+        } catch (err) {
+          announcementsList.unshift(newObj);
+          renderAnnouncementsTable(announcementsList);
+        }
+      }
+
+      /* Realtime Subscription */
+      function setupRealtime() {
+        supabase
+          .channel("public:announcements")
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "announcements" },
+            (payload) => {
+              loadAnnouncements();
+            },
+          )
+          .subscribe();
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        loadAnnouncements();
+        setupRealtime();
+      });
+    </script>
+  </body>
+</html>
