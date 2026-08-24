@@ -1,0 +1,1846 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Learning DC — Student Performance</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Supabase JS CDN Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+      :root {
+        /* Sidebar Design System (280px) */
+        --sidebar-bg: #031b2e;
+        --sidebar-text: #a0aec0;
+        --sidebar-text-active: #ffffff;
+        --sidebar-active-bg: #4f46e5;
+        --sidebar-hover-bg: #0a2540;
+
+        /* Main Background & Surfaces */
+        --main-bg: linear-gradient(
+          135deg,
+          #e3f2fd 0%,
+          #e0f2f1 50%,
+          #e8f5e9 100%
+        );
+        --surface: #ffffff;
+        --surface-border: #e2e8f0;
+
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+
+        --primary: #6366f1;
+        --primary-hover: #4f46e5;
+        --danger: #ef4444;
+        --success: #10b981;
+        --warning: #f59e0b;
+
+        --radius: 18px;
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+        --font: "DM Sans", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font);
+        background: var(--main-bg);
+        background-attachment: fixed;
+        color: var(--text-main);
+        display: flex;
+        min-height: 100vh;
+        overflow-x: hidden;
+        font-size: 16px;
+      }
+
+      /* ── FIXED SIDEBAR (280px) ── */
+      .sidebar {
+        width: 280px;
+        height: 100vh;
+        background-color: var(--sidebar-bg);
+        color: var(--sidebar-text);
+        position: fixed;
+        top: 0;
+        left: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 24px 18px;
+        z-index: 100;
+        overflow-y: auto;
+      }
+
+      .sidebar-brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 1.35rem;
+        padding: 6px 8px 24px 8px;
+      }
+
+      .brand-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #00818a, #6366f1);
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-weight: bold;
+        font-size: 1.2rem;
+      }
+
+      .nav-menu {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .nav-item a,
+      .nav-item button {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 13px 18px;
+        color: var(--sidebar-text);
+        text-decoration: none;
+        font-size: 1.05rem;
+        font-weight: 600;
+        border-radius: 14px;
+        transition: all 0.2s ease;
+        width: 100%;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .nav-item a:hover,
+      .nav-item button:hover {
+        background: var(--sidebar-hover-bg);
+        color: var(--sidebar-text-active);
+      }
+
+      .nav-item.active a {
+        background: var(--sidebar-active-bg);
+        color: var(--sidebar-text-active);
+        font-weight: 700;
+      }
+
+      .nav-icon {
+        font-size: 1.3rem;
+        width: 26px;
+        display: inline-grid;
+        place-items: center;
+      }
+
+      .btn-logout-sidebar {
+        color: #f87171 !important;
+      }
+
+      .btn-logout-sidebar:hover {
+        background: rgba(239, 68, 68, 0.18) !important;
+      }
+
+      /* ── MAIN CONTENT WRAPPER ── */
+      .main-wrapper {
+        margin-left: 280px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        width: calc(100% - 280px);
+      }
+
+      /* Header */
+      .header {
+        height: 80px;
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 0 40px;
+      }
+
+      .user-profile-bar {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .notif-bell {
+        position: relative;
+        background: #fff;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        box-shadow: var(--shadow-sm);
+        cursor: pointer;
+        font-size: 1.2rem;
+      }
+
+      .notif-badge {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: var(--danger);
+        color: white;
+        font-size: 0.72rem;
+        font-weight: 800;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+      }
+
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #fff;
+        padding: 6px 18px 6px 8px;
+        border-radius: 30px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .user-info {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .user-name {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .user-role {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+      }
+
+      /* Main Container Card */
+      .main-box-container {
+        margin: 0 40px 32px 40px;
+        padding: 32px;
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        border-radius: 24px;
+        border: 1px solid var(--surface-border);
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+
+      .page-title h1 {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--text-main);
+      }
+
+      .page-title p {
+        color: var(--text-muted);
+        font-size: 1.05rem;
+        margin-top: 4px;
+      }
+
+      .header-filters {
+        display: flex;
+        gap: 12px;
+      }
+
+      .select-dropdown-btn {
+        background: #ffffff;
+        color: var(--text-main);
+        border: 1px solid var(--surface-border);
+        padding: 10px 16px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        outline: none;
+        font-family: inherit;
+      }
+
+      /* Stat Cards Grid */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 18px;
+      }
+
+      .stat-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 20px;
+        border: 1px solid var(--surface-border);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        color: white;
+        font-size: 1.35rem;
+        flex-shrink: 0;
+      }
+
+      .stat-val {
+        font-size: 1.6rem;
+        font-weight: 800;
+        line-height: 1.1;
+      }
+
+      .stat-lbl {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        font-weight: 600;
+        margin-top: 2px;
+      }
+
+      .stat-sub {
+        font-size: 0.75rem;
+        font-weight: 700;
+        margin-top: 4px;
+      }
+
+      /* ── DASHBOARD GRID SECTION ── */
+      .analytics-grid-row {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr 0.9fr;
+        gap: 20px;
+      }
+
+      .analytics-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        border: 1px solid var(--surface-border);
+        padding: 20px 24px;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .card-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+
+      .card-head h3 {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: var(--text-main);
+      }
+
+      .card-head-link {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--primary);
+        text-decoration: none;
+      }
+
+      /* SVG Line Chart Styling */
+      .line-chart-container {
+        position: relative;
+        width: 100%;
+        height: 150px;
+      }
+
+      .subject-metrics-pills {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-top: 16px;
+      }
+
+      .subject-pill {
+        background: #f8fafc;
+        border: 1px solid var(--surface-border);
+        border-radius: 12px;
+        padding: 10px;
+      }
+
+      .pill-title {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-weight: 600;
+      }
+
+      .pill-val {
+        font-size: 1rem;
+        font-weight: 800;
+        margin-top: 2px;
+      }
+
+      .pill-sub {
+        font-size: 0.72rem;
+        font-weight: 700;
+        margin-top: 2px;
+      }
+
+      /* Donut Chart - Performance by Subject */
+      .donut-container-center {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .chart-svg-large {
+        width: 120px;
+        height: 120px;
+        transform: rotate(-90deg);
+      }
+
+      .donut-center-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+      }
+
+      .donut-legend-col {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        flex: 1;
+      }
+
+      .legend-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.82rem;
+      }
+
+      .legend-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .legend-bullet {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+
+      .banner-insight-box {
+        background: #eef2ff;
+        border: 1px solid #c7d2fe;
+        border-radius: 14px;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 14px;
+        font-size: 0.85rem;
+        color: #3730a3;
+        font-weight: 600;
+      }
+
+      /* Top Performers List */
+      .top-performers-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .performer-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .performer-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .rank-badge {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: 0.78rem;
+        font-weight: 800;
+        color: white;
+      }
+
+      .rank-1 {
+        background: #f59e0b;
+      }
+      .rank-2 {
+        background: #94a3b8;
+      }
+      .rank-3 {
+        background: #d97706;
+      }
+      .rank-other {
+        background: #e2e8f0;
+        color: var(--text-muted);
+      }
+
+      .performer-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .performer-name {
+        font-size: 0.88rem;
+        font-weight: 700;
+      }
+
+      .performer-tag {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+      }
+
+      .performer-score {
+        padding: 4px 10px;
+        background: #d1fae5;
+        color: #047857;
+        border-radius: 10px;
+        font-size: 0.82rem;
+        font-weight: 800;
+      }
+
+      /* ── LOWER SECTION: TABLE & SIDEBAR ── */
+      .details-layout {
+        display: flex;
+        gap: 20px;
+      }
+
+      .table-section-left {
+        flex: 1;
+      }
+
+      .table-container-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        border: 1px solid var(--surface-border);
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .table-controls-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+
+      .table-controls-bar h2 {
+        font-size: 1.15rem;
+        font-weight: 800;
+      }
+
+      .search-input-box {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--surface-border);
+        padding: 8px 14px;
+        border-radius: 10px;
+        background: #f8fafc;
+        width: 200px;
+      }
+
+      .search-input-box input {
+        border: none;
+        background: transparent;
+        outline: none;
+        width: 100%;
+        font-size: 0.88rem;
+        font-family: inherit;
+      }
+
+      .btn-filter {
+        border: 1px solid var(--surface-border);
+        padding: 8px 14px;
+        border-radius: 10px;
+        background: white;
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        cursor: pointer;
+      }
+
+      /* Data Table Styling */
+      .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+      }
+
+      .data-table th {
+        padding: 12px 14px;
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        border-bottom: 1px solid var(--surface-border);
+        font-weight: 700;
+      }
+
+      .data-table td {
+        padding: 12px 14px;
+        font-size: 0.88rem;
+        border-bottom: 1px solid var(--surface-border);
+        vertical-align: middle;
+      }
+
+      .checkbox-col {
+        width: 32px;
+      }
+
+      .student-info-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .student-avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .student-name {
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      /* Sparkline SVGs */
+      .sparkline-svg {
+        width: 60px;
+        height: 20px;
+        stroke-width: 2;
+        fill: none;
+      }
+
+      /* Badges */
+      .badge-perf {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        display: inline-block;
+        text-align: center;
+      }
+
+      .badge-excellent {
+        background: #d1fae5;
+        color: #047857;
+      }
+      .badge-verygood {
+        background: #e0f2fe;
+        color: #0369a1;
+      }
+      .badge-good {
+        background: #fef3c7;
+        color: #b45309;
+      }
+      .badge-needsimp {
+        background: #fee2e2;
+        color: #b91c1c;
+      }
+
+      .pagination-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+      }
+
+      .page-controls {
+        display: flex;
+        gap: 6px;
+      }
+
+      .page-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        border: 1px solid var(--surface-border);
+        background: white;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 0.85rem;
+      }
+
+      .page-btn.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+      }
+
+      /* Right Column Widgets */
+      .sidebar-right-widgets {
+        width: 320px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .widget-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        border: 1px solid var(--surface-border);
+        padding: 20px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .widget-title {
+        font-size: 1rem;
+        font-weight: 800;
+        margin-bottom: 16px;
+      }
+
+      .insight-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .insight-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .insight-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+      }
+
+      .insight-text h5 {
+        font-size: 0.88rem;
+        font-weight: 800;
+      }
+
+      .insight-text p {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+
+      .btn-report-action {
+        width: 100%;
+        padding: 12px;
+        background: white;
+        border: 1px solid #c7d2fe;
+        color: var(--primary);
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        cursor: pointer;
+        margin-top: 16px;
+      }
+
+      .btn-report-action:hover {
+        background: #eef2ff;
+      }
+
+      @media (max-width: 1200px) {
+        .stats-grid {
+          grid-template-columns: repeat(3, 1fr);
+        }
+        .analytics-grid-row {
+          grid-template-columns: 1fr;
+        }
+        .details-layout {
+          flex-direction: column;
+        }
+        .sidebar-right-widgets {
+          width: 100%;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .sidebar {
+          display: none;
+        }
+        .main-wrapper {
+          margin-left: 0;
+          width: 100%;
+        }
+        .main-box-container {
+          margin: 0 16px 20px 16px;
+          padding: 20px;
+        }
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- FIXED SIDEBAR (280px) -->
+    <aside class="sidebar">
+      <div>
+        <div class="sidebar-brand">
+          <div class="brand-icon">🎓</div>
+          <span>Smart Learning DC</span>
+        </div>
+
+        <ul class="nav-menu">
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📊</span> Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">🏫</span> My Classes</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">👥</span> Students</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📹</span> Live Classes</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📁</span> Materials</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📝</span> Quizzes</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📋</span> Assignments</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📅</span> Attendance</a>
+          </li>
+          <li class="nav-item active">
+            <a href="#"><span class="nav-icon">📈</span> Student Performance</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📢</span> Announcements</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📆</span> Calendar</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📥</span> Downloads</a>
+          </li>
+        </ul>
+      </div>
+
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">⚙️</span> Settings</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">❓</span> Help & Support</a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="btn-logout-sidebar"
+            ><span class="nav-icon">🚪</span> Log out</a
+          >
+        </li>
+      </ul>
+    </aside>
+
+    <!-- MAIN WRAPPER -->
+    <div class="main-wrapper">
+      <!-- TOP HEADER -->
+      <header class="header">
+        <div class="user-profile-bar">
+          <div class="notif-bell">
+            🔔
+            <span class="notif-badge">6</span>
+          </div>
+          <div class="user-profile">
+            <img
+              src="https://i.pravatar.cc/100?img=33"
+              alt="Ayush Kumar"
+              class="user-avatar"
+            />
+            <div class="user-info">
+              <span class="user-name">Ayush Kumar ▾</span>
+              <span class="user-role">Teacher • Subject Specialist</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- MAIN CONTENT CONTAINER -->
+      <main class="main-box-container">
+        <!-- PAGE TITLE & CLASS SELECTOR -->
+        <div class="page-header">
+          <div class="page-title">
+            <h1>Good morning, Ayush! 👋</h1>
+            <p>
+              Track and analyze student performance across all your classes.
+            </p>
+          </div>
+          <div class="header-filters">
+            <select
+              class="select-dropdown-btn"
+              id="classSelector"
+              onchange="switchGradeClass(this.value)"
+            >
+              <option value="Class 10 (Science)">🏫 Class 10 (Science)</option>
+              <option value="Class 9 (Science)">🏫 Class 9 (Science)</option>
+              <option value="Class 11 (Physics)">🏫 Class 11 (Physics)</option>
+              <option value="Class 12 (Mathematics)">
+                🏫 Class 12 (Mathematics)
+              </option>
+            </select>
+            <button class="select-dropdown-btn">
+              📅 01 May – 17 May 2025 ▾
+            </button>
+          </div>
+        </div>
+
+        <!-- METRICS GRID (Calculated Realtime per Grade) -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #6366f1">📈</div>
+            <div>
+              <div class="stat-val" id="statClassAvg">78.6%</div>
+              <div class="stat-lbl">Class Average</div>
+              <div class="stat-sub" style="color: #10b981">
+                ↑ 6.4% from last month
+              </div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #2563eb">⭐</div>
+            <div>
+              <div class="stat-val" id="statHighestScore">98%</div>
+              <div class="stat-lbl">Highest Score</div>
+              <div
+                class="stat-sub"
+                id="statTopStudentName"
+                style="color: var(--text-muted)"
+              >
+                Rohan Sharma
+              </div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #10b981">🚀</div>
+            <div>
+              <div class="stat-val">12%</div>
+              <div class="stat-lbl">Improvement</div>
+              <div class="stat-sub" style="color: var(--text-muted)">
+                Average improvement
+              </div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #f97316">⚠️</div>
+            <div>
+              <div class="stat-val" id="statNeedsHelpCount">6</div>
+              <div class="stat-lbl">Students Needing Help</div>
+              <div class="stat-sub" style="color: #ef4444">Below 60%</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #06b6d4">👥</div>
+            <div>
+              <div class="stat-val" id="statTotalStudents">32</div>
+              <div class="stat-lbl">Total Students</div>
+              <div class="stat-sub" style="color: var(--text-muted)">
+                In this class
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MID ANALYTICS ROW -->
+        <div class="analytics-grid-row">
+          <!-- CARD 1: PERFORMANCE OVERVIEW CHART -->
+          <div class="analytics-card">
+            <div>
+              <div class="card-head">
+                <h3>Performance Overview</h3>
+                <select
+                  style="
+                    border: none;
+                    font-size: 0.8rem;
+                    font-weight: 700;
+                    color: var(--text-muted);
+                  "
+                  onchange="renderTable()"
+                >
+                  <option>All Subjects</option>
+                  <option>Science</option>
+                  <option>Mathematics</option>
+                </select>
+              </div>
+              <div class="line-chart-container">
+                <svg
+                  viewBox="0 0 500 120"
+                  style="width: 100%; height: 100%; overflow: visible"
+                >
+                  <path
+                    d="M 10,80 Q 80,40 150,30 T 300,50 T 450,20"
+                    fill="none"
+                    stroke="#6366f1"
+                    stroke-width="3"
+                  />
+                  <circle cx="10" cy="80" r="4" fill="#6366f1" />
+                  <circle cx="80" cy="40" r="4" fill="#6366f1" />
+                  <circle cx="150" cy="30" r="4" fill="#6366f1" />
+                  <circle cx="220" cy="60" r="4" fill="#6366f1" />
+                  <circle cx="300" cy="50" r="4" fill="#6366f1" />
+                  <circle cx="380" cy="40" r="4" fill="#6366f1" />
+                  <circle cx="450" cy="20" r="6" fill="#6366f1" />
+                  <rect
+                    x="425"
+                    y="-5"
+                    width="50"
+                    height="20"
+                    rx="6"
+                    fill="#6366f1"
+                  />
+                  <text
+                    x="450"
+                    y="9"
+                    fill="#fff"
+                    font-size="10"
+                    font-weight="bold"
+                    text-anchor="middle"
+                    id="chartAvgTag"
+                  >
+                    78.6%
+                  </text>
+                </svg>
+              </div>
+            </div>
+            <div class="subject-metrics-pills">
+              <div class="subject-pill">
+                <div class="pill-title">Science</div>
+                <div class="pill-val">81%</div>
+                <div class="pill-sub" style="color: #10b981">↑ 8%</div>
+              </div>
+              <div class="subject-pill">
+                <div class="pill-title">Mathematics</div>
+                <div class="pill-val">76%</div>
+                <div class="pill-sub" style="color: #10b981">↑ 5%</div>
+              </div>
+              <div class="subject-pill">
+                <div class="pill-title">English</div>
+                <div class="pill-val">72%</div>
+                <div class="pill-sub" style="color: #10b981">↑ 3%</div>
+              </div>
+              <div class="subject-pill">
+                <div class="pill-title">Social Science</div>
+                <div class="pill-val">85%</div>
+                <div class="pill-sub" style="color: #10b981">↑ 10%</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD 2: PERFORMANCE BY SUBJECT DONUT -->
+          <div class="analytics-card">
+            <div class="card-head">
+              <h3>Performance by Subject</h3>
+            </div>
+            <div class="donut-container-center">
+              <div style="position: relative">
+                <svg class="chart-svg-large" viewBox="0 0 36 36">
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#e2e8f0"
+                    stroke-width="4.5"
+                  />
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#6366f1"
+                    stroke-width="4.5"
+                    stroke-dasharray="30, 100"
+                  />
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#2563eb"
+                    stroke-width="4.5"
+                    stroke-dasharray="25, 100"
+                    stroke-dashoffset="-30"
+                  />
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#10b981"
+                    stroke-width="4.5"
+                    stroke-dasharray="20, 100"
+                    stroke-dashoffset="-55"
+                  />
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#f59e0b"
+                    stroke-width="4.5"
+                    stroke-dasharray="25, 100"
+                    stroke-dashoffset="-75"
+                  />
+                </svg>
+                <div class="donut-center-text">
+                  <div
+                    style="font-size: 1.1rem; font-weight: 800"
+                    id="donutAvgVal"
+                  >
+                    78.6%
+                  </div>
+                  <div style="font-size: 0.65rem; color: var(--text-muted)">
+                    Class Avg
+                  </div>
+                </div>
+              </div>
+              <div class="donut-legend-col">
+                <div class="legend-row">
+                  <div class="legend-info">
+                    <div
+                      class="legend-bullet"
+                      style="background: #6366f1"
+                    ></div>
+                    <span>Science</span>
+                  </div>
+                  <span style="color: #10b981; font-weight: 700">↑ 8%</span>
+                </div>
+                <div class="legend-row">
+                  <div class="legend-info">
+                    <div
+                      class="legend-bullet"
+                      style="background: #2563eb"
+                    ></div>
+                    <span>Mathematics</span>
+                  </div>
+                  <span style="color: #10b981; font-weight: 700">76% ↑ 5%</span>
+                </div>
+                <div class="legend-row">
+                  <div class="legend-info">
+                    <div
+                      class="legend-bullet"
+                      style="background: #10b981"
+                    ></div>
+                    <span>English</span>
+                  </div>
+                  <span style="color: #10b981; font-weight: 700">72% ↑ 3%</span>
+                </div>
+                <div class="legend-row">
+                  <div class="legend-info">
+                    <div
+                      class="legend-bullet"
+                      style="background: #f59e0b"
+                    ></div>
+                    <span>Social Science</span>
+                  </div>
+                  <span style="color: #10b981; font-weight: 700"
+                    >85% ↑ 10%</span
+                  >
+                </div>
+              </div>
+            </div>
+            <div class="banner-insight-box">
+              🏆 Social Science has the highest average with 85% this month!
+            </div>
+          </div>
+
+          <!-- CARD 3: TOP PERFORMERS -->
+          <div class="analytics-card">
+            <div class="card-head">
+              <h3>Top Performers</h3>
+              <a href="#" class="card-head-link">View all</a>
+            </div>
+            <div class="top-performers-list" id="topPerformersContainer">
+              <!-- Dynamically populates top performers -->
+            </div>
+          </div>
+        </div>
+
+        <!-- LOWER DETAILS LAYOUT -->
+        <div class="details-layout">
+          <!-- LEFT: STUDENT TABLE -->
+          <div class="table-section-left">
+            <div class="table-container-card">
+              <div class="table-controls-bar">
+                <h2>Student Performance Details</h2>
+                <div style="display: flex; gap: 12px">
+                  <div class="search-input-box">
+                    <span>🔍</span>
+                    <input
+                      type="text"
+                      id="studentSearch"
+                      placeholder="Search students..."
+                      onkeyup="renderTable()"
+                    />
+                  </div>
+                  <button class="btn-filter">🌪️ Filter</button>
+                </div>
+              </div>
+
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th class="checkbox-col"><input type="checkbox" /></th>
+                    <th>Student Name ▾</th>
+                    <th>Overall Average</th>
+                    <th>Science</th>
+                    <th>Mathematics</th>
+                    <th>English</th>
+                    <th>Social Science</th>
+                    <th>Trend</th>
+                    <th>Performance</th>
+                  </tr>
+                </thead>
+                <tbody id="studentTableBody">
+                  <!-- Dynamically populated rows -->
+                </tbody>
+              </table>
+
+              <div class="pagination-bar">
+                <div id="paginationLabel">Showing 1 to 8 of 32 students</div>
+                <div class="page-controls">
+                  <span class="page-btn">‹</span>
+                  <span class="page-btn active">1</span>
+                  <span class="page-btn">2</span>
+                  <span class="page-btn">3</span>
+                  <span class="page-btn">4</span>
+                  <span class="page-btn">...</span>
+                  <span class="page-btn">›</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT: PERFORMANCE DISTRIBUTION & INSIGHTS -->
+          <div class="sidebar-right-widgets">
+            <!-- Performance Distribution -->
+            <div class="widget-card">
+              <div class="widget-title">Performance Distribution</div>
+              <div style="display: flex; align-items: center; gap: 16px">
+                <svg
+                  class="chart-svg-large"
+                  viewBox="0 0 36 36"
+                  style="width: 90px; height: 90px"
+                >
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#e2e8f0"
+                    stroke-width="4.5"
+                  />
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#10b981"
+                    stroke-width="4.5"
+                    stroke-dasharray="31, 100"
+                  />
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#2563eb"
+                    stroke-width="4.5"
+                    stroke-dasharray="37, 100"
+                    stroke-dashoffset="-31"
+                  />
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#f59e0b"
+                    stroke-width="4.5"
+                    stroke-dasharray="19, 100"
+                    stroke-dashoffset="-68"
+                  />
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#ef4444"
+                    stroke-width="4.5"
+                    stroke-dasharray="13, 100"
+                    stroke-dashoffset="-87"
+                  />
+                </svg>
+
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    font-size: 0.78rem;
+                  "
+                >
+                  <div class="legend-row">
+                    <div class="legend-info">
+                      <div
+                        class="legend-bullet"
+                        style="background: #10b981"
+                      ></div>
+                      <span>Excellent (90-100%)</span>
+                    </div>
+                    <strong style="margin-left: 8px" id="distExcellent"
+                      >10 (31%)</strong
+                    >
+                  </div>
+                  <div class="legend-row">
+                    <div class="legend-info">
+                      <div
+                        class="legend-bullet"
+                        style="background: #2563eb"
+                      ></div>
+                      <span>Very Good (75-89%)</span>
+                    </div>
+                    <strong style="margin-left: 8px" id="distVeryGood"
+                      >12 (37%)</strong
+                    >
+                  </div>
+                  <div class="legend-row">
+                    <div class="legend-info">
+                      <div
+                        class="legend-bullet"
+                        style="background: #f59e0b"
+                      ></div>
+                      <span>Good (60-74%)</span>
+                    </div>
+                    <strong style="margin-left: 8px" id="distGood"
+                      >6 (19%)</strong
+                    >
+                  </div>
+                  <div class="legend-row">
+                    <div class="legend-info">
+                      <div
+                        class="legend-bullet"
+                        style="background: #ef4444"
+                      ></div>
+                      <span>Needs Improvement (&lt;60%)</span>
+                    </div>
+                    <strong style="margin-left: 8px" id="distNeedsImp"
+                      >4 (13%)</strong
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Insights & Recommendations -->
+            <div class="widget-card">
+              <div class="widget-title">Insights & Recommendations</div>
+              <div class="insight-list">
+                <div class="insight-item">
+                  <div
+                    class="insight-icon"
+                    style="background: #d1fae5; color: #047857"
+                  >
+                    📈
+                  </div>
+                  <div class="insight-text">
+                    <h5>Great Progress!</h5>
+                    <p>Class average improved by 6.4% this month.</p>
+                  </div>
+                </div>
+
+                <div class="insight-item">
+                  <div
+                    class="insight-icon"
+                    style="background: #e0e7ff; color: #4338ca"
+                  >
+                    📚
+                  </div>
+                  <div class="insight-text">
+                    <h5>Focus Area: Mathematics</h5>
+                    <p>Average score is 76%. Consider more practice quizzes.</p>
+                  </div>
+                </div>
+
+                <div class="insight-item">
+                  <div
+                    class="insight-icon"
+                    style="background: #fee2e2; color: #b91c1c"
+                  >
+                    👥
+                  </div>
+                  <div class="insight-text">
+                    <h5>
+                      <span id="insightHelpCount">6</span> Students Need
+                      Attention
+                    </h5>
+                    <p>Students scoring below 60%. Schedule a one-on-one.</p>
+                  </div>
+                </div>
+              </div>
+
+              <button class="btn-report-action">📑 View Detailed Report</button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      /* ── SUPABASE CONFIGURATION ── */
+      const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
+      const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+      // Initialize Supabase Client
+      const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      /* Real-Time Datasets for Different Grade Classes */
+      const classDatasets = {
+        "Class 10 (Science)": [
+          {
+            id: 1,
+            name: "Rohan Sharma",
+            science: 95,
+            math: 97,
+            english: 96,
+            sst: 98,
+            avatar: "https://i.pravatar.cc/100?img=11",
+            trend: "up",
+          },
+          {
+            id: 2,
+            name: "Aanya Verma",
+            science: 93,
+            math: 92,
+            english: 91,
+            sst: 96,
+            avatar: "https://i.pravatar.cc/100?img=5",
+            trend: "up",
+          },
+          {
+            id: 3,
+            name: "Arjun Patel",
+            science: 90,
+            math: 91,
+            english: 89,
+            sst: 94,
+            avatar: "https://i.pravatar.cc/100?img=13",
+            trend: "up",
+          },
+          {
+            id: 4,
+            name: "Meera Singh",
+            science: 88,
+            math: 89,
+            english: 87,
+            sst: 93,
+            avatar: "https://i.pravatar.cc/100?img=9",
+            trend: "up",
+          },
+          {
+            id: 5,
+            name: "Sahil Khan",
+            science: 85,
+            math: 87,
+            english: 86,
+            sst: 92,
+            avatar: "https://i.pravatar.cc/100?img=12",
+            trend: "flat",
+          },
+          {
+            id: 6,
+            name: "Ishita Gupta",
+            science: 75,
+            math: 74,
+            english: 72,
+            sst: 83,
+            avatar: "https://i.pravatar.cc/100?img=20",
+            trend: "down",
+          },
+          {
+            id: 7,
+            name: "Karan Mehta",
+            science: 60,
+            math: 61,
+            english: 58,
+            sst: 69,
+            avatar: "https://i.pravatar.cc/100?img=33",
+            trend: "down",
+          },
+          {
+            id: 8,
+            name: "Diya Nair",
+            science: 52,
+            math: 54,
+            english: 53,
+            sst: 61,
+            avatar: "https://i.pravatar.cc/100?img=47",
+            trend: "down",
+          },
+        ],
+        "Class 9 (Science)": [
+          {
+            id: 101,
+            name: "Aarav Kumar",
+            science: 98,
+            math: 95,
+            english: 94,
+            sst: 96,
+            avatar: "https://i.pravatar.cc/100?img=60",
+            trend: "up",
+          },
+          {
+            id: 102,
+            name: "Sanya Gupta",
+            science: 88,
+            math: 84,
+            english: 90,
+            sst: 89,
+            avatar: "https://i.pravatar.cc/100?img=44",
+            trend: "up",
+          },
+          {
+            id: 103,
+            name: "Kabir Roy",
+            science: 72,
+            math: 70,
+            english: 68,
+            sst: 75,
+            avatar: "https://i.pravatar.cc/100?img=59",
+            trend: "flat",
+          },
+          {
+            id: 104,
+            name: "Neha Joshi",
+            science: 55,
+            math: 58,
+            english: 50,
+            sst: 54,
+            avatar: "https://i.pravatar.cc/100?img=41",
+            trend: "down",
+          },
+        ],
+        "Class 11 (Physics)": [
+          {
+            id: 201,
+            name: "Vikram Aditya",
+            science: 94,
+            math: 98,
+            english: 90,
+            sst: 92,
+            avatar: "https://i.pravatar.cc/100?img=68",
+            trend: "up",
+          },
+          {
+            id: 202,
+            name: "Ananya Roy",
+            science: 82,
+            math: 86,
+            english: 88,
+            sst: 84,
+            avatar: "https://i.pravatar.cc/100?img=32",
+            trend: "up",
+          },
+          {
+            id: 203,
+            name: "Rishabh Pant",
+            science: 58,
+            math: 52,
+            english: 61,
+            sst: 59,
+            avatar: "https://i.pravatar.cc/100?img=15",
+            trend: "down",
+          },
+        ],
+        "Class 12 (Mathematics)": [
+          {
+            id: 301,
+            name: "Devansh Shah",
+            science: 99,
+            math: 100,
+            english: 95,
+            sst: 97,
+            avatar: "https://i.pravatar.cc/100?img=53",
+            trend: "up",
+          },
+          {
+            id: 302,
+            name: "Priya Sharma",
+            science: 91,
+            math: 94,
+            english: 89,
+            sst: 93,
+            avatar: "https://i.pravatar.cc/100?img=25",
+            trend: "up",
+          },
+          {
+            id: 303,
+            name: "Yash Saxena",
+            science: 45,
+            math: 48,
+            english: 52,
+            sst: 50,
+            avatar: "https://i.pravatar.cc/100?img=65",
+            trend: "down",
+          },
+        ],
+      };
+
+      let activeGradeClass = "Class 10 (Science)";
+      let studentList = [];
+
+      /* Load Real-time Data with Supabase fallback */
+      async function loadPerformanceData() {
+        try {
+          let { data: records, error } = await supabase
+            .from("student_performance")
+            .select("*")
+            .eq("class_name", activeGradeClass);
+
+          if (error || !records || records.length === 0) {
+            studentList =
+              classDatasets[activeGradeClass] ||
+              classDatasets["Class 10 (Science)"];
+          } else {
+            studentList = records;
+          }
+        } catch (err) {
+          console.warn("Database fetch active fallback:", err);
+          studentList =
+            classDatasets[activeGradeClass] ||
+            classDatasets["Class 10 (Science)"];
+        }
+
+        calculateRealtimeMetrics();
+        renderTable();
+        renderTopPerformers();
+      }
+
+      /* Perform Realtime Analytical Computations for current selected Grade */
+      function calculateRealtimeMetrics() {
+        if (studentList.length === 0) return;
+
+        // Compute Overall Average per Student
+        studentList.forEach((s) => {
+          s.overall = Math.round((s.science + s.math + s.english + s.sst) / 4);
+        });
+
+        // Sort Descending by Overall
+        studentList.sort((a, b) => b.overall - a.overall);
+
+        // Stat Calculations
+        const classAvg = Math.round(
+          studentList.reduce((acc, s) => acc + s.overall, 0) /
+            studentList.length,
+        );
+        const topStudent = studentList[0];
+        const needsHelp = studentList.filter((s) => s.overall < 60).length;
+
+        // Update Top Stat Cards
+        document.getElementById("statClassAvg").innerText = classAvg + "%";
+        document.getElementById("statHighestScore").innerText =
+          topStudent.overall + "%";
+        document.getElementById("statTopStudentName").innerText =
+          topStudent.name;
+        document.getElementById("statNeedsHelpCount").innerText = needsHelp;
+        document.getElementById("statTotalStudents").innerText =
+          studentList.length * 4; // Scaled total
+        document.getElementById("chartAvgTag").innerText = classAvg + "%";
+        document.getElementById("donutAvgVal").innerText = classAvg + "%";
+        document.getElementById("insightHelpCount").innerText = needsHelp;
+
+        // Performance Distribution Breakdown
+        const excellent = studentList.filter((s) => s.overall >= 90).length;
+        const veryGood = studentList.filter(
+          (s) => s.overall >= 75 && s.overall < 90,
+        ).length;
+        const good = studentList.filter(
+          (s) => s.overall >= 60 && s.overall < 75,
+        ).length;
+        const needsImp = studentList.filter((s) => s.overall < 60).length;
+
+        document.getElementById("distExcellent").innerText =
+          `${excellent} (${Math.round((excellent / studentList.length) * 100)}%)`;
+        document.getElementById("distVeryGood").innerText =
+          `${veryGood} (${Math.round((veryGood / studentList.length) * 100)}%)`;
+        document.getElementById("distGood").innerText =
+          `${good} (${Math.round((good / studentList.length) * 100)}%)`;
+        document.getElementById("distNeedsImp").innerText =
+          `${needsImp} (${Math.round((needsImp / studentList.length) * 100)}%)`;
+      }
+
+      /* Render Top Performers Widget */
+      function renderTopPerformers() {
+        const container = document.getElementById("topPerformersContainer");
+        container.innerHTML = "";
+
+        const top5 = studentList.slice(0, 5);
+        top5.forEach((student, index) => {
+          const rank = index + 1;
+          const rankClass =
+            rank === 1
+              ? "rank-1"
+              : rank === 2
+                ? "rank-2"
+                : rank === 3
+                  ? "rank-3"
+                  : "rank-other";
+          const tagText = student.overall >= 90 ? "Excellent" : "Very Good";
+
+          const div = document.createElement("div");
+          div.className = "performer-item";
+          div.innerHTML = `
+          <div class="performer-left">
+            <span class="rank-badge ${rankClass}">${rank}</span>
+            <img src="${student.avatar}" class="performer-avatar" alt="${student.name}" />
+            <div>
+              <div class="performer-name">${student.name}</div>
+              <div class="performer-tag">${tagText}</div>
+            </div>
+          </div>
+          <div class="performer-score">${student.overall}%</div>
+        `;
+          container.appendChild(div);
+        });
+      }
+
+      /* Render Student Performance Table */
+      function renderTable() {
+        const tbody = document.getElementById("studentTableBody");
+        const query = document
+          .getElementById("studentSearch")
+          .value.toLowerCase();
+        tbody.innerHTML = "";
+
+        const filtered = studentList.filter((s) =>
+          s.name.toLowerCase().includes(query),
+        );
+
+        filtered.forEach((student) => {
+          let badgeClass = "badge-excellent";
+          let badgeLabel = "Excellent";
+
+          if (student.overall < 60) {
+            badgeClass = "badge-needsimp";
+            badgeLabel = "Needs Improvement";
+          } else if (student.overall < 75) {
+            badgeClass = "badge-good";
+            badgeLabel = "Good";
+          } else if (student.overall < 90) {
+            badgeClass = "badge-verygood";
+            badgeLabel = "Very Good";
+          }
+
+          // Sparkline color based on trend
+          const sparkStroke =
+            student.trend === "up"
+              ? "#10b981"
+              : student.trend === "down"
+                ? "#ef4444"
+                : "#f59e0b";
+          const sparkPath =
+            student.trend === "up"
+              ? "M 0 15 Q 30 12 60 5"
+              : student.trend === "down"
+                ? "M 0 5 Q 30 10 60 18"
+                : "M 0 10 L 60 10";
+
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+          <td><input type="checkbox" /></td>
+          <td>
+            <div class="student-info-cell">
+              <img src="${student.avatar}" class="student-avatar" alt="${student.name}" />
+              <span class="student-name">${student.name}</span>
+            </div>
+          </td>
+          <td style="font-weight:800; color:var(--text-main);">${student.overall}%</td>
+          <td style="color:var(--text-muted);">${student.science}%</td>
+          <td style="color:var(--text-muted);">${student.math}%</td>
+          <td style="color:var(--text-muted);">${student.english}%</td>
+          <td style="color:var(--text-muted);">${student.sst}%</td>
+          <td>
+            <svg class="sparkline-svg">
+              <path d="${sparkPath}" stroke="${sparkStroke}" />
+            </svg>
+          </td>
+          <td><span class="badge-perf ${badgeClass}">${badgeLabel}</span></td>
+        `;
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById("paginationLabel").innerText =
+          `Showing 1 to ${filtered.length} of ${studentList.length * 4} students`;
+      }
+
+      /* Switch Grade Class Callback */
+      function switchGradeClass(className) {
+        activeGradeClass = className;
+        loadPerformanceData();
+      }
+
+      /* Real-Time Supabase Subscription Setup */
+      function setupRealtimeSubscription() {
+        supabase
+          .channel("schema-db-changes")
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "student_performance" },
+            (payload) => {
+              console.log("Realtime change detected:", payload);
+              loadPerformanceData();
+            },
+          )
+          .subscribe();
+      }
+
+      // Initialize Application
+      document.addEventListener("DOMContentLoaded", () => {
+        loadPerformanceData();
+        setupRealtimeSubscription();
+      });
+    </script>
+  </body>
+</html>
