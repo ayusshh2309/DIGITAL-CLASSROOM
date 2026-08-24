@@ -1,0 +1,1315 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Learning DC — Students Management</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Supabase JS CDN Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+      :root {
+        /* Sidebar Design System (280px) */
+        --sidebar-bg: #031b2e;
+        --sidebar-text: #a0aec0;
+        --sidebar-text-active: #ffffff;
+        --sidebar-active-bg: #00818a;
+        --sidebar-hover-bg: #0a2540;
+
+        /* Main Background & Surfaces */
+        --main-bg: linear-gradient(
+          135deg,
+          #e3f2fd 0%,
+          #e0f2f1 50%,
+          #e8f5e9 100%
+        );
+        --surface: #ffffff;
+        --surface-border: #e2e8f0;
+
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+
+        --primary: #6366f1;
+        --primary-hover: #4f46e5;
+        --danger: #ef4444;
+
+        --radius: 18px;
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+        --font: "DM Sans", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font);
+        background: var(--main-bg);
+        background-attachment: fixed;
+        color: var(--text-main);
+        display: flex;
+        min-height: 100vh;
+        overflow-x: hidden;
+        font-size: 16px;
+      }
+
+      /* ── FIXED SIDEBAR (280px) ── */
+      .sidebar {
+        width: 280px;
+        height: 100vh;
+        background-color: var(--sidebar-bg);
+        color: var(--sidebar-text);
+        position: fixed;
+        top: 0;
+        left: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 24px 18px;
+        z-index: 100;
+        overflow-y: auto;
+      }
+
+      .sidebar-brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 1.35rem;
+        padding: 6px 8px 24px 8px;
+      }
+
+      .brand-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #00818a, #6366f1);
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-weight: bold;
+        font-size: 1.2rem;
+      }
+
+      .nav-menu {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .nav-item a,
+      .nav-item button {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 13px 18px;
+        color: var(--sidebar-text);
+        text-decoration: none;
+        font-size: 1.05rem;
+        font-weight: 600;
+        border-radius: 14px;
+        transition: all 0.2s ease;
+        width: 100%;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .nav-item a:hover,
+      .nav-item button:hover {
+        background: var(--sidebar-hover-bg);
+        color: var(--sidebar-text-active);
+      }
+
+      .nav-item.active a {
+        background: var(--sidebar-active-bg);
+        color: var(--sidebar-text-active);
+        font-weight: 700;
+      }
+
+      .nav-icon {
+        font-size: 1.3rem;
+        width: 26px;
+        display: inline-grid;
+        place-items: center;
+      }
+
+      .btn-logout-sidebar {
+        color: #f87171 !important;
+      }
+
+      .btn-logout-sidebar:hover {
+        background: rgba(239, 68, 68, 0.18) !important;
+      }
+
+      /* ── MAIN CONTENT WRAPPER ── */
+      .main-wrapper {
+        margin-left: 280px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        width: calc(100% - 280px);
+      }
+
+      /* Header */
+      .header {
+        height: 80px;
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 0 40px;
+      }
+
+      .user-profile-bar {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .notif-bell {
+        position: relative;
+        background: #fff;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        box-shadow: var(--shadow-sm);
+        cursor: pointer;
+        font-size: 1.2rem;
+      }
+
+      .notif-badge {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: var(--danger);
+        color: white;
+        font-size: 0.72rem;
+        font-weight: 800;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+      }
+
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #fff;
+        padding: 6px 18px 6px 8px;
+        border-radius: 30px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .user-info {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .user-name {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .user-role {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+      }
+
+      /* Main Container Card */
+      .main-box-container {
+        margin: 0 40px 32px 40px;
+        padding: 32px;
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        border-radius: 24px;
+        border: 1px solid var(--surface-border);
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+      }
+
+      .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+
+      .page-title h1 {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--text-main);
+      }
+
+      .page-title p {
+        color: var(--text-muted);
+        font-size: 1.05rem;
+        margin-top: 4px;
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 12px;
+      }
+
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 12px 22px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: var(--shadow-sm);
+        transition: background 0.2s;
+      }
+
+      .btn-primary:hover {
+        background: var(--primary-hover);
+      }
+
+      .btn-secondary {
+        background: #ffffff;
+        color: var(--text-main);
+        border: 1px solid var(--surface-border);
+        padding: 12px 20px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* Stat Cards Grid */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 18px;
+      }
+
+      .stat-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 20px;
+        border: 1px solid var(--surface-border);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        color: white;
+        font-size: 1.35rem;
+        flex-shrink: 0;
+      }
+
+      .stat-val {
+        font-size: 1.6rem;
+        font-weight: 800;
+        line-height: 1.1;
+      }
+
+      .stat-lbl {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        font-weight: 600;
+        margin-top: 2px;
+      }
+
+      .stat-sub {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+
+      /* Section Layout: Classes Sidebar + Student Table */
+      .students-content-layout {
+        display: flex;
+        gap: 24px;
+      }
+
+      /* Left Class Selector List */
+      .classes-sidebar {
+        width: 280px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        flex-shrink: 0;
+      }
+
+      .class-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 16px;
+        background: var(--surface);
+        border: 1px solid var(--surface-border);
+        border-radius: 14px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .class-item:hover {
+        border-color: var(--primary);
+      }
+
+      .class-item.active {
+        background: #eef2ff;
+        border-color: #818cf8;
+      }
+
+      .class-item-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .class-badge-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        color: white;
+        font-size: 1rem;
+      }
+
+      .class-item-title {
+        font-weight: 700;
+        font-size: 0.92rem;
+        color: var(--text-main);
+      }
+
+      .class-item-count {
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+      }
+
+      .btn-view-all-classes {
+        width: 100%;
+        padding: 12px;
+        background: #f1f5f9;
+        border: none;
+        border-radius: 12px;
+        color: var(--text-main);
+        font-weight: 700;
+        cursor: pointer;
+        margin-top: 6px;
+      }
+
+      /* Right Table Section */
+      .table-section {
+        flex: 1;
+        background: var(--surface);
+        border-radius: var(--radius);
+        border: 1px solid var(--surface-border);
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .table-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .section-heading-text h2 {
+        font-size: 1.25rem;
+        font-weight: 800;
+      }
+
+      .section-heading-text p {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+
+      .filter-controls {
+        display: flex;
+        gap: 12px;
+      }
+
+      .search-input-box {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--surface-border);
+        padding: 8px 14px;
+        border-radius: 10px;
+        background: #f8fafc;
+        width: 240px;
+      }
+
+      .search-input-box input {
+        border: none;
+        background: transparent;
+        outline: none;
+        width: 100%;
+        font-size: 0.9rem;
+        font-family: inherit;
+      }
+
+      .btn-filter {
+        border: 1px solid var(--surface-border);
+        padding: 8px 14px;
+        border-radius: 10px;
+        background: white;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        cursor: pointer;
+      }
+
+      /* Data Table */
+      .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+      }
+
+      .data-table th {
+        padding: 12px 16px;
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        border-bottom: 1px solid var(--surface-border);
+        font-weight: 700;
+        text-transform: capitalize;
+      }
+
+      .data-table td {
+        padding: 14px 16px;
+        font-size: 0.92rem;
+        border-bottom: 1px solid var(--surface-border);
+        vertical-align: middle;
+      }
+
+      .student-info-cell {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .student-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .student-name {
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .student-id {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+      }
+
+      .badge-grade {
+        background: #e0e7ff;
+        color: #4338ca;
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        display: inline-block;
+        margin-top: 2px;
+      }
+
+      .attendance-bar-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 120px;
+      }
+
+      .progress-bar {
+        flex: 1;
+        height: 6px;
+        background: #e2e8f0;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        height: 100%;
+        border-radius: 4px;
+        background: #10b981;
+      }
+
+      .performance-cell {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .perf-score {
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.9rem;
+      }
+
+      .perf-label {
+        font-size: 0.78rem;
+        font-weight: 700;
+      }
+
+      .perf-excellent {
+        color: #10b981;
+      }
+      .perf-vgood {
+        color: #0284c7;
+      }
+      .perf-good {
+        color: #f59e0b;
+      }
+
+      .action-btn-more {
+        background: transparent;
+        border: none;
+        font-size: 1.2rem;
+        color: var(--text-muted);
+        cursor: pointer;
+      }
+
+      .pagination-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+        font-size: 0.88rem;
+        color: var(--text-muted);
+      }
+
+      .page-controls {
+        display: flex;
+        gap: 6px;
+      }
+
+      .page-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        border: 1px solid var(--surface-border);
+        background: white;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 0.88rem;
+      }
+
+      .page-btn.active {
+        background: #6366f1;
+        color: white;
+        border-color: #6366f1;
+      }
+
+      /* Lower Overview Analytics Cards */
+      .overview-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+      }
+
+      .overview-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 20px 24px;
+        border: 1px solid var(--surface-border);
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .overview-card-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        font-size: 1.3rem;
+        flex-shrink: 0;
+      }
+
+      .overview-card-body h4 {
+        font-size: 0.98rem;
+        font-weight: 800;
+        margin-bottom: 2px;
+      }
+
+      .overview-card-body p {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+      }
+
+      .overview-card-body a {
+        font-size: 0.85rem;
+        color: #6366f1;
+        text-decoration: none;
+        font-weight: 700;
+      }
+
+      @media (max-width: 1200px) {
+        .stats-grid {
+          grid-template-columns: repeat(3, 1fr);
+        }
+        .students-content-layout {
+          flex-direction: column;
+        }
+        .classes-sidebar {
+          width: 100%;
+        }
+        .overview-cards-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .sidebar {
+          display: none;
+        }
+        .main-wrapper {
+          margin-left: 0;
+          width: 100%;
+        }
+        .main-box-container {
+          margin: 0 16px 20px 16px;
+          padding: 20px;
+        }
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- FIXED SIDEBAR (280px) -->
+    <aside class="sidebar">
+      <div>
+        <div class="sidebar-brand">
+          <div class="brand-icon">🎓</div>
+          <span>Smart Learning DC</span>
+        </div>
+
+        <ul class="nav-menu">
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📊</span> Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">🏫</span> My Classes</a>
+          </li>
+          <li class="nav-item active">
+            <a href="#"><span class="nav-icon">👥</span> Students</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📹</span> Live Classes</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📁</span> Materials</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📝</span> Quizzes</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📋</span> Assignments</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📅</span> Attendance</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📈</span> Student Performance</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📢</span> Announcements</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📆</span> Calendar</a>
+          </li>
+          <li class="nav-item">
+            <a href="#"><span class="nav-icon">📥</span> Downloads</a>
+          </li>
+        </ul>
+      </div>
+
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">⚙️</span> Settings</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">❓</span> Help & Support</a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="btn-logout-sidebar"
+            ><span class="nav-icon">🚪</span> Log out</a
+          >
+        </li>
+      </ul>
+    </aside>
+
+    <!-- MAIN WRAPPER -->
+    <div class="main-wrapper">
+      <!-- TOP HEADER -->
+      <header class="header">
+        <div class="user-profile-bar">
+          <div class="notif-bell">
+            🔔
+            <span class="notif-badge">3</span>
+          </div>
+          <div class="user-profile">
+            <img
+              src="https://i.pravatar.cc/100?img=33"
+              alt="Ayush Kumar"
+              class="user-avatar"
+            />
+            <div class="user-info">
+              <span class="user-name">Ayush Kumar ▾</span>
+              <span class="user-role">Teacher • Subject Specialist</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- MAIN CONTENT CONTAINER -->
+      <main class="main-box-container">
+        <!-- PAGE TITLE & ACTIONS -->
+        <div class="page-header">
+          <div class="page-title">
+            <h1>Good morning, Ayush! 👋</h1>
+            <p>Here's an overview of your students across all your classes.</p>
+          </div>
+          <div class="action-buttons">
+            <button class="btn-primary" onclick="addStudentPrompt()">
+              ➕ Add Student
+            </button>
+            <button class="btn-secondary">📤 Export Students ▾</button>
+          </div>
+        </div>
+
+        <!-- METRICS GRID -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #a855f7">👥</div>
+            <div>
+              <div class="stat-val" id="statTotal">156</div>
+              <div class="stat-lbl">Total Students</div>
+              <div class="stat-sub">Across all classes</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #2563eb">🎓</div>
+            <div>
+              <div class="stat-val" id="statClasses">6</div>
+              <div class="stat-lbl">Classes</div>
+              <div class="stat-sub">You're teaching</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #10b981">📖</div>
+            <div>
+              <div class="stat-val" id="statGrades">10</div>
+              <div class="stat-lbl">Grades</div>
+              <div class="stat-sub">You're teaching</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #f97316">📊</div>
+            <div>
+              <div class="stat-val" id="statAttendance">92%</div>
+              <div class="stat-lbl">Average Attendance</div>
+              <div class="stat-sub">This month</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #06b6d4">🎖️</div>
+            <div>
+              <div class="stat-val" id="statPerformance">4.6</div>
+              <div class="stat-lbl">Average Performance</div>
+              <div class="stat-sub">This month</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAIN SECTION: CLASSES SIDEBAR + TABLE -->
+        <div class="students-content-layout">
+          <!-- Left Class Filter Selector -->
+          <div class="classes-sidebar">
+            <div
+              class="class-item active"
+              onclick="selectClassFilter('Class 9 (Science)', this)"
+            >
+              <div class="class-item-left">
+                <div class="class-badge-icon" style="background: #818cf8">
+                  📚
+                </div>
+                <span class="class-item-title">Class 9 (Science)</span>
+              </div>
+              <span class="class-item-count">34</span>
+            </div>
+
+            <div
+              class="class-item"
+              onclick="selectClassFilter('Class 10 (Social Science)', this)"
+            >
+              <div class="class-item-left">
+                <div class="class-badge-icon" style="background: #34d399">
+                  🌍
+                </div>
+                <span class="class-item-title">Class 10 (Social Science)</span>
+              </div>
+              <span class="class-item-count">32</span>
+            </div>
+
+            <div
+              class="class-item"
+              onclick="selectClassFilter('Class 11 (Physics)', this)"
+            >
+              <div class="class-item-left">
+                <div class="class-badge-icon" style="background: #38bdf8">
+                  ⚛️
+                </div>
+                <span class="class-item-title">Class 11 (Physics)</span>
+              </div>
+              <span class="class-item-count">28</span>
+            </div>
+
+            <div
+              class="class-item"
+              onclick="selectClassFilter('Class 11 (Mathematics)', this)"
+            >
+              <div class="class-item-left">
+                <div class="class-badge-icon" style="background: #60a5fa">
+                  📐
+                </div>
+                <span class="class-item-title">Class 11 (Mathematics)</span>
+              </div>
+              <span class="class-item-count">26</span>
+            </div>
+
+            <div
+              class="class-item"
+              onclick="selectClassFilter('Class 12 (Physics)', this)"
+            >
+              <div class="class-item-left">
+                <div class="class-badge-icon" style="background: #fbbf24">
+                  ⚡
+                </div>
+                <span class="class-item-title">Class 12 (Physics)</span>
+              </div>
+              <span class="class-item-count">20</span>
+            </div>
+
+            <div
+              class="class-item"
+              onclick="selectClassFilter('Class 12 (Mathematics)', this)"
+            >
+              <div class="class-item-left">
+                <div class="class-badge-icon" style="background: #a78bfa">
+                  🧮
+                </div>
+                <span class="class-item-title">Class 12 (Mathematics)</span>
+              </div>
+              <span class="class-item-count">18</span>
+            </div>
+
+            <button class="btn-view-all-classes">View All Classes</button>
+          </div>
+
+          <!-- Right Student Data Table -->
+          <div class="table-section">
+            <div class="table-toolbar">
+              <div class="section-heading-text">
+                <h2>Students by Class & Grade</h2>
+                <p>
+                  View and manage students in the grades and subjects you teach.
+                </p>
+              </div>
+              <div class="filter-controls">
+                <div class="search-input-box">
+                  <span>🔍</span>
+                  <input
+                    type="text"
+                    id="studentSearchInput"
+                    placeholder="Search students..."
+                    onkeyup="filterStudents()"
+                  />
+                </div>
+                <button class="btn-filter">🌪️ Filter</button>
+              </div>
+            </div>
+
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Student Name ▾</th>
+                  <th>Class / Grade</th>
+                  <th>Subjects</th>
+                  <th>Attendance</th>
+                  <th>Performance</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="studentTableBody">
+                <!-- Dynamically populated rows -->
+              </tbody>
+            </table>
+
+            <div class="pagination-bar">
+              <div id="paginationInfo">Showing 1 to 5 of 34 students</div>
+              <div class="page-controls">
+                <span class="page-btn">‹</span>
+                <span class="page-btn active">1</span>
+                <span class="page-btn">2</span>
+                <span class="page-btn">3</span>
+                <span class="page-btn">...</span>
+                <span class="page-btn">7</span>
+                <span class="page-btn">›</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LOWER OVERVIEW CARDS -->
+        <div class="overview-cards-grid">
+          <div class="overview-card">
+            <div
+              class="overview-card-icon"
+              style="background: #e0e7ff; color: #4338ca"
+            >
+              🎓
+            </div>
+            <div class="overview-card-body">
+              <h4>Student Enrollment</h4>
+              <p>Total 156 students are enrolled in your classes.</p>
+              <a href="#">View details &rarr;</a>
+            </div>
+          </div>
+
+          <div class="overview-card">
+            <div
+              class="overview-card-icon"
+              style="background: #d1fae5; color: #047857"
+            >
+              👥
+            </div>
+            <div class="overview-card-body">
+              <h4>Attendance Overview</h4>
+              <p>Average attendance across all classes is 92% this month.</p>
+              <a href="#" style="color: #059669">View report &rarr;</a>
+            </div>
+          </div>
+
+          <div class="overview-card">
+            <div
+              class="overview-card-icon"
+              style="background: #dbeafe; color: #1d4ed8"
+            >
+              📈
+            </div>
+            <div class="overview-card-body">
+              <h4>Performance Overview</h4>
+              <p>Average performance rating is 4.6 out of 5.0.</p>
+              <a href="#" style="color: #2563eb">View analytics &rarr;</a>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      /* ── SUPABASE CONFIGURATION ── */
+      const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
+      const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+      // Initialize Supabase Client
+      const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      // Initial Dataset matching exact image content
+      const fallbackStudents = [
+        {
+          id: 1,
+          name: "Rohan Sharma",
+          student_id: "SLDC1001",
+          class: "Class 9 (Science)",
+          grade_badge: "Class 9",
+          badge_type: "Science",
+          subjects: "Physics, Chemistry, Mathematics",
+          attendance: 95,
+          rating: "4.7",
+          perf_label: "Excellent",
+          avatar: "https://i.pravatar.cc/100?img=11",
+        },
+        {
+          id: 2,
+          name: "Aanya Verma",
+          student_id: "SLDC1002",
+          class: "Class 9 (Science)",
+          grade_badge: "Class 9",
+          badge_type: "Science",
+          subjects: "Physics, Chemistry, Mathematics",
+          attendance: 92,
+          rating: "4.5",
+          perf_label: "Excellent",
+          avatar: "https://i.pravatar.cc/100?img=5",
+        },
+        {
+          id: 3,
+          name: "Arjun Patel",
+          student_id: "SLDC1003",
+          class: "Class 9 (Science)",
+          grade_badge: "Class 9",
+          badge_type: "Science",
+          subjects: "Physics, Chemistry, Mathematics",
+          attendance: 88,
+          rating: "4.2",
+          perf_label: "Very Good",
+          avatar: "https://i.pravatar.cc/100?img=13",
+        },
+        {
+          id: 4,
+          name: "Meera Singh",
+          student_id: "SLDC1004",
+          class: "Class 9 (Science)",
+          grade_badge: "Class 9",
+          badge_type: "Science",
+          subjects: "Physics, Chemistry, Mathematics",
+          attendance: 90,
+          rating: "4.3",
+          perf_label: "Very Good",
+          avatar: "https://i.pravatar.cc/100?img=9",
+        },
+        {
+          id: 5,
+          name: "Sahil Khan",
+          student_id: "SLDC1005",
+          class: "Class 9 (Science)",
+          grade_badge: "Class 9",
+          badge_type: "Science",
+          subjects: "Physics, Chemistry, Mathematics",
+          attendance: 85,
+          rating: "4.0",
+          perf_label: "Good",
+          avatar: "https://i.pravatar.cc/100?img=12",
+        },
+      ];
+
+      let currentStudents = [];
+      let selectedClass = "Class 9 (Science)";
+
+      /* Fetch Student List with Supabase Logic & Fallback */
+      async function loadStudents() {
+        try {
+          let { data: students, error } = await supabase
+            .from("students")
+            .select("*")
+            .order("id", { ascending: true });
+
+          if (error || !students || students.length === 0) {
+            currentStudents = [...fallbackStudents];
+          } else {
+            currentStudents = students;
+          }
+        } catch (err) {
+          console.warn(
+            "Database connection pending. Using local UI dataset:",
+            err,
+          );
+          currentStudents = [...fallbackStudents];
+        }
+
+        renderTable();
+      }
+
+      /* Render Student Table Rows */
+      function renderTable() {
+        const tbody = document.getElementById("studentTableBody");
+        const searchQuery = document
+          .getElementById("studentSearchInput")
+          .value.toLowerCase();
+
+        tbody.innerHTML = "";
+
+        let filtered = currentStudents.filter((student) => {
+          const matchesClass = student.class === selectedClass;
+          const matchesQuery =
+            student.name.toLowerCase().includes(searchQuery) ||
+            student.student_id.toLowerCase().includes(searchQuery);
+          return matchesClass && matchesQuery;
+        });
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">No students found for this class.</td></tr>`;
+          document.getElementById("paginationInfo").innerText =
+            `Showing 0 of 0 students`;
+          return;
+        }
+
+        filtered.forEach((student) => {
+          const perfClass =
+            student.perf_label === "Excellent"
+              ? "perf-excellent"
+              : student.perf_label === "Very Good"
+                ? "perf-vgood"
+                : "perf-good";
+
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+          <td>
+            <div class="student-info-cell">
+              <img src="${student.avatar}" class="student-avatar" alt="${student.name}" />
+              <div>
+                <div class="student-name">${student.name}</div>
+                <div class="student-id">ID: ${student.student_id}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div style="font-weight:700;">${student.grade_badge}</div>
+            <span class="badge-grade">${student.badge_type}</span>
+          </td>
+          <td style="color: var(--text-muted); font-size:0.88rem;">${student.subjects}</td>
+          <td>
+            <div class="attendance-bar-wrapper">
+              <span style="font-weight:700;">${student.attendance}%</span>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: ${student.attendance}%;"></div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="performance-cell">
+              <div class="perf-score">⭐ ${student.rating}</div>
+              <span class="perf-label ${perfClass}">${student.perf_label}</span>
+            </div>
+          </td>
+          <td>
+            <button class="action-btn-more" onclick="deleteStudent(${student.id})">⋮</button>
+          </td>
+        `;
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById("paginationInfo").innerText =
+          `Showing 1 to ${filtered.length} of 34 students`;
+      }
+
+      /* Class Selection Logic */
+      function selectClassFilter(className, element) {
+        selectedClass = className;
+        document
+          .querySelectorAll(".class-item")
+          .forEach((item) => item.classList.remove("active"));
+        element.classList.add("active");
+        renderTable();
+      }
+
+      /* Search Filter Function */
+      function filterStudents() {
+        renderTable();
+      }
+
+      /* Add Student Logic via Supabase */
+      async function addStudentPrompt() {
+        const name = prompt("Enter Student Name:", "Priya Sharma");
+        if (!name) return;
+
+        const studentId = prompt("Enter Student ID:", "SLDC1006");
+
+        const newStudent = {
+          name: name,
+          student_id: studentId || `SLDC100${Date.now().toString().slice(-2)}`,
+          class: selectedClass,
+          grade_badge:
+            selectedClass.split(" ")[0] + " " + selectedClass.split(" ")[1],
+          badge_type: "Science",
+          subjects: "Physics, Chemistry, Mathematics",
+          attendance: 90,
+          rating: "4.5",
+          perf_label: "Excellent",
+          avatar: `https://i.pravatar.cc/100?img=${Math.floor(Math.random() * 50)}`,
+        };
+
+        try {
+          const { data, error } = await supabase
+            .from("students")
+            .insert([newStudent])
+            .select();
+          if (error) throw error;
+          if (data && data[0]) currentStudents.push(data[0]);
+          else currentStudents.push(newStudent);
+        } catch (err) {
+          console.warn("Supabase insert fallback active:", err);
+          newStudent.id = Date.now();
+          currentStudents.push(newStudent);
+        }
+
+        renderTable();
+      }
+
+      /* Delete Student Logic */
+      async function deleteStudent(id) {
+        if (!confirm("Are you sure you want to remove this student?")) return;
+
+        try {
+          await supabase.from("students").delete().eq("id", id);
+        } catch (err) {
+          console.warn("Supabase delete fallback active:", err);
+        }
+
+        currentStudents = currentStudents.filter((s) => s.id !== id);
+        renderTable();
+      }
+
+      // Initialize Page
+      document.addEventListener("DOMContentLoaded", () => {
+        loadStudents();
+      });
+    </script>
+  </body>
+</html>
