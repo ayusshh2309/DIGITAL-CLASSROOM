@@ -3,20 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Smart Learning DC — Live Classes</title>
+    <title>Smart Learning DC — Quizzes</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-
-    <!-- Supabase JS CDN Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
     <style>
       :root {
-        /* Sidebar Design System (280px) */
+        /* Sidebar Design System (Restored exact 280px dimension from Material page) */
         --sidebar-bg: #031b2e;
         --sidebar-text: #a0aec0;
         --sidebar-text-active: #ffffff;
@@ -36,8 +32,8 @@
         --text-main: #0f172a;
         --text-muted: #64748b;
 
-        --primary: #4f46e5;
-        --primary-hover: #4338ca;
+        --primary: #0284c7;
+        --primary-teal: #00818a;
         --danger: #ef4444;
 
         --radius: 18px;
@@ -62,7 +58,7 @@
         font-size: 16px;
       }
 
-      /* ── FIXED SIDEBAR (280px) ── */
+      /* ── FIXED SIDEBAR (Exact 280px Dimensions from Material Page) ── */
       .sidebar {
         width: 280px;
         height: 100vh;
@@ -299,7 +295,7 @@
       }
 
       .btn-primary {
-        background: var(--primary);
+        background: #4f46e5;
         color: white;
         border: none;
         padding: 12px 24px;
@@ -311,16 +307,11 @@
         align-items: center;
         gap: 8px;
         box-shadow: var(--shadow-sm);
-        transition: background 0.2s;
-      }
-
-      .btn-primary:hover {
-        background: var(--primary-hover);
       }
 
       .btn-secondary {
         background: #ffffff;
-        color: var(--primary);
+        color: #4f46e5;
         border: 1px solid var(--surface-border);
         padding: 12px 24px;
         border-radius: 12px;
@@ -335,7 +326,7 @@
       /* Stat Cards */
       .stats-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(5, 1fr);
         gap: 18px;
       }
 
@@ -371,8 +362,14 @@
         font-weight: 600;
       }
 
-      /* ── LIVE CLASSES SECTION ── */
-      .live-classes-section {
+      .stat-trend {
+        font-size: 0.8rem;
+        font-weight: 700;
+        margin-top: 2px;
+      }
+
+      /* Table Section */
+      .table-section {
         background: var(--surface);
         border-radius: var(--radius);
         border: 1px solid var(--surface-border);
@@ -384,7 +381,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 24px;
+        margin-bottom: 20px;
         border-bottom: 1px solid var(--surface-border);
         padding-bottom: 16px;
       }
@@ -403,125 +400,329 @@
       }
 
       .tab.active {
-        color: var(--primary);
-        border-bottom: 3px solid var(--primary);
+        color: #4f46e5;
+        border-bottom: 3px solid #4f46e5;
         font-weight: 700;
       }
 
-      .view-schedule-link {
-        color: var(--primary);
-        text-decoration: none;
+      .filter-controls {
+        display: flex;
+        gap: 12px;
+      }
+
+      .search-input-sm {
+        border: 1px solid var(--surface-border);
+        padding: 8px 14px;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        width: 220px;
+        font-family: inherit;
+      }
+
+      .btn-filter,
+      .select-sort {
+        border: 1px solid var(--surface-border);
+        padding: 8px 14px;
+        border-radius: 10px;
+        background: white;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        font-family: inherit;
+      }
+
+      /* Table */
+      .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+      }
+
+      .data-table th {
+        padding: 12px 16px;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        border-bottom: 1px solid var(--surface-border);
         font-weight: 700;
+      }
+
+      .data-table td {
+        padding: 16px;
         font-size: 0.95rem;
+        border-bottom: 1px solid var(--surface-border);
+        vertical-align: middle;
+      }
+
+      .item-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .item-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        color: white;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+      }
+
+      .quiz-title-text {
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .quiz-subtitle-text {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+      }
+
+      .progress-bar-container {
+        width: 100px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .progress-bar {
+        flex: 1;
+        height: 6px;
+        background: #e2e8f0;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        height: 100%;
+        border-radius: 4px;
+      }
+
+      .badge-status {
+        padding: 4px 12px;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 700;
+      }
+
+      .status-published {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      .status-draft {
+        background: #f1f5f9;
+        color: #475569;
+      }
+      .status-scheduled {
+        background: #fef3c7;
+        color: #92400e;
+      }
+
+      .action-icons {
+        display: flex;
+        gap: 10px;
+        color: var(--text-muted);
+        cursor: pointer;
+      }
+
+      .pagination-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+        font-size: 0.9rem;
+        color: var(--text-muted);
+      }
+
+      .page-controls {
+        display: flex;
+        gap: 6px;
+      }
+
+      .page-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        border: 1px solid var(--surface-border);
+        background: white;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      .page-btn.active {
+        background: #4f46e5;
+        color: white;
+        border-color: #4f46e5;
+      }
+
+      /* ── ANALYTICS BOTTOM ROW ── */
+      .analytics-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 18px;
+      }
+
+      .analytics-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 24px;
+        border: 1px solid var(--surface-border);
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .analytics-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+
+      .analytics-header h4 {
+        font-weight: 800;
+        font-size: 1rem;
+      }
+
+      .chart-container {
+        position: relative;
+        height: 140px;
+        width: 100%;
+      }
+
+      /* SVG Performance Wave Chart */
+      .wave-chart {
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+      }
+
+      /* Class Performance Bars */
+      .class-perf-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .class-perf-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .class-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        color: white;
+        font-size: 0.9rem;
+      }
+
+      .class-info {
+        flex: 1;
+      }
+
+      .class-name-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+
+      .class-score {
+        color: var(--text-muted);
+        font-weight: 600;
+      }
+
+      /* Question Distribution Donut */
+      .donut-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        gap: 16px;
+      }
+
+      .donut-chart {
+        position: relative;
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        background: conic-gradient(
+          #3b82f6 0% 35%,
+          #38bdf8 35% 80%,
+          #ef4444 80% 100%
+        );
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+      }
+
+      .donut-center {
+        width: 75px;
+        height: 75px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+
+      .donut-total {
+        font-size: 1.1rem;
+        font-weight: 800;
+        line-height: 1;
+      }
+
+      .donut-label {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-weight: 700;
+      }
+
+      .legend-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        font-size: 0.82rem;
+        font-weight: 600;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .legend-dot-label {
         display: flex;
         align-items: center;
         gap: 6px;
       }
 
-      .view-schedule-link:hover {
-        text-decoration: underline;
-      }
-
-      /* Live Classes List View */
-      .live-classes-list {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-
-      .class-card {
-        background: #ffffff;
-        border: 1px solid var(--surface-border);
-        border-radius: 16px;
-        padding: 18px 24px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        transition:
-          transform 0.2s ease,
-          box-shadow 0.2s ease;
-      }
-
-      .class-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
-      }
-
-      .class-card-left {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-      }
-
-      .class-card-icon {
-        width: 52px;
-        height: 52px;
-        border-radius: 14px;
-        display: grid;
-        place-items: center;
-        color: white;
-        font-size: 1.5rem;
-        flex-shrink: 0;
-      }
-
-      .class-card-info h3 {
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: var(--text-main);
-        margin-bottom: 4px;
-      }
-
-      .class-card-info p {
-        font-size: 0.88rem;
-        color: var(--text-muted);
-        font-weight: 500;
-      }
-
-      .class-card-right {
-        display: flex;
-        align-items: center;
-        gap: 32px;
-      }
-
-      .class-time {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: var(--text-muted);
-        font-size: 0.95rem;
-        font-weight: 600;
-      }
-
-      .btn-join {
-        background: var(--primary);
-        color: white;
-        border: none;
-        padding: 10px 24px;
-        border-radius: 10px;
-        font-weight: 700;
-        font-size: 0.95rem;
-        cursor: pointer;
-        transition: background 0.2s ease;
-        text-decoration: none;
-        display: inline-block;
-      }
-
-      .btn-join:hover {
-        background: var(--primary-hover);
-      }
-
-      .btn-recording {
-        background: #e2e8f0;
-        color: #334155;
-      }
-
-      .btn-recording:hover {
-        background: #cbd5e1;
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
       }
 
       @media (max-width: 1200px) {
         .stats-grid {
-          grid-template-columns: repeat(2, 1fr);
+          grid-template-columns: repeat(3, 1fr);
+        }
+        .analytics-grid {
+          grid-template-columns: 1fr;
         }
       }
 
@@ -540,20 +741,11 @@
         .stats-grid {
           grid-template-columns: 1fr;
         }
-        .class-card {
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 16px;
-        }
-        .class-card-right {
-          width: 100%;
-          justify-content: space-between;
-        }
       }
     </style>
   </head>
   <body>
-    <!-- FIXED SIDEBAR (280px) -->
+    <!-- FIXED SIDEBAR (Identical 280px dimensions from Material page) -->
     <aside class="sidebar">
       <div>
         <div class="sidebar-brand">
@@ -577,12 +769,12 @@
               ><span class="nav-icon">📁</span> Materials</a
             >
           </li>
-          <li class="nav-item">
+          <li class="nav-item active">
             <a href="/teacher_content/quizzes.html"
               ><span class="nav-icon">📝</span> Quizzes</a
             >
           </li>
-          <li class="nav-item active">
+          <li class="nav-item">
             <a href="/teacher_content/live_classes.html"
               ><span class="nav-icon">📹</span> Live Classes</a
             >
@@ -627,7 +819,7 @@
           >
         </li>
         <li class="nav-item">
-          <a href="/teacher_content/help.html"
+          <a href="/teacher_content/help_support.html"
             ><span class="nav-icon">❓</span> Help & Support</a
           >
         </li>
@@ -645,12 +837,7 @@
       <header class="header">
         <div class="global-search">
           <span>🔍</span>
-          <input
-            type="text"
-            id="globalSearchInput"
-            placeholder="Search live classes..."
-            onkeyup="filterLiveClasses()"
-          />
+          <input type="text" placeholder="Search anything..." />
         </div>
 
         <div class="user-profile-bar">
@@ -677,284 +864,526 @@
         <!-- PAGE TITLE & ACTIONS -->
         <div class="page-header">
           <div class="page-title">
-            <h1>Live Classes</h1>
-            <p>
-              Schedule, manage and conduct real-time online sessions for your
-              subjects.
-            </p>
+            <h1>Quizzes</h1>
+            <p>Create, manage and analyze quizzes for your students.</p>
           </div>
           <div class="action-buttons">
-            <button class="btn-primary" onclick="scheduleClassPrompt()">
-              ➕ Schedule Class
-            </button>
-            <button class="btn-secondary">📹 Class Recordings</button>
+            <button class="btn-primary">➕ Create Quiz</button>
+            <button class="btn-secondary">📖 Question Bank</button>
           </div>
         </div>
 
         <!-- METRICS GRID -->
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-icon" style="background: #6366f1">📅</div>
+            <div class="stat-icon" style="background: #8b5cf6">📄</div>
             <div>
-              <div class="stat-val" id="statUpcoming">4</div>
-              <div class="stat-lbl">Upcoming Classes</div>
+              <div class="stat-val">18</div>
+              <div class="stat-lbl">Total Quizzes</div>
+              <div class="stat-trend" style="color: #8b5cf6">+2 this week</div>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon" style="background: #10b981">✅</div>
+            <div class="stat-icon" style="background: #3b82f6">🚀</div>
             <div>
-              <div class="stat-val" id="statCompleted">24</div>
-              <div class="stat-lbl">Completed Sessions</div>
+              <div class="stat-val">12</div>
+              <div class="stat-lbl">Published</div>
+              <div class="stat-trend" style="color: #3b82f6">+2 this week</div>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon" style="background: #00818a">👥</div>
+            <div class="stat-icon" style="background: #10b981">✏️</div>
             <div>
-              <div class="stat-val" id="statAttendees">310</div>
-              <div class="stat-lbl">Total Attendees</div>
+              <div class="stat-val">6</div>
+              <div class="stat-lbl">Drafts</div>
+              <div class="stat-trend" style="color: #10b981">+1 this week</div>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon" style="background: #f59e0b">⏱️</div>
+            <div class="stat-icon" style="background: #f59e0b">📊</div>
             <div>
-              <div class="stat-val" id="statHours">48 hrs</div>
-              <div class="stat-lbl">Stream Time</div>
+              <div class="stat-val">243</div>
+              <div class="stat-lbl">Total Responses</div>
+              <div class="stat-trend" style="color: #f59e0b">+28 this week</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #0ea5e9">📈</div>
+            <div>
+              <div class="stat-val">72%</div>
+              <div class="stat-lbl">Average Score</div>
+              <div class="stat-trend" style="color: #0ea5e9">+5% this week</div>
             </div>
           </div>
         </div>
 
-        <!-- MAIN LIVE CLASSES SECTION -->
-        <div class="live-classes-section">
+        <!-- MAIN TABLE SECTION -->
+        <div class="table-section">
           <div class="table-toolbar">
             <div class="tabs">
-              <span class="tab active" onclick="filterTab('Upcoming', this)"
-                >Upcoming</span
-              >
-              <span class="tab" onclick="filterTab('Previous', this)"
-                >Previous</span
-              >
+              <span class="tab active">All Quizzes</span>
+              <span class="tab">Published</span>
+              <span class="tab">Drafts</span>
+              <span class="tab">Scheduled</span>
+              <span class="tab">Archived</span>
             </div>
-            <a href="#" class="view-schedule-link">View schedule &rarr;</a>
+            <div class="filter-controls">
+              <input
+                type="text"
+                placeholder="Search quizzes..."
+                class="search-input-sm"
+              />
+              <button class="btn-filter">🌪️ Filter</button>
+              <select class="select-sort">
+                <option>Sort by: Recent</option>
+              </select>
+            </div>
           </div>
 
-          <div class="live-classes-list" id="classesList">
-            <!-- Live class cards dynamically populated via Supabase / JavaScript -->
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Quiz Title</th>
+                <th>Class</th>
+                <th>Subject</th>
+                <th>Questions</th>
+                <th>Responses</th>
+                <th>Average Score</th>
+                <th>Status</th>
+                <th>Created On</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <div class="item-title">
+                    <div class="item-icon" style="background: #6366f1">⚛️</div>
+                    <div>
+                      <div class="quiz-title-text">Electrostatics - Quiz 1</div>
+                      <div class="quiz-subtitle-text">
+                        Chapter 1 - Electric Charges
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td>Class 12</td>
+                <td>Physics</td>
+                <td>15</td>
+                <td>28</td>
+                <td>
+                  <div class="progress-bar-container">
+                    <span style="font-weight: 700; font-size: 0.85rem"
+                      >78%</span
+                    >
+                    <div class="progress-bar">
+                      <div
+                        class="progress-fill"
+                        style="width: 78%; background: #6366f1"
+                      ></div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge-status status-published">Published</span>
+                </td>
+                <td>
+                  16 May 2025 <br /><small style="color: var(--text-muted)"
+                    >10:30 AM</small
+                  >
+                </td>
+                <td><div class="action-icons">👁️ &nbsp; ⚙️</div></td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="item-title">
+                    <div class="item-icon" style="background: #10b981">🧪</div>
+                    <div>
+                      <div class="quiz-title-text">Chemical Bonding Basics</div>
+                      <div class="quiz-subtitle-text">
+                        Chapter 3 - Chemical Bonding
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td>Class 12</td>
+                <td>Chemistry</td>
+                <td>20</td>
+                <td>30</td>
+                <td>
+                  <div class="progress-bar-container">
+                    <span style="font-weight: 700; font-size: 0.85rem"
+                      >72%</span
+                    >
+                    <div class="progress-bar">
+                      <div
+                        class="progress-fill"
+                        style="width: 72%; background: #10b981"
+                      ></div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge-status status-published">Published</span>
+                </td>
+                <td>
+                  15 May 2025 <br /><small style="color: var(--text-muted)"
+                    >02:15 PM</small
+                  >
+                </td>
+                <td><div class="action-icons">👁️ &nbsp; ⚙️</div></td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="item-title">
+                    <div class="item-icon" style="background: #f59e0b">📐</div>
+                    <div>
+                      <div class="quiz-title-text">
+                        Integration - Practice Quiz
+                      </div>
+                      <div class="quiz-subtitle-text">
+                        Chapter 7 - Integration
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td>Class 12</td>
+                <td>Mathematics</td>
+                <td>10</td>
+                <td>25</td>
+                <td>
+                  <div class="progress-bar-container">
+                    <span style="font-weight: 700; font-size: 0.85rem"
+                      >65%</span
+                    >
+                    <div class="progress-bar">
+                      <div
+                        class="progress-fill"
+                        style="width: 65%; background: #f59e0b"
+                      ></div>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="badge-status status-draft">Draft</span></td>
+                <td>
+                  14 May 2025 <br /><small style="color: var(--text-muted)"
+                    >11:20 AM</small
+                  >
+                </td>
+                <td><div class="action-icons">✏️ &nbsp; ⚙️</div></td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="item-title">
+                    <div class="item-icon" style="background: #0ea5e9">📘</div>
+                    <div>
+                      <div class="quiz-title-text">English Grammar - Quiz</div>
+                      <div class="quiz-subtitle-text">
+                        Chapter 2 - Parts of Speech
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td>Class 10</td>
+                <td>English</td>
+                <td>15</td>
+                <td>32</td>
+                <td>
+                  <div class="progress-bar-container">
+                    <span style="font-weight: 700; font-size: 0.85rem"
+                      >80%</span
+                    >
+                    <div class="progress-bar">
+                      <div
+                        class="progress-fill"
+                        style="width: 80%; background: #0ea5e9"
+                      ></div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge-status status-published">Published</span>
+                </td>
+                <td>
+                  13 May 2025 <br /><small style="color: var(--text-muted)"
+                    >09:45 AM</small
+                  >
+                </td>
+                <td><div class="action-icons">👁️ &nbsp; ⚙️</div></td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="item-title">
+                    <div class="item-icon" style="background: #ef4444">❓</div>
+                    <div>
+                      <div class="quiz-title-text">Chapter 1 Quiz - Number</div>
+                      <div class="quiz-subtitle-text">Number System</div>
+                    </div>
+                  </div>
+                </td>
+                <td>Class 9</td>
+                <td>Mathematics</td>
+                <td>12</td>
+                <td>20</td>
+                <td>
+                  <div class="progress-bar-container">
+                    <span style="font-weight: 700; font-size: 0.85rem"
+                      >68%</span
+                    >
+                    <div class="progress-bar">
+                      <div
+                        class="progress-fill"
+                        style="width: 68%; background: #ef4444"
+                      ></div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge-status status-published">Published</span>
+                </td>
+                <td>
+                  12 May 2025 <br /><small style="color: var(--text-muted)"
+                    >04:30 PM</small
+                  >
+                </td>
+                <td><div class="action-icons">👁️ &nbsp; ⚙️</div></td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="item-title">
+                    <div class="item-icon" style="background: #8b5cf6">⏱️</div>
+                    <div>
+                      <div class="quiz-title-text">Physics - Motion Quiz</div>
+                      <div class="quiz-subtitle-text">
+                        Chapter 2 - Kinematics
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td>Class 11</td>
+                <td>Physics</td>
+                <td>18</td>
+                <td>27</td>
+                <td>
+                  <div class="progress-bar-container">
+                    <span style="font-weight: 700; font-size: 0.85rem"
+                      >74%</span
+                    >
+                    <div class="progress-bar">
+                      <div
+                        class="progress-fill"
+                        style="width: 74%; background: #8b5cf6"
+                      ></div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge-status status-scheduled">Scheduled</span>
+                </td>
+                <td>
+                  18 May 2025 <br /><small style="color: var(--text-muted)"
+                    >10:00 AM</small
+                  >
+                </td>
+                <td><div class="action-icons">📅 &nbsp; ⚙️</div></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="pagination-bar">
+            <div>Showing 1 to 6 of 18 quizzes</div>
+            <div class="page-controls">
+              <span class="page-btn">‹</span>
+              <span class="page-btn active">1</span>
+              <span class="page-btn">2</span>
+              <span class="page-btn">3</span>
+              <span class="page-btn">›</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ANALYTICS LOWER ROW (Matching screenshot exactly) -->
+        <div class="analytics-grid">
+          <!-- Quiz Performance Overview -->
+          <div class="analytics-card">
+            <div class="analytics-header">
+              <h4>Quiz Performance Overview</h4>
+              <select
+                class="select-sort"
+                style="padding: 4px 8px; font-size: 0.8rem"
+              >
+                <option>This Week</option>
+              </select>
+            </div>
+            <div>
+              <div style="font-size: 0.8rem; color: var(--text-muted)">
+                Average Score
+              </div>
+              <div style="font-size: 1.5rem; font-weight: 800">72%</div>
+              <div
+                style="
+                  font-size: 0.78rem;
+                  color: #10b981;
+                  font-weight: 700;
+                  margin-bottom: 8px;
+                "
+              >
+                +5% from last week
+              </div>
+            </div>
+            <div class="chart-container">
+              <svg
+                class="wave-chart"
+                viewBox="0 0 300 100"
+                preserveAspectRatio="none"
+              >
+                <defs>
+                  <linearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.4" />
+                    <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0" />
+                  </linearGradient>
+                </defs>
+                <path
+                  d="M 0 70 Q 50 80, 100 50 T 200 40 T 300 10 L 300 100 L 0 100 Z"
+                  fill="url(#grad)"
+                />
+                <path
+                  d="M 0 70 Q 50 80, 100 50 T 200 40 T 300 10"
+                  fill="none"
+                  stroke="#8b5cf6"
+                  stroke-width="3"
+                />
+              </svg>
+            </div>
+          </div>
+
+          <!-- Top Performing Classes -->
+          <div class="analytics-card">
+            <div class="analytics-header">
+              <h4>Top Performing Classes</h4>
+              <a
+                href="#"
+                style="
+                  font-size: 0.8rem;
+                  color: #4f46e5;
+                  text-decoration: none;
+                  font-weight: 700;
+                "
+                >View all</a
+              >
+            </div>
+            <div class="class-perf-list">
+              <div class="class-perf-item">
+                <div class="class-icon" style="background: #8b5cf6">⚛️</div>
+                <div class="class-info">
+                  <div class="class-name-row">
+                    <span>Class 12 Science</span>
+                    <span class="class-score">Avg Score: 82%</span>
+                  </div>
+                  <div class="progress-bar">
+                    <div
+                      class="progress-fill"
+                      style="width: 82%; background: #8b5cf6"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+              <div class="class-perf-item">
+                <div class="class-icon" style="background: #3b82f6">📘</div>
+                <div class="class-info">
+                  <div class="class-name-row">
+                    <span>Class 10</span>
+                    <span class="class-score">Avg Score: 75%</span>
+                  </div>
+                  <div class="progress-bar">
+                    <div
+                      class="progress-fill"
+                      style="width: 75%; background: #3b82f6"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+              <div class="class-perf-item">
+                <div class="class-icon" style="background: #10b981">🧪</div>
+                <div class="class-info">
+                  <div class="class-name-row">
+                    <span>Class 11</span>
+                    <span class="class-score">Avg Score: 70%</span>
+                  </div>
+                  <div class="progress-bar">
+                    <div
+                      class="progress-fill"
+                      style="width: 70%; background: #10b981"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+              <div class="class-perf-item">
+                <div class="class-icon" style="background: #f59e0b">📐</div>
+                <div class="class-info">
+                  <div class="class-name-row">
+                    <span>Class 9</span>
+                    <span class="class-score">Avg Score: 62%</span>
+                  </div>
+                  <div class="progress-bar">
+                    <div
+                      class="progress-fill"
+                      style="width: 62%; background: #f59e0b"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Question Distribution -->
+          <div class="analytics-card">
+            <div class="analytics-header">
+              <h4>Question Distribution</h4>
+            </div>
+            <div class="donut-wrapper">
+              <div class="donut-chart">
+                <div class="donut-center">
+                  <span class="donut-label">Total</span>
+                  <span class="donut-total">243</span>
+                </div>
+              </div>
+              <div class="legend-list">
+                <div class="legend-item">
+                  <div class="legend-dot-label">
+                    <span class="dot" style="background: #3b82f6"></span> Easy
+                  </div>
+                  <span>35% (85)</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-dot-label">
+                    <span class="dot" style="background: #38bdf8"></span> Medium
+                  </div>
+                  <span>45% (109)</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-dot-label">
+                    <span class="dot" style="background: #ef4444"></span> Hard
+                  </div>
+                  <span>20% (49)</span>
+                </div>
+              </div>
+            </div>
+            <div style="text-align: right; margin-top: 12px">
+              <a
+                href="#"
+                style="
+                  font-size: 0.8rem;
+                  color: #4f46e5;
+                  text-decoration: none;
+                  font-weight: 700;
+                "
+                >View Details →</a
+              >
+            </div>
           </div>
         </div>
       </main>
     </div>
-
-    <script>
-      /* ── SUPABASE CONFIGURATION ── */
-      const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
-      const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
-
-      // Initialize Supabase Client
-      const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-      // Initial dataset matching image content
-      const fallbackClasses = [
-        {
-          id: 1,
-          title: "Physics - Electromagnetism",
-          instructor: "Mr. Sharma",
-          datetime: "17 May, 10:00 AM",
-          status: "Upcoming",
-          icon: "⚛️",
-          color: "#3b82f6",
-        },
-        {
-          id: 2,
-          title: "Mathematics - Calculus",
-          instructor: "Mr. Verma",
-          datetime: "18 May, 12:30 PM",
-          status: "Upcoming",
-          icon: "🧪",
-          color: "#10b981",
-        },
-        {
-          id: 3,
-          title: "Chemistry - Organic Chemistry",
-          instructor: "Mr. Mehta",
-          datetime: "19 May, 02:00 PM",
-          status: "Upcoming",
-          icon: "📐",
-          color: "#0ea5e9",
-        },
-        {
-          id: 4,
-          title: "Computer Science - Python",
-          instructor: "Mr. Gupta",
-          datetime: "20 May, 04:00 PM",
-          status: "Upcoming",
-          icon: "</>",
-          color: "#8b5cf6",
-        },
-        {
-          id: 5,
-          title: "Physics - Mechanics",
-          instructor: "Mr. Sharma",
-          datetime: "10 May, 10:00 AM",
-          status: "Previous",
-          icon: "⚛️",
-          color: "#6366f1",
-        },
-      ];
-
-      let currentClasses = [];
-      let currentFilterTab = "Upcoming";
-
-      /* Fetch Classes with Supabase Logic & Fallback */
-      async function loadClasses() {
-        try {
-          let { data: classes, error } = await supabase
-            .from("live_classes")
-            .select("*")
-            .order("id", { ascending: true });
-
-          if (error || !classes || classes.length === 0) {
-            currentClasses = [...fallbackClasses];
-          } else {
-            currentClasses = classes;
-          }
-        } catch (err) {
-          console.warn(
-            "Database connection pending. Using local UI dataset:",
-            err,
-          );
-          currentClasses = [...fallbackClasses];
-        }
-
-        renderClasses();
-        updateMetrics();
-      }
-
-      /* Render Live Class Cards */
-      function renderClasses() {
-        const container = document.getElementById("classesList");
-        const searchQuery = document
-          .getElementById("globalSearchInput")
-          .value.toLowerCase();
-
-        container.innerHTML = "";
-
-        let filtered = currentClasses.filter((c) => {
-          const matchesTab = c.status === currentFilterTab;
-          const matchesQuery =
-            c.title.toLowerCase().includes(searchQuery) ||
-            c.instructor.toLowerCase().includes(searchQuery);
-          return matchesTab && matchesQuery;
-        });
-
-        if (filtered.length === 0) {
-          container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 40px;">No ${currentFilterTab.toLowerCase()} classes found.</div>`;
-          return;
-        }
-
-        filtered.forEach((item) => {
-          const card = document.createElement("div");
-          card.className = "class-card";
-
-          const buttonText =
-            item.status === "Upcoming" ? "Join Class" : "Watch Recording";
-          const buttonClass =
-            item.status === "Upcoming" ? "btn-join" : "btn-join btn-recording";
-
-          card.innerHTML = `
-          <div class="class-card-left">
-            <div class="class-card-icon" style="background: ${item.color || "#4f46e5"};">
-              ${item.icon || "📹"}
-            </div>
-            <div class="class-card-info">
-              <h3>${item.title}</h3>
-              <p>By ${item.instructor}</p>
-            </div>
-          </div>
-          <div class="class-card-right">
-            <div class="class-time">
-              📅 <span>${item.datetime}</span>
-            </div>
-            <button class="${buttonClass}" onclick="handleClassClick('${item.title}')">${buttonText}</button>
-          </div>
-        `;
-          container.appendChild(card);
-        });
-      }
-
-      /* Tab Switcher */
-      function filterTab(tabName, element) {
-        currentFilterTab = tabName;
-        document
-          .querySelectorAll(".tabs .tab")
-          .forEach((t) => t.classList.remove("active"));
-        element.classList.add("active");
-        renderClasses();
-      }
-
-      /* Search Filter */
-      function filterLiveClasses() {
-        renderClasses();
-      }
-
-      /* Update Metrics */
-      function updateMetrics() {
-        const upcoming = currentClasses.filter(
-          (c) => c.status === "Upcoming",
-        ).length;
-        const completed = currentClasses.filter(
-          (c) => c.status === "Previous",
-        ).length;
-
-        document.getElementById("statUpcoming").innerText = upcoming;
-        document.getElementById("statCompleted").innerText = completed;
-      }
-
-      /* Prompt to Schedule Class */
-      async function scheduleClassPrompt() {
-        const title = prompt(
-          "Enter Class Title:",
-          "Physics - Quantum Mechanics",
-        );
-        if (!title) return;
-
-        const instructor = prompt("Enter Instructor Name:", "Mr. Sharma");
-        const datetime = prompt("Enter Date & Time:", "21 May, 11:00 AM");
-
-        const newClass = {
-          title: title,
-          instructor: instructor || "Instructor",
-          datetime: datetime || "TBD",
-          status: "Upcoming",
-          icon: "⚛️",
-          color: "#3b82f6",
-        };
-
-        try {
-          const { data, error } = await supabase
-            .from("live_classes")
-            .insert([newClass])
-            .select();
-          if (error) throw error;
-          if (data && data[0]) currentClasses.push(data[0]);
-          else currentClasses.push(newClass);
-        } catch (err) {
-          console.warn("Supabase insert fallback active:", err);
-          newClass.id = Date.now();
-          currentClasses.push(newClass);
-        }
-
-        renderClasses();
-        updateMetrics();
-      }
-
-      function handleClassClick(title) {
-        alert(`Action triggered for: ${title}`);
-      }
-
-      // Initialize Page
-      document.addEventListener("DOMContentLoaded", () => {
-        loadClasses();
-      });
-    </script>
   </body>
 </html>
