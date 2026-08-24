@@ -1,0 +1,1680 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Learning DC — Downloads</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+      :root {
+        /* Sidebar Colors matching Calendar UI */
+        --sidebar-bg: #031b2e;
+        --sidebar-text: #a0aec0;
+        --sidebar-text-active: #ffffff;
+        --sidebar-active-bg: #4f46e5;
+        --sidebar-hover-bg: #0a2540;
+
+        /* Main Page Gradient Background matching Calendar & Announcement UI */
+        --main-bg: linear-gradient(
+          135deg,
+          #e3f2fd 0%,
+          #e0f2f1 50%,
+          #e8f5e9 100%
+        );
+        --surface: #ffffff;
+        --surface-border: #e2e8f0;
+
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+
+        --primary: #6366f1;
+        --primary-hover: #4f46e5;
+        --danger: #ef4444;
+
+        --radius: 18px;
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+        --font: "DM Sans", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font);
+        background: var(--main-bg);
+        background-attachment: fixed;
+        color: var(--text-main);
+        display: flex;
+        min-height: 100vh;
+        overflow-x: hidden;
+        font-size: 16px;
+      }
+
+      /* Fixed Sidebar (280px) */
+      .sidebar {
+        width: 280px;
+        height: 100vh;
+        background-color: var(--sidebar-bg);
+        color: var(--sidebar-text);
+        position: fixed;
+        top: 0;
+        left: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 24px 18px;
+        z-index: 100;
+        overflow-y: auto;
+      }
+
+      .sidebar-brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 1.35rem;
+        padding: 6px 8px 24px 8px;
+      }
+
+      .brand-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #00818a, #6366f1);
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-weight: bold;
+        font-size: 1.2rem;
+      }
+
+      .nav-menu {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .nav-item a {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 13px 18px;
+        color: var(--sidebar-text);
+        text-decoration: none;
+        font-size: 1.05rem;
+        font-weight: 600;
+        border-radius: 14px;
+        transition: all 0.2s ease;
+        width: 100%;
+      }
+
+      .nav-item a:hover {
+        background: var(--sidebar-hover-bg);
+        color: var(--sidebar-text-active);
+      }
+
+      .nav-item.active a {
+        background: var(--sidebar-active-bg);
+        color: var(--sidebar-text-active);
+        font-weight: 700;
+      }
+
+      .nav-icon {
+        font-size: 1.3rem;
+        width: 26px;
+        display: inline-grid;
+        place-items: center;
+      }
+
+      .btn-logout-sidebar {
+        color: #f87171 !important;
+      }
+
+      .btn-logout-sidebar:hover {
+        background: rgba(239, 68, 68, 0.18) !important;
+      }
+
+      /* Main Content Wrapper */
+      .main-wrapper {
+        margin-left: 280px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        width: calc(100% - 280px);
+      }
+
+      /* Top Navigation Header */
+      .header {
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 0 40px;
+      }
+
+      .user-profile-bar {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .notif-bell {
+        position: relative;
+        background: #fff;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        box-shadow: var(--shadow-sm);
+        cursor: pointer;
+        font-size: 1.2rem;
+      }
+
+      .notif-badge {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: var(--danger);
+        color: white;
+        font-size: 0.72rem;
+        font-weight: 800;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+      }
+
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #fff;
+        padding: 6px 18px 6px 8px;
+        border-radius: 30px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .user-info {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .user-name {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .user-role {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+      }
+
+      /* Glassmorphic Canvas Container */
+      .main-box-container {
+        margin: 0 40px 32px 40px;
+        padding: 32px;
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(12px);
+        border-radius: 24px;
+        border: 1px solid var(--surface-border);
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .page-title h1 {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--text-main);
+      }
+
+      .page-title p {
+        color: var(--text-muted);
+        font-size: 1.05rem;
+        margin-top: 4px;
+      }
+
+      .btn-primary-action {
+        background: var(--primary);
+        color: #ffffff;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        transition: all 0.2s ease;
+        font-family: inherit;
+      }
+
+      .btn-primary-action:hover {
+        background: var(--primary-hover);
+        transform: translateY(-1px);
+      }
+
+      /* Metric Cards Grid */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 16px;
+      }
+
+      .stat-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 20px;
+        border: 1px solid var(--surface-border);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        color: white;
+        font-size: 1.4rem;
+        flex-shrink: 0;
+      }
+
+      .stat-val {
+        font-size: 1.7rem;
+        font-weight: 800;
+        line-height: 1.1;
+      }
+
+      .stat-lbl {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        font-weight: 600;
+        margin-top: 2px;
+      }
+
+      .stat-sub {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-weight: 700;
+        margin-top: 2px;
+      }
+
+      /* Content Layout Split */
+      .content-layout {
+        display: flex;
+        gap: 24px;
+      }
+
+      .left-section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      /* Card Box */
+      .table-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        border: 1px solid var(--surface-border);
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .table-head-title {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--text-main);
+      }
+
+      /* Filters Bar Control */
+      .filters-bar {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .search-box {
+        flex: 1;
+        position: relative;
+      }
+
+      .search-box input {
+        width: 100%;
+        padding: 10px 14px 10px 38px;
+        border-radius: 10px;
+        border: 1px solid var(--surface-border);
+        outline: none;
+        font-size: 0.9rem;
+        font-family: inherit;
+        background: #ffffff;
+      }
+
+      .search-box ::placeholder {
+        color: #94a3b8;
+      }
+
+      .search-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        font-size: 0.95rem;
+      }
+
+      .select-dropdown {
+        background: #ffffff;
+        color: var(--text-main);
+        border: 1px solid var(--surface-border);
+        padding: 9px 14px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        outline: none;
+        font-family: inherit;
+      }
+
+      .btn-today {
+        background: white;
+        border: 1px solid var(--surface-border);
+        padding: 9px 16px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        cursor: pointer;
+        color: var(--text-main);
+      }
+
+      /* Downloads Table Styling */
+      .downloads-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+      }
+
+      .downloads-table th {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        padding: 12px 10px;
+        border-bottom: 1px solid var(--surface-border);
+      }
+
+      .downloads-table td {
+        padding: 16px 10px;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.9rem;
+        vertical-align: middle;
+      }
+
+      .file-cell {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .file-icon-badge {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        color: white;
+        font-weight: 800;
+        font-size: 0.78rem;
+        flex-shrink: 0;
+      }
+
+      .icon-pdf {
+        background: #ef4444;
+      }
+      .icon-excel {
+        background: #10b981;
+      }
+      .icon-ppt {
+        background: #f97316;
+      }
+      .icon-doc {
+        background: #3b82f6;
+      }
+      .icon-video {
+        background: #8b5cf6;
+      }
+      .icon-zip {
+        background: #f59e0b;
+      }
+
+      .file-name {
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .file-sub {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+
+      .badge-cat {
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        display: inline-block;
+      }
+
+      .badge-notes {
+        background: #e0e7ff;
+        color: #4338ca;
+      }
+      .badge-syllabus {
+        background: #d1fae5;
+        color: #047857;
+      }
+      .badge-ppt {
+        background: #ffedd5;
+        color: #c2410c;
+      }
+      .badge-doc {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+      .badge-video {
+        background: #f3e8ff;
+        color: #6b21a8;
+      }
+      .badge-test {
+        background: #ffe4e6;
+        color: #be123c;
+      }
+
+      .type-text {
+        font-weight: 700;
+        font-size: 0.8rem;
+      }
+
+      .action-icons {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--text-muted);
+      }
+
+      .action-btn {
+        cursor: pointer;
+        font-size: 1.1rem;
+        transition: color 0.2s ease;
+      }
+
+      .action-btn:hover {
+        color: var(--primary);
+      }
+
+      /* Table Footer Pagination */
+      .table-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 6px;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        font-weight: 600;
+      }
+
+      .pagination {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .page-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        border: 1px solid var(--surface-border);
+        background: white;
+        color: var(--text-main);
+        font-weight: 700;
+      }
+
+      .page-btn.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+      }
+
+      /* Promotional Banner Box matching Calendar UI */
+      .bottom-banner-card {
+        background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+        border: 1px solid #c7d2fe;
+        border-radius: var(--radius);
+        padding: 24px 32px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      .banner-left {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+      }
+
+      .banner-icon-bg {
+        width: 60px;
+        height: 60px;
+        background: #818cf8;
+        border-radius: 18px;
+        display: grid;
+        place-items: center;
+        color: white;
+        font-size: 1.8rem;
+      }
+
+      .banner-text h3 {
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: #1e1b4b;
+      }
+
+      .banner-text p {
+        font-size: 0.9rem;
+        color: #4338ca;
+        margin-top: 4px;
+      }
+
+      /* Right Sidebar Widgets */
+      .right-sidebar {
+        width: 320px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .widget-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        border: 1px solid var(--surface-border);
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .widget-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .widget-head h3 {
+        font-size: 1.05rem;
+        font-weight: 800;
+      }
+
+      .widget-head-link {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--primary);
+        text-decoration: none;
+      }
+
+      /* Storage Donut Chart Simulation */
+      .storage-chart-box {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 10px 0 20px 0;
+      }
+
+      .donut-graphic {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        background: conic-gradient(
+          #6366f1 0% 43%,
+          #2563eb 43% 76%,
+          #10b981 76% 90%,
+          #f97316 90% 100%
+        );
+        display: grid;
+        place-items: center;
+      }
+
+      .donut-hole {
+        width: 95px;
+        height: 95px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+
+      .donut-value {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: var(--text-main);
+      }
+
+      .donut-sub {
+        font-size: 0.68rem;
+        color: var(--text-muted);
+        font-weight: 600;
+      }
+
+      /* Chart Legend List */
+      .legend-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .legend-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.85rem;
+      }
+
+      .legend-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-main);
+        font-weight: 700;
+      }
+
+      .legend-dot-circle {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+
+      .legend-right {
+        color: var(--text-muted);
+        font-weight: 600;
+      }
+
+      /* Top Downloads Feed */
+      .top-downloads-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .top-item {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .top-item-info h4 {
+        font-size: 0.88rem;
+        font-weight: 800;
+        color: var(--text-main);
+      }
+
+      .top-item-info p {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+
+      /* File Categories List */
+      .cat-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .cat-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.88rem;
+      }
+
+      .cat-row-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .cat-count {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        font-weight: 600;
+      }
+
+      /* Quick Guidance Box matching Calendar Tips */
+      .tips-card {
+        background: linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 100%);
+        border: 1px solid #ddd6fe;
+        border-radius: var(--radius);
+        padding: 20px;
+        display: flex;
+        gap: 14px;
+      }
+
+      .tips-icon {
+        width: 40px;
+        height: 40px;
+        background: #a855f7;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        color: white;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+      }
+
+      .tips-content h5 {
+        font-size: 0.9rem;
+        font-weight: 800;
+        color: #581c87;
+      }
+
+      .tips-content p {
+        font-size: 0.8rem;
+        color: #6b21a8;
+        margin-top: 4px;
+        line-height: 1.4;
+      }
+
+      /* Upload File Modal Popup */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(15, 23, 42, 0.4);
+        backdrop-filter: blur(4px);
+        display: none;
+        place-items: center;
+        z-index: 200;
+      }
+
+      .modal-overlay.open {
+        display: grid;
+      }
+
+      .modal-card {
+        background: white;
+        border-radius: 20px;
+        padding: 28px;
+        width: 440px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .modal-header h3 {
+        font-size: 1.2rem;
+        font-weight: 800;
+      }
+
+      .modal-close-btn {
+        background: transparent;
+        border: none;
+        font-size: 1.2rem;
+        cursor: pointer;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .form-group label {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--text-muted);
+      }
+
+      .form-control {
+        padding: 10px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--surface-border);
+        outline: none;
+        font-size: 0.9rem;
+        font-family: inherit;
+      }
+
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 8px;
+      }
+
+      .btn-modal-cancel {
+        background: #f1f5f9;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .btn-modal-submit {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      @media (max-width: 1200px) {
+        .stats-grid {
+          grid-template-columns: repeat(3, 1fr);
+        }
+        .content-layout {
+          flex-direction: column;
+        }
+        .right-sidebar {
+          width: 100%;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .sidebar {
+          display: none;
+        }
+        .main-wrapper {
+          margin-left: 0;
+          width: 100%;
+        }
+        .main-box-container {
+          margin: 0 16px 20px 16px;
+          padding: 20px;
+        }
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+        .filters-bar {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div>
+        <div class="sidebar-brand">
+          <div class="brand-icon">🎓</div>
+          <span>Smart Learning DC</span>
+        </div>
+
+        <ul class="nav-menu">
+          <li class="nav-item">
+            <a href="/teacher_content/teacher_dashboard.html"><span class="nav-icon">📊</span> Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/my_classes.html"><span class="nav-icon">🏫</span> My Classes</a>
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/students.html"><span class="nav-icon">👥</span> Students</a>
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/live_classes.html"><span class="nav-icon">📹</span> Live Classes</a>
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/materials.html"><span class="nav-icon">📁</span> Materials</a>
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/quizzes.html"><span class="nav-icon">📝</span> Quizzes</a>
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/assignments.html"><span class="nav-icon">📋</span> Assignments</a>
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/attendance.html"><span class="nav-icon">📅</span> Attendance</a>
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/student_performance.html"><span class="nav-icon">📈</span> Student Performance</a>
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/announcements.html"><span class="nav-icon">📢</span> Announcements</a>
+          </li>
+          <li class="nav-item">
+            <a href="/teacher_content/calendar.html"><span class="nav-icon">📆</span> Calendar</a>
+          </li>
+          <li class="nav-item active">
+            <a href="/teacher_content/downloads.html"><span class="nav-icon">📥</span> Downloads</a>
+          </li>
+        </ul>
+      </div>
+
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="/teacher_content/settings.html"><span class="nav-icon">⚙️</span> Settings</a>
+        </li>
+        <li class="nav-item">
+          <a href="/teacher_content/help_support.html"><span class="nav-icon">❓</span> Help & Support</a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="btn-logout-sidebar"
+            ><span class="nav-icon">🚪</span> Log out</a
+          >
+        </li>
+      </ul>
+    </aside>
+
+    <div class="main-wrapper">
+      <header class="header">
+        <div class="user-profile-bar">
+          <div class="notif-bell">
+            🔔
+            <span class="notif-badge">3</span>
+          </div>
+          <div class="user-profile">
+            <img
+              src="https://i.pravatar.cc/100?img=33"
+              alt="Ayush Kumar"
+              class="user-avatar"
+            />
+            <div class="user-info">
+              <span class="user-name">Ayush Kumar ▾</span>
+              <span class="user-role">Teacher • Subject Specialist</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="main-box-container">
+        <div class="page-header">
+          <div class="page-title">
+            <h1>Good morning, Ayush! 👋</h1>
+            <p>
+              Access and download all your important study materials and files
+              in one place.
+            </p>
+          </div>
+          <button class="btn-primary-action" onclick="openUploadModal()">
+            <span>📤</span> Upload New File
+          </button>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #6366f1">📄</div>
+            <div>
+              <div class="stat-val">128</div>
+              <div class="stat-lbl">Total Files</div>
+              <div class="stat-sub">All time</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #2563eb">📥</div>
+            <div>
+              <div class="stat-val">2.4 GB</div>
+              <div class="stat-lbl">Total Downloads</div>
+              <div class="stat-sub">All time</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #10b981">📁</div>
+            <div>
+              <div class="stat-val">16</div>
+              <div class="stat-lbl">Categories</div>
+              <div class="stat-sub">Organized files</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #f97316">📆</div>
+            <div>
+              <div class="stat-val">24</div>
+              <div class="stat-lbl">Recently Added</div>
+              <div class="stat-sub">This month</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #0f766e">⭐</div>
+            <div>
+              <div class="stat-val">98%</div>
+              <div class="stat-lbl">Storage Used</div>
+              <div class="stat-sub">4.9 GB of 5 GB</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="content-layout">
+          <div class="left-section">
+            <div class="table-card">
+              <div class="table-head-title">All Downloads</div>
+
+              <div class="filters-bar">
+                <div class="search-box">
+                  <span class="search-icon">🔍</span>
+                  <input
+                    type="text"
+                    id="fileSearchInput"
+                    placeholder="Search files..."
+                    oninput="filterFiles()"
+                  />
+                </div>
+
+                <select
+                  class="select-dropdown"
+                  id="categoryFilter"
+                  onchange="filterFiles()"
+                >
+                  <option value="All">All Categories</option>
+                  <option value="Notes">Notes</option>
+                  <option value="Syllabus">Syllabus</option>
+                  <option value="Presentations">Presentations</option>
+                  <option value="Documents">Documents</option>
+                  <option value="Videos">Videos</option>
+                  <option value="Question Papers">Question Papers</option>
+                </select>
+
+                <select
+                  class="select-dropdown"
+                  id="typeFilter"
+                  onchange="filterFiles()"
+                >
+                  <option value="All">All File Types</option>
+                  <option value="PDF">PDF</option>
+                  <option value="Excel">Excel</option>
+                  <option value="PPTX">PPTX</option>
+                  <option value="DOCX">DOCX</option>
+                  <option value="MP4">MP4</option>
+                  <option value="ZIP">ZIP</option>
+                </select>
+
+                <button class="btn-today">🌪️ Filter</button>
+              </div>
+
+              <table class="downloads-table">
+                <thead>
+                  <tr>
+                    <th>File Name ▾</th>
+                    <th>Category</th>
+                    <th>File Type</th>
+                    <th>Size</th>
+                    <th>Downloads</th>
+                    <th>Added On</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="downloadsTableBody"></tbody>
+              </table>
+
+              <div class="table-footer">
+                <span id="showingCountText">Showing 1 to 8 of 128 files</span>
+                <div class="pagination">
+                  <div class="page-btn">‹</div>
+                  <div class="page-btn active">1</div>
+                  <div class="page-btn">2</div>
+                  <div class="page-btn">3</div>
+                  <div class="page-btn">...</div>
+                  <div class="page-btn">16</div>
+                  <div class="page-btn">›</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bottom-banner-card">
+              <div class="banner-left">
+                <div class="banner-icon-bg">📥</div>
+                <div class="banner-text">
+                  <h3>Sync & Manage Your Downloads</h3>
+                  <p>
+                    Keep track of class syllabus, study materials, lectures, and
+                    resources seamlessly in real time.
+                  </p>
+                </div>
+              </div>
+              <button class="btn-primary-action" onclick="openUploadModal()">
+                <span>📤</span> Upload New File
+              </button>
+            </div>
+          </div>
+
+          <div class="right-sidebar">
+            <div class="widget-card">
+              <div class="widget-head">
+                <h3>Storage Overview</h3>
+                <a href="#" class="widget-head-link">View Details</a>
+              </div>
+
+              <div class="storage-chart-box">
+                <div class="donut-graphic">
+                  <div class="donut-hole">
+                    <div class="donut-value">4.9 GB</div>
+                    <div class="donut-sub">of 5 GB Used</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="legend-list">
+                <div class="legend-row">
+                  <div class="legend-left">
+                    <div
+                      class="legend-dot-circle"
+                      style="background: #6366f1"
+                    ></div>
+                    <span>Documents</span>
+                  </div>
+                  <div class="legend-right">2.1 GB (43%)</div>
+                </div>
+
+                <div class="legend-row">
+                  <div class="legend-left">
+                    <div
+                      class="legend-dot-circle"
+                      style="background: #2563eb"
+                    ></div>
+                    <span>Videos</span>
+                  </div>
+                  <div class="legend-right">1.6 GB (33%)</div>
+                </div>
+
+                <div class="legend-row">
+                  <div class="legend-left">
+                    <div
+                      class="legend-dot-circle"
+                      style="background: #10b981"
+                    ></div>
+                    <span>Images</span>
+                  </div>
+                  <div class="legend-right">0.7 GB (14%)</div>
+                </div>
+
+                <div class="legend-row">
+                  <div class="legend-left">
+                    <div
+                      class="legend-dot-circle"
+                      style="background: #f97316"
+                    ></div>
+                    <span>Others</span>
+                  </div>
+                  <div class="legend-right">0.5 GB (10%)</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="widget-card">
+              <div class="widget-head">
+                <h3>Top Downloaded Files</h3>
+                <a href="#" class="widget-head-link">View all</a>
+              </div>
+
+              <div class="top-downloads-list">
+                <div class="top-item">
+                  <div class="file-icon-badge icon-pdf">PDF</div>
+                  <div class="top-item-info">
+                    <h4>Physics Chapter 2 Notes.pdf</h4>
+                    <p>156 downloads</p>
+                  </div>
+                </div>
+
+                <div class="top-item">
+                  <div class="file-icon-badge icon-video">MP4</div>
+                  <div class="top-item-info">
+                    <h4>Electromagnetic Waves Lecture.mp4</h4>
+                    <p>203 downloads</p>
+                  </div>
+                </div>
+
+                <div class="top-item">
+                  <div class="file-icon-badge icon-ppt">PPTX</div>
+                  <div class="top-item-info">
+                    <h4>Chemical Reactions Presentation.pptx</h4>
+                    <p>132 downloads</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="widget-card">
+              <div class="widget-head">
+                <h3>File Categories</h3>
+                <a href="#" class="widget-head-link">View all</a>
+              </div>
+
+              <div class="cat-list">
+                <div class="cat-row">
+                  <div class="cat-row-left">
+                    <span style="color: #6366f1">📁</span>
+                    <span>Notes</span>
+                  </div>
+                  <span class="cat-count">28 files</span>
+                </div>
+
+                <div class="cat-row">
+                  <div class="cat-row-left">
+                    <span style="color: #6366f1">📁</span>
+                    <span>Syllabus</span>
+                  </div>
+                  <span class="cat-count">15 files</span>
+                </div>
+
+                <div class="cat-row">
+                  <div class="cat-row-left">
+                    <span style="color: #6366f1">📁</span>
+                    <span>Question Papers</span>
+                  </div>
+                  <span class="cat-count">22 files</span>
+                </div>
+
+                <div class="cat-row">
+                  <div class="cat-row-left">
+                    <span style="color: #6366f1">📁</span>
+                    <span>Presentations</span>
+                  </div>
+                  <span class="cat-count">18 files</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="tips-card">
+              <div class="tips-icon">💡</div>
+              <div class="tips-content">
+                <h5>Quick Tips</h5>
+                <p>
+                  <strong>Tip:</strong> Organize your files into clear
+                  categories for easy student access and faster search!
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div class="modal-overlay" id="uploadFileModal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Upload New File</h3>
+          <button class="modal-close-btn" onclick="closeUploadModal()">
+            ✕
+          </button>
+        </div>
+
+        <div class="form-group">
+          <label>File Name</label>
+          <input
+            type="text"
+            id="inputFileName"
+            class="form-control"
+            placeholder="e.g. Chapter 3 Notes.pdf"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Description / Subtitle</label>
+          <input
+            type="text"
+            id="inputFileSub"
+            class="form-control"
+            placeholder="e.g. Gravitation Class 9"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Category</label>
+          <select id="inputCategory" class="form-control">
+            <option value="Notes">Notes</option>
+            <option value="Syllabus">Syllabus</option>
+            <option value="Presentations">Presentations</option>
+            <option value="Documents">Documents</option>
+            <option value="Videos">Videos</option>
+            <option value="Question Papers">Question Papers</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>File Type</label>
+          <select id="inputFileType" class="form-control">
+            <option value="PDF">PDF</option>
+            <option value="Excel">Excel</option>
+            <option value="PPTX">PPTX</option>
+            <option value="DOCX">DOCX</option>
+            <option value="MP4">MP4</option>
+            <option value="ZIP">ZIP</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>File Size</label>
+          <input
+            type="text"
+            id="inputFileSize"
+            class="form-control"
+            placeholder="e.g. 2.5 MB"
+          />
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn-modal-cancel" onclick="closeUploadModal()">
+            Cancel
+          </button>
+          <button class="btn-modal-submit" onclick="submitNewFile()">
+            Upload File
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      /* Supabase Credentials Setup */
+      const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
+      const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+      const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      /* Initial Dataset */
+      const initialFiles = [
+        {
+          id: "1",
+          name: "Physics Chapter 2 Notes.pdf",
+          sub: "Force and Laws of Motion",
+          category: "Notes",
+          type: "PDF",
+          size: "2.4 MB",
+          downloads: 156,
+          date: "17 May 2025",
+          time: "10:30 AM",
+        },
+        {
+          id: "2",
+          name: "Class 9 Science Syllabus.xlsx",
+          sub: "Academic Year 2025-26",
+          category: "Syllabus",
+          type: "Excel",
+          size: "520 KB",
+          downloads: 89,
+          date: "16 May 2025",
+          time: "02:15 PM",
+        },
+        {
+          id: "3",
+          name: "Chemical Reactions Presentation.pptx",
+          sub: "Class 10 - Chapter 1",
+          category: "Presentations",
+          type: "PPTX",
+          size: "5.1 MB",
+          downloads: 132,
+          date: "15 May 2025",
+          time: "11:45 AM",
+        },
+        {
+          id: "4",
+          name: "Science Lab Manual.docx",
+          sub: "Practical Guidelines",
+          category: "Documents",
+          type: "DOCX",
+          size: "1.2 MB",
+          downloads: 74,
+          date: "14 May 2025",
+          time: "09:20 AM",
+        },
+        {
+          id: "5",
+          name: "Electromagnetic Waves Lecture.mp4",
+          sub: "Video Lecture",
+          category: "Videos",
+          type: "MP4",
+          size: "45.6 MB",
+          downloads: 203,
+          date: "13 May 2025",
+          time: "04:30 PM",
+        },
+        {
+          id: "6",
+          name: "Monthly Test Paper - May 2025.pdf",
+          sub: "Class 9 (Science)",
+          category: "Question Papers",
+          type: "PDF",
+          size: "1.8 MB",
+          downloads: 178,
+          date: "12 May 2025",
+          time: "08:50 AM",
+        },
+        {
+          id: "7",
+          name: "Reference Images Pack.zip",
+          sub: "Diagrams and Charts",
+          category: "Resources",
+          type: "ZIP",
+          size: "12.7 MB",
+          downloads: 92,
+          date: "11 May 2025",
+          time: "03:10 PM",
+        },
+        {
+          id: "8",
+          name: "Student Performance May.xlsx",
+          sub: "Internal Assessment",
+          category: "Reports",
+          type: "Excel",
+          size: "300 KB",
+          downloads: 61,
+          date: "10 May 2025",
+          time: "10:05 AM",
+        },
+      ];
+
+      let filesData = [];
+
+      async function fetchFiles() {
+        try {
+          let { data, error } = await supabase
+            .from("downloads_files")
+            .select("*");
+          if (error || !data || data.length === 0) {
+            filesData = initialFiles;
+          } else {
+            filesData = data;
+          }
+        } catch (err) {
+          filesData = initialFiles;
+        }
+        renderTable(filesData);
+      }
+
+      function renderTable(list) {
+        const tbody = document.getElementById("downloadsTableBody");
+        tbody.innerHTML = "";
+
+        list.forEach((file) => {
+          const tr = document.createElement("tr");
+
+          let iconClass = "icon-pdf";
+          if (file.type === "Excel") iconClass = "icon-excel";
+          if (file.type === "PPTX") iconClass = "icon-ppt";
+          if (file.type === "DOCX") iconClass = "icon-doc";
+          if (file.type === "MP4") iconClass = "icon-video";
+          if (file.type === "ZIP") iconClass = "icon-zip";
+
+          let badgeClass = "badge-notes";
+          if (file.category === "Syllabus") badgeClass = "badge-syllabus";
+          if (file.category === "Presentations") badgeClass = "badge-ppt";
+          if (file.category === "Documents") badgeClass = "badge-doc";
+          if (file.category === "Videos") badgeClass = "badge-video";
+          if (file.category === "Question Papers") badgeClass = "badge-test";
+
+          tr.innerHTML = `
+          <td>
+            <div class="file-cell">
+              <div class="file-icon-badge ${iconClass}">${file.type}</div>
+              <div>
+                <div class="file-name">${file.name}</div>
+                <div class="file-sub">${file.sub}</div>
+              </div>
+            </div>
+          </td>
+          <td><span class="badge-cat ${badgeClass}">${file.category}</span></td>
+          <td><span class="type-text">${file.type}</span></td>
+          <td>${file.size}</td>
+          <td>${file.downloads}</td>
+          <td>${file.date}<br/><span style="color: #94a3b8; font-size: 0.75rem;">${file.time}</span></td>
+          <td>
+            <div class="action-icons">
+              <span class="action-btn">📥</span>
+              <span class="action-btn">⋮</span>
+            </div>
+          </td>
+        `;
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById("showingCountText").innerText =
+          `Showing 1 to ${list.length} of ${filesData.length} files`;
+      }
+
+      function filterFiles() {
+        const search = document
+          .getElementById("fileSearchInput")
+          .value.toLowerCase();
+        const cat = document.getElementById("categoryFilter").value;
+        const type = document.getElementById("typeFilter").value;
+
+        const filtered = filesData.filter((f) => {
+          const matchesSearch =
+            f.name.toLowerCase().includes(search) ||
+            f.sub.toLowerCase().includes(search);
+          const matchesCat = cat === "All" || f.category === cat;
+          const matchesType = type === "All" || f.type === type;
+          return matchesSearch && matchesCat && matchesType;
+        });
+
+        renderTable(filtered);
+      }
+
+      function openUploadModal() {
+        document.getElementById("uploadFileModal").classList.add("open");
+      }
+
+      function closeUploadModal() {
+        document.getElementById("uploadFileModal").classList.remove("open");
+      }
+
+      async function submitNewFile() {
+        const name = document.getElementById("inputFileName").value;
+        const sub = document.getElementById("inputFileSub").value;
+        const category = document.getElementById("inputCategory").value;
+        const type = document.getElementById("inputFileType").value;
+        const size = document.getElementById("inputFileSize").value || "1.0 MB";
+
+        if (!name) {
+          alert("Please specify file name.");
+          return;
+        }
+
+        const newFile = {
+          name,
+          sub: sub || "Study Material",
+          category,
+          type,
+          size,
+          downloads: 0,
+          date: "17 May 2025",
+          time: "Just now",
+        };
+
+        try {
+          const { error } = await supabase
+            .from("downloads_files")
+            .insert([newFile]);
+          if (error) {
+            filesData.unshift(newFile);
+          } else {
+            await fetchFiles();
+          }
+        } catch (err) {
+          filesData.unshift(newFile);
+        }
+
+        renderTable(filesData);
+        closeUploadModal();
+      }
+
+      /* Realtime Subscription */
+      function setupRealtime() {
+        supabase
+          .channel("public:downloads_files")
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "downloads_files" },
+            () => {
+              fetchFiles();
+            },
+          )
+          .subscribe();
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        fetchFiles();
+        setupRealtime();
+      });
+    </script>
+  </body>
+</html>
