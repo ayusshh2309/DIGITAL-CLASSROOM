@@ -1,0 +1,1487 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Smart Learning DC - Student Registration</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+      :root {
+        --bg-dashboard: #e8f3f1;
+        --card-bg: #ffffff;
+        --primary-purple: #5538ee;
+        --primary-hover: #4328d8;
+        --dark-text: #0f172a;
+        --muted-text: #64748b;
+        --border-color: #cbd5e1;
+        --font: "Plus Jakarta Sans", sans-serif;
+        --sidebar-width: 460px;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        min-height: 100%;
+      }
+
+      body {
+        font-family: var(--font);
+        background: #f8fafc;
+        color: var(--dark-text);
+      }
+
+      /* =========================================================
+       FIXED SIDEBAR
+    ========================================================= */
+
+      .left-sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: var(--sidebar-width);
+        height: 100vh;
+        background: var(--bg-dashboard);
+        border-right: 1px solid rgba(0, 0, 0, 0.08);
+        padding: 44px 40px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        overflow-y: auto;
+        z-index: 1000;
+      }
+
+      .left-sidebar::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .left-sidebar::-webkit-scrollbar-thumb {
+        background: rgba(100, 116, 139, 0.3);
+        border-radius: 10px;
+      }
+
+      /* =========================================================
+       BRAND
+    ========================================================= */
+
+      .brand-logo {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 28px;
+      }
+
+      .brand-logo svg {
+        flex-shrink: 0;
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+      }
+
+      .brand-text h3 {
+        font-size: 1.45rem;
+        font-weight: 800;
+        color: var(--dark-text);
+        letter-spacing: -0.3px;
+      }
+
+      .brand-text p {
+        font-size: 0.95rem;
+        color: var(--muted-text);
+        margin-top: 2px;
+        font-weight: 500;
+      }
+
+      /* =========================================================
+       SIDEBAR HERO
+    ========================================================= */
+
+      .sidebar-hero {
+        margin-bottom: 24px;
+      }
+
+      .sidebar-hero h2 {
+        font-size: 2.45rem;
+        font-weight: 800;
+        color: var(--dark-text);
+        line-height: 1.15;
+        letter-spacing: -0.5px;
+        margin-bottom: 12px;
+      }
+
+      .sidebar-hero p {
+        color: var(--muted-text);
+        font-size: 1.02rem;
+        line-height: 1.5;
+      }
+
+      /* =========================================================
+       FEATURES
+    ========================================================= */
+
+      .feature-list {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        margin: 22px 0;
+      }
+
+      .feature-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+      }
+
+      .feature-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        color: white;
+        flex-shrink: 0;
+      }
+
+      .bg-purple {
+        background: #6366f1;
+      }
+
+      .bg-blue {
+        background: #3b82f6;
+      }
+
+      .bg-green {
+        background: #10b981;
+      }
+
+      .bg-orange {
+        background: #f97316;
+      }
+
+      .feature-text h4 {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--dark-text);
+        margin-bottom: 3px;
+      }
+
+      .feature-text p {
+        font-size: 0.9rem;
+        color: var(--muted-text);
+        line-height: 1.4;
+      }
+
+      /* =========================================================
+       SIDEBAR IMAGE
+    ========================================================= */
+
+      .sidebar-illustration {
+        width: 100%;
+        margin: 18px 0;
+        text-align: center;
+      }
+
+      .sidebar-illustration img {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        height: 170px;
+        object-fit: cover;
+        border-radius: 14px;
+      }
+
+      /* =========================================================
+       SIDEBAR QUOTE
+    ========================================================= */
+
+      .sidebar-quote {
+        width: 100%;
+        background: white;
+        padding: 18px 20px;
+        border-radius: 14px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        margin-top: 12px;
+      }
+
+      .sidebar-quote p {
+        font-size: 0.9rem;
+        font-style: italic;
+        color: var(--dark-text);
+        line-height: 1.5;
+      }
+
+      .sidebar-quote span {
+        display: block;
+        margin-top: 8px;
+        font-size: 0.82rem;
+        font-style: normal;
+        font-weight: 700;
+        color: var(--muted-text);
+      }
+
+      /* =========================================================
+       RIGHT CONTENT
+    ========================================================= */
+
+      .right-content {
+        margin-left: var(--sidebar-width);
+        min-height: 100vh;
+        background: #f8fafc;
+        padding: 44px 60px 50px;
+        overflow-y: auto;
+      }
+
+      /* =========================================================
+       TOP BAR
+    ========================================================= */
+
+      .top-bar {
+        position: absolute;
+        top: 46px;
+        right: 60px;
+        z-index: 10;
+        font-size: 0.95rem;
+        color: var(--muted-text);
+      }
+
+      .top-bar a {
+        color: var(--primary-purple);
+        font-weight: 700;
+        text-decoration: none;
+        margin-left: 6px;
+      }
+
+      .top-bar a:hover {
+        text-decoration: underline;
+      }
+
+      /* =========================================================
+       HEADER
+    ========================================================= */
+
+      .form-header {
+        margin-top: 10px;
+        margin-bottom: 28px;
+      }
+
+      .form-header h1 {
+        font-size: 2.1rem;
+        font-weight: 800;
+        color: var(--dark-text);
+      }
+
+      .form-header p {
+        color: var(--muted-text);
+        font-size: 0.95rem;
+        margin-top: 5px;
+      }
+
+      /* =========================================================
+       STEPPER
+    ========================================================= */
+
+      .stepper {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        max-width: 650px;
+        width: 100%;
+        margin: 0 auto 36px;
+        position: relative;
+      }
+
+      .stepper::before {
+        content: "";
+        position: absolute;
+        top: 18px;
+        left: 40px;
+        right: 40px;
+        height: 2px;
+        background: #e2e8f0;
+        z-index: 0;
+      }
+
+      .step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        position: relative;
+        z-index: 1;
+        background: #f8fafc;
+        padding: 0 10px;
+      }
+
+      .step-number {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #e2e8f0;
+        color: var(--muted-text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.95rem;
+        border: 2px solid #f8fafc;
+      }
+
+      .step.active .step-number {
+        background: var(--primary-purple);
+        color: white;
+        box-shadow: 0 4px 12px rgba(85, 56, 238, 0.3);
+      }
+
+      .step-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--muted-text);
+        white-space: nowrap;
+      }
+
+      .step.active .step-label {
+        color: var(--primary-purple);
+        font-weight: 700;
+      }
+
+      /* =========================================================
+       FORM CARD
+    ========================================================= */
+
+      .form-card {
+        background: var(--card-bg);
+        border-radius: 20px;
+        padding: 36px 40px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+        border: 1px solid #e2e8f0;
+        max-width: 850px;
+        width: 100%;
+        margin: 0 auto;
+      }
+
+      .section-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--dark-text);
+        margin-bottom: 24px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #f1f5f9;
+      }
+
+      /* =========================================================
+       FORM GRID
+    ========================================================= */
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px 24px;
+      }
+
+      .full-width {
+        grid-column: span 2;
+      }
+
+      .input-field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .input-field label {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--dark-text);
+      }
+
+      /* =========================================================
+       INPUT
+    ========================================================= */
+
+      .input-control {
+        display: flex;
+        align-items: center;
+        min-height: 50px;
+        border: 1.5px solid var(--border-color);
+        border-radius: 12px;
+        padding: 10px 14px;
+        background: white;
+        gap: 10px;
+        transition: 0.2s ease;
+      }
+
+      .input-control:focus-within {
+        border-color: var(--primary-purple);
+        box-shadow: 0 0 0 3px rgba(85, 56, 238, 0.12);
+      }
+
+      .input-icon {
+        color: #94a3b8;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+      }
+
+      .input-control input,
+      .input-control select {
+        border: none;
+        outline: none;
+        width: 100%;
+        font-family: inherit;
+        font-size: 0.95rem;
+        color: var(--dark-text);
+        background: transparent;
+      }
+
+      .input-control input::placeholder {
+        color: #94a3b8;
+      }
+
+      /* =========================================================
+       PHONE PREFIX
+    ========================================================= */
+
+      .phone-prefix-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+        min-width: 95px;
+        padding-right: 14px;
+        margin-right: 4px;
+        border-right: 1.5px solid #e2e8f0;
+      }
+
+      .phone-prefix-select {
+        border: none;
+        outline: none;
+        background: transparent;
+        font-family: inherit;
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: var(--dark-text);
+        cursor: pointer;
+        appearance: none;
+        width: 100%;
+        padding-right: 16px;
+      }
+
+      .phone-prefix-wrapper::after {
+        content: "▼";
+        font-size: 0.5rem;
+        color: #64748b;
+        position: absolute;
+        right: 6px;
+        pointer-events: none;
+      }
+
+      /* =========================================================
+       FILE UPLOAD
+    ========================================================= */
+
+      .file-dropzone {
+        border: 2px dashed var(--border-color);
+        border-radius: 12px;
+        padding: 24px;
+        text-align: center;
+        background: #f8fafc;
+        cursor: pointer;
+        transition: 0.2s ease;
+        position: relative;
+      }
+
+      .file-dropzone:hover {
+        border-color: var(--primary-purple);
+        background: #f1f5f9;
+      }
+
+      .file-dropzone input[type="file"] {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+      }
+
+      .upload-icon {
+        font-size: 2rem;
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      .file-dropzone p {
+        font-size: 0.9rem;
+        color: var(--muted-text);
+      }
+
+      .file-dropzone strong {
+        color: var(--primary-purple);
+      }
+
+      /* =========================================================
+       NEXT BUTTON
+    ========================================================= */
+
+      .btn-next {
+        width: 100%;
+        margin-top: 28px;
+        padding: 14px;
+        background: var(--primary-purple);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-family: inherit;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition:
+          background 0.2s ease,
+          transform 0.15s ease;
+      }
+
+      .btn-next:hover {
+        background: var(--primary-hover);
+      }
+
+      .btn-next:active {
+        transform: translateY(1px);
+      }
+
+      .btn-next:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+      }
+
+      /* =========================================================
+       FOOTER
+    ========================================================= */
+
+      .footer-note {
+        text-align: center;
+        font-size: 0.85rem;
+        color: var(--muted-text);
+        margin: 20px auto 0;
+        max-width: 850px;
+      }
+
+      /* =========================================================
+       RESPONSIVE
+    ========================================================= */
+
+      @media (max-width: 1100px) {
+        :root {
+          --sidebar-width: 0px;
+        }
+
+        .left-sidebar {
+          position: relative;
+          width: 100%;
+          height: auto;
+          padding: 30px 25px;
+        }
+
+        .right-content {
+          margin-left: 0;
+          padding: 30px 20px;
+        }
+
+        .sidebar-illustration {
+          display: none;
+        }
+
+        .top-bar {
+          position: static;
+          text-align: right;
+          margin-bottom: 20px;
+        }
+      }
+
+      @media (max-width: 650px) {
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .full-width {
+          grid-column: span 1;
+        }
+
+        .form-card {
+          padding: 25px 20px;
+        }
+
+        .form-header h1 {
+          font-size: 1.7rem;
+        }
+
+        .stepper {
+          margin-bottom: 25px;
+        }
+
+        .step-label {
+          font-size: 0.72rem;
+        }
+
+        .stepper::before {
+          left: 30px;
+          right: 30px;
+        }
+
+        .sidebar-hero h2 {
+          font-size: 1.8rem;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- =========================================================
+       SIDEBAR
+  ========================================================== -->
+
+    <aside class="left-sidebar">
+      <div>
+        <!-- BRAND -->
+        <div class="brand-logo">
+          <svg width="40" height="40" viewBox="0 0 44 44" fill="none">
+            <rect width="44" height="44" rx="12" fill="#5538EE" />
+
+            <path d="M22 13L11 19.5L22 26L33 19.5L22 13Z" fill="white" />
+
+            <path
+              d="M14.5 23.2L11 25.25L22 31.75L33 25.25L29.5 23.2L22 27.6L14.5 23.2Z"
+              fill="white"
+              fill-opacity="0.9"
+            />
+
+            <path
+              d="M14.5 27.2L11 29.25L22 35.75L33 29.25L29.5 27.2L22 31.6L14.5 27.2Z"
+              fill="white"
+              fill-opacity="0.75"
+            />
+          </svg>
+
+          <div class="brand-text">
+            <h3>Smart Learning DC</h3>
+            <p>Learn. Grow. Succeed.</p>
+          </div>
+        </div>
+
+        <!-- HERO -->
+
+        <div class="sidebar-hero">
+          <h2>
+            Create Your<br />
+            Student Account
+          </h2>
+
+          <p>
+            Join Smart Learning DC and start your interactive learning journey
+            today.
+          </p>
+        </div>
+
+        <!-- FEATURES -->
+
+        <div class="feature-list">
+          <div class="feature-item">
+            <div class="feature-icon bg-purple">🎓</div>
+
+            <div class="feature-text">
+              <h4>Access Quality Courses</h4>
+
+              <p>
+                Explore structured lessons across multiple academic subjects.
+              </p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon bg-blue">📚</div>
+
+            <div class="feature-text">
+              <h4>Study Materials</h4>
+
+              <p>
+                Download notes, assignments, and reference documents easily.
+              </p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon bg-green">📈</div>
+
+            <div class="feature-text">
+              <h4>Track Your Progress</h4>
+
+              <p>Monitor your performance and improve every day.</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon bg-orange">🎯</div>
+
+            <div class="feature-text">
+              <h4>Achieve Goals</h4>
+
+              <p>Stay motivated and hit milestones with structured feedback.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- IMAGE -->
+
+        <div class="sidebar-illustration">
+          <img
+            src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=600&q=80"
+            alt="Students learning illustration"
+          />
+        </div>
+      </div>
+
+      <!-- QUOTE -->
+
+      <div class="sidebar-quote">
+        <p>
+          “Education is the passport to the future, for tomorrow belongs to
+          those who prepare for it today.”
+        </p>
+
+        <span>— Malcolm X</span>
+      </div>
+    </aside>
+
+    <!-- =========================================================
+       RIGHT CONTENT
+  ========================================================== -->
+
+    <main class="right-content">
+      <!-- LOGIN -->
+
+      <div class="top-bar">
+        Already have an account?
+
+        <a href="../login/login.html"> Login </a>
+      </div>
+
+      <!-- HEADER -->
+
+      <div class="form-header">
+        <h1>Student Registration</h1>
+
+        <p>Fill in the details below to create your student account.</p>
+      </div>
+
+      <!-- =======================================================
+         STEPPER
+    ======================================================== -->
+
+      <div class="stepper">
+        <div class="step active">
+          <div class="step-number">1</div>
+
+          <div class="step-label">Personal Info</div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">2</div>
+
+          <div class="step-label">Academic Information</div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">3</div>
+
+          <div class="step-label">Review & Submit</div>
+        </div>
+      </div>
+
+      <!-- =======================================================
+         FORM CARD
+    ======================================================== -->
+
+      <div class="form-card">
+        <div class="section-title">Personal Information</div>
+
+        <form id="studentForm">
+          <div class="form-grid">
+            <!-- FULL NAME -->
+
+            <div class="input-field">
+              <label for="fullName"> Full Name * </label>
+
+              <div class="input-control">
+                <span class="input-icon"> 👤 </span>
+
+                <input
+                  type="text"
+                  id="fullName"
+                  placeholder="Enter your full name"
+                  required
+                />
+              </div>
+            </div>
+
+            <!-- EMAIL -->
+
+            <div class="input-field">
+              <label for="email"> Email Address * </label>
+
+              <div class="input-control">
+                <span class="input-icon"> ✉️ </span>
+
+                <input
+                  type="email"
+                  id="email"
+                  placeholder="Enter your email address"
+                  required
+                />
+              </div>
+            </div>
+
+            <!-- PHONE -->
+
+            <div class="input-field">
+              <label for="phone"> Phone Number * </label>
+
+              <div class="input-control">
+                <div class="phone-prefix-wrapper">
+                  <select
+                    class="phone-prefix-select"
+                    id="countryCode"
+                    aria-label="Country Code"
+                  >
+                    <option value="+91">IN (+91)</option>
+
+                    <option value="+1">US (+1)</option>
+
+                    <option value="+44">UK (+44)</option>
+
+                    <option value="+61">AU (+61)</option>
+
+                    <option value="+86">CN (+86)</option>
+
+                    <option value="+49">DE (+49)</option>
+
+                    <option value="+33">FR (+33)</option>
+
+                    <option value="+81">JP (+81)</option>
+
+                    <option value="+971">AE (+971)</option>
+
+                    <option value="+65">SG (+65)</option>
+
+                    <option value="+92">PK (+92)</option>
+
+                    <option value="+880">BD (+880)</option>
+                  </select>
+                </div>
+
+                <input
+                  type="tel"
+                  id="phone"
+                  placeholder="Enter phone number"
+                  required
+                />
+              </div>
+            </div>
+
+            <!-- DOB -->
+
+            <div class="input-field">
+              <label for="dob"> Date of Birth * </label>
+
+              <div class="input-control">
+                <span class="input-icon"> 📅 </span>
+
+                <input type="date" id="dob" required />
+              </div>
+            </div>
+
+            <!-- FATHER NAME -->
+
+            <div class="input-field">
+              <label for="fatherName"> Father's Name * </label>
+
+              <div class="input-control">
+                <span class="input-icon"> 👨‍👦 </span>
+
+                <input
+                  type="text"
+                  id="fatherName"
+                  placeholder="Enter father's full name"
+                  required
+                />
+              </div>
+            </div>
+
+            <!-- FATHER PHONE -->
+
+            <div class="input-field">
+              <label for="fatherPhone"> Father's Phone Number * </label>
+
+              <div class="input-control">
+                <div class="phone-prefix-wrapper">
+                  <select
+                    class="phone-prefix-select"
+                    id="fatherCountryCode"
+                    aria-label="Father Country Code"
+                  >
+                    <option value="+91">IN (+91)</option>
+
+                    <option value="+1">US (+1)</option>
+
+                    <option value="+44">UK (+44)</option>
+                  </select>
+                </div>
+
+                <input
+                  type="tel"
+                  id="fatherPhone"
+                  placeholder="Enter father's phone number"
+                  required
+                />
+              </div>
+            </div>
+
+            <!-- MOTHER NAME -->
+
+            <div class="input-field">
+              <label for="motherName"> Mother's Name * </label>
+
+              <div class="input-control">
+                <span class="input-icon"> 👩‍👦 </span>
+
+                <input
+                  type="text"
+                  id="motherName"
+                  placeholder="Enter mother's full name"
+                  required
+                />
+              </div>
+            </div>
+
+            <!-- MOTHER PHONE -->
+
+            <div class="input-field">
+              <label for="motherPhone"> Mother's Phone Number * </label>
+
+              <div class="input-control">
+                <div class="phone-prefix-wrapper">
+                  <select
+                    class="phone-prefix-select"
+                    id="motherCountryCode"
+                    aria-label="Mother Country Code"
+                  >
+                    <option value="+91">IN (+91)</option>
+
+                    <option value="+1">US (+1)</option>
+
+                    <option value="+44">UK (+44)</option>
+                  </select>
+                </div>
+
+                <input
+                  type="tel"
+                  id="motherPhone"
+                  placeholder="Enter mother's phone number"
+                  required
+                />
+              </div>
+            </div>
+
+            <!-- GENDER -->
+
+            <div class="input-field">
+              <label for="gender"> Gender * </label>
+
+              <div class="input-control">
+                <span class="input-icon"> ⚥ </span>
+
+                <select id="gender" required>
+                  <option value="" disabled selected>Select gender</option>
+
+                  <option value="male">Male</option>
+
+                  <option value="female">Female</option>
+
+                  <option value="other">Other</option>
+
+                  <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- COUNTRY -->
+
+            <div class="input-field">
+              <label for="country"> Country * </label>
+
+              <div class="input-control">
+                <span class="input-icon"> 🌐 </span>
+
+                <select id="country" required>
+                  <option value="" disabled selected>Select country</option>
+
+                  <option value="India">India</option>
+
+                  <option value="United States">United States</option>
+
+                  <option value="United Kingdom">United Kingdom</option>
+
+                  <option value="Australia">Australia</option>
+
+                  <option value="Canada">Canada</option>
+
+                  <option value="Germany">Germany</option>
+
+                  <option value="United Arab Emirates">
+                    United Arab Emirates
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <!-- STATE -->
+
+            <div class="input-field">
+              <label for="state"> State / Province * </label>
+
+              <div class="input-control">
+                <span class="input-icon"> 📍 </span>
+
+                <input
+                  type="text"
+                  id="state"
+                  placeholder="Enter state or province"
+                  required
+                />
+              </div>
+            </div>
+
+            <!-- CITY -->
+
+            <div class="input-field">
+              <label for="city"> City * </label>
+
+              <div class="input-control">
+                <span class="input-icon"> 🏙️ </span>
+
+                <input
+                  type="text"
+                  id="city"
+                  placeholder="Enter city name"
+                  required
+                />
+              </div>
+            </div>
+
+            <!-- ADDRESS -->
+
+            <div class="input-field full-width">
+              <label for="address"> Address * </label>
+
+              <div class="input-control">
+                <span class="input-icon"> 🏠 </span>
+
+                <input
+                  type="text"
+                  id="address"
+                  placeholder="Enter street address, building, suite, etc."
+                  required
+                />
+              </div>
+            </div>
+
+            <!-- PROFILE PHOTO -->
+
+            <div class="input-field full-width">
+              <label> Profile Photo (Optional) </label>
+
+              <div class="file-dropzone">
+                <input type="file" id="profilePhotoInput" accept="image/*" />
+
+                <span class="upload-icon"> ☁️ </span>
+
+                <p id="uploadText">
+                  <strong> Click to upload </strong>
+
+                  or drag and drop
+
+                  <br />
+
+                  <span style="font-size: 0.78rem; color: #94a3b8">
+                    JPG, PNG or GIF (max. 2MB)
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            <!-- PASSWORD -->
+
+            <div class="input-field">
+              <label for="password"> Password * </label>
+
+              <div class="input-control">
+                <span class="input-icon"> 🔒 </span>
+
+                <input
+                  type="password"
+                  id="password"
+                  placeholder="Create a password"
+                  minlength="8"
+                  required
+                />
+              </div>
+            </div>
+
+            <!-- CONFIRM PASSWORD -->
+
+            <div class="input-field">
+              <label for="confirmPassword"> Confirm Password * </label>
+
+              <div class="input-control">
+                <span class="input-icon"> 🔒 </span>
+
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  placeholder="Confirm your password"
+                  minlength="8"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- NEXT -->
+
+          <button type="submit" class="btn-next" id="studentNextBtn">
+            Next: Academic Information →
+          </button>
+        </form>
+      </div>
+
+      <!-- FOOTER -->
+
+      <div class="footer-note">
+        🔒 Your information is secure and will never be shared with anyone.
+      </div>
+    </main>
+
+    <!-- =========================================================
+       SUPABASE + REGISTRATION LOGIC
+  ========================================================== -->
+
+    <script>
+      /* =========================================================
+       SUPABASE CONFIG
+    ========================================================= */
+
+      const SUPABASE_URL = "YOUR_SUPABASE_URL";
+
+      const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+      const supabaseClient = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY,
+      );
+
+      /* =========================================================
+       LOCAL REGISTRATION DATA
+    ========================================================= */
+
+      const registrationKey = "studentRegistrationData";
+
+      const savedData = JSON.parse(
+        localStorage.getItem(registrationKey) || "{}",
+      );
+
+      /* =========================================================
+       PERSONAL FIELD IDS
+    ========================================================= */
+
+      const personalFieldIds = [
+        "fullName",
+        "email",
+        "phone",
+        "dob",
+        "fatherName",
+        "fatherPhone",
+        "motherName",
+        "motherPhone",
+        "gender",
+        "country",
+        "state",
+        "city",
+        "address",
+        "password",
+        "confirmPassword",
+      ];
+
+      /* =========================================================
+       COUNTRY PREFIX FIELD IDS
+    ========================================================= */
+
+      const prefixFieldIds = [
+        "countryCode",
+        "fatherCountryCode",
+        "motherCountryCode",
+      ];
+
+      /* =========================================================
+       LOAD PREVIOUS DATA
+    ========================================================= */
+
+      personalFieldIds.concat(prefixFieldIds).forEach((id) => {
+        const field = document.getElementById(id);
+
+        if (field && savedData[id] !== undefined) {
+          field.value = savedData[id];
+        }
+      });
+
+      /* =========================================================
+       PROFILE PHOTO
+    ========================================================= */
+
+      if (savedData.profilePhoto) {
+        document.getElementById("uploadText").innerHTML =
+          "<strong>Photo selected</strong><br />Your profile image is ready to review.";
+      }
+
+      /* =========================================================
+       PROFILE PHOTO CHANGE
+    ========================================================= */
+
+      document
+        .getElementById("profilePhotoInput")
+        .addEventListener("change", (event) => {
+          const file = event.target.files[0];
+
+          if (!file) return;
+
+          /* FILE SIZE */
+
+          if (file.size > 2 * 1024 * 1024) {
+            alert("Please choose an image smaller than 2MB.");
+
+            event.target.value = "";
+
+            return;
+          }
+
+          /* FILE TYPE */
+
+          if (!file.type.startsWith("image/")) {
+            alert("Please select a valid image.");
+
+            event.target.value = "";
+
+            return;
+          }
+
+          /* READ FILE */
+
+          const reader = new FileReader();
+
+          reader.onload = () => {
+            savedData.profilePhoto = reader.result;
+
+            document.getElementById("uploadText").innerHTML =
+              "<strong>Photo selected</strong><br />Your profile image is ready to review.";
+          };
+
+          reader.readAsDataURL(file);
+        });
+
+      /* =========================================================
+       FORM SUBMIT
+    ========================================================= */
+
+      document
+        .getElementById("studentForm")
+        .addEventListener("submit", async (event) => {
+          event.preventDefault();
+
+          const button = document.getElementById("studentNextBtn");
+
+          /* ===================================================
+             GET FORM DATA
+          =================================================== */
+
+          const formData = { ...savedData };
+
+          personalFieldIds.concat(prefixFieldIds).forEach((id) => {
+            const field = document.getElementById(id);
+
+            if (field) {
+              formData[id] = field.value.trim();
+            }
+          });
+
+          /* ===================================================
+             PASSWORD CHECK
+          =================================================== */
+
+          if (formData.password !== formData.confirmPassword) {
+            alert("Passwords do not match.");
+
+            return;
+          }
+
+          /* ===================================================
+             PASSWORD LENGTH
+          =================================================== */
+
+          if (formData.password.length < 8) {
+            alert("Password must contain at least 8 characters.");
+
+            return;
+          }
+
+          /* ===================================================
+             DISABLE BUTTON
+          =================================================== */
+
+          button.disabled = true;
+
+          button.textContent = "Creating Account...";
+
+          try {
+            /* ===============================================
+               CREATE SUPABASE AUTH USER
+            =============================================== */
+
+            const { data: authData, error: authError } =
+              await supabaseClient.auth.signUp({
+                email: formData.email,
+
+                password: formData.password,
+              });
+
+            if (authError) {
+              throw authError;
+            }
+
+            if (!authData.user) {
+              throw new Error("Unable to create student account.");
+            }
+
+            const userId = authData.user.id;
+
+            /* ===============================================
+               SAVE STUDENT DATA
+            =============================================== */
+
+            const studentData = {
+              id: userId,
+
+              full_name: formData.fullName,
+
+              email: formData.email,
+
+              phone_country_code: formData.countryCode,
+
+              phone: formData.phone,
+
+              date_of_birth: formData.dob,
+
+              father_name: formData.fatherName,
+
+              father_country_code: formData.fatherCountryCode,
+
+              father_phone: formData.fatherPhone,
+
+              mother_name: formData.motherName,
+
+              mother_country_code: formData.motherCountryCode,
+
+              mother_phone: formData.motherPhone,
+
+              gender: formData.gender,
+
+              country: formData.country,
+
+              state: formData.state,
+
+              city: formData.city,
+
+              address: formData.address,
+
+              registration_status: "personal_info_completed",
+            };
+
+            /* ===============================================
+               INSERT INTO STUDENTS TABLE
+            =============================================== */
+
+            const { error: studentError } = await supabaseClient
+              .from("students")
+              .insert(studentData);
+
+            if (studentError) {
+              throw studentError;
+            }
+
+            /* ===============================================
+               REMOVE PASSWORD FROM LOCAL STORAGE DATA
+            =============================================== */
+
+            delete formData.password;
+
+            delete formData.confirmPassword;
+
+            /* ===============================================
+               SAVE USER ID FOR NEXT PAGE
+            =============================================== */
+
+            formData.user_id = userId;
+
+            localStorage.setItem(
+              registrationKey,
+
+              JSON.stringify(formData),
+            );
+
+            /* ===============================================
+               MOVE TO ACADEMIC PAGE
+            =============================================== */
+
+            window.location.href = "academic.html";
+          } catch (error) {
+            console.error("Student registration error:", error);
+
+            alert(
+              error.message ||
+                "Something went wrong while creating your account.",
+            );
+
+            button.disabled = false;
+
+            button.textContent = "Next: Academic Information →";
+          }
+        });
+    </script>
+  </body>
+</html>
