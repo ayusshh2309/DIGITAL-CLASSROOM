@@ -793,7 +793,7 @@
           <a href="academic.html" class="btn-back"> ← Back </a>
 
           <button type="button" class="btn-submit" id="submitRegistrationBtn">
-            Submit Registration 🚀
+            Create Account 🚀
           </button>
         </div>
 
@@ -814,9 +814,10 @@
          1. SUPABASE CONFIGURATION
       ========================================================= */
 
-      const SUPABASE_URL = "YOUR_SUPABASE_URL";
+      const SUPABASE_URL = "https://rcitrmmfsdnattjejkgc.supabase.co";
 
-      const SUPABASE_PUBLISHABLE_KEY = "YOUR_SUPABASE_PUBLISHABLE_KEY";
+      // Replace this with the project's public anon/publishable key.
+      const SUPABASE_PUBLISHABLE_KEY = "YOUR_SUPABASE_ANON_KEY";
 
       const supabaseClient = window.supabase.createClient(
         SUPABASE_URL,
@@ -1059,6 +1060,13 @@
 
             message.style.display = "none";
 
+            if (SUPABASE_PUBLISHABLE_KEY === "YOUR_SUPABASE_ANON_KEY") {
+              showError(
+                "Supabase is not configured. Add the public key in st_review.html.",
+              );
+              return;
+            }
+
             try {
               /* =============================================
                  4. CREATE SUPABASE AUTH ACCOUNT
@@ -1103,6 +1111,29 @@
 
               const studentId = generateStudentId();
 
+              let profilePhotoUrl = regData.profilePhoto || null;
+
+              if (regData.profilePhoto && authUser?.id) {
+                const photoResponse = await fetch(regData.profilePhoto);
+                const photoBlob = await photoResponse.blob();
+                const photoPath = `${authUser.id}/${Date.now()}.jpg`;
+                const { error: photoError } = await supabaseClient.storage
+                  .from("profile-images")
+                  .upload(photoPath, photoBlob, {
+                    contentType: photoBlob.type || "image/jpeg",
+                    upsert: true,
+                  });
+
+                if (photoError) {
+                  throw photoError;
+                }
+
+                const { data: publicPhoto } = supabaseClient.storage
+                  .from("profile-images")
+                  .getPublicUrl(photoPath);
+                profilePhotoUrl = publicPhoto.publicUrl;
+              }
+
               /* =============================================
                  6. CREATE STUDENT DATABASE OBJECT
                  
@@ -1135,7 +1166,7 @@
 
                 mother_phone: regData.motherPhone || null,
 
-                profile_photo: regData.profilePhoto || null,
+                profile_photo: profilePhotoUrl,
 
                 address: regData.address || null,
 
@@ -1192,6 +1223,8 @@
 
               regData.studentId = studentId;
 
+              regData.profilePhoto = profilePhotoUrl;
+
               regData.submittedAt = new Date().toISOString();
 
               regData.registrationStatus = "completed";
@@ -1220,8 +1253,8 @@
               ============================================= */
 
               setTimeout(() => {
-                window.location.href = "../student-dashboard/dashboard.html";
-              }, 2000);
+                window.location.href = "student_dashboard.html";
+              }, 1200);
             } catch (error) {
               console.error("Registration error:", error);
 
@@ -1231,7 +1264,7 @@
 
               submitButton.disabled = false;
 
-              submitButton.textContent = "Submit Registration 🚀";
+              submitButton.textContent = "Create Account 🚀";
 
               showError(
                 error.message || "Registration failed. Please try again.",

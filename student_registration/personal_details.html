@@ -1195,19 +1195,6 @@
 
     <script>
       /* =========================================================
-       SUPABASE CONFIG
-    ========================================================= */
-
-      const SUPABASE_URL = "YOUR_SUPABASE_URL";
-
-      const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
-
-      const supabaseClient = window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_ANON_KEY,
-      );
-
-      /* =========================================================
        LOCAL REGISTRATION DATA
     ========================================================= */
 
@@ -1308,6 +1295,8 @@
           reader.onload = () => {
             savedData.profilePhoto = reader.result;
 
+            localStorage.setItem(registrationKey, JSON.stringify(savedData));
+
             document.getElementById("uploadText").innerHTML =
               "<strong>Photo selected</strong><br />Your profile image is ready to review.";
           };
@@ -1321,7 +1310,7 @@
 
       document
         .getElementById("studentForm")
-        .addEventListener("submit", async (event) => {
+        .addEventListener("submit", (event) => {
           event.preventDefault();
 
           const button = document.getElementById("studentNextBtn");
@@ -1360,127 +1349,9 @@
             return;
           }
 
-          /* ===================================================
-             DISABLE BUTTON
-          =================================================== */
-
-          button.disabled = true;
-
-          button.textContent = "Creating Account...";
-
-          try {
-            /* ===============================================
-               CREATE SUPABASE AUTH USER
-            =============================================== */
-
-            const { data: authData, error: authError } =
-              await supabaseClient.auth.signUp({
-                email: formData.email,
-
-                password: formData.password,
-              });
-
-            if (authError) {
-              throw authError;
-            }
-
-            if (!authData.user) {
-              throw new Error("Unable to create student account.");
-            }
-
-            const userId = authData.user.id;
-
-            /* ===============================================
-               SAVE STUDENT DATA
-            =============================================== */
-
-            const studentData = {
-              id: userId,
-
-              full_name: formData.fullName,
-
-              email: formData.email,
-
-              phone_country_code: formData.countryCode,
-
-              phone: formData.phone,
-
-              date_of_birth: formData.dob,
-
-              father_name: formData.fatherName,
-
-              father_country_code: formData.fatherCountryCode,
-
-              father_phone: formData.fatherPhone,
-
-              mother_name: formData.motherName,
-
-              mother_country_code: formData.motherCountryCode,
-
-              mother_phone: formData.motherPhone,
-
-              gender: formData.gender,
-
-              country: formData.country,
-
-              state: formData.state,
-
-              city: formData.city,
-
-              address: formData.address,
-
-              registration_status: "personal_info_completed",
-            };
-
-            /* ===============================================
-               INSERT INTO STUDENTS TABLE
-            =============================================== */
-
-            const { error: studentError } = await supabaseClient
-              .from("students")
-              .insert(studentData);
-
-            if (studentError) {
-              throw studentError;
-            }
-
-            /* ===============================================
-               REMOVE PASSWORD FROM LOCAL STORAGE DATA
-            =============================================== */
-
-            delete formData.password;
-
-            delete formData.confirmPassword;
-
-            /* ===============================================
-               SAVE USER ID FOR NEXT PAGE
-            =============================================== */
-
-            formData.user_id = userId;
-
-            localStorage.setItem(
-              registrationKey,
-
-              JSON.stringify(formData),
-            );
-
-            /* ===============================================
-               MOVE TO ACADEMIC PAGE
-            =============================================== */
-
-            window.location.href = "academic.html";
-          } catch (error) {
-            console.error("Student registration error:", error);
-
-            alert(
-              error.message ||
-                "Something went wrong while creating your account.",
-            );
-
-            button.disabled = false;
-
-            button.textContent = "Next: Academic Information →";
-          }
+          localStorage.setItem(registrationKey, JSON.stringify(formData));
+          button.textContent = "Saved. Opening academic details...";
+          window.location.href = "academic.html";
         });
     </script>
   </body>
