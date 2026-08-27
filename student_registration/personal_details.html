@@ -1200,9 +1200,18 @@
 
       const registrationKey = "studentRegistrationData";
 
-      const savedData = JSON.parse(
-        localStorage.getItem(registrationKey) || "{}",
-      );
+      let savedData = {};
+
+      try {
+        savedData = JSON.parse(localStorage.getItem(registrationKey) || "{}");
+      } catch (error) {
+        localStorage.removeItem(registrationKey);
+      }
+
+      if (savedData.registrationStatus === "completed") {
+        localStorage.removeItem(registrationKey);
+        savedData = {};
+      }
 
       /* =========================================================
        PERSONAL FIELD IDS

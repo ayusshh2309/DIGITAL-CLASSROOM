@@ -1215,24 +1215,14 @@
               }
 
               /* =============================================
-                 8. SAVE FINAL DATA LOCALLY
-                 
-                 This is only for convenience on the next page.
-                 Supabase is already the permanent database.
-              ============================================= */
+                  8. REMOVE THE TEMPORARY DRAFT
 
-              regData.studentId = studentId;
+                  Supabase is now the permanent source of truth.
+                  Keep the draft if any earlier operation fails so
+                  the user can retry or edit it.
+                ============================================= */
 
-              regData.profilePhoto = profilePhotoUrl;
-
-              regData.submittedAt = new Date().toISOString();
-
-              regData.registrationStatus = "completed";
-
-              localStorage.setItem(
-                "studentRegistrationData",
-                JSON.stringify(regData),
-              );
+              localStorage.removeItem("studentRegistrationData");
 
               /* =============================================
                  9. SUCCESS
