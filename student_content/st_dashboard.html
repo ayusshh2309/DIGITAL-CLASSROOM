@@ -1,0 +1,1806 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Smart Learning DC - Main Content</title>
+
+    <!-- FONT -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- FONT AWESOME -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+
+        background: linear-gradient(
+          135deg,
+          #e8f7fa 0%,
+          #f3fafb 45%,
+          #eef9f5 100%
+        );
+
+        color: #111827;
+
+        min-height: 100vh;
+
+        overflow-x: hidden;
+      }
+
+      button,
+      input {
+        font-family: inherit;
+      }
+
+      /* =====================================================
+   MAIN CONTENT
+===================================================== */
+
+      .main {
+        width: 100%;
+
+        min-height: 100vh;
+
+        padding: 35px 42px 70px;
+      }
+
+      /* =====================================================
+   STATISTICS
+===================================================== */
+
+      .stats {
+        display: grid;
+
+        grid-template-columns: repeat(4, minmax(240px, 1fr));
+
+        gap: 20px;
+
+        margin-bottom: 24px;
+      }
+
+      .stat-card {
+        min-height: 145px;
+
+        background: white;
+
+        border: 1px solid #e1e7ed;
+
+        border-radius: 13px;
+
+        padding: 25px;
+
+        display: flex;
+
+        align-items: center;
+
+        box-shadow: 0 5px 18px rgba(16, 24, 40, 0.035);
+
+        transition: 0.2s ease;
+      }
+
+      .stat-card:hover {
+        transform: translateY(-2px);
+
+        box-shadow: 0 9px 25px rgba(16, 24, 40, 0.07);
+      }
+
+      .stat-icon {
+        width: 58px;
+        height: 58px;
+
+        border-radius: 12px;
+
+        display: flex;
+
+        align-items: center;
+        justify-content: center;
+
+        font-size: 24px;
+
+        margin-right: 17px;
+
+        flex-shrink: 0;
+      }
+
+      .purple-icon {
+        background: #eee9ff;
+        color: #5634db;
+      }
+
+      .green-icon {
+        background: #e4f8ee;
+        color: #20a56a;
+      }
+
+      .orange-icon {
+        background: #fff1dc;
+        color: #ef9311;
+      }
+
+      .blue-icon {
+        background: #e5f2ff;
+        color: #1177dc;
+      }
+
+      .stat-title {
+        font-size: 13px;
+
+        color: #667085;
+
+        margin-bottom: 5px;
+      }
+
+      .stat-value {
+        font-size: 26px;
+
+        font-weight: 800;
+
+        color: #111827;
+
+        margin-bottom: 5px;
+      }
+
+      .stat-change {
+        font-size: 11px;
+
+        color: #20a56a;
+
+        font-weight: 600;
+      }
+
+      /* =====================================================
+   DASHBOARD GRID
+===================================================== */
+
+      .dashboard-grid {
+        display: grid;
+
+        grid-template-columns:
+          minmax(0, 1.55fr)
+          minmax(350px, 0.8fr);
+
+        gap: 24px;
+
+        align-items: start;
+      }
+
+      .left-column,
+      .right-column {
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 24px;
+      }
+
+      /* =====================================================
+   CARD
+===================================================== */
+
+      .card {
+        background: white;
+
+        border: 1px solid #e1e7ed;
+
+        border-radius: 14px;
+
+        padding: 24px;
+
+        box-shadow: 0 5px 18px rgba(16, 24, 40, 0.035);
+      }
+
+      .card-header {
+        display: flex;
+
+        justify-content: space-between;
+
+        align-items: center;
+
+        margin-bottom: 20px;
+      }
+
+      .card-header h2 {
+        font-size: 17px;
+
+        font-weight: 700;
+
+        color: #111827;
+      }
+
+      .view-all {
+        color: #5735df;
+
+        font-size: 12px;
+
+        font-weight: 600;
+
+        cursor: pointer;
+      }
+
+      /* =====================================================
+   CONTINUE LEARNING
+===================================================== */
+
+      .learning-content {
+        display: grid;
+
+        grid-template-columns: 280px 1fr;
+
+        gap: 24px;
+
+        align-items: center;
+      }
+
+      .video {
+        height: 165px;
+
+        border-radius: 12px;
+
+        position: relative;
+
+        overflow: hidden;
+
+        background: linear-gradient(135deg, #4f32d7, #7c5ce7);
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+      }
+
+      .video-wave {
+        position: absolute;
+
+        width: 230px;
+
+        height: 100px;
+
+        border-radius: 50%;
+
+        border: 2px solid rgba(255, 255, 255, 0.18);
+
+        transform: rotate(-10deg);
+      }
+
+      .play {
+        width: 55px;
+        height: 55px;
+
+        border-radius: 50%;
+
+        background: white;
+
+        color: #5735df;
+
+        display: flex;
+
+        align-items: center;
+        justify-content: center;
+
+        font-size: 18px;
+
+        position: relative;
+
+        z-index: 2;
+      }
+
+      .learning-subject {
+        color: #5735df;
+
+        font-size: 12px;
+
+        font-weight: 700;
+
+        margin-bottom: 7px;
+      }
+
+      .learning-title {
+        font-size: 21px;
+
+        font-weight: 700;
+
+        margin-bottom: 17px;
+      }
+
+      .progress-container {
+        display: flex;
+
+        align-items: center;
+
+        gap: 12px;
+
+        margin-bottom: 10px;
+      }
+
+      .progress-bar {
+        flex: 1;
+
+        height: 7px;
+
+        background: #edf0f3;
+
+        border-radius: 20px;
+
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        height: 100%;
+
+        width: 68%;
+
+        border-radius: 20px;
+
+        background: #5735df;
+      }
+
+      .progress-percent {
+        font-size: 12px;
+
+        font-weight: 700;
+      }
+
+      .last-studied {
+        color: #8a94a6;
+
+        font-size: 11px;
+
+        margin-bottom: 16px;
+      }
+
+      .continue-button {
+        height: 39px;
+
+        padding: 0 20px;
+
+        border: none;
+
+        border-radius: 8px;
+
+        background: #5735df;
+
+        color: white;
+
+        font-size: 12px;
+
+        font-weight: 700;
+
+        cursor: pointer;
+
+        transition: 0.2s;
+      }
+
+      .continue-button:hover {
+        background: #4624c7;
+
+        transform: translateY(-1px);
+      }
+
+      /* =====================================================
+   SUBJECTS
+===================================================== */
+
+      .subject-grid {
+        display: grid;
+
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+
+        gap: 15px;
+      }
+
+      .subject {
+        min-height: 205px;
+
+        padding: 19px;
+
+        border: 1px solid #e8edf2;
+
+        border-radius: 12px;
+
+        background: #fff;
+
+        transition: 0.2s;
+      }
+
+      .subject:hover {
+        transform: translateY(-2px);
+
+        box-shadow: 0 7px 18px rgba(16, 24, 40, 0.06);
+      }
+
+      .subject-heading {
+        display: flex;
+
+        align-items: center;
+
+        gap: 12px;
+
+        margin-bottom: 20px;
+      }
+
+      .subject-icon {
+        width: 43px;
+        height: 43px;
+
+        border-radius: 10px;
+
+        background: #eee9ff;
+
+        color: #5735df;
+
+        display: flex;
+
+        align-items: center;
+        justify-content: center;
+
+        font-size: 19px;
+      }
+
+      .subject-name {
+        font-size: 14px;
+
+        font-weight: 700;
+      }
+
+      .subject-progress-label {
+        display: flex;
+
+        justify-content: space-between;
+
+        margin-bottom: 8px;
+
+        font-size: 11px;
+      }
+
+      .subject-progress-label strong {
+        font-size: 11px;
+      }
+
+      .subject .progress-bar {
+        margin-bottom: 18px;
+      }
+
+      .subject-stat-list {
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 9px;
+      }
+
+      .subject-stat {
+        display: flex;
+
+        justify-content: space-between;
+
+        font-size: 11px;
+
+        color: #667085;
+      }
+
+      .subject-stat strong {
+        color: #111827;
+      }
+
+      /* =====================================================
+   BOTTOM GRID
+===================================================== */
+
+      .bottom-grid {
+        display: grid;
+
+        grid-template-columns:
+          minmax(0, 1fr)
+          minmax(0, 1fr);
+
+        gap: 24px;
+      }
+
+      /* =====================================================
+   MATERIALS
+===================================================== */
+
+      .material {
+        display: flex;
+
+        align-items: center;
+
+        gap: 13px;
+
+        padding: 13px 0;
+
+        border-bottom: 1px solid #edf0f3;
+      }
+
+      .material:last-child {
+        border-bottom: none;
+      }
+
+      .material-icon {
+        width: 40px;
+        height: 40px;
+
+        border-radius: 9px;
+
+        display: flex;
+
+        align-items: center;
+        justify-content: center;
+
+        flex-shrink: 0;
+      }
+
+      .material-purple {
+        background: #eee9ff;
+
+        color: #5735df;
+      }
+
+      .material-red {
+        background: #ffe9ec;
+
+        color: #e5485d;
+      }
+
+      .material-green {
+        background: #e4f8ee;
+
+        color: #20a56a;
+      }
+
+      .material-orange {
+        background: #fff1dc;
+
+        color: #ef9311;
+      }
+
+      .material-details {
+        flex: 1;
+      }
+
+      .material-title {
+        font-size: 12px;
+
+        font-weight: 700;
+
+        margin-bottom: 4px;
+      }
+
+      .material-meta {
+        font-size: 10px;
+
+        color: #8993a5;
+      }
+
+      .material-time {
+        font-size: 10px;
+
+        color: #8993a5;
+      }
+
+      /* =====================================================
+   QUICK ACTIONS
+===================================================== */
+
+      .quick-grid {
+        display: grid;
+
+        grid-template-columns: repeat(2, 1fr);
+
+        gap: 12px;
+      }
+
+      .quick-action {
+        min-height: 68px;
+
+        border: 1px solid #e7ebf0;
+
+        border-radius: 10px;
+
+        padding: 12px;
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 12px;
+
+        cursor: pointer;
+
+        transition: 0.2s;
+      }
+
+      .quick-action:hover {
+        border-color: #cfc5ff;
+
+        background: #faf9ff;
+
+        transform: translateY(-1px);
+      }
+
+      .quick-icon {
+        width: 35px;
+        height: 35px;
+
+        border-radius: 8px;
+
+        background: #eee9ff;
+
+        color: #5735df;
+
+        display: flex;
+
+        align-items: center;
+        justify-content: center;
+
+        font-size: 14px;
+
+        flex-shrink: 0;
+      }
+
+      .quick-title {
+        font-size: 11px;
+
+        font-weight: 700;
+
+        margin-bottom: 3px;
+      }
+
+      .quick-description {
+        font-size: 9px;
+
+        color: #8993a5;
+      }
+
+      /* =====================================================
+   SCHEDULE
+===================================================== */
+
+      .schedule-item {
+        display: flex;
+
+        align-items: center;
+
+        gap: 14px;
+
+        padding: 15px 0;
+
+        border-bottom: 1px solid #edf0f3;
+      }
+
+      .schedule-item:last-child {
+        border-bottom: none;
+      }
+
+      .schedule-time {
+        min-width: 68px;
+
+        color: #5735df;
+
+        font-size: 11px;
+
+        font-weight: 700;
+      }
+
+      .schedule-info {
+        flex: 1;
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 4px;
+      }
+
+      .schedule-info strong {
+        font-size: 11px;
+      }
+
+      .schedule-info span {
+        font-size: 10px;
+
+        color: #8993a5;
+      }
+
+      .live-tag {
+        background: #e8f8ef;
+
+        color: #20a56a;
+
+        padding: 5px 8px;
+
+        border-radius: 20px;
+
+        font-size: 9px;
+
+        font-weight: 700;
+
+        white-space: nowrap;
+      }
+
+      /* =====================================================
+   UPCOMING CLASS
+===================================================== */
+
+      .live-soon {
+        display: inline-block;
+
+        background: #fff0f0;
+
+        color: #ef4d55;
+
+        font-size: 9px;
+
+        font-weight: 700;
+
+        padding: 6px 9px;
+
+        border-radius: 20px;
+
+        margin-bottom: 13px;
+      }
+
+      .upcoming-title {
+        font-size: 20px;
+
+        font-weight: 700;
+
+        margin-bottom: 6px;
+      }
+
+      .teacher {
+        color: #667085;
+
+        font-size: 11px;
+
+        margin-bottom: 15px;
+      }
+
+      .class-date {
+        font-size: 11px;
+
+        color: #667085;
+
+        margin-bottom: 20px;
+      }
+
+      .countdown {
+        font-size: 30px;
+
+        font-weight: 800;
+
+        color: #5735df;
+
+        letter-spacing: 2px;
+
+        text-align: center;
+
+        margin-bottom: 5px;
+      }
+
+      .countdown-label {
+        text-align: center;
+
+        color: #9aa3b2;
+
+        font-size: 8px;
+
+        margin-bottom: 20px;
+      }
+
+      .join-class {
+        width: 100%;
+
+        height: 42px;
+
+        border: none;
+
+        border-radius: 8px;
+
+        background: #5735df;
+
+        color: white;
+
+        font-size: 12px;
+
+        font-weight: 700;
+
+        cursor: pointer;
+      }
+
+      .join-class:hover {
+        background: #4624c7;
+      }
+
+      /* =====================================================
+   GOALS
+===================================================== */
+
+      .completed {
+        color: #20a56a;
+
+        font-size: 10px;
+
+        font-weight: 700;
+      }
+
+      .goal-progress {
+        height: 7px;
+
+        background: #edf0f3;
+
+        border-radius: 20px;
+
+        overflow: hidden;
+
+        margin-bottom: 18px;
+      }
+
+      .goal-progress-fill {
+        width: 100%;
+
+        height: 100%;
+
+        background: #20a86b;
+      }
+
+      .goal-grid {
+        display: grid;
+
+        grid-template-columns: repeat(2, 1fr);
+
+        gap: 13px;
+      }
+
+      .goal {
+        display: flex;
+
+        align-items: center;
+
+        gap: 9px;
+
+        font-size: 10px;
+
+        color: #526075;
+      }
+
+      .check {
+        width: 20px;
+        height: 20px;
+
+        border-radius: 50%;
+
+        background: #e4f8ee;
+
+        color: #20a86b;
+
+        display: flex;
+
+        align-items: center;
+        justify-content: center;
+
+        font-size: 9px;
+
+        flex-shrink: 0;
+      }
+
+      .goal-message {
+        margin-top: 20px;
+
+        color: #ed9d00;
+
+        font-size: 11px;
+
+        font-weight: 600;
+      }
+
+      /* =====================================================
+   TIP
+===================================================== */
+
+      .tip-card {
+        margin-top: 24px;
+
+        min-height: 125px;
+
+        background: linear-gradient(90deg, #e5f7fa, #f0fbfc);
+
+        border-color: #d5edf1;
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 30px;
+      }
+
+      .tip-icon {
+        font-size: 43px;
+
+        width: 60px;
+
+        text-align: center;
+      }
+
+      .tip-content {
+        flex: 1;
+      }
+
+      .tip-title {
+        font-size: 15px;
+
+        font-weight: 700;
+
+        margin-bottom: 7px;
+      }
+
+      .tip-text {
+        color: #667085;
+
+        font-size: 11px;
+
+        line-height: 1.6;
+      }
+
+      .quote {
+        flex: 1;
+
+        border-left: 1px solid #b9dce2;
+
+        padding-left: 30px;
+
+        font-size: 12px;
+
+        line-height: 1.5;
+
+        font-style: italic;
+
+        color: #52636a;
+      }
+
+      .books {
+        font-size: 40px;
+
+        padding-right: 10px;
+      }
+
+      /* =====================================================
+   RESPONSIVE
+===================================================== */
+
+      @media (max-width: 1250px) {
+        .dashboard-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .right-column {
+          display: grid;
+
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .goals-card {
+          grid-column: 1 / -1;
+        }
+      }
+
+      @media (max-width: 1000px) {
+        .stats {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .bottom-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .right-column {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 700px) {
+        .main {
+          padding: 20px;
+        }
+
+        .stats {
+          grid-template-columns: 1fr;
+        }
+
+        .learning-content {
+          grid-template-columns: 1fr;
+        }
+
+        .subject-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .goal-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .tip-card {
+          flex-direction: column;
+
+          align-items: flex-start;
+
+          gap: 15px;
+        }
+
+        .quote {
+          border-left: none;
+
+          border-top: 1px solid #b9dce2;
+
+          padding: 15px 0 0;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="main">
+      <!-- =====================================================
+         STATISTICS
+    ====================================================== -->
+
+      <section class="stats">
+        <div class="stat-card">
+          <div class="stat-icon purple-icon">
+            <i class="fa-regular fa-square-check"></i>
+          </div>
+
+          <div>
+            <div class="stat-title">Quizzes Taken</div>
+
+            <div class="stat-value">24</div>
+
+            <div class="stat-change">+4 this week</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon green-icon">
+            <i class="fa-regular fa-circle-play"></i>
+          </div>
+
+          <div>
+            <div class="stat-title">Videos Watched</div>
+
+            <div class="stat-value">18</div>
+
+            <div class="stat-change">+6 this week</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon orange-icon">
+            <i class="fa-regular fa-file-lines"></i>
+          </div>
+
+          <div>
+            <div class="stat-title">Notes Read</div>
+
+            <div class="stat-value">12</div>
+
+            <div class="stat-change">+3 this week</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon blue-icon">
+            <i class="fa-regular fa-clock"></i>
+          </div>
+
+          <div>
+            <div class="stat-title">Study Time</div>
+
+            <div class="stat-value">14h 32m</div>
+
+            <div class="stat-change">+2h 15m this week</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================
+         DASHBOARD GRID
+    ====================================================== -->
+
+      <section class="dashboard-grid">
+        <!-- LEFT -->
+
+        <div class="left-column">
+          <!-- CONTINUE LEARNING -->
+
+          <section class="card">
+            <div class="card-header">
+              <h2>Continue Learning</h2>
+
+              <span class="view-all"> View all </span>
+            </div>
+
+            <div class="learning-content">
+              <div class="video">
+                <div class="video-wave"></div>
+
+                <div class="play">
+                  <i class="fa-solid fa-play"></i>
+                </div>
+              </div>
+
+              <div>
+                <div class="learning-subject">Physics</div>
+
+                <div class="learning-title">Electromagnetic Waves</div>
+
+                <div class="progress-container">
+                  <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                  </div>
+
+                  <span class="progress-percent"> 68% </span>
+                </div>
+
+                <div class="last-studied">Last studied 25 minutes ago</div>
+
+                <button class="continue-button" onclick="continueLearning()">
+                  Continue Learning
+
+                  <i class="fa-solid fa-arrow-right"></i>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- SUBJECTS -->
+
+          <section class="card">
+            <div class="card-header">
+              <h2>Your Subjects</h2>
+
+              <span class="view-all" onclick="viewAllSubjects()">
+                View all
+              </span>
+            </div>
+
+            <div class="subject-grid">
+              <!-- PHYSICS -->
+
+              <div class="subject">
+                <div class="subject-heading">
+                  <div class="subject-icon">
+                    <i class="fa-solid fa-atom"></i>
+                  </div>
+
+                  <div class="subject-name">Physics</div>
+                </div>
+
+                <div class="subject-progress-label">
+                  <span>Progress</span>
+
+                  <strong>72%</strong>
+                </div>
+
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 72%"></div>
+                </div>
+
+                <div class="subject-stat-list">
+                  <div class="subject-stat">
+                    <span>Videos</span>
+                    <strong>12</strong>
+                  </div>
+
+                  <div class="subject-stat">
+                    <span>Notes</span>
+                    <strong>8</strong>
+                  </div>
+
+                  <div class="subject-stat">
+                    <span>Quizzes</span>
+                    <strong>6</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- CHEMISTRY -->
+
+              <div class="subject">
+                <div class="subject-heading">
+                  <div
+                    class="subject-icon"
+                    style="color: #20a56a; background: #e5f8ef"
+                  >
+                    <i class="fa-solid fa-flask"></i>
+                  </div>
+
+                  <div class="subject-name">Chemistry</div>
+                </div>
+
+                <div class="subject-progress-label">
+                  <span>Progress</span>
+
+                  <strong>65%</strong>
+                </div>
+
+                <div class="progress-bar">
+                  <div
+                    class="progress-fill"
+                    style="width: 65%; background: #20a56a"
+                  ></div>
+                </div>
+
+                <div class="subject-stat-list">
+                  <div class="subject-stat">
+                    <span>Videos</span>
+                    <strong>9</strong>
+                  </div>
+
+                  <div class="subject-stat">
+                    <span>Notes</span>
+                    <strong>5</strong>
+                  </div>
+
+                  <div class="subject-stat">
+                    <span>Quizzes</span>
+                    <strong>4</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MATHEMATICS -->
+
+              <div class="subject">
+                <div class="subject-heading">
+                  <div
+                    class="subject-icon"
+                    style="color: #ef9311; background: #fff1dc"
+                  >
+                    <i class="fa-solid fa-sigma"></i>
+                  </div>
+
+                  <div class="subject-name">Mathematics</div>
+                </div>
+
+                <div class="subject-progress-label">
+                  <span>Progress</span>
+
+                  <strong>80%</strong>
+                </div>
+
+                <div class="progress-bar">
+                  <div
+                    class="progress-fill"
+                    style="width: 80%; background: #f59e0b"
+                  ></div>
+                </div>
+
+                <div class="subject-stat-list">
+                  <div class="subject-stat">
+                    <span>Videos</span>
+                    <strong>14</strong>
+                  </div>
+
+                  <div class="subject-stat">
+                    <span>Notes</span>
+                    <strong>10</strong>
+                  </div>
+
+                  <div class="subject-stat">
+                    <span>Quizzes</span>
+                    <strong>8</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ENGLISH -->
+
+              <div class="subject">
+                <div class="subject-heading">
+                  <div
+                    class="subject-icon"
+                    style="color: #1684e8; background: #e6f3ff"
+                  >
+                    <i class="fa-solid fa-book-open"></i>
+                  </div>
+
+                  <div class="subject-name">English</div>
+                </div>
+
+                <div class="subject-progress-label">
+                  <span>Progress</span>
+
+                  <strong>60%</strong>
+                </div>
+
+                <div class="progress-bar">
+                  <div
+                    class="progress-fill"
+                    style="width: 60%; background: #1684e8"
+                  ></div>
+                </div>
+
+                <div class="subject-stat-list">
+                  <div class="subject-stat">
+                    <span>Videos</span>
+                    <strong>7</strong>
+                  </div>
+
+                  <div class="subject-stat">
+                    <span>Notes</span>
+                    <strong>6</strong>
+                  </div>
+
+                  <div class="subject-stat">
+                    <span>Quizzes</span>
+                    <strong>3</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- COMPUTER SCIENCE -->
+
+              <div class="subject">
+                <div class="subject-heading">
+                  <div class="subject-icon">
+                    <i class="fa-solid fa-code"></i>
+                  </div>
+
+                  <div class="subject-name">Computer Science</div>
+                </div>
+
+                <div class="subject-progress-label">
+                  <span>Progress</span>
+
+                  <strong>75%</strong>
+                </div>
+
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 75%"></div>
+                </div>
+
+                <div class="subject-stat-list">
+                  <div class="subject-stat">
+                    <span>Videos</span>
+                    <strong>11</strong>
+                  </div>
+
+                  <div class="subject-stat">
+                    <span>Notes</span>
+                    <strong>7</strong>
+                  </div>
+
+                  <div class="subject-stat">
+                    <span>Quizzes</span>
+                    <strong>5</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- BOTTOM -->
+
+          <div class="bottom-grid">
+            <!-- RECENT MATERIALS -->
+
+            <section class="card">
+              <div class="card-header">
+                <h2>Recent Materials</h2>
+
+                <span class="view-all"> View all </span>
+              </div>
+
+              <div class="material">
+                <div class="material-icon material-purple">
+                  <i class="fa-solid fa-play"></i>
+                </div>
+
+                <div class="material-details">
+                  <div class="material-title">
+                    Electrostatics – Introduction
+                  </div>
+
+                  <div class="material-meta">Physics · Class 12 · Video</div>
+                </div>
+
+                <div class="material-time">2 hours ago</div>
+              </div>
+
+              <div class="material">
+                <div class="material-icon material-red">
+                  <i class="fa-regular fa-file-lines"></i>
+                </div>
+
+                <div class="material-details">
+                  <div class="material-title">Chapter 3 Notes</div>
+
+                  <div class="material-meta">Chemistry · Class 12 · PDF</div>
+                </div>
+
+                <div class="material-time">Yesterday</div>
+              </div>
+
+              <div class="material">
+                <div class="material-icon material-green">
+                  <i class="fa-regular fa-image"></i>
+                </div>
+
+                <div class="material-details">
+                  <div class="material-title">Structure of Atom</div>
+
+                  <div class="material-meta">Chemistry · Class 11 · Image</div>
+                </div>
+
+                <div class="material-time">2 days ago</div>
+              </div>
+
+              <div class="material">
+                <div class="material-icon material-orange">
+                  <i class="fa-regular fa-circle-question"></i>
+                </div>
+
+                <div class="material-details">
+                  <div class="material-title">Chapter 1 Quiz</div>
+
+                  <div class="material-meta">Physics · Class 12 · Quiz</div>
+                </div>
+
+                <div class="material-time">3 days ago</div>
+              </div>
+            </section>
+
+            <!-- QUICK ACTIONS -->
+
+            <section class="card">
+              <div class="card-header">
+                <h2>Quick Actions</h2>
+              </div>
+
+              <div class="quick-grid">
+                <div class="quick-action" onclick="action('materials')">
+                  <div class="quick-icon">
+                    <i class="fa-regular fa-folder-open"></i>
+                  </div>
+
+                  <div>
+                    <div class="quick-title">Browse Materials</div>
+
+                    <div class="quick-description">Explore resources</div>
+                  </div>
+                </div>
+
+                <div class="quick-action" onclick="action('quiz')">
+                  <div class="quick-icon">
+                    <i class="fa-regular fa-circle-check"></i>
+                  </div>
+
+                  <div>
+                    <div class="quick-title">Take Quiz</div>
+
+                    <div class="quick-description">Test your knowledge</div>
+                  </div>
+                </div>
+
+                <div class="quick-action" onclick="action('live')">
+                  <div class="quick-icon">
+                    <i class="fa-solid fa-video"></i>
+                  </div>
+
+                  <div>
+                    <div class="quick-title">Join Live Class</div>
+
+                    <div class="quick-description">Attend sessions</div>
+                  </div>
+                </div>
+
+                <div class="quick-action" onclick="action('assignments')">
+                  <div class="quick-icon">
+                    <i class="fa-regular fa-clipboard"></i>
+                  </div>
+
+                  <div>
+                    <div class="quick-title">View Assignments</div>
+
+                    <div class="quick-description">Check your tasks</div>
+                  </div>
+                </div>
+
+                <div class="quick-action" onclick="action('grades')">
+                  <div class="quick-icon">
+                    <i class="fa-solid fa-chart-line"></i>
+                  </div>
+
+                  <div>
+                    <div class="quick-title">View Grades</div>
+
+                    <div class="quick-description">Track your progress</div>
+                  </div>
+                </div>
+
+                <div class="quick-action" onclick="action('calendar')">
+                  <div class="quick-icon">
+                    <i class="fa-regular fa-calendar"></i>
+                  </div>
+
+                  <div>
+                    <div class="quick-title">View Calendar</div>
+
+                    <div class="quick-description">Check schedule</div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <!-- RIGHT -->
+
+        <div class="right-column">
+          <!-- TODAY'S SCHEDULE -->
+
+          <section class="card">
+            <div class="card-header">
+              <h2>Today's Schedule</h2>
+
+              <span class="view-all"> View full schedule </span>
+            </div>
+
+            <div class="schedule-item">
+              <div class="schedule-time">10:00 AM</div>
+
+              <div class="schedule-info">
+                <strong> Class 9 Science </strong>
+
+                <span> Chapter 2 - Force and Laws of Motion </span>
+              </div>
+
+              <span class="live-tag"> Live Class </span>
+            </div>
+
+            <div class="schedule-item">
+              <div class="schedule-time">12:30 PM</div>
+
+              <div class="schedule-info">
+                <strong> Class 10 Social Science </strong>
+
+                <span> The Rise of Nationalism in Europe </span>
+              </div>
+
+              <span class="live-tag"> Live Class </span>
+            </div>
+
+            <div class="schedule-item">
+              <div class="schedule-time">02:30 PM</div>
+
+              <div class="schedule-info">
+                <strong> Class 6 Science </strong>
+
+                <span> Sorting Materials into Groups </span>
+              </div>
+
+              <span class="live-tag"> Live Class </span>
+            </div>
+          </section>
+
+          <!-- UPCOMING -->
+
+          <section class="card">
+            <div class="card-header">
+              <h2>Upcoming Live Class</h2>
+
+              <span class="view-all"> View all </span>
+            </div>
+
+            <span class="live-soon"> Live Soon </span>
+
+            <div class="upcoming-title">Geometry Practice</div>
+
+            <div class="teacher">with Ms. Sharma</div>
+
+            <div class="class-date">
+              <i class="fa-regular fa-calendar"></i>
+
+              &nbsp; Today, 04:00 PM
+            </div>
+
+            <div class="countdown" id="countdown">01 : 32 : 37</div>
+
+            <div class="countdown-label">
+              HRS &nbsp;&nbsp;&nbsp; MINS &nbsp;&nbsp;&nbsp; SECS
+            </div>
+
+            <button class="join-class" onclick="joinClass()">
+              <i class="fa-solid fa-play"></i>
+
+              &nbsp; Join Class
+            </button>
+          </section>
+
+          <!-- GOALS -->
+
+          <section class="card">
+            <div class="card-header">
+              <h2>Today's Goals</h2>
+
+              <span class="completed"> 4/4 Completed </span>
+            </div>
+
+            <div class="goal-progress">
+              <div class="goal-progress-fill"></div>
+            </div>
+
+            <div class="goal-grid">
+              <div class="goal">
+                <span class="check">
+                  <i class="fa-solid fa-check"></i>
+                </span>
+
+                <span> Complete one quiz today </span>
+              </div>
+
+              <div class="goal">
+                <span class="check">
+                  <i class="fa-solid fa-check"></i>
+                </span>
+
+                <span> Watch a subject video </span>
+              </div>
+
+              <div class="goal">
+                <span class="check">
+                  <i class="fa-solid fa-check"></i>
+                </span>
+
+                <span> Read notes for any subject </span>
+              </div>
+
+              <div class="goal">
+                <span class="check">
+                  <i class="fa-solid fa-check"></i>
+                </span>
+
+                <span> Review yesterday's material </span>
+              </div>
+            </div>
+
+            <div class="goal-message">
+              ⭐ Great job! All goals completed! 🎉
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <!-- TIP -->
+
+      <section class="card tip-card">
+        <div class="tip-icon">💡</div>
+
+        <div class="tip-content">
+          <div class="tip-title">Tip of the Day</div>
+
+          <div class="tip-text">
+            Break your study into small parts and take regular breaks to stay
+            focused and productive.
+          </div>
+        </div>
+
+        <div class="quote">
+          “The expert in anything was once a beginner.”
+
+          <br />
+
+          — Helen Hayes
+        </div>
+
+        <div class="books">🌱📚</div>
+      </section>
+    </main>
+
+    <script>
+      /* =====================================================
+   CONTINUE LEARNING
+===================================================== */
+
+      function continueLearning() {
+        alert("Opening Electromagnetic Waves...");
+      }
+
+      /* =====================================================
+   VIEW ALL SUBJECTS
+===================================================== */
+
+      function viewAllSubjects() {
+        alert("Opening all subjects...");
+      }
+
+      /* =====================================================
+   QUICK ACTIONS
+===================================================== */
+
+      function action(type) {
+        const pages = {
+          materials: "Opening Materials...",
+
+          quiz: "Opening Quizzes...",
+
+          live: "Opening Live Classes...",
+
+          assignments: "Opening Assignments...",
+
+          grades: "Opening Grades...",
+
+          calendar: "Opening Calendar...",
+        };
+
+        alert(pages[type]);
+      }
+
+      /* =====================================================
+   JOIN CLASS
+===================================================== */
+
+      function joinClass() {
+        alert("Joining Geometry Practice...");
+      }
+
+      /* =====================================================
+   COUNTDOWN
+===================================================== */
+
+      let totalSeconds = 1 * 60 * 60 + 32 * 60 + 37;
+
+      function updateCountdown() {
+        if (totalSeconds <= 0) {
+          document.getElementById("countdown").textContent = "LIVE NOW";
+
+          return;
+        }
+
+        const hours = Math.floor(totalSeconds / 3600);
+
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+        const seconds = totalSeconds % 60;
+
+        document.getElementById("countdown").textContent =
+          String(hours).padStart(2, "0") +
+          " : " +
+          String(minutes).padStart(2, "0") +
+          " : " +
+          String(seconds).padStart(2, "0");
+
+        totalSeconds--;
+      }
+
+      updateCountdown();
+
+      setInterval(updateCountdown, 1000);
+    </script>
+  </body>
+</html>
