@@ -1,0 +1,1219 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Live Classes</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background: #f7fafc;
+        color: #101828;
+      }
+
+      /* =========================================
+   MAIN CONTENT
+========================================= */
+
+      .main-content {
+        width: 100%;
+        min-height: 100vh;
+        padding: 35px 42px 50px;
+      }
+
+      /* =========================================
+   PAGE TITLE
+========================================= */
+
+      .page-header {
+        margin-bottom: 34px;
+      }
+
+      .page-header h1 {
+        font-size: 29px;
+        font-weight: 800;
+        color: #101b3d;
+        margin-bottom: 9px;
+      }
+
+      .page-header p {
+        font-size: 14px;
+        color: #52658b;
+      }
+
+      /* =========================================
+   CONTENT LAYOUT
+========================================= */
+
+      .content-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 245px;
+        gap: 22px;
+        align-items: start;
+      }
+
+      /* =========================================
+   LEFT CONTENT
+========================================= */
+
+      .left-content {
+        min-width: 0;
+      }
+
+      /* =========================================
+   TABS
+========================================= */
+
+      .tabs-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 7px;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 30px;
+        border-bottom: 1px solid #e4e9f0;
+      }
+
+      .tab {
+        position: relative;
+        padding: 0 10px 16px;
+        border: none;
+        background: transparent;
+        font-size: 13px;
+        font-weight: 700;
+        color: #0e1738;
+        cursor: pointer;
+      }
+
+      .tab.active {
+        color: #5836e4;
+      }
+
+      .tab.active::after {
+        content: "";
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: #5b36e5;
+        border-radius: 5px;
+      }
+
+      .schedule-link {
+        color: #5836e4;
+        font-size: 12px;
+        font-weight: 600;
+        text-decoration: none;
+        padding-bottom: 15px;
+      }
+
+      .schedule-link i {
+        margin-left: 7px;
+      }
+
+      /* =========================================
+   CLASS LIST
+========================================= */
+
+      .class-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      /* =========================================
+   CLASS CARD
+========================================= */
+
+      .class-card {
+        background: #ffffff;
+        border: 1px solid #edf0f4;
+        border-radius: 15px;
+        min-height: 142px;
+        padding: 25px 23px;
+
+        display: grid;
+        grid-template-columns: 76px minmax(250px, 1fr) 185px 150px;
+        align-items: center;
+        gap: 22px;
+
+        box-shadow: 0 4px 16px rgba(16, 24, 40, 0.025);
+
+        transition: 0.2s ease;
+      }
+
+      .class-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(16, 24, 40, 0.06);
+      }
+
+      /* =========================================
+   SUBJECT ICON
+========================================= */
+
+      .class-icon {
+        width: 74px;
+        height: 80px;
+        border-radius: 12px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        font-size: 39px;
+      }
+
+      .physics {
+        background: #5836d9;
+        color: white;
+      }
+
+      .math {
+        background: #06b56f;
+        color: white;
+      }
+
+      .chemistry {
+        background: #0a9bad;
+        color: white;
+      }
+
+      .computer {
+        background: #5734d4;
+        color: white;
+      }
+
+      /* =========================================
+   CLASS INFORMATION
+========================================= */
+
+      .class-info h2 {
+        font-size: 16px;
+        font-weight: 750;
+        color: #111b3c;
+        margin-bottom: 8px;
+      }
+
+      .teacher {
+        font-size: 12px;
+        color: #26395e;
+        margin-bottom: 11px;
+      }
+
+      .chapter {
+        display: inline-flex;
+        padding: 7px 13px;
+        border-radius: 7px;
+
+        font-size: 10px;
+        font-weight: 600;
+      }
+
+      .chapter-purple {
+        background: #f0edff;
+        color: #5033d7;
+      }
+
+      .chapter-green {
+        background: #e7f8f1;
+        color: #099a61;
+      }
+
+      .chapter-blue {
+        background: #e8f2ff;
+        color: #286ac7;
+      }
+
+      .chapter-pink {
+        background: #f2ecff;
+        color: #5b37d5;
+      }
+
+      /* =========================================
+   DATE/TIME
+========================================= */
+
+      .class-time {
+        display: flex;
+        flex-direction: column;
+        gap: 21px;
+      }
+
+      .time-row {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+
+        color: #34486e;
+        font-size: 12px;
+      }
+
+      .time-row i {
+        width: 17px;
+        color: #52678d;
+        font-size: 15px;
+      }
+
+      /* =========================================
+   JOIN AREA
+========================================= */
+
+      .join-area {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 13px;
+      }
+
+      .join-button {
+        width: 115px;
+        height: 42px;
+
+        border: none;
+        border-radius: 8px;
+
+        background: linear-gradient(135deg, #6039e8, #5030d1);
+
+        color: white;
+        font-size: 12px;
+        font-weight: 700;
+
+        box-shadow: 0 5px 12px rgba(88, 54, 217, 0.16);
+
+        cursor: pointer;
+        transition: 0.2s;
+      }
+
+      .join-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(88, 54, 217, 0.25);
+      }
+
+      .join-button:disabled {
+        background: #d9dce3;
+        box-shadow: none;
+        cursor: not-allowed;
+      }
+
+      /* =========================================
+   STARTING BADGE
+========================================= */
+
+      .starting-badge {
+        background: #e8f8f1;
+        color: #079b61;
+
+        padding: 7px 11px;
+
+        border-radius: 7px;
+
+        font-size: 10px;
+        font-weight: 600;
+
+        white-space: nowrap;
+      }
+
+      .starting-badge::before {
+        content: "";
+        display: inline-block;
+
+        width: 8px;
+        height: 8px;
+
+        background: #08a76a;
+        border-radius: 50%;
+
+        margin-right: 7px;
+      }
+
+      /* =========================================
+   RIGHT SIDEBAR
+========================================= */
+
+      .right-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      /* =========================================
+   SIDE CARD
+========================================= */
+
+      .side-card {
+        background: white;
+        border: 1px solid #edf0f4;
+        border-radius: 14px;
+        padding: 22px 19px;
+
+        box-shadow: 0 4px 15px rgba(16, 24, 40, 0.025);
+      }
+
+      .side-card h3 {
+        font-size: 14px;
+        font-weight: 750;
+        color: #101b3d;
+        margin-bottom: 16px;
+      }
+
+      /* =========================================
+   OVERVIEW
+========================================= */
+
+      .overview-box {
+        border: 1px solid #f0f2f5;
+        border-radius: 11px;
+        padding: 14px 14px 7px;
+      }
+
+      .overview-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding-bottom: 15px;
+      }
+
+      .overview-item + .overview-item {
+        padding-top: 15px;
+        border-top: 1px solid #e8ebef;
+      }
+
+      .overview-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 11px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        font-size: 17px;
+      }
+
+      .calendar-icon {
+        background: #f0edff;
+        color: #5b36d7;
+      }
+
+      .clock-icon {
+        background: #e7f8f0;
+        color: #0ba26a;
+      }
+
+      .overview-number {
+        font-size: 17px;
+        font-weight: 800;
+        margin-bottom: 4px;
+      }
+
+      .overview-label {
+        font-size: 10px;
+        color: #667895;
+      }
+
+      /* =========================================
+   ETIQUETTE
+========================================= */
+
+      .etiquette-item {
+        display: flex;
+        gap: 13px;
+        margin-bottom: 18px;
+      }
+
+      .etiquette-item:last-child {
+        margin-bottom: 0;
+      }
+
+      .etiquette-icon {
+        flex-shrink: 0;
+
+        width: 40px;
+        height: 40px;
+
+        border-radius: 11px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        font-size: 15px;
+      }
+
+      .et-purple {
+        background: #f0edff;
+        color: #5b36d7;
+      }
+
+      .et-green {
+        background: #e6f8f0;
+        color: #0ba36a;
+      }
+
+      .et-orange {
+        background: #fff1df;
+        color: #e89119;
+      }
+
+      .et-blue {
+        background: #eaf2ff;
+        color: #3a72d1;
+      }
+
+      .etiquette-text h4 {
+        font-size: 10px;
+        font-weight: 750;
+        color: #172344;
+        margin-bottom: 6px;
+      }
+
+      .etiquette-text p {
+        font-size: 9px;
+        line-height: 1.55;
+        color: #70809d;
+      }
+
+      /* =========================================
+   HELP CARD
+========================================= */
+
+      .help-card {
+        margin-top: 39px;
+
+        min-height: 118px;
+
+        background: linear-gradient(135deg, #f5f2ff, #faf9ff);
+
+        border: 1px solid #e8e1ff;
+        border-radius: 14px;
+
+        padding: 22px 25px;
+
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      .help-left {
+        display: flex;
+        align-items: center;
+        gap: 19px;
+      }
+
+      .help-icon {
+        width: 63px;
+        height: 63px;
+
+        flex-shrink: 0;
+
+        border-radius: 50%;
+
+        background: #5835d9;
+        color: white;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        font-size: 23px;
+      }
+
+      .help-text h3 {
+        font-size: 15px;
+        color: #152044;
+        margin-bottom: 8px;
+      }
+
+      .help-text p {
+        max-width: 390px;
+
+        font-size: 11px;
+        line-height: 1.55;
+
+        color: #4f6081;
+      }
+
+      .guide-button {
+        min-width: 145px;
+        height: 42px;
+
+        border: 1px solid #5835d9;
+        border-radius: 8px;
+
+        background: white;
+
+        color: #5835d9;
+
+        font-size: 11px;
+        font-weight: 700;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+
+        cursor: pointer;
+      }
+
+      /* =========================================
+   PREVIOUS CLASSES
+========================================= */
+
+      .previous-container {
+        display: none;
+      }
+
+      .previous-container.show {
+        display: flex;
+      }
+
+      .upcoming-container.hide {
+        display: none;
+      }
+
+      /* =========================================
+   EMPTY STATE
+========================================= */
+
+      .empty-state {
+        background: white;
+        border: 1px dashed #d9dfe8;
+        border-radius: 14px;
+        padding: 60px 20px;
+        text-align: center;
+      }
+
+      .empty-state i {
+        font-size: 32px;
+        color: #98a2b3;
+        margin-bottom: 14px;
+      }
+
+      .empty-state h3 {
+        font-size: 15px;
+        margin-bottom: 6px;
+      }
+
+      .empty-state p {
+        color: #7b879d;
+        font-size: 11px;
+      }
+
+      /* =========================================
+   RESPONSIVE
+========================================= */
+
+      @media (max-width: 1150px) {
+        .content-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .right-sidebar {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .class-card {
+          grid-template-columns:
+            70px
+            minmax(220px, 1fr)
+            160px
+            130px;
+        }
+      }
+
+      @media (max-width: 900px) {
+        .main-content {
+          padding: 28px 22px 40px;
+        }
+
+        .class-card {
+          grid-template-columns: 70px 1fr;
+          gap: 18px;
+        }
+
+        .class-time {
+          grid-column: 2;
+          flex-direction: row;
+          gap: 25px;
+        }
+
+        .join-area {
+          grid-column: 2;
+          align-items: flex-start;
+          flex-direction: row;
+          align-items: center;
+        }
+
+        .tabs-row {
+          align-items: flex-start;
+        }
+
+        .right-sidebar {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 600px) {
+        .main-content {
+          padding: 22px 15px 35px;
+        }
+
+        .page-header h1 {
+          font-size: 24px;
+        }
+
+        .tabs-row {
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .schedule-link {
+          align-self: flex-end;
+        }
+
+        .class-card {
+          grid-template-columns: 60px 1fr;
+          padding: 18px;
+        }
+
+        .class-icon {
+          width: 60px;
+          height: 65px;
+          font-size: 30px;
+        }
+
+        .class-info h2 {
+          font-size: 14px;
+        }
+
+        .class-time {
+          grid-column: 1 / -1;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .join-area {
+          grid-column: 1 / -1;
+        }
+
+        .join-button {
+          width: 100%;
+        }
+
+        .starting-badge {
+          width: 100%;
+          text-align: center;
+        }
+
+        .help-card {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .guide-button {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="main-content">
+      <!-- ======================================
+         PAGE TITLE
+    ======================================= -->
+
+      <div class="page-header">
+        <h1>Live Classes</h1>
+
+        <p>Join your scheduled live classes and never miss a session.</p>
+      </div>
+
+      <div class="content-layout">
+        <!-- ==================================
+             LEFT SIDE
+        =================================== -->
+
+        <div class="left-content">
+          <!-- TABS -->
+
+          <div class="tabs-row">
+            <div class="tabs">
+              <button
+                class="tab active"
+                id="upcomingTab"
+                onclick="showUpcoming()"
+              >
+                Upcoming
+              </button>
+
+              <button class="tab" id="previousTab" onclick="showPrevious()">
+                Previous
+              </button>
+            </div>
+
+            <a href="#" class="schedule-link">
+              View full schedule
+              <i class="fa-solid fa-arrow-right"></i>
+            </a>
+          </div>
+
+          <!-- ==================================
+                 UPCOMING CLASSES
+            =================================== -->
+
+          <div class="class-list upcoming-container" id="upcomingClasses">
+            <!-- CLASS 1 -->
+
+            <div class="class-card">
+              <div class="class-icon physics">
+                <i class="fa-solid fa-atom"></i>
+              </div>
+
+              <div class="class-info">
+                <h2>Physics - Electromagnetism</h2>
+
+                <div class="teacher">By Mr. Sharma</div>
+
+                <span class="chapter chapter-purple">
+                  Chapter 2 - Moving Charges & Magnetism
+                </span>
+              </div>
+
+              <div class="class-time">
+                <div class="time-row">
+                  <i class="fa-regular fa-calendar"></i>
+
+                  <span> 17 May, 10:00 AM </span>
+                </div>
+
+                <div class="time-row">
+                  <i class="fa-regular fa-clock"></i>
+
+                  <span> 60 min </span>
+                </div>
+              </div>
+
+              <div class="join-area">
+                <button
+                  class="join-button"
+                  onclick="joinClass('Physics - Electromagnetism')"
+                >
+                  Join Class
+                </button>
+
+                <span class="starting-badge"> Starting in 15 min </span>
+              </div>
+            </div>
+
+            <!-- CLASS 2 -->
+
+            <div class="class-card">
+              <div class="class-icon math">
+                <i class="fa-solid fa-flask"></i>
+              </div>
+
+              <div class="class-info">
+                <h2>Mathematics - Calculus</h2>
+
+                <div class="teacher">By Ms. Verma</div>
+
+                <span class="chapter chapter-green">
+                  Chapter 5 - Continuity & Differentiability
+                </span>
+              </div>
+
+              <div class="class-time">
+                <div class="time-row">
+                  <i class="fa-regular fa-calendar"></i>
+
+                  <span> 18 May, 12:30 PM </span>
+                </div>
+
+                <div class="time-row">
+                  <i class="fa-regular fa-clock"></i>
+
+                  <span> 60 min </span>
+                </div>
+              </div>
+
+              <div class="join-area">
+                <button
+                  class="join-button"
+                  onclick="joinClass('Mathematics - Calculus')"
+                >
+                  Join Class
+                </button>
+
+                <span class="starting-badge"> Starting in 2h 45m </span>
+              </div>
+            </div>
+
+            <!-- CLASS 3 -->
+
+            <div class="class-card">
+              <div class="class-icon chemistry">
+                <i class="fa-solid fa-book-open"></i>
+              </div>
+
+              <div class="class-info">
+                <h2>Chemistry - Organic Chemistry</h2>
+
+                <div class="teacher">By Mr. Mehta</div>
+
+                <span class="chapter chapter-blue">
+                  Chapter 3 - Hydrocarbons
+                </span>
+              </div>
+
+              <div class="class-time">
+                <div class="time-row">
+                  <i class="fa-regular fa-calendar"></i>
+
+                  <span> 19 May, 02:00 PM </span>
+                </div>
+
+                <div class="time-row">
+                  <i class="fa-regular fa-clock"></i>
+
+                  <span> 60 min </span>
+                </div>
+              </div>
+
+              <div class="join-area">
+                <button
+                  class="join-button"
+                  onclick="joinClass('Chemistry - Organic Chemistry')"
+                >
+                  Join Class
+                </button>
+
+                <span class="starting-badge"> Starting in 4h 15m </span>
+              </div>
+            </div>
+
+            <!-- CLASS 4 -->
+
+            <div class="class-card">
+              <div class="class-icon computer">
+                <i class="fa-solid fa-code"></i>
+              </div>
+
+              <div class="class-info">
+                <h2>Computer Science - Python</h2>
+
+                <div class="teacher">By Mr. Gupta</div>
+
+                <span class="chapter chapter-pink">
+                  Chapter 4 - Functions
+                </span>
+              </div>
+
+              <div class="class-time">
+                <div class="time-row">
+                  <i class="fa-regular fa-calendar"></i>
+
+                  <span> 20 May, 04:00 PM </span>
+                </div>
+
+                <div class="time-row">
+                  <i class="fa-regular fa-clock"></i>
+
+                  <span> 60 min </span>
+                </div>
+              </div>
+
+              <div class="join-area">
+                <button
+                  class="join-button"
+                  onclick="joinClass('Computer Science - Python')"
+                >
+                  Join Class
+                </button>
+
+                <span class="starting-badge"> Starting in 6h 15m </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ==================================
+                 PREVIOUS CLASSES
+            =================================== -->
+
+          <div class="class-list previous-container" id="previousClasses">
+            <div class="class-card">
+              <div class="class-icon physics">
+                <i class="fa-solid fa-atom"></i>
+              </div>
+
+              <div class="class-info">
+                <h2>Physics - Current Electricity</h2>
+
+                <div class="teacher">By Mr. Sharma</div>
+
+                <span class="chapter chapter-purple">
+                  Chapter 3 - Current Electricity
+                </span>
+              </div>
+
+              <div class="class-time">
+                <div class="time-row">
+                  <i class="fa-regular fa-calendar"></i>
+
+                  15 May, 10:00 AM
+                </div>
+
+                <div class="time-row">
+                  <i class="fa-regular fa-clock"></i>
+
+                  60 min
+                </div>
+              </div>
+
+              <div class="join-area">
+                <button class="join-button" disabled>Completed</button>
+              </div>
+            </div>
+
+            <div class="class-card">
+              <div class="class-icon math">
+                <i class="fa-solid fa-calculator"></i>
+              </div>
+
+              <div class="class-info">
+                <h2>Mathematics - Integration</h2>
+
+                <div class="teacher">By Ms. Verma</div>
+
+                <span class="chapter chapter-green">
+                  Chapter 7 - Integrals
+                </span>
+              </div>
+
+              <div class="class-time">
+                <div class="time-row">
+                  <i class="fa-regular fa-calendar"></i>
+
+                  14 May, 12:30 PM
+                </div>
+
+                <div class="time-row">
+                  <i class="fa-regular fa-clock"></i>
+
+                  60 min
+                </div>
+              </div>
+
+              <div class="join-area">
+                <button class="join-button" disabled>Completed</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ==================================
+                 HELP
+            =================================== -->
+
+          <div class="help-card">
+            <div class="help-left">
+              <div class="help-icon">
+                <i class="fa-regular fa-calendar-check"></i>
+              </div>
+
+              <div class="help-text">
+                <h3>Need Help Joining a Class?</h3>
+
+                <p>
+                  Make sure you have a stable internet connection and allow
+                  camera & microphone access.
+                </p>
+              </div>
+            </div>
+
+            <button class="guide-button" onclick="openGuide()">
+              View Guide
+
+              <i class="fa-solid fa-arrow-up-right-from-square"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- ==================================
+             RIGHT SIDE
+        =================================== -->
+
+        <aside class="right-sidebar">
+          <!-- TODAY OVERVIEW -->
+
+          <div class="side-card">
+            <h3>Today's Overview</h3>
+
+            <div class="overview-box">
+              <div class="overview-item">
+                <div class="overview-icon calendar-icon">
+                  <i class="fa-regular fa-calendar-days"></i>
+                </div>
+
+                <div>
+                  <div class="overview-number" id="todayClasses">4</div>
+
+                  <div class="overview-label">Classes Today</div>
+                </div>
+              </div>
+
+              <div class="overview-item">
+                <div class="overview-icon clock-icon">
+                  <i class="fa-regular fa-clock"></i>
+                </div>
+
+                <div>
+                  <div class="overview-number">3h 30m</div>
+
+                  <div class="overview-label">Total Class Time</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ETIQUETTE -->
+
+          <div class="side-card">
+            <h3>Live Class Etiquette</h3>
+
+            <div class="etiquette-item">
+              <div class="etiquette-icon et-purple">
+                <i class="fa-solid fa-video"></i>
+              </div>
+
+              <div class="etiquette-text">
+                <h4>Turn on your camera</h4>
+
+                <p>Helps teachers & classmates connect better.</p>
+              </div>
+            </div>
+
+            <div class="etiquette-item">
+              <div class="etiquette-icon et-green">
+                <i class="fa-solid fa-microphone"></i>
+              </div>
+
+              <div class="etiquette-text">
+                <h4>Mute when not speaking</h4>
+
+                <p>Avoid background noise.</p>
+              </div>
+            </div>
+
+            <div class="etiquette-item">
+              <div class="etiquette-icon et-orange">
+                <i class="fa-solid fa-comment-dots"></i>
+              </div>
+
+              <div class="etiquette-text">
+                <h4>Use chat respectfully</h4>
+
+                <p>Ask doubts and participate actively.</p>
+              </div>
+            </div>
+
+            <div class="etiquette-item">
+              <div class="etiquette-icon et-blue">
+                <i class="fa-solid fa-clock"></i>
+              </div>
+
+              <div class="etiquette-text">
+                <h4>Be on time</h4>
+
+                <p>Join a few minutes early to get settled.</p>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+
+    <script>
+      /* =========================================
+   TAB SWITCHING
+========================================= */
+
+      function showUpcoming() {
+        document.getElementById("upcomingClasses").classList.remove("hide");
+
+        document.getElementById("previousClasses").classList.remove("show");
+
+        document.getElementById("upcomingTab").classList.add("active");
+
+        document.getElementById("previousTab").classList.remove("active");
+      }
+
+      function showPrevious() {
+        document.getElementById("upcomingClasses").classList.add("hide");
+
+        document.getElementById("previousClasses").classList.add("show");
+
+        document.getElementById("upcomingTab").classList.remove("active");
+
+        document.getElementById("previousTab").classList.add("active");
+      }
+
+      /* =========================================
+   JOIN CLASS
+========================================= */
+
+      function joinClass(className) {
+        /*
+        Replace this with your actual
+        meeting URL from Supabase.
+
+        Example:
+
+        window.open(meetingUrl, "_blank");
+    */
+
+        alert("Joining " + className + "...");
+      }
+
+      /* =========================================
+   HELP GUIDE
+========================================= */
+
+      function openGuide() {
+        alert(
+          "Live Class Guide:\n\n" +
+            "1. Check your internet connection.\n" +
+            "2. Allow camera and microphone access.\n" +
+            "3. Join the class a few minutes early.\n" +
+            "4. Keep your microphone muted when not speaking.",
+        );
+      }
+    </script>
+  </body>
+</html>
