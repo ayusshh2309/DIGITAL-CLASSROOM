@@ -1,0 +1,1213 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Learning DC - Notes</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        background: #f7faff;
+        color: #101a35;
+      }
+
+      .notes-page {
+        width: 100%;
+        min-height: 100vh;
+        padding: 28px 32px 40px;
+      }
+
+      /* =========================
+       PAGE HEADER
+    ========================= */
+
+      .page-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 28px;
+      }
+
+      .page-title h1 {
+        font-size: 28px;
+        font-weight: 800;
+        color: #101a35;
+        margin-bottom: 7px;
+      }
+
+      .page-title p {
+        font-size: 14px;
+        color: #5d6d8f;
+      }
+
+      /* =========================
+       TOP STATS
+    ========================= */
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+
+      .stat-card {
+        background: #ffffff;
+        border: 1px solid #edf0f7;
+        border-radius: 15px;
+        padding: 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        box-shadow: 0 4px 18px rgba(20, 38, 80, 0.04);
+      }
+
+      .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        flex-shrink: 0;
+      }
+
+      .purple {
+        background: #eee8ff;
+        color: #5d35df;
+      }
+
+      .green {
+        background: #e8faf2;
+        color: #08a66b;
+      }
+
+      .orange {
+        background: #fff3df;
+        color: #ed8b00;
+      }
+
+      .blue {
+        background: #e8f2ff;
+        color: #2877e8;
+      }
+
+      .stat-info h3 {
+        font-size: 23px;
+        font-weight: 800;
+        margin-bottom: 3px;
+      }
+
+      .stat-info p {
+        color: #596987;
+        font-size: 12px;
+      }
+
+      /* =========================
+       MAIN LAYOUT
+    ========================= */
+
+      .content-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 315px;
+        gap: 20px;
+        align-items: start;
+      }
+
+      .notes-container,
+      .side-card {
+        background: #ffffff;
+        border: 1px solid #edf0f7;
+        border-radius: 16px;
+        box-shadow: 0 4px 18px rgba(20, 38, 80, 0.04);
+      }
+
+      /* =========================
+       NOTES HEADER
+    ========================= */
+
+      .notes-container {
+        overflow: hidden;
+      }
+
+      .notes-toolbar {
+        padding: 17px 20px;
+        border-bottom: 1px solid #edf0f7;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .notes-toolbar h2 {
+        font-size: 17px;
+        font-weight: 800;
+      }
+
+      .toolbar-right {
+        display: flex;
+        gap: 10px;
+      }
+
+      select {
+        height: 36px;
+        padding: 0 12px;
+        border: 1px solid #e2e7f0;
+        background: #fff;
+        border-radius: 8px;
+        color: #15213e;
+        font-family: inherit;
+        font-size: 12px;
+        outline: none;
+        cursor: pointer;
+      }
+
+      /* =========================
+       NOTES GRID
+    ========================= */
+
+      .notes-grid {
+        padding: 18px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+      }
+
+      .note-card {
+        border: 1px solid #e8edf5;
+        border-radius: 13px;
+        padding: 15px;
+        background: #ffffff;
+        transition: 0.2s ease;
+        min-width: 0;
+      }
+
+      .note-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 22px rgba(50, 65, 110, 0.08);
+      }
+
+      .note-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .note-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 19px;
+        flex-shrink: 0;
+      }
+
+      .note-menu {
+        border: none;
+        background: transparent;
+        color: #64728f;
+        font-size: 18px;
+        cursor: pointer;
+      }
+
+      .note-title {
+        font-size: 13px;
+        line-height: 1.4;
+        font-weight: 800;
+        color: #14203b;
+        margin-bottom: 6px;
+      }
+
+      .note-meta {
+        font-size: 10px;
+        color: #64728f;
+        line-height: 1.5;
+        margin-bottom: 13px;
+      }
+
+      .note-bottom {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+
+      .file-type {
+        font-size: 10px;
+        font-weight: 700;
+        color: #596987;
+        background: #f4f6fa;
+        padding: 5px 8px;
+        border-radius: 5px;
+      }
+
+      .file-size {
+        font-size: 10px;
+        color: #7a87a0;
+      }
+
+      .note-actions {
+        display: flex;
+        gap: 7px;
+      }
+
+      .note-btn {
+        flex: 1;
+        height: 32px;
+        border: none;
+        border-radius: 7px;
+        font-family: inherit;
+        font-size: 10px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+
+      .download-btn {
+        background: #f0ecff;
+        color: #5532d8;
+      }
+
+      .download-btn:hover {
+        background: #e5ddff;
+      }
+
+      .view-btn {
+        background: #f5f7fb;
+        color: #263554;
+      }
+
+      .view-btn:hover {
+        background: #e9edf5;
+      }
+
+      /* =========================
+       RIGHT SIDE
+    ========================= */
+
+      .right-column {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .side-card {
+        padding: 19px;
+      }
+
+      .side-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 17px;
+      }
+
+      .side-card-header h3 {
+        font-size: 15px;
+        font-weight: 800;
+      }
+
+      .side-card-header a {
+        font-size: 11px;
+        color: #5331d8;
+        text-decoration: none;
+        font-weight: 700;
+      }
+
+      /* =========================
+       RECENT NOTES
+    ========================= */
+
+      .recent-note {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 11px 0;
+        border-bottom: 1px solid #edf0f7;
+      }
+
+      .recent-note:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+
+      .recent-icon {
+        width: 35px;
+        height: 35px;
+        border-radius: 8px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-shrink: 0;
+        font-size: 15px;
+      }
+
+      .recent-info {
+        min-width: 0;
+      }
+
+      .recent-info h4 {
+        font-size: 11px;
+        font-weight: 700;
+        margin-bottom: 3px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .recent-info p {
+        font-size: 9px;
+        color: #73809a;
+      }
+
+      /* =========================
+       SUBJECT PROGRESS
+    ========================= */
+
+      .subject-progress {
+        margin-bottom: 17px;
+      }
+
+      .subject-progress:last-child {
+        margin-bottom: 0;
+      }
+
+      .subject-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        margin-bottom: 7px;
+      }
+
+      .subject-row span:first-child {
+        color: #344361;
+        font-weight: 600;
+      }
+
+      .subject-row span:last-child {
+        color: #1a2540;
+        font-weight: 700;
+      }
+
+      .progress-track {
+        height: 6px;
+        background: #edf0f5;
+        border-radius: 20px;
+        overflow: hidden;
+      }
+
+      .progress-bar {
+        height: 100%;
+        border-radius: 20px;
+      }
+
+      /* =========================
+       EMPTY STATE
+    ========================= */
+
+      .empty-state {
+        grid-column: 1 / -1;
+        padding: 65px 20px;
+        text-align: center;
+        color: #6e7b95;
+      }
+
+      .empty-icon {
+        font-size: 40px;
+        margin-bottom: 12px;
+      }
+
+      .empty-state h3 {
+        color: #1a2540;
+        margin-bottom: 5px;
+        font-size: 16px;
+      }
+
+      .empty-state p {
+        font-size: 12px;
+      }
+
+      /* =========================
+       LOADING
+    ========================= */
+
+      .loading {
+        grid-column: 1 / -1;
+        padding: 60px;
+        text-align: center;
+        color: #66738e;
+        font-size: 13px;
+      }
+
+      /* =========================
+       RESPONSIVE
+    ========================= */
+
+      @media (max-width: 1100px) {
+        .content-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .right-column {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      @media (max-width: 850px) {
+        .stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .notes-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      @media (max-width: 600px) {
+        .notes-page {
+          padding: 20px 15px;
+        }
+
+        .page-header {
+          flex-direction: column;
+          gap: 15px;
+        }
+
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .notes-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .notes-toolbar {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .toolbar-right {
+          width: 100%;
+        }
+
+        select {
+          flex: 1;
+        }
+
+        .right-column {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="notes-page">
+      <!-- =========================
+         PAGE TITLE
+    ========================== -->
+
+      <section class="page-header">
+        <div class="page-title">
+          <h1>My Notes</h1>
+          <p>Access your subject notes and study materials anytime.</p>
+        </div>
+      </section>
+
+      <!-- =========================
+         STATISTICS
+    ========================== -->
+
+      <section class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon purple">📚</div>
+          <div class="stat-info">
+            <h3 id="totalNotes">0</h3>
+            <p>Total Notes</p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon green">✓</div>
+          <div class="stat-info">
+            <h3 id="downloadedNotes">0</h3>
+            <p>Downloaded</p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon orange">📖</div>
+          <div class="stat-info">
+            <h3 id="subjectsCovered">0</h3>
+            <p>Subjects Covered</p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon blue">⭐</div>
+          <div class="stat-info">
+            <h3 id="recentNotes">0</h3>
+            <p>Added This Week</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================
+         MAIN CONTENT
+    ========================== -->
+
+      <section class="content-layout">
+        <!-- NOTES -->
+
+        <div class="notes-container">
+          <div class="notes-toolbar">
+            <h2>My Notes</h2>
+
+            <div class="toolbar-right">
+              <select id="subjectFilter">
+                <option value="all">All Subjects</option>
+              </select>
+
+              <select id="sortFilter">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="name">Name A-Z</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="notes-grid" id="notesGrid">
+            <div class="loading">Loading notes...</div>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN -->
+
+        <div class="right-column">
+          <!-- RECENT NOTES -->
+
+          <div class="side-card">
+            <div class="side-card-header">
+              <h3>Recent Notes</h3>
+              <a href="#" id="viewAllRecent">View all</a>
+            </div>
+
+            <div id="recentNotesList">
+              <div class="loading">Loading...</div>
+            </div>
+          </div>
+
+          <!-- SUBJECT PROGRESS -->
+
+          <div class="side-card">
+            <div class="side-card-header">
+              <h3>Notes by Subject</h3>
+            </div>
+
+            <div id="subjectProgress">
+              <div class="loading">Loading...</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      /* =====================================================
+       SUPABASE CONFIGURATION
+    ===================================================== */
+
+      const SUPABASE_URL = "YOUR_SUPABASE_URL";
+      const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+      const supabaseClient = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY,
+      );
+
+      /* =====================================================
+       GLOBAL DATA
+    ===================================================== */
+
+      let allNotes = [];
+
+      /* =====================================================
+       GET CURRENT STUDENT
+    ===================================================== */
+
+      async function getCurrentStudent() {
+        const {
+          data: { user },
+          error,
+        } = await supabaseClient.auth.getUser();
+
+        if (error || !user) {
+          console.log("Student not logged in");
+          return null;
+        }
+
+        return user;
+      }
+
+      /* =====================================================
+       LOAD NOTES
+    ===================================================== */
+
+      async function loadNotes() {
+        const user = await getCurrentStudent();
+
+        if (!user) {
+          showError("Please login to view your notes.");
+          return;
+        }
+
+        /*
+        Expected Supabase table:
+
+        notes
+
+        id
+        student_id
+        subject
+        title
+        chapter
+        file_url
+        file_type
+        file_size
+        created_at
+        download_count
+      */
+
+        const { data, error } = await supabaseClient
+          .from("notes")
+          .select("*")
+          .eq("student_id", user.id)
+          .order("created_at", {
+            ascending: false,
+          });
+
+        if (error) {
+          console.error(error);
+
+          showError(
+            "Unable to load notes. Check your Supabase table and policies.",
+          );
+
+          return;
+        }
+
+        allNotes = data || [];
+
+        populateSubjectFilter();
+
+        renderNotes(allNotes);
+
+        updateStatistics(allNotes);
+
+        renderRecentNotes(allNotes);
+
+        renderSubjectProgress(allNotes);
+      }
+
+      /* =====================================================
+       RENDER NOTES
+    ===================================================== */
+
+      function renderNotes(notes) {
+        const grid = document.getElementById("notesGrid");
+
+        if (!notes.length) {
+          grid.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📚</div>
+            <h3>No Notes Available</h3>
+            <p>Your teacher has not uploaded any notes yet.</p>
+          </div>
+        `;
+
+          return;
+        }
+
+        grid.innerHTML = notes
+          .map((note) => {
+            const icon = getSubjectIcon(note.subject);
+
+            const iconClass = getSubjectClass(note.subject);
+
+            return `
+          <article class="note-card">
+
+            <div class="note-top">
+
+              <div class="note-icon ${iconClass}">
+                ${icon}
+              </div>
+
+              <button
+                class="note-menu"
+                onclick="showNoteMenu('${note.id}')"
+              >
+                ⋮
+              </button>
+
+            </div>
+
+
+            <h3 class="note-title">
+              ${escapeHTML(note.title || "Untitled Note")}
+            </h3>
+
+
+            <p class="note-meta">
+              ${escapeHTML(note.subject || "General")}
+              ${note.chapter ? " • " + escapeHTML(note.chapter) : ""}
+            </p>
+
+
+            <div class="note-bottom">
+
+              <span class="file-type">
+                ${escapeHTML(note.file_type || "PDF")}
+              </span>
+
+              <span class="file-size">
+                ${escapeHTML(note.file_size || "")}
+              </span>
+
+            </div>
+
+
+            <div class="note-actions">
+
+              <button
+                class="note-btn view-btn"
+                onclick="viewNote('${note.file_url || ""}')"
+              >
+                View
+              </button>
+
+              <button
+                class="note-btn download-btn"
+                onclick="downloadNote('${note.id}', '${note.file_url || ""}', '${escapeAttribute(note.title || "note")}')"
+              >
+                ↓ Download
+              </button>
+
+            </div>
+
+          </article>
+        `;
+          })
+          .join("");
+      }
+
+      /* =====================================================
+       SUBJECT FILTER
+    ===================================================== */
+
+      function populateSubjectFilter() {
+        const filter = document.getElementById("subjectFilter");
+
+        const subjects = [
+          ...new Set(allNotes.map((note) => note.subject).filter(Boolean)),
+        ];
+
+        filter.innerHTML =
+          `<option value="all">All Subjects</option>` +
+          subjects
+            .map(
+              (subject) => `
+          <option value="${escapeAttribute(subject)}">
+            ${escapeHTML(subject)}
+          </option>
+        `,
+            )
+            .join("");
+      }
+
+      document
+        .getElementById("subjectFilter")
+        .addEventListener("change", applyFilters);
+
+      document
+        .getElementById("sortFilter")
+        .addEventListener("change", applyFilters);
+
+      function applyFilters() {
+        const subject = document.getElementById("subjectFilter").value;
+
+        const sort = document.getElementById("sortFilter").value;
+
+        let filtered = [...allNotes];
+
+        if (subject !== "all") {
+          filtered = filtered.filter((note) => note.subject === subject);
+        }
+
+        if (sort === "newest") {
+          filtered.sort(
+            (a, b) => new Date(b.created_at) - new Date(a.created_at),
+          );
+        } else if (sort === "oldest") {
+          filtered.sort(
+            (a, b) => new Date(a.created_at) - new Date(b.created_at),
+          );
+        } else if (sort === "name") {
+          filtered.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+        }
+
+        renderNotes(filtered);
+      }
+
+      /* =====================================================
+       STATISTICS
+    ===================================================== */
+
+      function updateStatistics(notes) {
+        document.getElementById("totalNotes").textContent = notes.length;
+
+        const downloaded = notes.filter(
+          (note) => Number(note.download_count || 0) > 0,
+        ).length;
+
+        document.getElementById("downloadedNotes").textContent = downloaded;
+
+        const subjects = new Set(
+          notes.map((note) => note.subject).filter(Boolean),
+        );
+
+        document.getElementById("subjectsCovered").textContent = subjects.size;
+
+        const oneWeekAgo = new Date();
+
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+        const recent = notes.filter(
+          (note) => new Date(note.created_at) >= oneWeekAgo,
+        );
+
+        document.getElementById("recentNotes").textContent = recent.length;
+      }
+
+      /* =====================================================
+       RECENT NOTES
+    ===================================================== */
+
+      function renderRecentNotes(notes) {
+        const container = document.getElementById("recentNotesList");
+
+        const recent = [...notes]
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+          .slice(0, 5);
+
+        if (!recent.length) {
+          container.innerHTML = `<p style="font-size:11px;color:#74819a">
+             No recent notes.
+           </p>`;
+
+          return;
+        }
+
+        container.innerHTML = recent
+          .map((note) => {
+            const icon = getSubjectIcon(note.subject);
+
+            const iconClass = getSubjectClass(note.subject);
+
+            return `
+            <div
+              class="recent-note"
+              onclick="viewNote('${note.file_url || ""}')"
+              style="cursor:pointer"
+            >
+
+              <div class="recent-icon ${iconClass}">
+                ${icon}
+              </div>
+
+              <div class="recent-info">
+
+                <h4>
+                  ${escapeHTML(note.title || "Untitled Note")}
+                </h4>
+
+                <p>
+                  ${escapeHTML(note.subject || "General")}
+                  •
+                  ${formatDate(note.created_at)}
+                </p>
+
+              </div>
+
+            </div>
+          `;
+          })
+          .join("");
+      }
+
+      /* =====================================================
+       SUBJECT PROGRESS
+    ===================================================== */
+
+      function renderSubjectProgress(notes) {
+        const container = document.getElementById("subjectProgress");
+
+        const subjectCounts = {};
+
+        notes.forEach((note) => {
+          const subject = note.subject || "Other";
+
+          subjectCounts[subject] = (subjectCounts[subject] || 0) + 1;
+        });
+
+        const entries = Object.entries(subjectCounts).sort(
+          (a, b) => b[1] - a[1],
+        );
+
+        if (!entries.length) {
+          container.innerHTML = `<p style="font-size:11px;color:#74819a">
+             No subject data available.
+           </p>`;
+
+          return;
+        }
+
+        const max = Math.max(...entries.map((item) => item[1]));
+
+        container.innerHTML = entries
+          .slice(0, 6)
+          .map(([subject, count]) => {
+            const percentage = Math.round((count / max) * 100);
+
+            return `
+              <div class="subject-progress">
+
+                <div class="subject-row">
+                  <span>
+                    ${escapeHTML(subject)}
+                  </span>
+
+                  <span>
+                    ${count}
+                  </span>
+                </div>
+
+                <div class="progress-track">
+                  <div
+                    class="progress-bar"
+                    style="
+                      width:${percentage}%;
+                      background:#5b35df;
+                    "
+                  ></div>
+                </div>
+
+              </div>
+            `;
+          })
+          .join("");
+      }
+
+      /* =====================================================
+       VIEW NOTE
+    ===================================================== */
+
+      function viewNote(url) {
+        if (!url) {
+          alert("This note does not have a file attached.");
+
+          return;
+        }
+
+        window.open(url, "_blank", "noopener,noreferrer");
+      }
+
+      /* =====================================================
+       DOWNLOAD NOTE
+    ===================================================== */
+
+      async function downloadNote(noteId, url, title) {
+        if (!url) {
+          alert("This note does not have a downloadable file.");
+
+          return;
+        }
+
+        const link = document.createElement("a");
+
+        link.href = url;
+        link.download = title || "note";
+
+        document.body.appendChild(link);
+
+        link.click();
+
+        link.remove();
+
+        /*
+        Update download count
+      */
+
+        const note = allNotes.find((item) => item.id === noteId);
+
+        if (note) {
+          const newCount = Number(note.download_count || 0) + 1;
+
+          await supabaseClient
+            .from("notes")
+            .update({
+              download_count: newCount,
+            })
+            .eq("id", noteId);
+
+          note.download_count = newCount;
+
+          updateStatistics(allNotes);
+        }
+      }
+
+      /* =====================================================
+       NOTE MENU
+    ===================================================== */
+
+      function showNoteMenu(id) {
+        const note = allNotes.find((item) => item.id === id);
+
+        if (!note) return;
+
+        alert(
+          `${note.title || "Note"}\n\nSubject: ${note.subject || "General"}`,
+        );
+      }
+
+      /* =====================================================
+       SUBJECT ICONS
+    ===================================================== */
+
+      function getSubjectIcon(subject) {
+        if (!subject) return "📄";
+
+        const value = subject.toLowerCase();
+
+        if (value.includes("physics")) return "⚛";
+
+        if (value.includes("chemistry")) return "⚗";
+
+        if (value.includes("math") || value.includes("statistics")) return "Σ";
+
+        if (value.includes("english")) return "📖";
+
+        if (value.includes("computer") || value.includes("program"))
+          return "</>";
+
+        if (value.includes("biology")) return "🧬";
+
+        if (value.includes("history") || value.includes("social")) return "🌐";
+
+        return "📄";
+      }
+
+      function getSubjectClass(subject) {
+        if (!subject) return "purple";
+
+        const value = subject.toLowerCase();
+
+        if (value.includes("physics")) return "purple";
+
+        if (value.includes("chemistry")) return "green";
+
+        if (value.includes("math") || value.includes("statistics"))
+          return "orange";
+
+        if (value.includes("english")) return "blue";
+
+        if (value.includes("computer") || value.includes("program"))
+          return "purple";
+
+        return "blue";
+      }
+
+      /* =====================================================
+       DATE FORMAT
+    ===================================================== */
+
+      function formatDate(date) {
+        if (!date) return "";
+
+        return new Date(date).toLocaleDateString("en-IN", {
+          day: "numeric",
+          month: "short",
+        });
+      }
+
+      /* =====================================================
+       SECURITY HELPERS
+    ===================================================== */
+
+      function escapeHTML(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function escapeAttribute(value) {
+        return String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+      }
+
+      /* =====================================================
+       ERROR
+    ===================================================== */
+
+      function showError(message) {
+        document.getElementById("notesGrid").innerHTML = `
+          <div class="empty-state">
+
+            <div class="empty-icon">
+              ⚠️
+            </div>
+
+            <h3>
+              Something went wrong
+            </h3>
+
+            <p>
+              ${escapeHTML(message)}
+            </p>
+
+          </div>
+        `;
+      }
+
+      /* =====================================================
+       INITIALIZE
+    ===================================================== */
+
+      document.addEventListener("DOMContentLoaded", loadNotes);
+    </script>
+  </body>
+</html>
