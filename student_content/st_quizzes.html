@@ -1,0 +1,2032 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Student Quizzes</title>
+
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+      /* =====================================================
+   RESET
+===================================================== */
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background: #f7fafc;
+        color: #101a3b;
+      }
+
+      /* =====================================================
+   MAIN CONTENT
+===================================================== */
+
+      .quiz-page {
+        width: 100%;
+        min-height: 100vh;
+        padding: 38px 30px 45px;
+      }
+
+      /* =====================================================
+   PAGE HEADER
+===================================================== */
+
+      .page-header {
+        margin-bottom: 32px;
+      }
+
+      .page-header h1 {
+        font-size: 28px;
+        font-weight: 800;
+        color: #0e1939;
+        margin-bottom: 10px;
+      }
+
+      .page-header p {
+        font-size: 14px;
+        color: #536587;
+      }
+
+      /* =====================================================
+   STATISTICS
+===================================================== */
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 17px;
+        margin-bottom: 20px;
+      }
+
+      .stat-card {
+        background: #ffffff;
+        border: 1px solid #edf0f5;
+        border-radius: 14px;
+
+        min-height: 112px;
+
+        padding: 20px 22px;
+
+        display: flex;
+        align-items: center;
+        gap: 17px;
+
+        box-shadow: 0 4px 15px rgba(16, 24, 40, 0.025);
+      }
+
+      .stat-icon {
+        width: 50px;
+        height: 50px;
+
+        flex-shrink: 0;
+
+        border-radius: 10px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        font-size: 22px;
+      }
+
+      .stat-purple {
+        background: #f0eaff;
+        color: #5935df;
+      }
+
+      .stat-green {
+        background: #e4f8ef;
+        color: #06a765;
+      }
+
+      .stat-orange {
+        background: #fff0dc;
+        color: #ed8b00;
+      }
+
+      .stat-blue {
+        background: #e5f5fa;
+        color: #0794b2;
+      }
+
+      .stat-number {
+        font-size: 23px;
+        font-weight: 800;
+        color: #101a3b;
+        margin-bottom: 5px;
+      }
+
+      .stat-label {
+        font-size: 11px;
+        color: #526489;
+        margin-bottom: 8px;
+      }
+
+      .stat-change {
+        font-size: 10px;
+        color: #00a866;
+        font-weight: 600;
+      }
+
+      /* =====================================================
+   MAIN GRID
+===================================================== */
+
+      .main-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 380px;
+        gap: 18px;
+        align-items: start;
+      }
+
+      /* =====================================================
+   AVAILABLE QUIZZES
+===================================================== */
+
+      .quiz-list-card {
+        background: #ffffff;
+        border: 1px solid #edf0f5;
+        border-radius: 14px;
+
+        overflow: hidden;
+
+        box-shadow: 0 4px 15px rgba(16, 24, 40, 0.025);
+      }
+
+      .quiz-list-header {
+        height: 58px;
+
+        padding: 0 20px;
+
+        border-bottom: 1px solid #edf0f4;
+
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .quiz-list-header h2 {
+        font-size: 15px;
+        font-weight: 750;
+        color: #111b3d;
+      }
+
+      /* =====================================================
+   FILTERS
+===================================================== */
+
+      .filters {
+        display: flex;
+        gap: 10px;
+      }
+
+      .filter-select {
+        height: 34px;
+
+        padding: 0 11px;
+
+        border: 1px solid #e3e8ef;
+        border-radius: 7px;
+
+        background: #ffffff;
+
+        color: #1a294a;
+
+        font-family: inherit;
+        font-size: 10px;
+        font-weight: 600;
+
+        cursor: pointer;
+        outline: none;
+      }
+
+      .filter-select:focus {
+        border-color: #6940e9;
+      }
+
+      /* =====================================================
+   QUIZ ITEM
+===================================================== */
+
+      .quiz-item {
+        min-height: 101px;
+
+        padding: 15px 20px;
+
+        border-bottom: 1px solid #edf0f4;
+
+        display: grid;
+
+        grid-template-columns:
+          61px
+          minmax(220px, 1fr)
+          150px
+          125px;
+
+        gap: 16px;
+
+        align-items: center;
+
+        transition: 0.2s ease;
+      }
+
+      .quiz-item:last-child {
+        border-bottom: none;
+      }
+
+      .quiz-item:hover {
+        background: #fcfcff;
+      }
+
+      /* =====================================================
+   QUIZ ICON
+===================================================== */
+
+      .quiz-icon {
+        width: 57px;
+        height: 57px;
+
+        border-radius: 11px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        font-size: 27px;
+
+        color: #ffffff;
+      }
+
+      .icon-purple {
+        background: #5832d6;
+      }
+
+      .icon-green {
+        background: #08a66a;
+      }
+
+      .icon-orange {
+        background: #ee8c00;
+      }
+
+      .icon-blue {
+        background: #2774dd;
+      }
+
+      .icon-teal {
+        background: #079ca3;
+      }
+
+      .icon-pink {
+        background: #c92d82;
+      }
+
+      /* =====================================================
+   QUIZ INFO
+===================================================== */
+
+      .quiz-info h3 {
+        font-size: 14px;
+        font-weight: 750;
+        color: #111b3d;
+
+        margin-bottom: 6px;
+      }
+
+      .quiz-subject {
+        font-size: 10px;
+        color: #40557d;
+
+        margin-bottom: 8px;
+      }
+
+      .quiz-meta {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+
+        color: #536587;
+
+        font-size: 9px;
+      }
+
+      .quiz-meta span {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .quiz-meta i {
+        font-size: 10px;
+      }
+
+      /* =====================================================
+   QUIZ DATE
+===================================================== */
+
+      .quiz-date {
+        font-size: 10px;
+        color: #42577e;
+
+        line-height: 1.7;
+      }
+
+      .quiz-date .due {
+        color: #40557d;
+      }
+
+      .quiz-date.overdue {
+        color: #ef3030;
+      }
+
+      .quiz-date.completed {
+        color: #00a466;
+      }
+
+      /* =====================================================
+   QUIZ ACTION
+===================================================== */
+
+      .quiz-action {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 7px;
+      }
+
+      .attempt-btn {
+        width: 110px;
+        height: 35px;
+
+        border: none;
+        border-radius: 7px;
+
+        background: linear-gradient(135deg, #6238e8, #5130d0);
+
+        color: #ffffff;
+
+        font-family: inherit;
+        font-size: 10px;
+        font-weight: 700;
+
+        cursor: pointer;
+
+        transition: 0.2s ease;
+      }
+
+      .attempt-btn:hover {
+        transform: translateY(-1px);
+
+        box-shadow: 0 5px 15px rgba(89, 53, 220, 0.22);
+      }
+
+      .result-btn {
+        background: #edf3ff;
+        color: #2165d3;
+      }
+
+      .status {
+        width: 110px;
+
+        padding: 6px 8px;
+
+        border-radius: 6px;
+
+        text-align: center;
+
+        font-size: 9px;
+        font-weight: 600;
+      }
+
+      .status-pending {
+        background: #e8f8f1;
+        color: #009b62;
+      }
+
+      .status-overdue {
+        background: #ffebeb;
+        color: #ed3030;
+      }
+
+      .status-completed {
+        background: #e5f8ee;
+        color: #009c63;
+      }
+
+      /* =====================================================
+   RIGHT SIDE
+===================================================== */
+
+      .right-column {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      /* =====================================================
+   RIGHT CARD
+===================================================== */
+
+      .right-card {
+        background: #ffffff;
+
+        border: 1px solid #edf0f5;
+
+        border-radius: 14px;
+
+        padding: 20px;
+
+        box-shadow: 0 4px 15px rgba(16, 24, 40, 0.025);
+      }
+
+      .right-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        margin-bottom: 20px;
+      }
+
+      .right-card-header h2 {
+        font-size: 14px;
+        font-weight: 750;
+      }
+
+      .view-all {
+        color: #5035df;
+
+        font-size: 10px;
+        font-weight: 600;
+
+        text-decoration: none;
+      }
+
+      /* =====================================================
+   UPCOMING QUIZ
+===================================================== */
+
+      .upcoming-top {
+        display: flex;
+        gap: 12px;
+
+        margin-bottom: 19px;
+      }
+
+      .upcoming-icon {
+        width: 50px;
+        height: 50px;
+
+        border-radius: 10px;
+
+        background: #5934d8;
+        color: #ffffff;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        font-size: 23px;
+      }
+
+      .upcoming-info h3 {
+        font-size: 13px;
+        font-weight: 750;
+
+        margin-bottom: 7px;
+      }
+
+      .upcoming-info p {
+        font-size: 10px;
+        color: #526587;
+      }
+
+      .upcoming-details {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+
+        margin-bottom: 20px;
+      }
+
+      .upcoming-detail {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+
+        font-size: 10px;
+        color: #43577d;
+      }
+
+      .upcoming-detail i {
+        width: 17px;
+
+        color: #617394;
+
+        font-size: 14px;
+      }
+
+      .due-box {
+        background: #f3efff;
+
+        border-radius: 8px;
+
+        padding: 12px;
+
+        text-align: center;
+      }
+
+      .due-box strong {
+        display: block;
+
+        color: #5b36df;
+
+        font-size: 13px;
+
+        margin-bottom: 5px;
+      }
+
+      .due-box span {
+        color: #526487;
+
+        font-size: 9px;
+      }
+
+      /* =====================================================
+   PERFORMANCE
+===================================================== */
+
+      .performance {
+        min-height: 290px;
+      }
+
+      .performance-content {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+
+        padding: 3px 0 18px;
+      }
+
+      /* =====================================================
+   DONUT
+===================================================== */
+
+      .donut {
+        width: 108px;
+        height: 108px;
+
+        border-radius: 50%;
+
+        background: conic-gradient(
+          #06a969 0deg 155deg,
+          #2577dc 155deg 255deg,
+          #f39a12 255deg 315deg,
+          #ef3b3b 315deg 360deg
+        );
+
+        position: relative;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        flex-shrink: 0;
+      }
+
+      .donut::after {
+        content: "";
+
+        position: absolute;
+
+        width: 77px;
+        height: 77px;
+
+        background: #ffffff;
+
+        border-radius: 50%;
+      }
+
+      .donut-center {
+        position: relative;
+        z-index: 2;
+
+        text-align: center;
+      }
+
+      .donut-score {
+        font-size: 19px;
+        font-weight: 800;
+        color: #111b3d;
+      }
+
+      .donut-label {
+        font-size: 8px;
+        color: #607294;
+      }
+
+      /* =====================================================
+   PERFORMANCE LEGEND
+===================================================== */
+
+      .legend {
+        display: flex;
+        flex-direction: column;
+        gap: 11px;
+
+        flex: 1;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+
+        gap: 8px;
+
+        font-size: 9px;
+        color: #405477;
+      }
+
+      .legend-dot {
+        width: 9px;
+        height: 9px;
+
+        border-radius: 50%;
+
+        flex-shrink: 0;
+      }
+
+      .dot-green {
+        background: #08a76a;
+      }
+
+      .dot-blue {
+        background: #2577dc;
+      }
+
+      .dot-orange {
+        background: #f39a12;
+      }
+
+      .dot-red {
+        background: #ef3b3b;
+      }
+
+      .legend-count {
+        margin-left: auto;
+
+        font-weight: 700;
+        color: #182546;
+      }
+
+      /* =====================================================
+   PERFORMANCE BOTTOM
+===================================================== */
+
+      .performance-bottom {
+        border-top: 1px solid #e7ebf0;
+
+        padding-top: 16px;
+
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .performance-stat {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+      }
+
+      .performance-stat + .performance-stat {
+        border-left: 1px solid #e7ebf0;
+        padding-left: 18px;
+      }
+
+      .performance-stat-icon {
+        width: 38px;
+        height: 38px;
+
+        border-radius: 9px;
+
+        background: #f0edff;
+        color: #5a35db;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .performance-stat-icon.orange {
+        background: #fff0dd;
+        color: #ec8b00;
+      }
+
+      .performance-stat strong {
+        display: block;
+
+        font-size: 18px;
+
+        margin-bottom: 4px;
+      }
+
+      .performance-stat span {
+        font-size: 8px;
+        color: #687999;
+      }
+
+      /* =====================================================
+   LOADING
+===================================================== */
+
+      .loading {
+        padding: 50px 20px;
+
+        text-align: center;
+
+        color: #71809d;
+
+        font-size: 12px;
+      }
+
+      .loading i {
+        font-size: 22px;
+
+        margin-bottom: 10px;
+      }
+
+      /* =====================================================
+   EMPTY STATE
+===================================================== */
+
+      .empty {
+        padding: 50px 20px;
+
+        text-align: center;
+
+        color: #73819b;
+      }
+
+      .empty i {
+        font-size: 28px;
+
+        margin-bottom: 12px;
+
+        color: #9ba6b8;
+      }
+
+      .empty h3 {
+        color: #1a2747;
+
+        font-size: 14px;
+
+        margin-bottom: 6px;
+      }
+
+      .empty p {
+        font-size: 10px;
+      }
+
+      /* =====================================================
+   RESPONSIVE
+===================================================== */
+
+      @media (max-width: 1250px) {
+        .stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .main-grid {
+          grid-template-columns: minmax(0, 1fr) 320px;
+        }
+
+        .quiz-item {
+          grid-template-columns:
+            58px
+            minmax(180px, 1fr)
+            120px
+            105px;
+        }
+      }
+
+      @media (max-width: 1000px) {
+        .main-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .right-column {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      @media (max-width: 750px) {
+        .quiz-page {
+          padding: 25px 18px;
+        }
+
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .right-column {
+          grid-template-columns: 1fr;
+        }
+
+        .quiz-list-header {
+          height: auto;
+
+          padding: 15px;
+
+          flex-direction: column;
+          align-items: flex-start;
+
+          gap: 12px;
+        }
+
+        .filters {
+          width: 100%;
+        }
+
+        .filter-select {
+          flex: 1;
+        }
+
+        .quiz-item {
+          grid-template-columns: 58px 1fr;
+          padding: 17px;
+        }
+
+        .quiz-date {
+          grid-column: 2;
+        }
+
+        .quiz-action {
+          grid-column: 2;
+
+          align-items: flex-start;
+        }
+
+        .attempt-btn,
+        .status {
+          width: 130px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .page-header h1 {
+          font-size: 24px;
+        }
+
+        .quiz-item {
+          grid-template-columns: 50px 1fr;
+        }
+
+        .quiz-icon {
+          width: 50px;
+          height: 50px;
+        }
+
+        .quiz-meta {
+          flex-wrap: wrap;
+          gap: 7px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="quiz-page">
+      <!-- =================================================
+         PAGE HEADER
+    ================================================== -->
+
+      <div class="page-header">
+        <h1>Quizzes</h1>
+
+        <p>Attempt quizzes from your subjects and track your progress.</p>
+      </div>
+
+      <!-- =================================================
+         STATISTICS
+    ================================================== -->
+
+      <div class="stats-grid">
+        <!-- TOTAL -->
+
+        <div class="stat-card">
+          <div class="stat-icon stat-purple">
+            <i class="fa-solid fa-clipboard-check"></i>
+          </div>
+
+          <div>
+            <div class="stat-number" id="totalQuizzes">0</div>
+
+            <div class="stat-label">Total Quizzes</div>
+
+            <div class="stat-change">Updated from Supabase</div>
+          </div>
+        </div>
+
+        <!-- COMPLETED -->
+
+        <div class="stat-card">
+          <div class="stat-icon stat-green">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+
+          <div>
+            <div class="stat-number" id="completedQuizzes">0</div>
+
+            <div class="stat-label">Completed</div>
+
+            <div class="stat-change">Based on your attempts</div>
+          </div>
+        </div>
+
+        <!-- PENDING -->
+
+        <div class="stat-card">
+          <div class="stat-icon stat-orange">
+            <i class="fa-regular fa-clock"></i>
+          </div>
+
+          <div>
+            <div class="stat-number" id="pendingQuizzes">0</div>
+
+            <div class="stat-label">Pending</div>
+
+            <div class="stat-change">Waiting to be attempted</div>
+          </div>
+        </div>
+
+        <!-- AVERAGE -->
+
+        <div class="stat-card">
+          <div class="stat-icon stat-blue">
+            <i class="fa-solid fa-chart-line"></i>
+          </div>
+
+          <div>
+            <div class="stat-number" id="averageScore">0%</div>
+
+            <div class="stat-label">Average Score</div>
+
+            <div class="stat-change">Your overall performance</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =================================================
+         MAIN GRID
+    ================================================== -->
+
+      <div class="main-grid">
+        <!-- =================================================
+             AVAILABLE QUIZZES
+        ================================================== -->
+
+        <section class="quiz-list-card">
+          <div class="quiz-list-header">
+            <h2>Available Quizzes</h2>
+
+            <div class="filters">
+              <select
+                class="filter-select"
+                id="subjectFilter"
+                onchange="applyFilters()"
+              >
+                <option value="all">All Subjects</option>
+              </select>
+
+              <select
+                class="filter-select"
+                id="sortFilter"
+                onchange="applyFilters()"
+              >
+                <option value="newest">Newest First</option>
+
+                <option value="oldest">Oldest First</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="quizList">
+            <div class="loading">
+              <i class="fa-solid fa-spinner fa-spin"></i>
+
+              <div>Loading quizzes...</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- =================================================
+             RIGHT COLUMN
+        ================================================== -->
+
+        <div class="right-column">
+          <!-- =================================================
+                 UPCOMING QUIZ
+            ================================================== -->
+
+          <section class="right-card">
+            <div class="right-card-header">
+              <h2>Upcoming Quiz</h2>
+
+              <a href="#" class="view-all"> View all </a>
+            </div>
+
+            <div id="upcomingQuiz">
+              <div class="loading">Loading...</div>
+            </div>
+          </section>
+
+          <!-- =================================================
+                 PERFORMANCE
+            ================================================== -->
+
+          <section class="right-card performance">
+            <div class="right-card-header">
+              <h2>Quiz Performance</h2>
+
+              <a href="#" class="view-all"> View all </a>
+            </div>
+
+            <div class="performance-content">
+              <div class="donut">
+                <div class="donut-center">
+                  <div class="donut-score" id="donutScore">0%</div>
+
+                  <div class="donut-label">Average Score</div>
+                </div>
+              </div>
+
+              <div class="legend">
+                <div class="legend-item">
+                  <span class="legend-dot dot-green"></span>
+
+                  Excellent (80-100%)
+
+                  <span class="legend-count" id="excellentCount"> 0 </span>
+                </div>
+
+                <div class="legend-item">
+                  <span class="legend-dot dot-blue"></span>
+
+                  Good (60-79%)
+
+                  <span class="legend-count" id="goodCount"> 0 </span>
+                </div>
+
+                <div class="legend-item">
+                  <span class="legend-dot dot-orange"></span>
+
+                  Average (40-59%)
+
+                  <span class="legend-count" id="averageCount"> 0 </span>
+                </div>
+
+                <div class="legend-item">
+                  <span class="legend-dot dot-red"></span>
+
+                  Needs Improvement (&lt;40%)
+
+                  <span class="legend-count" id="poorCount"> 0 </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="performance-bottom">
+              <div class="performance-stat">
+                <div class="performance-stat-icon">
+                  <i class="fa-regular fa-calendar"></i>
+                </div>
+
+                <div>
+                  <strong id="quizzesTaken"> 0 </strong>
+
+                  <span> Quizzes Taken </span>
+                </div>
+              </div>
+
+              <div class="performance-stat">
+                <div class="performance-stat-icon orange">
+                  <i class="fa-solid fa-trophy"></i>
+                </div>
+
+                <div>
+                  <strong id="bestScore"> 0% </strong>
+
+                  <span> Best Score </span>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      /* =====================================================
+   SUPABASE CONFIGURATION
+=====================================================
+
+   Replace these with your Supabase project details.
+
+===================================================== */
+
+      const SUPABASE_URL = "YOUR_SUPABASE_URL";
+
+      const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+      const supabaseClient = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY,
+      );
+
+      /* =====================================================
+   GLOBAL DATA
+===================================================== */
+
+      let allQuizzes = [];
+      let allAttempts = [];
+      let studentData = null;
+
+      /* =====================================================
+   ICON MAPPING
+===================================================== */
+
+      function getQuizIcon(subject) {
+        const value = String(subject || "").toLowerCase();
+
+        if (value.includes("physics")) {
+          return {
+            icon: "fa-atom",
+            className: "icon-purple",
+          };
+        }
+
+        if (value.includes("chemistry")) {
+          return {
+            icon: "fa-flask",
+            className: "icon-green",
+          };
+        }
+
+        if (value.includes("math") || value.includes("mathematics")) {
+          return {
+            icon: "fa-sigma",
+            className: "icon-orange",
+          };
+        }
+
+        if (value.includes("english")) {
+          return {
+            icon: "fa-book-open",
+            className: "icon-blue",
+          };
+        }
+
+        if (value.includes("computer") || value.includes("programming")) {
+          return {
+            icon: "fa-code",
+            className: "icon-pink",
+          };
+        }
+
+        return {
+          icon: "fa-globe",
+          className: "icon-teal",
+        };
+      }
+
+      /* =====================================================
+   FORMAT DATE
+===================================================== */
+
+      function formatDate(dateValue) {
+        if (!dateValue) {
+          return "Date not available";
+        }
+
+        const date = new Date(dateValue);
+
+        if (isNaN(date.getTime())) {
+          return "Date not available";
+        }
+
+        return date.toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        });
+      }
+
+      /* =====================================================
+   FORMAT DATE + TIME
+===================================================== */
+
+      function formatDateTime(dateValue) {
+        if (!dateValue) {
+          return "Date not available";
+        }
+
+        const date = new Date(dateValue);
+
+        if (isNaN(date.getTime())) {
+          return "Date not available";
+        }
+
+        return (
+          date.toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "short",
+          }) +
+          ", " +
+          date.toLocaleTimeString("en-IN", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          })
+        );
+      }
+
+      /* =====================================================
+   CALCULATE STATUS
+===================================================== */
+
+      function getQuizStatus(quiz, attempt) {
+        if (attempt) {
+          return {
+            type: "completed",
+            label: "Completed",
+          };
+        }
+
+        if (quiz.due_time && new Date(quiz.due_time) < new Date()) {
+          return {
+            type: "overdue",
+            label: "Overdue",
+          };
+        }
+
+        return {
+          type: "pending",
+          label: "Not Attempted",
+        };
+      }
+
+      /* =====================================================
+   GET CURRENT STUDENT
+===================================================== */
+
+      async function getCurrentStudent() {
+        const {
+          data: { user },
+          error: authError,
+        } = await supabaseClient.auth.getUser();
+
+        if (authError || !user) {
+          throw new Error("Student is not logged in.");
+        }
+
+        const { data, error } = await supabaseClient
+          .from("students")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+
+        if (error) {
+          throw error;
+        }
+
+        studentData = data;
+
+        return data;
+      }
+
+      /* =====================================================
+   LOAD QUIZZES
+===================================================== */
+
+      async function loadQuizzes() {
+        try {
+          const student = await getCurrentStudent();
+
+          /*
+           * Get quizzes for student's grade.
+           */
+
+          const { data: quizzes, error: quizError } = await supabaseClient
+            .from("quizzes")
+            .select("*")
+            .eq("grade", student.grade)
+            .order("start_time", {
+              ascending: false,
+            });
+
+          if (quizError) {
+            throw quizError;
+          }
+
+          allQuizzes = quizzes || [];
+
+          /*
+           * Get student's quiz attempts.
+           */
+
+          const { data: attempts, error: attemptError } = await supabaseClient
+            .from("quiz_attempts")
+            .select("*")
+            .eq("student_id", student.id);
+
+          if (attemptError) {
+            throw attemptError;
+          }
+
+          allAttempts = attempts || [];
+
+          populateSubjectFilter();
+
+          renderQuizzes();
+
+          updateStatistics();
+
+          renderUpcomingQuiz();
+
+          updatePerformance();
+        } catch (error) {
+          console.error("Quiz loading error:", error);
+
+          document.getElementById("quizList").innerHTML = `
+
+                <div class="empty">
+
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+
+                    <h3>
+                        Unable to load quizzes
+                    </h3>
+
+                    <p>
+                        Please check your Supabase configuration
+                        and student login.
+                    </p>
+
+                </div>
+
+            `;
+        }
+      }
+
+      /* =====================================================
+   FIND ATTEMPT
+===================================================== */
+
+      function getAttemptForQuiz(quizId) {
+        return allAttempts.find(
+          (attempt) => String(attempt.quiz_id) === String(quizId),
+        );
+      }
+
+      /* =====================================================
+   POPULATE SUBJECT FILTER
+===================================================== */
+
+      function populateSubjectFilter() {
+        const select = document.getElementById("subjectFilter");
+
+        const subjects = [
+          ...new Set(allQuizzes.map((quiz) => quiz.subject).filter(Boolean)),
+        ];
+
+        select.innerHTML = `
+
+        <option value="all">
+            All Subjects
+        </option>
+
+    `;
+
+        subjects.forEach((subject) => {
+          const option = document.createElement("option");
+
+          option.value = subject;
+
+          option.textContent = subject;
+
+          select.appendChild(option);
+        });
+      }
+
+      /* =====================================================
+   RENDER QUIZZES
+===================================================== */
+
+      function renderQuizzes() {
+        const container = document.getElementById("quizList");
+
+        let quizzes = [...allQuizzes];
+
+        const selectedSubject = document.getElementById("subjectFilter").value;
+
+        const sortValue = document.getElementById("sortFilter").value;
+
+        if (selectedSubject !== "all") {
+          quizzes = quizzes.filter((quiz) => quiz.subject === selectedSubject);
+        }
+
+        quizzes.sort((a, b) => {
+          const dateA = new Date(a.start_time || 0);
+
+          const dateB = new Date(b.start_time || 0);
+
+          return sortValue === "newest" ? dateB - dateA : dateA - dateB;
+        });
+
+        if (!quizzes.length) {
+          container.innerHTML = `
+
+            <div class="empty">
+
+                <i class="fa-solid fa-clipboard-list"></i>
+
+                <h3>
+                    No quizzes available
+                </h3>
+
+                <p>
+                    Your teacher has not added any quizzes for your grade yet.
+                </p>
+
+            </div>
+
+        `;
+
+          return;
+        }
+
+        container.innerHTML = quizzes
+          .map((quiz) => createQuizHTML(quiz))
+          .join("");
+      }
+
+      /* =====================================================
+   CREATE QUIZ HTML
+===================================================== */
+
+      function createQuizHTML(quiz) {
+        const attempt = getAttemptForQuiz(quiz.id);
+
+        const status = getQuizStatus(quiz, attempt);
+
+        const iconData = getQuizIcon(quiz.subject);
+
+        let dateClass = "";
+
+        if (status.type === "overdue") {
+          dateClass = "overdue";
+        }
+
+        if (status.type === "completed") {
+          dateClass = "completed";
+        }
+
+        let actionHTML = "";
+
+        if (status.type === "completed") {
+          const score = attempt.score ?? 0;
+
+          const total = attempt.total_marks || quiz.total_marks || 0;
+
+          actionHTML = `
+
+            <button
+                class="attempt-btn result-btn"
+                onclick="viewResult('${quiz.id}')">
+
+                View Result
+
+            </button>
+
+            <span class="status status-completed">
+
+                ${score}/${total}
+
+            </span>
+
+        `;
+        } else if (status.type === "overdue") {
+          actionHTML = `
+
+            <button
+                class="attempt-btn"
+                onclick="attemptQuiz('${quiz.id}')">
+
+                Attempt Quiz
+
+            </button>
+
+            <span class="status status-overdue">
+
+                Overdue
+
+            </span>
+
+        `;
+        } else {
+          actionHTML = `
+
+            <button
+                class="attempt-btn"
+                onclick="attemptQuiz('${quiz.id}')">
+
+                Attempt Quiz
+
+            </button>
+
+            <span class="status status-pending">
+
+                Not Attempted
+
+            </span>
+
+        `;
+        }
+
+        return `
+
+        <div class="quiz-item">
+
+
+            <div
+                class="quiz-icon ${iconData.className}">
+
+                <i class="fa-solid ${iconData.icon}"></i>
+
+            </div>
+
+
+            <div class="quiz-info">
+
+                <h3>
+                    ${escapeHTML(quiz.title || "Untitled Quiz")}
+                </h3>
+
+
+                <div class="quiz-subject">
+
+                    ${escapeHTML(quiz.subject || "Subject")}
+
+                    &nbsp; • &nbsp;
+
+                    ${escapeHTML(quiz.chapter || "Chapter")}
+
+                </div>
+
+
+                <div class="quiz-meta">
+
+                    <span>
+
+                        <i class="fa-regular fa-calendar"></i>
+
+                        ${quiz.questions_count || 0}
+                        Questions
+
+                    </span>
+
+
+                    <span>
+
+                        <i class="fa-regular fa-star"></i>
+
+                        ${quiz.total_marks || 0}
+                        Marks
+
+                    </span>
+
+
+                    <span>
+
+                        <i class="fa-regular fa-clock"></i>
+
+                        ${quiz.duration_minutes || 0}
+                        min
+
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div
+                class="quiz-date ${dateClass}">
+
+                <div>
+
+                    ${formatDateTime(quiz.start_time)}
+
+                </div>
+
+
+                ${
+                  status.type === "completed"
+                    ? `
+
+                        <div>
+                            Completed
+                            ${
+                              attempt.completed_at
+                                ? " " + formatDate(attempt.completed_at)
+                                : ""
+                            }
+                        </div>
+
+                    `
+                    : status.type === "overdue"
+                      ? `
+
+                        <div>
+                            Due
+                            ${formatDate(quiz.due_time)}
+                        </div>
+
+                    `
+                      : `
+
+                        <div class="due">
+
+                            ${
+                              quiz.due_time
+                                ? "Due " + getDueText(quiz.due_time)
+                                : "No due date"
+                            }
+
+                        </div>
+
+                    `
+                }
+
+            </div>
+
+
+            <div class="quiz-action">
+
+                ${actionHTML}
+
+            </div>
+
+
+        </div>
+
+    `;
+      }
+
+      /* =====================================================
+   DUE TEXT
+===================================================== */
+
+      function getDueText(dueDate) {
+        const due = new Date(dueDate);
+
+        const now = new Date();
+
+        const difference = due - now;
+
+        if (difference <= 0) {
+          return "now";
+        }
+
+        const days = Math.ceil(difference / (1000 * 60 * 60 * 24));
+
+        if (days === 1) {
+          return "in 1 day";
+        }
+
+        return `in ${days} days`;
+      }
+
+      /* =====================================================
+   FILTER
+===================================================== */
+
+      function applyFilters() {
+        renderQuizzes();
+      }
+
+      /* =====================================================
+   STATISTICS
+===================================================== */
+
+      function updateStatistics() {
+        const total = allQuizzes.length;
+
+        const completed = allQuizzes.filter((quiz) =>
+          getAttemptForQuiz(quiz.id),
+        ).length;
+
+        const pending = allQuizzes.filter(
+          (quiz) =>
+            !getAttemptForQuiz(quiz.id) &&
+            (!quiz.due_time || new Date(quiz.due_time) >= new Date()),
+        ).length;
+
+        document.getElementById("totalQuizzes").textContent = total;
+
+        document.getElementById("completedQuizzes").textContent = completed;
+
+        document.getElementById("pendingQuizzes").textContent = pending;
+      }
+
+      /* =====================================================
+   PERFORMANCE
+===================================================== */
+
+      function updatePerformance() {
+        if (!allAttempts.length) {
+          document.getElementById("averageScore").textContent = "0%";
+
+          document.getElementById("donutScore").textContent = "0%";
+
+          return;
+        }
+
+        let totalPercentage = 0;
+
+        let excellent = 0;
+
+        let good = 0;
+
+        let average = 0;
+
+        let poor = 0;
+
+        let best = 0;
+
+        allAttempts.forEach((attempt) => {
+          const score = Number(attempt.score || 0);
+
+          const total = Number(attempt.total_marks || 0);
+
+          if (total <= 0) {
+            return;
+          }
+
+          const percentage = (score / total) * 100;
+
+          totalPercentage += percentage;
+
+          best = Math.max(best, percentage);
+
+          if (percentage >= 80) {
+            excellent++;
+          } else if (percentage >= 60) {
+            good++;
+          } else if (percentage >= 40) {
+            average++;
+          } else {
+            poor++;
+          }
+        });
+
+        const avg = Math.round(totalPercentage / allAttempts.length);
+
+        document.getElementById("averageScore").textContent = `${avg}%`;
+
+        document.getElementById("donutScore").textContent = `${avg}%`;
+
+        document.getElementById("excellentCount").textContent = excellent;
+
+        document.getElementById("goodCount").textContent = good;
+
+        document.getElementById("averageCount").textContent = average;
+
+        document.getElementById("poorCount").textContent = poor;
+
+        document.getElementById("quizzesTaken").textContent =
+          allAttempts.length;
+
+        document.getElementById("bestScore").textContent =
+          `${Math.round(best)}%`;
+      }
+
+      /* =====================================================
+   UPCOMING QUIZ
+===================================================== */
+
+      function renderUpcomingQuiz() {
+        const container = document.getElementById("upcomingQuiz");
+
+        const upcoming = allQuizzes
+          .filter((quiz) => {
+            const attempt = getAttemptForQuiz(quiz.id);
+
+            return (
+              !attempt && quiz.due_time && new Date(quiz.due_time) >= new Date()
+            );
+          })
+          .sort((a, b) => new Date(a.due_time) - new Date(b.due_time))[0];
+
+        if (!upcoming) {
+          container.innerHTML = `
+
+            <div class="empty">
+
+                <i class="fa-solid fa-check-circle"></i>
+
+                <h3>
+                    No upcoming quizzes
+                </h3>
+
+                <p>
+                    You're all caught up!
+                </p>
+
+            </div>
+
+        `;
+
+          return;
+        }
+
+        const iconData = getQuizIcon(upcoming.subject);
+
+        container.innerHTML = `
+
+        <div class="upcoming-top">
+
+            <div
+                class="upcoming-icon">
+
+                <i class="fa-solid ${iconData.icon}"></i>
+
+            </div>
+
+
+            <div class="upcoming-info">
+
+                <h3>
+
+                    ${escapeHTML(upcoming.title)}
+
+                </h3>
+
+                <p>
+
+                    ${escapeHTML(upcoming.subject || "")}
+
+                    &nbsp; • &nbsp;
+
+                    ${escapeHTML(upcoming.chapter || "")}
+
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="upcoming-details">
+
+
+            <div class="upcoming-detail">
+
+                <i class="fa-regular fa-calendar"></i>
+
+                ${formatDateTime(upcoming.start_time)}
+
+            </div>
+
+
+            <div class="upcoming-detail">
+
+                <i class="fa-regular fa-clock"></i>
+
+                ${upcoming.duration_minutes || 0}
+                min
+
+            </div>
+
+
+            <div class="upcoming-detail">
+
+                <i class="fa-regular fa-star"></i>
+
+                ${upcoming.total_marks || 0}
+                Marks
+
+            </div>
+
+
+            <div class="upcoming-detail">
+
+                <i class="fa-regular fa-file-lines"></i>
+
+                ${upcoming.questions_count || 0}
+                Questions
+
+            </div>
+
+        </div>
+
+
+        <div class="due-box">
+
+            <strong>
+
+                Due
+                ${getDueText(upcoming.due_time)}
+
+            </strong>
+
+            <span>
+                Be ready and don't miss it!
+            </span>
+
+        </div>
+
+    `;
+      }
+
+      /* =====================================================
+   ATTEMPT QUIZ
+===================================================== */
+
+      function attemptQuiz(quizId) {
+        /*
+       Replace this URL with your actual
+       student quiz attempt page.
+
+       Example:
+
+       window.location.href =
+           `attempt-quiz.html?id=${quizId}`;
+    */
+
+        window.location.href = `attempt-quiz.html?id=${encodeURIComponent(
+          quizId,
+        )}`;
+      }
+
+      /* =====================================================
+   VIEW RESULT
+===================================================== */
+
+      function viewResult(quizId) {
+        window.location.href = `quiz-result.html?id=${encodeURIComponent(
+          quizId,
+        )}`;
+      }
+
+      /* =====================================================
+   HTML ESCAPE
+===================================================== */
+
+      function escapeHTML(value) {
+        if (value === null || value === undefined) {
+          return "";
+        }
+
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      /* =====================================================
+   START
+===================================================== */
+
+      document.addEventListener("DOMContentLoaded", () => {
+        loadQuizzes();
+      });
+    </script>
+  </body>
+</html>
