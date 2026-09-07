@@ -1,0 +1,1953 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Videos - Smart Learning DC</title>
+
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+
+    <style>
+      /* =====================================================
+           RESET
+        ===================================================== */
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background: #f5f9fd;
+        color: #07183f;
+      }
+
+      button,
+      input,
+      select {
+        font-family: inherit;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      /* =====================================================
+           MAIN PAGE
+        ===================================================== */
+
+      .page {
+        min-height: 100vh;
+
+        padding: 38px 40px 45px;
+
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(84, 55, 237, 0.055),
+            transparent 32%
+          ),
+          #f5f9fd;
+      }
+
+      /* =====================================================
+           PAGE HEADER
+        ===================================================== */
+
+      .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        gap: 30px;
+
+        margin-bottom: 30px;
+      }
+
+      .title-area {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .title-icon {
+        width: 58px;
+        height: 58px;
+
+        border-radius: 14px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        background: linear-gradient(135deg, #663df2, #5128dc);
+
+        color: white;
+
+        font-size: 24px;
+
+        box-shadow: 0 8px 20px rgba(91, 56, 231, 0.22);
+      }
+
+      .title-area h1 {
+        font-size: 31px;
+
+        font-weight: 800;
+
+        letter-spacing: -0.8px;
+
+        color: #08183e;
+
+        margin-bottom: 5px;
+      }
+
+      .title-area p {
+        font-size: 14px;
+
+        color: #53698e;
+      }
+
+      /* =====================================================
+           SEARCH
+        ===================================================== */
+
+      .search-box {
+        width: 405px;
+
+        height: 48px;
+
+        background: white;
+
+        border: 1px solid #dce5ef;
+
+        border-radius: 13px;
+
+        display: flex;
+        align-items: center;
+
+        padding: 0 16px;
+
+        box-shadow: 0 4px 14px rgba(20, 45, 80, 0.025);
+      }
+
+      .search-box i {
+        color: #607493;
+
+        font-size: 17px;
+
+        margin-right: 13px;
+      }
+
+      .search-box input {
+        width: 100%;
+
+        border: none;
+
+        outline: none;
+
+        background: transparent;
+
+        color: #172d53;
+
+        font-size: 13px;
+      }
+
+      .search-box input::placeholder {
+        color: #7083a2;
+      }
+
+      /* =====================================================
+           SUBJECT TABS
+        ===================================================== */
+
+      .subject-tabs {
+        display: flex;
+
+        align-items: center;
+
+        gap: 12px;
+
+        overflow-x: auto;
+
+        padding-bottom: 4px;
+
+        margin-bottom: 32px;
+
+        scrollbar-width: none;
+      }
+
+      .subject-tabs::-webkit-scrollbar {
+        display: none;
+      }
+
+      .subject-tab {
+        flex-shrink: 0;
+
+        height: 40px;
+
+        padding: 0 18px;
+
+        border-radius: 21px;
+
+        border: 1px solid #dce5ef;
+
+        background: white;
+
+        color: #243b66;
+
+        font-size: 13px;
+
+        font-weight: 600;
+
+        display: flex;
+        align-items: center;
+
+        gap: 9px;
+
+        transition: 0.2s;
+      }
+
+      .subject-tab:hover {
+        border-color: #6947ee;
+
+        color: #5636df;
+      }
+
+      .subject-tab.active {
+        background: linear-gradient(135deg, #633bf0, #5130dc);
+
+        border-color: transparent;
+
+        color: white;
+
+        box-shadow: 0 6px 15px rgba(88, 51, 225, 0.2);
+      }
+
+      .tab-dot {
+        width: 10px;
+        height: 10px;
+
+        border-radius: 50%;
+
+        background: #5d3aeb;
+      }
+
+      .tab-dot.green {
+        background: #08ae79;
+      }
+
+      .tab-dot.orange {
+        background: #ff8f00;
+      }
+
+      .tab-dot.blue {
+        background: #2679ed;
+      }
+
+      .tab-dot.pink {
+        background: #db3785;
+      }
+
+      .tab-dot.teal {
+        background: #0ba4a5;
+      }
+
+      .tab-dot.yellow {
+        background: #ffb000;
+      }
+
+      /* =====================================================
+           CONTENT LAYOUT
+        ===================================================== */
+
+      .content-layout {
+        display: grid;
+
+        grid-template-columns: 265px minmax(0, 1fr);
+
+        gap: 21px;
+
+        align-items: start;
+      }
+
+      /* =====================================================
+           FILTER PANEL
+        ===================================================== */
+
+      .filter-card {
+        background: white;
+
+        border: 1px solid #e6edf4;
+
+        border-radius: 15px;
+
+        padding: 22px 18px;
+
+        box-shadow: 0 8px 25px rgba(24, 45, 78, 0.04);
+      }
+
+      .filter-title {
+        display: flex;
+
+        align-items: center;
+
+        gap: 11px;
+
+        font-size: 16px;
+
+        font-weight: 700;
+
+        color: #172d53;
+
+        margin-bottom: 23px;
+      }
+
+      .filter-title i {
+        color: #304f82;
+      }
+
+      .filter-group {
+        margin-bottom: 24px;
+      }
+
+      .filter-group label {
+        display: block;
+
+        font-size: 13px;
+
+        font-weight: 600;
+
+        color: #19335f;
+
+        margin-bottom: 9px;
+      }
+
+      .select-wrapper {
+        position: relative;
+      }
+
+      .select-wrapper i {
+        position: absolute;
+
+        right: 14px;
+
+        top: 50%;
+
+        transform: translateY(-50%);
+
+        pointer-events: none;
+
+        color: #607493;
+
+        font-size: 12px;
+      }
+
+      select {
+        width: 100%;
+
+        height: 41px;
+
+        padding: 0 35px 0 13px;
+
+        appearance: none;
+
+        border: 1px solid #d9e4ef;
+
+        border-radius: 9px;
+
+        outline: none;
+
+        background: white;
+
+        color: #29436d;
+
+        font-size: 12px;
+
+        cursor: pointer;
+      }
+
+      select:focus {
+        border-color: #6847e9;
+      }
+
+      .filter-divider {
+        height: 1px;
+
+        background: #e4ebf2;
+
+        margin: 28px 0;
+      }
+
+      /* =====================================================
+           TOTAL VIDEOS
+        ===================================================== */
+
+      .total-box {
+        display: flex;
+
+        flex-direction: column;
+      }
+
+      .total-heading {
+        display: flex;
+
+        align-items: center;
+
+        gap: 12px;
+
+        margin-bottom: 17px;
+      }
+
+      .total-icon {
+        width: 37px;
+        height: 37px;
+
+        border-radius: 9px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        background: linear-gradient(135deg, #6940ef, #512cd9);
+
+        color: white;
+
+        font-size: 15px;
+      }
+
+      .total-heading span {
+        font-size: 12px;
+
+        color: #40577c;
+
+        font-weight: 600;
+      }
+
+      .total-number {
+        font-size: 25px;
+
+        font-weight: 800;
+
+        color: #07183f;
+
+        margin-top: 1px;
+      }
+
+      .total-progress {
+        height: 6px;
+
+        border-radius: 20px;
+
+        background: #e7edf4;
+
+        overflow: hidden;
+
+        margin-bottom: 13px;
+      }
+
+      .total-progress-fill {
+        height: 100%;
+
+        width: 67%;
+
+        background: #5e3beb;
+
+        border-radius: 20px;
+      }
+
+      .total-description {
+        color: #637898;
+
+        font-size: 11px;
+      }
+
+      /* =====================================================
+           VIDEO AREA
+        ===================================================== */
+
+      .video-area {
+        min-width: 0;
+      }
+
+      .video-grid {
+        display: grid;
+
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+
+        gap: 17px;
+      }
+
+      /* =====================================================
+           VIDEO CARD
+        ===================================================== */
+
+      .video-card {
+        background: white;
+
+        border: 1px solid #e6edf4;
+
+        border-radius: 14px;
+
+        padding: 16px;
+
+        box-shadow: 0 8px 22px rgba(24, 45, 78, 0.035);
+
+        transition:
+          transform 0.22s ease,
+          box-shadow 0.22s ease;
+      }
+
+      .video-card:hover {
+        transform: translateY(-3px);
+
+        box-shadow: 0 14px 32px rgba(24, 45, 78, 0.08);
+      }
+
+      /* =====================================================
+           THUMBNAIL
+        ===================================================== */
+
+      .thumbnail {
+        height: 125px;
+
+        border-radius: 10px;
+
+        position: relative;
+
+        overflow: hidden;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        margin-bottom: 10px;
+
+        background: #182c50;
+      }
+
+      .thumbnail img {
+        width: 100%;
+        height: 100%;
+
+        object-fit: cover;
+
+        display: block;
+      }
+
+      .thumbnail::after {
+        content: "";
+
+        position: absolute;
+
+        inset: 0;
+
+        background: linear-gradient(
+          to top,
+          rgba(0, 0, 0, 0.25),
+          transparent 55%
+        );
+      }
+
+      .play-button {
+        position: absolute;
+
+        z-index: 2;
+
+        width: 43px;
+        height: 43px;
+
+        border-radius: 50%;
+
+        border: 1px solid rgba(255, 255, 255, 0.75);
+
+        background: rgba(15, 25, 35, 0.67);
+
+        color: white;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        font-size: 15px;
+
+        padding-left: 2px;
+
+        transition: 0.2s;
+      }
+
+      .play-button:hover {
+        transform: scale(1.08);
+
+        background: rgba(86, 51, 224, 0.85);
+      }
+
+      .duration {
+        position: absolute;
+
+        z-index: 3;
+
+        bottom: 7px;
+
+        right: 7px;
+
+        background: rgba(8, 18, 34, 0.82);
+
+        color: white;
+
+        padding: 4px 6px;
+
+        border-radius: 4px;
+
+        font-size: 9px;
+
+        font-weight: 600;
+      }
+
+      /* =====================================================
+           CARD MENU
+        ===================================================== */
+
+      .card-menu {
+        position: absolute;
+
+        top: 9px;
+
+        right: 9px;
+
+        z-index: 5;
+      }
+
+      .card-menu-button {
+        width: 27px;
+        height: 27px;
+
+        border: none;
+
+        border-radius: 6px;
+
+        background: rgba(255, 255, 255, 0.8);
+
+        color: #173661;
+
+        font-size: 13px;
+
+        backdrop-filter: blur(4px);
+      }
+
+      .card-menu-button:hover {
+        background: white;
+      }
+
+      .card-dropdown {
+        position: absolute;
+
+        right: 0;
+
+        top: 31px;
+
+        width: 125px;
+
+        background: white;
+
+        border: 1px solid #e3e9f0;
+
+        border-radius: 8px;
+
+        box-shadow: 0 12px 30px rgba(20, 40, 70, 0.13);
+
+        padding: 5px;
+
+        display: none;
+      }
+
+      .card-dropdown.show {
+        display: block;
+      }
+
+      .card-dropdown button {
+        width: 100%;
+
+        border: none;
+
+        background: transparent;
+
+        text-align: left;
+
+        padding: 8px;
+
+        border-radius: 5px;
+
+        font-size: 11px;
+
+        color: #243a60;
+      }
+
+      .card-dropdown button:hover {
+        background: #f3f6fa;
+      }
+
+      /* =====================================================
+           VIDEO INFORMATION
+        ===================================================== */
+
+      .video-subject {
+        display: inline-flex;
+
+        align-items: center;
+
+        padding: 4px 9px;
+
+        border-radius: 20px;
+
+        font-size: 9px;
+
+        font-weight: 700;
+
+        margin-bottom: 7px;
+
+        border: 1px solid transparent;
+      }
+
+      .subject-purple {
+        color: #5733dc;
+        background: #f0edff;
+        border-color: #dcd4ff;
+      }
+
+      .subject-green {
+        color: #008e68;
+        background: #e8fbf4;
+        border-color: #bceedd;
+      }
+
+      .subject-orange {
+        color: #e87500;
+        background: #fff2df;
+        border-color: #ffdba9;
+      }
+
+      .subject-blue {
+        color: #176fd8;
+        background: #e9f3ff;
+        border-color: #cbe2ff;
+      }
+
+      .subject-pink {
+        color: #cf2879;
+        background: #ffebf4;
+        border-color: #f8c7de;
+      }
+
+      .subject-teal {
+        color: #078e91;
+        background: #e8f8f7;
+        border-color: #c4ebea;
+      }
+
+      .subject-yellow {
+        color: #d89100;
+        background: #fff7dc;
+        border-color: #f7e1a2;
+      }
+
+      .video-title {
+        font-size: 14px;
+
+        font-weight: 700;
+
+        color: #102650;
+
+        margin-bottom: 6px;
+
+        white-space: nowrap;
+
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+      }
+
+      .video-description {
+        color: #62799c;
+
+        font-size: 11px;
+
+        line-height: 1.55;
+
+        min-height: 34px;
+
+        margin-bottom: 12px;
+      }
+
+      /* =====================================================
+           VIDEO FOOTER
+        ===================================================== */
+
+      .video-footer {
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        gap: 10px;
+      }
+
+      .video-meta {
+        display: flex;
+
+        align-items: center;
+
+        gap: 14px;
+
+        color: #536b91;
+
+        font-size: 10px;
+      }
+
+      .meta-item {
+        display: flex;
+
+        align-items: center;
+
+        gap: 5px;
+      }
+
+      .meta-item i {
+        font-size: 10px;
+      }
+
+      .watch-button {
+        border: none;
+
+        border-radius: 9px;
+
+        padding: 9px 17px;
+
+        background: #efecff;
+
+        color: #5736e7;
+
+        font-size: 11px;
+
+        font-weight: 700;
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 7px;
+
+        transition: 0.2s;
+      }
+
+      .watch-button:hover {
+        transform: translateY(-1px);
+
+        filter: brightness(0.97);
+      }
+
+      .watch-green {
+        background: #e8faf3;
+        color: #00a977;
+      }
+
+      .watch-orange {
+        background: #fff2df;
+        color: #e98300;
+      }
+
+      .watch-blue {
+        background: #eaf3ff;
+        color: #176fdb;
+      }
+
+      .watch-pink {
+        background: #ffedf6;
+        color: #d42d7c;
+      }
+
+      .watch-teal {
+        background: #e8f8f7;
+        color: #049b9d;
+      }
+
+      .watch-yellow {
+        background: #fff7df;
+        color: #e89a00;
+      }
+
+      /* =====================================================
+           NO RESULTS
+        ===================================================== */
+
+      .no-results {
+        display: none;
+
+        grid-column: 1 / -1;
+
+        padding: 70px 20px;
+
+        text-align: center;
+
+        background: white;
+
+        border: 1px solid #e6edf4;
+
+        border-radius: 15px;
+      }
+
+      .no-results i {
+        font-size: 40px;
+
+        color: #7253e8;
+
+        margin-bottom: 14px;
+      }
+
+      .no-results h3 {
+        font-size: 18px;
+
+        margin-bottom: 7px;
+      }
+
+      .no-results p {
+        color: #72839f;
+
+        font-size: 12px;
+      }
+
+      /* =====================================================
+           VIDEO MODAL
+        ===================================================== */
+
+      .modal-overlay {
+        position: fixed;
+
+        inset: 0;
+
+        background: rgba(4, 15, 35, 0.62);
+
+        backdrop-filter: blur(5px);
+
+        display: none;
+
+        align-items: center;
+        justify-content: center;
+
+        padding: 20px;
+
+        z-index: 100;
+      }
+
+      .modal-overlay.show {
+        display: flex;
+      }
+
+      .video-modal {
+        width: 100%;
+
+        max-width: 850px;
+
+        background: #101b31;
+
+        border-radius: 16px;
+
+        overflow: hidden;
+
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+      }
+
+      .modal-video-area {
+        height: 470px;
+
+        background: #071020;
+
+        position: relative;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+      }
+
+      .modal-video-area img {
+        width: 100%;
+        height: 100%;
+
+        object-fit: cover;
+
+        opacity: 0.72;
+      }
+
+      .modal-play {
+        position: absolute;
+
+        width: 75px;
+        height: 75px;
+
+        border-radius: 50%;
+
+        border: none;
+
+        background: #603be7;
+
+        color: white;
+
+        font-size: 25px;
+
+        padding-left: 4px;
+
+        box-shadow: 0 10px 30px rgba(75, 43, 204, 0.4);
+      }
+
+      .modal-close {
+        position: absolute;
+
+        top: 15px;
+        right: 15px;
+
+        width: 35px;
+        height: 35px;
+
+        border: none;
+
+        border-radius: 50%;
+
+        background: rgba(0, 0, 0, 0.55);
+
+        color: white;
+
+        z-index: 5;
+      }
+
+      .modal-content {
+        padding: 22px 25px;
+      }
+
+      .modal-content h2 {
+        color: white;
+
+        font-size: 20px;
+
+        margin-bottom: 7px;
+      }
+
+      .modal-content p {
+        color: #aebbd0;
+
+        font-size: 12px;
+      }
+
+      /* =====================================================
+           RESPONSIVE
+        ===================================================== */
+
+      @media (max-width: 1250px) {
+        .video-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 950px) {
+        .page {
+          padding: 28px 25px;
+        }
+
+        .page-header {
+          align-items: flex-start;
+
+          flex-direction: column;
+        }
+
+        .search-box {
+          width: 100%;
+        }
+
+        .content-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .filter-card {
+          display: grid;
+
+          grid-template-columns: repeat(3, 1fr);
+
+          gap: 18px;
+        }
+
+        .filter-title {
+          grid-column: 1 / -1;
+
+          margin-bottom: 0;
+        }
+
+        .filter-divider {
+          display: none;
+        }
+
+        .total-box {
+          align-self: end;
+        }
+      }
+
+      @media (max-width: 650px) {
+        .page {
+          padding: 22px 15px;
+        }
+
+        .title-area {
+          align-items: flex-start;
+        }
+
+        .title-area h1 {
+          font-size: 27px;
+        }
+
+        .title-icon {
+          width: 50px;
+          height: 50px;
+        }
+
+        .video-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .filter-card {
+          display: block;
+        }
+
+        .filter-title {
+          margin-bottom: 20px;
+        }
+
+        .total-box {
+          margin-top: 25px;
+        }
+
+        .modal-video-area {
+          height: 250px;
+        }
+
+        .video-footer {
+          align-items: flex-end;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="page">
+      <!-- =================================================
+         HEADER
+    ================================================== -->
+
+      <header class="page-header">
+        <div class="title-area">
+          <div class="title-icon">
+            <i class="fa-solid fa-play"></i>
+          </div>
+
+          <div>
+            <h1>Videos</h1>
+
+            <p>Watch and learn from your subject-wise video lessons.</p>
+          </div>
+        </div>
+
+        <!-- SEARCH -->
+
+        <div class="search-box">
+          <i class="fa-solid fa-magnifying-glass"></i>
+
+          <input type="text" id="searchInput" placeholder="Search videos..." />
+        </div>
+      </header>
+
+      <!-- =================================================
+         SUBJECT TABS
+    ================================================== -->
+
+      <div class="subject-tabs" id="subjectTabs">
+        <button class="subject-tab active" data-subject="All">
+          All Subjects
+        </button>
+
+        <button class="subject-tab" data-subject="Physics">
+          <span class="tab-dot"></span>
+          Physics
+        </button>
+
+        <button class="subject-tab" data-subject="Chemistry">
+          <span class="tab-dot green"></span>
+          Chemistry
+        </button>
+
+        <button class="subject-tab" data-subject="Mathematics">
+          <span class="tab-dot orange"></span>
+          Mathematics
+        </button>
+
+        <button class="subject-tab" data-subject="English">
+          <span class="tab-dot blue"></span>
+          English
+        </button>
+
+        <button class="subject-tab" data-subject="Computer Science">
+          <span class="tab-dot"></span>
+          Computer Science
+        </button>
+
+        <button class="subject-tab" data-subject="Physical Education">
+          <span class="tab-dot pink"></span>
+          Physical Education
+        </button>
+
+        <button class="subject-tab" data-subject="Social Science">
+          <span class="tab-dot teal"></span>
+          Social Science
+        </button>
+
+        <button class="subject-tab" data-subject="Statistics">
+          <span class="tab-dot yellow"></span>
+          Statistics
+        </button>
+      </div>
+
+      <!-- =================================================
+         CONTENT
+    ================================================== -->
+
+      <div class="content-layout">
+        <!-- =================================================
+             FILTER PANEL
+        ================================================== -->
+
+        <aside class="filter-card">
+          <div class="filter-title">
+            <i class="fa-solid fa-sliders"></i>
+
+            Filter
+          </div>
+
+          <!-- SUBJECT -->
+
+          <div class="filter-group">
+            <label> Subject </label>
+
+            <div class="select-wrapper">
+              <select id="subjectFilter">
+                <option value="All">All Subjects</option>
+
+                <option value="Physics">Physics</option>
+
+                <option value="Chemistry">Chemistry</option>
+
+                <option value="Mathematics">Mathematics</option>
+
+                <option value="English">English</option>
+
+                <option value="Computer Science">Computer Science</option>
+
+                <option value="Physical Education">Physical Education</option>
+
+                <option value="Social Science">Social Science</option>
+
+                <option value="Statistics">Statistics</option>
+              </select>
+
+              <i class="fa-solid fa-chevron-down"></i>
+            </div>
+          </div>
+
+          <!-- SORT -->
+
+          <div class="filter-group">
+            <label> Sort By </label>
+
+            <div class="select-wrapper">
+              <select id="sortFilter">
+                <option value="latest">Latest First</option>
+
+                <option value="oldest">Oldest First</option>
+
+                <option value="az">A - Z</option>
+
+                <option value="duration">Duration</option>
+              </select>
+
+              <i class="fa-solid fa-chevron-down"></i>
+            </div>
+          </div>
+
+          <div class="filter-divider"></div>
+
+          <!-- TOTAL -->
+
+          <div class="total-box">
+            <div class="total-heading">
+              <div class="total-icon">
+                <i class="fa-solid fa-play"></i>
+              </div>
+
+              <div>
+                <span> Total Videos </span>
+
+                <div class="total-number" id="totalVideos">75</div>
+              </div>
+            </div>
+
+            <div class="total-progress">
+              <div class="total-progress-fill" id="totalProgress"></div>
+            </div>
+
+            <p class="total-description">Across all subjects</p>
+          </div>
+        </aside>
+
+        <!-- =================================================
+             VIDEO AREA
+        ================================================== -->
+
+        <main class="video-area">
+          <div class="video-grid" id="videoGrid">
+            <!-- Cards generated by JavaScript -->
+
+            <div class="no-results" id="noResults">
+              <i class="fa-solid fa-video-slash"></i>
+
+              <h3>No videos found</h3>
+
+              <p>Try another search or subject.</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- =====================================================
+     VIDEO MODAL
+===================================================== -->
+
+    <div class="modal-overlay" id="videoModal">
+      <div class="video-modal">
+        <div class="modal-video-area">
+          <img id="modalThumbnail" src="" alt="Video thumbnail" />
+
+          <button class="modal-play" id="modalPlay">
+            <i class="fa-solid fa-play"></i>
+          </button>
+
+          <button class="modal-close" onclick="closeVideoModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="modal-content">
+          <h2 id="modalTitle">Video Title</h2>
+
+          <p id="modalDescription">Video description</p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      /* =====================================================
+       VIDEO DATA
+    ===================================================== */
+
+      const videos = [
+        {
+          id: 1,
+          subject: "Physics",
+          title: "Introduction to Motion",
+          description:
+            "Learn about types of motion, displacement, velocity and acceleration.",
+          duration: "12:45",
+          minutes: 12.75,
+          color: "purple",
+          thumbnail:
+            "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=800&q=80",
+        },
+
+        {
+          id: 2,
+          subject: "Chemistry",
+          title: "Chemical Reactions and Equations",
+          description:
+            "Understand the basics of chemical reactions, balancing equations and types of reactions.",
+          duration: "15:20",
+          minutes: 15.33,
+          color: "green",
+          thumbnail:
+            "https://images.unsplash.com/photo-1532634922-8fe0b757fb13?auto=format&fit=crop&w=800&q=80",
+        },
+
+        {
+          id: 3,
+          subject: "Mathematics",
+          title: "Quadratic Equations",
+          description:
+            "Learn how to solve quadratic equations using factorization, formula and graph.",
+          duration: "18:32",
+          minutes: 18.53,
+          color: "orange",
+          thumbnail:
+            "https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=800&q=80",
+        },
+
+        {
+          id: 4,
+          subject: "English",
+          title: "Literature - Prose Analysis",
+          description:
+            "Explore the key themes, characters and main ideas in a prose passage.",
+          duration: "10:18",
+          minutes: 10.3,
+          color: "blue",
+          thumbnail:
+            "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=800&q=80",
+        },
+
+        {
+          id: 5,
+          subject: "Computer Science",
+          title: "Introduction to Python",
+          description:
+            "Get started with Python programming basics, syntax and data types.",
+          duration: "14:36",
+          minutes: 14.6,
+          color: "purple",
+          thumbnail:
+            "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=800&q=80",
+        },
+
+        {
+          id: 6,
+          subject: "Physical Education",
+          title: "Fitness and Health",
+          description:
+            "Learn about the importance of fitness, exercise and a healthy lifestyle.",
+          duration: "11:22",
+          minutes: 11.36,
+          color: "pink",
+          thumbnail:
+            "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=800&q=80",
+        },
+
+        {
+          id: 7,
+          subject: "Social Science",
+          title: "The Freedom Struggle of India",
+          description:
+            "Understand the key events, leaders and movements in India's freedom struggle.",
+          duration: "16:40",
+          minutes: 16.66,
+          color: "teal",
+          thumbnail:
+            "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=800&q=80",
+        },
+
+        {
+          id: 8,
+          subject: "Statistics",
+          title: "Introduction to Data Representation",
+          description:
+            "Learn how to represent data using tables, charts and graphs.",
+          duration: "13:15",
+          minutes: 13.25,
+          color: "yellow",
+          thumbnail:
+            "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80",
+        },
+
+        {
+          id: 9,
+          subject: "Mathematics",
+          title: "Geometry Basics",
+          description:
+            "Explore basic geometric shapes, angles, triangles and their properties.",
+          duration: "17:05",
+          minutes: 17.08,
+          color: "orange",
+          thumbnail:
+            "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=800&q=80",
+        },
+      ];
+
+      /* =====================================================
+       SUBJECT COLOR CLASSES
+    ===================================================== */
+
+      function getSubjectClass(color) {
+        return `subject-${color}`;
+      }
+
+      function getWatchClass(color) {
+        if (color === "green") return "watch-green";
+
+        if (color === "orange") return "watch-orange";
+
+        if (color === "blue") return "watch-blue";
+
+        if (color === "pink") return "watch-pink";
+
+        if (color === "teal") return "watch-teal";
+
+        if (color === "yellow") return "watch-yellow";
+
+        return "";
+      }
+
+      /* =====================================================
+       RENDER VIDEOS
+    ===================================================== */
+
+      function renderVideos() {
+        const grid = document.getElementById("videoGrid");
+
+        const noResults = document.getElementById("noResults");
+
+        const search = document
+          .getElementById("searchInput")
+          .value.toLowerCase()
+          .trim();
+
+        const subject = document.getElementById("subjectFilter").value;
+
+        const sort = document.getElementById("sortFilter").value;
+
+        let filtered = videos.filter((video) => {
+          const matchesSearch =
+            video.title.toLowerCase().includes(search) ||
+            video.description.toLowerCase().includes(search) ||
+            video.subject.toLowerCase().includes(search);
+
+          const matchesSubject = subject === "All" || video.subject === subject;
+
+          return matchesSearch && matchesSubject;
+        });
+
+        /* SORT */
+
+        if (sort === "az") {
+          filtered.sort((a, b) => a.title.localeCompare(b.title));
+        }
+
+        if (sort === "oldest") {
+          filtered.sort((a, b) => a.id - b.id);
+        }
+
+        if (sort === "latest") {
+          filtered.sort((a, b) => b.id - a.id);
+        }
+
+        if (sort === "duration") {
+          filtered.sort((a, b) => b.minutes - a.minutes);
+        }
+
+        /* REMOVE OLD CARDS */
+
+        grid.querySelectorAll(".video-card").forEach((card) => card.remove());
+
+        /* NO RESULTS */
+
+        if (filtered.length === 0) {
+          noResults.style.display = "block";
+
+          updateTotal(0);
+
+          return;
+        }
+
+        noResults.style.display = "none";
+
+        /* CREATE CARDS */
+
+        filtered.forEach((video) => {
+          const card = document.createElement("article");
+
+          card.className = "video-card";
+
+          card.innerHTML = `
+
+                <div
+                    class="thumbnail"
+                >
+
+                    <img
+                        src="${video.thumbnail}"
+                        alt="${video.title}"
+                    >
+
+
+                    <button
+                        class="play-button"
+                        onclick="openVideo(${video.id})"
+                        aria-label="Play video"
+                    >
+
+                        <i
+                            class="fa-solid fa-play"
+                        ></i>
+
+                    </button>
+
+
+                    <span class="duration">
+                        ${video.duration}
+                    </span>
+
+
+                    <div class="card-menu">
+
+                        <button
+                            class="card-menu-button"
+                            onclick="toggleCardMenu(event, ${video.id})"
+                        >
+
+                            <i
+                                class="fa-solid fa-ellipsis-vertical"
+                            ></i>
+
+                        </button>
+
+
+                        <div
+                            class="card-dropdown"
+                            id="dropdown-${video.id}"
+                        >
+
+                            <button
+                                onclick="saveVideo(${video.id})"
+                            >
+
+                                <i
+                                    class="fa-regular fa-bookmark"
+                                ></i>
+
+                                &nbsp; Save
+
+                            </button>
+
+
+                            <button
+                                onclick="shareVideo(${video.id})"
+                            >
+
+                                <i
+                                    class="fa-solid fa-share-nodes"
+                                ></i>
+
+                                &nbsp; Share
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <span
+                    class="
+                        video-subject
+                        ${getSubjectClass(video.color)}
+                    "
+                >
+                    ${video.subject}
+                </span>
+
+
+                <h3
+                    class="video-title"
+                    title="${video.title}"
+                >
+                    ${video.title}
+                </h3>
+
+
+                <p class="video-description">
+                    ${video.description}
+                </p>
+
+
+                <div class="video-footer">
+
+
+                    <div class="video-meta">
+
+                        <span class="meta-item">
+
+                            <i
+                                class="fa-solid fa-circle-play"
+                            ></i>
+
+                            ${video.subject}
+
+                        </span>
+
+
+                        <span class="meta-item">
+
+                            <i
+                                class="fa-regular fa-clock"
+                            ></i>
+
+                            ${video.duration}
+
+                        </span>
+
+                    </div>
+
+
+                    <button
+                        class="
+                            watch-button
+                            ${getWatchClass(video.color)}
+                        "
+                        onclick="openVideo(${video.id})"
+                    >
+
+                        <i
+                            class="fa-solid fa-play"
+                        ></i>
+
+                        Watch
+
+                    </button>
+
+
+                </div>
+
+            `;
+
+          grid.insertBefore(card, noResults);
+        });
+
+        updateTotal(filtered.length);
+      }
+
+      /* =====================================================
+       UPDATE TOTAL
+    ===================================================== */
+
+      function updateTotal(count) {
+        document.getElementById("totalVideos").textContent = count;
+
+        const percentage = Math.min(
+          100,
+          Math.round((count / videos.length) * 100),
+        );
+
+        document.getElementById("totalProgress").style.width = percentage + "%";
+      }
+
+      /* =====================================================
+       SUBJECT TAB
+    ===================================================== */
+
+      document.querySelectorAll(".subject-tab").forEach((tab) => {
+        tab.addEventListener("click", function () {
+          document
+            .querySelectorAll(".subject-tab")
+            .forEach((item) => item.classList.remove("active"));
+
+          this.classList.add("active");
+
+          const subject = this.dataset.subject;
+
+          document.getElementById("subjectFilter").value = subject;
+
+          renderVideos();
+        });
+      });
+
+      /* =====================================================
+       SEARCH
+    ===================================================== */
+
+      document
+        .getElementById("searchInput")
+        .addEventListener("input", renderVideos);
+
+      /* =====================================================
+       FILTER
+    ===================================================== */
+
+      document
+        .getElementById("subjectFilter")
+        .addEventListener("change", function () {
+          const selected = this.value;
+
+          document.querySelectorAll(".subject-tab").forEach((tab) => {
+            tab.classList.remove("active");
+
+            if (tab.dataset.subject === selected) {
+              tab.classList.add("active");
+            }
+          });
+
+          renderVideos();
+        });
+
+      /* =====================================================
+       SORT
+    ===================================================== */
+
+      document
+        .getElementById("sortFilter")
+        .addEventListener("change", renderVideos);
+
+      /* =====================================================
+       OPEN VIDEO
+    ===================================================== */
+
+      function openVideo(id) {
+        const video = videos.find((item) => item.id === id);
+
+        if (!video) return;
+
+        document.getElementById("modalThumbnail").src = video.thumbnail;
+
+        document.getElementById("modalTitle").textContent = video.title;
+
+        document.getElementById("modalDescription").textContent =
+          video.description;
+
+        document.getElementById("videoModal").classList.add("show");
+
+        closeAllDropdowns();
+      }
+
+      /* =====================================================
+       CLOSE VIDEO MODAL
+    ===================================================== */
+
+      function closeVideoModal() {
+        document.getElementById("videoModal").classList.remove("show");
+      }
+
+      /* =====================================================
+       CLOSE MODAL ON OUTSIDE CLICK
+    ===================================================== */
+
+      document
+        .getElementById("videoModal")
+        .addEventListener("click", function (event) {
+          if (event.target === this) {
+            closeVideoModal();
+          }
+        });
+
+      /* =====================================================
+       CARD MENU
+    ===================================================== */
+
+      function toggleCardMenu(event, id) {
+        event.stopPropagation();
+
+        const current = document.getElementById(`dropdown-${id}`);
+
+        document.querySelectorAll(".card-dropdown").forEach((dropdown) => {
+          if (dropdown !== current) {
+            dropdown.classList.remove("show");
+          }
+        });
+
+        current.classList.toggle("show");
+      }
+
+      /* =====================================================
+       CLOSE ALL DROPDOWNS
+    ===================================================== */
+
+      function closeAllDropdowns() {
+        document
+          .querySelectorAll(".card-dropdown")
+          .forEach((dropdown) => dropdown.classList.remove("show"));
+      }
+
+      /* =====================================================
+       SAVE VIDEO
+    ===================================================== */
+
+      function saveVideo(id) {
+        const video = videos.find((item) => item.id === id);
+
+        if (!video) return;
+
+        alert(`"${video.title}" has been saved.`);
+
+        closeAllDropdowns();
+      }
+
+      /* =====================================================
+       SHARE VIDEO
+    ===================================================== */
+
+      function shareVideo(id) {
+        const video = videos.find((item) => item.id === id);
+
+        if (!video) return;
+
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(video.title);
+
+          alert("Video title copied to clipboard.");
+        } else {
+          alert("Share link copied.");
+        }
+
+        closeAllDropdowns();
+      }
+
+      /* =====================================================
+       CLOSE DROPDOWN WHEN CLICKING OUTSIDE
+    ===================================================== */
+
+      document.addEventListener("click", function (event) {
+        if (!event.target.closest(".card-menu")) {
+          closeAllDropdowns();
+        }
+      });
+
+      /* =====================================================
+       ESCAPE KEY
+    ===================================================== */
+
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") {
+          closeVideoModal();
+
+          closeAllDropdowns();
+        }
+      });
+
+      /* =====================================================
+       INITIAL LOAD
+    ===================================================== */
+
+      renderVideos();
+    </script>
+  </body>
+</html>
