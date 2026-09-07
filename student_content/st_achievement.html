@@ -1,0 +1,1546 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Achievements - Smart Learning DC</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background: #f5f9fd;
+        color: #08183e;
+      }
+
+      button {
+        font-family: inherit;
+        cursor: pointer;
+      }
+
+      /* ===============================
+           PAGE
+        =============================== */
+
+      .page {
+        min-height: 100vh;
+        padding: 38px 40px 45px;
+
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(91, 57, 234, 0.06),
+            transparent 32%
+          ),
+          #f5f9fd;
+      }
+
+      /* ===============================
+           PAGE HEADER
+        =============================== */
+
+      .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 28px;
+      }
+
+      .heading-left {
+        display: flex;
+        align-items: center;
+        gap: 17px;
+      }
+
+      .heading-icon {
+        width: 58px;
+        height: 58px;
+
+        border-radius: 15px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        color: white;
+        font-size: 23px;
+
+        background: linear-gradient(135deg, #6841ef, #5129d9);
+
+        box-shadow: 0 8px 20px rgba(91, 55, 229, 0.23);
+      }
+
+      .heading-text h1 {
+        font-size: 30px;
+        font-weight: 800;
+        letter-spacing: -0.7px;
+        margin-bottom: 5px;
+      }
+
+      .heading-text p {
+        color: #607394;
+        font-size: 14px;
+      }
+
+      /* ===============================
+           POINTS
+        =============================== */
+
+      .points-box {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        background: white;
+
+        border: 1px solid #e0e8f1;
+
+        padding: 10px 15px;
+
+        border-radius: 12px;
+      }
+
+      .points-icon {
+        width: 37px;
+        height: 37px;
+
+        border-radius: 10px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        background: #fff2d8;
+        color: #e89400;
+      }
+
+      .points-text span {
+        display: block;
+        color: #71829c;
+        font-size: 9px;
+        margin-bottom: 3px;
+      }
+
+      .points-text strong {
+        font-size: 15px;
+      }
+
+      /* ===============================
+           OVERVIEW CARDS
+        =============================== */
+
+      .overview-grid {
+        display: grid;
+
+        grid-template-columns: repeat(4, 1fr);
+
+        gap: 18px;
+
+        margin-bottom: 22px;
+      }
+
+      .overview-card {
+        background: white;
+
+        border: 1px solid #e5edf4;
+
+        border-radius: 15px;
+
+        padding: 20px;
+
+        min-height: 130px;
+
+        box-shadow: 0 7px 22px rgba(25, 46, 78, 0.035);
+      }
+
+      .overview-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        margin-bottom: 14px;
+      }
+
+      .overview-icon {
+        width: 40px;
+        height: 40px;
+
+        border-radius: 10px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        font-size: 15px;
+        color: white;
+      }
+
+      .purple {
+        background: linear-gradient(135deg, #6841ef, #512dd9);
+      }
+
+      .orange {
+        background: linear-gradient(135deg, #ffab26, #e98500);
+      }
+
+      .green {
+        background: linear-gradient(135deg, #13b982, #079b6c);
+      }
+
+      .blue {
+        background: linear-gradient(135deg, #378cef, #1768d6);
+      }
+
+      .overview-label {
+        color: #637896;
+        font-size: 10px;
+        font-weight: 600;
+      }
+
+      .overview-value {
+        font-size: 25px;
+        font-weight: 800;
+        margin-top: 4px;
+      }
+
+      .overview-small {
+        font-size: 9px;
+        color: #7889a2;
+        margin-top: 5px;
+      }
+
+      /* ===============================
+           MAIN GRID
+        =============================== */
+
+      .main-grid {
+        display: grid;
+
+        grid-template-columns:
+          minmax(0, 1.55fr)
+          minmax(300px, 0.85fr);
+
+        gap: 20px;
+
+        margin-bottom: 20px;
+      }
+
+      /* ===============================
+           CARD
+        =============================== */
+
+      .card {
+        background: white;
+
+        border: 1px solid #e5edf4;
+
+        border-radius: 15px;
+
+        box-shadow: 0 7px 22px rgba(25, 46, 78, 0.035);
+      }
+
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        padding: 20px 22px 15px;
+      }
+
+      .card-header h2 {
+        font-size: 16px;
+        font-weight: 750;
+      }
+
+      .card-header p {
+        color: #71829f;
+        font-size: 10px;
+        margin-top: 5px;
+      }
+
+      /* ===============================
+           ACHIEVEMENT PROGRESS
+        =============================== */
+
+      .progress-card {
+        padding-bottom: 22px;
+      }
+
+      .progress-content {
+        padding: 5px 22px 0;
+      }
+
+      .progress-main {
+        display: flex;
+        align-items: center;
+        gap: 25px;
+      }
+
+      .achievement-circle {
+        width: 145px;
+        height: 145px;
+
+        flex-shrink: 0;
+
+        border-radius: 50%;
+
+        background: conic-gradient(#603ce7 0deg 230deg, #ebe8f8 230deg 360deg);
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        position: relative;
+      }
+
+      .achievement-circle::before {
+        content: "";
+
+        position: absolute;
+
+        width: 112px;
+        height: 112px;
+
+        border-radius: 50%;
+
+        background: white;
+      }
+
+      .circle-content {
+        position: relative;
+        text-align: center;
+      }
+
+      .circle-content strong {
+        display: block;
+        font-size: 26px;
+        font-weight: 800;
+      }
+
+      .circle-content span {
+        color: #7586a0;
+        font-size: 9px;
+      }
+
+      .progress-details {
+        flex: 1;
+      }
+
+      .progress-details h3 {
+        font-size: 14px;
+        margin-bottom: 7px;
+      }
+
+      .progress-details p {
+        font-size: 10px;
+        color: #71829f;
+        line-height: 1.6;
+        margin-bottom: 15px;
+      }
+
+      .progress-bar {
+        height: 8px;
+
+        border-radius: 20px;
+
+        background: #edf1f5;
+
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        width: 64%;
+
+        height: 100%;
+
+        border-radius: 20px;
+
+        background: linear-gradient(90deg, #5835dc, #7959f2);
+      }
+
+      .progress-label {
+        display: flex;
+        justify-content: space-between;
+
+        margin-top: 7px;
+
+        font-size: 9px;
+
+        color: #71839e;
+      }
+
+      /* ===============================
+           NEXT ACHIEVEMENT
+        =============================== */
+
+      .next-achievement {
+        padding: 21px;
+      }
+
+      .next-title {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+
+        margin-bottom: 17px;
+      }
+
+      .next-title-icon {
+        width: 39px;
+        height: 39px;
+
+        border-radius: 10px;
+
+        background: #fff1d8;
+
+        color: #ed9200;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .next-title h2 {
+        font-size: 15px;
+      }
+
+      .next-title p {
+        color: #7889a3;
+        font-size: 9px;
+        margin-top: 4px;
+      }
+
+      .next-badge {
+        text-align: center;
+
+        padding: 12px;
+
+        border-radius: 12px;
+
+        background: linear-gradient(135deg, #fffaf0, #fff4dd);
+
+        border: 1px solid #f7e8c7;
+      }
+
+      .next-badge-icon {
+        width: 65px;
+        height: 65px;
+
+        border-radius: 50%;
+
+        margin: 0 auto 10px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        font-size: 25px;
+
+        color: #e79600;
+
+        background: #ffe8af;
+
+        border: 5px solid #fff5d9;
+      }
+
+      .next-badge h3 {
+        font-size: 12px;
+        margin-bottom: 5px;
+      }
+
+      .next-badge p {
+        color: #7888a1;
+        font-size: 9px;
+      }
+
+      .next-progress {
+        margin-top: 13px;
+      }
+
+      .next-progress-bar {
+        height: 7px;
+
+        background: #f0e7d3;
+
+        border-radius: 20px;
+
+        overflow: hidden;
+      }
+
+      .next-progress-fill {
+        width: 72%;
+
+        height: 100%;
+
+        border-radius: 20px;
+
+        background: #efa000;
+      }
+
+      .next-progress-text {
+        display: flex;
+        justify-content: space-between;
+
+        margin-top: 6px;
+
+        font-size: 8px;
+
+        color: #7b6e56;
+      }
+
+      /* ===============================
+           RECENT ACHIEVEMENTS
+        =============================== */
+
+      .recent-card {
+        padding-bottom: 8px;
+      }
+
+      .achievement-list {
+        padding: 0 22px;
+      }
+
+      .achievement-item {
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        padding: 13px 0;
+
+        border-bottom: 1px solid #edf1f5;
+      }
+
+      .achievement-item:last-child {
+        border-bottom: none;
+      }
+
+      .achievement-left {
+        display: flex;
+
+        align-items: center;
+
+        gap: 12px;
+      }
+
+      .badge {
+        width: 42px;
+        height: 42px;
+
+        border-radius: 11px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        font-size: 16px;
+      }
+
+      .badge-purple {
+        background: #eeeaff;
+        color: #613de2;
+      }
+
+      .badge-orange {
+        background: #fff1d9;
+        color: #eb9200;
+      }
+
+      .badge-green {
+        background: #e5faf3;
+        color: #08a978;
+      }
+
+      .badge-blue {
+        background: #e8f2ff;
+        color: #2679df;
+      }
+
+      .badge-pink {
+        background: #fceaf3;
+        color: #d73d88;
+      }
+
+      .achievement-info strong {
+        display: block;
+
+        font-size: 11px;
+
+        margin-bottom: 4px;
+      }
+
+      .achievement-info span {
+        color: #7b8ba4;
+
+        font-size: 9px;
+      }
+
+      .earned-date {
+        color: #8494aa;
+
+        font-size: 8px;
+
+        text-align: right;
+      }
+
+      /* ===============================
+           FILTERS
+        =============================== */
+
+      .filter-buttons {
+        display: flex;
+        gap: 6px;
+      }
+
+      .filter-btn {
+        border: 1px solid #e0e7ef;
+
+        background: white;
+
+        color: #647894;
+
+        padding: 7px 11px;
+
+        border-radius: 8px;
+
+        font-size: 9px;
+
+        font-weight: 650;
+
+        transition: 0.2s;
+      }
+
+      .filter-btn:hover,
+      .filter-btn.active {
+        background: #eeeaff;
+
+        color: #5b39e0;
+
+        border-color: #dcd5ff;
+      }
+
+      /* ===============================
+           BADGES GRID
+        =============================== */
+
+      .badges-card {
+        padding-bottom: 20px;
+      }
+
+      .badges-grid {
+        display: grid;
+
+        grid-template-columns: repeat(4, 1fr);
+
+        gap: 13px;
+
+        padding: 5px 22px 0;
+      }
+
+      .badge-card {
+        border: 1px solid #e7edf3;
+
+        border-radius: 12px;
+
+        padding: 17px 12px;
+
+        text-align: center;
+
+        transition: 0.2s;
+
+        background: white;
+      }
+
+      .badge-card:hover {
+        transform: translateY(-2px);
+
+        box-shadow: 0 8px 20px rgba(35, 54, 82, 0.07);
+      }
+
+      .badge-big {
+        width: 58px;
+        height: 58px;
+
+        margin: 0 auto 11px;
+
+        border-radius: 50%;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        font-size: 22px;
+      }
+
+      .badge-card h3 {
+        font-size: 10px;
+
+        margin-bottom: 5px;
+      }
+
+      .badge-card p {
+        font-size: 8px;
+
+        color: #7b8ca5;
+
+        line-height: 1.5;
+      }
+
+      .badge-card.earned {
+        border-color: #e0dafa;
+      }
+
+      .badge-card.locked {
+        opacity: 0.58;
+
+        background: #f8fafc;
+      }
+
+      .badge-card.locked .badge-big {
+        background: #e8edf2;
+        color: #8d9bad;
+      }
+
+      .badge-check {
+        display: inline-flex;
+
+        align-items: center;
+        gap: 4px;
+
+        margin-top: 8px;
+
+        padding: 4px 7px;
+
+        border-radius: 10px;
+
+        background: #e7faf3;
+
+        color: #08a978;
+
+        font-size: 7px;
+
+        font-weight: 700;
+      }
+
+      .badge-lock {
+        display: inline-flex;
+
+        align-items: center;
+        gap: 4px;
+
+        margin-top: 8px;
+
+        padding: 4px 7px;
+
+        border-radius: 10px;
+
+        background: #edf1f5;
+
+        color: #76879e;
+
+        font-size: 7px;
+
+        font-weight: 700;
+      }
+
+      /* ===============================
+           CATEGORY PROGRESS
+        =============================== */
+
+      .category-card {
+        margin-top: 20px;
+
+        padding-bottom: 18px;
+      }
+
+      .category-grid {
+        display: grid;
+
+        grid-template-columns: repeat(3, 1fr);
+
+        gap: 16px;
+
+        padding: 5px 22px 0;
+      }
+
+      .category {
+        padding: 15px;
+
+        border: 1px solid #e7edf3;
+
+        border-radius: 11px;
+      }
+
+      .category-top {
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        margin-bottom: 11px;
+      }
+
+      .category-name {
+        display: flex;
+
+        align-items: center;
+
+        gap: 8px;
+
+        font-size: 10px;
+
+        font-weight: 700;
+      }
+
+      .category-name i {
+        color: #6040df;
+      }
+
+      .category-percent {
+        color: #607491;
+
+        font-size: 9px;
+
+        font-weight: 700;
+      }
+
+      .category-bar {
+        height: 6px;
+
+        background: #edf1f5;
+
+        border-radius: 20px;
+
+        overflow: hidden;
+      }
+
+      .category-fill {
+        height: 100%;
+
+        border-radius: 20px;
+
+        background: linear-gradient(90deg, #6040df, #7b5bf1);
+      }
+
+      /* ===============================
+           RESPONSIVE
+        =============================== */
+
+      @media (max-width: 1100px) {
+        .overview-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .main-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .badges-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .category-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      @media (max-width: 700px) {
+        .page {
+          padding: 25px 16px;
+        }
+
+        .page-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 18px;
+        }
+
+        .points-box {
+          width: 100%;
+        }
+
+        .overview-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .progress-main {
+          flex-direction: column;
+          text-align: center;
+        }
+
+        .badges-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .category-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .card-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 12px;
+        }
+
+        .filter-buttons {
+          width: 100%;
+        }
+
+        .filter-btn {
+          flex: 1;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="page">
+      <!-- =====================================
+         PAGE HEADER
+    ====================================== -->
+
+      <header class="page-header">
+        <div class="heading-left">
+          <div class="heading-icon">
+            <i class="fa-solid fa-trophy"></i>
+          </div>
+
+          <div class="heading-text">
+            <h1>Achievements</h1>
+
+            <p>Celebrate your progress and unlock new milestones.</p>
+          </div>
+        </div>
+
+        <div class="points-box">
+          <div class="points-icon">
+            <i class="fa-solid fa-star"></i>
+          </div>
+
+          <div class="points-text">
+            <span> Total Points </span>
+
+            <strong id="totalPoints"> 2,450 XP </strong>
+          </div>
+        </div>
+      </header>
+
+      <!-- =====================================
+         OVERVIEW
+    ====================================== -->
+
+      <section class="overview-grid">
+        <div class="overview-card">
+          <div class="overview-top">
+            <div class="overview-icon purple">
+              <i class="fa-solid fa-medal"></i>
+            </div>
+          </div>
+
+          <div class="overview-label">Achievements Earned</div>
+
+          <div class="overview-value">18</div>
+
+          <div class="overview-small">Out of 30 available</div>
+        </div>
+
+        <div class="overview-card">
+          <div class="overview-top">
+            <div class="overview-icon orange">
+              <i class="fa-solid fa-fire"></i>
+            </div>
+          </div>
+
+          <div class="overview-label">Current Streak</div>
+
+          <div class="overview-value">7 Days</div>
+
+          <div class="overview-small">Your best is 12 days</div>
+        </div>
+
+        <div class="overview-card">
+          <div class="overview-top">
+            <div class="overview-icon green">
+              <i class="fa-solid fa-check-double"></i>
+            </div>
+          </div>
+
+          <div class="overview-label">Challenges Completed</div>
+
+          <div class="overview-value">24</div>
+
+          <div class="overview-small">4 completed this month</div>
+        </div>
+
+        <div class="overview-card">
+          <div class="overview-top">
+            <div class="overview-icon blue">
+              <i class="fa-solid fa-ranking-star"></i>
+            </div>
+          </div>
+
+          <div class="overview-label">Achievement Rank</div>
+
+          <div class="overview-value">#12</div>
+
+          <div class="overview-small">Among your classmates</div>
+        </div>
+      </section>
+
+      <!-- =====================================
+         PROGRESS + NEXT ACHIEVEMENT
+    ====================================== -->
+
+      <section class="main-grid">
+        <!-- OVERALL PROGRESS -->
+
+        <div class="card progress-card">
+          <div class="card-header">
+            <div>
+              <h2>Achievement Progress</h2>
+
+              <p>Keep learning to unlock more achievements.</p>
+            </div>
+          </div>
+
+          <div class="progress-content">
+            <div class="progress-main">
+              <div class="achievement-circle">
+                <div class="circle-content">
+                  <strong> 60% </strong>
+
+                  <span> completed </span>
+                </div>
+              </div>
+
+              <div class="progress-details">
+                <h3>You're doing great!</h3>
+
+                <p>
+                  You have unlocked 18 out of 30 available achievements.
+                  Complete more quizzes, study consistently, and attend classes
+                  to unlock the remaining badges.
+                </p>
+
+                <div class="progress-bar">
+                  <div class="progress-fill"></div>
+                </div>
+
+                <div class="progress-label">
+                  <span> 18 earned </span>
+
+                  <span> 12 remaining </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- NEXT ACHIEVEMENT -->
+
+        <div class="card next-achievement">
+          <div class="next-title">
+            <div class="next-title-icon">
+              <i class="fa-solid fa-bullseye"></i>
+            </div>
+
+            <div>
+              <h2>Next Achievement</h2>
+
+              <p>You're almost there!</p>
+            </div>
+          </div>
+
+          <div class="next-badge">
+            <div class="next-badge-icon">
+              <i class="fa-solid fa-book-open"></i>
+            </div>
+
+            <h3>Knowledge Seeker</h3>
+
+            <p>Complete 30 study sessions</p>
+
+            <div class="next-progress">
+              <div class="next-progress-bar">
+                <div class="next-progress-fill"></div>
+              </div>
+
+              <div class="next-progress-text">
+                <span> 22 / 30 sessions </span>
+
+                <span> 8 more </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================
+         RECENT ACHIEVEMENTS
+    ====================================== -->
+
+      <section class="card recent-card">
+        <div class="card-header">
+          <div>
+            <h2>Recent Achievements</h2>
+
+            <p>Your latest unlocked badges</p>
+          </div>
+        </div>
+
+        <div class="achievement-list">
+          <div class="achievement-item">
+            <div class="achievement-left">
+              <div class="badge badge-purple">
+                <i class="fa-solid fa-bolt"></i>
+              </div>
+
+              <div class="achievement-info">
+                <strong> Quick Learner </strong>
+
+                <span> Completed 5 lessons in one day </span>
+              </div>
+            </div>
+
+            <div class="earned-date">Today</div>
+          </div>
+
+          <div class="achievement-item">
+            <div class="achievement-left">
+              <div class="badge badge-orange">
+                <i class="fa-solid fa-fire"></i>
+              </div>
+
+              <div class="achievement-info">
+                <strong> 7 Day Streak </strong>
+
+                <span> Studied for 7 consecutive days </span>
+              </div>
+            </div>
+
+            <div class="earned-date">Yesterday</div>
+          </div>
+
+          <div class="achievement-item">
+            <div class="achievement-left">
+              <div class="badge badge-green">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+
+              <div class="achievement-info">
+                <strong> Quiz Master </strong>
+
+                <span> Scored 90% or higher in 5 quizzes </span>
+              </div>
+            </div>
+
+            <div class="earned-date">Sep 5</div>
+          </div>
+
+          <div class="achievement-item">
+            <div class="achievement-left">
+              <div class="badge badge-blue">
+                <i class="fa-solid fa-clock"></i>
+              </div>
+
+              <div class="achievement-info">
+                <strong> Time Champion </strong>
+
+                <span> Studied for more than 20 hours this week </span>
+              </div>
+            </div>
+
+            <div class="earned-date">Sep 3</div>
+          </div>
+
+          <div class="achievement-item">
+            <div class="achievement-left">
+              <div class="badge badge-pink">
+                <i class="fa-solid fa-graduation-cap"></i>
+              </div>
+
+              <div class="achievement-info">
+                <strong> First Step </strong>
+
+                <span> Completed your first learning lesson </span>
+              </div>
+            </div>
+
+            <div class="earned-date">Aug 29</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================
+         BADGES
+    ====================================== -->
+
+      <section class="card badges-card">
+        <div class="card-header">
+          <div>
+            <h2>Achievement Badges</h2>
+
+            <p>Collect badges by reaching learning milestones.</p>
+          </div>
+
+          <div class="filter-buttons">
+            <button class="filter-btn active" data-filter="all">All</button>
+
+            <button class="filter-btn" data-filter="earned">Earned</button>
+
+            <button class="filter-btn" data-filter="locked">Locked</button>
+          </div>
+        </div>
+
+        <div class="badges-grid" id="badgesGrid">
+          <!-- BADGE 1 -->
+
+          <div class="badge-card earned" data-status="earned">
+            <div class="badge-big badge-purple">
+              <i class="fa-solid fa-bolt"></i>
+            </div>
+
+            <h3>Quick Learner</h3>
+
+            <p>Complete 5 lessons in one day.</p>
+
+            <span class="badge-check">
+              <i class="fa-solid fa-check"></i>
+              Earned
+            </span>
+          </div>
+
+          <!-- BADGE 2 -->
+
+          <div class="badge-card earned" data-status="earned">
+            <div class="badge-big badge-orange">
+              <i class="fa-solid fa-fire"></i>
+            </div>
+
+            <h3>Streak Master</h3>
+
+            <p>Maintain a 7 day study streak.</p>
+
+            <span class="badge-check">
+              <i class="fa-solid fa-check"></i>
+              Earned
+            </span>
+          </div>
+
+          <!-- BADGE 3 -->
+
+          <div class="badge-card earned" data-status="earned">
+            <div class="badge-big badge-green">
+              <i class="fa-solid fa-star"></i>
+            </div>
+
+            <h3>Quiz Master</h3>
+
+            <p>Score 90% in five quizzes.</p>
+
+            <span class="badge-check">
+              <i class="fa-solid fa-check"></i>
+              Earned
+            </span>
+          </div>
+
+          <!-- BADGE 4 -->
+
+          <div class="badge-card earned" data-status="earned">
+            <div class="badge-big badge-blue">
+              <i class="fa-solid fa-clock"></i>
+            </div>
+
+            <h3>Time Champion</h3>
+
+            <p>Study for 20+ hours in a week.</p>
+
+            <span class="badge-check">
+              <i class="fa-solid fa-check"></i>
+              Earned
+            </span>
+          </div>
+
+          <!-- BADGE 5 -->
+
+          <div class="badge-card earned" data-status="earned">
+            <div class="badge-big badge-pink">
+              <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+
+            <h3>First Step</h3>
+
+            <p>Complete your first lesson.</p>
+
+            <span class="badge-check">
+              <i class="fa-solid fa-check"></i>
+              Earned
+            </span>
+          </div>
+
+          <!-- BADGE 6 -->
+
+          <div class="badge-card earned" data-status="earned">
+            <div class="badge-big badge-purple">
+              <i class="fa-solid fa-book"></i>
+            </div>
+
+            <h3>Bookworm</h3>
+
+            <p>Complete 20 learning resources.</p>
+
+            <span class="badge-check">
+              <i class="fa-solid fa-check"></i>
+              Earned
+            </span>
+          </div>
+
+          <!-- BADGE 7 -->
+
+          <div class="badge-card locked" data-status="locked">
+            <div class="badge-big">
+              <i class="fa-solid fa-gem"></i>
+            </div>
+
+            <h3>Knowledge Seeker</h3>
+
+            <p>Complete 30 study sessions.</p>
+
+            <span class="badge-lock">
+              <i class="fa-solid fa-lock"></i>
+              Locked
+            </span>
+          </div>
+
+          <!-- BADGE 8 -->
+
+          <div class="badge-card locked" data-status="locked">
+            <div class="badge-big">
+              <i class="fa-solid fa-crown"></i>
+            </div>
+
+            <h3>Top Scholar</h3>
+
+            <p>Reach the top 5 in your class.</p>
+
+            <span class="badge-lock">
+              <i class="fa-solid fa-lock"></i>
+              Locked
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================
+         CATEGORY PROGRESS
+    ====================================== -->
+
+      <section class="card category-card">
+        <div class="card-header">
+          <div>
+            <h2>Achievement Categories</h2>
+
+            <p>Your progress across different achievement types.</p>
+          </div>
+        </div>
+
+        <div class="category-grid">
+          <div class="category">
+            <div class="category-top">
+              <div class="category-name">
+                <i class="fa-solid fa-book-open"></i>
+
+                Learning
+              </div>
+
+              <span class="category-percent"> 75% </span>
+            </div>
+
+            <div class="category-bar">
+              <div class="category-fill" style="width: 75%"></div>
+            </div>
+          </div>
+
+          <div class="category">
+            <div class="category-top">
+              <div class="category-name">
+                <i class="fa-solid fa-circle-question"></i>
+
+                Quizzes
+              </div>
+
+              <span class="category-percent"> 68% </span>
+            </div>
+
+            <div class="category-bar">
+              <div class="category-fill" style="width: 68%"></div>
+            </div>
+          </div>
+
+          <div class="category">
+            <div class="category-top">
+              <div class="category-name">
+                <i class="fa-solid fa-clock"></i>
+
+                Study Time
+              </div>
+
+              <span class="category-percent"> 60% </span>
+            </div>
+
+            <div class="category-bar">
+              <div class="category-fill" style="width: 60%"></div>
+            </div>
+          </div>
+
+          <div class="category">
+            <div class="category-top">
+              <div class="category-name">
+                <i class="fa-solid fa-fire"></i>
+
+                Consistency
+              </div>
+
+              <span class="category-percent"> 82% </span>
+            </div>
+
+            <div class="category-bar">
+              <div class="category-fill" style="width: 82%"></div>
+            </div>
+          </div>
+
+          <div class="category">
+            <div class="category-top">
+              <div class="category-name">
+                <i class="fa-solid fa-video"></i>
+
+                Classes
+              </div>
+
+              <span class="category-percent"> 55% </span>
+            </div>
+
+            <div class="category-bar">
+              <div class="category-fill" style="width: 55%"></div>
+            </div>
+          </div>
+
+          <div class="category">
+            <div class="category-top">
+              <div class="category-name">
+                <i class="fa-solid fa-trophy"></i>
+
+                Challenges
+              </div>
+
+              <span class="category-percent"> 70% </span>
+            </div>
+
+            <div class="category-bar">
+              <div class="category-fill" style="width: 70%"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      /* =========================================
+       BADGE FILTER
+    ========================================= */
+
+      const filterButtons = document.querySelectorAll(".filter-btn");
+
+      const badgeCards = document.querySelectorAll(".badge-card");
+
+      filterButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          filterButtons.forEach((btn) => {
+            btn.classList.remove("active");
+          });
+
+          button.classList.add("active");
+
+          const filter = button.dataset.filter;
+
+          badgeCards.forEach((card) => {
+            if (filter === "all" || card.dataset.status === filter) {
+              card.style.display = "block";
+            } else {
+              card.style.display = "none";
+            }
+          });
+        });
+      });
+
+      /* =========================================
+       SMALL BADGE INTERACTION
+    ========================================= */
+
+      badgeCards.forEach((card) => {
+        card.addEventListener("click", () => {
+          const title = card.querySelector("h3");
+
+          if (!title) return;
+
+          if (card.dataset.status === "locked") {
+            alert(
+              `${title.textContent.trim()} is still locked. Keep learning to unlock it!`,
+            );
+          } else {
+            alert(`🏆 ${title.textContent.trim()} achievement earned!`);
+          }
+        });
+      });
+
+      /* =========================================
+       SIMPLE XP ANIMATION
+    ========================================= */
+
+      const pointsElement = document.getElementById("totalPoints");
+
+      let xp = 0;
+
+      const targetXP = 2450;
+
+      const duration = 900;
+
+      const startTime = performance.now();
+
+      function animateXP(currentTime) {
+        const progress = Math.min((currentTime - startTime) / duration, 1);
+
+        xp = Math.floor(targetXP * progress);
+
+        pointsElement.textContent = xp.toLocaleString() + " XP";
+
+        if (progress < 1) {
+          requestAnimationFrame(animateXP);
+        }
+      }
+
+      requestAnimationFrame(animateXP);
+    </script>
+  </body>
+</html>
