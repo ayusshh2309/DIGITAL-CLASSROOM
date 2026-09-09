@@ -1,0 +1,1482 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Student Calendar</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background: #f5f8fc;
+        color: #172033;
+        min-height: 100vh;
+      }
+
+      .page {
+        width: 100%;
+        padding: 32px 38px 50px;
+      }
+
+      /* =========================================
+       PAGE HEADER
+    ========================================= */
+
+      .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+      }
+
+      .header-left h1 {
+        font-size: 28px;
+        font-weight: 800;
+        margin-bottom: 7px;
+      }
+
+      .header-left p {
+        font-size: 14px;
+        color: #7d8798;
+      }
+
+      .today-btn {
+        border: none;
+        background: #6246e5;
+        color: white;
+        padding: 11px 17px;
+        border-radius: 10px;
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+
+      .today-btn:hover {
+        background: #5136d0;
+      }
+
+      /* =========================================
+       CALENDAR LAYOUT
+    ========================================= */
+
+      .calendar-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 315px;
+        gap: 22px;
+        align-items: start;
+      }
+
+      /* =========================================
+       CALENDAR CARD
+    ========================================= */
+
+      .calendar-card {
+        background: #ffffff;
+        border: 1px solid #e6eaf0;
+        border-radius: 18px;
+        overflow: hidden;
+      }
+
+      /* =========================================
+       CALENDAR TOP
+    ========================================= */
+
+      .calendar-top {
+        padding: 21px 23px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #edf0f4;
+      }
+
+      .month-title {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+      }
+
+      .month-title h2 {
+        font-size: 19px;
+        font-weight: 800;
+        min-width: 150px;
+      }
+
+      .nav-buttons {
+        display: flex;
+        gap: 7px;
+      }
+
+      .nav-btn {
+        width: 34px;
+        height: 34px;
+        border: 1px solid #e3e7ed;
+        background: #ffffff;
+        border-radius: 9px;
+        cursor: pointer;
+        color: #697386;
+        transition: 0.2s;
+      }
+
+      .nav-btn:hover {
+        background: #f4f1ff;
+        color: #6246e5;
+        border-color: #dcd5ff;
+      }
+
+      /* =========================================
+       LEGEND
+    ========================================= */
+
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        padding: 15px 22px;
+        border-bottom: 1px solid #edf0f4;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 10px;
+        color: #778193;
+        font-weight: 600;
+      }
+
+      .legend-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+
+      .dot-class {
+        background: #6246e5;
+      }
+
+      .dot-material {
+        background: #3086dc;
+      }
+
+      .dot-assignment {
+        background: #e99a32;
+      }
+
+      .dot-holiday {
+        background: #27a269;
+      }
+
+      .dot-rescheduled {
+        background: #e34e68;
+      }
+
+      .dot-exam {
+        background: #7b4bb7;
+      }
+
+      /* =========================================
+       CALENDAR GRID
+    ========================================= */
+
+      .calendar-wrapper {
+        padding: 0 20px 20px;
+      }
+
+      .weekdays {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        border-bottom: 1px solid #edf0f4;
+      }
+
+      .weekday {
+        padding: 14px 5px;
+        text-align: center;
+        font-size: 10px;
+        font-weight: 800;
+        color: #8b94a4;
+        text-transform: uppercase;
+      }
+
+      .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        border-left: 1px solid #edf0f4;
+        border-top: 1px solid #edf0f4;
+      }
+
+      .day {
+        min-height: 118px;
+        border-right: 1px solid #edf0f4;
+        border-bottom: 1px solid #edf0f4;
+        padding: 9px;
+        cursor: pointer;
+        transition: 0.15s;
+        background: #ffffff;
+      }
+
+      .day:hover {
+        background: #fafaff;
+      }
+
+      .day.other-month {
+        background: #fafbfc;
+      }
+
+      .day.other-month .date-number {
+        color: #c3c8d1;
+      }
+
+      .date-number {
+        width: 26px;
+        height: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        margin-bottom: 5px;
+        border-radius: 50%;
+      }
+
+      .today .date-number {
+        background: #6246e5;
+        color: white;
+      }
+
+      /* =========================================
+       EVENTS
+    ========================================= */
+
+      .event {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 5px;
+        border-radius: 5px;
+        margin-top: 4px;
+        font-size: 8px;
+        font-weight: 700;
+        line-height: 1.25;
+        overflow: hidden;
+      }
+
+      .event i {
+        font-size: 7px;
+        flex-shrink: 0;
+      }
+
+      .event span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .event-class {
+        background: #eeeaff;
+        color: #6246e5;
+      }
+
+      .event-material {
+        background: #e9f4ff;
+        color: #287ac5;
+      }
+
+      .event-assignment {
+        background: #fff2df;
+        color: #d1841d;
+      }
+
+      .event-holiday {
+        background: #e7f8ef;
+        color: #26915e;
+      }
+
+      .event-rescheduled {
+        background: #ffe9ed;
+        color: #d83f5b;
+      }
+
+      .event-exam {
+        background: #f0e8f8;
+        color: #7440a4;
+      }
+
+      /* =========================================
+       RIGHT PANEL
+    ========================================= */
+
+      .right-column {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      .side-card {
+        background: #ffffff;
+        border: 1px solid #e6eaf0;
+        border-radius: 17px;
+        padding: 19px;
+      }
+
+      .side-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+
+      .side-card-header h3 {
+        font-size: 15px;
+        font-weight: 800;
+      }
+
+      .side-card-header span {
+        font-size: 10px;
+        color: #8b94a4;
+      }
+
+      /* =========================================
+       UPCOMING EVENTS
+    ========================================= */
+
+      .upcoming-event {
+        display: flex;
+        gap: 11px;
+        padding: 11px 0;
+        border-bottom: 1px solid #eef1f5;
+      }
+
+      .upcoming-event:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+
+      .event-date {
+        width: 43px;
+        height: 46px;
+        border-radius: 10px;
+        background: #f0edff;
+        color: #6246e5;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .event-date strong {
+        font-size: 16px;
+        font-weight: 800;
+        line-height: 1;
+      }
+
+      .event-date span {
+        font-size: 8px;
+        font-weight: 700;
+        margin-top: 3px;
+        text-transform: uppercase;
+      }
+
+      .upcoming-info {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .upcoming-info h4 {
+        font-size: 11px;
+        font-weight: 700;
+        color: #293349;
+        margin-bottom: 5px;
+        line-height: 1.4;
+      }
+
+      .upcoming-info p {
+        font-size: 9px;
+        color: #8a93a3;
+      }
+
+      .upcoming-info p i {
+        margin-right: 3px;
+      }
+
+      /* =========================================
+       RESCHEDULED CLASS
+    ========================================= */
+
+      .reschedule-box {
+        border-radius: 13px;
+        background: #fff2f4;
+        border: 1px solid #ffd9df;
+        padding: 14px;
+      }
+
+      .reschedule-top {
+        display: flex;
+        gap: 9px;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      .reschedule-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        background: #ffe0e5;
+        color: #d83f5b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+      }
+
+      .reschedule-top h4 {
+        font-size: 11px;
+        font-weight: 800;
+        color: #bd304b;
+      }
+
+      .reschedule-box p {
+        font-size: 10px;
+        color: #737d8f;
+        line-height: 1.5;
+      }
+
+      .schedule-change {
+        margin-top: 11px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 9px;
+        font-weight: 700;
+      }
+
+      .old-time {
+        color: #a2a8b3;
+        text-decoration: line-through;
+      }
+
+      .new-time {
+        color: #d83f5b;
+      }
+
+      /* =========================================
+       HOLIDAYS
+    ========================================= */
+
+      .holiday-item {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 10px 0;
+        border-bottom: 1px solid #eef1f5;
+      }
+
+      .holiday-item:last-child {
+        border-bottom: none;
+      }
+
+      .holiday-icon {
+        width: 35px;
+        height: 35px;
+        background: #e8f8f0;
+        color: #27a269;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+      }
+
+      .holiday-info {
+        flex: 1;
+      }
+
+      .holiday-info h4 {
+        font-size: 10px;
+        font-weight: 700;
+        margin-bottom: 3px;
+      }
+
+      .holiday-info p {
+        font-size: 9px;
+        color: #9098a7;
+      }
+
+      /* =========================================
+       QUICK STATS
+    ========================================= */
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .stat {
+        background: #f8f9fc;
+        border-radius: 10px;
+        padding: 12px;
+      }
+
+      .stat strong {
+        display: block;
+        font-size: 18px;
+        font-weight: 800;
+        margin-bottom: 3px;
+      }
+
+      .stat span {
+        font-size: 9px;
+        color: #8992a2;
+      }
+
+      /* =========================================
+       MODAL
+    ========================================= */
+
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(18, 27, 45, 0.35);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        z-index: 100;
+      }
+
+      .modal-overlay.show {
+        display: flex;
+      }
+
+      .event-modal {
+        width: 100%;
+        max-width: 450px;
+        background: white;
+        border-radius: 18px;
+        padding: 24px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 18px;
+      }
+
+      .modal-header h2 {
+        font-size: 18px;
+        font-weight: 800;
+      }
+
+      .close-modal {
+        width: 32px;
+        height: 32px;
+        border: none;
+        border-radius: 8px;
+        background: #f3f5f8;
+        color: #6d7686;
+        cursor: pointer;
+      }
+
+      .modal-content {
+        display: flex;
+        flex-direction: column;
+        gap: 13px;
+      }
+
+      .detail-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 11px;
+        border-radius: 10px;
+        background: #f8f9fc;
+      }
+
+      .detail-row i {
+        width: 18px;
+        color: #6246e5;
+        margin-top: 2px;
+      }
+
+      .detail-row div {
+        flex: 1;
+      }
+
+      .detail-row strong {
+        display: block;
+        font-size: 10px;
+        color: #8992a2;
+        margin-bottom: 3px;
+      }
+
+      .detail-row span {
+        font-size: 11px;
+        font-weight: 700;
+        color: #2d374b;
+      }
+
+      /* =========================================
+       RESPONSIVE
+    ========================================= */
+
+      @media (max-width: 1150px) {
+        .calendar-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .right-column {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      @media (max-width: 800px) {
+        .page {
+          padding: 22px 15px 40px;
+        }
+
+        .page-header {
+          align-items: flex-start;
+          gap: 15px;
+        }
+
+        .calendar-layout {
+          display: block;
+        }
+
+        .right-column {
+          display: flex;
+          margin-top: 18px;
+        }
+
+        .calendar-wrapper {
+          padding: 0 8px 10px;
+        }
+
+        .day {
+          min-height: 90px;
+          padding: 5px;
+        }
+
+        .weekday {
+          font-size: 8px;
+        }
+
+        .event {
+          font-size: 7px;
+          padding: 3px;
+        }
+
+        .month-title h2 {
+          font-size: 16px;
+          min-width: 120px;
+        }
+      }
+
+      @media (max-width: 550px) {
+        .page-header {
+          flex-direction: column;
+        }
+
+        .calendar-top {
+          padding: 15px;
+        }
+
+        .legend {
+          gap: 9px;
+          padding: 12px;
+        }
+
+        .day {
+          min-height: 70px;
+        }
+
+        .event {
+          padding: 2px;
+          margin-top: 2px;
+        }
+
+        .event i {
+          display: none;
+        }
+
+        .date-number {
+          width: 21px;
+          height: 21px;
+          font-size: 9px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="page">
+      <!-- =========================================
+         HEADER
+    ========================================= -->
+
+      <div class="page-header">
+        <div class="header-left">
+          <h1>Calendar</h1>
+
+          <p>
+            Keep track of your classes, study materials, assignments, exams and
+            important events.
+          </p>
+        </div>
+
+        <button class="today-btn" onclick="goToday()">
+          <i class="fa-solid fa-calendar-day"></i>
+          &nbsp; Today
+        </button>
+      </div>
+
+      <!-- =========================================
+         MAIN CALENDAR LAYOUT
+    ========================================= -->
+
+      <div class="calendar-layout">
+        <!-- =========================================
+           CALENDAR
+      ========================================= -->
+
+        <section class="calendar-card">
+          <!-- MONTH HEADER -->
+
+          <div class="calendar-top">
+            <div class="month-title">
+              <h2 id="monthTitle">September 2026</h2>
+
+              <div class="nav-buttons">
+                <button class="nav-btn" onclick="previousMonth()">
+                  <i class="fa-solid fa-chevron-left"></i>
+                </button>
+
+                <button class="nav-btn" onclick="nextMonth()">
+                  <i class="fa-solid fa-chevron-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- LEGEND -->
+
+          <div class="legend">
+            <div class="legend-item">
+              <span class="legend-dot dot-class"></span>
+              Classes
+            </div>
+
+            <div class="legend-item">
+              <span class="legend-dot dot-material"></span>
+              Materials
+            </div>
+
+            <div class="legend-item">
+              <span class="legend-dot dot-assignment"></span>
+              Assignments
+            </div>
+
+            <div class="legend-item">
+              <span class="legend-dot dot-rescheduled"></span>
+              Rescheduled
+            </div>
+
+            <div class="legend-item">
+              <span class="legend-dot dot-holiday"></span>
+              Holidays
+            </div>
+
+            <div class="legend-item">
+              <span class="legend-dot dot-exam"></span>
+              Exams
+            </div>
+          </div>
+
+          <!-- CALENDAR -->
+
+          <div class="calendar-wrapper">
+            <div class="weekdays">
+              <div class="weekday">Sun</div>
+              <div class="weekday">Mon</div>
+              <div class="weekday">Tue</div>
+              <div class="weekday">Wed</div>
+              <div class="weekday">Thu</div>
+              <div class="weekday">Fri</div>
+              <div class="weekday">Sat</div>
+            </div>
+
+            <div class="calendar-grid" id="calendarGrid"></div>
+          </div>
+        </section>
+
+        <!-- =========================================
+           RIGHT SIDE
+      ========================================= -->
+
+        <aside class="right-column">
+          <!-- UPCOMING EVENTS -->
+
+          <div class="side-card">
+            <div class="side-card-header">
+              <h3>Upcoming</h3>
+
+              <span>Next 7 days</span>
+            </div>
+
+            <div class="upcoming-event">
+              <div class="event-date">
+                <strong>08</strong>
+                <span>Sep</span>
+              </div>
+
+              <div class="upcoming-info">
+                <h4>Mathematics Class</h4>
+
+                <p>
+                  <i class="fa-regular fa-clock"></i>
+                  10:00 AM – 11:00 AM
+                </p>
+              </div>
+            </div>
+
+            <div class="upcoming-event">
+              <div class="event-date">
+                <strong>09</strong>
+                <span>Sep</span>
+              </div>
+
+              <div class="upcoming-info">
+                <h4>Science Notes Uploaded</h4>
+
+                <p>
+                  <i class="fa-solid fa-book"></i>
+                  Human Reproduction
+                </p>
+              </div>
+            </div>
+
+            <div class="upcoming-event">
+              <div class="event-date">
+                <strong>10</strong>
+                <span>Sep</span>
+              </div>
+
+              <div class="upcoming-info">
+                <h4>English Assignment Due</h4>
+
+                <p>
+                  <i class="fa-regular fa-clock"></i>
+                  Due by 11:59 PM
+                </p>
+              </div>
+            </div>
+
+            <div class="upcoming-event">
+              <div class="event-date">
+                <strong>12</strong>
+                <span>Sep</span>
+              </div>
+
+              <div class="upcoming-info">
+                <h4>Computer Science Quiz</h4>
+
+                <p>
+                  <i class="fa-solid fa-clipboard-question"></i>
+                  25 Questions
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- RESCHEDULED CLASS -->
+
+          <div class="side-card">
+            <div class="side-card-header">
+              <h3>Class Update</h3>
+
+              <span>Important</span>
+            </div>
+
+            <div class="reschedule-box">
+              <div class="reschedule-top">
+                <div class="reschedule-icon">
+                  <i class="fa-solid fa-calendar-xmark"></i>
+                </div>
+
+                <h4>Class Rescheduled</h4>
+              </div>
+
+              <p>
+                Your Physics class scheduled for September 11 has been moved to
+                September 13.
+              </p>
+
+              <div class="schedule-change">
+                <span class="old-time"> Sep 11 · 11:00 AM </span>
+
+                <i class="fa-solid fa-arrow-right"></i>
+
+                <span class="new-time"> Sep 13 · 11:00 AM </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- HOLIDAYS -->
+
+          <div class="side-card">
+            <div class="side-card-header">
+              <h3>Upcoming Holidays</h3>
+
+              <span>September</span>
+            </div>
+
+            <div class="holiday-item">
+              <div class="holiday-icon">
+                <i class="fa-solid fa-umbrella-beach"></i>
+              </div>
+
+              <div class="holiday-info">
+                <h4>School Holiday</h4>
+
+                <p>September 14, 2026</p>
+              </div>
+            </div>
+
+            <div class="holiday-item">
+              <div class="holiday-icon">
+                <i class="fa-solid fa-star"></i>
+              </div>
+
+              <div class="holiday-info">
+                <h4>Festival Holiday</h4>
+
+                <p>September 21, 2026</p>
+              </div>
+            </div>
+
+            <div class="holiday-item">
+              <div class="holiday-icon">
+                <i class="fa-solid fa-calendar-days"></i>
+              </div>
+
+              <div class="holiday-info">
+                <h4>Term Break</h4>
+
+                <p>September 28 – 30, 2026</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- QUICK STATS -->
+
+          <div class="side-card">
+            <div class="side-card-header">
+              <h3>This Month</h3>
+            </div>
+
+            <div class="stats-grid">
+              <div class="stat">
+                <strong>18</strong>
+
+                <span> Classes </span>
+              </div>
+
+              <div class="stat">
+                <strong>06</strong>
+
+                <span> Assignments </span>
+              </div>
+
+              <div class="stat">
+                <strong>03</strong>
+
+                <span> Exams / Quizzes </span>
+              </div>
+
+              <div class="stat">
+                <strong>04</strong>
+
+                <span> Holidays </span>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+
+    <!-- =========================================
+       EVENT DETAILS MODAL
+  ========================================= -->
+
+    <div class="modal-overlay" id="eventModal">
+      <div class="event-modal">
+        <div class="modal-header">
+          <h2 id="modalTitle">Event Details</h2>
+
+          <button class="close-modal" onclick="closeModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="modal-content">
+          <div class="detail-row">
+            <i class="fa-regular fa-calendar"></i>
+
+            <div>
+              <strong>Date</strong>
+
+              <span id="modalDate"> September 8, 2026 </span>
+            </div>
+          </div>
+
+          <div class="detail-row">
+            <i class="fa-regular fa-clock"></i>
+
+            <div>
+              <strong>Time</strong>
+
+              <span id="modalTime"> 10:00 AM – 11:00 AM </span>
+            </div>
+          </div>
+
+          <div class="detail-row">
+            <i class="fa-solid fa-book"></i>
+
+            <div>
+              <strong>Subject</strong>
+
+              <span id="modalSubject"> Mathematics </span>
+            </div>
+          </div>
+
+          <div class="detail-row">
+            <i class="fa-solid fa-circle-info"></i>
+
+            <div>
+              <strong>Details</strong>
+
+              <span id="modalDetails"> Regular mathematics class. </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      /* =========================================
+       CALENDAR STATE
+    ========================================= */
+
+      let currentDate = new Date(2026, 8, 7);
+
+      /* =========================================
+       SAMPLE EVENTS
+    ========================================= */
+
+      const events = {
+        "2026-09-08": [
+          {
+            type: "class",
+            title: "Mathematics",
+            time: "10:00 AM",
+            subject: "Mathematics",
+            details: "Regular mathematics lecture.",
+          },
+          {
+            type: "material",
+            title: "Physics Notes",
+            time: "",
+            subject: "Physics",
+            details: "New chapter notes uploaded.",
+          },
+        ],
+
+        "2026-09-09": [
+          {
+            type: "material",
+            title: "Science Notes",
+            time: "",
+            subject: "Science",
+            details: "Human Reproduction study material uploaded.",
+          },
+          {
+            type: "class",
+            title: "English",
+            time: "11:00 AM",
+            subject: "English",
+            details: "English grammar class.",
+          },
+        ],
+
+        "2026-09-10": [
+          {
+            type: "assignment",
+            title: "English Assignment",
+            time: "11:59 PM",
+            subject: "English",
+            details: "Tenses assignment submission deadline.",
+          },
+        ],
+
+        "2026-09-11": [
+          {
+            type: "rescheduled",
+            title: "Physics Rescheduled",
+            time: "11:00 AM",
+            subject: "Physics",
+            details: "Physics class has been rescheduled to September 13.",
+          },
+        ],
+
+        "2026-09-12": [
+          {
+            type: "exam",
+            title: "CS Quiz",
+            time: "2:00 PM",
+            subject: "Computer Science",
+            details: "Computer Science quiz – 25 questions.",
+          },
+        ],
+
+        "2026-09-13": [
+          {
+            type: "class",
+            title: "Physics",
+            time: "11:00 AM",
+            subject: "Physics",
+            details: "Rescheduled Physics lecture.",
+          },
+        ],
+
+        "2026-09-14": [
+          {
+            type: "holiday",
+            title: "School Holiday",
+            time: "",
+            subject: "",
+            details: "School will remain closed.",
+          },
+        ],
+
+        "2026-09-15": [
+          {
+            type: "material",
+            title: "Math Worksheet",
+            time: "",
+            subject: "Mathematics",
+            details: "Algebra practice worksheet uploaded.",
+          },
+        ],
+
+        "2026-09-17": [
+          {
+            type: "class",
+            title: "Computer Science",
+            time: "10:00 AM",
+            subject: "Computer Science",
+            details: "C++ programming class.",
+          },
+        ],
+
+        "2026-09-18": [
+          {
+            type: "assignment",
+            title: "Science Assignment",
+            time: "11:59 PM",
+            subject: "Science",
+            details: "Science assignment submission deadline.",
+          },
+        ],
+
+        "2026-09-21": [
+          {
+            type: "holiday",
+            title: "Festival Holiday",
+            time: "",
+            subject: "",
+            details: "Festival holiday.",
+          },
+        ],
+
+        "2026-09-23": [
+          {
+            type: "exam",
+            title: "Mathematics Test",
+            time: "9:00 AM",
+            subject: "Mathematics",
+            details: "Chapter test covering algebra and equations.",
+          },
+        ],
+
+        "2026-09-28": [
+          {
+            type: "holiday",
+            title: "Term Break",
+            time: "",
+            subject: "",
+            details: "Term break begins.",
+          },
+        ],
+
+        "2026-09-29": [
+          {
+            type: "holiday",
+            title: "Term Break",
+            time: "",
+            subject: "",
+            details: "Term break.",
+          },
+        ],
+
+        "2026-09-30": [
+          {
+            type: "holiday",
+            title: "Term Break",
+            time: "",
+            subject: "",
+            details: "Term break.",
+          },
+        ],
+      };
+
+      /* =========================================
+       EVENT ICONS
+    ========================================= */
+
+      const eventIcons = {
+        class: "fa-solid fa-chalkboard-user",
+
+        material: "fa-solid fa-file-lines",
+
+        assignment: "fa-solid fa-pen",
+
+        holiday: "fa-solid fa-umbrella-beach",
+
+        rescheduled: "fa-solid fa-calendar-xmark",
+
+        exam: "fa-solid fa-clipboard-check",
+      };
+
+      /* =========================================
+       RENDER CALENDAR
+    ========================================= */
+
+      function renderCalendar() {
+        const grid = document.getElementById("calendarGrid");
+
+        const monthTitle = document.getElementById("monthTitle");
+
+        grid.innerHTML = "";
+
+        const year = currentDate.getFullYear();
+
+        const month = currentDate.getMonth();
+
+        const monthName = currentDate.toLocaleString("default", {
+          month: "long",
+        });
+
+        monthTitle.textContent = `${monthName} ${year}`;
+
+        const firstDay = new Date(year, month, 1).getDay();
+
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        const daysPreviousMonth = new Date(year, month, 0).getDate();
+
+        /* Previous month days */
+
+        for (let i = firstDay - 1; i >= 0; i--) {
+          const dayNumber = daysPreviousMonth - i;
+
+          createDay(dayNumber, true, grid);
+        }
+
+        /* Current month */
+
+        for (let day = 1; day <= daysInMonth; day++) {
+          createDay(day, false, grid);
+        }
+
+        /* Next month */
+
+        const totalCells = firstDay + daysInMonth;
+
+        const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+
+        for (let day = 1; day <= remaining; day++) {
+          createDay(day, true, grid);
+        }
+      }
+
+      /* =========================================
+       CREATE DAY
+    ========================================= */
+
+      function createDay(dayNumber, otherMonth, container) {
+        const day = document.createElement("div");
+
+        day.className = "day";
+
+        if (otherMonth) {
+          day.classList.add("other-month");
+        }
+
+        const dateNumber = document.createElement("div");
+
+        dateNumber.className = "date-number";
+
+        dateNumber.textContent = dayNumber;
+
+        day.appendChild(dateNumber);
+
+        if (!otherMonth) {
+          const year = currentDate.getFullYear();
+
+          const month = currentDate.getMonth();
+
+          const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(dayNumber).padStart(2, "0")}`;
+
+          /* Today */
+
+          if (year === 2026 && month === 8 && dayNumber === 7) {
+            day.classList.add("today");
+          }
+
+          /* Events */
+
+          if (events[dateKey]) {
+            events[dateKey].forEach((event) => {
+              const eventElement = document.createElement("div");
+
+              eventElement.className = `event event-${event.type}`;
+
+              eventElement.innerHTML = `
+                <i class="${eventIcons[event.type]}"></i>
+                <span>${event.title}</span>
+              `;
+
+              eventElement.addEventListener("click", function (e) {
+                e.stopPropagation();
+
+                openModal(event, dateKey);
+              });
+
+              day.appendChild(eventElement);
+            });
+          }
+        }
+
+        container.appendChild(day);
+      }
+
+      /* =========================================
+       OPEN MODAL
+    ========================================= */
+
+      function openModal(event, date) {
+        document.getElementById("modalTitle").textContent = event.title;
+
+        const dateObject = new Date(date + "T00:00:00");
+
+        document.getElementById("modalDate").textContent =
+          dateObject.toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+          });
+
+        document.getElementById("modalTime").textContent =
+          event.time || "All Day";
+
+        document.getElementById("modalSubject").textContent =
+          event.subject || "General";
+
+        document.getElementById("modalDetails").textContent = event.details;
+
+        document.getElementById("eventModal").classList.add("show");
+      }
+
+      /* =========================================
+       CLOSE MODAL
+    ========================================= */
+
+      function closeModal() {
+        document.getElementById("eventModal").classList.remove("show");
+      }
+
+      /* Close by clicking outside */
+
+      document
+        .getElementById("eventModal")
+        .addEventListener("click", function (e) {
+          if (e.target === this) {
+            closeModal();
+          }
+        });
+
+      /* =========================================
+       PREVIOUS MONTH
+    ========================================= */
+
+      function previousMonth() {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+
+        renderCalendar();
+      }
+
+      /* =========================================
+       NEXT MONTH
+    ========================================= */
+
+      function nextMonth() {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+
+        renderCalendar();
+      }
+
+      /* =========================================
+       GO TO TODAY
+    ========================================= */
+
+      function goToday() {
+        currentDate = new Date(2026, 8, 7);
+
+        renderCalendar();
+      }
+
+      /* =========================================
+       INITIALIZE
+    ========================================= */
+
+      renderCalendar();
+    </script>
+  </body>
+</html>
