@@ -5,9 +5,18 @@
   --student-navy-soft: #062540;
   --student-purple: #6337e8;
   --student-purple-light: #7b4df2;
+  --student-active: #29aeb8;
   --student-text: #f8fafc;
   --student-muted: #c4ced9;
   --student-border: #e2e7ef;
+  --student-main-bg: linear-gradient(135deg, #e3f2fd 0%, #e0f2f1 50%, #e8f5e9 100%);
+  --student-surface: rgba(255, 255, 255, 0.7);
+  --student-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+body {
+  background: var(--student-main-bg);
+  background-attachment: fixed;
 }
 
 .student-sidebar,
@@ -40,11 +49,11 @@
 }
 .student-nav-link i { width: 23px; color: #dbe3eb; font-size: 1.12rem; text-align: center; }
 .student-nav-link:hover, .student-nav-link:focus-visible { color: #fff; background: rgba(255,255,255,.1); outline: none; }
-.student-nav-link.active { color: #fff; background: linear-gradient(135deg, var(--student-purple-light), var(--student-purple)); box-shadow: 0 6px 14px rgba(99,55,232,.28); }
+.student-nav-link.active { color: #fff; background: var(--student-active); box-shadow: 0 5px 12px rgba(41, 174, 184, .2); }
 .student-nav-link-danger, .student-nav-link-danger i { color: #ff6170; }
 .student-sidebar-divider { height: 1px; margin: 12px 4px 9px; background: rgba(205,222,235,.17); }
 
-.student-layout-main { margin-left: var(--student-sidebar-width); min-height: 100vh; }
+.student-layout-main { margin-left: var(--student-sidebar-width); min-height: 100vh; background: var(--student-main-bg); }
 .student-topbar {
   position: fixed; top: 0; right: 0; left: var(--student-sidebar-width); z-index: 900;
   display: flex; align-items: center; justify-content: flex-end; height: var(--student-topbar-height);
@@ -67,7 +76,19 @@
 .student-profile-chevron { color: #738392; font-size: .6rem; }
 .student-menu-toggle { display: none; border: 0; background: transparent; color: #203749; font-size: 1.1rem; }
 .student-main-content { position: fixed; top: var(--student-topbar-height); right: 0; bottom: 0; left: var(--student-sidebar-width); min-height: 0; overflow-x: hidden; overflow-y: auto; padding: 24px; }
-.student-page-content { min-height: 100%; }
+.student-page-content {
+  min-height: 100%;
+  margin: 0 16px 32px;
+  padding: 32px;
+  background: var(--student-surface);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--student-border);
+  border-radius: 24px;
+  box-shadow: var(--student-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
 
 @media (max-width: 760px) {
   :root { --student-sidebar-width: 270px; }
