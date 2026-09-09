@@ -618,8 +618,22 @@
         }
       }
     </style>
+    <style>
+      .page-banner-container,
+      .profile-tabs,
+      .profile-content-grid {
+        margin-left: 0;
+        margin-right: 0;
+      }
+
+      .profile-content-grid {
+        margin-bottom: 0;
+      }
+    </style>
+    <link rel="stylesheet" href="../css/layout.css" />
   </head>
   <body>
+    <div id="layout"></div>
     <!-- SIDEBAR (Strictly 280px) -->
     <aside class="sidebar">
       <div class="sidebar-brand">
@@ -709,247 +723,250 @@
         </div>
       </header>
 
-      <!-- PAGE BANNER -->
-      <div class="page-banner-container">
-        <div class="page-banner">
-          <h1>Good morning, Ayush! 👋</h1>
-          <p>Manage your profile information and account settings.</p>
-        </div>
-        <button class="btn-edit-header"><span>✎</span> Edit Profile</button>
-      </div>
-
-      <!-- PROFILE SUB-TABS -->
-      <div class="profile-tabs">
-        <a href="#" class="profile-tab active">👤 Profile Overview</a>
-        <a href="#" class="profile-tab">📋 Personal Details</a>
-        <a href="#" class="profile-tab">💼 Professional Details</a>
-        <a href="#" class="profile-tab">🔒 Account & Security</a>
-      </div>
-
-      <!-- MAIN PROFILE CONTENT GRID -->
-      <div class="profile-content-grid">
-        <!-- Left Profile Card -->
-        <div class="profile-card-left">
-          <div class="profile-banner-bg"></div>
-          <div class="profile-avatar-wrapper">
-            <img
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80"
-              alt="Ayush Kumar"
-              class="profile-main-avatar"
-            />
-            <div class="camera-badge">📷</div>
+      <main class="page-content main-box-container">
+        <!-- PAGE BANNER -->
+        <div class="page-banner-container">
+          <div class="page-banner">
+            <h1>Good morning, Ayush! 👋</h1>
+            <p>Manage your profile information and account settings.</p>
           </div>
-          <div class="profile-user-info">
-            <div class="profile-user-name">Ayush Kumar</div>
-            <div class="profile-user-role-badge">
-              Teacher • Subject Specialist
-            </div>
-          </div>
-
-          <div class="contact-info-list">
-            <div class="contact-item">
-              <span>✉️</span>
-              <span>ayush.kumar@smartdc.com</span>
-            </div>
-            <div class="contact-item">
-              <span>📞</span>
-              <span>+91 98765 43210</span>
-            </div>
-            <div class="contact-item">
-              <span>📍</span>
-              <span>Patna, Bihar, India</span>
-            </div>
-            <div class="contact-item">
-              <span>📅</span>
-              <span>Joined on 15 Jan 2023</span>
-            </div>
-          </div>
-
-          <div class="about-me-box">
-            <h4>About Me</h4>
-            <p>
-              Passionate educator with a strong commitment to student success
-              and interactive learning.
-            </p>
-          </div>
-
-          <div class="social-links-box">
-            <h4>Social Links</h4>
-            <div class="social-icons-row">
-              <a href="#" class="social-icon-btn" title="LinkedIn">in</a>
-              <a href="#" class="social-icon-btn" title="Twitter">🐦</a>
-              <a href="#" class="social-icon-btn" title="Website">🌐</a>
-            </div>
-          </div>
-
-          <div class="profile-stats-footer">
-            <div>
-              <div class="p-stat-val">12</div>
-              <div class="p-stat-lbl">Classes</div>
-            </div>
-            <div>
-              <div class="p-stat-val">156</div>
-              <div class="p-stat-lbl">Students</div>
-            </div>
-            <div>
-              <div class="p-stat-val">8</div>
-              <div class="p-stat-lbl">Subjects</div>
-            </div>
-            <div>
-              <div class="p-stat-val">4.8</div>
-              <div class="p-stat-lbl">Rating</div>
-            </div>
-          </div>
+          <button class="btn-edit-header"><span>✎</span> Edit Profile</button>
         </div>
 
-        <!-- Right Detailed Sections -->
-        <div class="profile-right-panels">
-          <!-- Personal Details Card -->
-          <div class="detail-card">
-            <div class="detail-card-header">
-              <div class="detail-icon-title">👤</div>
-              <span>Personal Details</span>
+        <!-- PROFILE SUB-TABS -->
+        <div class="profile-tabs">
+          <a href="#" class="profile-tab active">👤 Profile Overview</a>
+          <a href="#" class="profile-tab">📋 Personal Details</a>
+          <a href="#" class="profile-tab">💼 Professional Details</a>
+          <a href="#" class="profile-tab">🔒 Account & Security</a>
+        </div>
+
+        <!-- MAIN PROFILE CONTENT GRID -->
+        <div class="profile-content-grid">
+          <!-- Left Profile Card -->
+          <div class="profile-card-left">
+            <div class="profile-banner-bg"></div>
+            <div class="profile-avatar-wrapper">
+              <img
+                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80"
+                alt="Ayush Kumar"
+                class="profile-main-avatar"
+              />
+              <div class="camera-badge">📷</div>
             </div>
-            <div class="details-grid-2">
-              <div class="detail-row-item">
-                <span class="detail-label">Full Name</span>
-                <span class="detail-value">Ayush Kumar</span>
+            <div class="profile-user-info">
+              <div class="profile-user-name">Ayush Kumar</div>
+              <div class="profile-user-role-badge">
+                Teacher • Subject Specialist
               </div>
-              <div class="detail-row-item">
-                <span class="detail-label">Father's Name</span>
-                <span class="detail-value">Rajesh Kumar</span>
+            </div>
+
+            <div class="contact-info-list">
+              <div class="contact-item">
+                <span>✉️</span>
+                <span>ayush.kumar@smartdc.com</span>
               </div>
-              <div class="detail-row-item">
-                <span class="detail-label">Email Address</span>
-                <span class="detail-value">ayush.kumar@smartdc.com</span>
+              <div class="contact-item">
+                <span>📞</span>
+                <span>+91 98765 43210</span>
               </div>
-              <div class="detail-row-item">
-                <span class="detail-label">Mother's Name</span>
-                <span class="detail-value">Sushila Devi</span>
+              <div class="contact-item">
+                <span>📍</span>
+                <span>Patna, Bihar, India</span>
               </div>
-              <div class="detail-row-item">
-                <span class="detail-label">Phone Number</span>
-                <span class="detail-value">+91 98765 43210</span>
+              <div class="contact-item">
+                <span>📅</span>
+                <span>Joined on 15 Jan 2023</span>
               </div>
-              <div class="detail-row-item">
-                <span class="detail-label">Address</span>
-                <span class="detail-value"
-                  >Boring Road, Patna<br />Bihar - 800001, India</span
-                >
+            </div>
+
+            <div class="about-me-box">
+              <h4>About Me</h4>
+              <p>
+                Passionate educator with a strong commitment to student success
+                and interactive learning.
+              </p>
+            </div>
+
+            <div class="social-links-box">
+              <h4>Social Links</h4>
+              <div class="social-icons-row">
+                <a href="#" class="social-icon-btn" title="LinkedIn">in</a>
+                <a href="#" class="social-icon-btn" title="Twitter">🐦</a>
+                <a href="#" class="social-icon-btn" title="Website">🌐</a>
               </div>
-              <div class="detail-row-item">
-                <span class="detail-label">Date of Birth</span>
-                <span class="detail-value">12 March 1994</span>
+            </div>
+
+            <div class="profile-stats-footer">
+              <div>
+                <div class="p-stat-val">12</div>
+                <div class="p-stat-lbl">Classes</div>
               </div>
-              <div class="detail-row-item">
-                <span class="detail-label">Nationality</span>
-                <span class="detail-value">Indian</span>
+              <div>
+                <div class="p-stat-val">156</div>
+                <div class="p-stat-lbl">Students</div>
               </div>
-              <div class="detail-row-item">
-                <span class="detail-label">Gender</span>
-                <span class="detail-value">Male</span>
+              <div>
+                <div class="p-stat-val">8</div>
+                <div class="p-stat-lbl">Subjects</div>
               </div>
-              <div class="detail-row-item">
-                <span class="detail-label">Languages Known</span>
-                <span class="detail-value">English, Hindi</span>
+              <div>
+                <div class="p-stat-val">4.8</div>
+                <div class="p-stat-lbl">Rating</div>
               </div>
             </div>
           </div>
 
-          <!-- Professional Details Card -->
-          <div class="detail-card">
-            <div class="detail-card-header">
-              <div class="detail-icon-title">💼</div>
-              <span>Professional Details</span>
-            </div>
-            <div class="details-grid-2">
-              <div class="detail-row-item">
-                <span class="detail-label">Designation</span>
-                <span class="detail-value">Teacher</span>
+          <!-- Right Detailed Sections -->
+          <div class="profile-right-panels">
+            <!-- Personal Details Card -->
+            <div class="detail-card">
+              <div class="detail-card-header">
+                <div class="detail-icon-title">👤</div>
+                <span>Personal Details</span>
               </div>
-              <div class="detail-row-item">
-                <span class="detail-label">Qualification</span>
-                <span class="detail-value">M.Sc. in Physics</span>
-              </div>
-              <div class="detail-row-item">
-                <span class="detail-label">Department</span>
-                <span class="detail-value">Science Department</span>
-              </div>
-              <div class="detail-row-item">
-                <span class="detail-label">Experience</span>
-                <span class="detail-value">6+ Years</span>
-              </div>
-              <div class="detail-row-item">
-                <span class="detail-label">Subjects Teaching</span>
-                <div class="subject-badge-list">
-                  <span class="sub-badge">Physics</span>
-                  <span class="sub-badge">Chemistry</span>
-                  <span class="sub-badge">Science</span>
+              <div class="details-grid-2">
+                <div class="detail-row-item">
+                  <span class="detail-label">Full Name</span>
+                  <span class="detail-value">Ayush Kumar</span>
                 </div>
-              </div>
-              <div class="detail-row-item">
-                <span class="detail-label">School / Institution</span>
-                <span class="detail-value">Smart Learning DC School</span>
-              </div>
-              <div class="detail-row-item">
-                <span class="detail-label">Employee ID</span>
-                <span class="detail-value">SLDC-TEA-2023-015</span>
-              </div>
-              <div class="detail-row-item">
-                <span class="detail-label">Joining Date</span>
-                <span class="detail-value">10 January 2023</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Account & Security Card -->
-          <div class="detail-card">
-            <div class="detail-card-header">
-              <div class="detail-icon-title">🔒</div>
-              <span>Account & Security</span>
-            </div>
-            <div class="details-grid-2">
-              <div class="detail-row-item">
-                <span class="detail-label">Account Type</span>
-                <span class="detail-value">Teacher Account</span>
-              </div>
-              <div class="detail-row-item">
-                <span class="detail-label">Two-Factor Authentication</span>
-                <div>
-                  <span class="status-badge-green">Enabled</span>
+                <div class="detail-row-item">
+                  <span class="detail-label">Father's Name</span>
+                  <span class="detail-value">Rajesh Kumar</span>
                 </div>
-              </div>
-              <div class="detail-row-item">
-                <span class="detail-label">Password</span>
-                <span class="detail-value">••••••••</span>
-              </div>
-              <div class="detail-row-item">
-                <span class="detail-label">Last Login</span>
-                <span class="detail-value">17 May 2026, 09:30 AM</span>
-              </div>
-              <div class="detail-row-item" style="justify-content: center">
-                <button class="btn-session-manage" style="width: fit-content">
-                  Change Password
-                </button>
-              </div>
-              <div class="detail-row-item">
-                <span class="detail-label">Active Sessions</span>
-                <div
-                  style="
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    margin-top: 4px;
-                  "
-                >
-                  <span class="detail-value">2 Devices</span>
-                  <button class="btn-session-manage">Manage Sessions</button>
+                <div class="detail-row-item">
+                  <span class="detail-label">Email Address</span>
+                  <span class="detail-value">ayush.kumar@smartdc.com</span>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">Mother's Name</span>
+                  <span class="detail-value">Sushila Devi</span>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">Phone Number</span>
+                  <span class="detail-value">+91 98765 43210</span>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">Address</span>
+                  <span class="detail-value"
+                    >Boring Road, Patna<br />Bihar - 800001, India</span
+                  >
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">Date of Birth</span>
+                  <span class="detail-value">12 March 1994</span>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">Nationality</span>
+                  <span class="detail-value">Indian</span>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">Gender</span>
+                  <span class="detail-value">Male</span>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">Languages Known</span>
+                  <span class="detail-value">English, Hindi</span>
                 </div>
               </div>
             </div>
+
+            <!-- Professional Details Card -->
+            <div class="detail-card">
+              <div class="detail-card-header">
+                <div class="detail-icon-title">💼</div>
+                <span>Professional Details</span>
+              </div>
+              <div class="details-grid-2">
+                <div class="detail-row-item">
+                  <span class="detail-label">Designation</span>
+                  <span class="detail-value">Teacher</span>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">Qualification</span>
+                  <span class="detail-value">M.Sc. in Physics</span>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">Department</span>
+                  <span class="detail-value">Science Department</span>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">Experience</span>
+                  <span class="detail-value">6+ Years</span>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">Subjects Teaching</span>
+                  <div class="subject-badge-list">
+                    <span class="sub-badge">Physics</span>
+                    <span class="sub-badge">Chemistry</span>
+                    <span class="sub-badge">Science</span>
+                  </div>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">School / Institution</span>
+                  <span class="detail-value">Smart Learning DC School</span>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">Employee ID</span>
+                  <span class="detail-value">SLDC-TEA-2023-015</span>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">Joining Date</span>
+                  <span class="detail-value">10 January 2023</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Account & Security Card -->
+            <div class="detail-card">
+              <div class="detail-card-header">
+                <div class="detail-icon-title">🔒</div>
+                <span>Account & Security</span>
+              </div>
+              <div class="details-grid-2">
+                <div class="detail-row-item">
+                  <span class="detail-label">Account Type</span>
+                  <span class="detail-value">Teacher Account</span>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">Two-Factor Authentication</span>
+                  <div>
+                    <span class="status-badge-green">Enabled</span>
+                  </div>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">Password</span>
+                  <span class="detail-value">••••••••</span>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">Last Login</span>
+                  <span class="detail-value">17 May 2026, 09:30 AM</span>
+                </div>
+                <div class="detail-row-item" style="justify-content: center">
+                  <button class="btn-session-manage" style="width: fit-content">
+                    Change Password
+                  </button>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">Active Sessions</span>
+                  <div
+                    style="
+                      display: flex;
+                      align-items: center;
+                      justify-content: space-between;
+                      margin-top: 4px;
+                    "
+                  >
+                    <span class="detail-value">2 Devices</span>
+                    <button class="btn-session-manage">Manage Sessions</button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
+    <script src="../js/layout.js"></script>
   </body>
 </html>
