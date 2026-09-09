@@ -1,0 +1,995 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Student Downloads</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background: #f5f8fc;
+        color: #172033;
+        min-height: 100vh;
+      }
+
+      .page {
+        width: 100%;
+        padding: 32px 38px 50px;
+      }
+
+      /* ================= HEADER ================= */
+
+      .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 28px;
+      }
+
+      .header-left h1 {
+        font-size: 28px;
+        font-weight: 800;
+        color: #172033;
+        margin-bottom: 7px;
+      }
+
+      .header-left p {
+        color: #7b8496;
+        font-size: 14px;
+      }
+
+      .storage-box {
+        background: #ffffff;
+        border: 1px solid #e7ebf2;
+        border-radius: 14px;
+        padding: 13px 18px;
+        min-width: 220px;
+      }
+
+      .storage-top {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 9px;
+      }
+
+      .storage-top span:first-child {
+        font-size: 12px;
+        color: #7b8496;
+        font-weight: 600;
+      }
+
+      .storage-top span:last-child {
+        font-size: 12px;
+        font-weight: 700;
+        color: #303b50;
+      }
+
+      .storage-bar {
+        width: 100%;
+        height: 6px;
+        background: #edf0f5;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+
+      .storage-fill {
+        width: 34%;
+        height: 100%;
+        background: #6246e5;
+        border-radius: 10px;
+      }
+
+      /* ================= SUMMARY ================= */
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 18px;
+        margin-bottom: 25px;
+      }
+
+      .summary-card {
+        background: #ffffff;
+        border: 1px solid #e7ebf2;
+        border-radius: 17px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        transition: 0.2s ease;
+      }
+
+      .summary-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(31, 43, 68, 0.06);
+      }
+
+      .summary-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 13px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 18px;
+        flex-shrink: 0;
+      }
+
+      .purple {
+        background: #eeeaff;
+        color: #6246e5;
+      }
+
+      .blue {
+        background: #e9f4ff;
+        color: #3086dc;
+      }
+
+      .green {
+        background: #e8f8f0;
+        color: #27a269;
+      }
+
+      .orange {
+        background: #fff3e5;
+        color: #e99a32;
+      }
+
+      .summary-card h3 {
+        font-size: 21px;
+        font-weight: 800;
+        margin-bottom: 4px;
+      }
+
+      .summary-card p {
+        color: #8992a3;
+        font-size: 12px;
+        font-weight: 500;
+      }
+
+      /* ================= TOOLBAR ================= */
+
+      .toolbar {
+        background: #ffffff;
+        border: 1px solid #e7ebf2;
+        border-radius: 17px;
+        padding: 17px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 22px;
+      }
+
+      .search-box {
+        position: relative;
+        flex: 1;
+      }
+
+      .search-box i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9aa3b2;
+        font-size: 14px;
+      }
+
+      .search-box input {
+        width: 100%;
+        height: 44px;
+        border: 1px solid #e4e8ef;
+        border-radius: 11px;
+        padding: 0 15px 0 42px;
+        font-family: inherit;
+        outline: none;
+        color: #263147;
+        background: #fafbfd;
+      }
+
+      .search-box input:focus {
+        border-color: #6246e5;
+        background: #ffffff;
+      }
+
+      .filter-select {
+        height: 44px;
+        min-width: 155px;
+        border: 1px solid #e4e8ef;
+        border-radius: 11px;
+        padding: 0 13px;
+        background: #fafbfd;
+        color: #465166;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        outline: none;
+      }
+
+      /* ================= SECTION TITLE ================= */
+
+      .section-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+      }
+
+      .section-title h2 {
+        font-size: 18px;
+        font-weight: 800;
+      }
+
+      .section-title span {
+        font-size: 12px;
+        color: #8b94a5;
+      }
+
+      /* ================= DOWNLOAD LIST ================= */
+
+      .downloads-container {
+        background: #ffffff;
+        border: 1px solid #e7ebf2;
+        border-radius: 18px;
+        overflow: hidden;
+        margin-bottom: 25px;
+      }
+
+      .download-item {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 18px 21px;
+        border-bottom: 1px solid #eef1f5;
+        transition: 0.2s ease;
+      }
+
+      .download-item:last-child {
+        border-bottom: none;
+      }
+
+      .download-item:hover {
+        background: #fafbfe;
+      }
+
+      .file-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 13px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 19px;
+        flex-shrink: 0;
+      }
+
+      .pdf {
+        background: #fff0f0;
+        color: #e64b4b;
+      }
+
+      .doc {
+        background: #eaf3ff;
+        color: #327fd1;
+      }
+
+      .xls {
+        background: #eaf8ef;
+        color: #23985c;
+      }
+
+      .ppt {
+        background: #fff2e9;
+        color: #e77635;
+      }
+
+      .file-info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .file-info h3 {
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 6px;
+        color: #263147;
+      }
+
+      .file-meta {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .file-meta span {
+        color: #8a93a4;
+        font-size: 11px;
+        font-weight: 500;
+      }
+
+      .file-meta i {
+        margin-right: 4px;
+      }
+
+      .subject-tag {
+        padding: 5px 9px;
+        border-radius: 7px;
+        background: #f0edff;
+        color: #6246e5 !important;
+        font-weight: 700 !important;
+      }
+
+      .download-btn {
+        width: 40px;
+        height: 40px;
+        border: none;
+        border-radius: 10px;
+        background: #6246e5;
+        color: white;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: 0.2s ease;
+        flex-shrink: 0;
+      }
+
+      .download-btn:hover {
+        background: #5135d0;
+        transform: translateY(-1px);
+      }
+
+      /* ================= RECENT ================= */
+
+      .recent-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+      }
+
+      .recent-card {
+        background: #ffffff;
+        border: 1px solid #e7ebf2;
+        border-radius: 17px;
+        padding: 18px;
+        display: flex;
+        align-items: center;
+        gap: 13px;
+      }
+
+      .recent-card .file-icon {
+        width: 43px;
+        height: 43px;
+        font-size: 17px;
+      }
+
+      .recent-info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .recent-info h3 {
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 5px;
+      }
+
+      .recent-info p {
+        color: #939baa;
+        font-size: 10px;
+      }
+
+      .recent-download {
+        border: none;
+        background: transparent;
+        color: #6246e5;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      /* ================= EMPTY STATE ================= */
+
+      .empty-state {
+        display: none;
+        text-align: center;
+        padding: 50px 20px;
+        color: #8b94a5;
+      }
+
+      .empty-state i {
+        font-size: 35px;
+        margin-bottom: 13px;
+        color: #c2c7d2;
+      }
+
+      .empty-state h3 {
+        color: #596276;
+        font-size: 16px;
+        margin-bottom: 5px;
+      }
+
+      .empty-state p {
+        font-size: 12px;
+      }
+
+      /* ================= RESPONSIVE ================= */
+
+      @media (max-width: 1100px) {
+        .summary-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .recent-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 750px) {
+        .page {
+          padding: 22px 17px 40px;
+        }
+
+        .page-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 17px;
+        }
+
+        .storage-box {
+          width: 100%;
+        }
+
+        .summary-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .toolbar {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .filter-select {
+          width: 100%;
+        }
+
+        .download-item {
+          padding: 15px;
+        }
+
+        .file-info h3 {
+          font-size: 13px;
+        }
+
+        .download-btn {
+          width: 36px;
+          height: 36px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="page">
+      <!-- HEADER -->
+
+      <div class="page-header">
+        <div class="header-left">
+          <h1>Downloads</h1>
+          <p>Access and download your study materials anytime.</p>
+        </div>
+
+        <div class="storage-box">
+          <div class="storage-top">
+            <span>Downloaded Storage</span>
+            <span>680 MB / 2 GB</span>
+          </div>
+
+          <div class="storage-bar">
+            <div class="storage-fill"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUMMARY CARDS -->
+
+      <div class="summary-grid">
+        <div class="summary-card">
+          <div class="summary-icon purple">
+            <i class="fa-solid fa-folder-open"></i>
+          </div>
+
+          <div>
+            <h3>48</h3>
+            <p>Available Materials</p>
+          </div>
+        </div>
+
+        <div class="summary-card">
+          <div class="summary-icon blue">
+            <i class="fa-solid fa-download"></i>
+          </div>
+
+          <div>
+            <h3>26</h3>
+            <p>Files Downloaded</p>
+          </div>
+        </div>
+
+        <div class="summary-card">
+          <div class="summary-icon green">
+            <i class="fa-solid fa-book"></i>
+          </div>
+
+          <div>
+            <h3>8</h3>
+            <p>Subjects</p>
+          </div>
+        </div>
+
+        <div class="summary-card">
+          <div class="summary-icon orange">
+            <i class="fa-solid fa-file-lines"></i>
+          </div>
+
+          <div>
+            <h3>14</h3>
+            <p>New Materials</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEARCH / FILTER -->
+
+      <div class="toolbar">
+        <div class="search-box">
+          <i class="fa-solid fa-magnifying-glass"></i>
+
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Search study materials..."
+          />
+        </div>
+
+        <select class="filter-select" id="subjectFilter">
+          <option value="all">All Subjects</option>
+          <option value="Mathematics">Mathematics</option>
+          <option value="Science">Science</option>
+          <option value="English">English</option>
+          <option value="Computer Science">Computer Science</option>
+          <option value="Social Science">Social Science</option>
+        </select>
+
+        <select class="filter-select" id="typeFilter">
+          <option value="all">All File Types</option>
+          <option value="pdf">PDF</option>
+          <option value="doc">Document</option>
+          <option value="xls">Worksheet</option>
+          <option value="ppt">Presentation</option>
+        </select>
+      </div>
+
+      <!-- AVAILABLE MATERIALS -->
+
+      <div class="section-title">
+        <h2>Available Materials</h2>
+
+        <span id="materialCount">6 materials</span>
+      </div>
+
+      <div class="downloads-container" id="downloadsList">
+        <!-- ITEM 1 -->
+
+        <div class="download-item" data-subject="Mathematics" data-type="pdf">
+          <div class="file-icon pdf">
+            <i class="fa-solid fa-file-pdf"></i>
+          </div>
+
+          <div class="file-info">
+            <h3>Quadratic Equations - Complete Notes</h3>
+
+            <div class="file-meta">
+              <span class="subject-tag"> Mathematics </span>
+
+              <span>
+                <i class="fa-regular fa-file"></i>
+                PDF
+              </span>
+
+              <span>
+                <i class="fa-solid fa-hard-drive"></i>
+                2.4 MB
+              </span>
+
+              <span>
+                <i class="fa-regular fa-calendar"></i>
+                Sep 5, 2026
+              </span>
+            </div>
+          </div>
+
+          <button
+            class="download-btn"
+            onclick="downloadFile('Quadratic Equations - Complete Notes')"
+            title="Download"
+          >
+            <i class="fa-solid fa-download"></i>
+          </button>
+        </div>
+
+        <!-- ITEM 2 -->
+
+        <div class="download-item" data-subject="Science" data-type="pdf">
+          <div class="file-icon pdf">
+            <i class="fa-solid fa-file-pdf"></i>
+          </div>
+
+          <div class="file-info">
+            <h3>Human Reproduction - Study Material</h3>
+
+            <div class="file-meta">
+              <span class="subject-tag"> Science </span>
+
+              <span>
+                <i class="fa-regular fa-file"></i>
+                PDF
+              </span>
+
+              <span>
+                <i class="fa-solid fa-hard-drive"></i>
+                3.1 MB
+              </span>
+
+              <span>
+                <i class="fa-regular fa-calendar"></i>
+                Sep 4, 2026
+              </span>
+            </div>
+          </div>
+
+          <button
+            class="download-btn"
+            onclick="downloadFile('Human Reproduction - Study Material')"
+            title="Download"
+          >
+            <i class="fa-solid fa-download"></i>
+          </button>
+        </div>
+
+        <!-- ITEM 3 -->
+
+        <div
+          class="download-item"
+          data-subject="Computer Science"
+          data-type="doc"
+        >
+          <div class="file-icon doc">
+            <i class="fa-solid fa-file-word"></i>
+          </div>
+
+          <div class="file-info">
+            <h3>Introduction to C++ Programming</h3>
+
+            <div class="file-meta">
+              <span class="subject-tag"> Computer Science </span>
+
+              <span>
+                <i class="fa-regular fa-file"></i>
+                DOCX
+              </span>
+
+              <span>
+                <i class="fa-solid fa-hard-drive"></i>
+                1.8 MB
+              </span>
+
+              <span>
+                <i class="fa-regular fa-calendar"></i>
+                Sep 3, 2026
+              </span>
+            </div>
+          </div>
+
+          <button
+            class="download-btn"
+            onclick="downloadFile('Introduction to C++ Programming')"
+            title="Download"
+          >
+            <i class="fa-solid fa-download"></i>
+          </button>
+        </div>
+
+        <!-- ITEM 4 -->
+
+        <div class="download-item" data-subject="English" data-type="ppt">
+          <div class="file-icon ppt">
+            <i class="fa-solid fa-file-powerpoint"></i>
+          </div>
+
+          <div class="file-info">
+            <h3>English Grammar - Tenses</h3>
+
+            <div class="file-meta">
+              <span class="subject-tag"> English </span>
+
+              <span>
+                <i class="fa-regular fa-file"></i>
+                PPT
+              </span>
+
+              <span>
+                <i class="fa-solid fa-hard-drive"></i>
+                4.2 MB
+              </span>
+
+              <span>
+                <i class="fa-regular fa-calendar"></i>
+                Sep 2, 2026
+              </span>
+            </div>
+          </div>
+
+          <button
+            class="download-btn"
+            onclick="downloadFile('English Grammar - Tenses')"
+            title="Download"
+          >
+            <i class="fa-solid fa-download"></i>
+          </button>
+        </div>
+
+        <!-- ITEM 5 -->
+
+        <div class="download-item" data-subject="Mathematics" data-type="xls">
+          <div class="file-icon xls">
+            <i class="fa-solid fa-file-excel"></i>
+          </div>
+
+          <div class="file-info">
+            <h3>Mathematics Practice Worksheet - Algebra</h3>
+
+            <div class="file-meta">
+              <span class="subject-tag"> Mathematics </span>
+
+              <span>
+                <i class="fa-regular fa-file"></i>
+                Worksheet
+              </span>
+
+              <span>
+                <i class="fa-solid fa-hard-drive"></i>
+                950 KB
+              </span>
+
+              <span>
+                <i class="fa-regular fa-calendar"></i>
+                Sep 1, 2026
+              </span>
+            </div>
+          </div>
+
+          <button
+            class="download-btn"
+            onclick="downloadFile('Mathematics Practice Worksheet - Algebra')"
+            title="Download"
+          >
+            <i class="fa-solid fa-download"></i>
+          </button>
+        </div>
+
+        <!-- ITEM 6 -->
+
+        <div
+          class="download-item"
+          data-subject="Social Science"
+          data-type="pdf"
+        >
+          <div class="file-icon pdf">
+            <i class="fa-solid fa-file-pdf"></i>
+          </div>
+
+          <div class="file-info">
+            <h3>Indian Constitution - Revision Notes</h3>
+
+            <div class="file-meta">
+              <span class="subject-tag"> Social Science </span>
+
+              <span>
+                <i class="fa-regular fa-file"></i>
+                PDF
+              </span>
+
+              <span>
+                <i class="fa-solid fa-hard-drive"></i>
+                2.7 MB
+              </span>
+
+              <span>
+                <i class="fa-regular fa-calendar"></i>
+                Aug 30, 2026
+              </span>
+            </div>
+          </div>
+
+          <button
+            class="download-btn"
+            onclick="downloadFile('Indian Constitution - Revision Notes')"
+            title="Download"
+          >
+            <i class="fa-solid fa-download"></i>
+          </button>
+        </div>
+
+        <div class="empty-state" id="emptyState">
+          <i class="fa-regular fa-folder-open"></i>
+
+          <h3>No materials found</h3>
+
+          <p>Try changing your search or filters.</p>
+        </div>
+      </div>
+
+      <!-- RECENT DOWNLOADS -->
+
+      <div class="section-title">
+        <h2>Recently Downloaded</h2>
+
+        <span>Last 7 days</span>
+      </div>
+
+      <div class="recent-grid">
+        <div class="recent-card">
+          <div class="file-icon pdf">
+            <i class="fa-solid fa-file-pdf"></i>
+          </div>
+
+          <div class="recent-info">
+            <h3>Physics - Light Reflection Notes</h3>
+
+            <p>Downloaded yesterday · 2.1 MB</p>
+          </div>
+
+          <button
+            class="recent-download"
+            onclick="downloadFile('Physics - Light Reflection Notes')"
+          >
+            <i class="fa-solid fa-download"></i>
+          </button>
+        </div>
+
+        <div class="recent-card">
+          <div class="file-icon doc">
+            <i class="fa-solid fa-file-word"></i>
+          </div>
+
+          <div class="recent-info">
+            <h3>C++ Programming Basics</h3>
+
+            <p>Downloaded 2 days ago · 1.5 MB</p>
+          </div>
+
+          <button
+            class="recent-download"
+            onclick="downloadFile('C++ Programming Basics')"
+          >
+            <i class="fa-solid fa-download"></i>
+          </button>
+        </div>
+
+        <div class="recent-card">
+          <div class="file-icon pdf">
+            <i class="fa-solid fa-file-pdf"></i>
+          </div>
+
+          <div class="recent-info">
+            <h3>Algebra Important Questions</h3>
+
+            <p>Downloaded 4 days ago · 1.9 MB</p>
+          </div>
+
+          <button
+            class="recent-download"
+            onclick="downloadFile('Algebra Important Questions')"
+          >
+            <i class="fa-solid fa-download"></i>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      const searchInput = document.getElementById("searchInput");
+      const subjectFilter = document.getElementById("subjectFilter");
+      const typeFilter = document.getElementById("typeFilter");
+
+      const items = document.querySelectorAll(".download-item");
+      const emptyState = document.getElementById("emptyState");
+      const materialCount = document.getElementById("materialCount");
+
+      function filterMaterials() {
+        const search = searchInput.value.toLowerCase().trim();
+
+        const subject = subjectFilter.value;
+
+        const type = typeFilter.value;
+
+        let visibleCount = 0;
+
+        items.forEach((item) => {
+          const title = item.querySelector("h3").textContent.toLowerCase();
+
+          const itemSubject = item.dataset.subject;
+
+          const itemType = item.dataset.type;
+
+          const matchesSearch = title.includes(search);
+
+          const matchesSubject = subject === "all" || itemSubject === subject;
+
+          const matchesType = type === "all" || itemType === type;
+
+          if (matchesSearch && matchesSubject && matchesType) {
+            item.style.display = "flex";
+            visibleCount++;
+          } else {
+            item.style.display = "none";
+          }
+        });
+
+        materialCount.textContent =
+          visibleCount + (visibleCount === 1 ? " material" : " materials");
+
+        emptyState.style.display = visibleCount === 0 ? "block" : "none";
+      }
+
+      searchInput.addEventListener("input", filterMaterials);
+
+      subjectFilter.addEventListener("change", filterMaterials);
+
+      typeFilter.addEventListener("change", filterMaterials);
+
+      function downloadFile(fileName) {
+        alert("Downloading: " + fileName);
+
+        /*
+        Later connect this button
+        to your Supabase Storage file URL.
+
+        Example:
+
+        window.open(fileUrl, "_blank");
+
+        or:
+
+        const link = document.createElement("a");
+        link.href = fileUrl;
+        link.download = fileName;
+        link.click();
+      */
+      }
+    </script>
+  </body>
+</html>
