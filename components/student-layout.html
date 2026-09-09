@@ -1,0 +1,170 @@
+<aside class="student-sidebar" id="studentSidebar">
+  <div class="student-sidebar-inner">
+    <a
+      class="student-brand"
+      href="st_dashboard.html"
+      aria-label="Smart Learning DC dashboard"
+    >
+      <img
+        class="student-brand-logo"
+        src="../assets/smart-learning-dc-logo.svg"
+        alt="Smart Learning DC"
+      />
+    </a>
+
+    <nav class="student-sidebar-nav" aria-label="Student navigation">
+      <a
+        class="student-nav-link"
+        href="st_dashboard.html"
+        data-page="st_dashboard.html"
+        ><i class="fa-solid fa-house" aria-hidden="true"></i
+        ><span>Dashboard</span></a
+      >
+      <a
+        class="student-nav-link"
+        href="st_subjects.html"
+        data-page="st_subjects.html"
+        ><i class="fa-solid fa-book-open" aria-hidden="true"></i
+        ><span>Subjects</span></a
+      >
+      <a
+        class="student-nav-link"
+        href="st_live_classes.html"
+        data-page="st_live_classes.html"
+        ><i class="fa-solid fa-video" aria-hidden="true"></i
+        ><span>Live Classes</span></a
+      >
+      <a
+        class="student-nav-link"
+        href="st_quizzes.html"
+        data-page="st_quizzes.html"
+        ><i class="fa-solid fa-circle-check" aria-hidden="true"></i
+        ><span>Quizzes</span></a
+      >
+      <a class="student-nav-link" href="st_notes.html" data-page="st_notes.html"
+        ><i class="fa-solid fa-note-sticky" aria-hidden="true"></i
+        ><span>Notes</span></a
+      >
+      <a
+        class="student-nav-link"
+        href="st_videos.html"
+        data-page="st_videos.html"
+        ><i class="fa-solid fa-circle-play" aria-hidden="true"></i
+        ><span>Videos</span></a
+      >
+      <a
+        class="student-nav-link"
+        href="st_study_time.html"
+        data-page="st_study_time.html"
+        ><i class="fa-solid fa-clock" aria-hidden="true"></i
+        ><span>Study Time</span></a
+      >
+      <a
+        class="student-nav-link"
+        href="st_achievement.html"
+        data-page="st_achievement.html"
+        ><i class="fa-solid fa-trophy" aria-hidden="true"></i
+        ><span>Achievements</span></a
+      >
+      <a
+        class="student-nav-link"
+        href="st_downloads.html"
+        data-page="st_downloads.html"
+        ><i class="fa-solid fa-download" aria-hidden="true"></i
+        ><span>Downloads</span></a
+      >
+      <a
+        class="student-nav-link"
+        href="st_calendar.html"
+        data-page="st_calendar.html"
+        ><i class="fa-solid fa-calendar-days" aria-hidden="true"></i
+        ><span>Calendar</span></a
+      >
+
+      <div class="student-sidebar-divider" role="separator"></div>
+
+      <a
+        class="student-nav-link"
+        href="st_profile.html"
+        data-page="st_profile.html"
+        ><i class="fa-solid fa-user" aria-hidden="true"></i
+        ><span>My Profile</span></a
+      >
+      <a
+        class="student-nav-link"
+        href="st_settings.html"
+        data-page="st_settings.html"
+        ><i class="fa-solid fa-gear" aria-hidden="true"></i
+        ><span>Settings</span></a
+      >
+      <a class="student-nav-link" href="st_settings.html#help"
+        ><i class="fa-solid fa-circle-question" aria-hidden="true"></i
+        ><span>Help &amp; Support</span></a
+      >
+      <a
+        class="student-nav-link student-nav-link-danger"
+        href="../user_role.html"
+        id="studentLogout"
+        ><i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i
+        ><span>Log out</span></a
+      >
+    </nav>
+  </div>
+</aside>
+
+<div class="student-layout-main">
+  <header class="student-topbar">
+    <button
+      class="student-menu-toggle"
+      id="studentMenuToggle"
+      type="button"
+      aria-label="Open navigation"
+      aria-controls="studentSidebar"
+      aria-expanded="false"
+    >
+      <i class="fa-solid fa-bars" aria-hidden="true"></i>
+    </button>
+    <label class="student-search" for="studentSearchInput">
+      <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+      <input
+        id="studentSearchInput"
+        type="search"
+        placeholder="Search anything..."
+        autocomplete="off"
+      />
+    </label>
+    <div class="student-topbar-actions">
+      <button
+        class="student-notification-button"
+        type="button"
+        aria-label="Notifications"
+      >
+        <i class="fa-regular fa-bell" aria-hidden="true"></i
+        ><span class="student-notification-badge">10</span>
+      </button>
+      <span class="student-topbar-divider" aria-hidden="true"></span>
+      <a
+        class="student-profile-button"
+        href="st_profile.html"
+        aria-label="Open Ayush Kumar profile"
+      >
+        <img
+          class="student-avatar"
+          src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&amp;auto=format&amp;fit=crop&amp;q=80"
+          alt="Ayush Kumar"
+        />
+        <span class="student-user-info"
+          ><strong>Ayush Kumar</strong
+          ><small
+            >Grade 12 <span aria-hidden="true">&bull;</span> PCM</small
+          ></span
+        >
+        <i
+          class="fa-solid fa-chevron-down student-profile-chevron"
+          aria-hidden="true"
+        ></i>
+      </a>
+    </div>
+  </header>
+  <main class="student-main-content" id="studentMainContent"></main>
+</div>

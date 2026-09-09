@@ -1,1676 +1,1244 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>My Subjects - Smart Learning DC</title>
 
     <!-- Google Font -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet"
-    >
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
 
     <!-- Font Awesome -->
     <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-    >
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
 
     <style>
-
-        /* =====================================================
+      /* =====================================================
            RESET
         ===================================================== */
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-        body {
-            font-family: "Inter", sans-serif;
-            background: #f5f9fd;
-            color: #07183f;
-        }
+      body {
+        font-family: "Inter", sans-serif;
+        background: #f5f9fd;
+        color: #07183f;
+      }
 
-        button,
-        input {
-            font-family: inherit;
-        }
+      button,
+      input {
+        font-family: inherit;
+      }
 
-        button {
-            cursor: pointer;
-        }
+      button {
+        cursor: pointer;
+      }
 
-
-        /* =====================================================
+      /* =====================================================
            MAIN CONTENT
         ===================================================== */
 
-        .main-content {
-            min-height: 100vh;
+      .main-content {
+        min-height: 100vh;
 
-            padding: 45px 48px 40px;
+        padding: 45px 48px 40px;
 
-            background:
-                radial-gradient(
-                    circle at top left,
-                    rgba(76, 57, 237, 0.04),
-                    transparent 35%
-                ),
-                #f5f9fd;
-        }
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(76, 57, 237, 0.04),
+            transparent 35%
+          ),
+          #f5f9fd;
+      }
 
-
-        /* =====================================================
+      /* =====================================================
            PAGE HEADER
         ===================================================== */
 
-        .page-header {
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
+      .page-header {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
 
-            margin-bottom: 30px;
+        margin-bottom: 30px;
 
-            gap: 20px;
-        }
+        gap: 20px;
+      }
 
-        .page-title h1 {
-            font-size: 32px;
-            font-weight: 800;
+      .page-title h1 {
+        font-size: 32px;
+        font-weight: 800;
 
-            color: #08183e;
+        color: #08183e;
 
-            margin-bottom: 8px;
+        margin-bottom: 8px;
 
-            letter-spacing: -0.8px;
-        }
+        letter-spacing: -0.8px;
+      }
 
-        .page-title p {
-            font-size: 16px;
+      .page-title p {
+        font-size: 16px;
 
-            color: #536789;
-        }
+        color: #536789;
+      }
 
-
-        /* =====================================================
+      /* =====================================================
            SUBJECT GRID
         ===================================================== */
 
-        .subjects-grid {
+      .subjects-grid {
+        display: grid;
 
-            display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
 
-            grid-template-columns:
-                repeat(4, minmax(0, 1fr));
+        gap: 20px;
+      }
 
-            gap: 20px;
-        }
-
-
-        /* =====================================================
+      /* =====================================================
            SUBJECT CARD
         ===================================================== */
 
-        .subject-card {
+      .subject-card {
+        background: rgba(255, 255, 255, 0.96);
 
-            background: rgba(255, 255, 255, 0.96);
+        border: 1px solid #e8eef5;
 
-            border: 1px solid #e8eef5;
+        border-radius: 16px;
 
-            border-radius: 16px;
+        padding: 22px;
 
-            padding: 22px;
+        min-height: 325px;
 
-            min-height: 325px;
+        position: relative;
 
-            position: relative;
+        box-shadow: 0 8px 24px rgba(24, 45, 78, 0.045);
 
-            box-shadow:
-                0 8px 24px rgba(
-                    24,
-                    45,
-                    78,
-                    0.045
-                );
+        transition: 0.25s ease;
+      }
 
-            transition: 0.25s ease;
-        }
+      .subject-card:hover {
+        transform: translateY(-3px);
 
-        .subject-card:hover {
+        box-shadow: 0 15px 35px rgba(24, 45, 78, 0.08);
+      }
 
-            transform: translateY(-3px);
-
-            box-shadow:
-                0 15px 35px rgba(
-                    24,
-                    45,
-                    78,
-                    0.08
-                );
-        }
-
-
-        /* =====================================================
+      /* =====================================================
            CARD TOP
         ===================================================== */
 
-        .subject-top {
+      .subject-top {
+        display: flex;
 
-            display: flex;
+        align-items: center;
 
-            align-items: center;
+        justify-content: space-between;
 
-            justify-content: space-between;
+        margin-bottom: 22px;
+      }
 
-            margin-bottom: 22px;
-        }
+      .subject-info {
+        display: flex;
 
-        .subject-info {
+        align-items: center;
 
-            display: flex;
+        gap: 14px;
 
-            align-items: center;
+        min-width: 0;
+      }
 
-            gap: 14px;
+      .subject-icon {
+        width: 62px;
+        height: 62px;
 
-            min-width: 0;
-        }
+        min-width: 62px;
 
-        .subject-icon {
+        border-radius: 12px;
 
-            width: 62px;
-            height: 62px;
+        display: flex;
 
-            min-width: 62px;
+        align-items: center;
+        justify-content: center;
 
-            border-radius: 12px;
+        color: white;
 
-            display: flex;
+        font-size: 28px;
+      }
 
-            align-items: center;
-            justify-content: center;
+      .subject-name {
+        font-size: 16px;
 
-            color: white;
+        font-weight: 700;
 
-            font-size: 28px;
-        }
+        color: #0a193d;
 
-        .subject-name {
+        line-height: 1.3;
+      }
 
-            font-size: 16px;
-
-            font-weight: 700;
-
-            color: #0a193d;
-
-            line-height: 1.3;
-        }
-
-
-        /* =====================================================
+      /* =====================================================
            SUBJECT COLORS
         ===================================================== */
 
-        .purple {
+      .purple {
+        background: linear-gradient(135deg, #633cf1, #5127d8);
+      }
 
-            background:
-                linear-gradient(
-                    135deg,
-                    #633cf1,
-                    #5127d8
-                );
-        }
+      .green {
+        background: linear-gradient(135deg, #09b77a, #00a86b);
+      }
 
-        .green {
+      .orange {
+        background: linear-gradient(135deg, #f99b05, #ed8400);
+      }
 
-            background:
-                linear-gradient(
-                    135deg,
-                    #09b77a,
-                    #00a86b
-                );
-        }
+      .blue {
+        background: linear-gradient(135deg, #277ff0, #176bd6);
+      }
 
-        .orange {
+      .pink {
+        background: linear-gradient(135deg, #dd3e89, #c92475);
+      }
 
-            background:
-                linear-gradient(
-                    135deg,
-                    #f99b05,
-                    #ed8400
-                );
-        }
+      .teal {
+        background: linear-gradient(135deg, #11aaa8, #079696);
+      }
 
-        .blue {
+      .yellow {
+        background: linear-gradient(135deg, #ffb500, #f19a00);
+      }
 
-            background:
-                linear-gradient(
-                    135deg,
-                    #277ff0,
-                    #176bd6
-                );
-        }
-
-        .pink {
-
-            background:
-                linear-gradient(
-                    135deg,
-                    #dd3e89,
-                    #c92475
-                );
-        }
-
-        .teal {
-
-            background:
-                linear-gradient(
-                    135deg,
-                    #11aaa8,
-                    #079696
-                );
-        }
-
-        .yellow {
-
-            background:
-                linear-gradient(
-                    135deg,
-                    #ffb500,
-                    #f19a00
-                );
-        }
-
-
-        /* =====================================================
+      /* =====================================================
            THREE DOT MENU
         ===================================================== */
 
-        .menu-wrapper {
+      .menu-wrapper {
+        position: relative;
+      }
 
-            position: relative;
-        }
+      .menu-btn {
+        border: none;
 
-        .menu-btn {
+        background: transparent;
 
-            border: none;
+        color: #183765;
 
-            background: transparent;
+        width: 30px;
+        height: 30px;
 
-            color: #183765;
+        border-radius: 6px;
 
-            width: 30px;
-            height: 30px;
+        font-size: 17px;
+      }
 
-            border-radius: 6px;
+      .menu-btn:hover {
+        background: #f1f4f9;
+      }
 
-            font-size: 17px;
-        }
+      .dropdown-menu {
+        position: absolute;
 
-        .menu-btn:hover {
+        right: 0;
 
-            background: #f1f4f9;
-        }
+        top: 34px;
 
-        .dropdown-menu {
+        width: 145px;
 
-            position: absolute;
+        background: white;
 
-            right: 0;
+        border: 1px solid #e4e9f0;
 
-            top: 34px;
+        border-radius: 9px;
 
-            width: 145px;
+        padding: 5px;
 
-            background: white;
+        box-shadow: 0 12px 30px rgba(15, 35, 65, 0.12);
 
-            border: 1px solid #e4e9f0;
+        display: none;
 
-            border-radius: 9px;
+        z-index: 20;
+      }
 
-            padding: 5px;
+      .dropdown-menu.show {
+        display: block;
+      }
 
-            box-shadow:
-                0 12px 30px rgba(
-                    15,
-                    35,
-                    65,
-                    0.12
-                );
+      .dropdown-menu button {
+        width: 100%;
 
-            display: none;
+        border: none;
 
-            z-index: 20;
-        }
+        background: transparent;
 
-        .dropdown-menu.show {
+        padding: 9px 10px;
 
-            display: block;
-        }
+        border-radius: 6px;
 
-        .dropdown-menu button {
+        text-align: left;
 
-            width: 100%;
+        font-size: 12px;
 
-            border: none;
+        color: #24385d;
+      }
 
-            background: transparent;
+      .dropdown-menu button:hover {
+        background: #f4f6fa;
+      }
 
-            padding: 9px 10px;
+      .dropdown-menu .delete-btn {
+        color: #e63946;
+      }
 
-            border-radius: 6px;
-
-            text-align: left;
-
-            font-size: 12px;
-
-            color: #24385d;
-        }
-
-        .dropdown-menu button:hover {
-
-            background: #f4f6fa;
-        }
-
-        .dropdown-menu .delete-btn {
-
-            color: #e63946;
-        }
-
-
-        /* =====================================================
+      /* =====================================================
            PROGRESS
         ===================================================== */
 
-        .progress-section {
+      .progress-section {
+        margin-bottom: 23px;
+      }
 
-            margin-bottom: 23px;
-        }
+      .progress-label {
+        display: flex;
 
-        .progress-label {
+        align-items: center;
 
-            display: flex;
+        justify-content: space-between;
 
-            align-items: center;
+        margin-bottom: 10px;
+      }
 
-            justify-content: space-between;
+      .progress-label span {
+        font-size: 14px;
 
-            margin-bottom: 10px;
-        }
+        color: #233b67;
+      }
 
-        .progress-label span {
+      .progress-label strong {
+        font-size: 14px;
 
-            font-size: 14px;
+        color: #0a183c;
+      }
 
-            color: #233b67;
-        }
+      .progress-track {
+        width: 100%;
 
-        .progress-label strong {
+        height: 7px;
 
-            font-size: 14px;
+        background: #e9eef4;
 
-            color: #0a183c;
-        }
+        border-radius: 20px;
 
-        .progress-track {
+        overflow: hidden;
+      }
 
-            width: 100%;
+      .progress-fill {
+        height: 100%;
 
-            height: 7px;
+        border-radius: 20px;
 
-            background: #e9eef4;
+        transition: width 0.6s ease;
+      }
 
-            border-radius: 20px;
+      /* Progress colors */
 
-            overflow: hidden;
-        }
+      .progress-purple {
+        background: #5d39ee;
+      }
 
-        .progress-fill {
+      .progress-green {
+        background: #10bb80;
+      }
 
-            height: 100%;
+      .progress-orange {
+        background: #ff9909;
+      }
 
-            border-radius: 20px;
+      .progress-blue {
+        background: #237bea;
+      }
 
-            transition:
-                width 0.6s ease;
-        }
+      .progress-pink {
+        background: #df3c8d;
+      }
 
+      .progress-teal {
+        background: #0aa9a5;
+      }
 
-        /* Progress colors */
+      .progress-yellow {
+        background: #ffb00b;
+      }
 
-        .progress-purple {
-
-            background: #5d39ee;
-        }
-
-        .progress-green {
-
-            background: #10bb80;
-        }
-
-        .progress-orange {
-
-            background: #ff9909;
-        }
-
-        .progress-blue {
-
-            background: #237bea;
-        }
-
-        .progress-pink {
-
-            background: #df3c8d;
-        }
-
-        .progress-teal {
-
-            background: #0aa9a5;
-        }
-
-        .progress-yellow {
-
-            background: #ffb00b;
-        }
-
-
-        /* =====================================================
+      /* =====================================================
            STATISTICS
         ===================================================== */
 
-        .subject-stats {
+      .subject-stats {
+        display: flex;
 
-            display: flex;
+        flex-direction: column;
 
-            flex-direction: column;
+        gap: 11px;
 
-            gap: 11px;
+        margin-bottom: 20px;
+      }
 
-            margin-bottom: 20px;
-        }
+      .stat-row {
+        display: flex;
 
-        .stat-row {
+        align-items: center;
 
-            display: flex;
+        justify-content: space-between;
 
-            align-items: center;
+        font-size: 14px;
+      }
 
-            justify-content: space-between;
+      .stat-left {
+        display: flex;
 
-            font-size: 14px;
-        }
+        align-items: center;
 
-        .stat-left {
+        gap: 9px;
 
-            display: flex;
+        color: #152d57;
+      }
 
-            align-items: center;
+      .stat-left i {
+        width: 18px;
 
-            gap: 9px;
+        font-size: 13px;
+      }
 
-            color: #152d57;
-        }
+      .stat-number {
+        color: #08183e;
 
-        .stat-left i {
+        font-weight: 600;
+      }
 
-            width: 18px;
-
-            font-size: 13px;
-        }
-
-        .stat-number {
-
-            color: #08183e;
-
-            font-weight: 600;
-        }
-
-
-        /* =====================================================
+      /* =====================================================
            VIEW DETAILS BUTTON
         ===================================================== */
 
-        .view-details {
+      .view-details {
+        width: 100%;
 
-            width: 100%;
+        border: none;
 
-            border: none;
+        border-radius: 9px;
 
-            border-radius: 9px;
+        padding: 12px;
 
-            padding: 12px;
+        font-size: 13px;
 
-            font-size: 13px;
+        font-weight: 600;
 
-            font-weight: 600;
+        background: #f0edff;
 
-            background: #f0edff;
+        color: #5134e8;
 
-            color: #5134e8;
+        transition: 0.2s;
+      }
 
-            transition: 0.2s;
-        }
+      .view-details:hover {
+        filter: brightness(0.97);
 
-        .view-details:hover {
+        transform: translateY(-1px);
+      }
 
-            filter: brightness(0.97);
+      .green-card .view-details {
+        background: #e9f9f3;
 
-            transform: translateY(-1px);
-        }
+        color: #00a873;
+      }
 
-        .green-card .view-details {
+      .orange-card .view-details {
+        background: #fff3e3;
 
-            background: #e9f9f3;
+        color: #ee8a00;
+      }
 
-            color: #00a873;
-        }
+      .blue-card .view-details {
+        background: #eaf3ff;
 
-        .orange-card .view-details {
+        color: #1972df;
+      }
 
-            background: #fff3e3;
+      .pink-card .view-details {
+        background: #fcedf5;
 
-            color: #ee8a00;
-        }
+        color: #db3483;
+      }
 
-        .blue-card .view-details {
+      .teal-card .view-details {
+        background: #e8f8f7;
 
-            background: #eaf3ff;
+        color: #08a19f;
+      }
 
-            color: #1972df;
-        }
+      .yellow-card .view-details {
+        background: #fff7e5;
 
-        .pink-card .view-details {
+        color: #e99a00;
+      }
 
-            background: #fcedf5;
-
-            color: #db3483;
-        }
-
-        .teal-card .view-details {
-
-            background: #e8f8f7;
-
-            color: #08a19f;
-        }
-
-        .yellow-card .view-details {
-
-            background: #fff7e5;
-
-            color: #e99a00;
-        }
-
-
-        /* =====================================================
+      /* =====================================================
            SUMMARY CARD
         ===================================================== */
 
-        .summary-card {
+      .summary-card {
+        margin-top: 28px;
 
-            margin-top: 28px;
+        background: white;
 
-            background: white;
+        border: 1px solid #e8eef5;
 
-            border: 1px solid #e8eef5;
+        border-radius: 16px;
 
-            border-radius: 16px;
+        padding: 22px 25px;
 
-            padding: 22px 25px;
+        display: grid;
 
-            display: grid;
+        grid-template-columns: repeat(5, 1fr);
 
-            grid-template-columns:
-                repeat(5, 1fr);
+        box-shadow: 0 8px 25px rgba(24, 45, 78, 0.045);
+      }
 
-            box-shadow:
-                0 8px 25px rgba(
-                    24,
-                    45,
-                    78,
-                    0.045
-                );
-        }
+      .summary-item {
+        display: flex;
 
-        .summary-item {
+        align-items: center;
 
-            display: flex;
+        gap: 15px;
 
-            align-items: center;
+        padding: 0 22px;
 
-            gap: 15px;
+        border-right: 1px solid #e3e9f0;
+      }
 
-            padding: 0 22px;
+      .summary-item:first-child {
+        padding-left: 8px;
+      }
 
-            border-right:
-                1px solid #e3e9f0;
-        }
+      .summary-item:last-child {
+        border-right: none;
+      }
 
-        .summary-item:first-child {
+      .summary-icon {
+        width: 52px;
+        height: 52px;
 
-            padding-left: 8px;
-        }
+        min-width: 52px;
 
-        .summary-item:last-child {
+        border-radius: 11px;
 
-            border-right: none;
-        }
+        display: flex;
 
-        .summary-icon {
+        align-items: center;
 
-            width: 52px;
-            height: 52px;
+        justify-content: center;
 
-            min-width: 52px;
+        color: white;
 
-            border-radius: 11px;
+        font-size: 21px;
+      }
 
-            display: flex;
+      .summary-number {
+        font-size: 24px;
 
-            align-items: center;
+        font-weight: 800;
 
-            justify-content: center;
+        color: #07183f;
 
-            color: white;
+        margin-bottom: 2px;
+      }
 
-            font-size: 21px;
-        }
+      .summary-title {
+        font-size: 12px;
 
-        .summary-number {
+        color: #52698e;
 
-            font-size: 24px;
+        margin-bottom: 5px;
+      }
 
-            font-weight: 800;
+      .summary-subtitle {
+        font-size: 11px;
 
-            color: #07183f;
+        color: #7083a3;
+      }
 
-            margin-bottom: 2px;
-        }
-
-        .summary-title {
-
-            font-size: 12px;
-
-            color: #52698e;
-
-            margin-bottom: 5px;
-        }
-
-        .summary-subtitle {
-
-            font-size: 11px;
-
-            color: #7083a3;
-        }
-
-
-        /* =====================================================
+      /* =====================================================
            DETAILS MODAL
         ===================================================== */
 
-        .modal-overlay {
+      .modal-overlay {
+        position: fixed;
 
-            position: fixed;
+        inset: 0;
 
-            inset: 0;
+        background: rgba(6, 18, 44, 0.45);
 
-            background:
-                rgba(
-                    6,
-                    18,
-                    44,
-                    0.45
-                );
+        backdrop-filter: blur(4px);
 
-            backdrop-filter: blur(4px);
+        display: none;
 
-            display: none;
+        align-items: center;
 
-            align-items: center;
+        justify-content: center;
 
-            justify-content: center;
+        padding: 20px;
 
-            padding: 20px;
+        z-index: 100;
+      }
 
-            z-index: 100;
+      .modal-overlay.show {
+        display: flex;
+      }
+
+      .modal {
+        width: 100%;
+
+        max-width: 480px;
+
+        background: white;
+
+        border-radius: 18px;
+
+        padding: 28px;
+
+        box-shadow: 0 25px 70px rgba(0, 0, 0, 0.2);
+
+        animation: modalIn 0.2s ease;
+      }
+
+      @keyframes modalIn {
+        from {
+          opacity: 0;
+
+          transform: translateY(15px) scale(0.98);
         }
 
-        .modal-overlay.show {
+        to {
+          opacity: 1;
 
-            display: flex;
+          transform: translateY(0) scale(1);
         }
+      }
 
-        .modal {
+      .modal-header {
+        display: flex;
 
-            width: 100%;
+        justify-content: space-between;
 
-            max-width: 480px;
+        align-items: center;
 
-            background: white;
+        margin-bottom: 24px;
+      }
 
-            border-radius: 18px;
+      .modal-header h2 {
+        font-size: 21px;
 
-            padding: 28px;
+        color: #091a40;
+      }
 
-            box-shadow:
-                0 25px 70px rgba(
-                    0,
-                    0,
-                    0,
-                    0.2
-                );
+      .close-modal {
+        border: none;
 
-            animation:
-                modalIn 0.2s ease;
-        }
+        background: #f1f4f8;
 
-        @keyframes modalIn {
+        width: 34px;
+        height: 34px;
 
-            from {
+        border-radius: 50%;
 
-                opacity: 0;
+        color: #51617d;
+      }
 
-                transform:
-                    translateY(15px)
-                    scale(0.98);
-            }
+      .close-modal:hover {
+        background: #e7ebf1;
+      }
 
-            to {
+      .modal-subject {
+        display: flex;
 
-                opacity: 1;
+        align-items: center;
 
-                transform:
-                    translateY(0)
-                    scale(1);
-            }
-        }
+        gap: 15px;
 
-        .modal-header {
+        margin-bottom: 25px;
+      }
 
-            display: flex;
+      .modal-subject .subject-icon {
+        width: 58px;
 
-            justify-content: space-between;
+        height: 58px;
+      }
 
-            align-items: center;
+      .modal-progress {
+        margin-bottom: 22px;
+      }
 
-            margin-bottom: 24px;
-        }
+      .modal-progress-title {
+        display: flex;
 
-        .modal-header h2 {
+        justify-content: space-between;
 
-            font-size: 21px;
+        margin-bottom: 9px;
 
-            color: #091a40;
-        }
+        font-size: 14px;
+      }
 
-        .close-modal {
+      .modal-info-grid {
+        display: grid;
 
-            border: none;
+        grid-template-columns: repeat(3, 1fr);
 
-            background: #f1f4f8;
+        gap: 12px;
+      }
 
-            width: 34px;
-            height: 34px;
+      .modal-stat {
+        padding: 17px 10px;
 
-            border-radius: 50%;
+        text-align: center;
 
-            color: #51617d;
-        }
+        border-radius: 10px;
 
-        .close-modal:hover {
+        background: #f6f8fb;
+      }
 
-            background: #e7ebf1;
-        }
+      .modal-stat i {
+        font-size: 17px;
 
-        .modal-subject {
+        margin-bottom: 7px;
 
-            display: flex;
+        color: #5739e7;
+      }
 
-            align-items: center;
+      .modal-stat strong {
+        display: block;
 
-            gap: 15px;
+        font-size: 19px;
 
-            margin-bottom: 25px;
-        }
+        margin-bottom: 4px;
+      }
 
-        .modal-subject .subject-icon {
+      .modal-stat span {
+        font-size: 11px;
 
-            width: 58px;
+        color: #667895;
+      }
 
-            height: 58px;
-        }
-
-        .modal-progress {
-
-            margin-bottom: 22px;
-        }
-
-        .modal-progress-title {
-
-            display: flex;
-
-            justify-content: space-between;
-
-            margin-bottom: 9px;
-
-            font-size: 14px;
-        }
-
-        .modal-info-grid {
-
-            display: grid;
-
-            grid-template-columns:
-                repeat(3, 1fr);
-
-            gap: 12px;
-        }
-
-        .modal-stat {
-
-            padding: 17px 10px;
-
-            text-align: center;
-
-            border-radius: 10px;
-
-            background: #f6f8fb;
-        }
-
-        .modal-stat i {
-
-            font-size: 17px;
-
-            margin-bottom: 7px;
-
-            color: #5739e7;
-        }
-
-        .modal-stat strong {
-
-            display: block;
-
-            font-size: 19px;
-
-            margin-bottom: 4px;
-        }
-
-        .modal-stat span {
-
-            font-size: 11px;
-
-            color: #667895;
-        }
-
-
-        /* =====================================================
+      /* =====================================================
            EMPTY STATE
         ===================================================== */
 
-        .empty-state {
+      .empty-state {
+        grid-column: 1 / -1;
 
-            grid-column: 1 / -1;
+        padding: 70px 20px;
 
-            padding: 70px 20px;
+        text-align: center;
 
-            text-align: center;
+        background: white;
 
-            background: white;
+        border-radius: 15px;
 
-            border-radius: 15px;
+        border: 1px solid #e7edf4;
 
-            border: 1px solid #e7edf4;
+        display: none;
+      }
 
-            display: none;
-        }
+      .empty-state i {
+        font-size: 42px;
 
-        .empty-state i {
+        color: #7659ed;
 
-            font-size: 42px;
+        margin-bottom: 15px;
+      }
 
-            color: #7659ed;
+      .empty-state h3 {
+        font-size: 18px;
 
-            margin-bottom: 15px;
-        }
+        margin-bottom: 7px;
+      }
 
-        .empty-state h3 {
+      .empty-state p {
+        color: #71819c;
 
-            font-size: 18px;
+        font-size: 13px;
+      }
 
-            margin-bottom: 7px;
-        }
-
-        .empty-state p {
-
-            color: #71819c;
-
-            font-size: 13px;
-        }
-
-
-        /* =====================================================
+      /* =====================================================
            RESPONSIVE
         ===================================================== */
 
-        @media (max-width: 1250px) {
-
-            .subjects-grid {
-
-                grid-template-columns:
-                    repeat(3, 1fr);
-            }
-
-            .summary-card {
-
-                grid-template-columns:
-                    repeat(3, 1fr);
-
-                gap: 20px;
-            }
-
-            .summary-item {
-
-                border-right: none;
-            }
+      @media (max-width: 1250px) {
+        .subjects-grid {
+          grid-template-columns: repeat(3, 1fr);
         }
 
+        .summary-card {
+          grid-template-columns: repeat(3, 1fr);
 
-        @media (max-width: 900px) {
-
-            .main-content {
-
-                padding:
-                    30px 25px;
-            }
-
-            .subjects-grid {
-
-                grid-template-columns:
-                    repeat(2, 1fr);
-            }
-
-            .summary-card {
-
-                grid-template-columns:
-                    repeat(2, 1fr);
-            }
+          gap: 20px;
         }
 
+        .summary-item {
+          border-right: none;
+        }
+      }
 
-        @media (max-width: 600px) {
-
-            .main-content {
-
-                padding:
-                    25px 16px;
-            }
-
-            .page-title h1 {
-
-                font-size: 27px;
-            }
-
-            .subjects-grid {
-
-                grid-template-columns: 1fr;
-            }
-
-            .summary-card {
-
-                grid-template-columns: 1fr;
-            }
-
-            .summary-item {
-
-                border-right: none;
-
-                border-bottom:
-                    1px solid #e3e9f0;
-
-                padding:
-                    15px 5px;
-            }
-
-            .summary-item:last-child {
-
-                border-bottom: none;
-            }
-
-            .modal-info-grid {
-
-                grid-template-columns: 1fr;
-            }
+      @media (max-width: 900px) {
+        .main-content {
+          padding: 30px 25px;
         }
 
+        .subjects-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .summary-card {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      @media (max-width: 600px) {
+        .main-content {
+          padding: 25px 16px;
+        }
+
+        .page-title h1 {
+          font-size: 27px;
+        }
+
+        .subjects-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .summary-card {
+          grid-template-columns: 1fr;
+        }
+
+        .summary-item {
+          border-right: none;
+
+          border-bottom: 1px solid #e3e9f0;
+
+          padding: 15px 5px;
+        }
+
+        .summary-item:last-child {
+          border-bottom: none;
+        }
+
+        .modal-info-grid {
+          grid-template-columns: 1fr;
+        }
+      }
     </style>
-</head>
+    <link rel="stylesheet" href="../css/student-layout.css" />
+  </head>
 
+  <body>
+    <div id="studentLayout"></div>
 
-<body>
-
-
-<!-- =====================================================
+    <!-- =====================================================
      MAIN CONTENT
 ===================================================== -->
 
-<div class="main-content">
-
-
-    <!-- =================================================
+    <div class="main-content">
+      <!-- =================================================
          PAGE TITLE
     ================================================== -->
 
-    <div class="page-header">
-
+      <div class="page-header">
         <div class="page-title">
+          <h1>My Subjects</h1>
 
-            <h1>
-                My Subjects
-            </h1>
-
-            <p>
-                Manage and track all your subjects and their progress.
-            </p>
-
+          <p>Manage and track all your subjects and their progress.</p>
         </div>
+      </div>
 
-    </div>
-
-
-    <!-- =================================================
+      <!-- =================================================
          SUBJECT CARDS
     ================================================== -->
 
-    <div
-        class="subjects-grid"
-        id="subjectsGrid"
-    >
-
+      <div class="subjects-grid" id="subjectsGrid">
         <!-- JavaScript will create the cards -->
 
-        <div
-            class="empty-state"
-            id="emptyState"
-        >
+        <div class="empty-state" id="emptyState">
+          <i class="fa-solid fa-book-open"></i>
 
-            <i class="fa-solid fa-book-open"></i>
+          <h3>No subjects found</h3>
 
-            <h3>
-                No subjects found
-            </h3>
-
-            <p>
-                There are currently no subjects available.
-            </p>
-
+          <p>There are currently no subjects available.</p>
         </div>
+      </div>
 
-    </div>
-
-
-    <!-- =================================================
+      <!-- =================================================
          SUMMARY
     ================================================== -->
 
-    <div class="summary-card">
-
-
+      <div class="summary-card">
         <!-- Total Subjects -->
 
         <div class="summary-item">
+          <div class="summary-icon purple">
+            <i class="fa-solid fa-book-open"></i>
+          </div>
 
-            <div class="summary-icon purple">
+          <div>
+            <div class="summary-number" id="totalSubjects">8</div>
 
-                <i class="fa-solid fa-book-open"></i>
+            <div class="summary-title">Total Subjects</div>
 
-            </div>
-
-            <div>
-
-                <div
-                    class="summary-number"
-                    id="totalSubjects"
-                >
-                    8
-                </div>
-
-                <div class="summary-title">
-                    Total Subjects
-                </div>
-
-                <div class="summary-subtitle">
-                    Active
-                </div>
-
-            </div>
-
+            <div class="summary-subtitle">Active</div>
+          </div>
         </div>
-
 
         <!-- Total Videos -->
 
         <div class="summary-item">
+          <div class="summary-icon blue">
+            <i class="fa-solid fa-play"></i>
+          </div>
 
-            <div class="summary-icon blue">
+          <div>
+            <div class="summary-number" id="totalVideos">75</div>
 
-                <i class="fa-solid fa-play"></i>
+            <div class="summary-title">Total Videos</div>
 
-            </div>
-
-            <div>
-
-                <div
-                    class="summary-number"
-                    id="totalVideos"
-                >
-                    75
-                </div>
-
-                <div class="summary-title">
-                    Total Videos
-                </div>
-
-                <div class="summary-subtitle">
-                    Across all subjects
-                </div>
-
-            </div>
-
+            <div class="summary-subtitle">Across all subjects</div>
+          </div>
         </div>
-
 
         <!-- Total Notes -->
 
         <div class="summary-item">
+          <div class="summary-icon green">
+            <i class="fa-solid fa-file-lines"></i>
+          </div>
 
-            <div class="summary-icon green">
+          <div>
+            <div class="summary-number" id="totalNotes">49</div>
 
-                <i class="fa-solid fa-file-lines"></i>
+            <div class="summary-title">Total Notes</div>
 
-            </div>
-
-            <div>
-
-                <div
-                    class="summary-number"
-                    id="totalNotes"
-                >
-                    49
-                </div>
-
-                <div class="summary-title">
-                    Total Notes
-                </div>
-
-                <div class="summary-subtitle">
-                    Across all subjects
-                </div>
-
-            </div>
-
+            <div class="summary-subtitle">Across all subjects</div>
+          </div>
         </div>
-
 
         <!-- Total Quizzes -->
 
         <div class="summary-item">
+          <div class="summary-icon orange">
+            <i class="fa-solid fa-bullseye"></i>
+          </div>
 
-            <div class="summary-icon orange">
+          <div>
+            <div class="summary-number" id="totalQuizzes">32</div>
 
-                <i class="fa-solid fa-bullseye"></i>
+            <div class="summary-title">Total Quizzes</div>
 
-            </div>
-
-            <div>
-
-                <div
-                    class="summary-number"
-                    id="totalQuizzes"
-                >
-                    32
-                </div>
-
-                <div class="summary-title">
-                    Total Quizzes
-                </div>
-
-                <div class="summary-subtitle">
-                    Across all subjects
-                </div>
-
-            </div>
-
+            <div class="summary-subtitle">Across all subjects</div>
+          </div>
         </div>
-
 
         <!-- Average Progress -->
 
         <div class="summary-item">
+          <div class="summary-icon purple">
+            <i class="fa-solid fa-chart-pie"></i>
+          </div>
 
-            <div class="summary-icon purple">
+          <div>
+            <div class="summary-number" id="averageProgress">69%</div>
 
-                <i class="fa-solid fa-chart-pie"></i>
+            <div class="summary-title">Average Progress</div>
 
-            </div>
-
-            <div>
-
-                <div
-                    class="summary-number"
-                    id="averageProgress"
-                >
-                    69%
-                </div>
-
-                <div class="summary-title">
-                    Average Progress
-                </div>
-
-                <div class="summary-subtitle">
-                    Overall
-                </div>
-
-            </div>
-
+            <div class="summary-subtitle">Overall</div>
+          </div>
         </div>
-
-
+      </div>
     </div>
 
-</div>
-
-
-
-<!-- =====================================================
+    <!-- =====================================================
      DETAILS MODAL
 ===================================================== -->
 
-<div
-    class="modal-overlay"
-    id="detailsModal"
-    onclick="closeModalOutside(event)"
->
-
-    <div class="modal">
-
-
+    <div
+      class="modal-overlay"
+      id="detailsModal"
+      onclick="closeModalOutside(event)"
+    >
+      <div class="modal">
         <div class="modal-header">
+          <h2>Subject Details</h2>
 
-            <h2>
-                Subject Details
-            </h2>
-
-            <button
-                class="close-modal"
-                onclick="closeDetailsModal()"
-            >
-
-                <i class="fa-solid fa-xmark"></i>
-
-            </button>
-
+          <button class="close-modal" onclick="closeDetailsModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
         </div>
 
-
-        <div
-            class="modal-subject"
-            id="modalSubject"
-        >
-        </div>
-
+        <div class="modal-subject" id="modalSubject"></div>
 
         <div class="modal-progress">
+          <div class="modal-progress-title">
+            <span> Overall Progress </span>
 
-            <div class="modal-progress-title">
+            <strong id="modalProgress"> 72% </strong>
+          </div>
 
-                <span>
-                    Overall Progress
-                </span>
-
-                <strong id="modalProgress">
-                    72%
-                </strong>
-
-            </div>
-
-
-            <div class="progress-track">
-
-                <div
-                    class="progress-fill progress-purple"
-                    id="modalProgressBar"
-                    style="width:72%"
-                ></div>
-
-            </div>
-
+          <div class="progress-track">
+            <div
+              class="progress-fill progress-purple"
+              id="modalProgressBar"
+              style="width: 72%"
+            ></div>
+          </div>
         </div>
-
 
         <div class="modal-info-grid">
+          <div class="modal-stat">
+            <i class="fa-solid fa-play"></i>
 
+            <strong id="modalVideos"> 12 </strong>
 
-            <div class="modal-stat">
+            <span> Videos </span>
+          </div>
 
-                <i class="fa-solid fa-play"></i>
+          <div class="modal-stat">
+            <i class="fa-solid fa-file-lines"></i>
 
-                <strong id="modalVideos">
-                    12
-                </strong>
+            <strong id="modalNotes"> 8 </strong>
 
-                <span>
-                    Videos
-                </span>
+            <span> Notes </span>
+          </div>
 
-            </div>
+          <div class="modal-stat">
+            <i class="fa-solid fa-bullseye"></i>
 
+            <strong id="modalQuizzes"> 6 </strong>
 
-            <div class="modal-stat">
-
-                <i class="fa-solid fa-file-lines"></i>
-
-                <strong id="modalNotes">
-                    8
-                </strong>
-
-                <span>
-                    Notes
-                </span>
-
-            </div>
-
-
-            <div class="modal-stat">
-
-                <i class="fa-solid fa-bullseye"></i>
-
-                <strong id="modalQuizzes">
-                    6
-                </strong>
-
-                <span>
-                    Quizzes
-                </span>
-
-            </div>
-
-
+            <span> Quizzes </span>
+          </div>
         </div>
-
+      </div>
     </div>
 
-</div>
-
-
-
-<script>
-
-
-    /* =====================================================
+    <script>
+      /* =====================================================
        SUBJECT DATA
     ===================================================== */
 
-    let subjects = [
-
+      let subjects = [
         {
-            name: "Physics",
+          name: "Physics",
 
-            progress: 72,
+          progress: 72,
 
-            videos: 12,
+          videos: 12,
 
-            notes: 8,
+          notes: 8,
 
-            quizzes: 6,
+          quizzes: 6,
 
-            icon: "fa-atom",
+          icon: "fa-atom",
 
-            color: "purple",
+          color: "purple",
 
-            progressColor:
-                "progress-purple",
+          progressColor: "progress-purple",
 
-            cardColor: ""
+          cardColor: "",
         },
 
-
         {
-            name: "Chemistry",
+          name: "Chemistry",
 
-            progress: 65,
+          progress: 65,
 
-            videos: 9,
+          videos: 9,
 
-            notes: 5,
+          notes: 5,
 
-            quizzes: 4,
+          quizzes: 4,
 
-            icon: "fa-flask",
+          icon: "fa-flask",
 
-            color: "green",
+          color: "green",
 
-            progressColor:
-                "progress-green",
+          progressColor: "progress-green",
 
-            cardColor:
-                "green-card"
+          cardColor: "green-card",
         },
 
-
         {
-            name: "Mathematics",
+          name: "Mathematics",
 
-            progress: 80,
+          progress: 80,
 
-            videos: 14,
+          videos: 14,
 
-            notes: 10,
+          notes: 10,
 
-            quizzes: 8,
+          quizzes: 8,
 
-            icon: "fa-sigma",
+          icon: "fa-sigma",
 
-            color: "orange",
+          color: "orange",
 
-            progressColor:
-                "progress-orange",
+          progressColor: "progress-orange",
 
-            cardColor:
-                "orange-card"
+          cardColor: "orange-card",
         },
 
-
         {
-            name: "English",
+          name: "English",
 
-            progress: 60,
+          progress: 60,
 
-            videos: 7,
+          videos: 7,
 
-            notes: 6,
+          notes: 6,
 
-            quizzes: 3,
+          quizzes: 3,
 
-            icon: "fa-book-open",
+          icon: "fa-book-open",
 
-            color: "blue",
+          color: "blue",
 
-            progressColor:
-                "progress-blue",
+          progressColor: "progress-blue",
 
-            cardColor:
-                "blue-card"
+          cardColor: "blue-card",
         },
 
-
         {
-            name: "Computer Science",
+          name: "Computer Science",
 
-            progress: 75,
+          progress: 75,
 
-            videos: 11,
+          videos: 11,
 
-            notes: 7,
+          notes: 7,
 
-            quizzes: 5,
+          quizzes: 5,
 
-            icon: "fa-code",
+          icon: "fa-code",
 
-            color: "purple",
+          color: "purple",
 
-            progressColor:
-                "progress-purple",
+          progressColor: "progress-purple",
 
-            cardColor: ""
+          cardColor: "",
         },
 
-
         {
-            name: "Physical Education",
+          name: "Physical Education",
 
-            progress: 90,
+          progress: 90,
 
-            videos: 6,
+          videos: 6,
 
-            notes: 3,
+          notes: 3,
 
-            quizzes: 2,
+          quizzes: 2,
 
-            icon: "fa-person-running",
+          icon: "fa-person-running",
 
-            color: "pink",
+          color: "pink",
 
-            progressColor:
-                "progress-pink",
+          progressColor: "progress-pink",
 
-            cardColor:
-                "pink-card"
+          cardColor: "pink-card",
         },
 
-
         {
-            name: "Social Science",
+          name: "Social Science",
 
-            progress: 70,
+          progress: 70,
 
-            videos: 10,
+          videos: 10,
 
-            notes: 6,
+          notes: 6,
 
-            quizzes: 4,
+          quizzes: 4,
 
-            icon: "fa-globe",
+          icon: "fa-globe",
 
-            color: "teal",
+          color: "teal",
 
-            progressColor:
-                "progress-teal",
+          progressColor: "progress-teal",
 
-            cardColor:
-                "teal-card"
+          cardColor: "teal-card",
         },
 
-
         {
-            name: "Statistics",
+          name: "Statistics",
 
-            progress: 55,
+          progress: 55,
 
-            videos: 6,
+          videos: 6,
 
-            notes: 4,
+          notes: 4,
 
-            quizzes: 3,
+          quizzes: 3,
 
-            icon: "fa-calculator",
+          icon: "fa-calculator",
 
-            color: "yellow",
+          color: "yellow",
 
-            progressColor:
-                "progress-yellow",
+          progressColor: "progress-yellow",
 
-            cardColor:
-                "yellow-card"
-        }
+          cardColor: "yellow-card",
+        },
+      ];
 
-    ];
-
-
-
-    /* =====================================================
+      /* =====================================================
        RENDER SUBJECTS
     ===================================================== */
 
-    function renderSubjects() {
+      function renderSubjects() {
+        const grid = document.getElementById("subjectsGrid");
 
-
-        const grid =
-            document.getElementById(
-                "subjectsGrid"
-            );
-
-
-        const emptyState =
-            document.getElementById(
-                "emptyState"
-            );
-
+        const emptyState = document.getElementById("emptyState");
 
         /* Remove old cards */
 
-        const oldCards =
-            grid.querySelectorAll(
-                ".subject-card"
-            );
+        const oldCards = grid.querySelectorAll(".subject-card");
 
-
-        oldCards.forEach(
-            card => card.remove()
-        );
-
+        oldCards.forEach((card) => card.remove());
 
         /* Empty state */
 
         if (subjects.length === 0) {
+          emptyState.style.display = "block";
 
-            emptyState.style.display =
-                "block";
+          updateSummary();
 
-            updateSummary();
-
-            return;
+          return;
         }
 
-
-        emptyState.style.display =
-            "none";
-
+        emptyState.style.display = "none";
 
         /* Create cards */
 
-        subjects.forEach(
-            (subject, index) => {
+        subjects.forEach((subject, index) => {
+          const card = document.createElement("div");
 
+          card.className = `subject-card ${subject.cardColor}`;
 
-                const card =
-                    document.createElement(
-                        "div"
-                    );
-
-
-                card.className =
-                    `subject-card ${subject.cardColor}`;
-
-
-                card.innerHTML = `
+          card.innerHTML = `
 
 
                     <!-- CARD HEADER -->
@@ -1907,154 +1475,78 @@
 
                 `;
 
-
-                grid.insertBefore(
-                    card,
-                    emptyState
-                );
-
-            }
-        );
-
+          grid.insertBefore(card, emptyState);
+        });
 
         updateSummary();
+      }
 
-    }
-
-
-
-    /* =====================================================
+      /* =====================================================
        UPDATE SUMMARY
     ===================================================== */
 
-    function updateSummary() {
+      function updateSummary() {
+        const totalSubjects = subjects.length;
 
+        const totalVideos = subjects.reduce(
+          (sum, subject) => sum + subject.videos,
+          0,
+        );
 
-        const totalSubjects =
-            subjects.length;
+        const totalNotes = subjects.reduce(
+          (sum, subject) => sum + subject.notes,
+          0,
+        );
 
-
-        const totalVideos =
-            subjects.reduce(
-                (sum, subject) =>
-                    sum + subject.videos,
-                0
-            );
-
-
-        const totalNotes =
-            subjects.reduce(
-                (sum, subject) =>
-                    sum + subject.notes,
-                0
-            );
-
-
-        const totalQuizzes =
-            subjects.reduce(
-                (sum, subject) =>
-                    sum + subject.quizzes,
-                0
-            );
-
+        const totalQuizzes = subjects.reduce(
+          (sum, subject) => sum + subject.quizzes,
+          0,
+        );
 
         const averageProgress =
-            totalSubjects === 0
-                ? 0
-                : Math.round(
-                    subjects.reduce(
-                        (sum, subject) =>
-                            sum + subject.progress,
-                        0
-                    ) / totalSubjects
-                );
+          totalSubjects === 0
+            ? 0
+            : Math.round(
+                subjects.reduce((sum, subject) => sum + subject.progress, 0) /
+                  totalSubjects,
+              );
 
+        document.getElementById("totalSubjects").textContent = totalSubjects;
 
-        document.getElementById(
-            "totalSubjects"
-        ).textContent =
-            totalSubjects;
+        document.getElementById("totalVideos").textContent = totalVideos;
 
+        document.getElementById("totalNotes").textContent = totalNotes;
 
-        document.getElementById(
-            "totalVideos"
-        ).textContent =
-            totalVideos;
+        document.getElementById("totalQuizzes").textContent = totalQuizzes;
 
+        document.getElementById("averageProgress").textContent =
+          averageProgress + "%";
+      }
 
-        document.getElementById(
-            "totalNotes"
-        ).textContent =
-            totalNotes;
-
-
-        document.getElementById(
-            "totalQuizzes"
-        ).textContent =
-            totalQuizzes;
-
-
-        document.getElementById(
-            "averageProgress"
-        ).textContent =
-            averageProgress + "%";
-
-    }
-
-
-
-    /* =====================================================
+      /* =====================================================
        THREE DOT MENU
     ===================================================== */
 
-    function toggleMenu(index) {
+      function toggleMenu(index) {
+        const menu = document.getElementById(`menu-${index}`);
 
+        document.querySelectorAll(".dropdown-menu").forEach((item) => {
+          if (item !== menu) {
+            item.classList.remove("show");
+          }
+        });
 
-        const menu =
-            document.getElementById(
-                `menu-${index}`
-            );
+        menu.classList.toggle("show");
+      }
 
-
-        document
-            .querySelectorAll(
-                ".dropdown-menu"
-            )
-            .forEach(item => {
-
-                if (item !== menu) {
-
-                    item.classList.remove(
-                        "show"
-                    );
-
-                }
-
-            });
-
-
-        menu.classList.toggle(
-            "show"
-        );
-
-    }
-
-
-
-    /* =====================================================
+      /* =====================================================
        VIEW DETAILS
     ===================================================== */
 
-    function viewDetails(index) {
+      function viewDetails(index) {
+        const subject = subjects[index];
 
-
-        const subject =
-            subjects[index];
-
-
-        document.getElementById(
-            "modalSubject"
-        ).innerHTML = `
+        document.getElementById("modalSubject").innerHTML = `
 
 
             <div
@@ -2094,271 +1586,134 @@
 
         `;
 
+        document.getElementById("modalProgress").textContent =
+          subject.progress + "%";
 
-        document.getElementById(
-            "modalProgress"
-        ).textContent =
-            subject.progress + "%";
+        const progressBar = document.getElementById("modalProgressBar");
 
+        progressBar.style.width = subject.progress + "%";
 
-        const progressBar =
-            document.getElementById(
-                "modalProgressBar"
-            );
+        progressBar.className = `progress-fill ${subject.progressColor}`;
 
+        document.getElementById("modalVideos").textContent = subject.videos;
 
-        progressBar.style.width =
-            subject.progress + "%";
+        document.getElementById("modalNotes").textContent = subject.notes;
 
+        document.getElementById("modalQuizzes").textContent = subject.quizzes;
 
-        progressBar.className =
-            `progress-fill ${subject.progressColor}`;
-
-
-        document.getElementById(
-            "modalVideos"
-        ).textContent =
-            subject.videos;
-
-
-        document.getElementById(
-            "modalNotes"
-        ).textContent =
-            subject.notes;
-
-
-        document.getElementById(
-            "modalQuizzes"
-        ).textContent =
-            subject.quizzes;
-
-
-        document.getElementById(
-            "detailsModal"
-        ).classList.add(
-            "show"
-        );
-
+        document.getElementById("detailsModal").classList.add("show");
 
         closeAllMenus();
+      }
 
-    }
-
-
-
-    /* =====================================================
+      /* =====================================================
        CLOSE DETAILS MODAL
     ===================================================== */
 
-    function closeDetailsModal() {
+      function closeDetailsModal() {
+        document.getElementById("detailsModal").classList.remove("show");
+      }
 
-        document.getElementById(
-            "detailsModal"
-        ).classList.remove(
-            "show"
-        );
-
-    }
-
-
-
-    /* =====================================================
+      /* =====================================================
        CLOSE MODAL OUTSIDE
     ===================================================== */
 
-    function closeModalOutside(event) {
-
-
-        if (
-            event.target ===
-            document.getElementById(
-                "detailsModal"
-            )
-        ) {
-
-            closeDetailsModal();
-
+      function closeModalOutside(event) {
+        if (event.target === document.getElementById("detailsModal")) {
+          closeDetailsModal();
         }
+      }
 
-    }
-
-
-
-    /* =====================================================
+      /* =====================================================
        DELETE SUBJECT
     ===================================================== */
 
-    function deleteSubject(index) {
+      function deleteSubject(index) {
+        const subject = subjects[index];
 
-
-        const subject =
-            subjects[index];
-
-
-        const confirmation =
-            confirm(
-                `Are you sure you want to delete ${subject.name}?`
-            );
-
-
-        if (!confirmation) {
-
-            return;
-        }
-
-
-        subjects.splice(
-            index,
-            1
+        const confirmation = confirm(
+          `Are you sure you want to delete ${subject.name}?`,
         );
 
+        if (!confirmation) {
+          return;
+        }
+
+        subjects.splice(index, 1);
 
         renderSubjects();
+      }
 
-    }
-
-
-
-    /* =====================================================
+      /* =====================================================
        EDIT SUBJECT
     ===================================================== */
 
-    function editSubject(index) {
+      function editSubject(index) {
+        const subject = subjects[index];
 
+        const newProgress = prompt(
+          `Enter new progress for ${subject.name} (0-100):`,
+          subject.progress,
+        );
 
-        const subject =
-            subjects[index];
-
-
-        const newProgress =
-            prompt(
-                `Enter new progress for ${subject.name} (0-100):`,
-                subject.progress
-            );
-
-
-        if (
-            newProgress === null
-        ) {
-
-            return;
+        if (newProgress === null) {
+          return;
         }
 
+        const value = Number(newProgress);
 
-        const value =
-            Number(
-                newProgress
-            );
+        if (isNaN(value) || value < 0 || value > 100) {
+          alert("Please enter a number between 0 and 100.");
 
-
-        if (
-            isNaN(value) ||
-            value < 0 ||
-            value > 100
-        ) {
-
-            alert(
-                "Please enter a number between 0 and 100."
-            );
-
-            return;
+          return;
         }
 
-
-        subject.progress =
-            value;
-
+        subject.progress = value;
 
         renderSubjects();
 
-
         closeAllMenus();
+      }
 
-    }
-
-
-
-    /* =====================================================
+      /* =====================================================
        CLOSE ALL MENUS
     ===================================================== */
 
-    function closeAllMenus() {
+      function closeAllMenus() {
+        document.querySelectorAll(".dropdown-menu").forEach((menu) => {
+          menu.classList.remove("show");
+        });
+      }
 
-
-        document
-            .querySelectorAll(
-                ".dropdown-menu"
-            )
-            .forEach(
-                menu => {
-
-                    menu.classList.remove(
-                        "show"
-                    );
-
-                }
-            );
-
-    }
-
-
-
-    /* =====================================================
+      /* =====================================================
        CLICK OUTSIDE MENU
     ===================================================== */
 
-    document.addEventListener(
-        "click",
-        function(event) {
-
-
-            if (
-                !event.target.closest(
-                    ".menu-wrapper"
-                )
-            ) {
-
-                closeAllMenus();
-
-            }
-
+      document.addEventListener("click", function (event) {
+        if (!event.target.closest(".menu-wrapper")) {
+          closeAllMenus();
         }
-    );
+      });
 
-
-
-    /* =====================================================
+      /* =====================================================
        ESC KEY
     ===================================================== */
 
-    document.addEventListener(
-        "keydown",
-        function(event) {
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") {
+          closeDetailsModal();
 
-
-            if (
-                event.key === "Escape"
-            ) {
-
-                closeDetailsModal();
-
-                closeAllMenus();
-
-            }
-
+          closeAllMenus();
         }
-    );
+      });
 
-
-
-    /* =====================================================
+      /* =====================================================
        INITIAL LOAD
     ===================================================== */
 
-    renderSubjects();
+      renderSubjects();
+    </script>
 
-</script>
-
-</body>
-
+    <script src="../js/student-layout.js"></script>
+  </body>
 </html>
