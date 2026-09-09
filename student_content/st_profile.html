@@ -1,0 +1,1289 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Student Profile - Smart Learning DC</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background: #f5f8fc;
+        color: #172033;
+        min-height: 100vh;
+      }
+
+      .page {
+        width: 100%;
+        padding: 32px 38px 50px;
+      }
+
+      /* =====================================================
+       PAGE HEADER
+    ===================================================== */
+
+      .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 22px;
+      }
+
+      .header-left h1 {
+        font-size: 28px;
+        font-weight: 800;
+        color: #172033;
+        margin-bottom: 7px;
+      }
+
+      .header-left p {
+        color: #7d8798;
+        font-size: 14px;
+      }
+
+      .edit-profile-btn {
+        border: none;
+        background: #6246e5;
+        color: white;
+        padding: 12px 18px;
+        border-radius: 10px;
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: 0.2s ease;
+      }
+
+      .edit-profile-btn:hover {
+        background: #5135d1;
+        transform: translateY(-1px);
+      }
+
+      /* =====================================================
+       PROFILE TABS
+    ===================================================== */
+
+      .profile-tabs {
+        display: flex;
+        gap: 8px;
+        background: #ffffff;
+        border: 1px solid #e6eaf0;
+        border-radius: 14px;
+        padding: 7px;
+        margin-bottom: 22px;
+        overflow-x: auto;
+      }
+
+      .profile-tab {
+        border: none;
+        background: transparent;
+        color: #7b8495;
+        padding: 10px 15px;
+        border-radius: 9px;
+        font-family: inherit;
+        font-size: 11px;
+        font-weight: 700;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: 0.2s ease;
+      }
+
+      .profile-tab:hover {
+        background: #f4f1ff;
+        color: #6246e5;
+      }
+
+      .profile-tab.active {
+        background: #eeeaff;
+        color: #6246e5;
+      }
+
+      /* =====================================================
+       MAIN PROFILE GRID
+    ===================================================== */
+
+      .profile-content-grid {
+        display: grid;
+        grid-template-columns: 310px minmax(0, 1fr);
+        gap: 22px;
+        align-items: start;
+      }
+
+      /* =====================================================
+       LEFT PROFILE CARD
+    ===================================================== */
+
+      .profile-card-left {
+        background: #ffffff;
+        border: 1px solid #e6eaf0;
+        border-radius: 18px;
+        overflow: hidden;
+      }
+
+      .profile-banner-bg {
+        height: 92px;
+        background: linear-gradient(135deg, #6246e5, #7d65ec, #a393f3);
+        position: relative;
+      }
+
+      .profile-banner-bg::after {
+        content: "";
+        position: absolute;
+        width: 160px;
+        height: 160px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.08);
+        right: -45px;
+        top: -70px;
+      }
+
+      .profile-avatar-wrapper {
+        position: relative;
+        width: 94px;
+        height: 94px;
+        margin: -47px auto 0;
+        z-index: 2;
+      }
+
+      .profile-main-avatar {
+        width: 94px;
+        height: 94px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 5px solid white;
+        box-shadow: 0 5px 20px rgba(30, 40, 70, 0.12);
+      }
+
+      .camera-badge {
+        position: absolute;
+        right: 1px;
+        bottom: 2px;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #6246e5;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        border: 3px solid white;
+        cursor: pointer;
+      }
+
+      .profile-user-info {
+        text-align: center;
+        padding: 13px 18px 18px;
+      }
+
+      .profile-user-name {
+        font-size: 20px;
+        font-weight: 800;
+        color: #1b2538;
+        margin-bottom: 8px;
+      }
+
+      .profile-user-role-badge {
+        display: inline-flex;
+        padding: 6px 11px;
+        border-radius: 7px;
+        background: #eeeaff;
+        color: #6246e5;
+        font-size: 10px;
+        font-weight: 700;
+      }
+
+      /* =====================================================
+       CONTACT INFORMATION
+    ===================================================== */
+
+      .contact-info-list {
+        padding: 0 20px 18px;
+      }
+
+      .contact-item {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 10px 0;
+        border-bottom: 1px solid #eef1f5;
+        color: #697386;
+        font-size: 10px;
+        line-height: 1.4;
+      }
+
+      .contact-item:last-child {
+        border-bottom: none;
+      }
+
+      .contact-item i {
+        width: 19px;
+        height: 19px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6246e5;
+        font-size: 11px;
+        flex-shrink: 0;
+      }
+
+      /* =====================================================
+       ABOUT STUDENT
+    ===================================================== */
+
+      .about-me-box {
+        margin: 0 20px 18px;
+        padding: 15px;
+        background: #f8f9fc;
+        border-radius: 11px;
+      }
+
+      .about-me-box h4 {
+        font-size: 11px;
+        font-weight: 800;
+        margin-bottom: 7px;
+        color: #354055;
+      }
+
+      .about-me-box p {
+        font-size: 10px;
+        line-height: 1.6;
+        color: #858e9e;
+      }
+
+      /* =====================================================
+       STUDENT ID
+    ===================================================== */
+
+      .student-id-box {
+        margin: 0 20px 20px;
+        padding: 14px;
+        border-radius: 11px;
+        background: #f0edff;
+        border: 1px solid #e0d9ff;
+      }
+
+      .student-id-box .label {
+        display: block;
+        color: #7b70b0;
+        font-size: 8px;
+        font-weight: 800;
+        letter-spacing: 0.7px;
+        margin-bottom: 5px;
+      }
+
+      .student-id-box .id {
+        font-size: 13px;
+        font-weight: 800;
+        color: #6246e5;
+      }
+
+      /* =====================================================
+       RIGHT CONTENT
+    ===================================================== */
+
+      .right-profile-content {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      /* =====================================================
+       STAT CARDS
+    ===================================================== */
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+      }
+
+      .stat-card {
+        background: #ffffff;
+        border: 1px solid #e6eaf0;
+        border-radius: 15px;
+        padding: 17px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .stat-icon {
+        width: 39px;
+        height: 39px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        flex-shrink: 0;
+      }
+
+      .stat-purple {
+        background: #eeeaff;
+        color: #6246e5;
+      }
+
+      .stat-blue {
+        background: #e9f4ff;
+        color: #3285d4;
+      }
+
+      .stat-green {
+        background: #e8f8f0;
+        color: #269c63;
+      }
+
+      .stat-orange {
+        background: #fff2e1;
+        color: #dc8d27;
+      }
+
+      .stat-card strong {
+        display: block;
+        font-size: 17px;
+        font-weight: 800;
+        margin-bottom: 3px;
+      }
+
+      .stat-card span {
+        color: #8a93a3;
+        font-size: 9px;
+        font-weight: 600;
+      }
+
+      /* =====================================================
+       INFORMATION CARD
+    ===================================================== */
+
+      .information-card {
+        background: #ffffff;
+        border: 1px solid #e6eaf0;
+        border-radius: 17px;
+        padding: 21px;
+      }
+
+      .information-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .information-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .information-title-icon {
+        width: 34px;
+        height: 34px;
+        background: #eeeaff;
+        color: #6246e5;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+      }
+
+      .information-title h2 {
+        font-size: 15px;
+        font-weight: 800;
+      }
+
+      .information-header button {
+        border: 1px solid #e2e5eb;
+        background: white;
+        color: #6246e5;
+        padding: 7px 11px;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 9px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      /* =====================================================
+       DETAILS GRID
+    ===================================================== */
+
+      .details-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 17px 28px;
+      }
+
+      .detail-item {
+        border-bottom: 1px solid #eef1f5;
+        padding-bottom: 12px;
+      }
+
+      .detail-label {
+        display: block;
+        color: #929aaa;
+        font-size: 9px;
+        font-weight: 600;
+        margin-bottom: 5px;
+      }
+
+      .detail-value {
+        display: block;
+        color: #2d374b;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      /* =====================================================
+       ACADEMIC OVERVIEW
+    ===================================================== */
+
+      .academic-overview {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 17px;
+      }
+
+      .academic-box {
+        border: 1px solid #edf0f4;
+        background: #fafbfc;
+        border-radius: 13px;
+        padding: 17px;
+      }
+
+      .academic-box h3 {
+        font-size: 12px;
+        font-weight: 800;
+        margin-bottom: 13px;
+        color: #303a4e;
+      }
+
+      .academic-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+        padding: 8px 0;
+        border-bottom: 1px solid #edf0f4;
+      }
+
+      .academic-row:last-child {
+        border-bottom: none;
+      }
+
+      .academic-row span:first-child {
+        color: #8a93a3;
+        font-size: 9px;
+      }
+
+      .academic-row span:last-child {
+        color: #303a4e;
+        font-size: 9px;
+        font-weight: 700;
+        text-align: right;
+      }
+
+      /* =====================================================
+       SUBJECTS
+    ===================================================== */
+
+      .subjects-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .subject {
+        padding: 7px 11px;
+        border-radius: 8px;
+        background: #f0edff;
+        color: #6246e5;
+        font-size: 9px;
+        font-weight: 700;
+      }
+
+      .subject.blue {
+        background: #eaf4ff;
+        color: #287cc9;
+      }
+
+      .subject.green {
+        background: #e9f8f0;
+        color: #278d5b;
+      }
+
+      .subject.orange {
+        background: #fff3e3;
+        color: #d48620;
+      }
+
+      /* =====================================================
+       ACCOUNT STATUS
+    ===================================================== */
+
+      .account-status {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 18px;
+        border: 1px solid #dff1e7;
+        background: #f2fbf6;
+        border-radius: 13px;
+      }
+
+      .status-left {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+      }
+
+      .status-icon {
+        width: 35px;
+        height: 35px;
+        border-radius: 9px;
+        background: #daf4e5;
+        color: #23925a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .status-left h4 {
+        font-size: 11px;
+        font-weight: 800;
+        margin-bottom: 3px;
+      }
+
+      .status-left p {
+        color: #7e8a87;
+        font-size: 9px;
+      }
+
+      .verified {
+        background: #dff5e8;
+        color: #26955c;
+        padding: 6px 9px;
+        border-radius: 7px;
+        font-size: 8px;
+        font-weight: 800;
+      }
+
+      /* =====================================================
+       MODAL
+    ===================================================== */
+
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(17, 26, 43, 0.38);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        z-index: 100;
+      }
+
+      .modal-overlay.show {
+        display: flex;
+      }
+
+      .edit-modal {
+        width: 100%;
+        max-width: 470px;
+        background: #ffffff;
+        border-radius: 18px;
+        padding: 24px;
+        box-shadow: 0 25px 70px rgba(0, 0, 0, 0.15);
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .modal-header h2 {
+        font-size: 18px;
+        font-weight: 800;
+      }
+
+      .close-btn {
+        width: 32px;
+        height: 32px;
+        border: none;
+        background: #f3f5f8;
+        border-radius: 8px;
+        cursor: pointer;
+        color: #6e7787;
+      }
+
+      .edit-note {
+        background: #f4f1ff;
+        color: #665a9f;
+        border-radius: 10px;
+        padding: 12px;
+        font-size: 10px;
+        line-height: 1.5;
+        margin-bottom: 17px;
+      }
+
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 9px;
+        margin-top: 20px;
+      }
+
+      .modal-actions button {
+        border: none;
+        padding: 10px 15px;
+        border-radius: 9px;
+        font-family: inherit;
+        font-size: 10px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .cancel-btn {
+        background: #f1f3f6;
+        color: #687284;
+      }
+
+      .save-btn {
+        background: #6246e5;
+        color: white;
+      }
+
+      /* =====================================================
+       RESPONSIVE
+    ===================================================== */
+
+      @media (max-width: 1100px) {
+        .profile-content-grid {
+          grid-template-columns: 270px minmax(0, 1fr);
+        }
+
+        .stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      @media (max-width: 850px) {
+        .page {
+          padding: 22px 17px 40px;
+        }
+
+        .profile-content-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .profile-card-left {
+          max-width: 500px;
+        }
+
+        .academic-overview {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 600px) {
+        .page-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 15px;
+        }
+
+        .edit-profile-btn {
+          width: 100%;
+        }
+
+        .stats-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .details-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .profile-tabs {
+          overflow-x: auto;
+        }
+      }
+
+      @media (max-width: 420px) {
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .information-card {
+          padding: 16px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="page">
+      <!-- =================================================
+         PAGE HEADER
+    ================================================== -->
+
+      <div class="page-header">
+        <div class="header-left">
+          <h1>My Profile</h1>
+
+          <p>View and manage your personal and academic information.</p>
+        </div>
+
+        <button class="edit-profile-btn" onclick="openEditModal()">
+          <i class="fa-solid fa-pen"></i>
+          &nbsp; Edit Profile
+        </button>
+      </div>
+
+      <!-- =================================================
+         PROFILE TABS
+    ================================================== -->
+
+      <div class="profile-tabs">
+        <button class="profile-tab active" onclick="switchTab(this)">
+          <i class="fa-solid fa-user"></i>
+          &nbsp; Profile Overview
+        </button>
+
+        <button class="profile-tab" onclick="scrollToSection('personal')">
+          <i class="fa-regular fa-id-card"></i>
+          &nbsp; Personal Details
+        </button>
+
+        <button class="profile-tab" onclick="scrollToSection('academic')">
+          <i class="fa-solid fa-graduation-cap"></i>
+          &nbsp; Academic Details
+        </button>
+
+        <button class="profile-tab" onclick="scrollToSection('account')">
+          <i class="fa-solid fa-shield-halved"></i>
+          &nbsp; Account Status
+        </button>
+      </div>
+
+      <!-- =================================================
+         PROFILE CONTENT
+    ================================================== -->
+
+      <div class="profile-content-grid">
+        <!-- =================================================
+           LEFT PROFILE CARD
+      ================================================== -->
+
+        <aside class="profile-card-left">
+          <div class="profile-banner-bg"></div>
+
+          <div class="profile-avatar-wrapper">
+            <img
+              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80"
+              alt="Student Profile"
+              class="profile-main-avatar"
+              id="profileImage"
+            />
+
+            <div
+              class="camera-badge"
+              title="Change profile photo"
+              onclick="changePhoto()"
+            >
+              <i class="fa-solid fa-camera"></i>
+            </div>
+          </div>
+
+          <div class="profile-user-info">
+            <div class="profile-user-name">Ayush Kumar</div>
+
+            <div class="profile-user-role-badge">
+              <i class="fa-solid fa-graduation-cap"></i>
+              &nbsp; Student • Grade 12
+            </div>
+          </div>
+
+          <!-- CONTACT -->
+
+          <div class="contact-info-list">
+            <div class="contact-item">
+              <i class="fa-solid fa-envelope"></i>
+
+              <span> ayush.kumar@smartdc.com </span>
+            </div>
+
+            <div class="contact-item">
+              <i class="fa-solid fa-phone"></i>
+
+              <span> +91 98765 43210 </span>
+            </div>
+
+            <div class="contact-item">
+              <i class="fa-solid fa-location-dot"></i>
+
+              <span> Patna, Bihar, India </span>
+            </div>
+
+            <div class="contact-item">
+              <i class="fa-solid fa-calendar"></i>
+
+              <span> Joined on 07 Sep 2026 </span>
+            </div>
+          </div>
+
+          <!-- ABOUT -->
+
+          <div class="about-me-box">
+            <h4>About Me</h4>
+
+            <p>
+              Student passionate about learning, improving academic performance
+              and developing new skills.
+            </p>
+          </div>
+
+          <!-- STUDENT ID -->
+
+          <div class="student-id-box">
+            <span class="label"> STUDENT ID </span>
+
+            <span class="id"> SLDC-2026-5467 </span>
+          </div>
+        </aside>
+
+        <!-- =================================================
+           RIGHT CONTENT
+      ================================================== -->
+
+        <div class="right-profile-content">
+          <!-- =================================================
+             QUICK STATS
+        ================================================== -->
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon stat-purple">
+                <i class="fa-solid fa-graduation-cap"></i>
+              </div>
+
+              <div>
+                <strong>12</strong>
+
+                <span> Current Grade </span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon stat-blue">
+                <i class="fa-solid fa-book"></i>
+              </div>
+
+              <div>
+                <strong>6</strong>
+
+                <span> Subjects </span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon stat-green">
+                <i class="fa-solid fa-calendar-check"></i>
+              </div>
+
+              <div>
+                <strong>94%</strong>
+
+                <span> Attendance </span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon stat-orange">
+                <i class="fa-solid fa-chart-line"></i>
+              </div>
+
+              <div>
+                <strong>86%</strong>
+
+                <span> Average Score </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- =================================================
+             PERSONAL INFORMATION
+        ================================================== -->
+
+          <section class="information-card" id="personal">
+            <div class="information-header">
+              <div class="information-title">
+                <div class="information-title-icon">
+                  <i class="fa-solid fa-user"></i>
+                </div>
+
+                <h2>Personal Information</h2>
+              </div>
+
+              <button onclick="openEditModal()">
+                <i class="fa-solid fa-pen"></i>
+                Edit
+              </button>
+            </div>
+
+            <div class="details-grid">
+              <div class="detail-item">
+                <span class="detail-label"> Full Name </span>
+
+                <span class="detail-value"> Ayush Kumar </span>
+              </div>
+
+              <div class="detail-item">
+                <span class="detail-label"> Student ID </span>
+
+                <span class="detail-value"> SLDC-2026-5467 </span>
+              </div>
+
+              <div class="detail-item">
+                <span class="detail-label"> Date of Birth </span>
+
+                <span class="detail-value"> 15 March 2009 </span>
+              </div>
+
+              <div class="detail-item">
+                <span class="detail-label"> Gender </span>
+
+                <span class="detail-value"> Male </span>
+              </div>
+
+              <div class="detail-item">
+                <span class="detail-label"> Email Address </span>
+
+                <span class="detail-value"> ayush.kumar@smartdc.com </span>
+              </div>
+
+              <div class="detail-item">
+                <span class="detail-label"> Phone Number </span>
+
+                <span class="detail-value"> +91 98765 43210 </span>
+              </div>
+
+              <div class="detail-item">
+                <span class="detail-label"> Father's Name </span>
+
+                <span class="detail-value"> Rajesh Kumar </span>
+              </div>
+
+              <div class="detail-item">
+                <span class="detail-label"> Mother's Name </span>
+
+                <span class="detail-value"> Sunita Kumar </span>
+              </div>
+
+              <div class="detail-item">
+                <span class="detail-label"> City </span>
+
+                <span class="detail-value"> Patna </span>
+              </div>
+
+              <div class="detail-item">
+                <span class="detail-label"> State </span>
+
+                <span class="detail-value"> Bihar </span>
+              </div>
+
+              <div class="detail-item">
+                <span class="detail-label"> Country </span>
+
+                <span class="detail-value"> India </span>
+              </div>
+
+              <div class="detail-item">
+                <span class="detail-label"> Address </span>
+
+                <span class="detail-value"> Patna, Bihar </span>
+              </div>
+            </div>
+          </section>
+
+          <!-- =================================================
+             ACADEMIC INFORMATION
+        ================================================== -->
+
+          <section class="information-card" id="academic">
+            <div class="information-header">
+              <div class="information-title">
+                <div class="information-title-icon">
+                  <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+
+                <h2>Academic Information</h2>
+              </div>
+
+              <button onclick="openEditModal()">
+                <i class="fa-solid fa-pen"></i>
+                Edit
+              </button>
+            </div>
+
+            <div class="academic-overview">
+              <!-- ACADEMIC DETAILS -->
+
+              <div class="academic-box">
+                <h3>Academic Details</h3>
+
+                <div class="academic-row">
+                  <span> Current Grade </span>
+
+                  <span> Grade 12 </span>
+                </div>
+
+                <div class="academic-row">
+                  <span> Stream </span>
+
+                  <span> Science </span>
+                </div>
+
+                <div class="academic-row">
+                  <span> Board </span>
+
+                  <span> CBSE </span>
+                </div>
+
+                <div class="academic-row">
+                  <span> Academic Year </span>
+
+                  <span> 2026 - 2027 </span>
+                </div>
+
+                <div class="academic-row">
+                  <span> Roll Number </span>
+
+                  <span> 24 </span>
+                </div>
+              </div>
+
+              <!-- SCHOOL DETAILS -->
+
+              <div class="academic-box">
+                <h3>School Information</h3>
+
+                <div class="academic-row">
+                  <span> School Name </span>
+
+                  <span> Delhi Public School </span>
+                </div>
+
+                <div class="academic-row">
+                  <span> School City </span>
+
+                  <span> Patna </span>
+                </div>
+
+                <div class="academic-row">
+                  <span> Admission Year </span>
+
+                  <span> 2021 </span>
+                </div>
+
+                <div class="academic-row">
+                  <span> Class Section </span>
+
+                  <span> XII - A </span>
+                </div>
+
+                <div class="academic-row">
+                  <span> Student Status </span>
+
+                  <span> Active </span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- =================================================
+             SUBJECTS
+        ================================================== -->
+
+          <section class="information-card">
+            <div class="information-header">
+              <div class="information-title">
+                <div class="information-title-icon">
+                  <i class="fa-solid fa-books"></i>
+                </div>
+
+                <h2>Enrolled Subjects</h2>
+              </div>
+
+              <span style="color: #8a93a3; font-size: 9px; font-weight: 600">
+                6 Subjects
+              </span>
+            </div>
+
+            <div class="subjects-list">
+              <span class="subject"> Mathematics </span>
+
+              <span class="subject blue"> Physics </span>
+
+              <span class="subject green"> Chemistry </span>
+
+              <span class="subject orange"> Computer Science </span>
+
+              <span class="subject"> English </span>
+
+              <span class="subject blue"> Physical Education </span>
+            </div>
+          </section>
+
+          <!-- =================================================
+             ACCOUNT STATUS
+        ================================================== -->
+
+          <section class="account-status" id="account">
+            <div class="status-left">
+              <div class="status-icon">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+
+              <div>
+                <h4>Student Account Active</h4>
+
+                <p>Your profile and account are currently verified.</p>
+              </div>
+            </div>
+
+            <span class="verified"> VERIFIED </span>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <!-- =====================================================
+       EDIT PROFILE MODAL
+  ====================================================== -->
+
+    <div class="modal-overlay" id="editModal">
+      <div class="edit-modal">
+        <div class="modal-header">
+          <h2>Edit Profile</h2>
+
+          <button class="close-btn" onclick="closeEditModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="edit-note">
+          <i class="fa-solid fa-circle-info"></i>
+
+          &nbsp; Some academic information may be managed by your school or
+          administrator.
+        </div>
+
+        <p style="font-size: 11px; color: #6f7889; line-height: 1.6">
+          Profile editing can be connected to your Supabase student profile
+          later. Personal information such as phone number, address and profile
+          photo can be updated from here.
+        </p>
+
+        <div class="modal-actions">
+          <button class="cancel-btn" onclick="closeEditModal()">Cancel</button>
+
+          <button class="save-btn" onclick="saveProfile()">Save Changes</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      /* =====================================================
+       PROFILE TABS
+    ===================================================== */
+
+      function switchTab(button) {
+        document.querySelectorAll(".profile-tab").forEach((tab) => {
+          tab.classList.remove("active");
+        });
+
+        button.classList.add("active");
+      }
+
+      /* =====================================================
+       SCROLL TO SECTION
+    ===================================================== */
+
+      function scrollToSection(id) {
+        const section = document.getElementById(id);
+
+        if (section) {
+          section.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }
+      }
+
+      /* =====================================================
+       EDIT MODAL
+    ===================================================== */
+
+      function openEditModal() {
+        document.getElementById("editModal").classList.add("show");
+      }
+
+      function closeEditModal() {
+        document.getElementById("editModal").classList.remove("show");
+      }
+
+      /* =====================================================
+       SAVE
+    ===================================================== */
+
+      function saveProfile() {
+        alert("Profile changes can now be connected to Supabase.");
+
+        closeEditModal();
+      }
+
+      /* =====================================================
+       PROFILE PHOTO
+    ===================================================== */
+
+      function changePhoto() {
+        alert("Profile photo upload can be connected to Supabase Storage.");
+      }
+
+      /* =====================================================
+       CLOSE MODAL OUTSIDE
+    ===================================================== */
+
+      document
+        .getElementById("editModal")
+        .addEventListener("click", function (event) {
+          if (event.target === this) {
+            closeEditModal();
+          }
+        });
+    </script>
+  </body>
+</html>
