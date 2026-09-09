@@ -1,0 +1,955 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Learning DC — Profile</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../js/supabase-client.js"></script>
+
+    <style>
+      /* ── DESIGN SYSTEM & TOKENS ── */
+      :root {
+        --sidebar-bg: #031b2e;
+        --sidebar-text: #a0aec0;
+        --sidebar-text-active: #ffffff;
+        --sidebar-active-bg: #6366f1;
+        --sidebar-hover-bg: #0a2540;
+
+        --main-bg: linear-gradient(
+          135deg,
+          #e3f2fd 0%,
+          #e0f2f1 50%,
+          #e8f5e9 100%
+        );
+        --surface: #ffffff;
+        --surface-border: #e2e8f0;
+
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+
+        --primary: #0284c7;
+        --primary-teal: #00818a;
+        --primary-indigo: #6366f1;
+
+        --danger: #ef4444;
+        --radius: 18px;
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+        --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.08);
+        --font: "DM Sans", sans-serif;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font);
+        background: var(--main-bg);
+        background-attachment: fixed;
+        color: var(--text-main);
+        display: flex;
+        min-height: 100vh;
+        overflow-x: hidden;
+        font-size: 15px;
+      }
+
+      /* ── FIXED SIDEBAR (Strictly 280px) ── */
+      .sidebar {
+        width: 280px;
+        height: 100vh;
+        background-color: var(--sidebar-bg);
+        color: var(--sidebar-text);
+        position: fixed;
+        top: 0;
+        left: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 24px 18px;
+        z-index: 100;
+        overflow-y: auto;
+      }
+
+      .sidebar-brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 1.35rem;
+        padding: 6px 8px 24px 8px;
+      }
+
+      .brand-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #00818a, #6366f1);
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-weight: bold;
+        font-size: 1.2rem;
+      }
+
+      .nav-menu {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .nav-item a,
+      .nav-item button {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 11px 16px;
+        color: var(--sidebar-text);
+        text-decoration: none;
+        font-size: 0.98rem;
+        font-weight: 600;
+        border-radius: 12px;
+        transition: all 0.2s ease;
+        width: 100%;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .nav-item a:hover,
+      .nav-item button:hover {
+        background: var(--sidebar-hover-bg);
+        color: var(--sidebar-text-active);
+      }
+
+      .nav-item.active a {
+        background: var(--sidebar-active-bg);
+        color: var(--sidebar-text-active);
+        font-weight: 700;
+      }
+
+      .nav-icon {
+        font-size: 1.2rem;
+        width: 24px;
+        display: inline-grid;
+        place-items: center;
+      }
+
+      .nav-divider {
+        height: 1px;
+        background: rgba(255, 255, 255, 0.15);
+        margin: 10px 0;
+      }
+
+      .btn-logout-sidebar {
+        color: #f87171 !important;
+      }
+
+      .btn-logout-sidebar:hover {
+        background: rgba(239, 68, 68, 0.18) !important;
+      }
+
+      /* ── MAIN CONTENT WRAPPER ── */
+      .main-wrapper {
+        margin-left: 280px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        width: calc(100% - 280px);
+      }
+
+      /* Header */
+      .header {
+        height: 76px;
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 0 40px;
+        gap: 20px;
+      }
+
+      .notif-bell {
+        position: relative;
+        background: #fff;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        box-shadow: var(--shadow-sm);
+        cursor: pointer;
+        font-size: 1.2rem;
+      }
+
+      .notif-badge {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: var(--danger);
+        color: white;
+        font-size: 0.7rem;
+        font-weight: 800;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+      }
+
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: #fff;
+        padding: 6px 18px 6px 8px;
+        border-radius: 30px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .user-info {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .user-name {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .user-role {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+      }
+
+      /* Top Banner & Header Action */
+      .page-banner-container {
+        margin: 0 40px 24px 40px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+
+      .page-banner h1 {
+        font-size: 1.85rem;
+        font-weight: 800;
+        margin-bottom: 4px;
+        color: var(--text-main);
+      }
+
+      .page-banner p {
+        color: var(--text-muted);
+        font-size: 1rem;
+      }
+
+      .btn-edit-header {
+        background: #7c3aed;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.92rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      /* Tabs Row */
+      .profile-tabs {
+        margin: 0 40px 24px 40px;
+        background: var(--surface);
+        padding: 8px;
+        border-radius: 14px;
+        display: inline-flex;
+        gap: 8px;
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--surface-border);
+      }
+
+      .profile-tab {
+        padding: 10px 18px;
+        border-radius: 10px;
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+      }
+
+      .profile-tab:hover {
+        color: var(--text-main);
+        background: #f8fafc;
+      }
+
+      .profile-tab.active {
+        background: #ede9fe;
+        color: #7c3aed;
+      }
+
+      /* Profile Main Grid Content */
+      .profile-content-grid {
+        margin: 0 40px 40px 40px;
+        display: grid;
+        grid-template-columns: 340px 1fr;
+        gap: 24px;
+        align-items: start;
+      }
+
+      /* Left User Card */
+      .profile-card-left {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--surface-border);
+        overflow: hidden;
+      }
+
+      .profile-banner-bg {
+        height: 100px;
+        background: linear-gradient(135deg, #c7d2fe, #e0e7ff, #f3e8ff);
+        position: relative;
+      }
+
+      .profile-avatar-wrapper {
+        display: flex;
+        justify-content: center;
+        position: relative;
+        margin-top: -46px;
+      }
+
+      .profile-main-avatar {
+        width: 96px;
+        height: 96px;
+        border-radius: 50%;
+        border: 4px solid #ffffff;
+        object-fit: cover;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .camera-badge {
+        position: absolute;
+        bottom: 2px;
+        right: calc(50% - 40px);
+        background: #7c3aed;
+        color: white;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: 0.8rem;
+        border: 2px solid white;
+        cursor: pointer;
+      }
+
+      .profile-user-info {
+        text-align: center;
+        padding: 14px 20px 20px 20px;
+      }
+
+      .profile-user-name {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--text-main);
+      }
+
+      .profile-user-role-badge {
+        display: inline-block;
+        margin-top: 4px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #6d28d9;
+      }
+
+      .contact-info-list {
+        border-top: 1px solid var(--surface-border);
+        padding: 16px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .contact-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+
+      .contact-item span:first-child {
+        font-size: 1.1rem;
+        width: 20px;
+        text-align: center;
+      }
+
+      .about-me-box {
+        border-top: 1px solid var(--surface-border);
+        padding: 20px;
+      }
+
+      .about-me-box h4 {
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: var(--text-main);
+        margin-bottom: 6px;
+      }
+
+      .about-me-box p {
+        font-size: 0.88rem;
+        color: var(--text-muted);
+        line-height: 1.4;
+      }
+
+      .social-links-box {
+        border-top: 1px solid var(--surface-border);
+        padding: 20px;
+      }
+
+      .social-links-box h4 {
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: var(--text-main);
+        margin-bottom: 10px;
+      }
+
+      .social-icons-row {
+        display: flex;
+        gap: 10px;
+      }
+
+      .social-icon-btn {
+        width: 38px;
+        height: 38px;
+        background: #f8fafc;
+        border: 1px solid var(--surface-border);
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        color: #475569;
+        text-decoration: none;
+        font-size: 1rem;
+        font-weight: bold;
+      }
+
+      .social-icon-btn:hover {
+        background: #ede9fe;
+        color: #7c3aed;
+        border-color: #ddd6fe;
+      }
+
+      .profile-stats-footer {
+        border-top: 1px solid var(--surface-border);
+        padding: 16px 12px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        text-align: center;
+        background: #fafafa;
+        border-bottom-left-radius: var(--radius);
+        border-bottom-right-radius: var(--radius);
+      }
+
+      .p-stat-val {
+        font-size: 1rem;
+        font-weight: 800;
+        color: var(--text-main);
+      }
+
+      .p-stat-lbl {
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+        font-weight: 600;
+      }
+
+      /* Right Details Panels Column */
+      .profile-right-panels {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .detail-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--surface-border);
+      }
+
+      .detail-card-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--surface-border);
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: var(--text-main);
+      }
+
+      .detail-icon-title {
+        width: 34px;
+        height: 34px;
+        background: #ede9fe;
+        color: #7c3aed;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        font-size: 1rem;
+      }
+
+      .details-grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px 30px;
+      }
+
+      .detail-row-item {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .detail-label {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        font-weight: 600;
+        margin-bottom: 2px;
+      }
+
+      .detail-value {
+        font-size: 0.95rem;
+        color: var(--text-main);
+        font-weight: 700;
+      }
+
+      .subject-badge-list {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 2px;
+      }
+
+      .sub-badge {
+        background: #d1fae5;
+        color: #047857;
+        font-size: 0.78rem;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 20px;
+      }
+
+      .status-badge-green {
+        background: #d1fae5;
+        color: #047857;
+        font-size: 0.78rem;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 20px;
+        display: inline-block;
+      }
+
+      .btn-session-manage {
+        background: #f8fafc;
+        border: 1px solid var(--surface-border);
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #7c3aed;
+        cursor: pointer;
+      }
+
+      @media (max-width: 1200px) {
+        .profile-content-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 900px) {
+        .sidebar {
+          display: none;
+        }
+        .main-wrapper {
+          margin-left: 0;
+          width: 100%;
+        }
+        .profile-content-grid,
+        .profile-tabs,
+        .page-banner-container {
+          margin-left: 16px;
+          margin-right: 16px;
+        }
+        .details-grid-2 {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- SIDEBAR (Strictly 280px) -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">S</div>
+        <span>Smart Learning DC</span>
+      </div>
+
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="teacher_dashboard.html">
+            <span class="nav-icon">📊</span> Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="class_management.html">
+            <span class="nav-icon">👥</span> My Classes
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">🎓</span> Students</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📹</span> Live Classes</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📁</span> Materials</a>
+        </li>
+        <li class="nav-item">
+          <a href="quizzes.html"><span class="nav-icon">📝</span> Quizzes</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📋</span> Assignments</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📅</span> Attendance</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📈</span> Student Performance</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📢</span> Announcements</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">🗓️</span> Calendar</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">📥</span> Downloads</a>
+        </li>
+
+        <div class="nav-divider"></div>
+
+        <li class="nav-item">
+          <a href="settings.html"><span class="nav-icon">⚙️</span> Settings</a>
+        </li>
+        <li class="nav-item">
+          <a href="#"><span class="nav-icon">❓</span> Help & Support</a>
+        </li>
+        <li class="nav-item">
+          <button class="btn-logout-sidebar" id="logoutBtn">
+            <span class="nav-icon">🚪</span> Log out
+          </button>
+        </li>
+      </ul>
+    </aside>
+
+    <!-- MAIN WRAPPER -->
+    <div class="main-wrapper">
+      <!-- HEADER BAR -->
+      <header class="header">
+        <div class="notif-bell" id="notifBtn">
+          🔔
+          <span class="notif-badge">3</span>
+        </div>
+        <div class="user-profile">
+          <img
+            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
+            alt="Avatar"
+            class="user-avatar"
+            id="avatarImg"
+          />
+          <div class="user-info">
+            <span class="user-name" id="profileNameEl">Ayush Kumar</span>
+            <span class="user-role" id="profileRoleEl"
+              >Teacher • Subject Specialist</span
+            >
+          </div>
+        </div>
+      </header>
+
+      <!-- PAGE BANNER -->
+      <div class="page-banner-container">
+        <div class="page-banner">
+          <h1>Good morning, Ayush! 👋</h1>
+          <p>Manage your profile information and account settings.</p>
+        </div>
+        <button class="btn-edit-header"><span>✎</span> Edit Profile</button>
+      </div>
+
+      <!-- PROFILE SUB-TABS -->
+      <div class="profile-tabs">
+        <a href="#" class="profile-tab active">👤 Profile Overview</a>
+        <a href="#" class="profile-tab">📋 Personal Details</a>
+        <a href="#" class="profile-tab">💼 Professional Details</a>
+        <a href="#" class="profile-tab">🔒 Account & Security</a>
+      </div>
+
+      <!-- MAIN PROFILE CONTENT GRID -->
+      <div class="profile-content-grid">
+        <!-- Left Profile Card -->
+        <div class="profile-card-left">
+          <div class="profile-banner-bg"></div>
+          <div class="profile-avatar-wrapper">
+            <img
+              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80"
+              alt="Ayush Kumar"
+              class="profile-main-avatar"
+            />
+            <div class="camera-badge">📷</div>
+          </div>
+          <div class="profile-user-info">
+            <div class="profile-user-name">Ayush Kumar</div>
+            <div class="profile-user-role-badge">
+              Teacher • Subject Specialist
+            </div>
+          </div>
+
+          <div class="contact-info-list">
+            <div class="contact-item">
+              <span>✉️</span>
+              <span>ayush.kumar@smartdc.com</span>
+            </div>
+            <div class="contact-item">
+              <span>📞</span>
+              <span>+91 98765 43210</span>
+            </div>
+            <div class="contact-item">
+              <span>📍</span>
+              <span>Patna, Bihar, India</span>
+            </div>
+            <div class="contact-item">
+              <span>📅</span>
+              <span>Joined on 15 Jan 2023</span>
+            </div>
+          </div>
+
+          <div class="about-me-box">
+            <h4>About Me</h4>
+            <p>
+              Passionate educator with a strong commitment to student success
+              and interactive learning.
+            </p>
+          </div>
+
+          <div class="social-links-box">
+            <h4>Social Links</h4>
+            <div class="social-icons-row">
+              <a href="#" class="social-icon-btn" title="LinkedIn">in</a>
+              <a href="#" class="social-icon-btn" title="Twitter">🐦</a>
+              <a href="#" class="social-icon-btn" title="Website">🌐</a>
+            </div>
+          </div>
+
+          <div class="profile-stats-footer">
+            <div>
+              <div class="p-stat-val">12</div>
+              <div class="p-stat-lbl">Classes</div>
+            </div>
+            <div>
+              <div class="p-stat-val">156</div>
+              <div class="p-stat-lbl">Students</div>
+            </div>
+            <div>
+              <div class="p-stat-val">8</div>
+              <div class="p-stat-lbl">Subjects</div>
+            </div>
+            <div>
+              <div class="p-stat-val">4.8</div>
+              <div class="p-stat-lbl">Rating</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Detailed Sections -->
+        <div class="profile-right-panels">
+          <!-- Personal Details Card -->
+          <div class="detail-card">
+            <div class="detail-card-header">
+              <div class="detail-icon-title">👤</div>
+              <span>Personal Details</span>
+            </div>
+            <div class="details-grid-2">
+              <div class="detail-row-item">
+                <span class="detail-label">Full Name</span>
+                <span class="detail-value">Ayush Kumar</span>
+              </div>
+              <div class="detail-row-item">
+                <span class="detail-label">Father's Name</span>
+                <span class="detail-value">Rajesh Kumar</span>
+              </div>
+              <div class="detail-row-item">
+                <span class="detail-label">Email Address</span>
+                <span class="detail-value">ayush.kumar@smartdc.com</span>
+              </div>
+              <div class="detail-row-item">
+                <span class="detail-label">Mother's Name</span>
+                <span class="detail-value">Sushila Devi</span>
+              </div>
+              <div class="detail-row-item">
+                <span class="detail-label">Phone Number</span>
+                <span class="detail-value">+91 98765 43210</span>
+              </div>
+              <div class="detail-row-item">
+                <span class="detail-label">Address</span>
+                <span class="detail-value"
+                  >Boring Road, Patna<br />Bihar - 800001, India</span
+                >
+              </div>
+              <div class="detail-row-item">
+                <span class="detail-label">Date of Birth</span>
+                <span class="detail-value">12 March 1994</span>
+              </div>
+              <div class="detail-row-item">
+                <span class="detail-label">Nationality</span>
+                <span class="detail-value">Indian</span>
+              </div>
+              <div class="detail-row-item">
+                <span class="detail-label">Gender</span>
+                <span class="detail-value">Male</span>
+              </div>
+              <div class="detail-row-item">
+                <span class="detail-label">Languages Known</span>
+                <span class="detail-value">English, Hindi</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Professional Details Card -->
+          <div class="detail-card">
+            <div class="detail-card-header">
+              <div class="detail-icon-title">💼</div>
+              <span>Professional Details</span>
+            </div>
+            <div class="details-grid-2">
+              <div class="detail-row-item">
+                <span class="detail-label">Designation</span>
+                <span class="detail-value">Teacher</span>
+              </div>
+              <div class="detail-row-item">
+                <span class="detail-label">Qualification</span>
+                <span class="detail-value">M.Sc. in Physics</span>
+              </div>
+              <div class="detail-row-item">
+                <span class="detail-label">Department</span>
+                <span class="detail-value">Science Department</span>
+              </div>
+              <div class="detail-row-item">
+                <span class="detail-label">Experience</span>
+                <span class="detail-value">6+ Years</span>
+              </div>
+              <div class="detail-row-item">
+                <span class="detail-label">Subjects Teaching</span>
+                <div class="subject-badge-list">
+                  <span class="sub-badge">Physics</span>
+                  <span class="sub-badge">Chemistry</span>
+                  <span class="sub-badge">Science</span>
+                </div>
+              </div>
+              <div class="detail-row-item">
+                <span class="detail-label">School / Institution</span>
+                <span class="detail-value">Smart Learning DC School</span>
+              </div>
+              <div class="detail-row-item">
+                <span class="detail-label">Employee ID</span>
+                <span class="detail-value">SLDC-TEA-2023-015</span>
+              </div>
+              <div class="detail-row-item">
+                <span class="detail-label">Joining Date</span>
+                <span class="detail-value">10 January 2023</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Account & Security Card -->
+          <div class="detail-card">
+            <div class="detail-card-header">
+              <div class="detail-icon-title">🔒</div>
+              <span>Account & Security</span>
+            </div>
+            <div class="details-grid-2">
+              <div class="detail-row-item">
+                <span class="detail-label">Account Type</span>
+                <span class="detail-value">Teacher Account</span>
+              </div>
+              <div class="detail-row-item">
+                <span class="detail-label">Two-Factor Authentication</span>
+                <div>
+                  <span class="status-badge-green">Enabled</span>
+                </div>
+              </div>
+              <div class="detail-row-item">
+                <span class="detail-label">Password</span>
+                <span class="detail-value">••••••••</span>
+              </div>
+              <div class="detail-row-item">
+                <span class="detail-label">Last Login</span>
+                <span class="detail-value">17 May 2026, 09:30 AM</span>
+              </div>
+              <div class="detail-row-item" style="justify-content: center">
+                <button class="btn-session-manage" style="width: fit-content">
+                  Change Password
+                </button>
+              </div>
+              <div class="detail-row-item">
+                <span class="detail-label">Active Sessions</span>
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-top: 4px;
+                  "
+                >
+                  <span class="detail-value">2 Devices</span>
+                  <button class="btn-session-manage">Manage Sessions</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
