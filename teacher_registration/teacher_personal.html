@@ -1576,7 +1576,7 @@
       .getElementById("personalForm")
       .addEventListener(
         "submit",
-        function (event) {
+        async function (event) {
 
           event.preventDefault();
 
@@ -1650,6 +1650,20 @@
 
             /* Do NOT store password in sessionStorage */
           };
+
+          const profilePhotoFile = profilePhotoInput.files[0];
+
+          if (profilePhotoFile) {
+            personalData.profilePhotoData = await new Promise(
+              (resolve, reject) => {
+                const reader = new FileReader();
+
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error);
+                reader.readAsDataURL(profilePhotoFile);
+              },
+            );
+          }
 
 
           /* Save temporary registration data */
