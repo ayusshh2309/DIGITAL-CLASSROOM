@@ -24,6 +24,34 @@
     .then((html) => {
       layoutHost.innerHTML = html;
 
+      const readStoredTeacher = (key) => {
+        try {
+          return JSON.parse(localStorage.getItem(key) || "null");
+        } catch (error) {
+          return null;
+        }
+      };
+
+      const teacherData =
+        readStoredTeacher("teacherRegistration") ||
+        readStoredTeacher("teacherProfile") ||
+        readStoredTeacher("teacherData");
+      const teacherName =
+        teacherData?.personal?.fullName ||
+        teacherData?.personal?.full_name ||
+        teacherData?.fullName ||
+        teacherData?.full_name;
+      const profileName = document.getElementById("profileNameEl");
+      if (profileName && teacherName) profileName.textContent = teacherName;
+
+      const teacherRole = document.getElementById("profileRoleEl");
+      if (teacherRole && teacherData?.professional?.teachingMode) {
+        teacherRole.textContent =
+          teacherData.professional.teachingMode === "subject_specialist"
+            ? "Teacher · Subject Specialist"
+            : "Teacher · All Subjects";
+      }
+
       const legacySidebar = document.querySelector("body > .sidebar");
       const legacyWrapper = document.querySelector("body > .main-wrapper");
       const legacyHeader = legacyWrapper?.querySelector(":scope > .header");

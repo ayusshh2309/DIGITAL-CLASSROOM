@@ -359,6 +359,26 @@
         flex: 1; /* Takes remaining vertical space inside box */
       }
 
+      .classes-main-grid.list-view {
+        grid-template-columns: 1fr;
+      }
+
+      .classes-main-grid.list-view .registered-class-card {
+        display: grid;
+        grid-template-columns: minmax(180px, 0.8fr) minmax(300px, 1.5fr) auto;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .classes-main-grid.list-view .registered-class-card .subject-list {
+        margin: 0;
+      }
+
+      .classes-main-grid.list-view .registered-class-card .progress-section,
+      .classes-main-grid.list-view .registered-class-card .btn-view-class {
+        margin: 0;
+      }
+
       .class-card {
         background: var(--surface);
         border-radius: 16px;
@@ -681,6 +701,9 @@
         .classes-main-grid {
           grid-template-columns: 1fr;
         }
+        .classes-main-grid.list-view .registered-class-card {
+          grid-template-columns: 1fr;
+        }
         .overview-banner {
           flex-direction: column;
           gap: 20px;
@@ -706,8 +729,22 @@
           </div>
           <div class="title-actions">
             <div class="view-toggle">
-              <button class="toggle-btn active" title="Grid View">⣿</button>
-              <button class="toggle-btn" title="List View">☰</button>
+              <button
+                class="toggle-btn active"
+                id="gridViewButton"
+                type="button"
+                title="Grid View"
+                aria-label="Grid view"
+                aria-pressed="true"
+              >⣿</button>
+              <button
+                class="toggle-btn"
+                id="listViewButton"
+                type="button"
+                title="List View"
+                aria-label="List view"
+                aria-pressed="false"
+              >☰</button>
             </div>
           </div>
         </div>
@@ -1080,6 +1117,23 @@
           avatarElement.src = personal.profilePhoto;
         }
 
+        const classesGrid = document.getElementById("classesGrid");
+        const gridViewButton = document.getElementById("gridViewButton");
+        const listViewButton = document.getElementById("listViewButton");
+        const setView = (view) => {
+          const isList = view === "list";
+          classesGrid?.classList.toggle("list-view", isList);
+          gridViewButton?.classList.toggle("active", !isList);
+          listViewButton?.classList.toggle("active", isList);
+          gridViewButton?.setAttribute("aria-pressed", String(!isList));
+          listViewButton?.setAttribute("aria-pressed", String(isList));
+          localStorage.setItem("teacherClassesView", view);
+        };
+
+        gridViewButton?.addEventListener("click", () => setView("grid"));
+        listViewButton?.addEventListener("click", () => setView("list"));
+        setView(localStorage.getItem("teacherClassesView") || "grid");
+
         const supabase = TeacherData.getSupabaseClient();
 
         const subjectDetails = {
@@ -1221,7 +1275,6 @@
           }
         }
 
-        const classesGrid = document.getElementById("classesGrid");
         if (classesGrid) {
           classesGrid.innerHTML = selectedClasses.length
             ? selectedClasses.map(([grade, subjects]) => {
