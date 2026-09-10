@@ -753,13 +753,14 @@
           }
 
           if (role === "teacher") {
-            window.location.href = "teacher_dashboard.html";
+            window.location.href = "../teacher_content/teacher_dashboard.html";
           } else if (role === "student" || role === "learner") {
             window.location.href = "student_dashboard.html";
           } else {
             const savedRole = localStorage.getItem("selected_role");
             if (savedRole === "teacher") {
-              window.location.href = "teacher_dashboard.html";
+              window.location.href =
+                "../teacher_content/teacher_dashboard.html";
             } else if (savedRole === "student") {
               window.location.href = "student_dashboard.html";
             } else {

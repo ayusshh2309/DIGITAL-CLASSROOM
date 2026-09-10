@@ -755,8 +755,8 @@
               <div class="camera-badge">📷</div>
             </div>
             <div class="profile-user-info">
-              <div class="profile-user-name">Ayush Kumar</div>
-              <div class="profile-user-role-badge">
+              <div class="profile-user-name" id="profileFullName">Teacher</div>
+              <div class="profile-user-role-badge" id="profileRoleBadge">
                 Teacher • Subject Specialist
               </div>
             </div>
@@ -764,25 +764,25 @@
             <div class="contact-info-list">
               <div class="contact-item">
                 <span>✉️</span>
-                <span>ayush.kumar@smartdc.com</span>
+                <span id="profileEmail">-</span>
               </div>
               <div class="contact-item">
                 <span>📞</span>
-                <span>+91 98765 43210</span>
+                <span id="profilePhone">-</span>
               </div>
               <div class="contact-item">
                 <span>📍</span>
-                <span>Patna, Bihar, India</span>
+                <span id="profileLocation">-</span>
               </div>
               <div class="contact-item">
                 <span>📅</span>
-                <span>Joined on 15 Jan 2023</span>
+                <span id="profileJoined">Registration date unavailable</span>
               </div>
             </div>
 
             <div class="about-me-box">
               <h4>About Me</h4>
-              <p>
+              <p id="profileAbout">
                 Passionate educator with a strong commitment to student success
                 and interactive learning.
               </p>
@@ -828,7 +828,7 @@
               <div class="details-grid-2">
                 <div class="detail-row-item">
                   <span class="detail-label">Full Name</span>
-                  <span class="detail-value">Ayush Kumar</span>
+                  <span class="detail-value" id="detailFullName">-</span>
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Father's Name</span>
@@ -836,7 +836,7 @@
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Email Address</span>
-                  <span class="detail-value">ayush.kumar@smartdc.com</span>
+                  <span class="detail-value" id="detailEmail">-</span>
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Mother's Name</span>
@@ -844,29 +844,29 @@
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Phone Number</span>
-                  <span class="detail-value">+91 98765 43210</span>
+                  <span class="detail-value" id="detailPhone">-</span>
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Address</span>
-                  <span class="detail-value"
+                  <span class="detail-value" id="detailAddress"
                     >Boring Road, Patna<br />Bihar - 800001, India</span
                   >
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Date of Birth</span>
-                  <span class="detail-value">12 March 1994</span>
+                  <span class="detail-value" id="detailDob">-</span>
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Nationality</span>
-                  <span class="detail-value">Indian</span>
+                  <span class="detail-value" id="detailCountry">-</span>
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Gender</span>
-                  <span class="detail-value">Male</span>
+                  <span class="detail-value" id="detailGender">-</span>
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Languages Known</span>
-                  <span class="detail-value">English, Hindi</span>
+                  <span class="detail-value" id="detailLanguages">-</span>
                 </div>
               </div>
             </div>
@@ -880,35 +880,35 @@
               <div class="details-grid-2">
                 <div class="detail-row-item">
                   <span class="detail-label">Designation</span>
-                  <span class="detail-value">Teacher</span>
+                  <span class="detail-value" id="detailDesignation"
+                    >Teacher</span
+                  >
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Qualification</span>
-                  <span class="detail-value">M.Sc. in Physics</span>
+                  <span class="detail-value" id="detailQualification">-</span>
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Department</span>
-                  <span class="detail-value">Science Department</span>
+                  <span class="detail-value" id="detailDepartment">-</span>
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Experience</span>
-                  <span class="detail-value">6+ Years</span>
+                  <span class="detail-value" id="detailExperience">-</span>
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Subjects Teaching</span>
-                  <div class="subject-badge-list">
-                    <span class="sub-badge">Physics</span>
-                    <span class="sub-badge">Chemistry</span>
-                    <span class="sub-badge">Science</span>
+                  <div class="subject-badge-list" id="detailSubjects">
+                    <span class="sub-badge">-</span>
                   </div>
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">School / Institution</span>
-                  <span class="detail-value">Smart Learning DC School</span>
+                  <span class="detail-value" id="detailInstitution">-</span>
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Employee ID</span>
-                  <span class="detail-value">SLDC-TEA-2023-015</span>
+                  <span class="detail-value" id="detailTeacherId">-</span>
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Joining Date</span>
@@ -967,6 +967,69 @@
         </div>
       </main>
     </div>
+    <script src="../js/teacher-data.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const registration = TeacherData.getTeacherData() || {};
+        const personal = registration.personal || {};
+        const professional = registration.professional || {};
+        const name = personal.fullName || personal.full_name || "Teacher";
+        const subjects = professional.specialistAssignments?.length
+          ? professional.specialistAssignments.map((item) => item.subject)
+          : professional.subjects || [];
+        const setText = (id, value) => {
+          const element = document.getElementById(id);
+          if (element) element.textContent = value || "-";
+        };
+
+        setText("profileNameEl", name);
+        setText("profileFullName", name);
+        setText("detailFullName", name);
+        setText("profileEmail", personal.email);
+        setText("detailEmail", personal.email);
+        setText("profilePhone", personal.phone);
+        setText("detailPhone", personal.phone);
+        setText(
+          "profileLocation",
+          [personal.city, personal.state, personal.country]
+            .filter(Boolean)
+            .join(", "),
+        );
+        setText("detailAddress", personal.address);
+        setText("detailDob", personal.dob);
+        setText("detailCountry", personal.country);
+        setText("detailGender", personal.gender);
+        setText("detailLanguages", (professional.languages || []).join(", "));
+        setText("detailQualification", professional.highestQualification);
+        setText("detailDepartment", professional.institutionType);
+        setText("detailExperience", professional.experienceYears);
+        setText("detailInstitution", professional.institutionName);
+        setText("detailTeacherId", registration.teacherId);
+        setText(
+          "profileRoleEl",
+          `Teacher • ${professional.teachingMode === "subject_specialist" ? "Subject Specialist" : "Educator"}`,
+        );
+        setText(
+          "profileRoleBadge",
+          `Teacher • ${professional.teachingMode === "subject_specialist" ? "Subject Specialist" : "Educator"}`,
+        );
+        setText(
+          "profileAbout",
+          `Teaching ${subjects.join(", ") || "selected classes and subjects"} at ${professional.institutionName || "the registered institution"}.`,
+        );
+
+        const subjectContainer = document.getElementById("detailSubjects");
+        if (subjectContainer) {
+          subjectContainer.innerHTML = subjects.length
+            ? subjects
+                .map((subject) => `<span class="sub-badge">${subject}</span>`)
+                .join("")
+            : '<span class="sub-badge">-</span>';
+        }
+        if (personal.profilePhoto)
+          document.getElementById("avatarImg").src = personal.profilePhoto;
+      });
+    </script>
     <script src="../js/layout.js"></script>
   </body>
 </html>

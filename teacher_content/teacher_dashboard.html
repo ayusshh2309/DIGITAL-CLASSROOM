@@ -1189,16 +1189,57 @@
       </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../js/teacher-data.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", async () => {
-        const supabase =
-          window.supabaseClient ||
-          (window.supabase
-            ? window.supabase.createClient(
-                "YOUR_SUPABASE_URL",
-                "YOUR_SUPABASE_ANON_KEY",
-              )
-            : null);
+        const registration = TeacherData.getTeacherData() || {};
+        const personal = registration.personal || {};
+        const professional = registration.professional || {};
+        const name = personal.fullName || personal.full_name || "Teacher";
+        const profileName = document.getElementById("profileNameEl");
+        const greeting = document.getElementById("greetingEl");
+        const avatar = document.getElementById("avatarImg");
+
+        if (profileName) profileName.textContent = name;
+        if (greeting) greeting.textContent = `Good morning, ${name}!`;
+        if (avatar && personal.profilePhoto) avatar.src = personal.profilePhoto;
+
+        const assignments = professional.specialistAssignments || [];
+        const selectedClasses = assignments.length
+          ? assignments.flatMap((assignment) =>
+              (assignment.grades || []).map((grade) => ({
+                grade,
+                subject: assignment.subject,
+              })),
+            )
+          : (professional.grades || []).flatMap((grade) =>
+              (professional.subjects || ["All subjects"]).map((subject) => ({
+                grade,
+                subject,
+              })),
+            );
+        const classesGrid = document.getElementById("classesGrid");
+        if (classesGrid) {
+          const addClass = classesGrid.querySelector(".add-class-btn");
+          classesGrid.innerHTML = selectedClasses.length
+            ? selectedClasses
+                .map(
+                  ({ grade, subject }) => `
+                    <div class="class-card">
+                      <div class="class-badge-icon icon-purple">📚</div>
+                      <span class="class-title">Class ${grade}</span>
+                      <span class="class-sub">${subject}</span>
+                      <span class="class-students">📚 Registered assignment</span>
+                      <button class="btn-manage-class">Manage Class</button>
+                    </div>`,
+                )
+                .join("")
+            : '<p class="empty-state">No classes or subjects registered yet.</p>';
+          if (addClass) classesGrid.appendChild(addClass);
+        }
+
+        const supabase = TeacherData.getSupabaseClient();
 
         const uploadModal = document.getElementById("uploadModal");
         const closeModalBtn = document.getElementById("closeModalBtn");

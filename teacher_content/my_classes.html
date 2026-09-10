@@ -1075,23 +1075,14 @@
       </main>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../js/teacher-data.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", async () => {
-        const registration = JSON.parse(
-          sessionStorage.getItem("finalTeacherRegistration") || "null",
-        );
-        const savedProfessional = JSON.parse(
-          sessionStorage.getItem("teacherProfessionalInfo") || "{}",
-        );
-        const savedPersonal = JSON.parse(
-          sessionStorage.getItem("teacherPersonalInfo") || "{}",
-        );
-        const professional = registration?.professional || savedProfessional;
-        const personal = registration?.personal || savedPersonal;
-        const assignments =
-          professional.specialistAssignments ||
-          professional.specialist_assignments ||
-          [];
+        const registration = TeacherData.getTeacherData() || {};
+        const professional = registration.professional || {};
+        const personal = registration.personal || {};
+        const assignments = professional.specialistAssignments || [];
 
         const name = personal.fullName || personal.full_name || "Teacher";
         document.getElementById("profileNameEl").textContent = name;
@@ -1100,18 +1091,31 @@
           document.getElementById("avatarImg").src = personal.profilePhoto;
         }
 
-        if (assignments.length > 0) {
-          const classesGrid = document.getElementById("classesGrid");
-          classesGrid.innerHTML = assignments
-            .flatMap((assignment) =>
-              (assignment.grades || assignment.classes || []).map(
-                (grade) => `
+        const selectedClasses = assignments.length
+          ? assignments.flatMap((assignment) =>
+              (assignment.grades || []).map((grade) => ({
+                grade,
+                subject: assignment.subject,
+              })),
+            )
+          : (professional.grades || []).flatMap((grade) =>
+              (professional.subjects || ["All subjects"]).map((subject) => ({
+                grade,
+                subject,
+              })),
+            );
+
+        const classesGrid = document.getElementById("classesGrid");
+        if (classesGrid) {
+          classesGrid.innerHTML = selectedClasses.length
+            ? selectedClasses.map(
+                ({ grade, subject }) => `
                   <div class="class-card">
                     <div class="class-card-top">
                       <div class="class-icon-wrapper" style="background-color: var(--primary)">📚</div>
                       <div class="class-info-header">
                         <h3>Class ${grade}</h3>
-                        <p>${assignment.subject}</p>
+                        <p>${subject}</p>
                       </div>
                     </div>
                     <div class="class-meta-line">
@@ -1127,19 +1131,12 @@
                     <button class="btn-view-class">View Class</button>
                   </div>
                 `,
-              ),
-            )
-            .join("");
+              `,
+              ).join("")
+            : '<p class="empty-state">No classes or subjects registered yet.</p>';
         }
 
-        const supabase =
-          window.supabaseClient ||
-          (window.supabase
-            ? window.supabase.createClient(
-                "YOUR_SUPABASE_URL",
-                "YOUR_SUPABASE_ANON_KEY",
-              )
-            : null);
+        const supabase = TeacherData.getSupabaseClient();
 
         async function loadUserProfile() {
           if (!supabase) return;

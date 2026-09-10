@@ -2078,6 +2078,8 @@
        JAVASCRIPT
   ========================================== -->
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../js/teacher-data.js"></script>
     <script>
   /* =========================================================
      SMART LEARNING DC
@@ -2332,6 +2334,17 @@
   const gradeGroups = Array.isArray(professionalInfo.selected_grade_groups)
     ? professionalInfo.selected_grade_groups
     : [];
+
+  const groupGrades = {
+    grades_5_6: ["5", "6"],
+    grades_7_8: ["7", "8"],
+    grades_9_10: ["9", "10"],
+    grades_11_12: ["11", "12"],
+  };
+
+  const selectedGrades = grades.length
+    ? grades
+    : gradeGroups.flatMap((group) => groupGrades[group] || []);
 
   const streams =
     Array.isArray(professionalInfo.streams)
@@ -2649,22 +2662,22 @@
       professional: {
 
         employmentStatus:
-          professional.employmentStatus || "",
+          professional.employmentStatus || professional.employment_status || "",
 
         institutionName:
-          professional.institutionName || "",
+          professional.institutionName || professional.institution_name || "",
 
         institutionType:
-          professional.institutionType || "",
+          professional.institutionType || professional.institution_type || "",
 
         experienceYears:
-          professional.experienceYears || "",
+          professional.experienceYears || professional.experience_years || "",
 
         highestQualification:
-          professional.highestQualification || "",
+          professional.highestQualification || professional.highest_qualification || "",
 
         degreeName:
-          professional.degreeName || "",
+          professional.degreeName || professional.degree_name || "",
 
         specialization:
           professional.specialization || "",
@@ -2673,7 +2686,7 @@
           professional.university || "",
 
         gradYear:
-          professional.gradYear || "",
+          professional.gradYear || professional.graduation_year || "",
 
 
         /* ---------------------------------------
@@ -2684,10 +2697,10 @@
           teachingMode,
 
         grades:
-          grades,
+          selectedGrades,
 
         streams:
-          streams,
+          streams.length > 0 ? streams : professional.selected_streams || [],
 
         subjects:
           subjects.length > 0
@@ -2698,7 +2711,7 @@
           specialistAssignments,
 
         languages:
-          languages
+          languages.length > 0 ? languages : professional.languages || []
       },
 
 
@@ -2799,6 +2812,8 @@
       )
     );
 
+    TeacherData.saveTeacherData(finalTeacherData);
+
 
     /* =====================================================
        SUPABASE CONNECTION GOES HERE
@@ -2824,10 +2839,7 @@
        Remove this timeout when Supabase is connected.
       */
 
-      await new Promise(
-        (resolve) =>
-          setTimeout(resolve, 800)
-      );
+      await TeacherData.saveToSupabase(finalTeacherData);
 
 
       alert(
@@ -2840,7 +2852,7 @@
          Redirect after successful registration
       ----------------------------------------- */
 
-      window.location.href = "/teacher_content/teacher_dashboard.html";
+      window.location.href = "../teacher_content/teacher_dashboard.html";
 
 
     } catch (error) {
