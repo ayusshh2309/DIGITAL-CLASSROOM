@@ -609,13 +609,14 @@
       }
     </style>
       <link rel="stylesheet" href="../css/layout.css" />
+      <link rel="stylesheet" href="../css/materials.css" />
   </head>
   <body>
     <div id="layout"></div>
 
 
       <!-- CONTENT BODY CONTAINER -->
-      <main class="page-content main-box-container">
+      <main class="page-content main-box-container materials-page">
         <!-- PAGE TITLE & ACTIONS -->
         <div class="page-header">
           <div class="page-title">
@@ -623,8 +624,8 @@
             <p>Upload and manage study materials for your classes.</p>
           </div>
           <div class="action-buttons">
-            <button class="btn-primary">📤 Upload Material</button>
-            <button class="btn-secondary">📁 New Folder</button>
+            <button class="btn-primary" id="uploadMaterialBtn" type="button">📤 Upload Material</button>
+            <button class="btn-secondary" id="newFolderBtn" type="button">📁 New Folder</button>
           </div>
         </div>
 
@@ -633,7 +634,7 @@
           <div class="stat-card">
             <div class="stat-icon" style="background: #8b5cf6">📄</div>
             <div>
-              <div class="stat-val">142</div>
+              <div class="stat-val" id="statTotal">0</div>
               <div class="stat-lbl">Total Materials</div>
               <div class="stat-trend" style="color: #8b5cf6">+8 this week</div>
             </div>
@@ -641,7 +642,7 @@
           <div class="stat-card">
             <div class="stat-icon" style="background: #3b82f6">🎥</div>
             <div>
-              <div class="stat-val">34</div>
+              <div class="stat-val" id="statVideos">0</div>
               <div class="stat-lbl">Videos</div>
               <div class="stat-trend" style="color: #3b82f6">+3 this week</div>
             </div>
@@ -649,7 +650,7 @@
           <div class="stat-card">
             <div class="stat-icon" style="background: #10b981">📑</div>
             <div>
-              <div class="stat-val">48</div>
+              <div class="stat-val" id="statPdfs">0</div>
               <div class="stat-lbl">PDFs</div>
               <div class="stat-trend" style="color: #10b981">+5 this week</div>
             </div>
@@ -657,7 +658,7 @@
           <div class="stat-card">
             <div class="stat-icon" style="background: #f59e0b">🖼️</div>
             <div>
-              <div class="stat-val">36</div>
+              <div class="stat-val" id="statImages">0</div>
               <div class="stat-lbl">Images</div>
               <div class="stat-trend" style="color: #f59e0b">+2 this week</div>
             </div>
@@ -665,7 +666,7 @@
           <div class="stat-card">
             <div class="stat-icon" style="background: #00818a">🗂️</div>
             <div>
-              <div class="stat-val">12</div>
+              <div class="stat-val" id="statFolders">0</div>
               <div class="stat-lbl">Folders</div>
               <div class="stat-trend" style="color: #00818a">+1 this week</div>
             </div>
@@ -676,23 +677,27 @@
         <div class="table-section">
           <div class="table-toolbar">
             <div class="tabs">
-              <span class="tab active">All Materials</span>
-              <span class="tab">Notes</span>
-              <span class="tab">PDFs</span>
-              <span class="tab">Videos</span>
-              <span class="tab">Images</span>
-              <span class="tab">Links</span>
-              <span class="tab">Folders</span>
+              <button class="tab active" type="button" data-type="all">All Materials</button>
+              <button class="tab" type="button" data-type="note">Notes</button>
+              <button class="tab" type="button" data-type="pdf">PDFs</button>
+              <button class="tab" type="button" data-type="video">Videos</button>
+              <button class="tab" type="button" data-type="image">Images</button>
+              <button class="tab" type="button" data-type="link">Links</button>
+              <button class="tab" type="button" data-type="folder">Folders</button>
             </div>
             <div class="filter-controls">
               <input
                 type="text"
                 placeholder="Search materials..."
-                class="search-input-sm"
+                class="search-input-sm" id="materialSearch"
               />
-              <button class="btn-filter">🌪️ Filter</button>
-              <select class="select-sort">
-                <option>Sort by: Recent</option>
+              <select class="btn-filter" id="classFilter"><option value="">All classes</option></select>
+              <select class="btn-filter" id="subjectFilter"><option value="">All subjects</option></select>
+              <select class="select-sort" id="sortMaterials">
+                <option value="recent">Sort by: Recent</option>
+                <option value="oldest">Sort by: Oldest</option>
+                <option value="az">Name A-Z</option>
+                <option value="za">Name Z-A</option>
               </select>
             </div>
           </div>
@@ -709,7 +714,10 @@
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="materialsBody">
+              <tr><td class="loading-state" colspan="7">Loading your materials...</td></tr>
+            <!-- Dynamic material rows render here. -->
+            <!--
               <tr>
                 <td><div class="item-name">📕 Chapter 3 Notes</div></td>
                 <td><span class="badge-type type-pdf">PDF</span></td>
@@ -807,20 +815,12 @@
                 <td>—</td>
                 <td>💬</td>
               </tr>
-            </tbody>
+            --></tbody>
           </table>
 
           <div class="pagination-bar">
-            <div>Showing 1 to 7 of 142 materials</div>
-            <div class="page-controls">
-              <span class="page-btn">‹</span>
-              <span class="page-btn active">1</span>
-              <span class="page-btn">2</span>
-              <span class="page-btn">3</span>
-              <span class="page-btn">...</span>
-              <span class="page-btn">21</span>
-              <span class="page-btn">›</span>
-            </div>
+            <div id="paginationSummary">Loading materials...</div>
+            <div class="page-controls" id="paginationControls"></div>
           </div>
         </div>
 
@@ -833,7 +833,7 @@
               <div
                 style="font-size: 1.15rem; font-weight: 800; margin-top: 4px"
               >
-                6.8 GB
+                <span id="storageUsed">0 B</span>
                 <span
                   style="
                     font-size: 0.88rem;
@@ -852,19 +852,19 @@
           <div class="storage-breakdown">
             <div class="breakdown-item">
               <span class="breakdown-label">🎬 Videos</span>
-              <span class="breakdown-value">2.8 GB</span>
+              <span class="breakdown-value" id="storageVideos">0 B</span>
             </div>
             <div class="breakdown-item">
               <span class="breakdown-label">📕 PDFs</span>
-              <span class="breakdown-value">2.1 GB</span>
+              <span class="breakdown-value" id="storagePdfs">0 B</span>
             </div>
             <div class="breakdown-item">
               <span class="breakdown-label">🖼️ Images</span>
-              <span class="breakdown-value">1.3 GB</span>
+              <span class="breakdown-value" id="storageImages">0 B</span>
             </div>
             <div class="breakdown-item">
               <span class="breakdown-label">📂 Others</span>
-              <span class="breakdown-value">0.6 GB</span>
+              <span class="breakdown-value" id="storageOthers">0 B</span>
             </div>
           </div>
 
@@ -872,6 +872,24 @@
         </div>
       </main>
     </div>
+    <div class="material-modal" id="materialModal" hidden>
+      <div class="material-modal-card" role="dialog" aria-modal="true" aria-labelledby="materialModalTitle">
+        <div class="material-modal-header"><h2 id="materialModalTitle">Upload material</h2><button class="material-modal-close" id="closeMaterialModal" type="button" aria-label="Close">&times;</button></div>
+        <form class="material-form" id="materialForm">
+          <div class="form-row"><label>Class / grade<select id="materialClass" required><option value="">Select a class</option></select></label><label>Subject<select id="materialSubject" required disabled><option value="">Select a subject</option></select></label></div>
+          <div class="form-row"><label>Material type<select id="materialType" required><option value="">Select a type</option><option value="note">Note</option><option value="pdf">PDF</option><option value="video">Video</option><option value="image">Image</option><option value="document">Document</option><option value="link">Link</option></select></label><label>Title<input id="materialTitle" required maxlength="160" placeholder="e.g. Chapter 3 revision"></label></div>
+          <label>Description <span class="material-help">Optional</span><textarea id="materialDescription" maxlength="1000"></textarea></label>
+          <label id="fileField" class="material-dropzone">File <span class="material-help">Maximum 100 MB</span><input id="materialFile" type="file"></label>
+          <label id="linkField" hidden>External URL<input id="materialLink" type="url" placeholder="https://example.com/resource"></label>
+          <p class="material-help" id="assignmentMessage">Select a class to load your assigned subjects.</p>
+          <div class="material-modal-actions"><button class="btn-secondary" id="cancelMaterialModal" type="button">Cancel</button><button class="btn-primary" id="submitMaterial" type="submit">Save material</button></div>
+        </form>
+      </div>
+    </div>
+    <div class="toast-region" id="toastRegion" aria-live="polite"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../js/teacher-data.js"></script>
+    <script src="../js/materials.js"></script>
     <script src="../js/layout.js"></script>
   </body>
 </html>
