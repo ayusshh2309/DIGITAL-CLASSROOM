@@ -713,6 +713,86 @@
           flex-wrap: wrap;
         }
       }
+
+      /* Refined class workspace styling */
+      .classes-page {
+        background: radial-gradient(circle at 92% 0%, rgba(41, 174, 184, 0.12), transparent 27%), linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(246, 251, 252, 0.88)) !important;
+      }
+
+      .classes-page .page-title-row {
+        align-items: center;
+        padding: 4px 4px 8px;
+      }
+
+      .classes-page .page-title-row h1 {
+        margin-top: 5px;
+        letter-spacing: -0.035em;
+        font-size: clamp(2rem, 3vw, 2.7rem);
+      }
+
+      .classes-page .page-title-row p {
+        max-width: 560px;
+        color: #647887;
+      }
+
+      .class-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        color: #087f8a;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .class-scope {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 18px;
+        padding: 8px 12px;
+        border: 1px solid rgba(41, 174, 184, 0.22);
+        border-radius: 10px;
+        background: rgba(237, 250, 250, 0.72);
+        color: #315360;
+        font-size: 0.82rem;
+      }
+
+      .class-scope strong { color: #087f8a; }
+
+      .classes-page .view-toggle {
+        border: 1px solid #d6e2e8;
+        background: rgba(231, 241, 244, 0.8);
+      }
+
+      .classes-page .class-card {
+        min-height: 285px;
+        border-color: rgba(210, 224, 231, 0.9);
+        box-shadow: 0 8px 24px rgba(24, 63, 78, 0.06);
+        transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+      }
+
+      .classes-page .class-card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(41, 174, 184, 0.4);
+        box-shadow: 0 14px 30px rgba(24, 63, 78, 0.11);
+      }
+
+      .classes-page .class-info-header h3 { letter-spacing: -0.02em; }
+      .classes-page .class-meta-line { padding: 10px 0; border-top: 1px solid #eef3f5; border-bottom: 1px solid #eef3f5; }
+      .classes-page .subject-item { border-color: #e3edf0; background: #f7fafb; transition: background 160ms ease, border-color 160ms ease; }
+      .classes-page .subject-item:hover { border-color: rgba(41, 174, 184, 0.35); background: #eefafa; }
+      .classes-page .btn-view-class { color: #087f8a; border-color: #b9d7dc; }
+      .classes-page .btn-view-class:hover { color: #fff; border-color: #087f8a; background: #087f8a; }
+      .classes-page .overview-banner { border-color: rgba(41, 174, 184, 0.22); box-shadow: 0 10px 28px rgba(24, 63, 78, 0.06); }
+      .classes-page .overview-3d-icon { color: #087f8a; }
+
+      @media (max-width: 768px) {
+        .classes-page .page-title-row { align-items: stretch; flex-direction: column; gap: 18px; }
+        .classes-page .title-actions { justify-content: space-between; }
+        .class-scope { max-width: 100%; flex-wrap: wrap; }
+      }
     </style>
       <link rel="stylesheet" href="../css/layout.css" />
   </head>
@@ -720,12 +800,14 @@
     <div id="layout"></div>
 
       <!-- MAIN CONTENT CONTAINER (Expands to fill viewport bottom) -->
-      <main class="page-content main-box-container">
+      <main class="page-content main-box-container classes-page">
         <!-- PAGE TITLE ROW -->
         <div class="page-title-row">
           <div>
+            <span class="class-eyebrow"><i class="fa-solid fa-chalkboard-user"></i> Teaching workspace</span>
             <h1>My Classes</h1>
             <p>Manage all your classes and view their progress.</p>
+            <div class="class-scope"><strong>Your registered scope</strong><span id="classScopeValue">Loading classes...</span></div>
           </div>
           <div class="title-actions">
             <div class="view-toggle">
@@ -1229,6 +1311,12 @@
         }
 
         const selectedClasses = [...classesByGrade.entries()].sort(([a], [b]) => a - b);
+        const scopeValue = document.getElementById("classScopeValue");
+        if (scopeValue) {
+          scopeValue.textContent = selectedClasses.length
+            ? selectedClasses.map(([grade, subjects]) => `Class ${grade} · ${subjects.size} ${subjects.size === 1 ? "subject" : "subjects"}`).join("  •  ")
+            : "No registered classes found";
+        }
         const subjectIcon = (subject) => subjectDetails[subject] || ["•", "var(--primary)"];
         const escapeHtml = (value) =>
           String(value).replace(/[&<>'"]/g, (character) => ({
