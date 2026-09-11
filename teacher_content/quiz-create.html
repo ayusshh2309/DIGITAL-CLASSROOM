@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Learning DC - Create Quiz</title>
+    <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/quiz-create.css" />
+  </head>
+  <body>
+    <div id="layout"></div>
+    <main class="page-content quiz-create-page">
+      <header class="create-header">
+        <div>
+          <span class="create-eyebrow"
+            ><i class="fa-solid fa-wand-magic-sparkles"></i> Quiz studio</span
+          >
+          <h1 id="workflowTitle">Create New Quiz</h1>
+          <p>Build a focused assessment for your assigned classes.</p>
+        </div>
+        <a class="cancel-link" href="quizzes.html">Cancel</a>
+      </header>
+      <nav class="stepper" aria-label="Quiz creation steps">
+        <button class="step active" data-step="1">
+          <span>1</span> Basic Details</button
+        ><button class="step" data-step="2"><span>2</span> Questions</button
+        ><button class="step" data-step="3"><span>3</span> Settings</button
+        ><button class="step" data-step="4"><span>4</span> Preview</button>
+      </nav>
+      <form id="quizForm" class="workflow-card">
+        <section class="workflow-step active" data-panel="1">
+          <div class="section-heading">
+            <div>
+              <h2>Basic Details</h2>
+              <p>Set the class context and identity of your quiz.</p>
+            </div>
+          </div>
+          <div class="form-grid">
+            <label
+              >Quiz title<input
+                id="quizTitle"
+                required
+                maxlength="160"
+                placeholder="e.g. Chapter 3 revision quiz" /></label
+            ><label
+              >Class / grade<select id="quizClass" required>
+                <option value="">Select a registered class</option>
+              </select></label
+            ><label
+              >Subject<select id="quizSubject" required disabled>
+                <option value="">Select an assigned subject</option>
+              </select></label
+            ><label
+              >Topic / chapter<input
+                id="quizTopic"
+                required
+                maxlength="160"
+                placeholder="e.g. Chemical bonding" /></label
+            ><label
+              >Difficulty<select id="quizDifficulty">
+                <option>Easy</option>
+                <option selected>Medium</option>
+                <option>Hard</option>
+              </select></label
+            ><label class="full-field"
+              >Description<textarea
+                id="quizDescription"
+                rows="3"
+                placeholder="What will students practice?"
+              ></textarea></label
+            ><label class="full-field"
+              >Instructions<textarea
+                id="quizInstructions"
+                rows="3"
+                placeholder="Instructions shown before students begin"
+              ></textarea>
+            </label>
+          </div>
+          <p class="assignment-help" id="assignmentHelp">
+            <i class="fa-solid fa-circle-info"></i> Only subjects assigned to
+            the selected class are available.
+          </p>
+        </section>
+        <section class="workflow-step" data-panel="2">
+          <div class="section-heading">
+            <div>
+              <h2>Add Questions</h2>
+              <p>Build your quiz and keep the total marks visible.</p>
+            </div>
+            <div class="question-summary">
+              <strong id="questionCount">0</strong> questions
+              <strong id="totalMarks">0</strong> marks
+            </div>
+          </div>
+          <div id="questionsList" class="questions-list">
+            <div class="workflow-empty">
+              No questions added yet. Add your first question below.
+            </div>
+          </div>
+          <div class="question-editor" id="questionEditor" hidden>
+            <div class="editor-heading">
+              <strong>New question</strong>
+              <button id="closeQuestionEditor" type="button" aria-label="Close">
+                &times;
+              </button>
+            </div>
+            <label
+              >Question text<textarea
+                id="questionText"
+                rows="3"
+                placeholder="Write the question..."
+              ></textarea>
+            </label>
+            <div class="editor-grid">
+              <label
+                >Question type<select id="questionType">
+                  <option>Multiple Choice</option>
+                  <option>True/False</option>
+                  <option>Multiple Answer</option>
+                  <option>Short Answer</option>
+                  <option>Fill in the Blank</option>
+                </select></label
+              >
+              <label
+                >Marks<input id="questionMarks" type="number" min="1" value="1"
+              /></label>
+            </div>
+            <div id="questionOptions" class="question-options"></div>
+            <label
+              >Explanation <span class="editor-muted">Optional</span
+              ><textarea id="questionExplanation" rows="2"></textarea
+              ><button class="btn-primary" id="saveQuestionBtn" type="button">
+                <i class="fa-solid fa-check"></i> Add question
+              </button></label
+            >
+          </div>
+          <div class="question-actions">
+            <button class="btn-secondary" id="addQuestionBtn" type="button">
+              <i class="fa-solid fa-plus"></i> Add Question</button
+            ><button class="btn-secondary" id="questionBankBtn" type="button">
+              <i class="fa-solid fa-book"></i> Question Bank
+            </button>
+          </div>
+        </section>
+        <section class="workflow-step" data-panel="3">
+          <div class="section-heading">
+            <div>
+              <h2>Quiz Settings</h2>
+              <p>Define timing, marking, and availability rules.</p>
+            </div>
+          </div>
+          <div class="settings-grid">
+            <fieldset>
+              <legend>Attempt settings</legend>
+              <label
+                >Time limit (minutes)<input
+                  id="timeLimit"
+                  type="number"
+                  min="1"
+                  value="30"
+                  required /></label
+              ><label
+                >Attempts allowed<input
+                  id="attemptsAllowed"
+                  type="number"
+                  min="1"
+                  value="1"
+                  required /></label
+              ><label class="check-label"
+                ><input id="shuffleQuestions" type="checkbox" /> Shuffle
+                questions</label
+              ><label class="check-label"
+                ><input id="shuffleOptions" type="checkbox" /> Shuffle answer
+                options</label
+              >
+            </fieldset>
+            <fieldset>
+              <legend>Marking</legend>
+              <label
+                >Marks per question<input
+                  id="marksPerQuestion"
+                  type="number"
+                  min="1"
+                  value="1"
+                  required /></label
+              ><label
+                >Negative marking<input
+                  id="wrongMarks"
+                  type="number"
+                  max="0"
+                  step="0.25"
+                  value="0"
+                  required /></label
+              ><label
+                >Passing percentage<input
+                  id="passingPercentage"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value="40"
+                  required
+              /></label>
+            </fieldset>
+            <fieldset>
+              <legend>Availability</legend>
+              <label
+                >Start date and time<input
+                  id="startAt"
+                  type="datetime-local" /></label
+              ><label
+                >End date and time<input id="endAt" type="datetime-local"
+              /></label>
+            </fieldset>
+          </div>
+        </section>
+        <section class="workflow-step" data-panel="4">
+          <div class="section-heading">
+            <div>
+              <h2>Quiz Preview</h2>
+              <p>Review the actual quiz before saving or publishing.</p>
+            </div>
+          </div>
+          <div id="previewContent" class="preview-content"></div>
+        </section>
+        <footer class="workflow-footer">
+          <button class="btn-secondary" id="backBtn" type="button">Back</button>
+          <div>
+            <button class="btn-secondary" id="saveDraftBtn" type="button">
+              Save Draft</button
+            ><button class="btn-primary" id="nextBtn" type="button">
+              Next: Add Questions
+              <i class="fa-solid fa-arrow-right"></i></button
+            ><button class="btn-primary" id="publishBtn" type="button" hidden>
+              <i class="fa-solid fa-rocket"></i> Publish Quiz
+            </button>
+          </div>
+        </footer>
+      </form>
+    </main>
+    <div
+      class="quiz-toast-region"
+      id="quizToastRegion"
+      aria-live="polite"
+    ></div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../js/teacher-data.js"></script>
+    <script src="../js/quiz-create.js"></script>
+    <script src="../js/layout.js"></script>
+  </body>
+</html>

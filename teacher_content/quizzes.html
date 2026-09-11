@@ -750,7 +750,7 @@
 
 
     <!-- CONTENT BODY CONTAINER -->
-      <main class="page-content main-box-container">
+      <main class="page-content main-box-container quizzes-page">
         <!-- PAGE TITLE & ACTIONS -->
         <div class="page-header">
           <div class="page-title">
@@ -758,8 +758,8 @@
             <p>Create, manage and analyze quizzes for your students.</p>
           </div>
           <div class="action-buttons">
-            <button class="btn-primary">➕ Create Quiz</button>
-            <button class="btn-secondary">📖 Question Bank</button>
+            <button class="btn-primary" id="createQuizBtn" type="button">➕ Create Quiz</button>
+            <button class="btn-secondary" id="questionBankBtn" type="button">📖 Question Bank</button>
           </div>
         </div>
 
@@ -768,7 +768,7 @@
           <div class="stat-card">
             <div class="stat-icon" style="background: #8b5cf6">📄</div>
             <div>
-              <div class="stat-val">18</div>
+              <div class="stat-val" id="quizTotal">0</div>
               <div class="stat-lbl">Total Quizzes</div>
               <div class="stat-trend" style="color: #8b5cf6">+2 this week</div>
             </div>
@@ -776,7 +776,7 @@
           <div class="stat-card">
             <div class="stat-icon" style="background: #3b82f6">🚀</div>
             <div>
-              <div class="stat-val">12</div>
+              <div class="stat-val" id="quizPublished">0</div>
               <div class="stat-lbl">Published</div>
               <div class="stat-trend" style="color: #3b82f6">+2 this week</div>
             </div>
@@ -784,7 +784,7 @@
           <div class="stat-card">
             <div class="stat-icon" style="background: #10b981">✏️</div>
             <div>
-              <div class="stat-val">6</div>
+              <div class="stat-val" id="quizDrafts">0</div>
               <div class="stat-lbl">Drafts</div>
               <div class="stat-trend" style="color: #10b981">+1 this week</div>
             </div>
@@ -792,7 +792,7 @@
           <div class="stat-card">
             <div class="stat-icon" style="background: #f59e0b">📊</div>
             <div>
-              <div class="stat-val">243</div>
+              <div class="stat-val" id="quizResponses">0</div>
               <div class="stat-lbl">Total Responses</div>
               <div class="stat-trend" style="color: #f59e0b">+28 this week</div>
             </div>
@@ -800,7 +800,7 @@
           <div class="stat-card">
             <div class="stat-icon" style="background: #0ea5e9">📈</div>
             <div>
-              <div class="stat-val">72%</div>
+              <div class="stat-val" id="quizAverage">0%</div>
               <div class="stat-lbl">Average Score</div>
               <div class="stat-trend" style="color: #0ea5e9">+5% this week</div>
             </div>
@@ -811,21 +811,23 @@
         <div class="table-section">
           <div class="table-toolbar">
             <div class="tabs">
-              <span class="tab active">All Quizzes</span>
-              <span class="tab">Published</span>
-              <span class="tab">Drafts</span>
-              <span class="tab">Scheduled</span>
-              <span class="tab">Archived</span>
+              <button class="tab active" type="button" data-status="all">All Quizzes</button>
+              <button class="tab" type="button" data-status="published">Published</button>
+              <button class="tab" type="button" data-status="draft">Drafts</button>
+              <button class="tab" type="button" data-status="scheduled">Scheduled</button>
+              <button class="tab" type="button" data-status="archived">Archived</button>
             </div>
             <div class="filter-controls">
               <input
                 type="text"
                 placeholder="Search quizzes..."
-                class="search-input-sm"
+                class="search-input-sm" id="quizSearch"
               />
-              <button class="btn-filter">🌪️ Filter</button>
-              <select class="select-sort">
-                <option>Sort by: Recent</option>
+              <select class="select-sort" id="quizSort">
+                <option value="recent">Sort by: Recent</option>
+                <option value="oldest">Sort by: Oldest</option>
+                <option value="az">Name A-Z</option>
+                <option value="za">Name Z-A</option>
               </select>
             </div>
           </div>
@@ -844,7 +846,7 @@
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="quizTableBody">
               <tr>
                 <td>
                   <div class="item-title">
@@ -1081,14 +1083,8 @@
           </table>
 
           <div class="pagination-bar">
-            <div>Showing 1 to 6 of 18 quizzes</div>
-            <div class="page-controls">
-              <span class="page-btn">‹</span>
-              <span class="page-btn active">1</span>
-              <span class="page-btn">2</span>
-              <span class="page-btn">3</span>
-              <span class="page-btn">›</span>
-            </div>
+            <div id="quizPaginationSummary">Loading quizzes...</div>
+            <div class="page-controls" id="quizPaginationControls"></div>
           </div>
         </div>
 
@@ -1275,6 +1271,10 @@
         </div>
       </main>
     </div>
+    <div id="quizToastRegion" class="quiz-toast-region" aria-live="polite"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../js/teacher-data.js"></script>
+    <script src="../js/quizzes.js"></script>
     <script src="../js/layout.js"></script>
   </body>
 </html>
