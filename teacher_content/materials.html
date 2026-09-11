@@ -682,13 +682,13 @@
         <div class="table-section">
           <div class="table-toolbar">
             <div class="tabs">
-              <button class="tab active" type="button" data-type="all">All Materials</button>
-              <button class="tab" type="button" data-type="note">Notes</button>
-              <button class="tab" type="button" data-type="pdf">PDFs</button>
-              <button class="tab" type="button" data-type="video">Videos</button>
-              <button class="tab" type="button" data-type="image">Images</button>
-              <button class="tab" type="button" data-type="link">Links</button>
-              <button class="tab" type="button" data-type="folder">Folders</button>
+              <button class="tab active" type="button" data-type="all"><i class="fa-solid fa-grip"></i> All Materials</button>
+              <button class="tab" type="button" data-type="note"><i class="fa-regular fa-file-lines"></i> Notes</button>
+              <button class="tab" type="button" data-type="pdf"><i class="fa-solid fa-file-pdf"></i> PDFs</button>
+              <button class="tab" type="button" data-type="video"><i class="fa-regular fa-circle-play"></i> Videos</button>
+              <button class="tab" type="button" data-type="image"><i class="fa-regular fa-image"></i> Images</button>
+              <button class="tab" type="button" data-type="link"><i class="fa-solid fa-link"></i> Links</button>
+              <button class="tab" type="button" data-type="folder"><i class="fa-regular fa-folder"></i> Folders</button>
             </div>
             <div class="filter-controls">
               <input
@@ -710,12 +710,12 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Class</th>
-                <th>Subject</th>
-                <th>Uploaded On</th>
-                <th>Size</th>
+                <th><button class="table-heading" type="button">Name <i class="fa-solid fa-sort"></i></button></th>
+                <th><button class="table-heading" type="button">Type <i class="fa-solid fa-sort"></i></button></th>
+                <th><button class="table-heading" type="button">Class <i class="fa-solid fa-sort"></i></button></th>
+                <th><button class="table-heading" type="button">Subject <i class="fa-solid fa-sort"></i></button></th>
+                <th><button class="table-heading" type="button">Uploaded on <i class="fa-solid fa-sort"></i></button></th>
+                <th><button class="table-heading" type="button">Size <i class="fa-solid fa-sort"></i></button></th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -830,51 +830,25 @@
         </div>
 
         <!-- STORAGE OVERVIEW CARD -->
-        <div class="storage-card">
+        <section class="storage-card" aria-labelledby="storageOverviewTitle">
           <div class="storage-left">
-            <div class="radial-chart"></div>
-            <div>
-              <h4 style="font-weight: 800">Storage Overview</h4>
-              <div
-                style="font-size: 1.15rem; font-weight: 800; margin-top: 4px"
-              >
-                <span id="storageUsed">0 B</span>
-                <span
-                  style="
-                    font-size: 0.88rem;
-                    font-weight: 500;
-                    color: var(--text-muted);
-                  "
-                  >/ 10 GB</span
-                >
-              </div>
-              <div style="font-size: 0.8rem; color: var(--text-muted)">
-                Total Storage
-              </div>
+            <div class="radial-chart" id="storageRing" aria-label="Storage used">
+              <span id="storagePercent">0%</span>
+            </div>
+            <div class="storage-summary">
+              <h4 id="storageOverviewTitle"><i class="fa-solid fa-database"></i> Storage Overview</h4>
+              <div class="storage-used"><span id="storageUsed">0 B</span><small>/ 10 GB</small></div>
+              <div class="storage-caption">Total storage used</div>
             </div>
           </div>
 
-          <div class="storage-breakdown">
-            <div class="breakdown-item">
-              <span class="breakdown-label">🎬 Videos</span>
-              <span class="breakdown-value" id="storageVideos">0 B</span>
-            </div>
-            <div class="breakdown-item">
-              <span class="breakdown-label">📕 PDFs</span>
-              <span class="breakdown-value" id="storagePdfs">0 B</span>
-            </div>
-            <div class="breakdown-item">
-              <span class="breakdown-label">🖼️ Images</span>
-              <span class="breakdown-value" id="storageImages">0 B</span>
-            </div>
-            <div class="breakdown-item">
-              <span class="breakdown-label">📂 Others</span>
-              <span class="breakdown-value" id="storageOthers">0 B</span>
-            </div>
+          <div class="storage-breakdown" aria-label="Storage by material type">
+            <div class="breakdown-item"><span class="breakdown-label"><i class="fa-solid fa-play"></i> Videos</span><span class="breakdown-value" id="storageVideos">0 B</span></div>
+            <div class="breakdown-item"><span class="breakdown-label"><i class="fa-solid fa-file-pdf"></i> PDFs</span><span class="breakdown-value" id="storagePdfs">0 B</span></div>
+            <div class="breakdown-item"><span class="breakdown-label"><i class="fa-solid fa-image"></i> Images</span><span class="breakdown-value" id="storageImages">0 B</span></div>
+            <div class="breakdown-item"><span class="breakdown-label"><i class="fa-solid fa-folder"></i> Others</span><span class="breakdown-value" id="storageOthers">0 B</span></div>
           </div>
-
-          <button class="btn-secondary">⚙️ Manage Storage</button>
-        </div>
+        </section>
       </main>
     </div>
     <div class="material-modal" id="materialModal" hidden>

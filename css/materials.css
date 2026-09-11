@@ -63,7 +63,14 @@
 .materials-page .table-section,
 .materials-page .storage-card { border-color: rgba(210, 224, 231, 0.9); box-shadow: 0 10px 28px rgba(24, 63, 78, 0.07); }
 .materials-page .tabs { row-gap: 12px; }
-.materials-page .tab { padding: 7px 3px 10px; color: #748693; transition: color 160ms ease; }
+.materials-page .tab { display: inline-flex; align-items: center; gap: 8px; padding: 7px 10px 10px; color: #748693; transition: color 160ms ease, background 160ms ease, box-shadow 160ms ease; }
+.materials-page .tab i { color: #526aa3; font-size: .95rem; }
+.materials-page .tab[data-type="pdf"] i { color: #ed3c72; }
+.materials-page .tab[data-type="video"] i { color: #4568d9; }
+.materials-page .tab[data-type="image"] i { color: #536fd3; }
+.materials-page .tab[data-type="link"] i { color: #3d77b9; }
+.materials-page .tab[data-type="folder"] i { color: #d49214; }
+.materials-page .tab.active { border-radius: 10px; background: #f0f0ff; box-shadow: 0 5px 12px rgba(97, 87, 239, .1); }
 .materials-page .tab:hover { color: var(--primary-teal); }
 .materials-page .filter-controls { justify-content: flex-end; }
 .materials-page .search-input-sm,
@@ -74,6 +81,117 @@
 .materials-page .select-sort:focus { border-color: var(--primary-teal); box-shadow: 0 0 0 3px rgba(41, 174, 184, 0.12); outline: none; }
 .materials-page .data-table th { background: #f7fafb; color: #6c7e8b; letter-spacing: 0.03em; text-transform: uppercase; }
 .materials-page .data-table tbody tr:last-child td { border-bottom: 0; }
+.materials-page .data-table th,
+.materials-page .data-table td { white-space: nowrap; }
+.table-heading { display: inline-flex; align-items: center; gap: 7px; border: 0; color: inherit; background: transparent; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
+.table-heading i { color: #93a4c3; font-size: .7rem; }
+.material-thumb { display: grid; width: 40px; height: 40px; flex: 0 0 auto; place-items: center; border-radius: 10px; font-size: 1rem; }
+.material-thumb.type-image { color: #655cf1; background: #ecebff; }
+.material-thumb.type-pdf { color: #ed3c72; background: #ffe8f0; }
+.material-thumb.type-video { color: #4568d9; background: #e8efff; }
+.material-thumb.type-link { color: #3d77b9; background: #e6f2ff; }
+.material-thumb.type-folder { color: #d49214; background: #fff3d6; }
+.material-thumb.type-note,
+.material-thumb.type-document { color: #5d65c9; background: #eceeff; }
+.material-name { display: grid; gap: 3px; min-width: 130px; }
+.material-name strong { overflow: hidden; color: #1c315c; text-overflow: ellipsis; }
+.material-name small { color: #8493ae; font-size: .76rem; font-weight: 500; }
+.badge-type { display: inline-flex; align-items: center; gap: 6px; }
+.badge-type i { font-size: .7rem; }
+.table-value-icon { display: inline-flex; align-items: center; gap: 8px; color: #607497; }
+.table-value-icon i { color: #7087b1; }
+.materials-page .material-actions { gap: 8px; }
+.materials-page .material-action { display: grid; width: 38px; height: 38px; place-items: center; border-color: #e0e7f4; border-radius: 9px; color: #5e6cf0; background: #fbfcff; text-decoration: none; }
+.materials-page .material-action:hover { border-color: #bfc8ff; color: #4e50d9; background: #f1f2ff; }
+.materials-page .material-delete-action { color: #ef3d62; background: #fff0f3; }
+.materials-page .material-delete-action:hover { border-color: #ffc4d0; color: #d92750; background: #ffe4ea; }
+
+.materials-page .storage-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  min-height: 156px;
+  padding: 22px 28px;
+  border-radius: 16px;
+  background: linear-gradient(110deg, #f5f7ff 0%, #fbfcff 52%, #f6fbff 100%);
+}
+
+.materials-page .storage-left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  min-width: 290px;
+}
+
+.materials-page .radial-chart {
+  position: relative;
+  display: grid;
+  width: 112px;
+  height: 112px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(#6157ef 0%, #dfe4f4 0%);
+  box-shadow: inset 0 0 0 1px rgba(97, 87, 239, 0.08);
+}
+
+.materials-page .radial-chart::before {
+  width: 82px;
+  height: 82px;
+  background: #f8faff;
+  color: #172b5e;
+  content: "";
+}
+
+.materials-page .radial-chart span {
+  position: absolute;
+  z-index: 1;
+  color: #172b5e;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.storage-summary h4 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #172b5e;
+  font-size: 1rem;
+}
+
+.storage-summary h4 i { color: #6157ef; }
+.storage-used { margin-top: 10px; color: #172b5e; font-size: 1.28rem; font-weight: 800; }
+.storage-used small { margin-left: 5px; color: #8090af; font-size: .82rem; font-weight: 500; }
+.storage-caption { margin-top: 4px; color: #8090af; font-size: .78rem; }
+
+.materials-page .storage-breakdown {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(90px, 1fr));
+  flex: 1;
+  gap: 0;
+}
+
+.materials-page .breakdown-item {
+  min-height: 64px;
+  justify-content: center;
+  padding: 0 22px;
+  border-left: 1px solid #dce5f2;
+}
+
+.materials-page .breakdown-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #7487a8;
+  font-size: .78rem;
+}
+
+.materials-page .breakdown-label i { color: #6157ef; }
+.materials-page .breakdown-item:nth-child(2) .breakdown-label i { color: #ef3e77; }
+.materials-page .breakdown-item:nth-child(3) .breakdown-label i { color: #18b98a; }
+.materials-page .breakdown-item:nth-child(4) .breakdown-label i { color: #f2ad1c; }
+.materials-page .breakdown-value { margin-top: 8px; color: #172b5e; font-size: .9rem; font-weight: 800; }
 }
 
 .materials-page .stat-trend {
@@ -262,6 +380,11 @@
 }
 
 @media (max-width: 560px) {
+  .materials-page .storage-card { align-items: flex-start; flex-direction: column; padding: 20px; }
+  .materials-page .storage-left { min-width: 0; }
+  .materials-page .storage-breakdown { width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 16px; }
+  .materials-page .breakdown-item { justify-content: flex-start; padding: 0 12px; }
+  .materials-page .breakdown-item:nth-child(odd) { border-left: 0; padding-left: 0; }
   .material-modal-card { padding: 20px; }
   .form-row { align-items: stretch; flex-direction: column; }
   .form-row > * { width: 100%; }
