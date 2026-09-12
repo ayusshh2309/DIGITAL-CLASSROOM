@@ -798,6 +798,13 @@
                 </select>
               </div>
 
+              <div class="form-group stream-field" id="quizStreamField" hidden>
+                <label> Select Stream <span class="required">*</span> </label>
+                <select id="quizStream" onchange="updateQuizSubjects()">
+                  <option value="">Select stream</option>
+                </select>
+              </div>
+
               <div class="form-group">
                 <label> Select Subject <span class="required">*</span> </label>
 
@@ -1307,6 +1314,7 @@
         id: null,
         class: "",
         subject: "",
+        stream: "",
         title: "",
         description: "",
         instructions: "",
@@ -1337,6 +1345,46 @@
       const quizTeacherAssignments = {
         grades: [],
         subjectsByGrade: {},
+        registeredSubjects: [],
+        streams: [],
+      };
+
+      const quizStreamSubjects = {
+        science_pcm: [
+          "Mathematics",
+          "Physics",
+          "Chemistry",
+          "Computer Science",
+          "English",
+        ],
+        science_pcb: [
+          "Biology",
+          "Physics",
+          "Chemistry",
+          "Physical Education",
+          "English",
+        ],
+        commerce: [
+          "Accountancy",
+          "Business Studies",
+          "Economics",
+          "Mathematics",
+          "English",
+        ],
+        arts_humanities: [
+          "History",
+          "Geography",
+          "Economics",
+          "English",
+          "Hindi",
+        ],
+      };
+
+      const quizStreamLabels = {
+        science_pcm: "Science (PCM)",
+        science_pcb: "Science (PCB)",
+        commerce: "Commerce",
+        arts_humanities: "Arts / Humanities",
       };
 
       function normalizeQuizGrade(value) {
@@ -1394,6 +1442,11 @@
         const subjects = Array.isArray(professional.subjects)
           ? professional.subjects
           : [];
+        const registeredStreams = Array.isArray(professional.streams)
+          ? professional.streams
+          : Array.isArray(professional.selected_streams)
+            ? professional.selected_streams
+            : [];
         const assignmentCandidates = [
           professional.specialistAssignments,
           professional.specialist_assignments,
@@ -1445,7 +1498,39 @@
         quizTeacherAssignments.grades.sort(
           (left, right) => Number(left) - Number(right),
         );
+        quizTeacherAssignments.registeredSubjects = [
+          ...new Set([
+            ...subjects,
+            ...Object.values(quizTeacherAssignments.subjectsByGrade).flat(),
+          ]),
+        ];
+        quizTeacherAssignments.streams = [
+          ...new Set(
+            registeredStreams.filter((stream) => quizStreamLabels[stream]),
+          ),
+        ];
+        if (!quizTeacherAssignments.registeredSubjects.length) {
+          const standardSubjects = ["Mathematics", "English", "Science", "SST"];
+          quizTeacherAssignments.registeredSubjects = [
+            ...new Set([
+              ...standardSubjects,
+              ...quizTeacherAssignments.streams.flatMap(
+                (stream) => quizStreamSubjects[stream] || [],
+              ),
+            ]),
+          ];
+          quizTeacherAssignments.grades.forEach((grade) => {
+            if (!(quizTeacherAssignments.subjectsByGrade[grade] || []).length) {
+              quizTeacherAssignments.subjectsByGrade[grade] =
+                Number(grade) >= 11
+                  ? [...quizTeacherAssignments.registeredSubjects]
+                  : [...standardSubjects];
+            }
+          });
+        }
         const classSelect = document.getElementById("quizClass");
+        const streamField = document.getElementById("quizStreamField");
+        const streamSelect = document.getElementById("quizStream");
         const subjectSelect = document.getElementById("quizSubject");
         classSelect.innerHTML = quizTeacherAssignments.grades.length
           ? '<option value="">Select registered class</option>'
@@ -1456,6 +1541,15 @@
           option.textContent = `Class ${grade}`;
           classSelect.appendChild(option);
         });
+        streamSelect.innerHTML = '<option value="">Select stream</option>';
+        quizTeacherAssignments.streams.forEach((stream) => {
+          const option = document.createElement("option");
+          option.value = stream;
+          option.textContent = quizStreamLabels[stream];
+          streamSelect.appendChild(option);
+        });
+        streamField.hidden = true;
+        streamSelect.disabled = true;
         subjectSelect.innerHTML =
           '<option value="">Select a class first</option>';
         subjectSelect.disabled = true;
@@ -1466,11 +1560,29 @@
         const grade = normalizeQuizGrade(
           document.getElementById("quizClass").value,
         );
+        const streamField = document.getElementById("quizStreamField");
+        const streamSelect = document.getElementById("quizStream");
         const subjectSelect = document.getElementById("quizSubject");
-        const subjects = quizTeacherAssignments.subjectsByGrade[grade] || [];
+        const isSeniorGrade = grade === "11" || grade === "12";
+        const registeredForGrade = (
+          quizTeacherAssignments.subjectsByGrade[grade] || []
+        ).length
+          ? quizTeacherAssignments.subjectsByGrade[grade]
+          : quizTeacherAssignments.registeredSubjects;
+        const streamSubjects = quizStreamSubjects[streamSelect.value] || [];
+        const subjects = isSeniorGrade
+          ? streamSubjects.filter((subject) =>
+              registeredForGrade.includes(subject),
+            )
+          : registeredForGrade;
+        streamField.hidden = !isSeniorGrade;
+        streamSelect.disabled =
+          !isSeniorGrade || !quizTeacherAssignments.streams.length;
         subjectSelect.innerHTML = subjects.length
           ? '<option value="">Select assigned subject</option>'
-          : '<option value="">No subjects assigned to this class</option>';
+          : isSeniorGrade && !streamSelect.value
+            ? '<option value="">Select a stream first</option>'
+            : '<option value="">No registered subjects for this selection</option>';
         subjects.sort().forEach((subject) => {
           const option = document.createElement("option");
           option.value = subject;
@@ -1478,6 +1590,9 @@
           subjectSelect.appendChild(option);
         });
         subjectSelect.disabled = !subjects.length;
+        if (isSeniorGrade && !streamSelect.value) {
+          subjectSelect.disabled = true;
+        }
         updateSummary();
       }
 
@@ -1973,6 +2088,8 @@
 
         quizData.subject = document.getElementById("quizSubject").value;
 
+        quizData.stream = document.getElementById("quizStream").value;
+
         quizData.title = document.getElementById("quizTitle").value.trim();
 
         quizData.description = document
@@ -2043,13 +2160,33 @@
         }
 
         const selectedGrade = normalizeQuizGrade(quizData.class);
+        const selectedStream = document.getElementById("quizStream").value;
         const assignedSubjects =
           quizTeacherAssignments.subjectsByGrade[selectedGrade] || [];
+        const streamSubjects = quizStreamSubjects[selectedStream] || [];
+        const allowedSubjects =
+          selectedGrade === "11" || selectedGrade === "12"
+            ? streamSubjects.filter((subject) =>
+                (
+                  quizTeacherAssignments.subjectsByGrade[selectedGrade] ||
+                  quizTeacherAssignments.registeredSubjects
+                ).includes(subject),
+              )
+            : assignedSubjects;
         if (
           !quizTeacherAssignments.grades.includes(selectedGrade) ||
-          !assignedSubjects.includes(quizData.subject)
+          ((selectedGrade === "11" || selectedGrade === "12") &&
+            (!quizTeacherAssignments.streams.includes(selectedStream) ||
+              !allowedSubjects.includes(quizData.subject))) ||
+          (selectedGrade !== "11" &&
+            selectedGrade !== "12" &&
+            !allowedSubjects.includes(quizData.subject))
         ) {
-          showToast("Please choose a subject assigned to the selected class.");
+          showToast(
+            selectedGrade === "11" || selectedGrade === "12"
+              ? "Please choose a registered stream and subject."
+              : "Please choose a subject assigned to the selected class.",
+          );
 
           return false;
         }
@@ -2357,6 +2494,8 @@
               ? quizData.class
               : "";
 
+          updateQuizSubjects();
+          document.getElementById("quizStream").value = quizData.stream || "";
           updateQuizSubjects();
           document.getElementById("quizSubject").value = quizData.subject || "";
 
