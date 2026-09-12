@@ -831,9 +831,9 @@
         <div class="table-section">
           <div class="table-toolbar">
             <div class="tabs">
-              <button class="tab active" type="button" data-status="all"><i class="fa-solid fa-list"></i> All Quizzes <span class="tab-count" id="allQuizCount">0</span></button>
-              <button class="tab" type="button" data-status="published"><i class="fa-regular fa-clock"></i> Active Quizzes <span class="tab-count" id="publishedQuizCount">0</span></button>
-              <button class="tab" type="button" data-status="archived"><i class="fa-regular fa-folder-closed"></i> Archived Quizzes <span class="tab-count" id="archivedQuizCount">0</span></button>
+              <button class="tab active" type="button" data-status="all"><i class="fa-solid fa-grip"></i> All Quizzes <span class="tab-count" id="allQuizCount">0</span></button>
+              <button class="tab" type="button" data-status="published"><i class="fa-solid fa-circle-play"></i> Active Quizzes <span class="tab-count" id="publishedQuizCount">0</span></button>
+              <button class="tab" type="button" data-status="archived"><i class="fa-solid fa-box-archive"></i> Archived Quizzes <span class="tab-count" id="archivedQuizCount">0</span></button>
             </div>
             <select class="select-sort" id="quizSort" aria-label="Sort quizzes">
               <option value="recent">Sort by: Recent</option>
@@ -847,15 +847,15 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>Quiz Title</th>
-                <th>Class</th>
-                <th>Subject</th>
-                <th>Total Marks</th>
-                <th>Duration</th>
-                <th>Questions</th>
-                <th>Created On</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th><i class="fa-solid fa-file-lines"></i> Quiz</th>
+                <th><i class="fa-solid fa-graduation-cap"></i> Class</th>
+                <th><i class="fa-solid fa-book-open"></i> Subject</th>
+                <th><i class="fa-solid fa-star"></i> Total Marks</th>
+                <th><i class="fa-regular fa-clock"></i> Duration</th>
+                <th><i class="fa-solid fa-list-check"></i> Questions</th>
+                <th><i class="fa-regular fa-calendar-days"></i> Created On</th>
+                <th><i class="fa-solid fa-shield-halved"></i> Status</th>
+                <th><i class="fa-solid fa-atom"></i> Actions</th>
               </tr>
             </thead>
             <tbody id="quizTableBody">
