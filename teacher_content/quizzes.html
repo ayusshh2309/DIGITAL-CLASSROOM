@@ -744,6 +744,7 @@
       }
     </style>
       <link rel="stylesheet" href="../css/layout.css" />
+      <link rel="stylesheet" href="../css/quizzes.css" />
   </head>
   <body>
     <div id="layout"></div>
@@ -754,16 +755,35 @@
         <!-- PAGE TITLE & ACTIONS -->
         <div class="page-header">
           <div class="page-title">
-            <h1>Quizzes</h1>
-            <p>Create, manage and analyze quizzes for your students.</p>
+            <div class="quiz-title-lockup">
+              <span class="quiz-page-icon"><i class="fa-solid fa-clipboard-check"></i></span>
+              <div>
+            <h1>Quiz Management</h1>
+            <p>Create, manage and track quizzes for your classes and subjects.</p>
+              </div>
+            </div>
           </div>
-          <div class="action-buttons">
-            <button class="btn-primary" id="createQuizBtn" type="button">➕ Create Quiz</button>
-            <button class="btn-secondary" id="questionBankBtn" type="button">📖 Question Bank</button>
+          <div class="quiz-header-filters">
+            <label class="quiz-search-control">
+              <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+              <input type="text" placeholder="Search quizzes..." id="quizSearch" />
+            </label>
+            <label class="quiz-select-control">
+              <i class="fa-regular fa-calendar" aria-hidden="true"></i>
+              <select id="quizClassFilter" aria-label="Filter by class">
+                <option value="">All Classes</option>
+              </select>
+            </label>
+            <label class="quiz-select-control">
+              <i class="fa-regular fa-book-open" aria-hidden="true"></i>
+              <select id="quizSubjectFilter" aria-label="Filter by subject">
+                <option value="">All Subjects</option>
+              </select>
+            </label>
           </div>
         </div>
 
-        <!-- METRICS GRID -->
+        <!-- METRICS ARE KEPT FOR EXISTING DATA SUPPORT -->
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-icon" style="background: #8b5cf6">📄</div>
@@ -811,38 +831,30 @@
         <div class="table-section">
           <div class="table-toolbar">
             <div class="tabs">
-              <button class="tab active" type="button" data-status="all">All Quizzes</button>
-              <button class="tab" type="button" data-status="published">Published</button>
-              <button class="tab" type="button" data-status="draft">Drafts</button>
-              <button class="tab" type="button" data-status="scheduled">Scheduled</button>
-              <button class="tab" type="button" data-status="archived">Archived</button>
+              <button class="tab active" type="button" data-status="all"><i class="fa-solid fa-list"></i> All Quizzes <span class="tab-count" id="allQuizCount">0</span></button>
+              <button class="tab" type="button" data-status="published"><i class="fa-regular fa-clock"></i> Active Quizzes <span class="tab-count" id="publishedQuizCount">0</span></button>
+              <button class="tab" type="button" data-status="archived"><i class="fa-regular fa-folder-closed"></i> Archived Quizzes <span class="tab-count" id="archivedQuizCount">0</span></button>
             </div>
-            <div class="filter-controls">
-              <input
-                type="text"
-                placeholder="Search quizzes..."
-                class="search-input-sm" id="quizSearch"
-              />
-              <select class="select-sort" id="quizSort">
-                <option value="recent">Sort by: Recent</option>
-                <option value="oldest">Sort by: Oldest</option>
-                <option value="az">Name A-Z</option>
-                <option value="za">Name Z-A</option>
-              </select>
-            </div>
+            <select class="select-sort" id="quizSort" aria-label="Sort quizzes">
+              <option value="recent">Sort by: Recent</option>
+              <option value="oldest">Sort by: Oldest</option>
+              <option value="az">Name A-Z</option>
+              <option value="za">Name Z-A</option>
+            </select>
           </div>
 
+          <div class="data-table-wrap">
           <table class="data-table">
             <thead>
               <tr>
                 <th>Quiz Title</th>
                 <th>Class</th>
                 <th>Subject</th>
+                <th>Total Marks</th>
+                <th>Duration</th>
                 <th>Questions</th>
-                <th>Responses</th>
-                <th>Average Score</th>
-                <th>Status</th>
                 <th>Created On</th>
+                <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -1081,10 +1093,15 @@
               </tr>
             </tbody>
           </table>
+          </div>
 
           <div class="pagination-bar">
             <div id="quizPaginationSummary">Loading quizzes...</div>
             <div class="page-controls" id="quizPaginationControls"></div>
+          </div>
+          <div class="quiz-table-actions">
+            <button class="btn-secondary" id="questionBankBtn" type="button"><i class="fa-solid fa-book-open"></i> Question Bank</button>
+            <button class="btn-primary" id="createQuizBtn" type="button"><i class="fa-solid fa-plus"></i> Create Quiz</button>
           </div>
         </div>
 
