@@ -2286,7 +2286,7 @@
                 "quiz.html";
         */
 
-          goToStep(4);
+          window.location.href = "quizzes.html";
         }, 1200);
       }
 
@@ -2307,7 +2307,7 @@
         */
 
           if (confirm("Leave quiz creation? Unsaved changes may be lost.")) {
-            window.history.back();
+            window.location.href = "quizzes.html";
           }
         } else {
           goToStep(currentStep - 1);
