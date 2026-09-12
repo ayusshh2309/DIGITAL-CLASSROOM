@@ -777,7 +777,8 @@
           <div class="card form-card">
             <h2 class="card-title">Quiz Information</h2>
             <p class="card-subtitle">
-              Fill in the basic details for your quiz.
+              Fill in the basic details for your quiz. You can always edit these
+              later.
             </p>
 
             <div class="form-grid">
@@ -901,7 +902,12 @@
           <!-- SUMMARY -->
 
           <aside class="card summary-card">
-            <div class="summary-header">Quiz Summary</div>
+            <div class="summary-header">
+              <span>
+                Quiz Summary
+                <small>Quick overview of your quiz details.</small>
+              </span>
+            </div>
 
             <div class="summary-body">
               <div class="summary-row">
@@ -935,6 +941,22 @@
                 <strong>ⓘ Save your progress</strong><br />
                 You can save your quiz as a draft at any time and continue
                 later.
+              </div>
+
+              <div class="ready-box">
+                <strong
+                  ><i class="fa-solid fa-bullseye"></i> Ready to create?</strong
+                >
+                <p>
+                  After adding questions, you can preview your quiz and publish
+                  it for your students.
+                </p>
+              </div>
+
+              <div class="summary-illustration" aria-hidden="true">
+                <i class="fa-solid fa-list-check"></i>
+                <i class="fa-solid fa-book"></i>
+                <i class="fa-solid fa-graduation-cap"></i>
               </div>
             </div>
           </aside>
@@ -2287,7 +2309,7 @@
                 "quiz.html";
         */
 
-          window.location.href = "quizzes.html";
+          goToStep(4);
         }, 1200);
       }
 
@@ -2308,7 +2330,7 @@
         */
 
           if (confirm("Leave quiz creation? Unsaved changes may be lost.")) {
-            window.location.href = "quizzes.html";
+            window.history.back();
           }
         } else {
           goToStep(currentStep - 1);
