@@ -1,0 +1,2353 @@
+```html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Learning DC - Create Quiz</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --primary: #5735df;
+        --primary-dark: #4527c7;
+        --navy: #092b4c;
+        --text: #102a43;
+        --muted: #6b7c93;
+        --border: #dce5f0;
+        --bg: #f4f7fb;
+        --white: #ffffff;
+        --success: #159957;
+        --danger: #dc3545;
+        --warning: #e89b17;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-width: 320px;
+      }
+
+      /* MAIN CONTENT */
+
+      .main-content {
+        width: auto;
+        min-height: 100%;
+        padding: 32px;
+      }
+
+      .page-header {
+        margin-bottom: 30px;
+      }
+
+      .back-button {
+        border: none;
+        background: transparent;
+        color: var(--navy);
+        font-size: 15px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .page-header h1 {
+        font-size: 32px;
+        font-weight: 800;
+        margin-bottom: 8px;
+      }
+
+      .page-header p {
+        color: var(--muted);
+        font-size: 15px;
+      }
+
+      /* STEPPER */
+
+      .stepper {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 26px 35px;
+        margin-bottom: 25px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .step {
+        display: flex;
+        align-items: center;
+        flex: 1;
+      }
+
+      .step:last-child {
+        flex: 0;
+      }
+
+      .step-number {
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+        border-radius: 50%;
+        background: #e5ecf5;
+        color: #65758b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 14px;
+        position: relative;
+        z-index: 2;
+      }
+
+      .step.active .step-number,
+      .step.completed .step-number {
+        background: var(--primary);
+        color: white;
+      }
+
+      .step-info {
+        margin-left: 11px;
+      }
+
+      .step-info strong {
+        display: block;
+        font-size: 13px;
+        margin-bottom: 3px;
+      }
+
+      .step-info span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .step.active .step-info strong {
+        color: var(--primary);
+      }
+
+      .step-line {
+        height: 2px;
+        background: #dfe6ef;
+        flex: 1;
+        margin: 0 22px;
+      }
+
+      .step-line.completed {
+        background: var(--primary);
+      }
+
+      /* LAYOUT */
+
+      .content-grid {
+        display: grid;
+        grid-template-columns: minmax(650px, 1fr) 310px;
+        gap: 25px;
+        align-items: start;
+      }
+
+      .card {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: 0 4px 15px rgba(20, 40, 70, 0.035);
+      }
+
+      .form-card {
+        padding: 30px;
+      }
+
+      .card-title {
+        font-size: 21px;
+        font-weight: 750;
+        margin-bottom: 7px;
+      }
+
+      .card-subtitle {
+        font-size: 14px;
+        color: var(--muted);
+        margin-bottom: 28px;
+      }
+
+      /* FORM */
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 22px;
+      }
+
+      .form-group {
+        margin-bottom: 22px;
+      }
+
+      .form-grid .form-group {
+        margin-bottom: 0;
+      }
+
+      label {
+        display: block;
+        font-size: 13px;
+        font-weight: 650;
+        margin-bottom: 9px;
+      }
+
+      .required {
+        color: var(--danger);
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        border: 1px solid #d4dfeb;
+        border-radius: 9px;
+        padding: 13px 14px;
+        font-family: inherit;
+        font-size: 14px;
+        color: var(--text);
+        background: white;
+        outline: none;
+        transition: 0.2s;
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(87, 53, 223, 0.09);
+      }
+
+      textarea {
+        min-height: 110px;
+        resize: vertical;
+      }
+
+      .small-text {
+        color: var(--muted);
+        font-size: 11px;
+        margin-top: 6px;
+        text-align: right;
+      }
+
+      .full {
+        grid-column: 1 / -1;
+      }
+
+      /* SUMMARY */
+
+      .summary-card {
+        overflow: hidden;
+      }
+
+      .summary-header {
+        padding: 22px;
+        border-bottom: 1px solid var(--border);
+        font-size: 18px;
+        font-weight: 750;
+      }
+
+      .summary-body {
+        padding: 20px;
+      }
+
+      .summary-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+        padding: 14px 0;
+        border-bottom: 1px solid #edf1f6;
+        font-size: 13px;
+      }
+
+      .summary-row:last-child {
+        border-bottom: none;
+      }
+
+      .summary-label {
+        color: var(--muted);
+      }
+
+      .summary-value {
+        font-weight: 650;
+        text-align: right;
+        max-width: 170px;
+        word-break: break-word;
+      }
+
+      .info-box {
+        background: #edf6ff;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 15px;
+        color: #426384;
+        font-size: 12px;
+        line-height: 1.6;
+      }
+
+      /* BUTTONS */
+
+      .action-bar {
+        border-top: 1px solid var(--border);
+        margin-top: 30px;
+        padding-top: 22px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .action-right {
+        display: flex;
+        gap: 10px;
+      }
+
+      button {
+        font-family: inherit;
+      }
+
+      .btn {
+        border: none;
+        border-radius: 8px;
+        padding: 12px 18px;
+        font-size: 13px;
+        font-weight: 650;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: var(--primary-dark);
+      }
+
+      .btn-secondary {
+        background: white;
+        border: 1px solid #d4dfeb;
+        color: var(--text);
+      }
+
+      .btn-light {
+        background: #f1edff;
+        color: var(--primary);
+      }
+
+      .btn-danger {
+        background: #fff0f1;
+        color: var(--danger);
+      }
+
+      .btn-success {
+        background: var(--success);
+        color: white;
+      }
+
+      /* HIDDEN */
+
+      .hidden {
+        display: none !important;
+      }
+
+      /* QUESTIONS */
+
+      .question-list {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      .question-card {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 22px;
+        background: #fff;
+      }
+
+      .question-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 18px;
+      }
+
+      .question-number {
+        font-size: 15px;
+        font-weight: 750;
+      }
+
+      .question-tools {
+        display: flex;
+        gap: 7px;
+      }
+
+      .icon-btn {
+        border: 1px solid var(--border);
+        background: white;
+        width: 34px;
+        height: 34px;
+        border-radius: 7px;
+        cursor: pointer;
+        color: var(--muted);
+      }
+
+      .icon-btn:hover {
+        color: var(--primary);
+        border-color: var(--primary);
+      }
+
+      .option-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 15px;
+      }
+
+      .option-item {
+        position: relative;
+      }
+
+      .option-item input {
+        padding-left: 43px;
+      }
+
+      .option-letter {
+        position: absolute;
+        left: 14px;
+        top: 13px;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--primary);
+      }
+
+      .question-bottom {
+        display: grid;
+        grid-template-columns: 150px 1fr;
+        gap: 15px;
+        margin-top: 18px;
+      }
+
+      .add-question {
+        width: 100%;
+        padding: 17px;
+        border: 2px dashed #cbd7e5;
+        border-radius: 11px;
+        background: white;
+        color: var(--primary);
+        font-weight: 650;
+        cursor: pointer;
+        margin-top: 18px;
+      }
+
+      .add-question:hover {
+        border-color: var(--primary);
+        background: #faf9ff;
+      }
+
+      /* SETTINGS */
+
+      .setting-section {
+        border: 1px solid var(--border);
+        border-radius: 11px;
+        margin-bottom: 18px;
+        overflow: hidden;
+      }
+
+      .setting-heading {
+        padding: 17px 20px;
+        background: #fafbfd;
+        border-bottom: 1px solid var(--border);
+        font-size: 15px;
+        font-weight: 700;
+      }
+
+      .setting-body {
+        padding: 20px;
+      }
+
+      .setting-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+      }
+
+      .toggle-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 0;
+        border-bottom: 1px solid #edf1f5;
+      }
+
+      .toggle-row:last-child {
+        border-bottom: none;
+      }
+
+      .toggle-title {
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .toggle-description {
+        color: var(--muted);
+        font-size: 11px;
+        margin-top: 4px;
+      }
+
+      .switch {
+        position: relative;
+        width: 44px;
+        height: 24px;
+      }
+
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        inset: 0;
+        background: #cbd5e1;
+        border-radius: 20px;
+        transition: 0.2s;
+      }
+
+      .slider:before {
+        content: "";
+        position: absolute;
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        top: 3px;
+        background: white;
+        border-radius: 50%;
+        transition: 0.2s;
+      }
+
+      .switch input:checked + .slider {
+        background: var(--primary);
+      }
+
+      .switch input:checked + .slider:before {
+        transform: translateX(20px);
+      }
+
+      /* PREVIEW */
+
+      .preview-wrapper {
+        max-width: 850px;
+        margin: auto;
+      }
+
+      .preview-header {
+        text-align: center;
+        padding: 30px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .preview-header h2 {
+        font-size: 25px;
+        margin-bottom: 12px;
+      }
+
+      .preview-meta {
+        display: flex;
+        justify-content: center;
+        gap: 25px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .preview-question {
+        padding: 25px;
+        border-bottom: 1px solid #edf1f6;
+      }
+
+      .preview-question:last-child {
+        border-bottom: none;
+      }
+
+      .preview-question-title {
+        font-size: 15px;
+        font-weight: 650;
+        line-height: 1.6;
+        margin-bottom: 15px;
+      }
+
+      .preview-option {
+        border: 1px solid var(--border);
+        padding: 13px 15px;
+        border-radius: 8px;
+        margin-bottom: 9px;
+        font-size: 13px;
+        background: white;
+      }
+
+      /* EMPTY */
+
+      .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--muted);
+      }
+
+      .empty-state-icon {
+        font-size: 35px;
+        margin-bottom: 12px;
+      }
+
+      .empty-state h3 {
+        color: var(--text);
+        margin-bottom: 6px;
+      }
+
+      /* MODAL */
+
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(8, 25, 45, 0.48);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+      }
+
+      .modal-overlay.show {
+        display: flex;
+      }
+
+      .modal {
+        width: 430px;
+        background: white;
+        border-radius: 14px;
+        padding: 28px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+      }
+
+      .modal h3 {
+        font-size: 20px;
+        margin-bottom: 10px;
+      }
+
+      .modal p {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.7;
+        margin-bottom: 22px;
+      }
+
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+
+      /* TOAST */
+
+      .toast {
+        position: fixed;
+        right: 30px;
+        bottom: 30px;
+        background: #102a43;
+        color: white;
+        padding: 14px 19px;
+        border-radius: 9px;
+        font-size: 13px;
+        opacity: 0;
+        transform: translateY(15px);
+        pointer-events: none;
+        transition: 0.3s;
+        z-index: 200;
+      }
+
+      .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* RESPONSIVE */
+
+      @media (max-width: 1200px) {
+        .content-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .summary-card {
+          order: -1;
+        }
+
+        .summary-body {
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 12px;
+        }
+
+        .info-box {
+          grid-column: 1 / -1;
+        }
+      }
+    </style>
+    <link rel="stylesheet" href="../css/layout.css" />
+  </head>
+
+  <body>
+    <div id="layout"></div>
+    <main class="page-content main-box-container main-content">
+      <!-- PAGE HEADER -->
+
+      <div class="page-header">
+        <button class="back-button" onclick="goBack()">← Back</button>
+        <h1>Create New Quiz</h1>
+        <p>Create an engaging quiz for your students.</p>
+      </div>
+
+      <!-- STEPPER -->
+
+      <div class="stepper">
+        <div class="step active" id="stepIndicator1">
+          <div class="step-number">1</div>
+          <div class="step-info">
+            <strong>Quiz Information</strong>
+            <span>Basic details</span>
+          </div>
+        </div>
+
+        <div class="step-line" id="line1"></div>
+
+        <div class="step" id="stepIndicator2">
+          <div class="step-number">2</div>
+          <div class="step-info">
+            <strong>Questions</strong>
+            <span>Add questions</span>
+          </div>
+        </div>
+
+        <div class="step-line" id="line2"></div>
+
+        <div class="step" id="stepIndicator3">
+          <div class="step-number">3</div>
+          <div class="step-info">
+            <strong>Settings</strong>
+            <span>Configure quiz</span>
+          </div>
+        </div>
+
+        <div class="step-line" id="line3"></div>
+
+        <div class="step" id="stepIndicator4">
+          <div class="step-number">4</div>
+          <div class="step-info">
+            <strong>Preview</strong>
+            <span>Review & publish</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================= -->
+      <!-- STEP 1 -->
+      <!-- ========================================= -->
+
+      <section id="step1">
+        <div class="content-grid">
+          <div class="card form-card">
+            <h2 class="card-title">Quiz Information</h2>
+            <p class="card-subtitle">
+              Fill in the basic details for your quiz.
+            </p>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label> Select Class <span class="required">*</span> </label>
+
+                <select id="quizClass" onchange="updateSummary()">
+                  <option value="">Select class</option>
+                  <option value="Class 5">Class 5</option>
+                  <option value="Class 6">Class 6</option>
+                  <option value="Class 7">Class 7</option>
+                  <option value="Class 8">Class 8</option>
+                  <option value="Class 9">Class 9</option>
+                  <option value="Class 10">Class 10</option>
+                  <option value="Class 11">Class 11</option>
+                  <option value="Class 12">Class 12</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label> Select Subject <span class="required">*</span> </label>
+
+                <select id="quizSubject" onchange="updateSummary()">
+                  <option value="">Select subject</option>
+                  <option value="Mathematics">Mathematics</option>
+                  <option value="Science">Science</option>
+                  <option value="English">English</option>
+                  <option value="Physics">Physics</option>
+                  <option value="Chemistry">Chemistry</option>
+                  <option value="Biology">Biology</option>
+                  <option value="Computer Science">Computer Science</option>
+                </select>
+              </div>
+
+              <div class="form-group full">
+                <label> Quiz Title <span class="required">*</span> </label>
+
+                <input
+                  type="text"
+                  id="quizTitle"
+                  maxlength="100"
+                  placeholder="e.g. Mathematics - Algebra Quiz"
+                  oninput="updateSummary()"
+                />
+
+                <div class="small-text"><span id="titleCount">0</span>/100</div>
+              </div>
+
+              <div class="form-group full">
+                <label> Description <span class="required">*</span> </label>
+
+                <textarea
+                  id="quizDescription"
+                  maxlength="500"
+                  placeholder="Describe what students will learn or be tested on..."
+                  oninput="updateSummary()"
+                ></textarea>
+
+                <div class="small-text">
+                  <span id="descriptionCount">0</span>/500
+                </div>
+              </div>
+
+              <div class="form-group full">
+                <label>
+                  Quiz Instructions <span class="required">*</span>
+                </label>
+
+                <textarea
+                  id="quizInstructions"
+                  maxlength="500"
+                  placeholder="Write instructions for students..."
+                ></textarea>
+
+                <div class="small-text">
+                  <span id="instructionCount">0</span>/500
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label> Quiz Duration <span class="required">*</span> </label>
+
+                <input
+                  type="number"
+                  id="quizDuration"
+                  value="30"
+                  min="1"
+                  max="300"
+                  onchange="updateSummary()"
+                />
+              </div>
+
+              <div class="form-group">
+                <label> Total Marks </label>
+
+                <input type="text" id="totalMarks" value="0" readonly />
+
+                <div style="font-size: 11px; color: #6b7c93; margin-top: 6px">
+                  Automatically calculated from questions.
+                </div>
+              </div>
+            </div>
+
+            <div class="action-bar">
+              <button class="btn btn-secondary" onclick="goBack()">
+                Cancel
+              </button>
+
+              <div class="action-right">
+                <button class="btn btn-light" onclick="saveDraft()">
+                  Save as Draft
+                </button>
+
+                <button class="btn btn-primary" onclick="nextFromStep1()">
+                  Next: Add Questions →
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUMMARY -->
+
+          <aside class="card summary-card">
+            <div class="summary-header">Quiz Summary</div>
+
+            <div class="summary-body">
+              <div class="summary-row">
+                <span class="summary-label">Class</span>
+                <span class="summary-value" id="summaryClass">—</span>
+              </div>
+
+              <div class="summary-row">
+                <span class="summary-label">Subject</span>
+                <span class="summary-value" id="summarySubject">—</span>
+              </div>
+
+              <div class="summary-row">
+                <span class="summary-label">Questions</span>
+                <span class="summary-value" id="summaryQuestions">0</span>
+              </div>
+
+              <div class="summary-row">
+                <span class="summary-label">Total Marks</span>
+                <span class="summary-value" id="summaryMarks">0</span>
+              </div>
+
+              <div class="summary-row">
+                <span class="summary-label">Duration</span>
+                <span class="summary-value">
+                  <span id="summaryDuration">30</span> min
+                </span>
+              </div>
+
+              <div class="info-box">
+                <strong>ⓘ Save your progress</strong><br />
+                You can save your quiz as a draft at any time and continue
+                later.
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ========================================= -->
+      <!-- STEP 2 -->
+      <!-- ========================================= -->
+
+      <section id="step2" class="hidden">
+        <div class="card form-card">
+          <h2 class="card-title">Add Questions</h2>
+
+          <p class="card-subtitle">
+            Create questions for your selected class and subject.
+          </p>
+
+          <div id="questionList"></div>
+
+          <button class="add-question" onclick="addQuestion()">
+            + Add New Question
+          </button>
+
+          <div class="action-bar">
+            <button class="btn btn-secondary" onclick="goToStep(1)">
+              ← Back
+            </button>
+
+            <div class="action-right">
+              <button class="btn btn-light" onclick="saveDraft()">
+                Save as Draft
+              </button>
+
+              <button class="btn btn-primary" onclick="nextFromStep2()">
+                Next: Settings →
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================= -->
+      <!-- STEP 3 -->
+      <!-- ========================================= -->
+
+      <section id="step3" class="hidden">
+        <div class="card form-card">
+          <h2 class="card-title">Quiz Settings</h2>
+
+          <p class="card-subtitle">
+            Configure availability, attempts, questions and results.
+          </p>
+
+          <!-- AVAILABILITY -->
+
+          <div class="setting-section">
+            <div class="setting-heading">Availability</div>
+
+            <div class="setting-body">
+              <div class="setting-grid">
+                <div class="form-group">
+                  <label>Start Date</label>
+                  <input type="date" id="startDate" />
+                </div>
+
+                <div class="form-group">
+                  <label>Start Time</label>
+                  <input type="time" id="startTime" />
+                </div>
+
+                <div class="form-group">
+                  <label>End Date</label>
+                  <input type="date" id="endDate" />
+                </div>
+
+                <div class="form-group">
+                  <label>End Time</label>
+                  <input type="time" id="endTime" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ATTEMPTS -->
+
+          <div class="setting-section">
+            <div class="setting-heading">Attempt Settings</div>
+
+            <div class="setting-body">
+              <div class="form-group">
+                <label>Attempts Allowed</label>
+
+                <select id="attemptsAllowed">
+                  <option value="1">1 Attempt</option>
+                  <option value="2">2 Attempts</option>
+                  <option value="3">3 Attempts</option>
+                  <option value="unlimited">Unlimited Attempts</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- QUESTION SETTINGS -->
+
+          <div class="setting-section">
+            <div class="setting-heading">Question Settings</div>
+
+            <div class="setting-body">
+              <div class="toggle-row">
+                <div>
+                  <div class="toggle-title">Shuffle Questions</div>
+
+                  <div class="toggle-description">
+                    Randomize the order of questions for students.
+                  </div>
+                </div>
+
+                <label class="switch">
+                  <input type="checkbox" id="shuffleQuestions" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle-row">
+                <div>
+                  <div class="toggle-title">Shuffle Answer Options</div>
+
+                  <div class="toggle-description">
+                    Randomize answer options for each question.
+                  </div>
+                </div>
+
+                <label class="switch">
+                  <input type="checkbox" id="shuffleOptions" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle-row">
+                <div>
+                  <div class="toggle-title">Show Question Numbers</div>
+
+                  <div class="toggle-description">
+                    Display question numbers to students.
+                  </div>
+                </div>
+
+                <label class="switch">
+                  <input type="checkbox" id="showQuestionNumbers" checked />
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- RESULT SETTINGS -->
+
+          <div class="setting-section">
+            <div class="setting-heading">Result Settings</div>
+
+            <div class="setting-body">
+              <div class="toggle-row">
+                <div>
+                  <div class="toggle-title">Show Score Immediately</div>
+
+                  <div class="toggle-description">
+                    Students can see their score after submitting.
+                  </div>
+                </div>
+
+                <label class="switch">
+                  <input type="checkbox" id="showScore" checked />
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle-row">
+                <div>
+                  <div class="toggle-title">Show Correct Answers</div>
+
+                  <div class="toggle-description">
+                    Students can see the correct answers.
+                  </div>
+                </div>
+
+                <label class="switch">
+                  <input type="checkbox" id="showAnswers" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle-row">
+                <div>
+                  <div class="toggle-title">Show Explanations</div>
+
+                  <div class="toggle-description">
+                    Show question explanations after submission.
+                  </div>
+                </div>
+
+                <label class="switch">
+                  <input type="checkbox" id="showExplanations" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- ACCESS -->
+
+          <div class="setting-section">
+            <div class="setting-heading">Student Access</div>
+
+            <div class="setting-body">
+              <div class="form-group">
+                <label>Who can access this quiz?</label>
+
+                <select id="studentAccess">
+                  <option value="class">All students in selected class</option>
+
+                  <option value="assigned">Only assigned students</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="action-bar">
+            <button class="btn btn-secondary" onclick="goToStep(2)">
+              ← Back
+            </button>
+
+            <div class="action-right">
+              <button class="btn btn-light" onclick="saveDraft()">
+                Save as Draft
+              </button>
+
+              <button class="btn btn-primary" onclick="goToStep(4)">
+                Next: Preview →
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================= -->
+      <!-- STEP 4 -->
+      <!-- ========================================= -->
+
+      <section id="step4" class="hidden">
+        <div class="card">
+          <div class="preview-wrapper">
+            <div class="preview-header">
+              <h2 id="previewTitle">Quiz Preview</h2>
+
+              <p
+                id="previewDescription"
+                style="color: #6b7c93; font-size: 13px; margin-bottom: 18px"
+              ></p>
+
+              <div class="preview-meta">
+                <span>
+                  Class:
+                  <strong id="previewClass">—</strong>
+                </span>
+
+                <span>
+                  Subject:
+                  <strong id="previewSubject">—</strong>
+                </span>
+
+                <span>
+                  Duration:
+                  <strong id="previewDuration">—</strong>
+                </span>
+
+                <span>
+                  Marks:
+                  <strong id="previewMarks">—</strong>
+                </span>
+              </div>
+            </div>
+
+            <div id="previewQuestions"></div>
+          </div>
+        </div>
+
+        <div class="action-bar" style="margin-top: 20px">
+          <button class="btn btn-secondary" onclick="goToStep(3)">
+            ← Back to Settings
+          </button>
+
+          <div class="action-right">
+            <button class="btn btn-secondary" onclick="goToStep(2)">
+              Edit Questions
+            </button>
+
+            <button class="btn btn-light" onclick="saveDraft()">
+              Save as Draft
+            </button>
+
+            <button class="btn btn-success" onclick="openPublishModal()">
+              Publish Quiz
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ========================================= -->
+    <!-- PUBLISH MODAL -->
+    <!-- ========================================= -->
+
+    <div class="modal-overlay" id="publishModal">
+      <div class="modal">
+        <h3>Publish Quiz?</h3>
+
+        <p>
+          Once published, this quiz will become available to the selected
+          students according to your availability and access settings.
+        </p>
+
+        <div class="modal-actions">
+          <button class="btn btn-secondary" onclick="closePublishModal()">
+            Cancel
+          </button>
+
+          <button class="btn btn-success" onclick="publishQuiz()">
+            Publish Quiz
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST -->
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+      /* ==========================================
+   QUIZ DATA
+========================================== */
+
+      let currentStep = 1;
+
+      let quizData = {
+        id: null,
+        class: "",
+        subject: "",
+        title: "",
+        description: "",
+        instructions: "",
+        duration: 30,
+
+        questions: [],
+
+        settings: {
+          startDate: "",
+          startTime: "",
+          endDate: "",
+          endTime: "",
+          attemptsAllowed: "1",
+          shuffleQuestions: false,
+          shuffleOptions: false,
+          showQuestionNumbers: true,
+          showScore: true,
+          showAnswers: false,
+          showExplanations: false,
+          studentAccess: "class",
+        },
+
+        status: "draft",
+        createdAt: null,
+        updatedAt: null,
+      };
+
+      /* ==========================================
+   INITIALIZE
+========================================== */
+
+      document.addEventListener("DOMContentLoaded", function () {
+        loadDraft();
+
+        setupCharacterCounters();
+
+        if (quizData.questions.length === 0) {
+          addQuestion();
+        }
+
+        renderQuestions();
+        updateSummary();
+      });
+
+      /* ==========================================
+   CHARACTER COUNTERS
+========================================== */
+
+      function setupCharacterCounters() {
+        const title = document.getElementById("quizTitle");
+
+        const description = document.getElementById("quizDescription");
+
+        const instructions = document.getElementById("quizInstructions");
+
+        title.addEventListener("input", function () {
+          document.getElementById("titleCount").textContent = this.value.length;
+        });
+
+        description.addEventListener("input", function () {
+          document.getElementById("descriptionCount").textContent =
+            this.value.length;
+        });
+
+        instructions.addEventListener("input", function () {
+          document.getElementById("instructionCount").textContent =
+            this.value.length;
+        });
+      }
+
+      /* ==========================================
+   ADD QUESTION
+========================================== */
+
+      function addQuestion() {
+        const question = {
+          id: Date.now(),
+
+          type: "multiple_choice",
+
+          text: "",
+
+          options: ["", "", "", ""],
+
+          correctAnswer: 0,
+
+          marks: 1,
+
+          explanation: "",
+        };
+
+        quizData.questions.push(question);
+
+        renderQuestions();
+
+        updateSummary();
+      }
+
+      /* ==========================================
+   RENDER QUESTIONS
+========================================== */
+
+      function renderQuestions() {
+        const container = document.getElementById("questionList");
+
+        container.innerHTML = "";
+
+        if (quizData.questions.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+
+                <div class="empty-state-icon">?</div>
+
+                <h3>No questions yet</h3>
+
+                <p>Add your first question to continue.</p>
+
+            </div>
+        `;
+
+          return;
+        }
+
+        quizData.questions.forEach(function (question, index) {
+          const card = document.createElement("div");
+
+          card.className = "question-card";
+
+          card.innerHTML = `
+
+            <div class="question-top">
+
+                <div class="question-number">
+                    Question ${index + 1}
+                </div>
+
+                <div class="question-tools">
+
+                    <button
+                        class="icon-btn"
+                        title="Duplicate"
+                        onclick="duplicateQuestion(${index})">
+                        ⧉
+                    </button>
+
+                    <button
+                        class="icon-btn"
+                        title="Delete"
+                        onclick="deleteQuestion(${index})">
+                        🗑
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    Question <span class="required">*</span>
+                </label>
+
+                <textarea
+                    placeholder="Enter your question here..."
+                    oninput="updateQuestion(${index}, 'text', this.value)"
+                >${escapeHTML(question.text)}</textarea>
+
+            </div>
+
+
+            <div class="form-grid">
+
+                <div class="form-group">
+
+                    <label>Question Type</label>
+
+                    <select
+                        onchange="changeQuestionType(${index}, this.value)">
+
+                        <option value="multiple_choice"
+                            ${question.type === "multiple_choice" ? "selected" : ""}>
+                            Multiple Choice
+                        </option>
+
+                        <option value="true_false"
+                            ${question.type === "true_false" ? "selected" : ""}>
+                            True / False
+                        </option>
+
+                        <option value="short_answer"
+                            ${question.type === "short_answer" ? "selected" : ""}>
+                            Short Answer
+                        </option>
+
+                    </select>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Marks</label>
+
+                    <input
+                        type="number"
+                        min="1"
+                        value="${question.marks}"
+                        onchange="updateQuestion(${index}, 'marks', Number(this.value))"
+                    >
+
+                </div>
+
+            </div>
+
+
+            ${renderQuestionType(question, index)}
+
+        `;
+
+          container.appendChild(card);
+        });
+
+        updateTotalMarks();
+      }
+
+      /* ==========================================
+   QUESTION TYPE
+========================================== */
+
+      function renderQuestionType(question, index) {
+        if (question.type === "true_false") {
+          return `
+
+            <div class="form-group">
+
+                <label>
+                    Correct Answer
+                </label>
+
+                <select
+                    onchange="updateQuestion(${index}, 'correctAnswer', this.value)">
+
+                    <option value="0"
+                        ${question.correctAnswer == 0 ? "selected" : ""}>
+                        True
+                    </option>
+
+                    <option value="1"
+                        ${question.correctAnswer == 1 ? "selected" : ""}>
+                        False
+                    </option>
+
+                </select>
+
+            </div>
+
+        `;
+        }
+
+        if (question.type === "short_answer") {
+          return `
+
+            <div class="form-group">
+
+                <label>
+                    Correct Answer
+                </label>
+
+                <input
+                    type="text"
+                    value="${escapeHTML(question.options[0])}"
+                    placeholder="Enter the expected answer..."
+                    oninput="updateShortAnswer(${index}, this.value)"
+                >
+
+            </div>
+
+            <div class="form-group">
+
+                <label>
+                    Explanation
+                </label>
+
+                <textarea
+                    placeholder="Optional explanation..."
+                    oninput="updateQuestion(${index}, 'explanation', this.value)"
+                >${escapeHTML(question.explanation)}</textarea>
+
+            </div>
+
+        `;
+        }
+
+        return `
+
+        <label>
+            Answer Options
+            <span class="required">*</span>
+        </label>
+
+        <div class="option-grid">
+
+            ${question.options
+              .map(function (option, optionIndex) {
+                return `
+
+                    <div class="option-item">
+
+                        <span class="option-letter">
+                            ${String.fromCharCode(65 + optionIndex)}
+                        </span>
+
+                        <input
+                            type="text"
+                            value="${escapeHTML(option)}"
+                            placeholder="Option ${optionIndex + 1}"
+                            oninput="updateOption(${index}, ${optionIndex}, this.value)"
+                        >
+
+                    </div>
+
+                `;
+              })
+              .join("")}
+
+        </div>
+
+
+        <div class="form-group" style="margin-top:18px;">
+
+            <label>
+                Correct Answer
+            </label>
+
+            <select
+                onchange="updateQuestion(${index}, 'correctAnswer', Number(this.value))">
+
+                ${question.options
+                  .map(function (option, i) {
+                    return `
+                        <option value="${i}"
+                            ${question.correctAnswer === i ? "selected" : ""}>
+                            ${String.fromCharCode(65 + i)} — ${option || "Option " + (i + 1)}
+                        </option>
+                    `;
+                  })
+                  .join("")}
+
+            </select>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label>
+                Explanation
+            </label>
+
+            <textarea
+                placeholder="Optional explanation shown after submission..."
+                oninput="updateQuestion(${index}, 'explanation', this.value)"
+            >${escapeHTML(question.explanation)}</textarea>
+
+        </div>
+
+    `;
+      }
+
+      /* ==========================================
+   UPDATE QUESTION
+========================================== */
+
+      function updateQuestion(index, property, value) {
+        quizData.questions[index][property] = value;
+
+        if (property === "marks") {
+          updateTotalMarks();
+        }
+
+        updateSummary();
+      }
+
+      /* ==========================================
+   UPDATE OPTION
+========================================== */
+
+      function updateOption(questionIndex, optionIndex, value) {
+        quizData.questions[questionIndex].options[optionIndex] = value;
+      }
+
+      /* ==========================================
+   SHORT ANSWER
+========================================== */
+
+      function updateShortAnswer(index, value) {
+        quizData.questions[index].options[0] = value;
+      }
+
+      /* ==========================================
+   CHANGE TYPE
+========================================== */
+
+      function changeQuestionType(index, type) {
+        quizData.questions[index].type = type;
+
+        if (type === "true_false") {
+          quizData.questions[index].options = ["True", "False"];
+
+          quizData.questions[index].correctAnswer = 0;
+        } else if (type === "short_answer") {
+          quizData.questions[index].options = [""];
+
+          quizData.questions[index].correctAnswer = 0;
+        } else {
+          quizData.questions[index].options = ["", "", "", ""];
+
+          quizData.questions[index].correctAnswer = 0;
+        }
+
+        renderQuestions();
+      }
+
+      /* ==========================================
+   DUPLICATE
+========================================== */
+
+      function duplicateQuestion(index) {
+        const copy = JSON.parse(JSON.stringify(quizData.questions[index]));
+
+        copy.id = Date.now();
+
+        quizData.questions.splice(index + 1, 0, copy);
+
+        renderQuestions();
+
+        updateSummary();
+
+        showToast("Question duplicated.");
+      }
+
+      /* ==========================================
+   DELETE
+========================================== */
+
+      function deleteQuestion(index) {
+        if (quizData.questions.length === 1) {
+          showToast("At least one question is required.");
+
+          return;
+        }
+
+        if (!confirm("Delete this question?")) {
+          return;
+        }
+
+        quizData.questions.splice(index, 1);
+
+        renderQuestions();
+
+        updateSummary();
+      }
+
+      /* ==========================================
+   TOTAL MARKS
+========================================== */
+
+      function calculateTotalMarks() {
+        return quizData.questions.reduce(function (total, question) {
+          return total + Number(question.marks || 0);
+        }, 0);
+      }
+
+      function updateTotalMarks() {
+        const total = calculateTotalMarks();
+
+        document.getElementById("totalMarks").value = total;
+
+        document.getElementById("summaryMarks").textContent = total;
+      }
+
+      /* ==========================================
+   SUMMARY
+========================================== */
+
+      function updateSummary() {
+        const classValue = document.getElementById("quizClass").value;
+
+        const subjectValue = document.getElementById("quizSubject").value;
+
+        const title = document.getElementById("quizTitle").value;
+
+        const duration = document.getElementById("quizDuration").value;
+
+        document.getElementById("summaryClass").textContent = classValue || "—";
+
+        document.getElementById("summarySubject").textContent =
+          subjectValue || "—";
+
+        document.getElementById("summaryQuestions").textContent =
+          quizData.questions.length;
+
+        document.getElementById("summaryDuration").textContent =
+          duration || "0";
+
+        document.getElementById("summaryMarks").textContent =
+          calculateTotalMarks();
+      }
+
+      /* ==========================================
+   COLLECT FORM DATA
+========================================== */
+
+      function collectQuizInformation() {
+        quizData.class = document.getElementById("quizClass").value;
+
+        quizData.subject = document.getElementById("quizSubject").value;
+
+        quizData.title = document.getElementById("quizTitle").value.trim();
+
+        quizData.description = document
+          .getElementById("quizDescription")
+          .value.trim();
+
+        quizData.instructions = document
+          .getElementById("quizInstructions")
+          .value.trim();
+
+        quizData.duration = Number(
+          document.getElementById("quizDuration").value,
+        );
+
+        quizData.settings.startDate =
+          document.getElementById("startDate").value;
+
+        quizData.settings.startTime =
+          document.getElementById("startTime").value;
+
+        quizData.settings.endDate = document.getElementById("endDate").value;
+
+        quizData.settings.endTime = document.getElementById("endTime").value;
+
+        quizData.settings.attemptsAllowed =
+          document.getElementById("attemptsAllowed").value;
+
+        quizData.settings.shuffleQuestions =
+          document.getElementById("shuffleQuestions").checked;
+
+        quizData.settings.shuffleOptions =
+          document.getElementById("shuffleOptions").checked;
+
+        quizData.settings.showQuestionNumbers = document.getElementById(
+          "showQuestionNumbers",
+        ).checked;
+
+        quizData.settings.showScore =
+          document.getElementById("showScore").checked;
+
+        quizData.settings.showAnswers =
+          document.getElementById("showAnswers").checked;
+
+        quizData.settings.showExplanations =
+          document.getElementById("showExplanations").checked;
+
+        quizData.settings.studentAccess =
+          document.getElementById("studentAccess").value;
+      }
+
+      /* ==========================================
+   VALIDATE STEP 1
+========================================== */
+
+      function validateStep1() {
+        collectQuizInformation();
+
+        if (!quizData.class) {
+          showToast("Please select a class.");
+
+          return false;
+        }
+
+        if (!quizData.subject) {
+          showToast("Please select a subject.");
+
+          return false;
+        }
+
+        if (!quizData.title) {
+          showToast("Please enter a quiz title.");
+
+          return false;
+        }
+
+        if (!quizData.description) {
+          showToast("Please enter a description.");
+
+          return false;
+        }
+
+        if (!quizData.instructions) {
+          showToast("Please enter quiz instructions.");
+
+          return false;
+        }
+
+        if (!quizData.duration || quizData.duration < 1) {
+          showToast("Please enter a valid duration.");
+
+          return false;
+        }
+
+        return true;
+      }
+
+      /* ==========================================
+   VALIDATE QUESTIONS
+========================================== */
+
+      function validateQuestions() {
+        if (quizData.questions.length === 0) {
+          showToast("Please add at least one question.");
+
+          return false;
+        }
+
+        for (let i = 0; i < quizData.questions.length; i++) {
+          const question = quizData.questions[i];
+
+          if (!question.text.trim()) {
+            showToast(`Please enter Question ${i + 1}.`);
+
+            return false;
+          }
+
+          if (question.type === "multiple_choice") {
+            for (let j = 0; j < 4; j++) {
+              if (!question.options[j].trim()) {
+                showToast(`Please fill all options in Question ${i + 1}.`);
+
+                return false;
+              }
+            }
+          }
+
+          if (question.type === "short_answer") {
+            if (!question.options[0].trim()) {
+              showToast(
+                `Please enter the correct answer for Question ${i + 1}.`,
+              );
+
+              return false;
+            }
+          }
+
+          if (!question.marks || question.marks < 1) {
+            showToast(`Question ${i + 1} must have at least 1 mark.`);
+
+            return false;
+          }
+        }
+
+        return true;
+      }
+
+      /* ==========================================
+   STEP NAVIGATION
+========================================== */
+
+      function nextFromStep1() {
+        if (!validateStep1()) {
+          return;
+        }
+
+        goToStep(2);
+      }
+
+      function nextFromStep2() {
+        collectQuizInformation();
+
+        if (!validateQuestions()) {
+          return;
+        }
+
+        goToStep(3);
+      }
+
+      /* ==========================================
+   GO TO STEP
+========================================== */
+
+      function goToStep(step) {
+        collectQuizInformation();
+
+        currentStep = step;
+
+        for (let i = 1; i <= 4; i++) {
+          document
+            .getElementById("step" + i)
+            .classList.toggle("hidden", i !== step);
+        }
+
+        updateStepper(step);
+
+        if (step === 2) {
+          renderQuestions();
+        }
+
+        if (step === 4) {
+          renderPreview();
+        }
+
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth",
+        });
+      }
+
+      /* ==========================================
+   STEPPER
+========================================== */
+
+      function updateStepper(step) {
+        for (let i = 1; i <= 4; i++) {
+          const indicator = document.getElementById("stepIndicator" + i);
+
+          indicator.classList.remove("active", "completed");
+
+          if (i < step) {
+            indicator.classList.add("completed");
+          } else if (i === step) {
+            indicator.classList.add("active");
+          }
+        }
+
+        for (let i = 1; i <= 3; i++) {
+          document
+            .getElementById("line" + i)
+            .classList.toggle("completed", i < step);
+        }
+      }
+
+      /* ==========================================
+   RENDER PREVIEW
+========================================== */
+
+      function renderPreview() {
+        collectQuizInformation();
+
+        document.getElementById("previewTitle").textContent =
+          quizData.title || "Untitled Quiz";
+
+        document.getElementById("previewDescription").textContent =
+          quizData.description;
+
+        document.getElementById("previewClass").textContent = quizData.class;
+
+        document.getElementById("previewSubject").textContent =
+          quizData.subject;
+
+        document.getElementById("previewDuration").textContent =
+          quizData.duration + " min";
+
+        document.getElementById("previewMarks").textContent =
+          calculateTotalMarks();
+
+        const container = document.getElementById("previewQuestions");
+
+        container.innerHTML = "";
+
+        quizData.questions.forEach(function (question, index) {
+          const wrapper = document.createElement("div");
+
+          wrapper.className = "preview-question";
+
+          let questionNumber = quizData.settings.showQuestionNumbers
+            ? `${index + 1}. `
+            : "";
+
+          let optionsHTML = "";
+
+          if (question.type === "multiple_choice") {
+            optionsHTML = question.options
+              .map(function (option, i) {
+                return `
+                        <div class="preview-option">
+                            <strong>
+                                ${String.fromCharCode(65 + i)}.
+                            </strong>
+                            ${escapeHTML(option)}
+                        </div>
+                    `;
+              })
+              .join("");
+          } else if (question.type === "true_false") {
+            optionsHTML = `
+
+                <div class="preview-option">
+                    <strong>A.</strong> True
+                </div>
+
+                <div class="preview-option">
+                    <strong>B.</strong> False
+                </div>
+
+            `;
+          } else {
+            optionsHTML = `
+
+                <div class="preview-option">
+                    Short answer
+                </div>
+
+            `;
+          }
+
+          wrapper.innerHTML = `
+
+            <div class="preview-question-title">
+
+                ${questionNumber}
+                ${escapeHTML(question.text)}
+
+            </div>
+
+            ${optionsHTML}
+
+            <div style="
+                margin-top:12px;
+                color:#6b7c93;
+                font-size:11px;
+            ">
+                ${question.marks} mark${question.marks > 1 ? "s" : ""}
+            </div>
+
+        `;
+
+          container.appendChild(wrapper);
+        });
+      }
+
+      /* ==========================================
+   SAVE DRAFT
+========================================== */
+
+      function saveDraft() {
+        collectQuizInformation();
+
+        if (!quizData.id) {
+          quizData.id = "quiz_" + Date.now();
+        }
+
+        quizData.status = "draft";
+
+        if (!quizData.createdAt) {
+          quizData.createdAt = new Date().toISOString();
+        }
+
+        quizData.updatedAt = new Date().toISOString();
+
+        localStorage.setItem(
+          "smartLearningDC_quiz_draft",
+          JSON.stringify(quizData),
+        );
+
+        showToast("Quiz saved as draft.");
+      }
+
+      /* ==========================================
+   LOAD DRAFT
+========================================== */
+
+      function loadDraft() {
+        const saved = localStorage.getItem("smartLearningDC_quiz_draft");
+
+        if (!saved) {
+          return;
+        }
+
+        try {
+          const data = JSON.parse(saved);
+
+          quizData = data;
+
+          document.getElementById("quizClass").value = quizData.class || "";
+
+          document.getElementById("quizSubject").value = quizData.subject || "";
+
+          document.getElementById("quizTitle").value = quizData.title || "";
+
+          document.getElementById("quizDescription").value =
+            quizData.description || "";
+
+          document.getElementById("quizInstructions").value =
+            quizData.instructions || "";
+
+          document.getElementById("quizDuration").value =
+            quizData.duration || 30;
+
+          const settings = quizData.settings || {};
+
+          document.getElementById("startDate").value = settings.startDate || "";
+
+          document.getElementById("startTime").value = settings.startTime || "";
+
+          document.getElementById("endDate").value = settings.endDate || "";
+
+          document.getElementById("endTime").value = settings.endTime || "";
+
+          document.getElementById("attemptsAllowed").value =
+            settings.attemptsAllowed || "1";
+
+          document.getElementById("shuffleQuestions").checked =
+            settings.shuffleQuestions || false;
+
+          document.getElementById("shuffleOptions").checked =
+            settings.shuffleOptions || false;
+
+          document.getElementById("showQuestionNumbers").checked =
+            settings.showQuestionNumbers !== false;
+
+          document.getElementById("showScore").checked =
+            settings.showScore !== false;
+
+          document.getElementById("showAnswers").checked =
+            settings.showAnswers || false;
+
+          document.getElementById("showExplanations").checked =
+            settings.showExplanations || false;
+
+          document.getElementById("studentAccess").value =
+            settings.studentAccess || "class";
+
+          showToast("Draft loaded.");
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      /* ==========================================
+   PUBLISH
+========================================== */
+
+      function openPublishModal() {
+        if (!validateStep1()) {
+          return;
+        }
+
+        if (!validateQuestions()) {
+          return;
+        }
+
+        collectQuizInformation();
+
+        document.getElementById("publishModal").classList.add("show");
+      }
+
+      function closePublishModal() {
+        document.getElementById("publishModal").classList.remove("show");
+      }
+
+      function publishQuiz() {
+        collectQuizInformation();
+
+        quizData.id = quizData.id || "quiz_" + Date.now();
+
+        quizData.status = "published";
+
+        quizData.createdAt = quizData.createdAt || new Date().toISOString();
+
+        quizData.updatedAt = new Date().toISOString();
+
+        /*
+       LOCAL STORAGE DEMO
+
+       Later this section can be replaced
+       with Supabase INSERT/UPDATE logic.
+    */
+
+        const existing = JSON.parse(
+          localStorage.getItem("smartLearningDC_published_quizzes") || "[]",
+        );
+
+        existing.push(JSON.parse(JSON.stringify(quizData)));
+
+        localStorage.setItem(
+          "smartLearningDC_published_quizzes",
+          JSON.stringify(existing),
+        );
+
+        localStorage.removeItem("smartLearningDC_quiz_draft");
+
+        closePublishModal();
+
+        showToast("Quiz published successfully!");
+
+        setTimeout(function () {
+          /*
+            You can redirect here later:
+
+            window.location.href =
+                "quiz.html";
+        */
+
+          goToStep(4);
+        }, 1200);
+      }
+
+      /* ==========================================
+   BACK
+========================================== */
+
+      function goBack() {
+        if (currentStep === 1) {
+          /*
+           Change this to your actual
+           teacher dashboard / quiz page.
+
+           Example:
+
+           window.location.href =
+               "quiz.html";
+        */
+
+          if (confirm("Leave quiz creation? Unsaved changes may be lost.")) {
+            window.history.back();
+          }
+        } else {
+          goToStep(currentStep - 1);
+        }
+      }
+
+      /* ==========================================
+   TOAST
+========================================== */
+
+      function showToast(message) {
+        const toast = document.getElementById("toast");
+
+        toast.textContent = message;
+
+        toast.classList.add("show");
+
+        setTimeout(function () {
+          toast.classList.remove("show");
+        }, 2500);
+      }
+
+      /* ==========================================
+   ESCAPE HTML
+========================================== */
+
+      function escapeHTML(value) {
+        if (value === null || value === undefined) {
+          return "";
+        }
+
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+    </script>
+    <script src="../js/layout.js"></script>
+  </body>
+</html>
+```

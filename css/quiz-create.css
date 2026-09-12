@@ -1,5 +1,6 @@
 :root { --quiz-purple: #6257ef; --quiz-navy: #14285b; --quiz-muted: #7182a2; --quiz-border: #dfe6f3; }
-.quiz-create-page { background: linear-gradient(145deg, #f4f8fc, #eef4fb); }
+body { font-family: "DM Sans", sans-serif; background: linear-gradient(135deg, #e3f2fd 0%, #e0f2f1 50%, #e8f5e9 100%); background-attachment: fixed; }
+.quiz-create-page { min-height: 100%; background: rgba(255, 255, 255, 0.7) !important; }
 .create-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
 .create-eyebrow { color: #6257ef; font-size: .75rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 .create-header h1 { margin-top: 7px; color: var(--quiz-navy); font-size: clamp(2rem, 3vw, 2.6rem); letter-spacing: -.035em; }
