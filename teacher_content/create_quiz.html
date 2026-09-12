@@ -1295,6 +1295,7 @@
 
     <div class="toast" id="toast"></div>
 
+    <script src="../js/teacher-data.js"></script>
     <script>
       /* ==========================================
    QUIZ DATA
@@ -1333,11 +1334,159 @@
         updatedAt: null,
       };
 
+      const quizTeacherAssignments = {
+        grades: [],
+        subjectsByGrade: {},
+      };
+
+      function normalizeQuizGrade(value) {
+        const match = String(value ?? "").match(/\d+/);
+        return match ? match[0] : "";
+      }
+
+      function addQuizAssignment(subject, grades) {
+        if (!subject || !Array.isArray(grades)) return;
+
+        grades.forEach((gradeValue) => {
+          const grade = normalizeQuizGrade(gradeValue);
+          if (!grade) return;
+
+          if (!quizTeacherAssignments.grades.includes(grade)) {
+            quizTeacherAssignments.grades.push(grade);
+          }
+
+          quizTeacherAssignments.subjectsByGrade[grade] ||= [];
+          if (
+            !quizTeacherAssignments.subjectsByGrade[grade].includes(subject)
+          ) {
+            quizTeacherAssignments.subjectsByGrade[grade].push(subject);
+          }
+        });
+      }
+
+      function populateQuizTeacherAssignments() {
+        const teacherData = window.TeacherData?.getTeacherData?.();
+        let sessionProfessional = {};
+        try {
+          sessionProfessional = JSON.parse(
+            sessionStorage.getItem("teacherProfessionalInfo") || "{}",
+          );
+        } catch (error) {
+          sessionProfessional = {};
+        }
+        const professional = {
+          ...sessionProfessional,
+          ...(teacherData?.professional || {}),
+        };
+        const gradeGroups = {
+          grades_5_6: ["5", "6"],
+          grades_7_8: ["7", "8"],
+          grades_9_10: ["9", "10"],
+          grades_11_12: ["11", "12"],
+        };
+        const registeredGrades = Array.isArray(professional.grades)
+          ? professional.grades
+          : Array.isArray(professional.selected_grades)
+            ? professional.selected_grades
+            : (professional.selected_grade_groups || []).flatMap(
+                (group) => gradeGroups[group] || [],
+              );
+        const subjects = Array.isArray(professional.subjects)
+          ? professional.subjects
+          : [];
+        const assignmentCandidates = [
+          professional.specialistAssignments,
+          professional.specialist_assignments,
+          professional.subjectAssignments,
+          professional.subject_assignments,
+          sessionProfessional.specialistAssignments,
+          sessionProfessional.specialist_assignments,
+          sessionProfessional.subjectAssignments,
+          sessionProfessional.subject_assignments,
+        ];
+        const assignments =
+          assignmentCandidates.find((value) =>
+            Array.isArray(value)
+              ? value.length
+              : value && typeof value === "object" && Object.keys(value).length,
+          ) || [];
+
+        if (Array.isArray(assignments)) {
+          assignments.forEach((assignment) => {
+            addQuizAssignment(
+              assignment.subject || assignment.subjectName,
+              assignment.grades || assignment.selectedGrades || [],
+            );
+          });
+        } else if (assignments && typeof assignments === "object") {
+          Object.entries(assignments).forEach(([subject, grades]) => {
+            addQuizAssignment(subject, grades);
+          });
+        }
+
+        if (!Object.keys(quizTeacherAssignments.subjectsByGrade).length) {
+          registeredGrades.forEach((gradeValue) => {
+            const grade = normalizeQuizGrade(gradeValue);
+            if (!grade) return;
+            if (!quizTeacherAssignments.grades.includes(grade)) {
+              quizTeacherAssignments.grades.push(grade);
+            }
+            quizTeacherAssignments.subjectsByGrade[grade] = [...subjects];
+          });
+        } else {
+          registeredGrades.forEach((gradeValue) => {
+            const grade = normalizeQuizGrade(gradeValue);
+            if (grade && !quizTeacherAssignments.grades.includes(grade)) {
+              quizTeacherAssignments.grades.push(grade);
+            }
+          });
+        }
+
+        quizTeacherAssignments.grades.sort(
+          (left, right) => Number(left) - Number(right),
+        );
+        const classSelect = document.getElementById("quizClass");
+        const subjectSelect = document.getElementById("quizSubject");
+        classSelect.innerHTML = quizTeacherAssignments.grades.length
+          ? '<option value="">Select registered class</option>'
+          : '<option value="">No registered classes found</option>';
+        quizTeacherAssignments.grades.forEach((grade) => {
+          const option = document.createElement("option");
+          option.value = `Class ${grade}`;
+          option.textContent = `Class ${grade}`;
+          classSelect.appendChild(option);
+        });
+        subjectSelect.innerHTML =
+          '<option value="">Select a class first</option>';
+        subjectSelect.disabled = true;
+        classSelect.addEventListener("change", updateQuizSubjects);
+      }
+
+      function updateQuizSubjects() {
+        const grade = normalizeQuizGrade(
+          document.getElementById("quizClass").value,
+        );
+        const subjectSelect = document.getElementById("quizSubject");
+        const subjects = quizTeacherAssignments.subjectsByGrade[grade] || [];
+        subjectSelect.innerHTML = subjects.length
+          ? '<option value="">Select assigned subject</option>'
+          : '<option value="">No subjects assigned to this class</option>';
+        subjects.sort().forEach((subject) => {
+          const option = document.createElement("option");
+          option.value = subject;
+          option.textContent = subject;
+          subjectSelect.appendChild(option);
+        });
+        subjectSelect.disabled = !subjects.length;
+        updateSummary();
+      }
+
       /* ==========================================
    INITIALIZE
 ========================================== */
 
       document.addEventListener("DOMContentLoaded", function () {
+        populateQuizTeacherAssignments();
         loadDraft();
 
         setupCharacterCounters();
@@ -1893,6 +2042,18 @@
           return false;
         }
 
+        const selectedGrade = normalizeQuizGrade(quizData.class);
+        const assignedSubjects =
+          quizTeacherAssignments.subjectsByGrade[selectedGrade] || [];
+        if (
+          !quizTeacherAssignments.grades.includes(selectedGrade) ||
+          !assignedSubjects.includes(quizData.subject)
+        ) {
+          showToast("Please choose a subject assigned to the selected class.");
+
+          return false;
+        }
+
         if (!quizData.title) {
           showToast("Please enter a quiz title.");
 
@@ -2189,8 +2350,14 @@
 
           quizData = data;
 
-          document.getElementById("quizClass").value = quizData.class || "";
+          document.getElementById("quizClass").value =
+            quizTeacherAssignments.grades.includes(
+              normalizeQuizGrade(quizData.class),
+            )
+              ? quizData.class
+              : "";
 
+          updateQuizSubjects();
           document.getElementById("quizSubject").value = quizData.subject || "";
 
           document.getElementById("quizTitle").value = quizData.title || "";

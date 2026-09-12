@@ -1,0 +1,114 @@
+.students-page,
+.page-content.main-box-container:has(.students-content-layout) {
+  gap: 24px;
+  background: radial-gradient(circle at 92% 0%, rgba(41, 174, 184, 0.1), transparent 27%), linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(246, 251, 252, 0.9)) !important;
+}
+
+.page-content.main-box-container:has(.students-content-layout) .page-header {
+  align-items: center;
+  padding: 4px 4px 8px;
+}
+
+.page-content.main-box-container:has(.students-content-layout) .page-title h1 {
+  margin-top: 7px;
+  color: #172b5e;
+  font-size: clamp(2rem, 3vw, 2.7rem);
+  letter-spacing: -0.035em;
+  line-height: 1.12;
+}
+
+.page-content.main-box-container:has(.students-content-layout) .page-title p {
+  max-width: 540px;
+  margin-top: 4px;
+  color: #647887;
+  font-size: 1.05rem;
+}
+
+.page-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #087f8a;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.page-eyebrow i {
+  font-size: 0.75rem;
+}
+
+.page-content.main-box-container:has(.students-content-layout) .action-buttons {
+  align-self: center;
+  gap: 10px;
+}
+
+.page-content.main-box-container:has(.students-content-layout) .btn-primary,
+.page-content.main-box-container:has(.students-content-layout) .btn-secondary {
+  min-height: 44px;
+  border-radius: 11px;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.page-content.main-box-container:has(.students-content-layout) .btn-primary {
+  background: linear-gradient(135deg, #6258ef, #4d43d8);
+  box-shadow: 0 8px 16px rgba(78, 65, 225, 0.18);
+}
+
+.page-content.main-box-container:has(.students-content-layout) .btn-primary:hover,
+.page-content.main-box-container:has(.students-content-layout) .btn-secondary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 9px 20px rgba(24, 63, 78, 0.12);
+}
+
+.page-content.main-box-container:has(.students-content-layout) .stats-grid {
+  gap: 14px;
+}
+
+.page-content.main-box-container:has(.students-content-layout) .stat-card {
+  min-height: 112px;
+  border-color: rgba(210, 224, 231, 0.9);
+  box-shadow: 0 8px 24px rgba(24, 63, 78, 0.06);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.page-content.main-box-container:has(.students-content-layout) .stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 26px rgba(24, 63, 78, 0.1);
+}
+
+.page-content.main-box-container:has(.students-content-layout) .students-content-layout {
+  gap: 18px;
+}
+
+.page-content.main-box-container:has(.students-content-layout) .classes-sidebar,
+.page-content.main-box-container:has(.students-content-layout) .students-table-section,
+.page-content.main-box-container:has(.students-content-layout) .enrollment-card {
+  border-color: rgba(210, 224, 231, 0.9);
+  box-shadow: 0 10px 28px rgba(24, 63, 78, 0.07);
+}
+
+@media (max-width: 900px) {
+  .page-content.main-box-container:has(.students-content-layout) .page-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .page-content.main-box-container:has(.students-content-layout) .action-buttons {
+    align-self: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 560px) {
+  .page-content.main-box-container:has(.students-content-layout) .action-buttons {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .page-content.main-box-container:has(.students-content-layout) .action-buttons > * {
+    width: 100%;
+    justify-content: center;
+  }
+}

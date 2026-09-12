@@ -515,7 +515,7 @@
 }
 
 .quiz-empty-state::before {
-  content: "\\f46d";
+  content: "\f46d";
   display: grid;
   width: 58px;
   height: 58px;
