@@ -993,6 +993,10 @@
             <span class="page-eyebrow"><i class="fa-solid fa-layer-group"></i> Teacher workspace</span>
             <h1>Students</h1>
             <p>Here's an overview of your students across all your classes.</p>
+            <div class="assignment-scope" id="studentTeachingScope">
+              <span class="scope-label">Your teaching scope</span>
+              <span class="scope-value" id="selectedClassContext">Class 11 / Physics, Chemistry, Biology</span>
+            </div>
           </div>
         </div>
 
@@ -1211,6 +1215,10 @@
       }
       function renderClasses() {
         const teachingAssignments = localTeachingAssignments();
+        const selectedSubjects = [...(teachingAssignments.get(selectedClass) || [])];
+        document.getElementById("selectedClassContext").textContent = selectedClass
+          ? `${classLabel(selectedClass)} / ${selectedSubjects.slice(0, 3).join(", ") || "Subjects not specified"}`
+          : "No registered classes";
         const classFilter = document.getElementById("classFilter");
         classFilter.innerHTML = teachingClasses.length
           ? teachingClasses.map((grade) => `<option value="${grade}">${classLabel(grade)}</option>`).join("")
@@ -1221,7 +1229,7 @@
 
         const registeredClassSummary = document.getElementById("registeredClassSummary");
         registeredClassSummary.innerHTML = teachingClasses.length
-          ? teachingClasses.map((grade) => `<button class="registered-class-card" type="button" onclick="selectClassFilter('${grade}', this)"><strong>${classLabel(grade)}</strong><span class="registered-class-subjects">${[...(teachingAssignments.get(grade) || [])].join(" · ") || "Subjects not specified"}</span></button>`).join("")
+          ? teachingClasses.map((grade) => `<button class="registered-class-card${grade === selectedClass ? " active" : ""}" type="button" onclick="selectClassFilter('${grade}', this)"><strong>${classLabel(grade)}</strong><span class="registered-class-subjects">${[...(teachingAssignments.get(grade) || [])].join(" · ") || "Subjects not specified"}</span></button>`).join("")
           : `<div class="registered-class-subjects">No registered classes found.</div>`;
 
         const subjects = [...new Set([...teachingAssignments.values()].flatMap((subjectSet) => [...subjectSet]).concat(currentStudents.flatMap((student) => String(student.subjects).split(",").map((subject) => subject.trim()).filter(Boolean))))].sort();
@@ -1266,7 +1274,7 @@
         });
 
         if (filtered.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px;">No students found for this class.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="7" class="empty-table-state"><span class="empty-state-icon"><i class="fa-solid fa-user-plus"></i></span><strong>No students found for this class.</strong><small>Try selecting a different class, subject or stream.</small></td></tr>`;
           document.getElementById("paginationInfo").innerText =
             `Showing 0 of 0 students`;
           return;
@@ -1322,6 +1330,7 @@
       function selectClassFilter(className, element) {
         selectedClass = className;
         document.getElementById("classFilter").value = className;
+        renderClasses();
         renderTable();
       }
 
