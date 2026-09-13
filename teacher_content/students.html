@@ -512,6 +512,37 @@
         white-space: nowrap;
       }
 
+      .registered-classes {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding: 0 2px 4px;
+        margin: -10px 0 18px;
+      }
+
+      .registered-class-card {
+        flex: 0 0 auto;
+        min-width: 190px;
+        padding: 10px 13px;
+        border: 1px solid #e1e7f2;
+        border-radius: 10px;
+        background: #fff;
+        color: #52627b;
+      }
+
+      .registered-class-card strong {
+        display: block;
+        margin-bottom: 5px;
+        color: #172b5e;
+        font-size: 0.76rem;
+      }
+
+      .registered-class-subjects {
+        color: #7a8aa1;
+        font-size: 0.68rem;
+        line-height: 1.4;
+      }
+
       .table-sort-icon,
       .table-info-icon {
         margin-left: 3px;
@@ -1024,6 +1055,7 @@
               </label>
               <div class="student-count-pill"><i class="fa-solid fa-users"></i><span id="studentCountPill">0 Students</span></div>
             </div>
+            <div class="registered-classes" id="registeredClassSummary" aria-label="Registered classes and subjects"></div>
             <div class="table-toolbar">
               <div class="section-heading-text">
                 <h2>Students by Class & Grade</h2>
@@ -1085,10 +1117,62 @@
         }
         return null;
       }
+      const gradeGroups = {
+        grades_5_6: ["5", "6"],
+        grades_7_8: ["7", "8"],
+        grades_9_10: ["9", "10"],
+        grades_11_12: ["11", "12"],
+      };
+      const standardSubjects = {
+        "5": ["English", "Mathematics", "EVS", "Hindi"],
+        "6": ["English", "Mathematics", "Science", "Social Science", "Hindi"],
+        "7": ["English", "Mathematics", "Science", "Social Science", "Hindi"],
+        "8": ["English", "Mathematics", "Science", "Social Science", "Hindi"],
+        "9": ["English", "Mathematics", "Science", "Social Science", "Hindi"],
+        "10": ["English", "Mathematics", "Science", "Social Science", "Hindi"],
+      };
+      const streamSubjects = {
+        science_pcm: ["Physics", "Chemistry", "Mathematics"],
+        science_pcb: ["Physics", "Chemistry", "Biology"],
+        commerce: ["Accountancy", "Business Studies", "Economics"],
+        arts_humanities: ["History", "Geography", "Political Science", "Psychology"],
+      };
+      function localTeachingAssignments() {
+        const professional = getLocalTeacher()?.professional || {};
+        const assignments = new Map();
+        const addSubject = (grade, subject) => {
+          const normalizedGrade = normalizeGrade(grade);
+          if (!normalizedGrade || !subject) return;
+          if (!assignments.has(normalizedGrade)) assignments.set(normalizedGrade, new Set());
+          assignments.get(normalizedGrade).add(String(subject));
+        };
+        const rawAssignments = professional.specialistAssignments || professional.specialist_assignments || [];
+        const assignmentList = Array.isArray(rawAssignments)
+          ? rawAssignments
+          : Object.entries(rawAssignments).map(([subject, grades]) => ({ subject, grades }));
+        assignmentList.forEach((assignment) => (assignment.grades || []).forEach((grade) => addSubject(grade, assignment.subject)));
+
+        const selectedGroups = Array.isArray(professional.selected_grade_groups)
+          ? professional.selected_grade_groups
+          : Array.isArray(professional.gradeGroups) ? professional.gradeGroups : [];
+        const selectedGrades = Array.isArray(professional.grades)
+          ? professional.grades
+          : Array.isArray(professional.selected_grades) ? professional.selected_grades : [];
+        const grades = selectedGroups.flatMap((group) => gradeGroups[group] || []).concat(selectedGrades.map(normalizeGrade));
+        const selectedStreams = professional.streams || professional.selected_streams || [];
+        const seniorSubjects = [...new Set(selectedStreams.flatMap((stream) => streamSubjects[stream] || []).concat(["English", "Physical Education", "Computer Science"]))];
+        if (!assignmentList.length) {
+          [...new Set(grades.filter(Boolean))].forEach((grade) => {
+            (Number(grade) >= 11 ? seniorSubjects : standardSubjects[grade] || professional.subjects || []).forEach((subject) => addSubject(grade, subject));
+          });
+        }
+        if (!assignments.size && Array.isArray(professional.subjects)) {
+          grades.forEach((grade) => professional.subjects.forEach((subject) => addSubject(grade, subject)));
+        }
+        return assignments;
+      }
       function localTeachingClasses() {
-        const registration = getLocalTeacher();
-        const assignments = registration?.professional?.specialistAssignments || registration?.professional?.specialist_assignments || [];
-        return [...new Set(assignments.flatMap((assignment) => (assignment.grades || []).map(normalizeGrade)).filter(Boolean))].sort((a, b) => Number(a) - Number(b));
+        return [...localTeachingAssignments().keys()].sort((a, b) => Number(a) - Number(b));
       }
       function readLocalStudents() {
         try {
@@ -1126,6 +1210,7 @@
         document.getElementById("studentTableBody").innerHTML = `<tr><td colspan="7" class="empty-table-state">${message}</td></tr>`;
       }
       function renderClasses() {
+        const teachingAssignments = localTeachingAssignments();
         const classFilter = document.getElementById("classFilter");
         classFilter.innerHTML = teachingClasses.length
           ? teachingClasses.map((grade) => `<option value="${grade}">${classLabel(grade)}</option>`).join("")
@@ -1134,7 +1219,12 @@
         document.getElementById("statClasses").textContent = teachingClasses.length;
         document.getElementById("studentCountPill").textContent = `${currentStudents.length} Students`;
 
-        const subjects = [...new Set(currentStudents.flatMap((student) => String(student.subjects).split(",").map((subject) => subject.trim()).filter(Boolean)))].sort();
+        const registeredClassSummary = document.getElementById("registeredClassSummary");
+        registeredClassSummary.innerHTML = teachingClasses.length
+          ? teachingClasses.map((grade) => `<button class="registered-class-card" type="button" onclick="selectClassFilter('${grade}', this)"><strong>${classLabel(grade)}</strong><span class="registered-class-subjects">${[...(teachingAssignments.get(grade) || [])].join(" · ") || "Subjects not specified"}</span></button>`).join("")
+          : `<div class="registered-class-subjects">No registered classes found.</div>`;
+
+        const subjects = [...new Set([...teachingAssignments.values()].flatMap((subjectSet) => [...subjectSet]).concat(currentStudents.flatMap((student) => String(student.subjects).split(",").map((subject) => subject.trim()).filter(Boolean))))].sort();
         const subjectFilter = document.getElementById("subjectFilter");
         subjectFilter.innerHTML = `<option value="">All Subjects (${subjects.length || 6})</option>${subjects.map((subject) => `<option value="${subject}">${subject}</option>`).join("")}`;
 
