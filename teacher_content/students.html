@@ -11,9 +11,6 @@
       rel="stylesheet"
     />
 
-    <!-- Supabase JS CDN Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
     <style>
       :root {
         /* Sidebar Design System (280px) */
@@ -448,6 +445,70 @@
         flex-direction: column;
       }
 
+      .student-filter-bar {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr auto;
+        gap: 14px;
+        align-items: end;
+        padding: 8px;
+        margin-bottom: 22px;
+        background: #f7f9fe;
+        border: 1px solid #e6ebf5;
+        border-radius: 13px;
+      }
+
+      .student-filter-field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        min-width: 0;
+      }
+
+      .student-filter-field span {
+        padding-left: 8px;
+        color: #718096;
+        font-size: 0.68rem;
+        font-weight: 700;
+      }
+
+      .student-filter-field select {
+        width: 100%;
+        min-height: 34px;
+        padding: 0 10px;
+        border: 1px solid #e1e7f2;
+        border-radius: 9px;
+        background: #fff;
+        color: #334155;
+        font: inherit;
+        font-size: 0.78rem;
+        font-weight: 700;
+        outline: none;
+      }
+
+      .student-count-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 34px;
+        padding: 0 15px;
+        border-radius: 9px;
+        background: #f1f4ff;
+        color: #5b5ee9;
+        font-size: 0.76rem;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .table-sort-icon,
+      .table-info-icon {
+        margin-left: 3px;
+        color: #9aa8bc;
+        font-size: 0.65rem;
+      }
+
+      .table-info-icon { font-size: 0.7rem; }
+
       .table-toolbar {
         display: flex;
         justify-content: space-between;
@@ -532,8 +593,8 @@
       }
 
       .student-avatar {
-        width: 38px;
-        height: 38px;
+        width: 32px;
+        height: 32px;
         border-radius: 50%;
         object-fit: cover;
       }
@@ -549,8 +610,8 @@
       }
 
       .badge-grade {
-        background: #e0e7ff;
-        color: #4338ca;
+        background: transparent;
+        color: #718096;
         padding: 3px 8px;
         border-radius: 6px;
         font-size: 0.75rem;
@@ -559,12 +620,64 @@
         margin-top: 2px;
       }
 
+      .grade-cell {
+        color: #586b85;
+        font-size: 0.78rem;
+        font-weight: 700;
+      }
+
+      .subject-chips {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        flex-wrap: nowrap;
+        white-space: nowrap;
+      }
+
+      .subject-chip {
+        padding: 5px 9px;
+        border-radius: 999px;
+        background: #e7f4ff;
+        color: #3d9ad2;
+        font-size: 0.68rem;
+        font-weight: 700;
+      }
+
+      .subject-chip-1 { background: #e5f8ed; color: #4eae7d; }
+      .subject-chip-2 { background: #f0e9ff; color: #8b6add; }
+      .subject-chip-more { background: #f1f4f8; color: #8290a4; }
+
       .attendance-bar-wrapper {
         display: flex;
         align-items: center;
         gap: 10px;
-        width: 120px;
+        width: 130px;
       }
+
+      .attendance-value {
+        display: flex;
+        flex-direction: column;
+        min-width: 42px;
+        font-weight: 800;
+        line-height: 1.1;
+      }
+
+      .attendance-value small {
+        color: #9aa8bc;
+        font-size: 0.62rem;
+        font-weight: 600;
+      }
+
+      .attendance-dot {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        margin-right: 4px;
+        border-radius: 50%;
+        background: #10b981;
+      }
+
+      .attendance-dot.late { background: #f59e0b; }
 
       .progress-bar {
         flex: 1;
@@ -580,9 +693,22 @@
         background: #10b981;
       }
 
+      .performance-fill { background: #665cf2; }
+
       .performance-cell {
         display: flex;
-        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        min-width: 150px;
+      }
+
+      .performance-cell .progress-bar { height: 6px; }
+
+      .performance-percent {
+        min-width: 28px;
+        color: #718096;
+        font-size: 0.72rem;
+        font-weight: 700;
       }
 
       .perf-score {
@@ -609,11 +735,34 @@
       }
 
       .action-btn-more {
-        background: transparent;
-        border: none;
-        font-size: 1.2rem;
-        color: var(--text-muted);
+        width: 32px;
+        height: 32px;
+        border: 1px solid #e1e7f2;
+        border-radius: 8px;
+        background: #fff;
+        color: #718096;
+        font-size: 0.8rem;
         cursor: pointer;
+      }
+
+      .action-btn-view {
+        width: 32px;
+        height: 32px;
+        margin-right: 5px;
+        border: 1px solid #e1e7f2;
+        border-radius: 8px;
+        background: #fff;
+        color: #718096;
+        cursor: pointer;
+      }
+
+      .actions-cell { white-space: nowrap; }
+
+      @media (max-width: 900px) {
+        .student-filter-bar { grid-template-columns: 1fr 1fr; }
+        .student-count-pill { grid-column: span 2; }
+        .table-section { overflow-x: auto; }
+        .data-table { min-width: 800px; }
       }
 
       .pagination-bar {
@@ -743,12 +892,6 @@
             <h1>Students</h1>
             <p>Here's an overview of your students across all your classes.</p>
           </div>
-          <div class="action-buttons">
-            <button class="btn-primary" onclick="addStudentPrompt()">
-              ➕ Add Student
-            </button>
-            <button class="btn-secondary">📤 Export Students ▾</button>
-          </div>
         </div>
 
         <!-- METRICS GRID -->
@@ -756,7 +899,7 @@
           <div class="stat-card">
             <div class="stat-icon" style="background: #a855f7">👥</div>
             <div>
-              <div class="stat-val" id="statTotal">156</div>
+              <div class="stat-val" id="statTotal">0</div>
               <div class="stat-lbl">Total Students</div>
               <div class="stat-sub">Across all classes</div>
             </div>
@@ -764,7 +907,7 @@
           <div class="stat-card">
             <div class="stat-icon" style="background: #2563eb">🎓</div>
             <div>
-              <div class="stat-val" id="statClasses">6</div>
+              <div class="stat-val" id="statClasses">0</div>
               <div class="stat-lbl">Classes</div>
               <div class="stat-sub">You're teaching</div>
             </div>
@@ -772,7 +915,7 @@
           <div class="stat-card">
             <div class="stat-icon" style="background: #10b981">📖</div>
             <div>
-              <div class="stat-val" id="statGrades">10</div>
+              <div class="stat-val" id="statGrades">0</div>
               <div class="stat-lbl">Grades</div>
               <div class="stat-sub">You're teaching</div>
             </div>
@@ -780,7 +923,7 @@
           <div class="stat-card">
             <div class="stat-icon" style="background: #f97316">📊</div>
             <div>
-              <div class="stat-val" id="statAttendance">92%</div>
+              <div class="stat-val" id="statAttendance">--</div>
               <div class="stat-lbl">Average Attendance</div>
               <div class="stat-sub">This month</div>
             </div>
@@ -788,7 +931,7 @@
           <div class="stat-card">
             <div class="stat-icon" style="background: #06b6d4">🎖️</div>
             <div>
-              <div class="stat-val" id="statPerformance">4.6</div>
+              <div class="stat-val" id="statPerformance">--</div>
               <div class="stat-lbl">Average Performance</div>
               <div class="stat-sub">This month</div>
             </div>
@@ -797,120 +940,48 @@
 
         <!-- MAIN SECTION: CLASSES SIDEBAR + TABLE -->
         <div class="students-content-layout">
-          <!-- Left Class Filter Selector -->
-          <div class="classes-sidebar">
-            <div
-              class="class-item active"
-              onclick="selectClassFilter('Class 9 (Science)', this)"
-            >
-              <div class="class-item-left">
-                <div class="class-badge-icon" style="background: #818cf8">
-                  📚
-                </div>
-                <span class="class-item-title">Class 9 (Science)</span>
-              </div>
-              <span class="class-item-count">34</span>
-            </div>
-
-            <div
-              class="class-item"
-              onclick="selectClassFilter('Class 10 (Social Science)', this)"
-            >
-              <div class="class-item-left">
-                <div class="class-badge-icon" style="background: #34d399">
-                  🌍
-                </div>
-                <span class="class-item-title">Class 10 (Social Science)</span>
-              </div>
-              <span class="class-item-count">32</span>
-            </div>
-
-            <div
-              class="class-item"
-              onclick="selectClassFilter('Class 11 (Physics)', this)"
-            >
-              <div class="class-item-left">
-                <div class="class-badge-icon" style="background: #38bdf8">
-                  ⚛️
-                </div>
-                <span class="class-item-title">Class 11 (Physics)</span>
-              </div>
-              <span class="class-item-count">28</span>
-            </div>
-
-            <div
-              class="class-item"
-              onclick="selectClassFilter('Class 11 (Mathematics)', this)"
-            >
-              <div class="class-item-left">
-                <div class="class-badge-icon" style="background: #60a5fa">
-                  📐
-                </div>
-                <span class="class-item-title">Class 11 (Mathematics)</span>
-              </div>
-              <span class="class-item-count">26</span>
-            </div>
-
-            <div
-              class="class-item"
-              onclick="selectClassFilter('Class 12 (Physics)', this)"
-            >
-              <div class="class-item-left">
-                <div class="class-badge-icon" style="background: #fbbf24">
-                  ⚡
-                </div>
-                <span class="class-item-title">Class 12 (Physics)</span>
-              </div>
-              <span class="class-item-count">20</span>
-            </div>
-
-            <div
-              class="class-item"
-              onclick="selectClassFilter('Class 12 (Mathematics)', this)"
-            >
-              <div class="class-item-left">
-                <div class="class-badge-icon" style="background: #a78bfa">
-                  🧮
-                </div>
-                <span class="class-item-title">Class 12 (Mathematics)</span>
-              </div>
-              <span class="class-item-count">18</span>
-            </div>
-
-            <button class="btn-view-all-classes">View All Classes</button>
-          </div>
-
-          <!-- Right Student Data Table -->
+          <!-- Student Data Table -->
           <div class="table-section">
+            <div class="student-filter-bar">
+              <label class="student-filter-field">
+                <span>Class / Grade</span>
+                <select id="classFilter" onchange="selectClassFilter(this.value, this)"></select>
+              </label>
+              <label class="student-filter-field">
+                <span>Subjects</span>
+                <select id="subjectFilter" onchange="filterStudents()">
+                  <option value="">All Subjects (6)</option>
+                </select>
+              </label>
+              <label class="student-filter-field">
+                <span>Stream</span>
+                <select id="streamFilter" onchange="filterStudents()">
+                  <option value="">All Streams</option>
+                </select>
+              </label>
+              <div class="student-count-pill"><i class="fa-solid fa-users"></i><span id="studentCountPill">0 Students</span></div>
+            </div>
             <div class="table-toolbar">
               <div class="section-heading-text">
                 <h2>Students by Class & Grade</h2>
-                <p>
-                  View and manage students in the grades and subjects you teach.
-                </p>
+                <p>View and manage students in the grades and subjects you teach.</p>
               </div>
               <div class="filter-controls">
                 <div class="search-input-box">
-                  <span>🔍</span>
-                  <input
-                    type="text"
-                    id="studentSearchInput"
-                    placeholder="Search students..."
-                    onkeyup="filterStudents()"
-                  />
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                  <input type="text" id="studentSearchInput" placeholder="Search students..." onkeyup="filterStudents()" />
                 </div>
-                <button class="btn-filter">🌪️ Filter</button>
               </div>
             </div>
 
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Student Name ▾</th>
+                  <th>Student Name <i class="fa-solid fa-chevron-down table-sort-icon"></i></th>
                   <th>Class / Grade</th>
-                  <th>Subjects</th>
-                  <th>Attendance</th>
-                  <th>Performance</th>
+                  <th>Subjects <i class="fa-regular fa-circle-question table-info-icon"></i></th>
+                  <th>Attendance <i class="fa-regular fa-circle-question table-info-icon"></i></th>
+                  <th>Performance <i class="fa-regular fa-circle-question table-info-icon"></i></th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -920,7 +991,7 @@
             </table>
 
             <div class="pagination-bar">
-              <div id="paginationInfo">Showing 1 to 5 of 34 students</div>
+              <div id="paginationInfo">No students loaded</div>
               <div class="page-controls">
                 <span class="page-btn">‹</span>
                 <span class="page-btn active">1</span>
@@ -982,107 +1053,84 @@
     </div>
 
     <script>
-      /* ── SUPABASE CONFIGURATION ── */
-      const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
-      const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
-
-      // Initialize Supabase Client
-      const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-      // Initial Dataset matching exact image content
-      const fallbackStudents = [
-        {
-          id: 1,
-          name: "Rohan Sharma",
-          student_id: "SLDC1001",
-          class: "Class 9 (Science)",
-          grade_badge: "Class 9",
-          badge_type: "Science",
-          subjects: "Physics, Chemistry, Mathematics",
-          attendance: 95,
-          rating: "4.7",
-          perf_label: "Excellent",
-          avatar: "https://i.pravatar.cc/100?img=11",
-        },
-        {
-          id: 2,
-          name: "Aanya Verma",
-          student_id: "SLDC1002",
-          class: "Class 9 (Science)",
-          grade_badge: "Class 9",
-          badge_type: "Science",
-          subjects: "Physics, Chemistry, Mathematics",
-          attendance: 92,
-          rating: "4.5",
-          perf_label: "Excellent",
-          avatar: "https://i.pravatar.cc/100?img=5",
-        },
-        {
-          id: 3,
-          name: "Arjun Patel",
-          student_id: "SLDC1003",
-          class: "Class 9 (Science)",
-          grade_badge: "Class 9",
-          badge_type: "Science",
-          subjects: "Physics, Chemistry, Mathematics",
-          attendance: 88,
-          rating: "4.2",
-          perf_label: "Very Good",
-          avatar: "https://i.pravatar.cc/100?img=13",
-        },
-        {
-          id: 4,
-          name: "Meera Singh",
-          student_id: "SLDC1004",
-          class: "Class 9 (Science)",
-          grade_badge: "Class 9",
-          badge_type: "Science",
-          subjects: "Physics, Chemistry, Mathematics",
-          attendance: 90,
-          rating: "4.3",
-          perf_label: "Very Good",
-          avatar: "https://i.pravatar.cc/100?img=9",
-        },
-        {
-          id: 5,
-          name: "Sahil Khan",
-          student_id: "SLDC1005",
-          class: "Class 9 (Science)",
-          grade_badge: "Class 9",
-          badge_type: "Science",
-          subjects: "Physics, Chemistry, Mathematics",
-          attendance: 85,
-          rating: "4.0",
-          perf_label: "Good",
-          avatar: "https://i.pravatar.cc/100?img=12",
-        },
-      ];
-
+      const STUDENTS_STORAGE_KEY = "teacherStudents";
       let currentStudents = [];
-      let selectedClass = "Class 9 (Science)";
+      let teachingClasses = [];
+      let selectedClass = null;
 
-      /* Fetch Student List with Supabase Logic & Fallback */
-      async function loadStudents() {
-        try {
-          let { data: students, error } = await supabase
-            .from("students")
-            .select("*")
-            .order("id", { ascending: true });
-
-          if (error || !students || students.length === 0) {
-            currentStudents = [...fallbackStudents];
-          } else {
-            currentStudents = students;
-          }
-        } catch (err) {
-          console.warn(
-            "Database connection pending. Using local UI dataset:",
-            err,
-          );
-          currentStudents = [...fallbackStudents];
+      function normalizeGrade(value) { return String(value ?? "").match(/\d+/)?.[0] || String(value ?? ""); }
+      function getLocalTeacher() {
+        for (const key of ["teacherRegistration", "teacherProfile", "teacherData", "finalTeacherRegistration"]) {
+          try { const value = JSON.parse((localStorage.getItem(key) || sessionStorage.getItem(key) || "null")); if (value) return value; } catch (_) {}
         }
+        return null;
+      }
+      function localTeachingClasses() {
+        const registration = getLocalTeacher();
+        const assignments = registration?.professional?.specialistAssignments || registration?.professional?.specialist_assignments || [];
+        return [...new Set(assignments.flatMap((assignment) => (assignment.grades || []).map(normalizeGrade)).filter(Boolean))].sort((a, b) => Number(a) - Number(b));
+      }
+      function readLocalStudents() {
+        try {
+          const storedStudents = JSON.parse(localStorage.getItem(STUDENTS_STORAGE_KEY) || "[]");
+          return Array.isArray(storedStudents) ? storedStudents : [];
+        } catch (error) {
+          console.warn("Could not read local students.", error);
+          return [];
+        }
+      }
+      function saveLocalStudents() {
+        localStorage.setItem(STUDENTS_STORAGE_KEY, JSON.stringify(currentStudents));
+      }
+      function normalizeStudent(student) {
+        const grade = normalizeGrade(student.class_grade || student.grade || student.class);
+        return {
+          ...student,
+          id: student.id || `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          name: student.name || student.full_name || "Unnamed student",
+          student_id: String(student.student_id || student.id || ""),
+          class: grade,
+          grade_badge: student.grade_badge || classLabel(grade),
+          badge_type: student.badge_type || student.stream || "Student",
+          subjects: student.subjects || student.subject || "Not assigned",
+          attendance: Number(student.attendance ?? 0),
+          rating: student.rating || "--",
+          perf_label: student.perf_label || "Not rated",
+          avatar: student.avatar || `https://i.pravatar.cc/100?u=${encodeURIComponent(student.student_id || student.id || student.name)}`,
+        };
+      }
+      function classLabel(grade) { return `Class ${grade}`; }
+      function showPageMessage(message) {
+        document.getElementById("studentTableBody").innerHTML = `<tr><td colspan="6" class="empty-table-state">${message}</td></tr>`;
+      }
+      function renderClasses() {
+        const classFilter = document.getElementById("classFilter");
+        classFilter.innerHTML = teachingClasses.length
+          ? teachingClasses.map((grade) => `<option value="${grade}">${classLabel(grade)}</option>`).join("")
+          : `<option value="">No registered classes</option>`;
+        classFilter.value = selectedClass || "";
+        document.getElementById("statClasses").textContent = teachingClasses.length;
+        document.getElementById("statGrades").textContent = teachingClasses.length;
+        document.getElementById("studentCountPill").textContent = `${currentStudents.length} Students`;
 
+        const subjects = [...new Set(currentStudents.flatMap((student) => String(student.subjects).split(",").map((subject) => subject.trim()).filter(Boolean)))].sort();
+        const subjectFilter = document.getElementById("subjectFilter");
+        subjectFilter.innerHTML = `<option value="">All Subjects (${subjects.length || 6})</option>${subjects.map((subject) => `<option value="${subject}">${subject}</option>`).join("")}`;
+
+        const streams = [...new Set(currentStudents.map((student) => student.badge_type).filter(Boolean))].sort();
+        const streamFilter = document.getElementById("streamFilter");
+        streamFilter.innerHTML = `<option value="">All Streams</option>${streams.map((stream) => `<option value="${stream}">${stream}</option>`).join("")}`;
+      }
+      async function loadTeachingClasses() {
+        teachingClasses = localTeachingClasses();
+      }
+      async function loadStudents() {
+        await loadTeachingClasses();
+        currentStudents = readLocalStudents().map(normalizeStudent);
+        if (!selectedClass || !teachingClasses.includes(selectedClass)) selectedClass = teachingClasses[0] || null;
+        renderClasses();
         renderTable();
+        updateStats();
       }
 
       /* Render Student Table Rows */
@@ -1096,10 +1144,14 @@
 
         let filtered = currentStudents.filter((student) => {
           const matchesClass = student.class === selectedClass;
+          const selectedSubject = document.getElementById("subjectFilter").value;
+          const selectedStream = document.getElementById("streamFilter").value;
+          const matchesSubject = !selectedSubject || String(student.subjects).split(",").map((subject) => subject.trim()).includes(selectedSubject);
+          const matchesStream = !selectedStream || student.badge_type === selectedStream;
           const matchesQuery =
             student.name.toLowerCase().includes(searchQuery) ||
             student.student_id.toLowerCase().includes(searchQuery);
-          return matchesClass && matchesQuery;
+          return matchesClass && matchesSubject && matchesStream && matchesQuery;
         });
 
         if (filtered.length === 0) {
@@ -1118,6 +1170,10 @@
                 : "perf-good";
 
           const tr = document.createElement("tr");
+          const performancePercent = Math.max(0, Math.min(100, Number(student.performance ?? Number(student.rating) * 20) || 0));
+          const attendanceStatus = student.attendance < 90 ? "Late" : "Present";
+          const subjectChips = String(student.subjects).split(",").map((subject) => subject.trim()).filter(Boolean).slice(0, 3).map((subject, index) => `<span class="subject-chip subject-chip-${index}">${subject}</span>`).join("");
+          const remainingSubjects = String(student.subjects).split(",").filter((subject) => subject.trim()).length - 3;
           tr.innerHTML = `
           <td>
             <div class="student-info-cell">
@@ -1129,43 +1185,56 @@
             </div>
           </td>
           <td>
-            <div style="font-weight:700;">${student.grade_badge}</div>
-            <span class="badge-grade">${student.badge_type}</span>
+            <div class="grade-cell">${student.grade_badge}</div>
           </td>
-          <td style="color: var(--text-muted); font-size:0.88rem;">${student.subjects}</td>
+          <td><div class="subject-chips">${subjectChips}${remainingSubjects > 0 ? `<span class="subject-chip subject-chip-more">+${remainingSubjects} more</span>` : ""}</div></td>
           <td>
             <div class="attendance-bar-wrapper">
-              <span style="font-weight:700;">${student.attendance}%</span>
-              <div class="progress-bar">
-                <div class="progress-fill" style="width: ${student.attendance}%;"></div>
-              </div>
+              <span class="attendance-dot${attendanceStatus === "Late" ? " late" : ""}"></span>
+              <span class="attendance-value">${student.attendance}%<small>${attendanceStatus}</small></span>
             </div>
           </td>
           <td>
             <div class="performance-cell">
-              <div class="perf-score">⭐ ${student.rating}</div>
-              <span class="perf-label ${perfClass}">${student.perf_label}</span>
+              <div class="progress-bar"><div class="progress-fill performance-fill" style="width: ${performancePercent}%;"></div></div>
+              <span class="performance-percent">${performancePercent}%</span>
             </div>
           </td>
-          <td>
-            <button class="action-btn-more" onclick="deleteStudent(${student.id})">⋮</button>
+          <td class="actions-cell">
+            <button class="action-btn-view" title="View student" onclick="viewStudent('${String(student.id).replace(/'/g, "\\'")}')"><i class="fa-regular fa-eye"></i></button>
+            <button class="action-btn-more" title="Remove student" onclick="deleteStudent('${String(student.id).replace(/'/g, "\\'")}')"><i class="fa-solid fa-ellipsis-vertical"></i></button>
           </td>
         `;
           tbody.appendChild(tr);
         });
 
         document.getElementById("paginationInfo").innerText =
-          `Showing 1 to ${filtered.length} of 34 students`;
+          `Showing 1 to ${filtered.length} of ${filtered.length} students`;
+      }
+
+      function updateStats() {
+        const studentsInClasses = currentStudents.filter((student) => teachingClasses.includes(student.class));
+        const attendanceValues = studentsInClasses.map((student) => student.attendance).filter((value) => Number.isFinite(value) && value > 0);
+        const ratings = studentsInClasses.map((student) => Number(student.rating)).filter((value) => Number.isFinite(value));
+        document.getElementById("statTotal").textContent = studentsInClasses.length;
+        document.getElementById("statAttendance").textContent = attendanceValues.length
+          ? `${Math.round(attendanceValues.reduce((total, value) => total + value, 0) / attendanceValues.length)}%`
+          : "--";
+        document.getElementById("statPerformance").textContent = ratings.length
+          ? (ratings.reduce((total, value) => total + value, 0) / ratings.length).toFixed(1)
+          : "--";
       }
 
       /* Class Selection Logic */
       function selectClassFilter(className, element) {
         selectedClass = className;
-        document
-          .querySelectorAll(".class-item")
-          .forEach((item) => item.classList.remove("active"));
-        element.classList.add("active");
+        document.getElementById("classFilter").value = className;
         renderTable();
+      }
+
+      function viewStudent(id) {
+        const student = currentStudents.find((item) => String(item.id) === String(id));
+        if (student) alert(`${student.name}\n${student.student_id}\n${classLabel(student.class)}`);
       }
 
       /* Search Filter Function */
@@ -1173,7 +1242,7 @@
         renderTable();
       }
 
-      /* Add Student Logic via Supabase */
+      /* Kept for local testing and future student-registration wiring. */
       async function addStudentPrompt() {
         const name = prompt("Enter Student Name:", "Priya Sharma");
         if (!name) return;
@@ -1195,34 +1264,26 @@
         };
 
         try {
-          const { data, error } = await supabase
-            .from("students")
-            .insert([newStudent])
-            .select();
-          if (error) throw error;
-          if (data && data[0]) currentStudents.push(data[0]);
-          else currentStudents.push(newStudent);
+          currentStudents.push(normalizeStudent(newStudent));
+          saveLocalStudents();
         } catch (err) {
-          console.warn("Supabase insert fallback active:", err);
-          newStudent.id = Date.now();
-          currentStudents.push(newStudent);
+          console.warn("Could not save local student:", err);
         }
 
+        renderClasses();
         renderTable();
+        updateStats();
       }
 
       /* Delete Student Logic */
       async function deleteStudent(id) {
         if (!confirm("Are you sure you want to remove this student?")) return;
 
-        try {
-          await supabase.from("students").delete().eq("id", id);
-        } catch (err) {
-          console.warn("Supabase delete fallback active:", err);
-        }
-
         currentStudents = currentStudents.filter((s) => s.id !== id);
+        saveLocalStudents();
+        renderClasses();
         renderTable();
+        updateStats();
       }
 
       // Initialize Page
