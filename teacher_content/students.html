@@ -252,6 +252,18 @@
         gap: 28px;
       }
 
+      .page-content.main-box-container:has(.students-content-layout) {
+        min-height: calc(100vh - 112px);
+      }
+
+      .page-content.main-box-container:has(.students-content-layout) .students-content-layout {
+        flex: 1;
+      }
+
+      .page-content.main-box-container:has(.students-content-layout) .table-section {
+        min-height: 100%;
+      }
+
       .page-header {
         display: flex;
         justify-content: space-between;
@@ -312,7 +324,7 @@
       /* Stat Cards Grid */
       .stats-grid {
         display: grid;
-        grid-template-columns: repeat(5, 1fr);
+        grid-template-columns: repeat(4, 1fr);
         gap: 18px;
       }
 
@@ -609,6 +621,13 @@
         color: var(--text-muted);
       }
 
+      .student-id-cell {
+        color: #60728b;
+        font-size: 0.74rem;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
       .badge-grade {
         background: transparent;
         color: #718096;
@@ -646,6 +665,55 @@
       .subject-chip-1 { background: #e5f8ed; color: #4eae7d; }
       .subject-chip-2 { background: #f0e9ff; color: #8b6add; }
       .subject-chip-more { background: #f1f4f8; color: #8290a4; }
+
+      .status-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        background: #dcf8ea;
+        color: #159566;
+        font-size: 0.68rem;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .status-chip::before {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+        content: "";
+      }
+
+      .status-chip.inactive {
+        background: #ffe1e5;
+        color: #e34d5f;
+      }
+
+      .profile-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        min-height: 32px;
+        padding: 0 10px;
+        border: 1px solid #dce5f1;
+        border-radius: 8px;
+        background: #fff;
+        color: #5269d9;
+        font: inherit;
+        font-size: 0.7rem;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .profile-action:hover,
+      .action-btn-more:hover,
+      .action-btn-view:hover {
+        border-color: #8290ee;
+        background: #f5f6ff;
+      }
 
       .attendance-bar-wrapper {
         display: flex;
@@ -872,6 +940,9 @@
           margin: 0 16px 20px 16px;
           padding: 20px;
         }
+        .page-content.main-box-container:has(.students-content-layout) {
+          min-height: auto;
+        }
         .stats-grid {
           grid-template-columns: 1fr;
         }
@@ -909,14 +980,6 @@
             <div>
               <div class="stat-val" id="statClasses">0</div>
               <div class="stat-lbl">Classes</div>
-              <div class="stat-sub">You're teaching</div>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #10b981">📖</div>
-            <div>
-              <div class="stat-val" id="statGrades">0</div>
-              <div class="stat-lbl">Grades</div>
               <div class="stat-sub">You're teaching</div>
             </div>
           </div>
@@ -978,10 +1041,11 @@
               <thead>
                 <tr>
                   <th>Student Name <i class="fa-solid fa-chevron-down table-sort-icon"></i></th>
-                  <th>Class / Grade</th>
-                  <th>Subjects <i class="fa-regular fa-circle-question table-info-icon"></i></th>
-                  <th>Attendance <i class="fa-regular fa-circle-question table-info-icon"></i></th>
-                  <th>Performance <i class="fa-regular fa-circle-question table-info-icon"></i></th>
+                  <th>Student ID <i class="fa-solid fa-sort table-sort-icon"></i></th>
+                  <th>Grade <i class="fa-solid fa-sort table-sort-icon"></i></th>
+                  <th>Stream <i class="fa-solid fa-sort table-sort-icon"></i></th>
+                  <th>Enrolled Subjects</th>
+                  <th>Status <i class="fa-solid fa-sort table-sort-icon"></i></th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -1005,50 +1069,6 @@
           </div>
         </div>
 
-        <!-- LOWER OVERVIEW CARDS -->
-        <div class="overview-cards-grid">
-          <div class="overview-card">
-            <div
-              class="overview-card-icon"
-              style="background: #e0e7ff; color: #4338ca"
-            >
-              🎓
-            </div>
-            <div class="overview-card-body">
-              <h4>Student Enrollment</h4>
-              <p>Total 156 students are enrolled in your classes.</p>
-              <a href="#">View details &rarr;</a>
-            </div>
-          </div>
-
-          <div class="overview-card">
-            <div
-              class="overview-card-icon"
-              style="background: #d1fae5; color: #047857"
-            >
-              👥
-            </div>
-            <div class="overview-card-body">
-              <h4>Attendance Overview</h4>
-              <p>Average attendance across all classes is 92% this month.</p>
-              <a href="#" style="color: #059669">View report &rarr;</a>
-            </div>
-          </div>
-
-          <div class="overview-card">
-            <div
-              class="overview-card-icon"
-              style="background: #dbeafe; color: #1d4ed8"
-            >
-              📈
-            </div>
-            <div class="overview-card-body">
-              <h4>Performance Overview</h4>
-              <p>Average performance rating is 4.6 out of 5.0.</p>
-              <a href="#" style="color: #2563eb">View analytics &rarr;</a>
-            </div>
-          </div>
-        </div>
       </main>
     </div>
 
@@ -1092,6 +1112,8 @@
           class: grade,
           grade_badge: student.grade_badge || classLabel(grade),
           badge_type: student.badge_type || student.stream || "Student",
+          stream: student.stream || student.stream_name || "--",
+          status: student.status || (student.is_active === false ? "Inactive" : "Active"),
           subjects: student.subjects || student.subject || "Not assigned",
           attendance: Number(student.attendance ?? 0),
           rating: student.rating || "--",
@@ -1101,7 +1123,7 @@
       }
       function classLabel(grade) { return `Class ${grade}`; }
       function showPageMessage(message) {
-        document.getElementById("studentTableBody").innerHTML = `<tr><td colspan="6" class="empty-table-state">${message}</td></tr>`;
+        document.getElementById("studentTableBody").innerHTML = `<tr><td colspan="7" class="empty-table-state">${message}</td></tr>`;
       }
       function renderClasses() {
         const classFilter = document.getElementById("classFilter");
@@ -1110,7 +1132,6 @@
           : `<option value="">No registered classes</option>`;
         classFilter.value = selectedClass || "";
         document.getElementById("statClasses").textContent = teachingClasses.length;
-        document.getElementById("statGrades").textContent = teachingClasses.length;
         document.getElementById("studentCountPill").textContent = `${currentStudents.length} Students`;
 
         const subjects = [...new Set(currentStudents.flatMap((student) => String(student.subjects).split(",").map((subject) => subject.trim()).filter(Boolean)))].sort();
@@ -1155,53 +1176,35 @@
         });
 
         if (filtered.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">No students found for this class.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px;">No students found for this class.</td></tr>`;
           document.getElementById("paginationInfo").innerText =
             `Showing 0 of 0 students`;
           return;
         }
 
         filtered.forEach((student) => {
-          const perfClass =
-            student.perf_label === "Excellent"
-              ? "perf-excellent"
-              : student.perf_label === "Very Good"
-                ? "perf-vgood"
-                : "perf-good";
-
           const tr = document.createElement("tr");
-          const performancePercent = Math.max(0, Math.min(100, Number(student.performance ?? Number(student.rating) * 20) || 0));
-          const attendanceStatus = student.attendance < 90 ? "Late" : "Present";
           const subjectChips = String(student.subjects).split(",").map((subject) => subject.trim()).filter(Boolean).slice(0, 3).map((subject, index) => `<span class="subject-chip subject-chip-${index}">${subject}</span>`).join("");
           const remainingSubjects = String(student.subjects).split(",").filter((subject) => subject.trim()).length - 3;
+          const isActive = String(student.status || "Active").toLowerCase() !== "inactive";
           tr.innerHTML = `
           <td>
             <div class="student-info-cell">
               <img src="${student.avatar}" class="student-avatar" alt="${student.name}" />
               <div>
                 <div class="student-name">${student.name}</div>
-                <div class="student-id">ID: ${student.student_id}</div>
               </div>
             </div>
           </td>
+          <td class="student-id-cell">${student.student_id}</td>
           <td>
             <div class="grade-cell">${student.grade_badge}</div>
           </td>
+          <td><span class="stream-value">${student.stream || "--"}</span></td>
           <td><div class="subject-chips">${subjectChips}${remainingSubjects > 0 ? `<span class="subject-chip subject-chip-more">+${remainingSubjects} more</span>` : ""}</div></td>
-          <td>
-            <div class="attendance-bar-wrapper">
-              <span class="attendance-dot${attendanceStatus === "Late" ? " late" : ""}"></span>
-              <span class="attendance-value">${student.attendance}%<small>${attendanceStatus}</small></span>
-            </div>
-          </td>
-          <td>
-            <div class="performance-cell">
-              <div class="progress-bar"><div class="progress-fill performance-fill" style="width: ${performancePercent}%;"></div></div>
-              <span class="performance-percent">${performancePercent}%</span>
-            </div>
-          </td>
+          <td><span class="status-chip${isActive ? "" : " inactive"}">${isActive ? "Active" : "Inactive"}</span></td>
           <td class="actions-cell">
-            <button class="action-btn-view" title="View student" onclick="viewStudent('${String(student.id).replace(/'/g, "\\'")}')"><i class="fa-regular fa-eye"></i></button>
+            <button class="profile-action" title="View student profile" onclick="viewStudent('${String(student.id).replace(/'/g, "\\'")}')">View Profile <i class="fa-solid fa-arrow-right"></i></button>
             <button class="action-btn-more" title="Remove student" onclick="deleteStudent('${String(student.id).replace(/'/g, "\\'")}')"><i class="fa-solid fa-ellipsis-vertical"></i></button>
           </td>
         `;
