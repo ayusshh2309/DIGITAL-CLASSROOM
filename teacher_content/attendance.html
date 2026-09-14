@@ -22,16 +22,19 @@
     <div id="layout"></div>
     <main class="page-content main-box-container attendance-page">
       <div class="attendance-shell">
-        <section class="attendance-heading">
-          <div>
-            <span class="eyebrow">Teacher workspace</span>
+        <section class="page-header">
+          <div class="page-title">
+            <span class="page-eyebrow"
+              ><i class="fa-solid fa-clipboard-check"></i> Teacher
+              workspace</span
+            >
             <h1>Attendance</h1>
             <p>
               Record, review, and understand attendance across your registered
               classes.
             </p>
           </div>
-          <div class="heading-actions">
+          <div class="action-buttons">
             <div class="export-menu">
               <select
                 class="att-select"
@@ -97,19 +100,33 @@
           <div class="panel">
             <div class="controls">
               <div class="field">
-                <label for="classSelect">Class</label
+                <label for="classSelect"
+                  ><i
+                    class="fa-solid fa-users-rectangle"
+                    aria-hidden="true"
+                  ></i>
+                  Class</label
                 ><select class="att-select" id="classSelect"></select>
               </div>
               <div class="field">
-                <label for="subjectSelect">Subject</label
+                <label for="subjectSelect"
+                  ><i class="fa-solid fa-book-open" aria-hidden="true"></i>
+                  Subject</label
                 ><select class="att-select" id="subjectSelect"></select>
               </div>
               <div class="field">
-                <label for="dateSelect">Date</label
+                <label for="dateSelect"
+                  ><i class="fa-regular fa-calendar" aria-hidden="true"></i>
+                  Date</label
                 ><input class="att-input" id="dateSelect" type="date" />
               </div>
               <div class="field grow">
-                <label for="studentSearch">Find student</label
+                <label for="studentSearch"
+                  ><i
+                    class="fa-solid fa-magnifying-glass"
+                    aria-hidden="true"
+                  ></i>
+                  Find student</label
                 ><input
                   class="att-input"
                   id="studentSearch"
@@ -117,7 +134,9 @@
                 />
               </div>
               <div class="field">
-                <label for="statusFilter">Status</label
+                <label for="statusFilter"
+                  ><i class="fa-solid fa-sliders" aria-hidden="true"></i>
+                  Status</label
                 ><select class="att-select" id="statusFilter">
                   <option value="All">All statuses</option>
                   <option>Present</option>
@@ -129,7 +148,10 @@
             </div>
             <div class="panel-head">
               <div>
-                <h2 id="tableTitle">Attendance register</h2>
+                <h2 id="tableTitle">
+                  <i class="fa-solid fa-clipboard-check" aria-hidden="true"></i>
+                  Attendance register
+                </h2>
                 <p id="tableSubtitle">
                   Select a registered class to load students.
                 </p>
@@ -156,13 +178,46 @@
               <table class="attendance-table">
                 <thead>
                   <tr>
-                    <th>Student</th>
-                    <th>ID / Roll</th>
-                    <th>Status</th>
-                    <th>Check in</th>
-                    <th>Check out</th>
-                    <th>Duration</th>
-                    <th>Remarks</th>
+                    <th>
+                      <i class="fa-solid fa-user" aria-hidden="true"></i>
+                      Student
+                    </th>
+                    <th>
+                      <i class="fa-solid fa-id-card" aria-hidden="true"></i> ID
+                      / Roll
+                    </th>
+                    <th>
+                      <i
+                        class="fa-solid fa-circle-check"
+                        aria-hidden="true"
+                      ></i>
+                      Status
+                    </th>
+                    <th>
+                      <i
+                        class="fa-solid fa-arrow-right-to-bracket"
+                        aria-hidden="true"
+                      ></i>
+                      Check in
+                    </th>
+                    <th>
+                      <i
+                        class="fa-solid fa-arrow-right-from-bracket"
+                        aria-hidden="true"
+                      ></i>
+                      Check out
+                    </th>
+                    <th>
+                      <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                      Duration
+                    </th>
+                    <th>
+                      <i
+                        class="fa-regular fa-note-sticky"
+                        aria-hidden="true"
+                      ></i>
+                      Remarks
+                    </th>
                   </tr>
                 </thead>
                 <tbody id="attendanceBody"></tbody>
@@ -171,7 +226,10 @@
           </div>
           <aside class="panel calendar-panel">
             <div class="calendar-head">
-              <h2 id="calendarLabel">Calendar</h2>
+              <h2 id="calendarLabel">
+                <i class="fa-regular fa-calendar-days" aria-hidden="true"></i>
+                Calendar
+              </h2>
               <div class="calendar-nav">
                 <button
                   class="icon-button"
@@ -195,7 +253,10 @@
             </div>
             <div class="panel-head" style="margin-top: 24px">
               <div>
-                <h2>Analytics</h2>
+                <h2>
+                  <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
+                  Analytics
+                </h2>
                 <p>Selected register breakdown</p>
               </div>
             </div>
@@ -207,7 +268,10 @@
         <section class="history-panel">
           <div class="panel-head">
             <div>
-              <h2>Attendance history</h2>
+              <h2>
+                <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+                Attendance history
+              </h2>
               <p>Saved registers for the selected class and subject.</p>
             </div>
             <span class="eyebrow" id="modeLabel">Local mode</span>
@@ -216,12 +280,28 @@
             <table class="history-table">
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Present</th>
-                  <th>Absent</th>
-                  <th>Late</th>
-                  <th>Attendance</th>
-                  <th>Status</th>
+                  <th>
+                    <i class="fa-regular fa-calendar" aria-hidden="true"></i>
+                    Date
+                  </th>
+                  <th>
+                    <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+                    Present
+                  </th>
+                  <th>
+                    <i class="fa-solid fa-circle-xmark" aria-hidden="true"></i>
+                    Absent
+                  </th>
+                  <th>
+                    <i class="fa-solid fa-clock" aria-hidden="true"></i> Late
+                  </th>
+                  <th>
+                    <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
+                    Attendance
+                  </th>
+                  <th>
+                    <i class="fa-solid fa-flag" aria-hidden="true"></i> Status
+                  </th>
                   <th></th>
                 </tr>
               </thead>
