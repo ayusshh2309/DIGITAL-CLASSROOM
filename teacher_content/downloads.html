@@ -10,247 +10,56 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-
+    <link rel="stylesheet" href="../css/layout.css" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
     <style>
       :root {
-        /* Sidebar Colors matching Calendar UI */
         --sidebar-bg: #031b2e;
         --sidebar-text: #a0aec0;
         --sidebar-text-active: #ffffff;
         --sidebar-active-bg: #4f46e5;
         --sidebar-hover-bg: #0a2540;
-
-        /* Main Page Gradient Background matching Calendar & Announcement UI */
-        --main-bg: linear-gradient(
-          135deg,
-          #e3f2fd 0%,
-          #e0f2f1 50%,
-          #e8f5e9 100%
-        );
+        --main-bg: linear-gradient(135deg, #e3f2fd 0%, #e0f2f1 50%, #e8f5e9 100%);
         --surface: #ffffff;
         --surface-border: #e2e8f0;
-
         --text-main: #0f172a;
         --text-muted: #64748b;
-
         --primary: #6366f1;
         --primary-hover: #4f46e5;
         --danger: #ef4444;
-
+        --success: #10b981;
+        --warning: #f59e0b;
         --radius: 18px;
         --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+        --shadow-md: 0 10px 25px rgba(15, 23, 42, 0.08);
         --font: "DM Sans", sans-serif;
       }
 
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { font-family: var(--font); background: var(--main-bg); color: var(--text-main); min-height: 100vh; }
       body {
-        font-family: var(--font);
-        background: var(--main-bg);
-        background-attachment: fixed;
-        color: var(--text-main);
         display: flex;
         min-height: 100vh;
         overflow-x: hidden;
         font-size: 16px;
       }
 
-      /* Fixed Sidebar (280px) */
-      .sidebar {
-        width: 280px;
-        height: 100vh;
-        background-color: var(--sidebar-bg);
-        color: var(--sidebar-text);
-        position: fixed;
-        top: 0;
-        left: 0;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        padding: 24px 18px;
-        z-index: 100;
-        overflow-y: auto;
-      }
-
-      .sidebar-brand {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        color: #ffffff;
-        font-weight: 800;
-        font-size: 1.35rem;
-        padding: 6px 8px 24px 8px;
-      }
-
-      .brand-icon {
-        width: 40px;
-        height: 40px;
-        background: linear-gradient(135deg, #00818a, #6366f1);
-        border-radius: 12px;
-        display: grid;
-        place-items: center;
-        color: #fff;
-        font-weight: bold;
-        font-size: 1.2rem;
-      }
-
-      .nav-menu {
-        list-style: none;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .nav-item a {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        padding: 13px 18px;
-        color: var(--sidebar-text);
-        text-decoration: none;
-        font-size: 1.05rem;
-        font-weight: 600;
-        border-radius: 14px;
-        transition: all 0.2s ease;
-        width: 100%;
-      }
-
-      .nav-item a:hover {
-        background: var(--sidebar-hover-bg);
-        color: var(--sidebar-text-active);
-      }
-
-      .nav-item.active a {
-        background: var(--sidebar-active-bg);
-        color: var(--sidebar-text-active);
-        font-weight: 700;
-      }
-
-      .nav-icon {
-        font-size: 1.3rem;
-        width: 26px;
-        display: inline-grid;
-        place-items: center;
-      }
-
-      .btn-logout-sidebar {
-        color: #f87171 !important;
-      }
-
-      .btn-logout-sidebar:hover {
-        background: rgba(239, 68, 68, 0.18) !important;
-      }
-
-      /* Main Content Wrapper */
-      .main-wrapper {
-        margin-left: 280px;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh;
-        width: calc(100% - 280px);
-      }
-
-      /* Top Navigation Header */
-      .header {
-        height: 80px;
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        padding: 0 40px;
-      }
-
-      .user-profile-bar {
-        display: flex;
-        align-items: center;
-        gap: 18px;
-      }
-
-      .notif-bell {
-        position: relative;
-        background: #fff;
-        width: 44px;
-        height: 44px;
-        border-radius: 50%;
-        display: grid;
-        place-items: center;
-        box-shadow: var(--shadow-sm);
-        cursor: pointer;
-        font-size: 1.2rem;
-      }
-
-      .notif-badge {
-        position: absolute;
-        top: 2px;
-        right: 2px;
-        background: var(--danger);
-        color: white;
-        font-size: 0.72rem;
-        font-weight: 800;
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        display: grid;
-        place-items: center;
-      }
-
-      .user-profile {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        background: #fff;
-        padding: 6px 18px 6px 8px;
-        border-radius: 30px;
-        box-shadow: var(--shadow-sm);
-      }
-
-      .user-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        object-fit: cover;
-      }
-
-      .user-info {
-        display: flex;
-        flex-direction: column;
-      }
-
-      .user-name {
-        font-size: 0.95rem;
-        font-weight: 700;
-        color: var(--text-main);
-      }
-
-      .user-role {
-        font-size: 0.78rem;
-        color: var(--text-muted);
-      }
-
-      /* Glassmorphic Canvas Container */
       .main-box-container {
-        margin: 0 40px 32px 40px;
+        margin: 0 40px 28px;
         padding: 32px;
         background: rgba(255, 255, 255, 0.75);
         backdrop-filter: blur(12px);
-        border-radius: 24px;
         border: 1px solid var(--surface-border);
+        border-radius: 24px;
         box-shadow: var(--shadow-sm);
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
       }
 
       .page-header {
         display: flex;
-        justify-content: space-between;
         align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 24px;
       }
 
       .page-title h1 {
@@ -261,48 +70,38 @@
 
       .page-title p {
         color: var(--text-muted);
-        font-size: 1.05rem;
-        margin-top: 4px;
+        margin-top: 6px;
+        font-size: 0.96rem;
       }
 
       .btn-primary-action {
-        background: var(--primary);
-        color: #ffffff;
         border: none;
-        padding: 12px 24px;
         border-radius: 12px;
+        background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+        color: white;
+        padding: 12px 20px;
         font-weight: 700;
-        font-size: 0.95rem;
+        font-family: var(--font);
         cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-        transition: all 0.2s ease;
-        font-family: inherit;
+        box-shadow: var(--shadow-sm);
       }
 
-      .btn-primary-action:hover {
-        background: var(--primary-hover);
-        transform: translateY(-1px);
-      }
-
-      /* Metric Cards Grid */
       .stats-grid {
         display: grid;
-        grid-template-columns: repeat(5, 1fr);
-        gap: 16px;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 18px;
+        margin-bottom: 24px;
       }
 
       .stat-card {
-        background: var(--surface);
-        border-radius: var(--radius);
-        padding: 20px;
+        background: rgba(255, 255, 255, 0.9);
         border: 1px solid var(--surface-border);
+        border-radius: 18px;
+        padding: 18px 18px 16px;
+        box-shadow: var(--shadow-sm);
         display: flex;
         align-items: center;
-        gap: 16px;
-        box-shadow: var(--shadow-sm);
+        gap: 14px;
       }
 
       .stat-icon {
@@ -311,9 +110,8 @@
         border-radius: 14px;
         display: grid;
         place-items: center;
+        font-size: 1.3rem;
         color: white;
-        font-size: 1.4rem;
-        flex-shrink: 0;
       }
 
       .stat-val {
@@ -323,263 +121,233 @@
       }
 
       .stat-lbl {
-        font-size: 0.85rem;
+        margin-top: 4px;
+        font-size: 0.82rem;
         color: var(--text-muted);
-        font-weight: 600;
-        margin-top: 2px;
       }
 
       .stat-sub {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        font-weight: 700;
         margin-top: 2px;
+        font-size: 0.65rem;
+        color: var(--text-muted);
       }
 
-      /* Content Layout Split */
       .content-layout {
-        display: flex;
+        display: grid;
+        grid-template-columns: minmax(0, 2.15fr) minmax(280px, 0.85fr);
         gap: 24px;
       }
 
-      .left-section {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-      }
-
-      /* Card Box */
-      .table-card {
-        background: var(--surface);
-        border-radius: var(--radius);
+      .table-card,
+      .widget-card,
+      .bottom-banner-card,
+      .tips-card {
+        background: rgba(255, 255, 255, 0.82);
         border: 1px solid var(--surface-border);
-        padding: 24px;
+        border-radius: 20px;
         box-shadow: var(--shadow-sm);
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
       }
 
+      .table-card { padding: 20px; }
       .table-head-title {
-        font-size: 1.25rem;
+        font-size: 1.2rem;
         font-weight: 800;
-        color: var(--text-main);
+        margin-bottom: 18px;
       }
 
-      /* Filters Bar Control */
       .filters-bar {
-        display: flex;
+        display: grid;
+        grid-template-columns: minmax(180px, 1.4fr) repeat(4, minmax(130px, 1fr));
         gap: 12px;
-        align-items: center;
+        margin-bottom: 16px;
       }
 
       .search-box {
-        flex: 1;
-        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #f8fafc;
+        border: 1px solid var(--surface-border);
+        border-radius: 12px;
+        padding: 11px 12px;
       }
 
-      .search-box input {
+      .search-box input,
+      .select-dropdown,
+      .form-control,
+      .textarea-control {
+        border: 1px solid var(--surface-border);
+        background: #fff;
+        border-radius: 10px;
+        padding: 11px 12px;
+        font-family: var(--font);
+        font-size: 0.92rem;
+        color: var(--text-main);
         width: 100%;
-        padding: 10px 14px 10px 38px;
-        border-radius: 10px;
-        border: 1px solid var(--surface-border);
-        outline: none;
-        font-size: 0.9rem;
-        font-family: inherit;
-        background: #ffffff;
       }
 
-      .search-box ::placeholder {
-        color: #94a3b8;
-      }
+      .search-box input { border: none; background: transparent; }
+      .select-dropdown, .form-control, .textarea-control { height: 44px; }
+      .textarea-control { height: 90px; resize: vertical; }
 
-      .search-icon {
-        position: absolute;
-        left: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #94a3b8;
-        font-size: 0.95rem;
-      }
-
-      .select-dropdown {
-        background: #ffffff;
-        color: var(--text-main);
-        border: 1px solid var(--surface-border);
-        padding: 9px 14px;
-        border-radius: 10px;
-        font-weight: 600;
-        font-size: 0.9rem;
-        cursor: pointer;
-        outline: none;
-        font-family: inherit;
-      }
-
-      .btn-today {
-        background: white;
-        border: 1px solid var(--surface-border);
-        padding: 9px 16px;
-        border-radius: 10px;
-        font-weight: 700;
-        font-size: 0.9rem;
-        cursor: pointer;
-        color: var(--text-main);
-      }
-
-      /* Downloads Table Styling */
       .downloads-table {
         width: 100%;
         border-collapse: collapse;
-        text-align: left;
+        table-layout: fixed;
       }
 
-      .downloads-table th {
-        font-size: 0.82rem;
-        font-weight: 700;
+      .downloads-table thead th {
+        text-align: left;
+        font-size: 0.8rem;
         color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
         padding: 12px 10px;
         border-bottom: 1px solid var(--surface-border);
       }
 
-      .downloads-table td {
-        padding: 16px 10px;
-        border-bottom: 1px solid #f1f5f9;
-        font-size: 0.9rem;
+      .downloads-table tbody td {
+        padding: 14px 10px;
+        border-bottom: 1px solid #eef2f7;
         vertical-align: middle;
+        font-size: 0.92rem;
       }
 
       .file-cell {
         display: flex;
         align-items: center;
         gap: 12px;
-      }
-
-      .file-icon-badge {
-        width: 38px;
-        height: 38px;
-        border-radius: 10px;
-        display: grid;
-        place-items: center;
-        color: white;
-        font-weight: 800;
-        font-size: 0.78rem;
-        flex-shrink: 0;
-      }
-
-      .icon-pdf {
-        background: #ef4444;
-      }
-      .icon-excel {
-        background: #10b981;
-      }
-      .icon-ppt {
-        background: #f97316;
-      }
-      .icon-doc {
-        background: #3b82f6;
-      }
-      .icon-video {
-        background: #8b5cf6;
-      }
-      .icon-zip {
-        background: #f59e0b;
+        min-width: 0;
       }
 
       .file-name {
         font-weight: 700;
         color: var(--text-main);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .file-sub {
-        font-size: 0.78rem;
+        font-size: 0.76rem;
         color: var(--text-muted);
         margin-top: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
-      .badge-cat {
-        padding: 4px 10px;
-        border-radius: 8px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        display: inline-block;
+      .file-badge {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        color: white;
+        font-size: 0.72rem;
+        font-weight: 800;
+        flex-shrink: 0;
       }
 
-      .badge-notes {
-        background: #e0e7ff;
-        color: #4338ca;
-      }
-      .badge-syllabus {
-        background: #d1fae5;
-        color: #047857;
-      }
-      .badge-ppt {
-        background: #ffedd5;
-        color: #c2410c;
-      }
-      .badge-doc {
-        background: #dbeafe;
-        color: #1e40af;
-      }
-      .badge-video {
-        background: #f3e8ff;
-        color: #6b21a8;
-      }
-      .badge-test {
-        background: #ffe4e6;
-        color: #be123c;
-      }
+      .file-badge.pdf { background: linear-gradient(135deg, #ef4444, #f97316); }
+      .file-badge.doc { background: linear-gradient(135deg, #3b82f6, #6366f1); }
+      .file-badge.ppt { background: linear-gradient(135deg, #f59e0b, #f97316); }
+      .file-badge.video { background: linear-gradient(135deg, #8b5cf6, #ec4899); }
+      .file-badge.image { background: linear-gradient(135deg, #10b981, #14b8a6); }
+      .file-badge.archive { background: linear-gradient(135deg, #475569, #64748b); }
+      .file-badge.other { background: linear-gradient(135deg, #0ea5e9, #334155); }
 
-      .type-text {
-        font-weight: 700;
-        font-size: 0.8rem;
-      }
-
-      .action-icons {
-        display: flex;
+      .table-badge {
+        display: inline-flex;
         align-items: center;
-        gap: 12px;
-        color: var(--text-muted);
-      }
-
-      .action-btn {
-        cursor: pointer;
-        font-size: 1.1rem;
-        transition: color 0.2s ease;
-      }
-
-      .action-btn:hover {
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 0.76rem;
+        font-weight: 700;
+        background: #eef2ff;
         color: var(--primary);
       }
 
-      /* Table Footer Pagination */
+      .table-badge.notes { background: #eef2ff; color: #4338ca; }
+      .table-badge.syllabus { background: #ecfeff; color: #0f766e; }
+      .table-badge.presentations { background: #fff7ed; color: #c2410c; }
+      .table-badge.documents { background: #eff6ff; color: #1d4ed8; }
+      .table-badge.videos { background: #f5f3ff; color: #7c3aed; }
+      .table-badge.question-papers { background: #fef2f2; color: #b91c1c; }
+      .table-badge.assignments { background: #ecfdf5; color: #047857; }
+      .table-badge.images { background: #f0fdf4; color: #15803d; }
+      .table-badge.other { background: #f8fafc; color: #475569; }
+      .file-type-pill {
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .download-count-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 56px;
+        padding: 7px 8px;
+        border-radius: 999px;
+        background: #f8fafc;
+        color: var(--text-main);
+        font-weight: 700;
+      }
+
+      .action-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .action-btn {
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--surface-border);
+        border-radius: 10px;
+        background: #fff;
+        color: var(--text-main);
+        cursor: pointer;
+        font-size: 0.8rem;
+      }
+
+      .action-btn.primary { background: rgba(99, 102, 241, 0.1); color: var(--primary); }
+      .action-btn.success { background: rgba(16, 185, 129, 0.08); color: var(--success); }
+      .action-btn.danger { background: rgba(239, 68, 68, 0.08); color: var(--danger); }
+
       .table-footer {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding-top: 6px;
-        font-size: 0.85rem;
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .table-footer small {
         color: var(--text-muted);
-        font-weight: 600;
+        font-size: 0.82rem;
       }
 
       .pagination {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
+        flex-wrap: wrap;
       }
 
       .page-btn {
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
-        display: grid;
-        place-items: center;
-        cursor: pointer;
+        min-width: 34px;
+        height: 34px;
+        border-radius: 10px;
         border: 1px solid var(--surface-border);
-        background: white;
-        color: var(--text-main);
+        background: #fff;
+        cursor: pointer;
         font-weight: 700;
+        color: var(--text-main);
       }
 
       .page-btn.active {
@@ -588,1013 +356,1012 @@
         border-color: var(--primary);
       }
 
-      /* Promotional Banner Box matching Calendar UI */
       .bottom-banner-card {
-        background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
-        border: 1px solid #c7d2fe;
-        border-radius: var(--radius);
-        padding: 24px 32px;
         display: flex;
-        align-items: center;
         justify-content: space-between;
-        gap: 20px;
-      }
-
-      .banner-left {
-        display: flex;
         align-items: center;
-        gap: 24px;
+        gap: 16px;
+        padding: 18px 20px;
+        margin-top: 22px;
       }
 
+      .banner-left { display: flex; align-items: center; gap: 14px; }
       .banner-icon-bg {
-        width: 60px;
-        height: 60px;
-        background: #818cf8;
-        border-radius: 18px;
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(59,130,246,0.15));
+        color: var(--primary);
         display: grid;
         place-items: center;
-        color: white;
-        font-size: 1.8rem;
+        font-size: 1.4rem;
       }
 
-      .banner-text h3 {
-        font-size: 1.15rem;
-        font-weight: 800;
-        color: #1e1b4b;
-      }
+      .banner-text h3 { font-size: 1.08rem; margin-bottom: 4px; }
+      .banner-text p { color: var(--text-muted); font-size: 0.84rem; }
 
-      .banner-text p {
-        font-size: 0.9rem;
-        color: #4338ca;
-        margin-top: 4px;
-      }
-
-      /* Right Sidebar Widgets */
-      .right-sidebar {
-        width: 320px;
-        flex-shrink: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-      }
-
-      .widget-card {
-        background: var(--surface);
-        border-radius: var(--radius);
-        border: 1px solid var(--surface-border);
-        padding: 24px;
-        box-shadow: var(--shadow-sm);
-      }
-
+      .right-sidebar { display: flex; flex-direction: column; gap: 20px; }
+      .widget-card { padding: 18px; }
       .widget-head {
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        margin-bottom: 20px;
+        justify-content: space-between;
+        margin-bottom: 16px;
       }
+      .widget-head h3 { font-size: 1.05rem; }
+      .widget-head-link { font-size: 0.8rem; color: var(--primary); text-decoration: none; }
 
-      .widget-head h3 {
-        font-size: 1.05rem;
-        font-weight: 800;
-      }
-
-      .widget-head-link {
-        font-size: 0.82rem;
-        font-weight: 700;
-        color: var(--primary);
-        text-decoration: none;
-      }
-
-      /* Storage Donut Chart Simulation */
       .storage-chart-box {
         display: flex;
-        align-items: center;
         justify-content: center;
-        margin: 10px 0 20px 0;
+        margin-bottom: 18px;
       }
 
       .donut-graphic {
-        width: 140px;
-        height: 140px;
+        width: 180px;
+        height: 180px;
         border-radius: 50%;
-        background: conic-gradient(
-          #6366f1 0% 43%,
-          #2563eb 43% 76%,
-          #10b981 76% 90%,
-          #f97316 90% 100%
-        );
         display: grid;
         place-items: center;
+        background: conic-gradient(var(--primary) 0 70%, #dfe4f4 70% 100%);
+        position: relative;
       }
 
       .donut-hole {
-        width: 95px;
-        height: 95px;
-        background: white;
+        background: rgba(255,255,255,0.96);
+        width: 110px;
+        height: 110px;
         border-radius: 50%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
+        display: grid;
+        place-items: center;
         text-align: center;
+        box-shadow: inset 0 0 0 1px var(--surface-border);
       }
 
-      .donut-value {
-        font-size: 1.1rem;
-        font-weight: 800;
-        color: var(--text-main);
-      }
+      .donut-value { font-size: 1.3rem; font-weight: 800; }
+      .donut-sub { font-size: 0.72rem; color: var(--text-muted); }
 
-      .donut-sub {
-        font-size: 0.68rem;
-        color: var(--text-muted);
-        font-weight: 600;
-      }
-
-      /* Chart Legend List */
-      .legend-list {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      .legend-row {
+      .legend-list,
+      .cat-list { display: flex; flex-direction: column; gap: 10px; }
+      .legend-row, .cat-row {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        font-size: 0.85rem;
-      }
-
-      .legend-left {
-        display: flex;
-        align-items: center;
         gap: 8px;
+        font-size: 0.84rem;
         color: var(--text-main);
-        font-weight: 700;
       }
-
+      .legend-left, .cat-row-left { display: flex; align-items: center; gap: 10px; }
       .legend-dot-circle {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
+        width: 10px; height: 10px; border-radius: 50%; display: inline-block;
       }
+      .legend-right { color: var(--text-muted); }
+      .cat-count { color: var(--text-muted); }
 
-      .legend-right {
-        color: var(--text-muted);
-        font-weight: 600;
-      }
-
-      /* Top Downloads Feed */
-      .top-downloads-list {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-
+      .top-downloads-list { display: flex; flex-direction: column; gap: 12px; }
       .top-item {
-        display: flex;
-        align-items: center;
-        gap: 14px;
+        display: flex; gap: 10px; align-items: center;
+        padding: 8px 0;
       }
 
+      .file-icon-badge {
+        min-width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; color: white; font-weight: 700; font-size: 0.72rem;
+      }
+      .file-icon-badge.pdf { background: linear-gradient(135deg,#ef4444,#f97316); }
+      .file-icon-badge.video { background: linear-gradient(135deg,#8b5cf6,#ec4899); }
+      .file-icon-badge.ppt { background: linear-gradient(135deg,#f59e0b,#f97316); }
+      .file-icon-badge.doc { background: linear-gradient(135deg,#3b82f6,#6366f1); }
+      .file-icon-badge.image { background: linear-gradient(135deg,#10b981,#14b8a6); }
       .top-item-info h4 {
-        font-size: 0.88rem;
-        font-weight: 800;
-        color: var(--text-main);
+        font-size: 0.88rem; line-height: 1.3;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 210px;
       }
+      .top-item-info p { color: var(--text-muted); font-size: 0.75rem; margin-top: 2px; }
 
-      .top-item-info p {
-        font-size: 0.78rem;
-        color: var(--text-muted);
-        margin-top: 2px;
-      }
-
-      /* File Categories List */
-      .cat-list {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      .cat-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        font-size: 0.88rem;
-      }
-
-      .cat-row-left {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-weight: 700;
-        color: var(--text-main);
-      }
-
-      .cat-count {
-        font-size: 0.8rem;
-        color: var(--text-muted);
-        font-weight: 600;
-      }
-
-      /* Quick Guidance Box matching Calendar Tips */
       .tips-card {
-        background: linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 100%);
-        border: 1px solid #ddd6fe;
-        border-radius: var(--radius);
-        padding: 20px;
-        display: flex;
-        gap: 14px;
+        display: flex; align-items: flex-start; gap: 12px; padding: 16px 18px;
+      }
+      .tips-icon { width: 34px; height: 34px; border-radius: 10px; background:#fff7ed; display:grid; place-items:center; }
+      .tips-content h5 { margin-bottom: 4px; }
+      .tips-content p { font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; }
+
+      .empty-state {
+        text-align: center; padding: 32px 12px; color: var(--text-muted);
+      }
+      .empty-state h3 { color: var(--text-main); margin-bottom: 8px; }
+      .empty-state button {
+        margin-top: 12px; background: #f8fafc; border: 1px solid var(--surface-border); border-radius: 10px; padding: 9px 14px; cursor: pointer; font-weight: 700; color: var(--text-main);
       }
 
-      .tips-icon {
-        width: 40px;
-        height: 40px;
-        background: #a855f7;
-        border-radius: 12px;
-        display: grid;
-        place-items: center;
-        color: white;
-        font-size: 1.2rem;
-        flex-shrink: 0;
-      }
-
-      .tips-content h5 {
-        font-size: 0.9rem;
-        font-weight: 800;
-        color: #581c87;
-      }
-
-      .tips-content p {
-        font-size: 0.8rem;
-        color: #6b21a8;
-        margin-top: 4px;
-        line-height: 1.4;
-      }
-
-      /* Upload File Modal Popup */
       .modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: rgba(15, 23, 42, 0.4);
-        backdrop-filter: blur(4px);
-        display: none;
-        place-items: center;
-        z-index: 200;
+        position: fixed; inset: 0; background: rgba(2, 6, 23, 0.4); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 18px;
       }
-
-      .modal-overlay.open {
-        display: grid;
-      }
-
+      .modal-overlay.open { display: flex; }
       .modal-card {
-        background: white;
-        border-radius: 20px;
-        padding: 28px;
-        width: 440px;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-        display: flex;
-        flex-direction: column;
-        gap: 18px;
+        width: min(720px, 100%);
+        background: white; border-radius: 22px; border: 1px solid var(--surface-border); box-shadow: var(--shadow-md); padding: 24px;
       }
-
-      .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      .modal-header h3 {
-        font-size: 1.2rem;
-        font-weight: 800;
-      }
-
+      .modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 18px; }
+      .modal-header h3 { font-size: 1.35rem; }
       .modal-close-btn {
-        background: transparent;
-        border: none;
-        font-size: 1.2rem;
-        cursor: pointer;
+        border: none; background: #f8fafc; width: 38px; height: 38px; border-radius: 10px; cursor: pointer; font-size: 1.1rem;
       }
-
-      .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
-
-      .form-group label {
-        font-size: 0.85rem;
-        font-weight: 700;
-        color: var(--text-muted);
-      }
-
-      .form-control {
-        padding: 10px 14px;
-        border-radius: 10px;
-        border: 1px solid var(--surface-border);
-        outline: none;
-        font-size: 0.9rem;
-        font-family: inherit;
-      }
-
+      .form-grid { display:grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap:16px; }
+      .form-group { display:flex; flex-direction:column; gap:8px; }
+      .form-group.full { grid-column: 1 / -1; }
+      .form-group label { font-size: 0.85rem; font-weight:700; color: var(--text-main); }
+      .help-text { font-size: 0.72rem; color: var(--text-muted); }
       .modal-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-        margin-top: 8px;
+        display:flex; justify-content:flex-end; gap:12px; margin-top:20px;
+      }
+      .btn-secondary, .btn-primary {
+        border: none; border-radius: 10px; padding: 11px 18px; font-family: var(--font); font-weight:700; cursor:pointer;
+      }
+      .btn-secondary { background: #f1f5f9; color: var(--text-main); }
+      .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-hover)); color: white; }
+      .upload-progress {
+        margin-top: 12px; display: none;
+      }
+      .upload-progress.visible { display:block; }
+      .progress-track {
+        width: 100%; height: 10px; background: #eef2ff; border-radius: 999px; overflow: hidden;
+      }
+      .progress-bar {
+        height:100%; width:0; background: linear-gradient(135deg, var(--primary), var(--success)); transition: width 0.2s ease;
       }
 
-      .btn-modal-cancel {
-        background: #f1f5f9;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 10px;
-        font-weight: 700;
-        cursor: pointer;
-      }
-
-      .btn-modal-submit {
-        background: var(--primary);
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 10px;
-        font-weight: 700;
-        cursor: pointer;
-      }
-
-      @media (max-width: 1200px) {
-        .stats-grid {
-          grid-template-columns: repeat(3, 1fr);
-        }
-        .content-layout {
-          flex-direction: column;
-        }
-        .right-sidebar {
-          width: 100%;
-        }
+      @media (max-width: 1180px) {
+        .stats-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .content-layout { grid-template-columns: 1fr; }
       }
 
       @media (max-width: 768px) {
-        .sidebar {
-          display: none;
-        }
-        .main-wrapper {
-          margin-left: 0;
-          width: 100%;
-        }
-        .main-box-container {
-          margin: 0 16px 20px 16px;
-          padding: 20px;
-        }
-        .stats-grid {
-          grid-template-columns: 1fr;
-        }
-        .filters-bar {
-          flex-direction: column;
-        }
+        body { display:block; }
+        .main-box-container { margin: 16px; padding: 20px; }
+        .stats-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+        .filters-bar { grid-template-columns: 1fr; }
+        .page-header, .bottom-banner-card { flex-direction: column; align-items: flex-start; }
+        .downloads-table { display:block; overflow-x:auto; }
+        .form-grid { grid-template-columns: 1fr; }
       }
     </style>
-      <link rel="stylesheet" href="../css/layout.css" />
   </head>
   <body>
     <div id="layout"></div>
-<main class="page-content main-box-container">
-        <div class="page-header">
-          <div class="page-title">
-            <h1>Downloads</h1>
-            <p>
-              Access and download all your important study materials and files
-              in one place.
-            </p>
-          </div>
-          <button class="btn-primary-action" onclick="openUploadModal()">
-            <span>📤</span> Upload New File
-          </button>
+
+    <main class="page-content main-box-container">
+      <div class="page-header">
+        <div class="page-title">
+          <h1>Downloads</h1>
+          <p>Access and manage all your teacher resources, study files, and class materials in one place.</p>
         </div>
+        <button class="btn-primary-action" id="openUploadButton" type="button">📤 Upload New File</button>
+      </div>
 
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #6366f1">📄</div>
-            <div>
-              <div class="stat-val">128</div>
-              <div class="stat-lbl">Total Files</div>
-              <div class="stat-sub">All time</div>
-            </div>
-          </div>
-
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #2563eb">📥</div>
-            <div>
-              <div class="stat-val">2.4 GB</div>
-              <div class="stat-lbl">Total Downloads</div>
-              <div class="stat-sub">All time</div>
-            </div>
-          </div>
-
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #10b981">📁</div>
-            <div>
-              <div class="stat-val">16</div>
-              <div class="stat-lbl">Categories</div>
-              <div class="stat-sub">Organized files</div>
-            </div>
-          </div>
-
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #f97316">📆</div>
-            <div>
-              <div class="stat-val">24</div>
-              <div class="stat-lbl">Recently Added</div>
-              <div class="stat-sub">This month</div>
-            </div>
-          </div>
-
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #0f766e">⭐</div>
-            <div>
-              <div class="stat-val">98%</div>
-              <div class="stat-lbl">Storage Used</div>
-              <div class="stat-sub">4.9 GB of 5 GB</div>
-            </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #6366f1;">📄</div>
+          <div>
+            <div class="stat-val" id="statTotalFiles">0</div>
+            <div class="stat-lbl">Total Files</div>
+            <div class="stat-sub">All time</div>
           </div>
         </div>
 
-        <div class="content-layout">
-          <div class="left-section">
-            <div class="table-card">
-              <div class="table-head-title">All Downloads</div>
-
-              <div class="filters-bar">
-                <div class="search-box">
-                  <span class="search-icon">🔍</span>
-                  <input
-                    type="text"
-                    id="fileSearchInput"
-                    placeholder="Search files..."
-                    oninput="filterFiles()"
-                  />
-                </div>
-
-                <select
-                  class="select-dropdown"
-                  id="categoryFilter"
-                  onchange="filterFiles()"
-                >
-                  <option value="All">All Categories</option>
-                  <option value="Notes">Notes</option>
-                  <option value="Syllabus">Syllabus</option>
-                  <option value="Presentations">Presentations</option>
-                  <option value="Documents">Documents</option>
-                  <option value="Videos">Videos</option>
-                  <option value="Question Papers">Question Papers</option>
-                </select>
-
-                <select
-                  class="select-dropdown"
-                  id="typeFilter"
-                  onchange="filterFiles()"
-                >
-                  <option value="All">All File Types</option>
-                  <option value="PDF">PDF</option>
-                  <option value="Excel">Excel</option>
-                  <option value="PPTX">PPTX</option>
-                  <option value="DOCX">DOCX</option>
-                  <option value="MP4">MP4</option>
-                  <option value="ZIP">ZIP</option>
-                </select>
-
-                <button class="btn-today">🌪️ Filter</button>
-              </div>
-
-              <table class="downloads-table">
-                <thead>
-                  <tr>
-                    <th>File Name ▾</th>
-                    <th>Category</th>
-                    <th>File Type</th>
-                    <th>Size</th>
-                    <th>Downloads</th>
-                    <th>Added On</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="downloadsTableBody"></tbody>
-              </table>
-
-              <div class="table-footer">
-                <span id="showingCountText">Showing 1 to 8 of 128 files</span>
-                <div class="pagination">
-                  <div class="page-btn">‹</div>
-                  <div class="page-btn active">1</div>
-                  <div class="page-btn">2</div>
-                  <div class="page-btn">3</div>
-                  <div class="page-btn">...</div>
-                  <div class="page-btn">16</div>
-                  <div class="page-btn">›</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="bottom-banner-card">
-              <div class="banner-left">
-                <div class="banner-icon-bg">📥</div>
-                <div class="banner-text">
-                  <h3>Sync & Manage Your Downloads</h3>
-                  <p>
-                    Keep track of class syllabus, study materials, lectures, and
-                    resources seamlessly in real time.
-                  </p>
-                </div>
-              </div>
-              <button class="btn-primary-action" onclick="openUploadModal()">
-                <span>📤</span> Upload New File
-              </button>
-            </div>
-          </div>
-
-          <div class="right-sidebar">
-            <div class="widget-card">
-              <div class="widget-head">
-                <h3>Storage Overview</h3>
-                <a href="#" class="widget-head-link">View Details</a>
-              </div>
-
-              <div class="storage-chart-box">
-                <div class="donut-graphic">
-                  <div class="donut-hole">
-                    <div class="donut-value">4.9 GB</div>
-                    <div class="donut-sub">of 5 GB Used</div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="legend-list">
-                <div class="legend-row">
-                  <div class="legend-left">
-                    <div
-                      class="legend-dot-circle"
-                      style="background: #6366f1"
-                    ></div>
-                    <span>Documents</span>
-                  </div>
-                  <div class="legend-right">2.1 GB (43%)</div>
-                </div>
-
-                <div class="legend-row">
-                  <div class="legend-left">
-                    <div
-                      class="legend-dot-circle"
-                      style="background: #2563eb"
-                    ></div>
-                    <span>Videos</span>
-                  </div>
-                  <div class="legend-right">1.6 GB (33%)</div>
-                </div>
-
-                <div class="legend-row">
-                  <div class="legend-left">
-                    <div
-                      class="legend-dot-circle"
-                      style="background: #10b981"
-                    ></div>
-                    <span>Images</span>
-                  </div>
-                  <div class="legend-right">0.7 GB (14%)</div>
-                </div>
-
-                <div class="legend-row">
-                  <div class="legend-left">
-                    <div
-                      class="legend-dot-circle"
-                      style="background: #f97316"
-                    ></div>
-                    <span>Others</span>
-                  </div>
-                  <div class="legend-right">0.5 GB (10%)</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="widget-card">
-              <div class="widget-head">
-                <h3>Top Downloaded Files</h3>
-                <a href="#" class="widget-head-link">View all</a>
-              </div>
-
-              <div class="top-downloads-list">
-                <div class="top-item">
-                  <div class="file-icon-badge icon-pdf">PDF</div>
-                  <div class="top-item-info">
-                    <h4>Physics Chapter 2 Notes.pdf</h4>
-                    <p>156 downloads</p>
-                  </div>
-                </div>
-
-                <div class="top-item">
-                  <div class="file-icon-badge icon-video">MP4</div>
-                  <div class="top-item-info">
-                    <h4>Electromagnetic Waves Lecture.mp4</h4>
-                    <p>203 downloads</p>
-                  </div>
-                </div>
-
-                <div class="top-item">
-                  <div class="file-icon-badge icon-ppt">PPTX</div>
-                  <div class="top-item-info">
-                    <h4>Chemical Reactions Presentation.pptx</h4>
-                    <p>132 downloads</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="widget-card">
-              <div class="widget-head">
-                <h3>File Categories</h3>
-                <a href="#" class="widget-head-link">View all</a>
-              </div>
-
-              <div class="cat-list">
-                <div class="cat-row">
-                  <div class="cat-row-left">
-                    <span style="color: #6366f1">📁</span>
-                    <span>Notes</span>
-                  </div>
-                  <span class="cat-count">28 files</span>
-                </div>
-
-                <div class="cat-row">
-                  <div class="cat-row-left">
-                    <span style="color: #6366f1">📁</span>
-                    <span>Syllabus</span>
-                  </div>
-                  <span class="cat-count">15 files</span>
-                </div>
-
-                <div class="cat-row">
-                  <div class="cat-row-left">
-                    <span style="color: #6366f1">📁</span>
-                    <span>Question Papers</span>
-                  </div>
-                  <span class="cat-count">22 files</span>
-                </div>
-
-                <div class="cat-row">
-                  <div class="cat-row-left">
-                    <span style="color: #6366f1">📁</span>
-                    <span>Presentations</span>
-                  </div>
-                  <span class="cat-count">18 files</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="tips-card">
-              <div class="tips-icon">💡</div>
-              <div class="tips-content">
-                <h5>Quick Tips</h5>
-                <p>
-                  <strong>Tip:</strong> Organize your files into clear
-                  categories for easy student access and faster search!
-                </p>
-              </div>
-            </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #2563eb;">📥</div>
+          <div>
+            <div class="stat-val" id="statTotalDownloads">0</div>
+            <div class="stat-lbl">Total Downloads</div>
+            <div class="stat-sub">All time</div>
           </div>
         </div>
-      </main>
-    </div>
 
-    <div class="modal-overlay" id="uploadFileModal">
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #10b981;">📁</div>
+          <div>
+            <div class="stat-val" id="statCategories">0</div>
+            <div class="stat-lbl">Categories</div>
+            <div class="stat-sub">Active groups</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #f97316;">📆</div>
+          <div>
+            <div class="stat-val" id="statRecentlyAdded">0</div>
+            <div class="stat-lbl">Recently Added</div>
+            <div class="stat-sub">Last 30 days</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #0f766e;">💾</div>
+          <div>
+            <div class="stat-val" id="statStorageUsed">0 KB</div>
+            <div class="stat-lbl">Storage Used</div>
+            <div class="stat-sub" id="statStorageLimit">of 5 GB</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="content-layout">
+        <div class="left-section">
+          <div class="table-card">
+            <div class="table-head-title">All Downloads</div>
+
+            <div class="filters-bar">
+              <div class="search-box">
+                <span>🔍</span>
+                <input type="text" id="fileSearchInput" placeholder="Search files, subjects, or classes" />
+              </div>
+              <select id="categoryFilter" class="select-dropdown">
+                <option value="All">All Categories</option>
+              </select>
+              <select id="typeFilter" class="select-dropdown">
+                <option value="All">All File Types</option>
+              </select>
+              <select id="classFilter" class="select-dropdown">
+                <option value="All">All Classes</option>
+              </select>
+              <select id="subjectFilter" class="select-dropdown">
+                <option value="All">All Subjects</option>
+              </select>
+              <select id="sortFilter" class="select-dropdown">
+                <option value="recent">Recently Added</option>
+                <option value="name">File Name</option>
+                <option value="size">Largest Size</option>
+                <option value="downloads">Most Downloaded</option>
+              </select>
+            </div>
+
+            <table class="downloads-table">
+              <thead>
+                <tr>
+                  <th style="width: 26%;">File Name</th>
+                  <th style="width: 12%;">Category</th>
+                  <th style="width: 11%;">File Type</th>
+                  <th style="width: 9%;">Size</th>
+                  <th style="width: 11%;">Downloads</th>
+                  <th style="width: 14%;">Added On</th>
+                  <th style="width: 10%;">Class</th>
+                  <th style="width: 10%;">Subject</th>
+                  <th style="width: 12%;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="downloadsTableBody"></tbody>
+            </table>
+
+            <div class="table-footer">
+              <small id="showingCountText">Showing 0 files</small>
+              <div class="pagination" id="paginationControls"></div>
+            </div>
+          </div>
+
+          <div class="bottom-banner-card">
+            <div class="banner-left">
+              <div class="banner-icon-bg">📥</div>
+              <div class="banner-text">
+                <h3>Sync & Manage Your Downloads</h3>
+                <p>Keep track of class resources, assignments, lectures, and study materials in real time.</p>
+              </div>
+            </div>
+            <button class="btn-primary-action" id="secondaryUploadButton" type="button">📤 Upload New File</button>
+          </div>
+        </div>
+
+        <aside class="right-sidebar">
+          <div class="widget-card">
+            <div class="widget-head">
+              <h3>Storage Overview</h3>
+            </div>
+
+            <div class="storage-chart-box">
+              <div class="donut-graphic" id="storageGraphic">
+                <div class="donut-hole">
+                  <div>
+                    <div class="donut-value" id="storageDonutValue">0 KB</div>
+                    <div class="donut-sub" id="storageDonutSub">of 5 GB</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="legend-list" id="storageLegend"></div>
+          </div>
+
+          <div class="widget-card">
+            <div class="widget-head">
+              <h3>Top Downloaded Files</h3>
+            </div>
+            <div class="top-downloads-list" id="topDownloadsList"></div>
+          </div>
+
+          <div class="widget-card">
+            <div class="widget-head">
+              <h3>File Categories</h3>
+            </div>
+            <div class="cat-list" id="categorySummaryList"></div>
+          </div>
+
+          <div class="tips-card">
+            <div class="tips-icon">💡</div>
+            <div class="tips-content">
+              <h5>Quick Tip</h5>
+              <p><strong>Tip:</strong> Keep file names descriptive and organize them by class and subject for easier student access.</p>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+
+    <div class="modal-overlay" id="uploadModal">
       <div class="modal-card">
         <div class="modal-header">
           <h3>Upload New File</h3>
-          <button class="modal-close-btn" onclick="closeUploadModal()">
-            ✕
-          </button>
+          <button class="modal-close-btn" type="button" id="closeUploadModal">✕</button>
         </div>
 
-        <div class="form-group">
-          <label>File Name</label>
-          <input
-            type="text"
-            id="inputFileName"
-            class="form-control"
-            placeholder="e.g. Chapter 3 Notes.pdf"
-          />
-        </div>
+        <form id="uploadForm">
+          <div class="form-grid">
+            <div class="form-group full">
+              <label for="uploadFileInput">Select File</label>
+              <input id="uploadFileInput" class="form-control" type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.png,.jpg,.jpeg,.gif,.webp,.mp4,.mov,.avi,.mkv,.zip,.rar" />
+              <small class="help-text">Maximum size: 100 MB. Supported file types: documents, images, videos, presentations, and archives.</small>
+            </div>
 
-        <div class="form-group">
-          <label>Description / Subtitle</label>
-          <input
-            type="text"
-            id="inputFileSub"
-            class="form-control"
-            placeholder="e.g. Gravitation Class 9"
-          />
-        </div>
+            <div class="form-group">
+              <label for="uploadCategory">Category</label>
+              <select id="uploadCategory" class="form-control">
+                <option value="Notes">Notes</option>
+                <option value="Assignments">Assignments</option>
+                <option value="Syllabus">Syllabus</option>
+                <option value="Documents">Documents</option>
+                <option value="Presentations">Presentations</option>
+                <option value="Videos">Videos</option>
+                <option value="Images">Images</option>
+                <option value="Question Papers">Question Papers</option>
+              </select>
+            </div>
 
-        <div class="form-group">
-          <label>Category</label>
-          <select id="inputCategory" class="form-control">
-            <option value="Notes">Notes</option>
-            <option value="Syllabus">Syllabus</option>
-            <option value="Presentations">Presentations</option>
-            <option value="Documents">Documents</option>
-            <option value="Videos">Videos</option>
-            <option value="Question Papers">Question Papers</option>
-          </select>
-        </div>
+            <div class="form-group">
+              <label for="uploadClass">Class</label>
+              <select id="uploadClass" class="form-control"></select>
+            </div>
 
-        <div class="form-group">
-          <label>File Type</label>
-          <select id="inputFileType" class="form-control">
-            <option value="PDF">PDF</option>
-            <option value="Excel">Excel</option>
-            <option value="PPTX">PPTX</option>
-            <option value="DOCX">DOCX</option>
-            <option value="MP4">MP4</option>
-            <option value="ZIP">ZIP</option>
-          </select>
-        </div>
+            <div class="form-group">
+              <label for="uploadSubject">Subject</label>
+              <select id="uploadSubject" class="form-control"></select>
+            </div>
 
-        <div class="form-group">
-          <label>File Size</label>
-          <input
-            type="text"
-            id="inputFileSize"
-            class="form-control"
-            placeholder="e.g. 2.5 MB"
-          />
-        </div>
+            <div class="form-group">
+              <label for="uploadVisibility">Visibility</label>
+              <select id="uploadVisibility" class="form-control">
+                <option value="Class">Class</option>
+                <option value="Department">Department</option>
+                <option value="Teacher Only">Teacher Only</option>
+              </select>
+            </div>
 
-        <div class="modal-actions">
-          <button class="btn-modal-cancel" onclick="closeUploadModal()">
-            Cancel
-          </button>
-          <button class="btn-modal-submit" onclick="submitNewFile()">
-            Upload File
-          </button>
-        </div>
+            <div class="form-group">
+              <label for="uploadDescription">Description</label>
+              <input id="uploadDescription" class="form-control" type="text" placeholder="Optional notes about this file" />
+            </div>
+          </div>
+
+          <div class="upload-progress" id="uploadProgressContainer">
+            <div class="progress-track"><div class="progress-bar" id="uploadProgressBar"></div></div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-secondary" id="cancelUploadButton">Cancel</button>
+            <button type="submit" class="btn-primary" id="submitUploadButton">Upload File</button>
+          </div>
+        </form>
       </div>
     </div>
 
+    <div class="modal-overlay" id="detailsModal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>File Details</h3>
+          <button class="modal-close-btn" type="button" id="closeDetailsModal">✕</button>
+        </div>
+        <div id="detailsContent"></div>
+      </div>
+    </div>
+
+    <script src="../js/downloads-service.js"></script>
     <script>
-      /* Supabase Credentials Setup */
-      const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
-      const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+      const service = window.SmartLearningDownloads;
+      const state = {
+        files: [],
+        filtered: [],
+        page: 1,
+        pageSize: 8,
+        activeSort: "recent",
+        filters: { search: "", category: "All", type: "All", class: "All", subject: "All" },
+        unsubscribe: null,
+      };
 
-      const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const $ = (id) => document.getElementById(id);
 
-      /* Initial Dataset */
-      const initialFiles = [
-        {
-          id: "1",
-          name: "Physics Chapter 2 Notes.pdf",
-          sub: "Force and Laws of Motion",
-          category: "Notes",
-          type: "PDF",
-          size: "2.4 MB",
-          downloads: 156,
-          date: "17 May 2025",
-          time: "10:30 AM",
-        },
-        {
-          id: "2",
-          name: "Class 9 Science Syllabus.xlsx",
-          sub: "Academic Year 2025-26",
-          category: "Syllabus",
-          type: "Excel",
-          size: "520 KB",
-          downloads: 89,
-          date: "16 May 2025",
-          time: "02:15 PM",
-        },
-        {
-          id: "3",
-          name: "Chemical Reactions Presentation.pptx",
-          sub: "Class 10 - Chapter 1",
-          category: "Presentations",
-          type: "PPTX",
-          size: "5.1 MB",
-          downloads: 132,
-          date: "15 May 2025",
-          time: "11:45 AM",
-        },
-        {
-          id: "4",
-          name: "Science Lab Manual.docx",
-          sub: "Practical Guidelines",
-          category: "Documents",
-          type: "DOCX",
-          size: "1.2 MB",
-          downloads: 74,
-          date: "14 May 2025",
-          time: "09:20 AM",
-        },
-        {
-          id: "5",
-          name: "Electromagnetic Waves Lecture.mp4",
-          sub: "Video Lecture",
-          category: "Videos",
-          type: "MP4",
-          size: "45.6 MB",
-          downloads: 203,
-          date: "13 May 2025",
-          time: "04:30 PM",
-        },
-        {
-          id: "6",
-          name: "Monthly Test Paper - May 2025.pdf",
-          sub: "Class 9 (Science)",
-          category: "Question Papers",
-          type: "PDF",
-          size: "1.8 MB",
-          downloads: 178,
-          date: "12 May 2025",
-          time: "08:50 AM",
-        },
-        {
-          id: "7",
-          name: "Reference Images Pack.zip",
-          sub: "Diagrams and Charts",
-          category: "Resources",
-          type: "ZIP",
-          size: "12.7 MB",
-          downloads: 92,
-          date: "11 May 2025",
-          time: "03:10 PM",
-        },
-        {
-          id: "8",
-          name: "Student Performance May.xlsx",
-          sub: "Internal Assessment",
-          category: "Reports",
-          type: "Excel",
-          size: "300 KB",
-          downloads: 61,
-          date: "10 May 2025",
-          time: "10:05 AM",
-        },
-      ];
+      function formatBytes(value) {
+        return service.formatBytes(value);
+      }
 
-      let filesData = [];
+      function formatDate(value) {
+        return service.formatDate(value);
+      }
 
-      async function fetchFiles() {
-        try {
-          let { data, error } = await supabase
-            .from("downloads_files")
-            .select("*");
-          if (error || !data || data.length === 0) {
-            filesData = initialFiles;
-          } else {
-            filesData = data;
-          }
-        } catch (err) {
-          filesData = initialFiles;
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function fileTypeBadgeClass(type) {
+        const value = String(type || "Other").toLowerCase();
+        if (["pdf"].includes(value)) return "pdf";
+        if (["doc", "docx", "document"].includes(value)) return "doc";
+        if (["ppt", "pptx", "presentation"].includes(value)) return "ppt";
+        if (["video", "mp4", "mov", "avi", "mkv", "webm"].includes(value)) return "video";
+        if (["image", "png", "jpg", "jpeg", "gif", "webp", "svg"].includes(value)) return "image";
+        if (["zip", "rar", "7z", "archive"].includes(value)) return "archive";
+        return "other";
+      }
+
+      function categoryBadgeClass(category) {
+        const value = String(category || "Other").toLowerCase().replace(/\s+/g, "-");
+        return ["notes", "syllabus", "presentations", "documents", "videos", "question-papers", "assignments", "images", "other"].includes(value)
+          ? value
+          : "other";
+      }
+
+      function buildFilterOptions() {
+        const filters = service.getFilterOptions(state.files);
+        const categoryList = ["All", ...filters.categories];
+        const typeList = ["All", ...filters.types];
+        const classList = ["All", ...filters.classes];
+        const subjectList = ["All", ...filters.subjects];
+
+        populateSelect("categoryFilter", categoryList, state.filters.category);
+        populateSelect("typeFilter", typeList, state.filters.type);
+        populateSelect("classFilter", classList, state.filters.class);
+        populateSelect("subjectFilter", subjectList, state.filters.subject);
+      }
+
+      function populateSelect(selectId, values, selectedValue) {
+        const select = $(selectId);
+        if (!select) return;
+        select.innerHTML = values
+          .map((value) => `<option value="${escapeHtml(value)}" ${value === selectedValue ? "selected" : ""}>${escapeHtml(value === "All" ? "All" : value)}</option>`)
+          .join("");
+      }
+
+      function sortFiles(files) {
+        const copied = [...files];
+        switch (state.activeSort) {
+          case "name":
+            return copied.sort((left, right) => String(left.file_name || "").localeCompare(String(right.file_name || "")));
+          case "size":
+            return copied.sort((left, right) => (Number(right.size_bytes || right.file_size || 0) - Number(left.size_bytes || left.file_size || 0)));
+          case "downloads":
+            return copied.sort((left, right) => Number(right.download_count || right.downloads || 0) - Number(left.download_count || left.downloads || 0));
+          case "recent":
+          default:
+            return copied.sort((left, right) => new Date(right.created_at || right.uploaded_at || 0) - new Date(left.created_at || left.uploaded_at || 0));
         }
-        renderTable(filesData);
       }
 
-      function renderTable(list) {
-        const tbody = document.getElementById("downloadsTableBody");
-        tbody.innerHTML = "";
+      function getFilteredFiles() {
+        const query = state.filters.search.trim().toLowerCase();
+        return sortFiles(
+          state.files.filter((file) => {
+            const fileName = String(file.file_name || file.name || "").toLowerCase();
+            const desc = String(file.description || file.sub || "").toLowerCase();
+            const className = String(file.class_grade || "").toLowerCase();
+            const subject = String(file.subject || "").toLowerCase();
+            const category = String(file.category || "").toLowerCase();
+            const type = String(file.file_type || file.type || "").toLowerCase();
 
-        list.forEach((file) => {
-          const tr = document.createElement("tr");
+            const matchesSearch = !query || [fileName, desc, className, subject, category, type].some((segment) => segment.includes(query));
+            const matchesCategory = state.filters.category === "All" || String(file.category || "") === state.filters.category;
+            const matchesType = state.filters.type === "All" || String(file.file_type || file.type || "") === state.filters.type;
+            const matchesClass = state.filters.class === "All" || String(file.class_grade || "") === state.filters.class;
+            const matchesSubject = state.filters.subject === "All" || String(file.subject || "") === state.filters.subject;
+            return matchesSearch && matchesCategory && matchesType && matchesClass && matchesSubject;
+          }),
+        );
+      }
 
-          let iconClass = "icon-pdf";
-          if (file.type === "Excel") iconClass = "icon-excel";
-          if (file.type === "PPTX") iconClass = "icon-ppt";
-          if (file.type === "DOCX") iconClass = "icon-doc";
-          if (file.type === "MP4") iconClass = "icon-video";
-          if (file.type === "ZIP") iconClass = "icon-zip";
+      function renderStats() {
+        const metrics = service.getStats(state.files);
+        $("statTotalFiles").textContent = metrics.totalFiles;
+        $("statTotalDownloads").textContent = metrics.totalDownloads;
+        $("statCategories").textContent = metrics.categories;
+        $("statRecentlyAdded").textContent = metrics.recentlyAdded;
+        $("statStorageUsed").textContent = formatBytes(metrics.storageUsed);
+        $("statStorageLimit").textContent = `of ${formatBytes(metrics.storageLimit)}`;
 
-          let badgeClass = "badge-notes";
-          if (file.category === "Syllabus") badgeClass = "badge-syllabus";
-          if (file.category === "Presentations") badgeClass = "badge-ppt";
-          if (file.category === "Documents") badgeClass = "badge-doc";
-          if (file.category === "Videos") badgeClass = "badge-video";
-          if (file.category === "Question Papers") badgeClass = "badge-test";
+        const storagePercent = Math.min(100, Math.round((metrics.storageUsed / metrics.storageLimit) * 100));
+        $("storageGraphic").style.background = `conic-gradient(var(--primary) 0 ${storagePercent}%, #dfe4f4 ${storagePercent}% 100%)`;
+        $("storageDonutValue").textContent = formatBytes(metrics.storageUsed);
+        $("storageDonutSub").textContent = `of ${formatBytes(metrics.storageLimit)}`;
 
-          tr.innerHTML = `
-          <td>
-            <div class="file-cell">
-              <div class="file-icon-badge ${iconClass}">${file.type}</div>
-              <div>
-                <div class="file-name">${file.name}</div>
-                <div class="file-sub">${file.sub}</div>
+        const legendItems = [
+          { label: "Documents", value: metrics.breakdown.documents, color: "#6366f1" },
+          { label: "Videos", value: metrics.breakdown.videos, color: "#2563eb" },
+          { label: "Images", value: metrics.breakdown.images, color: "#10b981" },
+          { label: "Presentations", value: metrics.breakdown.presentations, color: "#f97316" },
+          { label: "Other Files", value: metrics.breakdown.other, color: "#a78bfa" },
+        ];
+
+        const totalLegend = legendItems.reduce((sum, item) => sum + item.value, 0) || 1;
+        $("storageLegend").innerHTML = legendItems.map((item) => {
+          const percent = Math.round((item.value / totalLegend) * 100) || 0;
+          return `
+            <div class="legend-row">
+              <div class="legend-left">
+                <div class="legend-dot-circle" style="background: ${item.color};"></div>
+                <span>${item.label}</span>
               </div>
+              <div class="legend-right">${formatBytes(item.value)} (${percent}%)</div>
             </div>
-          </td>
-          <td><span class="badge-cat ${badgeClass}">${file.category}</span></td>
-          <td><span class="type-text">${file.type}</span></td>
-          <td>${file.size}</td>
-          <td>${file.downloads}</td>
-          <td>${file.date}<br/><span style="color: #94a3b8; font-size: 0.75rem;">${file.time}</span></td>
-          <td>
-            <div class="action-icons">
-              <span class="action-btn">📥</span>
-              <span class="action-btn">⋮</span>
-            </div>
-          </td>
-        `;
-          tbody.appendChild(tr);
-        });
+          `;
+        }).join("");
 
-        document.getElementById("showingCountText").innerText =
-          `Showing 1 to ${list.length} of ${filesData.length} files`;
+        const categorySummary = Object.entries(
+          state.files.reduce((bucket, file) => {
+            const key = String(file.category || "Other");
+            bucket[key] = (bucket[key] || 0) + 1;
+            return bucket;
+          }, {}),
+        ).sort((left, right) => right[1] - left[1]).slice(0, 5);
+
+        $("categorySummaryList").innerHTML = categorySummary.length
+          ? categorySummary.map(([name, count]) => `
+              <div class="cat-row">
+                <div class="cat-row-left">
+                  <span style="color: #6366f1;">📁</span>
+                  <span>${escapeHtml(name)}</span>
+                </div>
+                <span class="cat-count">${count} file${count > 1 ? "s" : ""}</span>
+              </div>
+            `).join("")
+          : '<div class="empty-state"><h3>No categories yet</h3><p>Upload a file to begin organizing resources.</p></div>';
       }
 
-      function filterFiles() {
-        const search = document
-          .getElementById("fileSearchInput")
-          .value.toLowerCase();
-        const cat = document.getElementById("categoryFilter").value;
-        const type = document.getElementById("typeFilter").value;
-
-        const filtered = filesData.filter((f) => {
-          const matchesSearch =
-            f.name.toLowerCase().includes(search) ||
-            f.sub.toLowerCase().includes(search);
-          const matchesCat = cat === "All" || f.category === cat;
-          const matchesType = type === "All" || f.type === type;
-          return matchesSearch && matchesCat && matchesType;
-        });
-
-        renderTable(filtered);
-      }
-
-      function openUploadModal() {
-        document.getElementById("uploadFileModal").classList.add("open");
-      }
-
-      function closeUploadModal() {
-        document.getElementById("uploadFileModal").classList.remove("open");
-      }
-
-      async function submitNewFile() {
-        const name = document.getElementById("inputFileName").value;
-        const sub = document.getElementById("inputFileSub").value;
-        const category = document.getElementById("inputCategory").value;
-        const type = document.getElementById("inputFileType").value;
-        const size = document.getElementById("inputFileSize").value || "1.0 MB";
-
-        if (!name) {
-          alert("Please specify file name.");
+      function renderTopDownloads() {
+        const top = service.getTopDownloaded(state.files).slice(0, 5);
+        if (!top.length) {
+          $("topDownloadsList").innerHTML = '<div class="empty-state"><h3>No downloads yet</h3><p>Recent download activity will appear here.</p></div>';
           return;
         }
 
-        const newFile = {
-          name,
-          sub: sub || "Study Material",
-          category,
-          type,
-          size,
-          downloads: 0,
-          date: "17 May 2025",
-          time: "Just now",
-        };
+        $("topDownloadsList").innerHTML = top.map((file) => {
+          const type = String(file.file_type || file.type || "Other");
+          const typeLabel = type.length > 4 ? type.slice(0, 4).toUpperCase() : type.toUpperCase();
+          const badgeClass = typeLabel === "PPT" ? "ppt" : fileTypeBadgeClass(type);
+          return `
+            <div class="top-item">
+              <div class="file-icon-badge ${badgeClass}">${escapeHtml(typeLabel)}</div>
+              <div class="top-item-info">
+                <h4>${escapeHtml(file.file_name || file.name || "Untitled file")}</h4>
+                <p>${Number(file.download_count || file.downloads || 0)} downloads</p>
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
 
-        try {
-          const { error } = await supabase
-            .from("downloads_files")
-            .insert([newFile]);
-          if (error) {
-            filesData.unshift(newFile);
-          } else {
-            await fetchFiles();
-          }
-        } catch (err) {
-          filesData.unshift(newFile);
+      function renderTable() {
+        state.filtered = getFilteredFiles();
+        const totalPages = Math.max(1, Math.ceil(state.filtered.length / state.pageSize));
+        if (state.page > totalPages) state.page = totalPages;
+
+        const startIndex = (state.page - 1) * state.pageSize;
+        const visibleFiles = state.filtered.slice(startIndex, startIndex + state.pageSize);
+
+        if (!visibleFiles.length) {
+          $("downloadsTableBody").innerHTML = `
+            <tr>
+              <td colspan="9">
+                <div class="empty-state">
+                  <h3>No files found</h3>
+                  <p>Try narrowing the filters or upload a new file.</p>
+                  <button type="button" id="clearFiltersButton">Clear filters</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        } else {
+          $("downloadsTableBody").innerHTML = visibleFiles.map((file) => {
+            const fileType = String(file.file_type || file.type || "Other");
+            const badgeKey = fileTypeBadgeClass(fileType);
+            const categoryKey = categoryBadgeClass(file.category || "Other");
+            const addedDate = file.created_at || file.uploaded_at || new Date().toISOString();
+            return `
+              <tr>
+                <td>
+                  <div class="file-cell">
+                    <div class="file-badge ${badgeKey}">${escapeHtml(fileType.slice(0, 3).toUpperCase())}</div>
+                    <div style="min-width:0;">
+                      <div class="file-name" title="${escapeHtml(file.file_name || file.name || "Untitled file")}">${escapeHtml(file.file_name || file.name || "Untitled file")}</div>
+                      <div class="file-sub">${escapeHtml(file.description || "No description")}</div>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="table-badge ${categoryKey}">${escapeHtml(file.category || "Other")}</span></td>
+                <td><span class="file-type-pill">${escapeHtml(fileType)}</span></td>
+                <td>${formatBytes(file.size_bytes || file.file_size || 0)}</td>
+                <td><span class="download-count-pill">${Number(file.download_count || file.downloads || 0)}</span></td>
+                <td>${escapeHtml(formatDate(addedDate))}</td>
+                <td>${escapeHtml(file.class_grade || "—")}</td>
+                <td>${escapeHtml(file.subject || "—")}</td>
+                <td>
+                  <div class="action-group">
+                    <button class="action-btn primary" type="button" data-action="preview" data-id="${escapeHtml(file.id)}" title="Open"><i class="fa-solid fa-eye"></i></button>
+                    <button class="action-btn success" type="button" data-action="download" data-id="${escapeHtml(file.id)}" title="Download"><i class="fa-solid fa-download"></i></button>
+                    <button class="action-btn" type="button" data-action="copy" data-id="${escapeHtml(file.id)}" title="Copy link"><i class="fa-solid fa-link"></i></button>
+                    <button class="action-btn" type="button" data-action="details" data-id="${escapeHtml(file.id)}" title="Details"><i class="fa-solid fa-pen-to-square"></i></button>
+                    <button class="action-btn danger" type="button" data-action="delete" data-id="${escapeHtml(file.id)}" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join("");
         }
 
-        renderTable(filesData);
-        closeUploadModal();
+        const start = state.filtered.length ? startIndex + 1 : 0;
+        const end = Math.min(startIndex + state.pageSize, state.filtered.length);
+        $("showingCountText").textContent = state.filtered.length
+          ? `Showing ${start}–${end} of ${state.filtered.length} files`
+          : "Showing 0 files";
+
+        const pages = Array.from({ length: totalPages }, (_, index) => index + 1);
+        $("paginationControls").innerHTML = pages.map((pageNumber) => `
+          <button class="page-btn ${pageNumber === state.page ? "active" : ""}" type="button" data-page="${pageNumber}">${pageNumber}</button>
+        `).join("");
+
+        $("downloadsTableBody").querySelector("#clearFiltersButton")?.addEventListener("click", clearFilters);
       }
 
-      /* Realtime Subscription */
-      function setupRealtime() {
-        supabase
-          .channel("public:downloads_files")
-          .on(
-            "postgres_changes",
-            { event: "*", schema: "public", table: "downloads_files" },
-            () => {
-              fetchFiles();
-            },
-          )
-          .subscribe();
+      function clearFilters() {
+        state.filters = { search: "", category: "All", type: "All", class: "All", subject: "All" };
+        state.page = 1;
+        $("fileSearchInput").value = "";
+        $("categoryFilter").value = "All";
+        $("typeFilter").value = "All";
+        $("classFilter").value = "All";
+        $("subjectFilter").value = "All";
+        $("sortFilter").value = state.activeSort;
+        renderTable();
       }
 
-      document.addEventListener("DOMContentLoaded", () => {
-        fetchFiles();
-        setupRealtime();
+      function handleTableAction(event) {
+        const button = event.target.closest("[data-action]");
+        if (!button) return;
+
+        const file = state.files.find((item) => String(item.id) === String(button.dataset.id));
+        if (!file) return;
+        const action = button.dataset.action;
+
+        if (action === "preview") openFile(file);
+        if (action === "download") triggerDownload(file);
+        if (action === "copy") copyLink(file);
+        if (action === "details") openDetailsModal(file);
+        if (action === "delete") deleteFile(file);
+      }
+
+      function openDetailsModal(file) {
+        const detail = service.normalizeRecord(file);
+        $("detailsContent").innerHTML = `
+          <div class="form-grid">
+            <div class="form-group">
+              <label>File Name</label>
+              <div class="form-control" style="display:flex;align-items:center;">${escapeHtml(detail.file_name || detail.name || "Untitled file")}</div>
+            </div>
+            <div class="form-group">
+              <label>Category</label>
+              <div class="form-control" style="display:flex;align-items:center;">${escapeHtml(detail.category || "Other")}</div>
+            </div>
+            <div class="form-group">
+              <label>File Type</label>
+              <div class="form-control" style="display:flex;align-items:center;">${escapeHtml(detail.file_type || detail.type || "Other")}</div>
+            </div>
+            <div class="form-group">
+              <label>Size</label>
+              <div class="form-control" style="display:flex;align-items:center;">${formatBytes(detail.size_bytes || detail.file_size || 0)}</div>
+            </div>
+            <div class="form-group">
+              <label>Class</label>
+              <div class="form-control" style="display:flex;align-items:center;">${escapeHtml(detail.class_grade || "—")}</div>
+            </div>
+            <div class="form-group">
+              <label>Subject</label>
+              <div class="form-control" style="display:flex;align-items:center;">${escapeHtml(detail.subject || "—")}</div>
+            </div>
+            <div class="form-group">
+              <label>Upload Date</label>
+              <div class="form-control" style="display:flex;align-items:center;">${escapeHtml(service.formatDateTime(detail.created_at || detail.uploaded_at || new Date().toISOString()))}</div>
+            </div>
+            <div class="form-group">
+              <label>Visibility</label>
+              <div class="form-control" style="display:flex;align-items:center;">${escapeHtml(detail.visibility || "Class")}</div>
+            </div>
+            <div class="form-group full">
+              <label>Description</label>
+              <div class="form-control" style="display:flex;align-items:center; min-height: 52px;">${escapeHtml(detail.description || "No description provided.")}</div>
+            </div>
+            <div class="form-group full">
+              <label>Download Count</label>
+              <div class="form-control" style="display:flex;align-items:center;">${Number(detail.download_count || detail.downloads || 0)} total downloads</div>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn-secondary" data-copy-detail-link="${escapeHtml(detail.file_url || "")}">Copy Link</button>
+            <button type="button" class="btn-primary" data-detail-open="${escapeHtml(detail.id)}">Open File</button>
+          </div>
+        `;
+
+        $("detailsModal").classList.add("open");
+        $("detailsContent").querySelector("[data-copy-detail-link]")?.addEventListener("click", () => copyLink(detail));
+        $("detailsContent").querySelector("[data-detail-open]")?.addEventListener("click", () => openFile(detail));
+      }
+
+      function openFile(file) {
+        const url = file.file_url || file.url || "";
+        if (url) {
+          window.open(url, "_blank", "noopener");
+          return;
+        }
+        alert("This file does not have a downloadable URL available yet.");
+      }
+
+      async function triggerDownload(file) {
+        const url = file.file_url || file.url || "";
+        if (url) {
+          const anchor = document.createElement("a");
+          anchor.href = url;
+          anchor.target = "_blank";
+          anchor.rel = "noopener";
+          anchor.download = file.file_name || file.name || "download";
+          document.body.appendChild(anchor);
+          anchor.click();
+          anchor.remove();
+        }
+
+        try {
+          await service.trackDownload(file);
+        } catch (error) {
+          console.warn("Download tracking failed:", error);
+        }
+
+        await refreshFiles();
+      }
+
+      async function copyLink(file) {
+        const url = file.file_url || file.url || "";
+        if (!url) {
+          alert("This file does not have a valid link yet.");
+          return;
+        }
+
+        try {
+          await navigator.clipboard.writeText(url);
+          alert("File link copied to clipboard.");
+        } catch (error) {
+          const textarea = document.createElement("textarea");
+          textarea.value = url;
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+          alert("File link copied to clipboard.");
+        }
+      }
+
+      async function deleteFile(file) {
+        const confirmed = window.confirm(`Delete ${file.file_name || file.name}? This cannot be undone.`);
+        if (!confirmed) return;
+
+        try {
+          await service.deleteFile(file.id);
+          await refreshFiles();
+          alert("File deleted successfully.");
+        } catch (error) {
+          alert(error.message || "Unable to delete file.");
+        }
+      }
+
+      function populateUploadClassOptions() {
+        const classOptions = service.getRegisteredClasses();
+        const classSelect = $("uploadClass");
+        if (!classOptions.length) {
+          classSelect.innerHTML = '<option value="">No registered classes found</option>';
+          $("uploadSubject").innerHTML = '<option value="">No subjects available</option>';
+          return;
+        }
+
+        classSelect.innerHTML = classOptions.map((grade) => `<option value="${escapeHtml(grade)}">Class ${escapeHtml(grade)}</option>`).join("");
+        const defaultGrade = classOptions[0];
+        updateUploadSubjects(defaultGrade);
+      }
+
+      function updateUploadSubjects(grade) {
+        const subjectOptions = service.getRegisteredSubjects(grade);
+        const subjectSelect = $("uploadSubject");
+        subjectSelect.innerHTML = subjectOptions.length
+          ? subjectOptions.map((subject) => `<option value="${escapeHtml(subject)}">${escapeHtml(subject)}</option>`).join("")
+          : '<option value="">No registered subjects</option>';
+      }
+
+      function openUploadModal() {
+        populateUploadClassOptions();
+        $("uploadModal").classList.add("open");
+      }
+
+      function closeUploadModal() {
+        $("uploadModal").classList.remove("open");
+        $("uploadForm").reset();
+        $("uploadProgressContainer").classList.remove("visible");
+        $("uploadProgressBar").style.width = "0%";
+      }
+
+      async function submitUpload(event) {
+        event.preventDefault();
+        const fileInput = $("uploadFileInput");
+        const chosenFile = fileInput.files && fileInput.files[0];
+        const category = $("uploadCategory").value || "Documents";
+        const classGrade = $("uploadClass").value;
+        const subject = $("uploadSubject").value;
+        const description = $("uploadDescription").value.trim();
+        const visibility = $("uploadVisibility").value || "Class";
+
+        if (!chosenFile) {
+          alert("Please choose a file to upload.");
+          return;
+        }
+
+        if (!classGrade || !subject) {
+          alert("Select a registered class and subject before uploading.");
+          return;
+        }
+
+        const maxBytes = 100 * 1024 * 1024;
+        if (chosenFile.size > maxBytes) {
+          alert("File is larger than 100 MB. Please reduce file size and try again.");
+          return;
+        }
+
+        const submitButton = $("submitUploadButton");
+        submitButton.disabled = true;
+        submitButton.textContent = "Uploading...";
+        $("uploadProgressContainer").classList.add("visible");
+
+        const animateProgress = (value) => {
+          $("uploadProgressBar").style.width = `${value}%`;
+        };
+
+        animateProgress(12);
+
+        try {
+          const metadata = {
+            file_name: chosenFile.name,
+            file_type: service.detectFileType(chosenFile.name, chosenFile.type),
+            category,
+            class_grade: classGrade,
+            subject,
+            description,
+            visibility,
+            sync_to_materials: true,
+          };
+
+          animateProgress(42);
+          const uploaded = await service.uploadFile(chosenFile, metadata);
+          animateProgress(100);
+          await refreshFiles();
+          closeUploadModal();
+          alert(`File uploaded successfully: ${uploaded.file_name || uploaded.name}`);
+        } catch (error) {
+          alert(error.message || "Upload failed. Please try again.");
+        } finally {
+          submitButton.disabled = false;
+          submitButton.textContent = "Upload File";
+          $("uploadProgressContainer").classList.remove("visible");
+          $("uploadProgressBar").style.width = "0%";
+        }
+      }
+
+      async function refreshFiles() {
+        state.files = await service.fetchFiles();
+        buildFilterOptions();
+        renderStats();
+        renderTopDownloads();
+        renderTable();
+      }
+
+      document.addEventListener("DOMContentLoaded", async () => {
+        $("openUploadButton").addEventListener("click", openUploadModal);
+        $("secondaryUploadButton").addEventListener("click", openUploadModal);
+        $("closeUploadModal").addEventListener("click", closeUploadModal);
+        $("cancelUploadButton").addEventListener("click", closeUploadModal);
+        $("closeDetailsModal").addEventListener("click", () => $("detailsModal").classList.remove("open"));
+        $("uploadClass").addEventListener("change", (event) => updateUploadSubjects(event.target.value));
+        $("fileSearchInput").addEventListener("input", (event) => {
+          state.filters.search = event.target.value;
+          state.page = 1;
+          renderTable();
+        });
+        $("categoryFilter").addEventListener("change", (event) => {
+          state.filters.category = event.target.value;
+          state.page = 1;
+          renderTable();
+        });
+        $("typeFilter").addEventListener("change", (event) => {
+          state.filters.type = event.target.value;
+          state.page = 1;
+          renderTable();
+        });
+        $("classFilter").addEventListener("change", (event) => {
+          state.filters.class = event.target.value;
+          state.page = 1;
+          renderTable();
+        });
+        $("subjectFilter").addEventListener("change", (event) => {
+          state.filters.subject = event.target.value;
+          state.page = 1;
+          renderTable();
+        });
+        $("sortFilter").addEventListener("change", (event) => {
+          state.activeSort = event.target.value;
+          state.page = 1;
+          renderTable();
+        });
+        $("paginationControls").addEventListener("click", (event) => {
+          const pageButton = event.target.closest("[data-page]");
+          if (!pageButton) return;
+          state.page = Number(pageButton.dataset.page);
+          renderTable();
+        });
+        $("downloadsTableBody").addEventListener("click", handleTableAction);
+        $("uploadForm").addEventListener("submit", submitUpload);
+        $("detailsModal").addEventListener("click", (event) => {
+          if (event.target === $("detailsModal")) $("detailsModal").classList.remove("open");
+        });
+
+        try {
+          state.files = await service.fetchFiles();
+          if (!service.getRegisteredClasses().length) {
+            alert("No registered classes or subjects were found for this teacher. Add assignments in the teacher registration panel to enable uploads.");
+          }
+          buildFilterOptions();
+          renderStats();
+          renderTopDownloads();
+          renderTable();
+          state.unsubscribe = service.subscribe(async () => {
+            await refreshFiles();
+          });
+        } catch (error) {
+          console.error("Unable to initialize downloads page.", error);
+        }
+      });
+
+      window.addEventListener("beforeunload", () => {
+        if (state.unsubscribe) state.unsubscribe();
       });
     </script>
+    <script src="../js/layout.js"></script>
+  </body>
+</html>
+
     <script src="../js/layout.js"></script>
   </body>
 </html>

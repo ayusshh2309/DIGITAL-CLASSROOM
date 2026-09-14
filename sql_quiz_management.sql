@@ -59,3 +59,94 @@ create policy "Teachers manage their quiz questions" on public.quiz_questions fo
 -- Realtime publication is project-level and may already include these tables.
 alter publication supabase_realtime add table public.quizzes;
 alter publication supabase_realtime add table public.quiz_questions;
+
+-- Downloads and teacher resource management
+create table if not exists public.downloads_files (
+  id uuid primary key default gen_random_uuid(),
+  teacher_id uuid not null references auth.users(id) on delete cascade,
+  file_name text not null,
+  file_type text not null,
+  category text not null default 'Documents',
+  class_grade text not null,
+  subject text not null,
+  description text,
+  visibility text not null default 'Class' check (visibility in ('Class', 'Department', 'Teacher Only')),
+  file_url text,
+  storage_path text,
+  size_bytes bigint not null default 0,
+  download_count integer not null default 0,
+  mime_type text,
+  is_material_synced boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.materials (
+  id uuid primary key default gen_random_uuid(),
+  teacher_id uuid not null references auth.users(id) on delete cascade,
+  title text not null,
+  name text,
+  description text,
+  type text not null default 'document',
+  material_type text,
+  class_grade text not null,
+  subject text not null,
+  file_url text,
+  storage_path text,
+  file_name text,
+  file_size bigint not null default 0,
+  size bigint not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  source_download_id uuid references public.downloads_files(id) on delete set null,
+  sync_to_materials boolean not null default false
+);
+
+create index if not exists downloads_files_teacher_created_idx on public.downloads_files(teacher_id, created_at desc);
+create index if not exists downloads_files_teacher_class_subject_idx on public.downloads_files(teacher_id, class_grade, subject);
+create index if not exists materials_teacher_created_idx on public.materials(teacher_id, created_at desc);
+
+alter table public.downloads_files enable row level security;
+alter table public.materials enable row level security;
+
+create policy "Teachers manage their own downloads" on public.downloads_files
+for all
+using (auth.uid() = teacher_id)
+with check (auth.uid() = teacher_id);
+
+create policy "Teachers manage their own materials" on public.materials
+for all
+using (auth.uid() = teacher_id)
+with check (auth.uid() = teacher_id);
+
+create policy "Students can view shared class materials" on public.materials
+for select
+using (
+  auth.uid() is not null and
+  teacher_id is not null and
+  class_grade is not null and
+  subject is not null
+);
+
+create policy "Students can view shared downloads" on public.downloads_files
+for select
+using (
+  auth.uid() is not null and
+  teacher_id is not null and
+  visibility in ('Class', 'Department')
+);
+
+create policy "Teachers can upload to teacher_resources" on storage.objects
+for insert with check (bucket_id = 'teacher_resources' and auth.role() = 'authenticated');
+
+create policy "Teachers can update their own resource files" on storage.objects
+for update using (bucket_id = 'teacher_resources' and auth.uid()::text = (storage.foldername(name))[1]);
+
+create policy "Teachers can delete their own resource files" on storage.objects
+for delete using (bucket_id = 'teacher_resources' and auth.uid()::text = (storage.foldername(name))[1]);
+
+create policy "Teachers can view their own resource files" on storage.objects
+for select using (bucket_id = 'teacher_resources' and auth.uid()::text = (storage.foldername(name))[1]);
+
+alter publication supabase_realtime add table public.downloads_files;
+alter publication supabase_realtime add table public.materials;
