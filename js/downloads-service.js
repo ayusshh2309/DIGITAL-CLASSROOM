@@ -211,8 +211,53 @@
     return Array.isArray(rows) ? rows.map((item, index) => normalizeRecord(item, index)) : [];
   }
 
+  function getLocalMaterials() {
+    const rows = readJson(`${MATERIALS_KEY_PREFIX}${teacherId()}`, []);
+    return Array.isArray(rows)
+      ? rows.map((item, index) =>
+          normalizeRecord(
+            {
+              ...item,
+              file_name: item.file_name || item.title || item.name || `material-${index + 1}`,
+              file_type: item.file_type || item.material_type || item.type || detectFileType(item.file_name || item.name || "", item.mime_type || item.content_type || ""),
+              category: item.category || detectCategory(item.file_name || item.name || "", item.file_type || item.material_type || item.type || "Document"),
+              class_grade: normalizeGrade(item.class_grade || item.class || item.grade || ""),
+              subject: item.subject || item.subject_name || "",
+              description: item.description || item.details || "",
+              size_bytes: safeNumber(item.size_bytes || item.file_size || item.size || 0),
+              file_size: safeNumber(item.file_size || item.size_bytes || item.size || 0),
+              download_count: safeNumber(item.download_count || item.downloads || 0),
+              visibility: item.visibility || "Class",
+              created_at: item.created_at || item.uploaded_at || new Date().toISOString(),
+              uploaded_at: item.uploaded_at || item.created_at || new Date().toISOString(),
+            },
+            index,
+          ),
+        )
+      : [];
+  }
+
   function setLocalRecords(rows) {
     writeJson(STORAGE_KEY, rows.map((row) => normalizeRecord(row)));
+  }
+
+  function mergeDownloadRecords(downloads, materials) {
+    const map = new Map();
+    [...downloads, ...materials].forEach((record) => {
+      const key = String(record.source_download_id || record.id);
+      const normalized = normalizeRecord(record);
+      const existing = map.get(key);
+      if (!existing) {
+        map.set(key, normalized);
+      } else {
+        map.set(key, { ...existing, ...normalized, id: existing.id || normalized.id });
+      }
+    });
+
+    return Array.from(map.values()).sort(
+      (left, right) =>
+        new Date(right.created_at || right.uploaded_at || 0).getTime() - new Date(left.created_at || left.uploaded_at || 0).getTime(),
+    );
   }
 
   function getMaterialLocalKey() {
@@ -274,28 +319,39 @@
   async function fetchFiles() {
     const client = getClient();
     if (!client || !isSupabaseConfigured()) {
-      return getLocalRecords();
+      return mergeDownloadRecords(getLocalRecords(), getLocalMaterials());
     }
 
     try {
       const { data: userData, error: userError } = await client.auth.getUser();
-      if (userError || !userData?.user) return getLocalRecords();
-
-      const { data, error } = await client
-        .from("downloads_files")
-        .select("*")
-        .eq("teacher_id", userData.user.id)
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.warn("Downloads fetch error:", error.message);
-        return getLocalRecords();
+      if (userError || !userData?.user) {
+        return mergeDownloadRecords(getLocalRecords(), getLocalMaterials());
       }
 
-      return (data || []).map((item, index) => normalizeRecord(item, index));
+      const [downloadsResponse, materialsResponse] = await Promise.all([
+        client
+          .from("downloads_files")
+          .select("*")
+          .eq("teacher_id", userData.user.id)
+          .order("created_at", { ascending: false }),
+        client
+          .from("materials")
+          .select("*")
+          .eq("teacher_id", userData.user.id)
+          .order("created_at", { ascending: false }),
+      ]);
+
+      const downloads = downloadsResponse.error
+        ? []
+        : (downloadsResponse.data || []).map((item, index) => normalizeRecord(item, index));
+      const materials = materialsResponse.error
+        ? []
+        : (materialsResponse.data || []).map((item, index) => normalizeRecord(item, index));
+
+      return mergeDownloadRecords(downloads, materials);
     } catch (error) {
       console.warn("Unable to fetch remote downloads:", error);
-      return getLocalRecords();
+      return mergeDownloadRecords(getLocalRecords(), getLocalMaterials());
     }
   }
 
