@@ -34,15 +34,21 @@
             </p>
           </div>
           <div class="toolbar">
-            <select
-              id="classSelector"
-              aria-label="Select registered class"
-            ></select
-            ><select
-              id="subjectSelector"
-              aria-label="Select registered subject"
-            ></select
-            ><span class="performance-mode" id="performanceMode"
+            <div class="performance-filter">
+              <i class="fa-solid fa-users-rectangle" aria-hidden="true"></i
+              ><select
+                id="classSelector"
+                aria-label="Select registered class"
+              ></select>
+            </div>
+            <div class="performance-filter">
+              <i class="fa-solid fa-book-open" aria-hidden="true"></i
+              ><select
+                id="subjectSelector"
+                aria-label="Select registered subject"
+              ></select>
+            </div>
+            <span class="performance-mode" id="performanceMode"
               >Local mode</span
             >
           </div>
@@ -140,36 +146,71 @@
                 <p>Enrolled students and calculated assessment performance.</p>
               </div>
               <div class="details-tools">
-                <input
-                  id="studentSearch"
-                  placeholder="Search students"
-                  aria-label="Search students"
-                /><select
-                  id="categoryFilter"
-                  aria-label="Filter performance category"
-                >
-                  <option value="All">All categories</option>
-                  <option>Excellent</option>
-                  <option>Very Good</option>
-                  <option>Good</option>
-                  <option>Needs Improvement</option></select
-                ><select id="sortPerformance" aria-label="Sort students">
-                  <option value="average-desc">Highest average</option>
-                  <option value="average-asc">Lowest average</option>
-                  <option value="name-asc">Name A-Z</option>
-                  <option value="trend-desc">Best improvement</option>
-                </select>
+                <div class="performance-filter">
+                  <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i
+                  ><input
+                    id="studentSearch"
+                    placeholder="Search students"
+                    aria-label="Search students"
+                  />
+                </div>
+                <div class="performance-filter">
+                  <i class="fa-solid fa-filter" aria-hidden="true"></i
+                  ><select
+                    id="categoryFilter"
+                    aria-label="Filter performance category"
+                  >
+                    <option value="All">All categories</option>
+                    <option>Excellent</option>
+                    <option>Very Good</option>
+                    <option>Good</option>
+                    <option>Needs Improvement</option>
+                  </select>
+                </div>
+                <div class="performance-filter">
+                  <i
+                    class="fa-solid fa-arrow-down-wide-short"
+                    aria-hidden="true"
+                  ></i
+                  ><select id="sortPerformance" aria-label="Sort students">
+                    <option value="average-desc">Highest average</option>
+                    <option value="average-asc">Lowest average</option>
+                    <option value="name-asc">Name A-Z</option>
+                    <option value="trend-desc">Best improvement</option>
+                  </select>
+                </div>
               </div>
             </div>
             <div class="table-scroll">
               <table class="details-table">
                 <thead>
                   <tr>
-                    <th>Student</th>
-                    <th>Overall Average</th>
-                    <th>Subject Scores</th>
-                    <th>Trend</th>
-                    <th>Category</th>
+                    <th>
+                      <i
+                        class="fa-solid fa-user-graduate"
+                        aria-hidden="true"
+                      ></i>
+                      Student
+                    </th>
+                    <th>
+                      <i class="fa-solid fa-gauge-high" aria-hidden="true"></i>
+                      Overall Average
+                    </th>
+                    <th>
+                      <i class="fa-solid fa-book-open" aria-hidden="true"></i>
+                      Subject Scores
+                    </th>
+                    <th>
+                      <i
+                        class="fa-solid fa-arrow-trend-up"
+                        aria-hidden="true"
+                      ></i>
+                      Trend
+                    </th>
+                    <th>
+                      <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
+                      Category
+                    </th>
                   </tr>
                 </thead>
                 <tbody id="performanceBody"></tbody>
