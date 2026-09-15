@@ -723,6 +723,8 @@
         gap: 8px;
         cursor: pointer;
         background: #fafafa;
+        color: inherit;
+        text-decoration: none;
         transition: all 0.2s ease;
       }
 
@@ -731,6 +733,11 @@
         background: #ffffff;
         transform: translateY(-2px);
         box-shadow: var(--shadow-sm);
+      }
+
+      .action-card:focus-visible {
+        outline: 3px solid rgba(41, 174, 184, 0.35);
+        outline-offset: 2px;
       }
 
       .action-icon {
@@ -1149,36 +1156,36 @@
               <span class="section-title">Quick Actions</span>
             </div>
             <div class="quick-actions-grid">
-              <div class="action-card" id="quickUploadBtn">
+              <a class="action-card" id="quickUploadBtn" href="materials.html">
                 <div class="action-icon icon-purple">☁️</div>
                 <span class="action-title">Upload Material</span>
                 <span class="action-desc">Videos, PDFs, Images</span>
-              </div>
-              <div class="action-card" id="quickLessonBtn">
+              </a>
+              <a class="action-card" id="quickLessonBtn" href="my_classes.html">
                 <div class="action-icon icon-blue">📖</div>
                 <span class="action-title">Create Lesson</span>
                 <span class="action-desc">Add Lesson Plan</span>
-              </div>
-              <div class="action-card" id="quickQuizBtn">
+              </a>
+              <a class="action-card" id="quickQuizBtn" href="create_quiz.html">
                 <div class="action-icon icon-green">📋</div>
                 <span class="action-title">Create Quiz</span>
                 <span class="action-desc">New Quiz / Assessment</span>
-              </div>
-              <div class="action-card" id="quickLiveBtn">
+              </a>
+              <a class="action-card" id="quickLiveBtn" href="live_classes.html">
                 <div class="action-icon icon-orange">📹</div>
                 <span class="action-title">Start Live Class</span>
                 <span class="action-desc">Go Live with Students</span>
-              </div>
-              <div class="action-card">
+              </a>
+              <a class="action-card" href="announcements.html">
                 <div class="action-icon icon-purple">📢</div>
                 <span class="action-title">Post Announcement</span>
                 <span class="action-desc">Send to Classes</span>
-              </div>
-              <div class="action-card">
+              </a>
+              <a class="action-card" href="calendar.html">
                 <div class="action-icon icon-teal">📅</div>
                 <span class="action-title">View Calendar</span>
                 <span class="action-desc">Manage Schedule</span>
-              </div>
+              </a>
             </div>
           </div>
         </div>
@@ -1319,13 +1326,7 @@
           .getElementById("uploadMaterialBtn")
           ?.addEventListener("click", openModal);
         document
-          .getElementById("quickUploadBtn")
-          ?.addEventListener("click", openModal);
-        document
           .getElementById("createLessonBtn")
-          ?.addEventListener("click", openModal);
-        document
-          .getElementById("quickLessonBtn")
           ?.addEventListener("click", openModal);
 
         closeModalBtn?.addEventListener("click", closeModal);
