@@ -212,9 +212,14 @@
   }
 
   function getLocalMaterials() {
-    const rows = readJson(`${MATERIALS_KEY_PREFIX}${teacherId()}`, []);
-    return Array.isArray(rows)
-      ? rows.map((item, index) =>
+    const materialKeys = [...new Set([
+      `${MATERIALS_KEY_PREFIX}${teacherId()}`,
+      `${MATERIALS_KEY_PREFIX}local-teacher`,
+    ])];
+    return materialKeys.flatMap((key) => {
+      const rows = readJson(key, []);
+      return Array.isArray(rows)
+        ? rows.map((item, index) =>
           normalizeRecord(
             {
               ...item,
@@ -234,7 +239,8 @@
             index,
           ),
         )
-      : [];
+        : [];
+    });
   }
 
   function setLocalRecords(rows) {
@@ -264,10 +270,11 @@
     return `${MATERIALS_KEY_PREFIX}${teacherId()}`;
   }
 
+  function getMaterialLocalKeys() {
+    return [...new Set([getMaterialLocalKey(), `${MATERIALS_KEY_PREFIX}local-teacher`])];
+  }
+
   function syncLocalMaterials(record) {
-    const storageKey = getMaterialLocalKey();
-    const current = readJson(storageKey, []);
-    const next = Array.isArray(current) ? current : [];
     const normalized = normalizeRecord({
       ...record,
       title: record.file_name,
@@ -284,19 +291,24 @@
       sync_to_materials: true,
     });
 
-    const index = next.findIndex((item) => String(item.id) === String(record.id));
-    if (index >= 0) next[index] = normalized;
-    else next.unshift(normalized);
-    writeJson(storageKey, next);
+    getMaterialLocalKeys().forEach((storageKey) => {
+      const current = readJson(storageKey, []);
+      const next = Array.isArray(current) ? current : [];
+      const index = next.findIndex((item) => String(item.id) === String(record.id));
+      if (index >= 0) next[index] = normalized;
+      else next.unshift(normalized);
+      writeJson(storageKey, next);
+    });
   }
 
   function syncLocalMaterialRemoval(recordId) {
-    const storageKey = getMaterialLocalKey();
-    const current = readJson(storageKey, []);
-    writeJson(
-      storageKey,
-      (Array.isArray(current) ? current : []).filter((item) => String(item.id) !== String(recordId)),
-    );
+    getMaterialLocalKeys().forEach((storageKey) => {
+      const current = readJson(storageKey, []);
+      writeJson(
+        storageKey,
+        (Array.isArray(current) ? current : []).filter((item) => String(item.id) !== String(recordId)),
+      );
+    });
   }
 
   function compareValues(left, right) {
