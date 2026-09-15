@@ -270,23 +270,74 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        gap: 28px;
+        position: relative;
+        overflow: hidden;
+        padding: 30px 32px;
+        border: 1px solid rgba(41, 174, 184, 0.18);
+        border-radius: 18px;
+        background: linear-gradient(110deg, #ffffff 0%, #f5fbfc 68%, #e7f7f5 100%);
+        box-shadow: 0 10px 28px rgba(7, 27, 44, 0.06);
+      }
+
+      .welcome-banner::after {
+        content: "";
+        position: absolute;
+        right: -42px;
+        bottom: -64px;
+        width: 180px;
+        height: 180px;
+        border: 22px solid rgba(41, 174, 184, 0.08);
+        border-radius: 50%;
+        pointer-events: none;
+      }
+
+      .welcome-text {
+        position: relative;
+        z-index: 1;
+      }
+
+      .welcome-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 9px;
+        color: var(--primary-teal);
+        font-size: 0.73rem;
+        font-weight: 800;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+      }
+
+      .welcome-eyebrow::before {
+        content: "";
+        width: 22px;
+        height: 2px;
+        border-radius: 2px;
+        background: var(--primary-teal);
       }
 
       .welcome-text h1 {
-        font-size: 2rem;
+        font-size: clamp(1.75rem, 3vw, 2.35rem);
+        line-height: 1.12;
         font-weight: 800;
-        margin-bottom: 6px;
+        letter-spacing: -0.025em;
+        margin-bottom: 8px;
         color: var(--text-main);
       }
 
       .welcome-text p {
         color: var(--text-muted);
-        font-size: 1.05rem;
+        font-size: 1rem;
+        line-height: 1.55;
       }
 
       .banner-actions {
         display: flex;
         gap: 14px;
+        position: relative;
+        z-index: 1;
+        flex-shrink: 0;
       }
 
       .btn-action-primary {
@@ -848,6 +899,19 @@
         .quick-actions-grid {
           grid-template-columns: 1fr 1fr;
         }
+        .welcome-banner {
+          align-items: flex-start;
+          flex-direction: column;
+          padding: 24px;
+        }
+        .banner-actions {
+          width: 100%;
+          flex-wrap: wrap;
+        }
+        .banner-actions button {
+          flex: 1 1 180px;
+          justify-content: center;
+        }
       }
     </style>
       <link rel="stylesheet" href="../css/layout.css" />
@@ -858,7 +922,8 @@
     <main class="page-content main-box-container">
         <div class="welcome-banner">
           <div class="welcome-text">
-            <h1 id="greetingEl">Good morning, Ready! 👋</h1>
+            <span class="welcome-eyebrow">Teacher workspace</span>
+            <h1 id="greetingEl">Good morning, Ready!</h1>
             <p>
               Let's create an amazing learning experience for your students.
             </p>
@@ -878,43 +943,43 @@
           <div class="stat-card">
             <div class="stat-icon icon-purple">📄</div>
             <div class="stat-content">
-              <span class="stat-number" id="statMaterials">24</span>
+              <span class="stat-number" id="statMaterials">0</span>
               <span class="stat-label">Materials Uploaded</span>
-              <span class="stat-trend trend-plus">+6 this week</span>
+                <span class="stat-trend trend-plus" id="statMaterialsTrend">0 this week</span>
             </div>
           </div>
 
           <div class="stat-card">
             <div class="stat-icon icon-teal">📖</div>
             <div class="stat-content">
-              <span class="stat-number" id="statLessons">12</span>
+              <span class="stat-number" id="statLessons">0</span>
               <span class="stat-label">Lessons Created</span>
-              <span class="stat-trend trend-plus">+3 this week</span>
+                <span class="stat-trend trend-plus" id="statLessonsTrend">0 this week</span>
             </div>
           </div>
 
           <div class="stat-card">
             <div class="stat-icon icon-green">📋</div>
             <div class="stat-content">
-              <span class="stat-number" id="statQuizzes">8</span>
+              <span class="stat-number" id="statQuizzes">0</span>
               <span class="stat-label">Quizzes Published</span>
-              <span class="stat-trend trend-plus">+2 this week</span>
+                <span class="stat-trend trend-plus" id="statQuizzesTrend">0 this week</span>
             </div>
           </div>
 
           <div class="stat-card">
             <div class="stat-icon icon-orange">📹</div>
             <div class="stat-content">
-              <span class="stat-number" id="statLive">3</span>
+              <span class="stat-number" id="statLive">0</span>
               <span class="stat-label">Live Classes</span>
-              <span class="stat-trend trend-plus">+1 this week</span>
+                <span class="stat-trend trend-plus" id="statLiveTrend">0 this week</span>
             </div>
           </div>
 
           <div class="stat-card">
             <div class="stat-icon icon-blue">👥</div>
             <div class="stat-content">
-              <span class="stat-number" id="statStudents">156</span>
+              <span class="stat-number" id="statStudents">0</span>
               <span class="stat-label">Total Students</span>
               <span class="stat-trend">Across all classes</span>
             </div>
@@ -1283,7 +1348,7 @@
                 document.getElementById("profileNameEl").textContent =
                   profile.full_name || "Ready";
                 document.getElementById("greetingEl").textContent =
-                  `Good morning, ${profile.full_name || "Ready"}! 👋`;
+                  `Good morning, ${profile.full_name || "Ready"}!`;
                 if (profile.avatar_url)
                   document.getElementById("avatarImg").src = profile.avatar_url;
               }
@@ -1333,6 +1398,86 @@
           }
         }
 
+        const statElements = {
+          materials: document.getElementById("statMaterials"),
+          lessons: document.getElementById("statLessons"),
+          quizzes: document.getElementById("statQuizzes"),
+          live: document.getElementById("statLive"),
+          students: document.getElementById("statStudents"),
+        };
+
+        const statTrendElements = {
+          materials: document.getElementById("statMaterialsTrend"),
+          lessons: document.getElementById("statLessonsTrend"),
+          quizzes: document.getElementById("statQuizzesTrend"),
+          live: document.getElementById("statLiveTrend"),
+        };
+
+        const countThisWeek = (rows) => {
+          const startOfWeek = new Date();
+          const day = startOfWeek.getDay();
+          startOfWeek.setDate(startOfWeek.getDate() - (day === 0 ? 6 : day - 1));
+          startOfWeek.setHours(0, 0, 0, 0);
+          return rows.filter((row) => row.created_at && new Date(row.created_at) >= startOfWeek).length;
+        };
+
+        const updateStat = (element, value) => {
+          if (element) element.textContent = String(value);
+        };
+
+        async function loadDashboardStats() {
+          if (!supabase) return;
+
+          try {
+            const {
+              data: { user },
+            } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const [materialsResult, quizzesResult, liveResult, studentsResult] =
+              await Promise.all([
+                supabase.from("materials").select("created_at").eq("teacher_id", user.id),
+                supabase.from("quizzes").select("created_at, status").eq("teacher_id", user.id).eq("status", "published"),
+                supabase.from("live_classes").select("*"),
+                supabase.from("students").select("*"),
+              ]);
+
+            const materials = materialsResult.error ? [] : materialsResult.data || [];
+            const quizzes = quizzesResult.error ? [] : quizzesResult.data || [];
+            const liveClasses = liveResult.error ? [] : liveResult.data || [];
+            const students = studentsResult.error ? [] : studentsResult.data || [];
+
+            updateStat(statElements.materials, materials.length);
+            updateStat(statElements.lessons, materials.length);
+            updateStat(statElements.quizzes, quizzes.length);
+            updateStat(statElements.live, liveClasses.length);
+            updateStat(statElements.students, students.length);
+
+            updateStat(statTrendElements.materials, `+${countThisWeek(materials)} this week`);
+            updateStat(statTrendElements.lessons, `+${countThisWeek(materials)} this week`);
+            updateStat(statTrendElements.quizzes, `+${countThisWeek(quizzes)} this week`);
+            updateStat(statTrendElements.live, `+${countThisWeek(liveClasses)} this week`);
+          } catch (error) {
+            console.warn("Could not load live dashboard statistics:", error.message);
+          }
+        }
+
+        function subscribeToDashboardStats() {
+          if (!supabase) return;
+
+          const refreshStats = () => {
+            loadDashboardStats();
+            loadMaterials();
+          };
+
+          supabase
+            .channel("teacher-dashboard-stats")
+            .on("postgres_changes", { event: "*", schema: "public", table: "materials" }, refreshStats)
+            .on("postgres_changes", { event: "*", schema: "public", table: "quizzes" }, refreshStats)
+            .on("postgres_changes", { event: "*", schema: "public", table: "live_classes" }, refreshStats)
+            .on("postgres_changes", { event: "*", schema: "public", table: "students" }, refreshStats)
+            .subscribe();
+        }
         materialForm?.addEventListener("submit", async (e) => {
           e.preventDefault();
           const title = document.getElementById("matTitle").value;
@@ -1351,10 +1496,7 @@
               if (error) alert("Error uploading to Supabase: " + error.message);
               else {
                 loadMaterials();
-                const statMat = document.getElementById("statMaterials");
-                if (statMat)
-                  statMat.textContent =
-                    parseInt(statMat.textContent || "0") + 1;
+                loadDashboardStats();
               }
             } catch (err) {
               console.error(err);
@@ -1376,6 +1518,8 @@
 
         loadUserProfile();
         loadMaterials();
+        loadDashboardStats();
+        subscribeToDashboardStats();
       });
     </script>
     <script src="../js/layout.js"></script>
