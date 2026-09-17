@@ -769,25 +769,9 @@
         document.getElementById("statCompleted").innerText = completed;
       }
 
-      /* Prompt to Schedule Class */
-      async function scheduleClassPrompt() {
-        const title = prompt(
-          "Enter Class Title:",
-          "Physics - Quantum Mechanics",
-        );
-        if (!title) return;
-
-        const classGrade = prompt("Enter class grade:", "9");
-        const subject = prompt("Enter subject:", "Science");
-        const topic = prompt("Enter topic:", "Chapter 1");
-        const datetime = prompt("Enter start date and time (ISO format):", new Date(Date.now() + 60 * 60 * 1000).toISOString());
-        const start = new Date(datetime || "");
-        if (Number.isNaN(start.getTime())) {
-          alert("Please enter a valid date and time.");
-          return;
-        }
-        await LiveClassService.schedule({ title, class_grade: classGrade, subject, topic, start_at: start.toISOString(), icon: "📹", color: "#3b82f6" });
-        await loadClasses();
+      /* Open the dedicated multi-step scheduling page. */
+      function scheduleClassPrompt() {
+        window.location.href = "create_liveclass.html";
       }
 
       async function handleClassClick(id) {
