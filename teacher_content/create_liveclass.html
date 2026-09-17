@@ -1,0 +1,1288 @@
+<!-- =========================
+     SCHEDULE LIVE CLASS
+     MAIN CONTENT ONLY
+========================= -->
+
+<style>
+  .schedule-page {
+    padding: 28px;
+    max-width: 1250px;
+    margin: 0 auto;
+  }
+
+  .schedule-container {
+    background: #ffffff;
+    border: 1px solid #e3eaee;
+    border-radius: 18px;
+    padding: 28px;
+    box-shadow: 0 8px 25px rgba(20, 55, 75, 0.06);
+  }
+
+  /* Header */
+  .schedule-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 28px;
+    gap: 30px;
+  }
+
+  .back-btn {
+    border: none;
+    background: transparent;
+    color: #6d7d91;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    margin-bottom: 12px;
+  }
+
+  .back-btn i {
+    margin-right: 7px;
+  }
+
+  .schedule-header h1 {
+    margin: 0 0 7px;
+    font-size: 26px;
+    color: #17243a;
+    font-weight: 800;
+  }
+
+  .schedule-header p {
+    margin: 0;
+    color: #74849a;
+    font-size: 12px;
+  }
+
+  /* Stepper */
+  .stepper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-top: 8px;
+  }
+
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #a1adba;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .step-number {
+    width: 29px;
+    height: 29px;
+    border-radius: 50%;
+    background: #edf1f4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .step.active {
+    color: #5538ee;
+  }
+
+  .step.active .step-number {
+    background: #5538ee;
+    color: white;
+  }
+
+  .step-line {
+    width: 38px;
+    height: 1px;
+    background: #dfe5e9;
+  }
+
+  /* Sections */
+  .schedule-section {
+    display: none;
+  }
+
+  .schedule-section.active {
+    display: block;
+  }
+
+  .section-title {
+    margin: 0 0 6px;
+    font-size: 16px;
+    font-weight: 800;
+    color: #17243a;
+  }
+
+  .section-description {
+    margin: 0 0 20px;
+    color: #7b8a9d;
+    font-size: 11px;
+  }
+
+  /* Class Cards */
+  .registered-classes {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+  }
+
+  .registered-class {
+    position: relative;
+    border: 1.5px solid #e1e8ed;
+    border-radius: 14px;
+    padding: 18px;
+    cursor: pointer;
+    transition: 0.2s ease;
+    background: #fff;
+  }
+
+  .registered-class:hover {
+    border-color: #9a8df5;
+    transform: translateY(-2px);
+    box-shadow: 0 7px 18px rgba(85, 56, 238, 0.08);
+  }
+
+  .registered-class.selected {
+    border-color: #5538ee;
+    background: #faf9ff;
+    box-shadow: 0 0 0 3px rgba(85, 56, 238, 0.07);
+  }
+
+  .class-icon {
+    width: 43px;
+    height: 43px;
+    border-radius: 11px;
+    background: #eeecff;
+    color: #5538ee;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 14px;
+    font-size: 16px;
+  }
+
+  .registered-class h3 {
+    margin: 0 0 6px;
+    font-size: 14px;
+    color: #17243a;
+  }
+
+  .registered-class p {
+    margin: 0 0 15px;
+    color: #78879a;
+    font-size: 10px;
+  }
+
+  .student-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #eaf8f3;
+    color: #14996a;
+    padding: 5px 9px;
+    border-radius: 6px;
+    font-size: 9px;
+    font-weight: 700;
+  }
+
+  .class-arrow {
+    position: absolute;
+    right: 17px;
+    bottom: 19px;
+    color: #8a98a8;
+  }
+
+  /* Subject */
+  .subject-area {
+    margin-top: 28px;
+    padding-top: 25px;
+    border-top: 1px solid #edf0f3;
+  }
+
+  .subjects {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .subject-card {
+    border: 1px solid #e0e7ec;
+    border-radius: 11px;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+
+  .subject-card:hover {
+    border-color: #9a8df5;
+  }
+
+  .subject-card.selected {
+    border-color: #5538ee;
+    background: #faf9ff;
+  }
+
+  .subject-card input {
+    accent-color: #5538ee;
+  }
+
+  .subject-card i {
+    color: #5538ee;
+  }
+
+  .subject-card span {
+    font-size: 11px;
+    font-weight: 700;
+    color: #33445a;
+  }
+
+  /* Info */
+  .class-info {
+    background: #f4f8fa;
+    border: 1px solid #e3ebef;
+    border-radius: 10px;
+    padding: 13px 15px;
+    margin-bottom: 22px;
+    color: #687a8e;
+    font-size: 10px;
+  }
+
+  .class-info i {
+    color: #5538ee;
+    margin-right: 6px;
+  }
+
+  /* Form */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 17px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .form-group.full {
+    grid-column: 1 / -1;
+  }
+
+  .form-group label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #33445a;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #dce5ea;
+    border-radius: 9px;
+    padding: 11px 12px;
+    outline: none;
+    background: #fff;
+    color: #17243a;
+    font-size: 11px;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    border-color: #8e80f3;
+    box-shadow: 0 0 0 3px rgba(85, 56, 238, 0.07);
+  }
+
+  .form-group textarea {
+    min-height: 90px;
+    resize: vertical;
+  }
+
+  /* Options */
+  .options-title {
+    margin: 23px 0 10px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #33445a;
+  }
+
+  .options {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .option {
+    border: 1px solid #e0e7ec;
+    border-radius: 9px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #62738a;
+    background: #fff;
+  }
+
+  .option input {
+    accent-color: #5538ee;
+  }
+
+  /* Buttons */
+  .bottom-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 27px;
+    padding-top: 19px;
+    border-top: 1px solid #e8edf0;
+  }
+
+  .btn {
+    border: none;
+    border-radius: 9px;
+    padding: 11px 17px;
+    font-size: 11px;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+
+  .btn-primary {
+    background: #5538ee;
+    color: #fff;
+    box-shadow: 0 5px 14px rgba(85, 56, 238, 0.18);
+  }
+
+  .btn-primary:hover {
+    background: #4630cf;
+  }
+
+  .btn-secondary {
+    background: #fff;
+    border: 1px solid #dfe6eb;
+    color: #687991;
+  }
+
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  /* Review */
+  .review-grid {
+    display: grid;
+    grid-template-columns: 1.25fr 0.75fr;
+    gap: 18px;
+  }
+
+  .review-card {
+    border: 1px solid #e1e8ed;
+    border-radius: 13px;
+    padding: 19px;
+  }
+
+  .review-card h3 {
+    margin: 0 0 15px;
+    font-size: 13px;
+    color: #17243a;
+  }
+
+  .review-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 10px 0;
+    border-bottom: 1px solid #edf0f3;
+    font-size: 10px;
+  }
+
+  .review-row:last-child {
+    border-bottom: none;
+  }
+
+  .review-row span {
+    color: #7c8a9b;
+  }
+
+  .review-row strong {
+    color: #27384e;
+    text-align: right;
+  }
+
+  .students-card {
+    background: #f8f7ff;
+    border-color: #e4e0ff;
+  }
+
+  .students-number {
+    font-size: 29px;
+    font-weight: 800;
+    color: #5538ee;
+    margin-bottom: 3px;
+  }
+
+  .students-card p {
+    margin: 0;
+    color: #74839a;
+    font-size: 10px;
+  }
+
+  /* Success */
+  .success-screen {
+    text-align: center;
+    padding: 45px 20px;
+  }
+
+  .success-icon {
+    width: 67px;
+    height: 67px;
+    border-radius: 50%;
+    background: #e8f8f2;
+    color: #16b879;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    margin: 0 auto 18px;
+  }
+
+  .success-screen h2 {
+    margin: 0 0 8px;
+    font-size: 21px;
+    color: #17243a;
+  }
+
+  .success-screen > p {
+    margin: 0 0 22px;
+    color: #78879a;
+    font-size: 11px;
+  }
+
+  .success-details {
+    display: inline-block;
+    min-width: 360px;
+    text-align: left;
+    border: 1px solid #e1e8ed;
+    border-radius: 12px;
+    padding: 14px 23px;
+  }
+
+  .success-details div {
+    display: flex;
+    justify-content: space-between;
+    gap: 30px;
+    padding: 7px 0;
+    font-size: 10px;
+  }
+
+  .success-details span {
+    color: #7c8a9b;
+  }
+
+  @media (max-width: 1000px) {
+    .registered-classes {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .subjects {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .review-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<main class="schedule-page">
+  <div class="schedule-container">
+    <!-- HEADER -->
+    <div class="schedule-header">
+      <div>
+        <button class="back-btn" onclick="history.back()">
+          <i class="fa-solid fa-arrow-left"></i>
+          Back to Live Classes
+        </button>
+
+        <h1>Schedule a Live Class</h1>
+
+        <p>
+          Create and schedule an online session for your registered students.
+        </p>
+      </div>
+
+      <div class="stepper">
+        <div class="step active" id="step1">
+          <span class="step-number">1</span>
+          Class & Subject
+        </div>
+
+        <span class="step-line"></span>
+
+        <div class="step" id="step2">
+          <span class="step-number">2</span>
+          Class Details
+        </div>
+
+        <span class="step-line"></span>
+
+        <div class="step" id="step3">
+          <span class="step-number">3</span>
+          Review
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================
+             STEP 1
+             CLASS + SUBJECT
+        ================================== -->
+
+    <section class="schedule-section active" id="section1">
+      <h2 class="section-title">Select a registered class</h2>
+
+      <p class="section-description">
+        Only classes registered to your teacher account are shown here.
+      </p>
+
+      <div class="registered-classes" id="registeredClasses"></div>
+
+      <!-- SUBJECTS -->
+
+      <div class="subject-area" id="subjectArea" style="display: none">
+        <h2 class="section-title">Select subject</h2>
+
+        <p class="section-description">
+          Choose a subject registered for the selected class.
+        </p>
+
+        <div class="subjects" id="subjects"></div>
+      </div>
+
+      <div class="bottom-actions">
+        <span></span>
+
+        <button
+          class="btn btn-primary"
+          id="continueBtn"
+          onclick="goToDetails()"
+          disabled
+        >
+          Continue
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- =================================
+             STEP 2
+             CLASS DETAILS
+        ================================== -->
+
+    <section class="schedule-section" id="section2">
+      <h2 class="section-title">Class details</h2>
+
+      <p class="section-description">
+        Add the date, time and meeting information for your live session.
+      </p>
+
+      <div class="class-info">
+        <i class="fa-solid fa-circle-info"></i>
+
+        <strong id="selectedClassText"> Class </strong>
+
+        ·
+
+        <strong id="selectedSubjectText"> Subject </strong>
+
+        — This session will be available only to eligible enrolled students.
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group full">
+          <label> Class Title * </label>
+
+          <input
+            type="text"
+            id="classTitle"
+            placeholder="e.g. Chapter 5 – Magnetism Revision"
+          />
+        </div>
+
+        <div class="form-group full">
+          <label> Description </label>
+
+          <textarea
+            id="classDescription"
+            placeholder="Briefly describe what students will learn in this session..."
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label> Date * </label>
+
+          <input type="date" id="classDate" />
+        </div>
+
+        <div class="form-group">
+          <label> Start Time * </label>
+
+          <input type="time" id="startTime" />
+        </div>
+
+        <div class="form-group">
+          <label> End Time * </label>
+
+          <input type="time" id="endTime" />
+        </div>
+
+        <div class="form-group">
+          <label> Meeting Platform * </label>
+
+          <select id="platform">
+            <option value="">Select platform</option>
+
+            <option>Google Meet</option>
+
+            <option>Zoom</option>
+
+            <option>Microsoft Teams</option>
+
+            <option>Other</option>
+          </select>
+        </div>
+
+        <div class="form-group full">
+          <label> Meeting Link * </label>
+
+          <input
+            type="url"
+            id="meetingLink"
+            placeholder="Paste your online meeting link here"
+          />
+        </div>
+      </div>
+
+      <div class="options-title">Class options</div>
+
+      <div class="options">
+        <label class="option">
+          <input type="checkbox" id="notifyStudents" checked />
+          Notify students immediately
+        </label>
+
+        <label class="option">
+          <input type="checkbox" checked />
+          Allow students to join 10 minutes early
+        </label>
+
+        <label class="option">
+          <input type="checkbox" id="recordClass" />
+          Record this session
+        </label>
+
+        <label class="option">
+          <input type="checkbox" id="reminder" checked />
+          Send 30-minute reminder
+        </label>
+      </div>
+
+      <div class="bottom-actions">
+        <button class="btn btn-secondary" onclick="showSection(1)">
+          <i class="fa-solid fa-arrow-left"></i>
+          Back
+        </button>
+
+        <button class="btn btn-primary" onclick="goToReview()">
+          Review Class
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- =================================
+             STEP 3
+             REVIEW
+        ================================== -->
+
+    <section class="schedule-section" id="section3">
+      <h2 class="section-title">Review your live class</h2>
+
+      <p class="section-description">
+        Check the information before scheduling the session.
+      </p>
+
+      <div class="review-grid">
+        <div class="review-card">
+          <h3>
+            <i
+              class="fa-solid fa-video"
+              style="color: #5538ee; margin-right: 7px"
+            ></i>
+
+            Session information
+          </h3>
+
+          <div class="review-row">
+            <span>Class</span>
+            <strong id="reviewClass"></strong>
+          </div>
+
+          <div class="review-row">
+            <span>Subject</span>
+            <strong id="reviewSubject"></strong>
+          </div>
+
+          <div class="review-row">
+            <span>Title</span>
+            <strong id="reviewTitle"></strong>
+          </div>
+
+          <div class="review-row">
+            <span>Date</span>
+            <strong id="reviewDate"></strong>
+          </div>
+
+          <div class="review-row">
+            <span>Time</span>
+            <strong id="reviewTime"></strong>
+          </div>
+
+          <div class="review-row">
+            <span>Platform</span>
+            <strong id="reviewPlatform"></strong>
+          </div>
+
+          <div class="review-row">
+            <span>Meeting Link</span>
+            <strong id="reviewLink"></strong>
+          </div>
+        </div>
+
+        <div>
+          <div class="review-card students-card">
+            <h3>Eligible students</h3>
+
+            <div class="students-number" id="reviewStudents">0</div>
+
+            <p>enrolled students will have access to this class.</p>
+          </div>
+
+          <div class="review-card" style="margin-top: 18px">
+            <h3>Notifications</h3>
+
+            <div class="review-row">
+              <span> Instant notification </span>
+
+              <strong id="reviewNotify"> Enabled </strong>
+            </div>
+
+            <div class="review-row">
+              <span> 30-minute reminder </span>
+
+              <strong id="reviewReminder"> Enabled </strong>
+            </div>
+
+            <div class="review-row">
+              <span> Recording </span>
+
+              <strong id="reviewRecording"> Off </strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-actions">
+        <button class="btn btn-secondary" onclick="showSection(2)">
+          <i class="fa-solid fa-arrow-left"></i>
+          Edit Details
+        </button>
+
+        <button class="btn btn-primary" onclick="scheduleLiveClass()">
+          <i class="fa-solid fa-calendar-check"></i>
+          Schedule Class
+        </button>
+      </div>
+    </section>
+
+    <!-- =================================
+             SUCCESS
+        ================================== -->
+
+    <section class="schedule-section" id="successSection">
+      <div class="success-screen">
+        <div class="success-icon">
+          <i class="fa-solid fa-check"></i>
+        </div>
+
+        <h2>Class Scheduled Successfully</h2>
+
+        <p>Your live session has been added to Upcoming Classes.</p>
+
+        <div class="success-details">
+          <div>
+            <span>Class</span>
+            <strong id="successClass"></strong>
+          </div>
+
+          <div>
+            <span>Subject</span>
+            <strong id="successSubject"></strong>
+          </div>
+
+          <div>
+            <span>Date & Time</span>
+            <strong id="successDate"></strong>
+          </div>
+
+          <div>
+            <span>Students</span>
+            <strong id="successStudents"></strong>
+          </div>
+        </div>
+
+        <div style="margin-top: 25px">
+          <button class="btn btn-secondary" onclick="location.reload()">
+            Schedule Another
+          </button>
+
+          <button
+            class="btn btn-primary"
+            onclick="window.location.href = 'live-classes.html'"
+          >
+            View Live Classes
+          </button>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+  /* ==========================================
+   REGISTERED CLASSES
+
+   Replace this demo data later with Supabase.
+========================================== */
+
+  const registeredClasses = [
+    {
+      id: "grade5",
+      name: "Grade 5",
+      stream: "All Subjects",
+      students: 32,
+      subjects: [
+        "Mathematics",
+        "Science",
+        "English",
+        "Hindi",
+        "Social Science",
+      ],
+    },
+
+    {
+      id: "grade8",
+      name: "Grade 8",
+      stream: "Mathematics",
+      students: 28,
+      subjects: ["Mathematics"],
+    },
+
+    {
+      id: "grade10",
+      name: "Grade 10",
+      stream: "Science",
+      students: 31,
+      subjects: ["Science"],
+    },
+
+    {
+      id: "grade12pcm",
+      name: "Grade 12",
+      stream: "PCM",
+      students: 24,
+      subjects: ["Physics", "Chemistry", "Mathematics"],
+    },
+  ];
+
+  let selectedClass = null;
+  let selectedSubject = null;
+
+  /* ==========================================
+   SHOW REGISTERED CLASSES
+========================================== */
+
+  function renderClasses() {
+    const container = document.getElementById("registeredClasses");
+
+    container.innerHTML = "";
+
+    registeredClasses.forEach((cls) => {
+      const card = document.createElement("div");
+
+      card.className = "registered-class";
+
+      card.innerHTML = `
+
+            <div class="class-icon">
+                <i class="fa-solid fa-users"></i>
+            </div>
+
+            <h3>
+                ${cls.name}
+                ${cls.stream !== "All Subjects" ? " • " + cls.stream : ""}
+            </h3>
+
+            <p>
+                ${cls.stream}
+            </p>
+
+            <span class="student-count">
+                <i class="fa-solid fa-user-group"></i>
+                ${cls.students} Students
+            </span>
+
+            <span class="class-arrow">
+                <i class="fa-solid fa-chevron-right"></i>
+            </span>
+
+        `;
+
+      card.onclick = () => selectClass(cls.id);
+
+      container.appendChild(card);
+    });
+  }
+
+  /* ==========================================
+   SELECT CLASS
+========================================== */
+
+  function selectClass(id) {
+    selectedClass = registeredClasses.find((cls) => cls.id === id);
+
+    selectedSubject = null;
+
+    document
+      .querySelectorAll(".registered-class")
+      .forEach((card) => card.classList.remove("selected"));
+
+    event.currentTarget.classList.add("selected");
+
+    const subjectArea = document.getElementById("subjectArea");
+
+    const subjects = document.getElementById("subjects");
+
+    subjects.innerHTML = "";
+
+    selectedClass.subjects.forEach((subject, index) => {
+      const label = document.createElement("label");
+
+      label.className = "subject-card";
+
+      label.innerHTML = `
+
+                <input
+                    type="radio"
+                    name="subject"
+                >
+
+                <i class="fa-solid fa-book-open"></i>
+
+                <span>
+                    ${subject}
+                </span>
+
+            `;
+
+      label.onclick = () => {
+        selectedSubject = subject;
+
+        document
+          .querySelectorAll(".subject-card")
+          .forEach((card) => card.classList.remove("selected"));
+
+        label.classList.add("selected");
+
+        document.getElementById("continueBtn").disabled = false;
+      };
+
+      subjects.appendChild(label);
+    });
+
+    subjectArea.style.display = "block";
+
+    document.getElementById("continueBtn").disabled = true;
+  }
+
+  /* ==========================================
+   STEP NAVIGATION
+========================================== */
+
+  function showSection(step) {
+    document
+      .querySelectorAll(".schedule-section")
+      .forEach((section) => section.classList.remove("active"));
+
+    document
+      .getElementById(
+        step === 1 ? "section1" : step === 2 ? "section2" : "section3",
+      )
+      .classList.add("active");
+
+    document.getElementById("step1").classList.toggle("active", step >= 1);
+
+    document.getElementById("step2").classList.toggle("active", step >= 2);
+
+    document.getElementById("step3").classList.toggle("active", step >= 3);
+  }
+
+  /* ==========================================
+   GO TO DETAILS
+========================================== */
+
+  function goToDetails() {
+    if (!selectedClass || !selectedSubject) {
+      alert("Please select a class and subject.");
+
+      return;
+    }
+
+    document.getElementById("selectedClassText").textContent =
+      selectedClass.name +
+      (selectedClass.stream !== "All Subjects"
+        ? " • " + selectedClass.stream
+        : "");
+
+    document.getElementById("selectedSubjectText").textContent =
+      selectedSubject;
+
+    showSection(2);
+  }
+
+  /* ==========================================
+   VALIDATE FORM
+========================================== */
+
+  function validateForm() {
+    const title = document.getElementById("classTitle").value.trim();
+
+    const date = document.getElementById("classDate").value;
+
+    const start = document.getElementById("startTime").value;
+
+    const end = document.getElementById("endTime").value;
+
+    const platform = document.getElementById("platform").value;
+
+    const link = document.getElementById("meetingLink").value.trim();
+
+    if (!title) {
+      alert("Please enter the class title.");
+
+      return false;
+    }
+
+    if (!date) {
+      alert("Please select the class date.");
+
+      return false;
+    }
+
+    if (!start) {
+      alert("Please select the start time.");
+
+      return false;
+    }
+
+    if (!end) {
+      alert("Please select the end time.");
+
+      return false;
+    }
+
+    if (end <= start) {
+      alert("End time must be later than start time.");
+
+      return false;
+    }
+
+    if (!platform) {
+      alert("Please select a meeting platform.");
+
+      return false;
+    }
+
+    if (!link) {
+      alert("Please enter the meeting link.");
+
+      return false;
+    }
+
+    return true;
+  }
+
+  /* ==========================================
+   GO TO REVIEW
+========================================== */
+
+  function goToReview() {
+    if (!validateForm()) return;
+
+    const date = document.getElementById("classDate").value;
+
+    document.getElementById("reviewClass").textContent =
+      selectedClass.name +
+      (selectedClass.stream !== "All Subjects"
+        ? " • " + selectedClass.stream
+        : "");
+
+    document.getElementById("reviewSubject").textContent = selectedSubject;
+
+    document.getElementById("reviewTitle").textContent =
+      document.getElementById("classTitle").value;
+
+    document.getElementById("reviewDate").textContent = new Date(
+      date + "T00:00:00",
+    ).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+
+    document.getElementById("reviewTime").textContent =
+      document.getElementById("startTime").value +
+      " – " +
+      document.getElementById("endTime").value;
+
+    document.getElementById("reviewPlatform").textContent =
+      document.getElementById("platform").value;
+
+    document.getElementById("reviewLink").textContent =
+      document.getElementById("meetingLink").value;
+
+    document.getElementById("reviewStudents").textContent =
+      selectedClass.students;
+
+    document.getElementById("reviewNotify").textContent =
+      document.getElementById("notifyStudents").checked ? "Enabled" : "Off";
+
+    document.getElementById("reviewReminder").textContent =
+      document.getElementById("reminder").checked ? "Enabled" : "Off";
+
+    document.getElementById("reviewRecording").textContent =
+      document.getElementById("recordClass").checked ? "Enabled" : "Off";
+
+    showSection(3);
+  }
+
+  /* ==========================================
+   SCHEDULE CLASS
+========================================== */
+
+  function scheduleLiveClass() {
+    const date = document.getElementById("classDate").value;
+
+    const liveClass = {
+      id: "live_" + Date.now(),
+
+      classId: selectedClass.id,
+
+      className: selectedClass.name,
+
+      stream: selectedClass.stream,
+
+      subject: selectedSubject,
+
+      title: document.getElementById("classTitle").value,
+
+      description: document.getElementById("classDescription").value,
+
+      date: date,
+
+      startTime: document.getElementById("startTime").value,
+
+      endTime: document.getElementById("endTime").value,
+
+      platform: document.getElementById("platform").value,
+
+      meetingLink: document.getElementById("meetingLink").value,
+
+      students: selectedClass.students,
+
+      createdAt: new Date().toISOString(),
+    };
+
+    /* Temporary localStorage */
+
+    const existingClasses = JSON.parse(
+      localStorage.getItem("scheduledLiveClasses") || "[]",
+    );
+
+    existingClasses.push(liveClass);
+
+    localStorage.setItem(
+      "scheduledLiveClasses",
+      JSON.stringify(existingClasses),
+    );
+
+    /* Success screen */
+
+    document
+      .querySelectorAll(".schedule-section")
+      .forEach((section) => section.classList.remove("active"));
+
+    document.getElementById("successSection").classList.add("active");
+
+    document.getElementById("successClass").textContent =
+      selectedClass.name +
+      (selectedClass.stream !== "All Subjects"
+        ? " • " + selectedClass.stream
+        : "");
+
+    document.getElementById("successSubject").textContent = selectedSubject;
+
+    document.getElementById("successDate").textContent =
+      new Date(date + "T00:00:00").toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }) +
+      " · " +
+      liveClass.startTime +
+      " – " +
+      liveClass.endTime;
+
+    document.getElementById("successStudents").textContent =
+      selectedClass.students;
+  }
+
+  /* ==========================================
+   TODAY AS MINIMUM DATE
+========================================== */
+
+  const today = new Date();
+
+  const year = today.getFullYear();
+
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+
+  const day = String(today.getDate()).padStart(2, "0");
+
+  document.getElementById("classDate").min = `${year}-${month}-${day}`;
+
+  /* Start */
+
+  renderClasses();
+</script>
