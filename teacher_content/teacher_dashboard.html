@@ -745,82 +745,28 @@
         color: #1e40af;
       }
 
-      /* Recent Materials List */
-      .materials-list {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-
-      .material-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding-bottom: 12px;
-        border-bottom: 1px solid var(--surface-border);
-      }
-
-      .material-item:last-child {
-        border-bottom: none;
-        padding-bottom: 0;
-      }
-
-      .material-left {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-      }
-
-      .material-thumb {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        display: grid;
-        place-items: center;
-        color: white;
-        font-size: 1.1rem;
-      }
-
-      .material-title {
-        font-size: 1rem;
-        font-weight: 800;
-      }
-
-      .material-meta {
-        font-size: 0.85rem;
-        color: var(--text-muted);
-        margin-top: 2px;
-      }
-
-      .material-right {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        font-size: 0.85rem;
-        color: var(--text-muted);
-        font-weight: 600;
-      }
-
       /* Quick Actions */
       .quick-actions-grid {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 14px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
       }
 
       .action-card {
-        border: 1px solid rgba(148, 163, 184, 0.18);
-        border-radius: 18px;
-        padding: 18px 14px;
+        position: relative;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 12px;
+        padding: 14px 34px 14px 12px;
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
+        align-items: center;
         gap: 10px;
         cursor: pointer;
-        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        background: linear-gradient(135deg, #ffffff 0%, #f5fbfb 100%);
         color: inherit;
         text-decoration: none;
         transition: all 0.2s ease;
-        min-height: 150px;
+        min-height: 70px;
       }
 
       .action-card:hover {
@@ -836,26 +782,53 @@
       }
 
       .action-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 14px;
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+        border-radius: 11px;
         display: grid;
         place-items: center;
         color: white;
-        font-size: 1.35rem;
+        font-size: 1rem;
         box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 8px 18px rgba(15, 23, 42, 0.08);
       }
 
+      .action-copy {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+
       .action-title {
-        font-size: 1rem;
+        font-size: 0.82rem;
         font-weight: 800;
         letter-spacing: -0.01em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .action-desc {
-        font-size: 0.8rem;
+        font-size: 0.68rem;
         color: var(--text-muted);
-        line-height: 1.5;
+        line-height: 1.25;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .action-arrow {
+        position: absolute;
+        right: 10px;
+        width: 22px;
+        height: 22px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: rgba(41, 174, 184, 0.1);
+        color: var(--primary-teal);
+        font-size: 0.65rem;
       }
 
       /* Footer */
@@ -978,6 +951,9 @@
         .classes-grid {
           grid-template-columns: repeat(2, 1fr);
         }
+        .quick-actions-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
       }
 
       @media (max-width: 768px) {
@@ -1037,7 +1013,7 @@
         <!-- Stats Grid -->
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-icon icon-purple">📄</div>
+            <div class="stat-icon icon-purple">�</div>
             <div class="stat-content">
               <span class="stat-number" id="statMaterials">0</span>
               <span class="stat-label">Materials Uploaded</span>
@@ -1136,54 +1112,77 @@
           </div>
         </div>
 
-        <!-- Grid Row 2: Recent Materials & Quick Actions -->
-        <div class="grid-2-col">
-          <div class="section-card">
-            <div class="section-header">
-              <span class="section-title">Recent Materials</span>
-              <a href="#" class="section-link">View all</a>
-            </div>
-            <div class="materials-list" id="materialsList">
-              <p class="empty-state">Loading recent materials...</p>
-            </div>
+        <!-- Quick Actions -->
+        <div class="section-card">
+          <div class="section-header">
+            <span class="section-title">Quick Actions</span>
+            <a href="#" class="section-link">View all <span aria-hidden="true">→</span></a>
           </div>
-
-          <div class="section-card">
-            <div class="section-header">
-              <span class="section-title">Quick Actions</span>
-            </div>
-            <div class="quick-actions-grid">
-              <a class="action-card" id="quickUploadBtn" href="materials.html">
-                <div class="action-icon icon-purple">📤</div>
+          <div class="quick-actions-grid">
+            <a class="action-card" id="quickUploadBtn" href="materials.html">
+              <div class="action-icon icon-purple">📤</div>
+              <div class="action-copy">
                 <span class="action-title">Upload Material</span>
-                <span class="action-desc">Videos, PDFs, and Images</span>
-              </a>
-              <a class="action-card" id="quickLessonBtn" href="my_classes.html">
-                <div class="action-icon icon-blue">📘</div>
+                <span class="action-desc">Videos, PDFs, Images</span>
+              </div>
+              <span class="action-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="action-card" id="quickLessonBtn" href="my_classes.html">
+              <div class="action-icon icon-purple">📖</div>
+              <div class="action-copy">
                 <span class="action-title">Create Lesson</span>
-                <span class="action-desc">Plan engaging classes</span>
-              </a>
-              <a class="action-card" id="quickQuizBtn" href="create_quiz.html">
-                <div class="action-icon icon-green">🧪</div>
+                <span class="action-desc">Add Lesson Plan</span>
+              </div>
+              <span class="action-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="action-card" id="quickQuizBtn" href="create_quiz.html">
+              <div class="action-icon icon-orange">📄</div>
+              <div class="action-copy">
                 <span class="action-title">Create Quiz</span>
-                <span class="action-desc">New assessment / challenge</span>
-              </a>
-              <a class="action-card" id="quickLiveBtn" href="live_classes.html">
-                <div class="action-icon icon-orange">🎥</div>
+                <span class="action-desc">New Quiz / Assessment</span>
+              </div>
+              <span class="action-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="action-card" id="quickLiveBtn" href="live_classes.html">
+              <div class="action-icon icon-blue">◉</div>
+              <div class="action-copy">
                 <span class="action-title">Start Live Class</span>
-                <span class="action-desc">Go live with students</span>
-              </a>
-              <a class="action-card" href="announcements.html">
-                <div class="action-icon icon-purple">📣</div>
+                <span class="action-desc">Go Live with Students</span>
+              </div>
+              <span class="action-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="action-card" href="announcements.html">
+              <div class="action-icon icon-purple">📣</div>
+              <div class="action-copy">
                 <span class="action-title">Post Announcement</span>
-                <span class="action-desc">Send updates to classes</span>
-              </a>
-              <a class="action-card" href="calendar.html">
-                <div class="action-icon icon-teal">🗓️</div>
+                <span class="action-desc">Send to Classes</span>
+              </div>
+              <span class="action-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="action-card" href="calendar.html">
+              <div class="action-icon icon-purple">▣</div>
+              <div class="action-copy">
                 <span class="action-title">View Calendar</span>
-                <span class="action-desc">Manage your schedule</span>
-              </a>
-            </div>
+                <span class="action-desc">Manage Schedule</span>
+              </div>
+              <span class="action-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="action-card" href="attendance.html">
+              <div class="action-icon icon-teal">✓</div>
+              <div class="action-copy">
+                <span class="action-title">Take Attendance</span>
+                <span class="action-desc">Mark Today's Attendance</span>
+              </div>
+              <span class="action-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="action-card" href="student_performance.html">
+              <div class="action-icon icon-green">●</div>
+              <div class="action-copy">
+                <span class="action-title">Student Performance</span>
+                <span class="action-desc">View Student Progress</span>
+              </div>
+              <span class="action-arrow" aria-hidden="true">→</span>
+            </a>
           </div>
         </div>
       </main>
@@ -1338,8 +1337,6 @@
         const closeModalBtn = document.getElementById("closeModalBtn");
         const cancelModalBtn = document.getElementById("cancelModalBtn");
         const materialForm = document.getElementById("materialForm");
-        const materialsList = document.getElementById("materialsList");
-
         const openModal = () => uploadModal.classList.add("open");
         const closeModal = () => uploadModal.classList.remove("open");
 
@@ -1370,122 +1367,6 @@
             }
           } catch (err) {
             console.warn("Supabase context offline or unconfigured.");
-          }
-        }
-
-        async function loadMaterials() {
-          const localMaterialsKey = "teacherMaterials:local-teacher";
-          const readLocalMaterials = () => {
-            try {
-              return JSON.parse(localStorage.getItem(localMaterialsKey) || "[]");
-            } catch {
-              return [];
-            }
-          };
-          const recentSince = Date.now() - 24 * 24 * 60 * 60 * 1000;
-          const escapeHtml = (value) =>
-            String(value ?? "").replace(
-              /[&<>"']/g,
-              (character) =>
-                ({
-                  "&": "&amp;",
-                  "<": "&lt;",
-                  ">": "&gt;",
-                  '"': "&quot;",
-                  "'": "&#39;",
-                })[character],
-            );
-          const relativeTime = (value) => {
-            const age = Math.max(0, Date.now() - new Date(value).getTime());
-            const minutes = Math.floor(age / 60000);
-            if (minutes < 1) return "Just now";
-            if (minutes < 60) return `${minutes} min ago`;
-            const hours = Math.floor(minutes / 60);
-            if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
-            const days = Math.floor(hours / 24);
-            return `${days} day${days === 1 ? "" : "s"} ago`;
-          };
-          const materialType = (material) =>
-            String(material.type || material.material_type || "document").toLowerCase();
-          const typeStyle = (type) =>
-            type === "video"
-              ? ["icon-purple", "▶"]
-              : type === "pdf"
-                ? ["icon-orange", "📄"]
-                : type === "image"
-                  ? ["icon-green", "🖼️"]
-                  : ["icon-blue", "📄"];
-          const renderMaterials = (records) => {
-            const materials = records
-              .filter((material) => {
-                const timestamp = new Date(material.created_at || material.uploaded_at).getTime();
-                return timestamp && timestamp >= recentSince;
-              })
-              .sort(
-                (first, second) =>
-                  new Date(second.created_at || second.uploaded_at).getTime() -
-                  new Date(first.created_at || first.uploaded_at).getTime(),
-              )
-              .slice(0, 4);
-
-            materialsList.innerHTML = materials.length
-              ? materials
-                  .map((material) => {
-                    const type = materialType(material);
-                    const [iconClass, icon] = typeStyle(type);
-                    const title = material.title || material.name || "Untitled material";
-                    const grade = material.class_grade || material.grade;
-                    const details = [material.subject, grade ? `Class ${grade}` : null, type]
-                      .filter(Boolean)
-                      .join(" • ");
-                    return `
-              <div class="material-item">
-                <div class="material-left">
-                  <div class="material-thumb ${iconClass}">${icon}</div>
-                  <div>
-                    <div class="material-title">${escapeHtml(title)}</div>
-                    <div class="material-meta">${escapeHtml(details || "General")}</div>
-                  </div>
-                </div>
-                <div class="material-right">
-                  <span>${relativeTime(material.created_at || material.uploaded_at)}</span>
-                  <span>⋮</span>
-                </div>
-              </div>`;
-                  })
-                  .join("")
-              : '<p class="empty-state">No materials uploaded.</p>';
-          };
-
-          if (!supabase) {
-            renderMaterials(readLocalMaterials());
-            return;
-          }
-
-          try {
-            const {
-              data: { user },
-            } = await supabase.auth.getUser();
-            if (!user) return;
-
-            const recentSinceIso = new Date(recentSince).toISOString();
-            const { data: materials, error } = await supabase
-              .from("materials")
-              .select("title, name, subject, type, material_type, class_grade, grade, created_at")
-              .eq("teacher_id", user.id)
-              .gte("created_at", recentSinceIso)
-              .order("created_at", { ascending: false })
-              .limit(4);
-
-            if (error) throw error;
-
-            renderMaterials(materials || []);
-          } catch (err) {
-            renderMaterials([]);
-            console.warn(
-              "Could not load materials from Supabase:",
-              err.message,
-            );
           }
         }
 
@@ -1558,7 +1439,6 @@
 
           const refreshStats = () => {
             loadDashboardStats();
-            loadMaterials();
           };
 
           supabase
@@ -1587,7 +1467,6 @@
 
               if (error) alert("Error uploading to Supabase: " + error.message);
               else {
-                loadMaterials();
                 loadDashboardStats();
               }
             } catch (err) {
@@ -1609,14 +1488,10 @@
           });
 
         loadUserProfile();
-        loadMaterials();
         loadDashboardStats();
         loadSchedule();
         subscribeToDashboardStats();
-        setInterval(() => { loadMaterials(); loadSchedule(); }, 60 * 1000);
-        window.addEventListener("storage", (event) => {
-          if (event.key === "teacherMaterials:local-teacher") loadMaterials();
-        });
+        setInterval(() => { loadSchedule(); }, 60 * 1000);
       });
     </script>
     <script src="../js/layout.js"></script>
