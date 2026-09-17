@@ -142,7 +142,7 @@
 
       .content-grid {
         display: grid;
-        grid-template-columns: minmax(650px, 1fr) 310px;
+        grid-template-columns: minmax(0, 1fr) minmax(260px, 280px);
         gap: 25px;
         align-items: start;
       }
@@ -167,6 +167,7 @@
         border-bottom: 1px solid var(--border);
         font-size: 18px;
         font-weight: 750;
+        line-height: 1.2;
       }
 
       .summary-body {
@@ -175,6 +176,7 @@
 
       .summary-row {
         display: flex;
+        align-items: center;
         justify-content: space-between;
         gap: 15px;
         padding: 14px 0;
@@ -191,10 +193,12 @@
       }
 
       .summary-value {
+        min-width: 0;
         font-weight: 650;
         text-align: right;
-        max-width: 170px;
+        max-width: 62%;
         word-break: break-word;
+        overflow-wrap: anywhere;
       }
 
       .info-box {
@@ -611,6 +615,55 @@
 
         .review-grid {
           grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .main-content {
+          padding: 20px;
+        }
+
+        .page-header h1 {
+          font-size: 26px;
+        }
+
+        .stepper {
+          align-items: stretch;
+          flex-direction: column;
+          gap: 12px;
+          padding: 18px;
+        }
+
+        .step {
+          flex: none;
+        }
+
+        .step:last-child {
+          flex: none;
+        }
+
+        .step-line {
+          width: 2px;
+          height: 16px;
+          flex: none;
+          margin: 0 0 0 18px;
+        }
+
+        .form-card {
+          padding: 22px;
+        }
+
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .form-group.full {
+          grid-column: auto;
+        }
+
+        .success-details {
+          min-width: 0;
+          width: 100%;
         }
       }
     </style>
