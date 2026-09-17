@@ -395,6 +395,31 @@
         display: none;
       }
 
+      .classes-pager {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 4px;
+      }
+
+      .classes-page-button {
+        min-width: 34px;
+        height: 34px;
+        border: 1px solid var(--surface-border);
+        border-radius: 8px;
+        color: var(--primary-teal);
+        background: #ffffff;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .classes-page-button.active,
+      .classes-page-button:hover {
+        color: #ffffff;
+        border-color: var(--primary-teal);
+        background: var(--primary-teal);
+      }
+
       .class-card-top {
         display: flex;
         align-items: center;
@@ -1310,7 +1335,17 @@
           });
         }
 
-        const selectedClasses = [...classesByGrade.entries()].sort(([a], [b]) => a - b);
+        const allSelectedClasses = [...classesByGrade.entries()].sort(([a], [b]) => a - b);
+        const query = new URLSearchParams(window.location.search);
+        const requestedGrade = Number(query.get("class_grade"));
+        const pageSize = 4;
+        let currentPage = Math.max(1, Number(query.get("page")) || 1);
+        const selectedClasses = requestedGrade && allSelectedClasses.some(([grade]) => grade === requestedGrade)
+          ? allSelectedClasses.filter(([grade]) => grade === requestedGrade)
+          : allSelectedClasses;
+        const totalPages = Math.max(1, Math.ceil(selectedClasses.length / pageSize));
+        currentPage = Math.min(currentPage, totalPages);
+        const pageClasses = () => selectedClasses.slice((currentPage - 1) * pageSize, currentPage * pageSize);
         const scopeValue = document.getElementById("classScopeValue");
         if (scopeValue) {
           scopeValue.textContent = selectedClasses.length
@@ -1365,7 +1400,7 @@
 
         if (classesGrid) {
           classesGrid.innerHTML = selectedClasses.length
-            ? selectedClasses.map(([grade, subjects]) => {
+            ? pageClasses().map(([grade, subjects]) => {
                 const subjectArray = [...subjects];
                 const stats = classStats.get(grade) || { students: 0, lessons: 0 };
                 const subjectCards = subjectArray.map((subject) => {
@@ -1394,11 +1429,28 @@
                     <div class="progress-section">
                       <div class="progress-labels"><span>Teaching assignment</span><span>Ready</span></div>
                     </div>
-                    <button class="btn-view-class">View Class</button>
+                    <button class="btn-view-class" type="button">View Class</button>
                   </div>
                 `;
               }).join("")
             : '<p class="empty-state">No classes or subjects registered yet.</p>';
+
+          const pager = document.createElement("nav");
+          pager.className = "classes-pager";
+          pager.setAttribute("aria-label", "Class pages");
+          pager.innerHTML = Array.from({ length: totalPages }, (_, index) => {
+            const page = index + 1;
+            return `<button type="button" class="classes-page-button${page === currentPage ? " active" : ""}" data-page="${page}">${page}</button>`;
+          }).join("");
+          if (totalPages > 1) classesGrid.after(pager);
+          pager.querySelectorAll(".classes-page-button").forEach((button) => {
+            button.addEventListener("click", () => {
+              const nextPage = Number(button.dataset.page);
+              const params = new URLSearchParams(window.location.search);
+              params.set("page", String(nextPage));
+              window.location.search = params.toString();
+            });
+          });
         }
 
         const totalStudents = [...classStats.values()].reduce(

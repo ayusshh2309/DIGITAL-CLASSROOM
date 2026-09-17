@@ -516,6 +516,9 @@
       }
 
       .btn-manage-class {
+        display: block;
+        text-align: center;
+        text-decoration: none;
         width: 100%;
         border: 1px solid var(--surface-border);
         background: #ffffff;
@@ -1164,9 +1167,7 @@
         if (avatar && personal.profilePhoto) avatar.src = personal.profilePhoto;
 
         const selectedClasses = window.AttendanceService
-          ? AttendanceService.loadTeacherClasses().flatMap((grade) =>
-              AttendanceService.loadTeacherSubjects(grade).map((subject) => ({ grade, subject })),
-            )
+          ? AttendanceService.loadTeacherClasses()
           : [];
         const classesGrid = document.getElementById("classesGrid");
         if (classesGrid) {
@@ -1174,13 +1175,13 @@
           classesGrid.innerHTML = selectedClasses.length
             ? selectedClasses
                 .map(
-                  ({ grade, subject }) => `
+                  (grade) => `
                     <div class="class-card">
                       <div class="class-badge-icon icon-purple">📚</div>
                       <span class="class-title">Class ${grade}</span>
-                      <span class="class-sub">${subject}</span>
+                      <span class="class-sub">Registered class</span>
                       <span class="class-students">📚 Registered assignment</span>
-                      <button class="btn-manage-class">Manage Class</button>
+                      <a class="btn-manage-class" href="my_classes.html?class_grade=${encodeURIComponent(grade)}&page=1">View Class</a>
                     </div>`,
                 )
                 .join("")
