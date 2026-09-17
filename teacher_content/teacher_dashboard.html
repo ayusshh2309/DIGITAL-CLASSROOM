@@ -332,14 +332,6 @@
         line-height: 1.55;
       }
 
-      .banner-actions {
-        display: flex;
-        gap: 14px;
-        position: relative;
-        z-index: 1;
-        flex-shrink: 0;
-      }
-
       .btn-action-primary {
         background-color: var(--primary-teal);
         color: white;
@@ -911,14 +903,6 @@
           flex-direction: column;
           padding: 24px;
         }
-        .banner-actions {
-          width: 100%;
-          flex-wrap: wrap;
-        }
-        .banner-actions button {
-          flex: 1 1 180px;
-          justify-content: center;
-        }
       }
     </style>
       <link rel="stylesheet" href="../css/layout.css" />
@@ -934,14 +918,6 @@
             <p>
               Let's create an amazing learning experience for your students.
             </p>
-          </div>
-          <div class="banner-actions">
-            <button class="btn-action-primary" id="createLessonBtn">
-              <span>+</span> Create Lesson
-            </button>
-            <button class="btn-action-secondary" id="uploadMaterialBtn">
-              <span>↑</span> Upload Material ▾
-            </button>
           </div>
         </div>
 
@@ -1039,42 +1015,10 @@
           <div class="section-card">
             <div class="section-header">
               <span class="section-title">Today's Schedule</span>
-              <a href="#" class="section-link">View full schedule</a>
+              <a href="live_classes.html" class="section-link">View full schedule</a>
             </div>
-            <div class="schedule-timeline">
-              <div class="timeline-item">
-                <div class="timeline-dot dot-green"></div>
-                <span class="time-slot time-green">10:00 AM</span>
-                <div class="timeline-content">
-                  <div class="timeline-title">Class 9 Science</div>
-                  <div class="timeline-sub">
-                    Chapter 2 - Force and Laws of Motion
-                  </div>
-                </div>
-                <span class="live-chip-badge badge-green">Live Class</span>
-              </div>
-
-              <div class="timeline-item">
-                <div class="timeline-dot dot-purple"></div>
-                <span class="time-slot time-purple">12:30 PM</span>
-                <div class="timeline-content">
-                  <div class="timeline-title">Class 10 Social Science</div>
-                  <div class="timeline-sub">
-                    The Rise of Nationalism in Europe
-                  </div>
-                </div>
-                <span class="live-chip-badge badge-purple">Live Class</span>
-              </div>
-
-              <div class="timeline-item">
-                <div class="timeline-dot dot-blue"></div>
-                <span class="time-slot time-blue">02:30 PM</span>
-                <div class="timeline-content">
-                  <div class="timeline-title">Class 6 Science</div>
-                  <div class="timeline-sub">Sorting Materials into Groups</div>
-                </div>
-                <span class="live-chip-badge badge-blue">Live Class</span>
-              </div>
+            <div class="schedule-timeline" id="scheduleTimeline">
+              <p class="empty-state">No live classes scheduled in the next 24 hours.</p>
             </div>
           </div>
         </div>
@@ -1087,67 +1031,7 @@
               <a href="#" class="section-link">View all</a>
             </div>
             <div class="materials-list" id="materialsList">
-              <div class="material-item">
-                <div class="material-left">
-                  <div class="material-thumb icon-purple">▶</div>
-                  <div>
-                    <div class="material-title">
-                      Electrostatics – Introduction
-                    </div>
-                    <div class="material-meta">Physics • Class 12 • Video</div>
-                  </div>
-                </div>
-                <div class="material-right">
-                  <span>2 hours ago</span>
-                  <span>⋮</span>
-                </div>
-              </div>
-              <div class="material-item">
-                <div class="material-left">
-                  <div
-                    class="material-thumb"
-                    style="background-color: var(--danger)"
-                  >
-                    📄
-                  </div>
-                  <div>
-                    <div class="material-title">Chapter 3 Notes</div>
-                    <div class="material-meta">Chemistry • Class 12 • PDF</div>
-                  </div>
-                </div>
-                <div class="material-right">
-                  <span>Yesterday</span>
-                  <span>⋮</span>
-                </div>
-              </div>
-              <div class="material-item">
-                <div class="material-left">
-                  <div class="material-thumb icon-green">🖼️</div>
-                  <div>
-                    <div class="material-title">Structure of Atom</div>
-                    <div class="material-meta">
-                      Chemistry • Class 11 • Image
-                    </div>
-                  </div>
-                </div>
-                <div class="material-right">
-                  <span>2 days ago</span>
-                  <span>⋮</span>
-                </div>
-              </div>
-              <div class="material-item">
-                <div class="material-left">
-                  <div class="material-thumb icon-orange">❓</div>
-                  <div>
-                    <div class="material-title">Chapter 1 Quiz</div>
-                    <div class="material-meta">Physics • Class 12 • Quiz</div>
-                  </div>
-                </div>
-                <div class="material-right">
-                  <span>3 days ago</span>
-                  <span>⋮</span>
-                </div>
-              </div>
+              <p class="empty-state">Loading recent materials...</p>
             </div>
           </div>
 
@@ -1263,6 +1147,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="../js/teacher-data.js"></script>
+    <script src="../js/attendance-service.js"></script>
+    <script src="../js/live-class-service.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", async () => {
         const registration = TeacherData.getTeacherData() || {};
@@ -1277,20 +1163,11 @@
         if (greeting) greeting.textContent = `Good morning, ${name}!`;
         if (avatar && personal.profilePhoto) avatar.src = personal.profilePhoto;
 
-        const assignments = professional.specialistAssignments || [];
-        const selectedClasses = assignments.length
-          ? assignments.flatMap((assignment) =>
-              (assignment.grades || []).map((grade) => ({
-                grade,
-                subject: assignment.subject,
-              })),
+        const selectedClasses = window.AttendanceService
+          ? AttendanceService.loadTeacherClasses().flatMap((grade) =>
+              AttendanceService.loadTeacherSubjects(grade).map((subject) => ({ grade, subject })),
             )
-          : (professional.grades || []).flatMap((grade) =>
-              (professional.subjects || ["All subjects"]).map((subject) => ({
-                grade,
-                subject,
-              })),
-            );
+          : [];
         const classesGrid = document.getElementById("classesGrid");
         if (classesGrid) {
           const addClass = classesGrid.querySelector(".add-class-btn");
@@ -1311,6 +1188,39 @@
           if (addClass) classesGrid.appendChild(addClass);
         }
 
+        const scheduleTimeline = document.getElementById("scheduleTimeline");
+        const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
+          "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+        })[character]);
+        const palette = ["green", "purple", "blue"];
+        const formatTime = (value) => new Intl.DateTimeFormat([], { hour: "2-digit", minute: "2-digit" }).format(new Date(value));
+        const formatDate = (value) => new Intl.DateTimeFormat([], { weekday: "short", month: "short", day: "numeric" }).format(new Date(value));
+        const renderSchedule = (records) => {
+          const classes = records.sort((first, second) => new Date(first.start_at) - new Date(second.start_at));
+          scheduleTimeline.innerHTML = classes.length
+            ? classes.map((item, index) => {
+                const color = palette[index % palette.length];
+                const attended = item.status === "Attended";
+                return `<div class="timeline-item">
+                  <div class="timeline-dot dot-${color}"></div>
+                  <span class="time-slot time-${color}">${formatTime(item.start_at)}</span>
+                  <div class="timeline-content">
+                    <div class="timeline-title">${escapeHtml(item.title || `Class ${item.class_grade} ${item.subject}`)}</div>
+                    <div class="timeline-sub">Class ${escapeHtml(item.class_grade)}${item.subject ? ` • ${escapeHtml(item.subject)}` : ""} · ${formatDate(item.start_at)}${item.topic ? ` · ${escapeHtml(item.topic)}` : ""}</div>
+                  </div>
+                  ${attended ? '<span class="live-chip-badge badge-green">Attended</span>' : `<button class="live-chip-badge badge-blue schedule-attend-btn" data-class-id="${escapeHtml(item.id)}">Attend</button>`}
+                </div>`;
+              }).join("")
+            : '<p class="empty-state">No live classes scheduled in the next 24 hours.</p>';
+          scheduleTimeline.querySelectorAll(".schedule-attend-btn").forEach((button) => {
+            button.addEventListener("click", async () => {
+              await LiveClassService.markAttended(button.dataset.classId);
+              loadSchedule();
+            });
+          });
+        };
+        const loadSchedule = async () => renderSchedule(await LiveClassService.load());
+
         const supabase = TeacherData.getSupabaseClient();
 
         const uploadModal = document.getElementById("uploadModal");
@@ -1321,13 +1231,6 @@
 
         const openModal = () => uploadModal.classList.add("open");
         const closeModal = () => uploadModal.classList.remove("open");
-
-        document
-          .getElementById("uploadMaterialBtn")
-          ?.addEventListener("click", openModal);
-        document
-          .getElementById("createLessonBtn")
-          ?.addEventListener("click", openModal);
 
         closeModalBtn?.addEventListener("click", closeModal);
         cancelModalBtn?.addEventListener("click", closeModal);
@@ -1360,38 +1263,114 @@
         }
 
         async function loadMaterials() {
-          if (!supabase) return;
+          const localMaterialsKey = "teacherMaterials:local-teacher";
+          const readLocalMaterials = () => {
+            try {
+              return JSON.parse(localStorage.getItem(localMaterialsKey) || "[]");
+            } catch {
+              return [];
+            }
+          };
+          const recentSince = Date.now() - 24 * 24 * 60 * 60 * 1000;
+          const escapeHtml = (value) =>
+            String(value ?? "").replace(
+              /[&<>"']/g,
+              (character) =>
+                ({
+                  "&": "&amp;",
+                  "<": "&lt;",
+                  ">": "&gt;",
+                  '"': "&quot;",
+                  "'": "&#39;",
+                })[character],
+            );
+          const relativeTime = (value) => {
+            const age = Math.max(0, Date.now() - new Date(value).getTime());
+            const minutes = Math.floor(age / 60000);
+            if (minutes < 1) return "Just now";
+            if (minutes < 60) return `${minutes} min ago`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+            const days = Math.floor(hours / 24);
+            return `${days} day${days === 1 ? "" : "s"} ago`;
+          };
+          const materialType = (material) =>
+            String(material.type || material.material_type || "document").toLowerCase();
+          const typeStyle = (type) =>
+            type === "video"
+              ? ["icon-purple", "▶"]
+              : type === "pdf"
+                ? ["icon-orange", "📄"]
+                : type === "image"
+                  ? ["icon-green", "🖼️"]
+                  : ["icon-blue", "📄"];
+          const renderMaterials = (records) => {
+            const materials = records
+              .filter((material) => {
+                const timestamp = new Date(material.created_at || material.uploaded_at).getTime();
+                return timestamp && timestamp >= recentSince;
+              })
+              .sort(
+                (first, second) =>
+                  new Date(second.created_at || second.uploaded_at).getTime() -
+                  new Date(first.created_at || first.uploaded_at).getTime(),
+              )
+              .slice(0, 4);
+
+            materialsList.innerHTML = materials.length
+              ? materials
+                  .map((material) => {
+                    const type = materialType(material);
+                    const [iconClass, icon] = typeStyle(type);
+                    const title = material.title || material.name || "Untitled material";
+                    const grade = material.class_grade || material.grade;
+                    const details = [material.subject, grade ? `Class ${grade}` : null, type]
+                      .filter(Boolean)
+                      .join(" • ");
+                    return `
+              <div class="material-item">
+                <div class="material-left">
+                  <div class="material-thumb ${iconClass}">${icon}</div>
+                  <div>
+                    <div class="material-title">${escapeHtml(title)}</div>
+                    <div class="material-meta">${escapeHtml(details || "General")}</div>
+                  </div>
+                </div>
+                <div class="material-right">
+                  <span>${relativeTime(material.created_at || material.uploaded_at)}</span>
+                  <span>⋮</span>
+                </div>
+              </div>`;
+                  })
+                  .join("")
+              : '<p class="empty-state">No materials uploaded.</p>';
+          };
+
+          if (!supabase) {
+            renderMaterials(readLocalMaterials());
+            return;
+          }
+
           try {
+            const {
+              data: { user },
+            } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const recentSinceIso = new Date(recentSince).toISOString();
             const { data: materials, error } = await supabase
               .from("materials")
-              .select("*")
+              .select("title, name, subject, type, material_type, class_grade, grade, created_at")
+              .eq("teacher_id", user.id)
+              .gte("created_at", recentSinceIso)
               .order("created_at", { ascending: false })
               .limit(4);
 
             if (error) throw error;
 
-            if (materials && materials.length > 0) {
-              materialsList.innerHTML = materials
-                .map(
-                  (m) => `
-              <div class="material-item">
-                <div class="material-left">
-                  <div class="material-thumb icon-purple">📄</div>
-                  <div>
-                    <div class="material-title">${m.title}</div>
-                    <div class="material-meta">${m.subject || "General"} • ${m.type || "Document"}</div>
-                  </div>
-                </div>
-                <div class="material-right">
-                  <span>Recently</span>
-                  <span>⋮</span>
-                </div>
-              </div>
-            `,
-                )
-                .join("");
-            }
+            renderMaterials(materials || []);
           } catch (err) {
+            renderMaterials([]);
             console.warn(
               "Could not load materials from Supabase:",
               err.message,
@@ -1439,7 +1418,7 @@
               await Promise.all([
                 supabase.from("materials").select("created_at").eq("teacher_id", user.id),
                 supabase.from("quizzes").select("created_at, status").eq("teacher_id", user.id).eq("status", "published"),
-                supabase.from("live_classes").select("*"),
+                supabase.from("live_classes").select("*").eq("teacher_id", user.id),
                 supabase.from("students").select("*"),
               ]);
 
@@ -1479,6 +1458,7 @@
             .on("postgres_changes", { event: "*", schema: "public", table: "students" }, refreshStats)
             .subscribe();
         }
+        LiveClassService.subscribe(loadSchedule);
         materialForm?.addEventListener("submit", async (e) => {
           e.preventDefault();
           const title = document.getElementById("matTitle").value;
@@ -1520,7 +1500,12 @@
         loadUserProfile();
         loadMaterials();
         loadDashboardStats();
+        loadSchedule();
         subscribeToDashboardStats();
+        setInterval(() => { loadMaterials(); loadSchedule(); }, 60 * 1000);
+        window.addEventListener("storage", (event) => {
+          if (event.key === "teacherMaterials:local-teacher") loadMaterials();
+        });
       });
     </script>
     <script src="../js/layout.js"></script>

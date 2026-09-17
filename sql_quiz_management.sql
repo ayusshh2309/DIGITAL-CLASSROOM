@@ -106,6 +106,31 @@ create index if not exists downloads_files_teacher_created_idx on public.downloa
 create index if not exists downloads_files_teacher_class_subject_idx on public.downloads_files(teacher_id, class_grade, subject);
 create index if not exists materials_teacher_created_idx on public.materials(teacher_id, created_at desc);
 
+-- Teacher live-class scheduling and attendance state
+create table if not exists public.live_classes (
+  id uuid primary key default gen_random_uuid(),
+  teacher_id uuid not null references auth.users(id) on delete cascade,
+  title text not null,
+  class_grade text not null,
+  subject text not null,
+  topic text,
+  start_at timestamptz not null,
+  status text not null default 'Scheduled' check (status in ('Scheduled', 'Attended')),
+  attended_at timestamptz,
+  meeting_url text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists live_classes_teacher_start_idx on public.live_classes(teacher_id, start_at);
+alter table public.live_classes enable row level security;
+
+drop policy if exists "Teachers manage their live classes" on public.live_classes;
+create policy "Teachers manage their live classes" on public.live_classes
+for all using (auth.uid() = teacher_id) with check (auth.uid() = teacher_id);
+
+alter publication supabase_realtime add table public.live_classes;
+
 alter table public.downloads_files enable row level security;
 alter table public.materials enable row level security;
 

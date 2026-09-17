@@ -628,13 +628,10 @@
       </main>
     </div>
 
+    <script src="../js/teacher-data.js"></script>
+    <script src="../js/attendance-service.js"></script>
+    <script src="../js/live-class-service.js"></script>
     <script>
-      /* ── SUPABASE CONFIGURATION ── */
-      const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
-      const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
-
-      // Initialize Supabase Client
-      const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
       // Initial dataset matching image content
       const fallbackClasses = [
@@ -690,24 +687,7 @@
 
       /* Fetch Classes with Supabase Logic & Fallback */
       async function loadClasses() {
-        try {
-          let { data: classes, error } = await supabase
-            .from("live_classes")
-            .select("*")
-            .order("id", { ascending: true });
-
-          if (error || !classes || classes.length === 0) {
-            currentClasses = [...fallbackClasses];
-          } else {
-            currentClasses = classes;
-          }
-        } catch (err) {
-          console.warn(
-            "Database connection pending. Using local UI dataset:",
-            err,
-          );
-          currentClasses = [...fallbackClasses];
-        }
+        currentClasses = await LiveClassService.load();
 
         renderClasses();
         updateMetrics();
@@ -716,17 +696,18 @@
       /* Render Live Class Cards */
       function renderClasses() {
         const container = document.getElementById("classesList");
-        const searchQuery = document
-          .getElementById("globalSearchInput")
-          .value.toLowerCase();
+        const searchInput = document.getElementById("globalSearchInput");
+        const searchQuery = searchInput ? searchInput.value.toLowerCase() : "";
 
         container.innerHTML = "";
 
         let filtered = currentClasses.filter((c) => {
-          const matchesTab = c.status === currentFilterTab;
+          const matchesTab = currentFilterTab === "Upcoming"
+            ? c.status !== "Attended"
+            : c.status === "Attended";
           const matchesQuery =
-            c.title.toLowerCase().includes(searchQuery) ||
-            c.instructor.toLowerCase().includes(searchQuery);
+            (c.title || "").toLowerCase().includes(searchQuery) ||
+            (c.subject || "").toLowerCase().includes(searchQuery);
           return matchesTab && matchesQuery;
         });
 
@@ -739,10 +720,9 @@
           const card = document.createElement("div");
           card.className = "class-card";
 
-          const buttonText =
-            item.status === "Upcoming" ? "Join Class" : "Watch Recording";
+          const buttonText = item.status === "Attended" ? "Attended" : "Mark Attended";
           const buttonClass =
-            item.status === "Upcoming" ? "btn-join" : "btn-join btn-recording";
+            item.status === "Attended" ? "btn-join btn-recording" : "btn-join";
 
           card.innerHTML = `
           <div class="class-card-left">
@@ -751,14 +731,14 @@
             </div>
             <div class="class-card-info">
               <h3>${item.title}</h3>
-              <p>By ${item.instructor}</p>
+              <p>Class ${item.class_grade}${item.subject ? ` • ${item.subject}` : ""}</p>
             </div>
           </div>
           <div class="class-card-right">
             <div class="class-time">
-              📅 <span>${item.datetime}</span>
+              📅 <span>${new Intl.DateTimeFormat([], { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.start_at))}</span>
             </div>
-            <button class="${buttonClass}" onclick="handleClassClick('${item.title}')">${buttonText}</button>
+            <button class="${buttonClass}" ${item.status === "Attended" ? "disabled" : `onclick="handleClassClick('${item.id}')"`}>${buttonText}</button>
           </div>
         `;
           container.appendChild(card);
@@ -782,12 +762,8 @@
 
       /* Update Metrics */
       function updateMetrics() {
-        const upcoming = currentClasses.filter(
-          (c) => c.status === "Upcoming",
-        ).length;
-        const completed = currentClasses.filter(
-          (c) => c.status === "Previous",
-        ).length;
+        const upcoming = currentClasses.filter((c) => c.status !== "Attended").length;
+        const completed = currentClasses.filter((c) => c.status === "Attended").length;
 
         document.getElementById("statUpcoming").innerText = upcoming;
         document.getElementById("statCompleted").innerText = completed;
@@ -801,43 +777,28 @@
         );
         if (!title) return;
 
-        const instructor = prompt("Enter Instructor Name:", "Mr. Sharma");
-        const datetime = prompt("Enter Date & Time:", "21 May, 11:00 AM");
-
-        const newClass = {
-          title: title,
-          instructor: instructor || "Instructor",
-          datetime: datetime || "TBD",
-          status: "Upcoming",
-          icon: "⚛️",
-          color: "#3b82f6",
-        };
-
-        try {
-          const { data, error } = await supabase
-            .from("live_classes")
-            .insert([newClass])
-            .select();
-          if (error) throw error;
-          if (data && data[0]) currentClasses.push(data[0]);
-          else currentClasses.push(newClass);
-        } catch (err) {
-          console.warn("Supabase insert fallback active:", err);
-          newClass.id = Date.now();
-          currentClasses.push(newClass);
+        const classGrade = prompt("Enter class grade:", "9");
+        const subject = prompt("Enter subject:", "Science");
+        const topic = prompt("Enter topic:", "Chapter 1");
+        const datetime = prompt("Enter start date and time (ISO format):", new Date(Date.now() + 60 * 60 * 1000).toISOString());
+        const start = new Date(datetime || "");
+        if (Number.isNaN(start.getTime())) {
+          alert("Please enter a valid date and time.");
+          return;
         }
-
-        renderClasses();
-        updateMetrics();
+        await LiveClassService.schedule({ title, class_grade: classGrade, subject, topic, start_at: start.toISOString(), icon: "📹", color: "#3b82f6" });
+        await loadClasses();
       }
 
-      function handleClassClick(title) {
-        alert(`Action triggered for: ${title}`);
+      async function handleClassClick(id) {
+        await LiveClassService.markAttended(id);
+        await loadClasses();
       }
 
       // Initialize Page
       document.addEventListener("DOMContentLoaded", () => {
         loadClasses();
+        LiveClassService.subscribe(loadClasses);
       });
     </script>
     <script src="../js/layout.js"></script>
