@@ -339,6 +339,34 @@
         min-width: 190px;
       }
 
+      .welcome-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 10px;
+        flex-wrap: wrap;
+      }
+
+      .welcome-meta-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 6px 10px;
+        border: 1px solid rgba(255, 255, 255, 0.72);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.72);
+        color: #0f4f53;
+        font-size: 0.72rem;
+        font-weight: 700;
+        white-space: nowrap;
+        box-shadow: 0 2px 8px rgba(15, 118, 110, 0.05);
+      }
+
+      .welcome-meta-pill i {
+        color: #087f8a;
+        font-size: 0.75rem;
+      }
+
       .welcome-quote {
         position: relative;
         z-index: 1;
@@ -1001,6 +1029,16 @@
 
           <div class="welcome-subtext">
             Here's what's happening with your classes and students today.
+            <div class="welcome-meta" aria-label="Current date and time">
+              <span class="welcome-meta-pill">
+                <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
+                <span id="dashboardDate">Monday, 16 Sep 2025</span>
+              </span>
+              <span class="welcome-meta-pill">
+                <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                <span id="dashboardTime">10:24 AM</span>
+              </span>
+            </div>
           </div>
 
           <div class="welcome-quote" aria-label="Teacher quote">
@@ -1263,6 +1301,37 @@
     <script src="../js/live-class-service.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", async () => {
+        const dashboardDate = document.getElementById("dashboardDate");
+        const dashboardTime = document.getElementById("dashboardTime");
+
+        const updateDashboardClock = () => {
+          const now = new Date();
+          const dateParts = new Intl.DateTimeFormat("en-GB", {
+            weekday: "long",
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          }).formatToParts(now);
+          const dateValues = Object.fromEntries(
+            dateParts.map(({ type, value }) => [type, value]),
+          );
+
+          if (dashboardDate) {
+            dashboardDate.textContent = `${dateValues.weekday}, ${dateValues.day} ${dateValues.month} ${dateValues.year}`;
+          }
+
+          if (dashboardTime) {
+            dashboardTime.textContent = new Intl.DateTimeFormat([], {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            }).format(now);
+          }
+        };
+
+        updateDashboardClock();
+        setInterval(updateDashboardClock, 1000);
+
         const registration = TeacherData.getTeacherData() || {};
         const personal = registration.personal || {};
         const professional = registration.professional || {};
