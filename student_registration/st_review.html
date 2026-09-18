@@ -809,36 +809,21 @@
          SUPABASE + PAGE JAVASCRIPT
     ========================= -->
 
+    <script src="../js/student-data.js"></script>
     <script>
-      /* =========================================================
-         1. SUPABASE CONFIGURATION
-      ========================================================= */
-
-      const SUPABASE_URL = "https://rcitrmmfsdnattjejkgc.supabase.co";
-
-      // Replace this with the project's public anon/publishable key.
-      const SUPABASE_PUBLISHABLE_KEY = "YOUR_SUPABASE_ANON_KEY";
-
-      const supabaseClient = window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_PUBLISHABLE_KEY,
-      );
-
-      /* =========================================================
-         2. LOAD REGISTRATION DATA
-         
-         IMPORTANT:
-         This is ONLY localStorage.
-         Nothing is sent to Supabase yet.
-      ========================================================= */
-
       document.addEventListener("DOMContentLoaded", function () {
-        const regData =
-          JSON.parse(localStorage.getItem("studentRegistrationData")) || {};
-
-        /* =====================================================
-           HELPER
-        ===================================================== */
+        const draftData = StudentData?.getStudentDraft?.() || {};
+        const personalInfo =
+          JSON.parse(localStorage.getItem("studentPersonalInfo") || "null") ||
+          {};
+        const academicInfo =
+          JSON.parse(localStorage.getItem("studentAcademicInfo") || "null") ||
+          {};
+        const regData = {
+          ...draftData,
+          ...personalInfo,
+          ...academicInfo,
+        };
 
         function createRow(label, value) {
           if (value === undefined || value === null || value === "") {
@@ -847,445 +832,170 @@
 
           return `
             <div class="review-row">
-
-              <span class="review-label">
-                ${label}
-              </span>
-
-              <span class="review-value">
-                ${value}
-              </span>
-
+              <span class="review-label">${label}</span>
+              <span class="review-value">${value}</span>
             </div>
           `;
         }
 
-        /* =====================================================
-           PERSONAL INFORMATION
-        ===================================================== */
-
         let personalHTML = "";
-
         personalHTML += createRow("Full Name", regData.fullName);
-
         personalHTML += createRow("Email Address", regData.email);
-
         personalHTML += createRow("Phone Number", regData.phone);
-
         personalHTML += createRow("Date of Birth", regData.dob);
-
         personalHTML += createRow("Gender", regData.gender);
-
         personalHTML += createRow("Father's Name", regData.fatherName);
-
         personalHTML += createRow("Father's Phone", regData.fatherPhone);
-
         personalHTML += createRow("Mother's Name", regData.motherName);
-
         personalHTML += createRow("Mother's Phone", regData.motherPhone);
-
         document.getElementById("personalInfoContainer").innerHTML =
           personalHTML ||
           `
           <div class="review-row">
-            <span
-              class="review-value"
-              style="width:100%;text-align:left;color:var(--muted-text);"
-            >
+            <span class="review-value" style="width:100%;text-align:left;color:var(--muted-text);">
               No details provided
             </span>
           </div>
           `;
 
-        /* =====================================================
-           PROFILE INFORMATION
-        ===================================================== */
-
         let profileHTML = "";
 
         if (regData.profilePhoto) {
           profileHTML += `
-
             <div class="profile-photo-group">
-
-              <span class="review-label">
-                Profile Photo
-              </span>
-
-              <img
-                src="${regData.profilePhoto}"
-                alt="Profile Preview"
-                class="uploaded-photo-preview"
-              />
-
+              <span class="review-label">Profile Photo</span>
+              <img src="${regData.profilePhoto}" alt="Profile Preview" class="uploaded-photo-preview" />
             </div>
-
           `;
         }
 
         profileHTML += createRow("Address", regData.address);
-
         profileHTML += createRow("City", regData.city);
-
         profileHTML += createRow("State", regData.state);
-
         profileHTML += createRow("Country", regData.country);
-
         document.getElementById("profileInfoContainer").innerHTML =
           profileHTML ||
           `
           <div class="review-row">
-            <span
-              class="review-value"
-              style="width:100%;text-align:left;color:var(--muted-text);"
-            >
+            <span class="review-value" style="width:100%;text-align:left;color:var(--muted-text);">
               No profile details provided
             </span>
           </div>
           `;
 
-        /* =====================================================
-           ACADEMIC INFORMATION
-
-           SUBJECTS HAVE BEEN COMPLETELY REMOVED.
-        ===================================================== */
-
         let academicHTML = "";
-
         academicHTML += createRow(
           "Class / Grade",
           regData.classGrade ? `Class ${regData.classGrade}` : "",
         );
-
         academicHTML += createRow("Stream", regData.stream);
-
         academicHTML += createRow("School Name", regData.schoolName);
-
         academicHTML += createRow(
           "Board",
           regData.board ? regData.board.toUpperCase() : "",
         );
-
         academicHTML += createRow("Academic Year", regData.academicYear);
-
         academicHTML += createRow("Medium of Instruction", regData.medium);
-
         document.getElementById("academicInfoContainer").innerHTML =
           academicHTML ||
           `
           <div class="review-row">
-            <span
-              class="review-value"
-              style="width:100%;text-align:left;color:var(--muted-text);"
-            >
+            <span class="review-value" style="width:100%;text-align:left;color:var(--muted-text);">
               No academic details provided
             </span>
           </div>
           `;
 
-        /* =====================================================
-           OTHER INFORMATION
-        ===================================================== */
-
         let otherHTML = "";
-
         otherHTML += createRow("Roll Number", regData.rollNumber);
-
-        /*
-          Student ID is NOT generated randomly anymore.
-
-          It will be generated only when the final registration
-          is successfully saved.
-        */
-
         otherHTML += createRow(
           "Student ID",
           "Will be generated after successful registration",
         );
-
         document.getElementById("otherInfoContainer").innerHTML = otherHTML;
-
-        /* =====================================================
-           3. FINAL SUBMIT
-           
-           ONLY HERE WE WRITE TO SUPABASE.
-        ===================================================== */
 
         document
           .getElementById("submitRegistrationBtn")
-          .addEventListener("click", async function () {
+          .addEventListener("click", function () {
             const submitButton = document.getElementById(
               "submitRegistrationBtn",
             );
-
             const message = document.getElementById("registrationMessage");
 
-            /* -----------------------------------------------
-               BASIC VALIDATION
-            ------------------------------------------------ */
-
             if (!regData.fullName) {
-              showError("Personal information is incomplete.");
-
+              message.textContent = "Personal information is incomplete.";
+              message.className = "message error";
+              message.style.display = "block";
               return;
             }
 
             if (!regData.email) {
-              showError("Email address is required.");
-
+              message.textContent = "Email address is required.";
+              message.className = "message error";
+              message.style.display = "block";
               return;
             }
 
             if (!regData.classGrade) {
-              showError("Please select your class/grade.");
-
+              message.textContent = "Please select your class/grade.";
+              message.className = "message error";
+              message.style.display = "block";
               return;
             }
 
             if (!regData.schoolName) {
-              showError("School name is required.");
-
+              message.textContent = "School name is required.";
+              message.className = "message error";
+              message.style.display = "block";
               return;
             }
-
-            /* -----------------------------------------------
-               BUTTON LOADING STATE
-            ------------------------------------------------ */
 
             submitButton.disabled = true;
-
             submitButton.textContent = "Creating Account...";
-
             message.className = "message";
-
             message.style.display = "none";
 
-            if (SUPABASE_PUBLISHABLE_KEY === "YOUR_SUPABASE_ANON_KEY") {
-              showError(
-                "Supabase is not configured. Add the public key in st_review.html.",
-              );
-              return;
-            }
-
             try {
-              /* =============================================
-                 4. CREATE SUPABASE AUTH ACCOUNT
-
-                 This assumes your registration has a
-                 password stored as regData.password.
-
-                 If your personal_info.html currently does
-                 NOT store password, add it there.
-              ============================================= */
-
-              let authUser = null;
-
-              if (regData.password) {
-                const { data: authData, error: authError } =
-                  await supabaseClient.auth.signUp({
-                    email: regData.email,
-
-                    password: regData.password,
-
-                    options: {
-                      data: {
-                        full_name: regData.fullName,
-
-                        role: "student",
-                      },
-                    },
-                  });
-
-                if (authError) {
-                  throw authError;
-                }
-
-                authUser = authData?.user || null;
-              }
-
-              /* =============================================
-                 5. GENERATE STUDENT ID
-                 
-                 This happens only during final submission.
-              ============================================= */
-
-              const studentId = generateStudentId();
-
-              let profilePhotoUrl = regData.profilePhoto || null;
-
-              if (regData.profilePhoto && authUser?.id) {
-                const photoResponse = await fetch(regData.profilePhoto);
-                const photoBlob = await photoResponse.blob();
-                const photoPath = `${authUser.id}/${Date.now()}.jpg`;
-                const { error: photoError } = await supabaseClient.storage
-                  .from("profile-images")
-                  .upload(photoPath, photoBlob, {
-                    contentType: photoBlob.type || "image/jpeg",
-                    upsert: true,
-                  });
-
-                if (photoError) {
-                  throw photoError;
-                }
-
-                const { data: publicPhoto } = supabaseClient.storage
-                  .from("profile-images")
-                  .getPublicUrl(photoPath);
-                profilePhotoUrl = publicPhoto.publicUrl;
-              }
-
-              /* =============================================
-                 6. CREATE STUDENT DATABASE OBJECT
-                 
-                 IMPORTANT:
-                 Change column names here if your
-                 Supabase "students" table uses different
-                 names.
-              ============================================= */
-
-              const studentRecord = {
-                auth_user_id: authUser?.id || null,
-
-                student_id: studentId,
-
-                full_name: regData.fullName || null,
-
-                email: regData.email || null,
-
-                phone: regData.phone || null,
-
-                date_of_birth: regData.dob || null,
-
-                gender: regData.gender || null,
-
-                father_name: regData.fatherName || null,
-
-                father_phone: regData.fatherPhone || null,
-
-                mother_name: regData.motherName || null,
-
-                mother_phone: regData.motherPhone || null,
-
-                profile_photo: profilePhotoUrl,
-
-                address: regData.address || null,
-
-                city: regData.city || null,
-
-                state: regData.state || null,
-
-                country: regData.country || null,
-
-                class_grade: regData.classGrade
-                  ? Number(regData.classGrade)
-                  : null,
-
-                stream: regData.stream || null,
-
-                school_name: regData.schoolName || null,
-
-                board: regData.board || null,
-
-                academic_year: regData.academicYear || null,
-
-                medium_of_instruction: regData.medium || null,
-
-                roll_number: regData.rollNumber || null,
-
-                registration_status: "completed",
-
-                created_at: new Date().toISOString(),
+              const studentId = `SLDC-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
+              const finalStudentData = {
+                ...regData,
+                studentId,
+                profilePhoto: regData.profilePhoto || "",
+                registrationStatus: "completed",
+                createdAt: new Date().toISOString(),
               };
 
-              /* =============================================
-                 7. INSERT INTO STUDENTS TABLE
-
-                 THIS IS THE FIRST TIME DATA GOES TO SUPABASE.
-              ============================================= */
-
-              const { data: insertedStudent, error: insertError } =
-                await supabaseClient
-                  .from("students")
-                  .insert(studentRecord)
-                  .select()
-                  .single();
-
-              if (insertError) {
-                throw insertError;
-              }
-
-              /* =============================================
-                  8. REMOVE THE TEMPORARY DRAFT
-
-                  Supabase is now the permanent source of truth.
-                  Keep the draft if any earlier operation fails so
-                  the user can retry or edit it.
-                ============================================= */
-
+              StudentData?.saveStudentProfile?.(finalStudentData);
+              localStorage.setItem(
+                "studentProfile",
+                JSON.stringify(finalStudentData),
+              );
+              localStorage.setItem(
+                "studentData",
+                JSON.stringify(finalStudentData),
+              );
               localStorage.removeItem("studentRegistrationData");
-
-              /* =============================================
-                 9. SUCCESS
-              ============================================= */
+              localStorage.removeItem("studentPersonalInfo");
+              localStorage.removeItem("studentAcademicInfo");
 
               submitButton.textContent = "Registration Completed ✓";
-
               submitButton.style.background = "#10b981";
-
               message.textContent = `Account created successfully. Your Student ID is ${studentId}`;
-
               message.className = "message success";
 
-              /* =============================================
-                 10. REDIRECT
-                 
-                 Change this to your actual dashboard.
-              ============================================= */
-
               setTimeout(() => {
-                window.location.href = "student_dashboard.html";
+                window.location.href = "../student_content/st_profile.html";
               }, 1200);
             } catch (error) {
-              console.error("Registration error:", error);
-
-              /* =============================================
-                 ERROR HANDLING
-              ============================================= */
-
+              console.error("Student registration error:", error);
               submitButton.disabled = false;
-
               submitButton.textContent = "Create Account 🚀";
-
-              showError(
-                error.message || "Registration failed. Please try again.",
-              );
-            }
-
-            /* ===============================================
-               ERROR FUNCTION
-            =============================================== */
-
-            function showError(text) {
-              message.textContent = text;
-
+              message.textContent = "Registration failed. Please try again.";
               message.className = "message error";
-
               message.style.display = "block";
             }
           });
       });
-
-      /* =========================================================
-         STUDENT ID GENERATOR
-      ========================================================= */
-
-      function generateStudentId() {
-        const year = new Date().getFullYear();
-
-        const randomNumber = Math.floor(100000 + Math.random() * 900000);
-
-        return `SLDC-${year}-${randomNumber}`;
-      }
     </script>
   </body>
 </html>

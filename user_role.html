@@ -478,8 +478,15 @@
         localStorage.setItem("selected_role", role);
 
         if (role === "teacher") {
+          sessionStorage.removeItem("teacherPersonalInfo");
+          sessionStorage.removeItem("teacherProfessionalInfo");
+          sessionStorage.removeItem("teacherProfilePhotoName");
           window.location.href = "teacher_registration/teacher_personal.html";
         } else if (role === "student") {
+          localStorage.removeItem("studentRegistrationData");
+          localStorage.removeItem("studentPersonalInfo");
+          localStorage.removeItem("studentAcademicInfo");
+          sessionStorage.removeItem("finalStudentRegistration");
           window.location.href = "student_registration/personal_details.html";
         }
       }

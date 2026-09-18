@@ -1189,33 +1189,22 @@
       </div>
     </main>
 
+    <script src="../js/student-data.js"></script>
+
     <!-- =========================================================
        SUPABASE + REGISTRATION LOGIC
   ========================================================== -->
 
     <script>
-      /* =========================================================
-       LOCAL REGISTRATION DATA
-    ========================================================= */
+      const registrationKey =
+        StudentData?.DRAFT_KEY || "studentRegistrationData";
 
-      const registrationKey = "studentRegistrationData";
-
-      let savedData = {};
-
-      try {
-        savedData = JSON.parse(localStorage.getItem(registrationKey) || "{}");
-      } catch (error) {
-        localStorage.removeItem(registrationKey);
-      }
+      let savedData = StudentData?.getStudentDraft?.() || {};
 
       if (savedData.registrationStatus === "completed") {
-        localStorage.removeItem(registrationKey);
+        StudentData?.clearStudentRegistration?.();
         savedData = {};
       }
-
-      /* =========================================================
-       PERSONAL FIELD IDS
-    ========================================================= */
 
       const personalFieldIds = [
         "fullName",
@@ -1235,19 +1224,11 @@
         "confirmPassword",
       ];
 
-      /* =========================================================
-       COUNTRY PREFIX FIELD IDS
-    ========================================================= */
-
       const prefixFieldIds = [
         "countryCode",
         "fatherCountryCode",
         "motherCountryCode",
       ];
-
-      /* =========================================================
-       LOAD PREVIOUS DATA
-    ========================================================= */
 
       personalFieldIds.concat(prefixFieldIds).forEach((id) => {
         const field = document.getElementById(id);
@@ -1257,18 +1238,10 @@
         }
       });
 
-      /* =========================================================
-       PROFILE PHOTO
-    ========================================================= */
-
       if (savedData.profilePhoto) {
         document.getElementById("uploadText").innerHTML =
           "<strong>Photo selected</strong><br />Your profile image is ready to review.";
       }
-
-      /* =========================================================
-       PROFILE PHOTO CHANGE
-    ========================================================= */
 
       document
         .getElementById("profilePhotoInput")
@@ -1277,35 +1250,23 @@
 
           if (!file) return;
 
-          /* FILE SIZE */
-
           if (file.size > 2 * 1024 * 1024) {
             alert("Please choose an image smaller than 2MB.");
-
             event.target.value = "";
-
             return;
           }
-
-          /* FILE TYPE */
 
           if (!file.type.startsWith("image/")) {
             alert("Please select a valid image.");
-
             event.target.value = "";
-
             return;
           }
-
-          /* READ FILE */
 
           const reader = new FileReader();
 
           reader.onload = () => {
             savedData.profilePhoto = reader.result;
-
-            localStorage.setItem(registrationKey, JSON.stringify(savedData));
-
+            StudentData.saveStudentDraft(savedData);
             document.getElementById("uploadText").innerHTML =
               "<strong>Photo selected</strong><br />Your profile image is ready to review.";
           };
@@ -1313,20 +1274,12 @@
           reader.readAsDataURL(file);
         });
 
-      /* =========================================================
-       FORM SUBMIT
-    ========================================================= */
-
       document
         .getElementById("studentForm")
         .addEventListener("submit", (event) => {
           event.preventDefault();
 
           const button = document.getElementById("studentNextBtn");
-
-          /* ===================================================
-             GET FORM DATA
-          =================================================== */
 
           const formData = { ...savedData };
 
@@ -1338,27 +1291,18 @@
             }
           });
 
-          /* ===================================================
-             PASSWORD CHECK
-          =================================================== */
-
           if (formData.password !== formData.confirmPassword) {
             alert("Passwords do not match.");
-
             return;
           }
 
-          /* ===================================================
-             PASSWORD LENGTH
-          =================================================== */
-
-          if (formData.password.length < 8) {
+          if ((formData.password || "").length < 8) {
             alert("Password must contain at least 8 characters.");
-
             return;
           }
 
-          localStorage.setItem(registrationKey, JSON.stringify(formData));
+          StudentData.saveStudentDraft(formData);
+          localStorage.setItem("studentPersonalInfo", JSON.stringify(formData));
           button.textContent = "Saved. Opening academic details...";
           window.location.href = "academic.html";
         });

@@ -1041,54 +1041,15 @@
          NO SUPABASE INSERT HERE
     ========================================================= -->
 
+    <script src="../js/student-data.js"></script>
     <script>
-      /*
-       * IMPORTANT:
-       *
-       * This page DOES NOT save anything to Supabase.
-       *
-       * Data is temporarily stored in localStorage.
-       *
-       * review.html will read this data.
-       *
-       * Only after the user clicks the final
-       * "Create Account" / "Submit" button on review.html
-       * should the complete registration data be inserted
-       * into Supabase.
-       */
-
       const classGradeSelect = document.getElementById("classGrade");
-
       const streamContainer = document.getElementById("streamContainer");
-
       const streamSelect = document.getElementById("stream");
 
-      /*
-       * Temporary registration storage
-       */
-
-      const registrationKey = "studentRegistrationData";
-
-      /*
-       * Get previously entered registration data.
-       *
-       * This allows the user to go Back and return
-       * without losing the information.
-       */
-
-      let savedData = {};
-
-      try {
-        savedData = JSON.parse(localStorage.getItem(registrationKey) || "{}");
-      } catch (error) {
-        console.error("Unable to read registration data:", error);
-
-        savedData = {};
-      }
-
-      /*
-       * Academic fields
-       */
+      const registrationKey =
+        StudentData?.DRAFT_KEY || "studentRegistrationData";
+      let savedData = StudentData?.getStudentDraft?.() || {};
 
       const academicFieldIds = [
         "classGrade",
@@ -1099,21 +1060,12 @@
         "rollNumber",
       ];
 
-      /*
-       * Restore previously entered values
-       */
-
       academicFieldIds.forEach((id) => {
         const field = document.getElementById(id);
-
         if (field && savedData[id] !== undefined && savedData[id] !== null) {
           field.value = savedData[id];
         }
       });
-
-      /*
-       * Restore medium
-       */
 
       if (savedData.medium) {
         const mediumRadio = document.querySelector(
@@ -1125,93 +1077,40 @@
         }
       }
 
-      /*
-       * Show stream if Grade 11 or 12
-       */
+      function updateStreamVisibility() {
+        const requiresStream = ["11", "12"].includes(classGradeSelect.value);
 
-      if (savedData.classGrade === "11" || savedData.classGrade === "12") {
-        streamContainer.classList.remove("hidden");
+        streamContainer.classList.toggle("hidden", !requiresStream);
+        streamSelect.required = requiresStream;
 
-        streamSelect.setAttribute("required", "true");
-      }
-
-      /*
-       * Grade change
-       */
-
-      classGradeSelect.addEventListener("change", function () {
-        const selectedValue = this.value;
-
-        if (selectedValue === "11" || selectedValue === "12") {
-          streamContainer.classList.remove("hidden");
-
-          streamSelect.setAttribute("required", "true");
-        } else {
-          streamContainer.classList.add("hidden");
-
-          streamSelect.removeAttribute("required");
-
+        if (!requiresStream) {
           streamSelect.value = "";
         }
-      });
+      }
 
-      /*
-       * NEXT STEP
-       *
-       * IMPORTANT:
-       *
-       * NO SUPABASE INSERT IS DONE HERE.
-       */
+      updateStreamVisibility();
+
+      classGradeSelect.addEventListener("change", updateStreamVisibility);
 
       document
         .getElementById("academicForm")
         .addEventListener("submit", function (event) {
           event.preventDefault();
 
-          /*
-           * Create object containing
-           * previous + academic information.
-           */
-
-          const formData = {
-            ...savedData,
-          };
-
-          /*
-           * Save academic fields.
-           */
+          const formData = { ...savedData };
 
           academicFieldIds.forEach((id) => {
             const field = document.getElementById(id);
-
             if (field) {
               formData[id] = field.value.trim();
             }
           });
 
-          /*
-           * Save medium.
-           */
-
           formData.medium =
             document.querySelector('input[name="medium"]:checked')?.value || "";
 
-          /*
-           * There is intentionally NO:
-           *
-           * supabase.from(...).insert(...)
-           *
-           * here.
-           *
-           * The data is only temporarily stored.
-           */
-
-          localStorage.setItem(registrationKey, JSON.stringify(formData));
-
-          /*
-           * Go to review page.
-           */
-
+          StudentData.saveStudentDraft(formData);
+          localStorage.setItem("studentAcademicInfo", JSON.stringify(formData));
           window.location.href = "st_review.html";
         });
     </script>

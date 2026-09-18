@@ -1288,5 +1288,119 @@
         });
     </script>
     <script src="../js/student-layout.js"></script>
+    <script>
+      (function () {
+        const profileData =
+          JSON.parse(localStorage.getItem("studentProfile") || "null") ||
+          JSON.parse(localStorage.getItem("studentData") || "null") ||
+          JSON.parse(
+            localStorage.getItem("studentRegistrationData") || "null",
+          ) ||
+          {};
+
+        function setText(selector, value, fallback = "Not provided") {
+          const node = document.querySelector(selector);
+          if (!node) return;
+          node.textContent = value && String(value).trim() ? value : fallback;
+        }
+
+        setText(
+          ".profile-user-name",
+          profileData.fullName || profileData.full_name || "Student",
+        );
+        setText(".detail-value", "", "");
+
+        const nameValue = document.querySelectorAll(".detail-value");
+        const personalValues = [
+          [
+            ".profile-user-name",
+            profileData.fullName || profileData.full_name || "Student",
+          ],
+          [
+            ".detail-item:nth-of-type(1) .detail-value",
+            profileData.fullName || profileData.full_name || "Not provided",
+          ],
+          [
+            ".detail-item:nth-of-type(2) .detail-value",
+            profileData.studentId || "Not provided",
+          ],
+          [
+            ".detail-item:nth-of-type(3) .detail-value",
+            profileData.dob || "Not provided",
+          ],
+          [
+            ".detail-item:nth-of-type(4) .detail-value",
+            profileData.gender || "Not provided",
+          ],
+          [
+            ".detail-item:nth-of-type(5) .detail-value",
+            profileData.email || "Not provided",
+          ],
+          [
+            ".detail-item:nth-of-type(6) .detail-value",
+            profileData.phone || "Not provided",
+          ],
+          [
+            ".detail-item:nth-of-type(7) .detail-value",
+            profileData.fatherName || "Not provided",
+          ],
+          [
+            ".detail-item:nth-of-type(8) .detail-value",
+            profileData.motherName || "Not provided",
+          ],
+          [
+            ".detail-item:nth-of-type(9) .detail-value",
+            profileData.city || "Not provided",
+          ],
+          [
+            ".detail-item:nth-of-type(10) .detail-value",
+            profileData.state || "Not provided",
+          ],
+          [
+            ".detail-item:nth-of-type(11) .detail-value",
+            profileData.country || "Not provided",
+          ],
+          [
+            ".detail-item:nth-of-type(12) .detail-value",
+            profileData.address || "Not provided",
+          ],
+        ];
+
+        personalValues.forEach(([selector, value]) => {
+          const node = document.querySelector(selector);
+          if (node) node.textContent = value || "Not provided";
+        });
+
+        const academicRows = document.querySelectorAll(
+          ".academic-row span:last-child",
+        );
+        if (academicRows.length >= 5) {
+          academicRows[0].textContent = profileData.classGrade
+            ? `Grade ${profileData.classGrade}`
+            : "Not provided";
+          academicRows[1].textContent = profileData.stream || "Not provided";
+          academicRows[2].textContent = profileData.board || "Not provided";
+          academicRows[3].textContent =
+            profileData.academicYear || "Not provided";
+          academicRows[4].textContent =
+            profileData.rollNumber || "Not provided";
+        }
+
+        const schoolNameNode = document.querySelector(
+          ".academic-box:nth-of-type(2) .academic-row:nth-of-type(1) span:last-child",
+        );
+        if (schoolNameNode)
+          schoolNameNode.textContent = profileData.schoolName || "Not provided";
+
+        if (profileData.profilePhoto) {
+          const avatar = document.querySelector(".profile-main-avatar");
+          if (avatar) avatar.src = profileData.profilePhoto;
+        }
+
+        const studentIdBox = document.querySelector(".student-id-box .id");
+        if (studentIdBox)
+          studentIdBox.textContent = profileData.studentId || "Not provided";
+      })();
+    </script>
   </body>
 </html>
