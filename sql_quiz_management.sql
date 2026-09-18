@@ -4,7 +4,9 @@ create table if not exists public.quizzes (
   id uuid primary key default gen_random_uuid(),
   teacher_id uuid not null references auth.users(id) on delete cascade,
   title text not null,
+  grade text,
   class_grade text not null,
+  stream text,
   subject text not null,
   topic text not null,
   description text,
@@ -20,6 +22,7 @@ create table if not exists public.quizzes (
   shuffle_options boolean not null default false,
   start_at timestamptz,
   end_at timestamptz,
+  published_at timestamptz,
   question_count integer not null default 0,
   total_marks numeric not null default 0,
   response_count integer not null default 0,
@@ -28,6 +31,10 @@ create table if not exists public.quizzes (
   updated_at timestamptz not null default now(),
   constraint quiz_availability_order check (end_at is null or start_at is null or end_at > start_at)
 );
+
+alter table public.quizzes add column if not exists grade text;
+alter table public.quizzes add column if not exists stream text;
+alter table public.quizzes add column if not exists published_at timestamptz;
 
 create table if not exists public.quiz_questions (
   id uuid primary key default gen_random_uuid(),
@@ -45,6 +52,7 @@ create table if not exists public.quiz_questions (
 );
 
 create index if not exists quizzes_teacher_updated_idx on public.quizzes(teacher_id, updated_at desc);
+create index if not exists quizzes_target_idx on public.quizzes(class_grade, stream, subject, status, start_at);
 create index if not exists quiz_questions_quiz_position_idx on public.quiz_questions(quiz_id, position);
 
 alter table public.quizzes enable row level security;

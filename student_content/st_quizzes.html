@@ -1214,6 +1214,83 @@
       let allAttempts = [];
       let studentData = null;
 
+      const LOCAL_QUIZ_KEY = "smartLearningDC_published_quizzes";
+
+      function normalizeGrade(value) {
+        return String(value || "")
+          .trim()
+          .toLowerCase()
+          .replace(/^(class|grade)\s*/i, "");
+      }
+
+      function normalizeText(value) {
+        return String(value || "")
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, " ");
+      }
+
+      function normalizeStream(value) {
+        return normalizeText(value).replace(/\s+/g, "");
+      }
+
+      function readLocalQuizzes() {
+        try {
+          const rows = JSON.parse(localStorage.getItem(LOCAL_QUIZ_KEY) || "[]");
+          return Array.isArray(rows) ? rows : [];
+        } catch (error) {
+          console.warn("Could not read locally published quizzes.", error);
+          return [];
+        }
+      }
+
+      function studentSubjects(student) {
+        const values = [
+          student?.subject,
+          ...(Array.isArray(student?.subjects) ? student.subjects : []),
+          ...(Array.isArray(student?.registeredSubjects)
+            ? student.registeredSubjects
+            : []),
+          ...(Array.isArray(student?.enrolledSubjects)
+            ? student.enrolledSubjects
+            : []),
+        ];
+        return new Set(values.map(normalizeText).filter(Boolean));
+      }
+
+      function quizMatchesStudent(quiz, student) {
+        const studentGrade = normalizeGrade(
+          student?.grade || student?.classGrade || student?.class_grade,
+        );
+        const quizGrade = normalizeGrade(
+          quiz?.grade || quiz?.class_grade || quiz?.class,
+        );
+        if (!studentGrade || studentGrade !== quizGrade) return false;
+
+        const quizStream = normalizeStream(quiz?.stream || quiz?.class_stream);
+        const studentStream = normalizeStream(
+          student?.stream || student?.classStream,
+        );
+        if (quizStream && quizStream !== studentStream) return false;
+
+        const subject = normalizeText(quiz?.subject);
+        const subjects = studentSubjects(student);
+        return !subject || !subjects.size || subjects.has(subject);
+      }
+
+      function quizIsAvailable(quiz) {
+        const status = normalizeText(quiz?.status || "published");
+        if (!["published", "active", "scheduled"].includes(status))
+          return false;
+        return true;
+      }
+
+      function filterEligibleQuizzes(quizzes, student) {
+        return (quizzes || []).filter(
+          (quiz) => quizMatchesStudent(quiz, student) && quizIsAvailable(quiz),
+        );
+      }
+
       /* =====================================================
    ICON MAPPING
 ===================================================== */
@@ -1343,28 +1420,32 @@
 ===================================================== */
 
       async function getCurrentStudent() {
-        const {
-          data: { user },
-          error: authError,
-        } = await supabaseClient.auth.getUser();
-
-        if (authError || !user) {
-          throw new Error("Student is not logged in.");
+        const localProfile =
+          window.StudentData?.getStudentProfile?.() ||
+          JSON.parse(localStorage.getItem("studentProfile") || "null");
+        try {
+          const { data: { user } = {}, error: authError } =
+            await supabaseClient.auth.getUser();
+          if (!authError && user) {
+            const { data, error } = await supabaseClient
+              .from("students")
+              .select("*")
+              .eq("id", user.id)
+              .single();
+            if (!error && data) {
+              studentData = { ...localProfile, ...data };
+              return studentData;
+            }
+          }
+        } catch (error) {
+          console.warn(
+            "Could not load the authenticated student profile.",
+            error,
+          );
         }
-
-        const { data, error } = await supabaseClient
-          .from("students")
-          .select("*")
-          .eq("id", user.id)
-          .single();
-
-        if (error) {
-          throw error;
-        }
-
-        studentData = data;
-
-        return data;
+        if (!localProfile) throw new Error("Student profile is not available.");
+        studentData = localProfile;
+        return localProfile;
       }
 
       /* =====================================================
@@ -1374,24 +1455,20 @@
       async function loadQuizzes() {
         try {
           const student = await getCurrentStudent();
-
-          /*
-           * Get quizzes for student's grade.
-           */
-
-          const { data: quizzes, error: quizError } = await supabaseClient
+          const grade =
+            student.grade || student.classGrade || student.class_grade;
+          const remoteResult = await supabaseClient
             .from("quizzes")
             .select("*")
-            .eq("grade", student.grade)
-            .order("start_time", {
-              ascending: false,
-            });
+            .eq("class_grade", `Class ${normalizeGrade(grade)}`)
+            .in("status", ["published", "active", "scheduled"])
+            .order("start_at", { ascending: false });
+          if (remoteResult.error) throw remoteResult.error;
+          allQuizzes = filterEligibleQuizzes(remoteResult.data || [], student);
 
-          if (quizError) {
-            throw quizError;
+          if (!allQuizzes.length) {
+            allQuizzes = filterEligibleQuizzes(readLocalQuizzes(), student);
           }
-
-          allQuizzes = quizzes || [];
 
           /*
            * Get student's quiz attempts.
@@ -2065,6 +2142,12 @@
 
       document.addEventListener("DOMContentLoaded", () => {
         loadQuizzes();
+        window.addEventListener("storage", (event) => {
+          if (event.key === LOCAL_QUIZ_KEY || event.key === "studentProfile") {
+            loadQuizzes();
+          }
+        });
+        window.addEventListener("smart-learning-quizzes-updated", loadQuizzes);
       });
     </script>
     <script src="../js/student-layout.js"></script>

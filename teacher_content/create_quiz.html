@@ -2575,6 +2575,10 @@
       function publishQuiz() {
         collectQuizInformation();
 
+        if (!validateStep1() || !validateQuestions()) {
+          return;
+        }
+
         quizData.id = quizData.id || "quiz_" + Date.now();
 
         quizData.status = "published";
@@ -2582,6 +2586,27 @@
         quizData.createdAt = quizData.createdAt || new Date().toISOString();
 
         quizData.updatedAt = new Date().toISOString();
+
+        const teacher = window.TeacherData?.getTeacherData?.() || {};
+        const teacherUser = window.TeacherData?.getCurrentUser?.() || {};
+        quizData.teacher_id =
+          teacherUser.id || teacher.id || teacher.teacher_id || null;
+        quizData.grade = normalizeQuizGrade(quizData.class);
+        quizData.class_grade = quizData.class;
+        quizData.topic = quizData.topic || quizData.title;
+        quizData.chapter = quizData.topic;
+        quizData.question_count = quizData.questions.length;
+        quizData.total_questions = quizData.questions.length;
+        quizData.total_marks = calculateTotalMarks();
+        quizData.published_at = quizData.updatedAt;
+        quizData.start_at =
+          quizData.settings.startDate && quizData.settings.startTime
+            ? `${quizData.settings.startDate}T${quizData.settings.startTime}`
+            : null;
+        quizData.end_at =
+          quizData.settings.endDate && quizData.settings.endTime
+            ? `${quizData.settings.endDate}T${quizData.settings.endTime}`
+            : null;
 
         /*
        LOCAL STORAGE DEMO
