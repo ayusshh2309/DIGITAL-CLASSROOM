@@ -244,6 +244,11 @@
         margin-bottom: 11px;
       }
 
+      .teacher i {
+        margin-right: 5px;
+        color: #52678d;
+      }
+
       .chapter {
         display: inline-flex;
         padding: 7px 13px;
@@ -322,6 +327,11 @@
         font-size: 12px;
         font-weight: 700;
 
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+
         box-shadow: 0 5px 12px rgba(88, 54, 217, 0.16);
 
         cursor: pointer;
@@ -394,6 +404,9 @@
       }
 
       .side-card h3 {
+        display: flex;
+        align-items: center;
+        gap: 8px;
         font-size: 14px;
         font-weight: 750;
         color: #101b3d;
@@ -648,28 +661,14 @@
    RESPONSIVE
 ========================================= */
 
-      @media (max-width: 1150px) {
+      @media (max-width: 980px) {
         .content-layout {
           grid-template-columns: 1fr;
         }
 
         .right-sidebar {
           display: grid;
-          grid-template-columns: 1fr 1fr;
-        }
-
-        .class-card {
-          grid-template-columns:
-            70px
-            minmax(220px, 1fr)
-            160px
-            130px;
-        }
-      }
-
-      @media (max-width: 900px) {
-        .main-content {
-          padding: 28px 22px 40px;
+          grid-template-columns: 1fr;
         }
 
         .class-card {
@@ -689,13 +688,15 @@
           flex-direction: row;
           align-items: center;
         }
+      }
+
+      @media (max-width: 760px) {
+        .main-content {
+          padding: 28px 22px 40px;
+        }
 
         .tabs-row {
           align-items: flex-start;
-        }
-
-        .right-sidebar {
-          grid-template-columns: 1fr;
         }
       }
 
@@ -809,7 +810,6 @@
               View full schedule
               <i class="fa-solid fa-arrow-right"></i>
             </a>
-          </div>
 
           <!-- ==================================
                  UPCOMING CLASSES
@@ -826,7 +826,9 @@
               <div class="class-info">
                 <h2>Physics - Electromagnetism</h2>
 
-                <div class="teacher">By Mr. Sharma</div>
+                <div class="teacher">
+                  <i class="fa-solid fa-user"></i>By Mr. Sharma
+                </div>
 
                 <span class="chapter chapter-purple">
                   Chapter 2 - Moving Charges & Magnetism
@@ -852,7 +854,8 @@
                   class="join-button"
                   onclick="joinClass('Physics - Electromagnetism')"
                 >
-                  Join Class
+                  <i class="fa-solid fa-video"></i> Join Class
+                  <i class="fa-solid fa-arrow-right"></i>
                 </button>
 
                 <span class="starting-badge"> Starting in 15 min </span>
@@ -869,7 +872,9 @@
               <div class="class-info">
                 <h2>Mathematics - Calculus</h2>
 
-                <div class="teacher">By Ms. Verma</div>
+                <div class="teacher">
+                  <i class="fa-solid fa-user"></i>By Ms. Verma
+                </div>
 
                 <span class="chapter chapter-green">
                   Chapter 5 - Continuity & Differentiability
@@ -895,7 +900,8 @@
                   class="join-button"
                   onclick="joinClass('Mathematics - Calculus')"
                 >
-                  Join Class
+                  <i class="fa-solid fa-video"></i> Join Class
+                  <i class="fa-solid fa-arrow-right"></i>
                 </button>
 
                 <span class="starting-badge"> Starting in 2h 45m </span>
@@ -912,7 +918,9 @@
               <div class="class-info">
                 <h2>Chemistry - Organic Chemistry</h2>
 
-                <div class="teacher">By Mr. Mehta</div>
+                <div class="teacher">
+                  <i class="fa-solid fa-user"></i>By Mr. Mehta
+                </div>
 
                 <span class="chapter chapter-blue">
                   Chapter 3 - Hydrocarbons
@@ -938,7 +946,8 @@
                   class="join-button"
                   onclick="joinClass('Chemistry - Organic Chemistry')"
                 >
-                  Join Class
+                  <i class="fa-solid fa-video"></i> Join Class
+                  <i class="fa-solid fa-arrow-right"></i>
                 </button>
 
                 <span class="starting-badge"> Starting in 4h 15m </span>
@@ -955,7 +964,9 @@
               <div class="class-info">
                 <h2>Computer Science - Python</h2>
 
-                <div class="teacher">By Mr. Gupta</div>
+                <div class="teacher">
+                  <i class="fa-solid fa-user"></i>By Mr. Gupta
+                </div>
 
                 <span class="chapter chapter-pink">
                   Chapter 4 - Functions
@@ -981,7 +992,8 @@
                   class="join-button"
                   onclick="joinClass('Computer Science - Python')"
                 >
-                  Join Class
+                  <i class="fa-solid fa-video"></i> Join Class
+                  <i class="fa-solid fa-arrow-right"></i>
                 </button>
 
                 <span class="starting-badge"> Starting in 6h 15m </span>
@@ -1002,7 +1014,9 @@
               <div class="class-info">
                 <h2>Physics - Current Electricity</h2>
 
-                <div class="teacher">By Mr. Sharma</div>
+                <div class="teacher">
+                  <i class="fa-solid fa-user"></i>By Mr. Sharma
+                </div>
 
                 <span class="chapter chapter-purple">
                   Chapter 3 - Current Electricity
@@ -1036,7 +1050,9 @@
               <div class="class-info">
                 <h2>Mathematics - Integration</h2>
 
-                <div class="teacher">By Ms. Verma</div>
+                <div class="teacher">
+                  <i class="fa-solid fa-user"></i>By Ms. Verma
+                </div>
 
                 <span class="chapter chapter-green">
                   Chapter 7 - Integrals
@@ -1099,7 +1115,9 @@
           <!-- TODAY OVERVIEW -->
 
           <div class="side-card">
-            <h3>Today's Overview</h3>
+            <h3>
+              <i class="fa-regular fa-calendar-days"></i> Today's Overview
+            </h3>
 
             <div class="overview-box">
               <div class="overview-item">
@@ -1131,7 +1149,9 @@
           <!-- ETIQUETTE -->
 
           <div class="side-card">
-            <h3>Live Class Etiquette</h3>
+            <h3>
+              <i class="fa-solid fa-shield"></i> Live Class Etiquette
+            </h3>
 
             <div class="etiquette-item">
               <div class="etiquette-icon et-purple">
