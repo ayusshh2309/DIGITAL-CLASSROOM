@@ -48,7 +48,14 @@
       .quiz-page {
         width: 100%;
         min-height: 100vh;
-        padding: 38px 30px 45px;
+        padding: 45px 48px 40px;
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(76, 57, 237, 0.04),
+            transparent 35%
+          ),
+          #f5f9fd;
       }
 
       /* =====================================================
@@ -56,17 +63,40 @@
 ===================================================== */
 
       .page-header {
-        margin-bottom: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 4px 4px 8px;
+        margin-bottom: 18px;
+        gap: 20px;
       }
 
-      .page-header h1 {
-        font-size: 28px;
+      .page-title h1 {
+        margin-top: 7px;
+        font-size: clamp(2rem, 3vw, 2.7rem);
         font-weight: 800;
-        color: #0e1939;
-        margin-bottom: 10px;
+        color: #08183e;
+        letter-spacing: -0.8px;
       }
 
-      .page-header p {
+      .page-eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #008b95;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .page-eyebrow i {
+        font-size: 13px;
+      }
+
+      .page-title p {
+        max-width: 540px;
+        margin-top: 4px;
         font-size: 14px;
         color: #536587;
       }
@@ -927,9 +957,16 @@
     ================================================== -->
 
       <div class="page-header">
-        <h1>Quizzes</h1>
+        <div class="page-title">
+          <span class="page-eyebrow">
+            <i class="fa-solid fa-clipboard-check" aria-hidden="true"></i>
+            Student workspace
+          </span>
 
-        <p>Attempt quizzes from your subjects and track your progress.</p>
+          <h1>Quizzes</h1>
+
+          <p>Attempt quizzes from your subjects and track your progress.</p>
+        </div>
       </div>
 
       <!-- =================================================
