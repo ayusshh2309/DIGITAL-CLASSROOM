@@ -48,17 +48,36 @@
 
       .page-header {
         margin-bottom: 34px;
+        padding: 4px 4px 8px;
+      }
+
+      .page-eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 0;
+        color: #008b95;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .page-eyebrow i {
+        font-size: 13px;
       }
 
       .page-header h1 {
-        font-size: 29px;
+        margin-top: 7px;
+        font-size: clamp(2rem, 3vw, 2.7rem);
         font-weight: 800;
         color: #101b3d;
-        margin-bottom: 9px;
       }
 
       .page-header p {
-        font-size: 14px;
+        max-width: 540px;
+        margin-top: 4px;
+        font-size: 1.05rem;
         color: #52658b;
       }
 
@@ -753,6 +772,11 @@
     ======================================= -->
 
       <div class="page-header">
+        <span class="page-eyebrow">
+          <i class="fa-solid fa-video" aria-hidden="true"></i>
+          Student workspace
+        </span>
+
         <h1>Live Classes</h1>
 
         <p>Join your scheduled live classes and never miss a session.</p>
