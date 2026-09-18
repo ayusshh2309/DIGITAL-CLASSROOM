@@ -38,6 +38,8 @@
 
       .main-content {
         width: 100%;
+        max-width: 1500px;
+        margin: 0 auto;
         min-height: 100vh;
         padding: 35px 42px 50px;
       }
@@ -87,8 +89,9 @@
 
       .content-layout {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 245px;
-        gap: 22px;
+        grid-template-columns: minmax(0, 3fr) minmax(280px, 1fr);
+        width: 100%;
+        gap: 24px;
         align-items: start;
       }
 
@@ -171,17 +174,19 @@
 
       .class-card {
         background: #ffffff;
-        border: 1px solid #edf0f4;
-        border-radius: 15px;
-        min-height: 142px;
-        padding: 25px 23px;
+        width: 100%;
+        min-width: 0;
+        min-height: 128px;
+        border: 1px solid #e5eaf0;
+        border-radius: 16px;
+        padding: 24px 22px;
 
         display: grid;
         grid-template-columns: 76px minmax(250px, 1fr) 185px 150px;
         align-items: center;
-        gap: 22px;
+        gap: 24px;
 
-        box-shadow: 0 4px 16px rgba(16, 24, 40, 0.025);
+        box-shadow: 0 5px 18px rgba(16, 24, 40, 0.045);
 
         transition: 0.2s ease;
       }
@@ -396,11 +401,13 @@
 
       .side-card {
         background: white;
-        border: 1px solid #edf0f4;
-        border-radius: 14px;
-        padding: 22px 19px;
+        width: 100%;
+        min-width: 0;
+        border: 1px solid #e5eaf0;
+        border-radius: 16px;
+        padding: 24px 20px;
 
-        box-shadow: 0 4px 15px rgba(16, 24, 40, 0.025);
+        box-shadow: 0 5px 18px rgba(16, 24, 40, 0.045);
       }
 
       .side-card h3 {
@@ -535,7 +542,8 @@
 ========================================= */
 
       .help-card {
-        margin-top: 39px;
+        width: 100%;
+        margin-top: 24px;
 
         min-height: 118px;
 
@@ -810,6 +818,7 @@
               View full schedule
               <i class="fa-solid fa-arrow-right"></i>
             </a>
+          </div>
 
           <!-- ==================================
                  UPCOMING CLASSES
@@ -1149,9 +1158,7 @@
           <!-- ETIQUETTE -->
 
           <div class="side-card">
-            <h3>
-              <i class="fa-solid fa-shield"></i> Live Class Etiquette
-            </h3>
+            <h3><i class="fa-solid fa-shield"></i> Live Class Etiquette</h3>
 
             <div class="etiquette-item">
               <div class="etiquette-icon et-purple">
