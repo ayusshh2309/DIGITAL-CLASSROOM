@@ -96,6 +96,24 @@
         color: #536789;
       }
 
+      .registration-context {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 14px;
+        padding: 9px 13px;
+        border: 1px solid #dce6f2;
+        border-radius: 999px;
+        background: #ffffff;
+        color: #29446d;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .registration-context i {
+        color: #5538ee;
+      }
+
       /* =====================================================
            SUBJECT GRID
         ===================================================== */
@@ -866,7 +884,14 @@
         <div class="page-title">
           <h1>My Subjects</h1>
 
-          <p>Manage and track all your subjects and their progress.</p>
+          <p id="subjectsDescription">
+            Manage and track all your subjects and their progress.
+          </p>
+
+          <div class="registration-context" id="registrationContext" hidden>
+            <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
+            <span id="registrationContextText"></span>
+          </div>
         </div>
       </div>
 
@@ -899,7 +924,7 @@
           </div>
 
           <div>
-            <div class="summary-number" id="totalSubjects">8</div>
+            <div class="summary-number" id="totalSubjects">0</div>
 
             <div class="summary-title">Total Subjects</div>
 
@@ -915,7 +940,7 @@
           </div>
 
           <div>
-            <div class="summary-number" id="totalVideos">75</div>
+            <div class="summary-number" id="totalVideos">0</div>
 
             <div class="summary-title">Total Videos</div>
 
@@ -931,7 +956,7 @@
           </div>
 
           <div>
-            <div class="summary-number" id="totalNotes">49</div>
+            <div class="summary-number" id="totalNotes">0</div>
 
             <div class="summary-title">Total Notes</div>
 
@@ -947,7 +972,7 @@
           </div>
 
           <div>
-            <div class="summary-number" id="totalQuizzes">32</div>
+            <div class="summary-number" id="totalQuizzes">0</div>
 
             <div class="summary-title">Total Quizzes</div>
 
@@ -963,7 +988,7 @@
           </div>
 
           <div>
-            <div class="summary-number" id="averageProgress">69%</div>
+            <div class="summary-number" id="averageProgress">0%</div>
 
             <div class="summary-title">Average Progress</div>
 
@@ -1042,167 +1067,226 @@
        SUBJECT DATA
     ===================================================== */
 
-      let subjects = [
-        {
-          name: "Physics",
-
-          progress: 72,
-
-          videos: 12,
-
-          notes: 8,
-
-          quizzes: 6,
-
-          icon: "fa-atom",
-
-          color: "purple",
-
-          progressColor: "progress-purple",
-
-          cardColor: "",
-        },
-
-        {
-          name: "Chemistry",
-
-          progress: 65,
-
-          videos: 9,
-
-          notes: 5,
-
-          quizzes: 4,
-
-          icon: "fa-flask",
-
-          color: "green",
-
-          progressColor: "progress-green",
-
-          cardColor: "green-card",
-        },
-
-        {
-          name: "Mathematics",
-
-          progress: 80,
-
-          videos: 14,
-
-          notes: 10,
-
-          quizzes: 8,
-
-          icon: "fa-sigma",
-
-          color: "orange",
-
-          progressColor: "progress-orange",
-
-          cardColor: "orange-card",
-        },
-
-        {
-          name: "English",
-
-          progress: 60,
-
-          videos: 7,
-
-          notes: 6,
-
-          quizzes: 3,
-
-          icon: "fa-book-open",
-
-          color: "blue",
-
-          progressColor: "progress-blue",
-
-          cardColor: "blue-card",
-        },
-
-        {
-          name: "Computer Science",
-
-          progress: 75,
-
-          videos: 11,
-
-          notes: 7,
-
-          quizzes: 5,
-
-          icon: "fa-code",
-
-          color: "purple",
-
-          progressColor: "progress-purple",
-
-          cardColor: "",
-        },
-
-        {
-          name: "Physical Education",
-
-          progress: 90,
-
-          videos: 6,
-
-          notes: 3,
-
-          quizzes: 2,
-
-          icon: "fa-person-running",
-
-          color: "pink",
-
-          progressColor: "progress-pink",
-
-          cardColor: "pink-card",
-        },
-
-        {
-          name: "Social Science",
-
-          progress: 70,
-
-          videos: 10,
-
-          notes: 6,
-
-          quizzes: 4,
-
-          icon: "fa-globe",
-
-          color: "teal",
-
-          progressColor: "progress-teal",
-
-          cardColor: "teal-card",
-        },
-
-        {
-          name: "Statistics",
-
-          progress: 55,
-
-          videos: 6,
-
-          notes: 4,
-
-          quizzes: 3,
-
-          icon: "fa-calculator",
-
-          color: "yellow",
-
-          progressColor: "progress-yellow",
-
-          cardColor: "yellow-card",
-        },
-      ];
+      const subjectStyles = {
+        English: ["fa-book-open", "blue", "progress-blue", "blue-card"],
+        Mathematics: ["fa-sigma", "orange", "progress-orange", "orange-card"],
+        Physics: ["fa-atom", "purple", "progress-purple", ""],
+        Chemistry: ["fa-flask", "green", "progress-green", "green-card"],
+        Biology: ["fa-dna", "green", "progress-green", "green-card"],
+        Science: ["fa-flask", "green", "progress-green", "green-card"],
+        "General Science": [
+          "fa-flask",
+          "green",
+          "progress-green",
+          "green-card",
+        ],
+        "Social Science": ["fa-globe", "teal", "progress-teal", "teal-card"],
+        History: ["fa-landmark", "orange", "progress-orange", "orange-card"],
+        Geography: ["fa-earth-americas", "teal", "progress-teal", "teal-card"],
+        "Political Science": [
+          "fa-scale-balanced",
+          "purple",
+          "progress-purple",
+          "",
+        ],
+        Sociology: ["fa-people-group", "pink", "progress-pink", "pink-card"],
+        Hindi: ["fa-language", "pink", "progress-pink", "pink-card"],
+        Sanskrit: ["fa-scroll", "yellow", "progress-yellow", "yellow-card"],
+        "Environmental Studies": [
+          "fa-leaf",
+          "green",
+          "progress-green",
+          "green-card",
+        ],
+        "Computer Science": ["fa-code", "purple", "progress-purple", ""],
+        "Physical Education": [
+          "fa-person-running",
+          "pink",
+          "progress-pink",
+          "pink-card",
+        ],
+        "General Knowledge": [
+          "fa-lightbulb",
+          "yellow",
+          "progress-yellow",
+          "yellow-card",
+        ],
+        Art: ["fa-palette", "orange", "progress-orange", "orange-card"],
+        Accountancy: [
+          "fa-calculator",
+          "yellow",
+          "progress-yellow",
+          "yellow-card",
+        ],
+        "Business Studies": [
+          "fa-briefcase",
+          "blue",
+          "progress-blue",
+          "blue-card",
+        ],
+        Economics: ["fa-chart-line", "teal", "progress-teal", "teal-card"],
+      };
+
+      const gradeSubjects = {
+        5: [
+          "English",
+          "Mathematics",
+          "Environmental Studies",
+          "Hindi",
+          "Computer Science",
+          "General Knowledge",
+          "Art",
+          "Physical Education",
+        ],
+        6: [
+          "English",
+          "Mathematics",
+          "Science",
+          "Social Science",
+          "Hindi",
+          "Computer Science",
+          "Sanskrit",
+          "Physical Education",
+        ],
+        7: [
+          "English",
+          "Mathematics",
+          "Science",
+          "Social Science",
+          "Hindi",
+          "Computer Science",
+          "Sanskrit",
+          "Physical Education",
+        ],
+        8: [
+          "English",
+          "Mathematics",
+          "Science",
+          "Social Science",
+          "Hindi",
+          "Computer Science",
+          "Sanskrit",
+          "Physical Education",
+        ],
+        9: [
+          "English",
+          "Mathematics",
+          "Science",
+          "Social Science",
+          "Hindi",
+          "Computer Science",
+          "Physical Education",
+        ],
+        10: [
+          "English",
+          "Mathematics",
+          "Science",
+          "Social Science",
+          "Hindi",
+          "Computer Science",
+          "Physical Education",
+        ],
+      };
+
+      const streamSubjects = {
+        science_pcm: ["Physics", "Chemistry", "Mathematics"],
+        science_pcb: ["Physics", "Chemistry", "Biology"],
+        commerce: ["Accountancy", "Business Studies", "Economics"],
+        arts: ["History", "Political Science", "Geography", "Sociology"],
+      };
+
+      function readProfile(key) {
+        try {
+          return JSON.parse(localStorage.getItem(key) || "null") || null;
+        } catch (error) {
+          return null;
+        }
+      }
+
+      function getRegisteredStudent() {
+        return (
+          ["studentProfile", "studentData", "finalStudentRegistration"]
+            .map(readProfile)
+            .find(
+              (profile) =>
+                profile && (profile.classGrade || profile.class_grade),
+            ) || {}
+        );
+      }
+
+      function getRegisteredSubjectNames(grade, stream) {
+        if (grade === "11" || grade === "12") {
+          return [
+            ...(streamSubjects[stream] || []),
+            "English",
+            "Computer Science",
+            "Physical Education",
+          ];
+        }
+
+        return gradeSubjects[grade] || [];
+      }
+
+      const profile = getRegisteredStudent();
+      const registeredGrade = String(
+        profile.classGrade || profile.class_grade || "",
+      );
+      const registeredStream = profile.stream || "";
+      const registeredNames = getRegisteredSubjectNames(
+        registeredGrade,
+        registeredStream,
+      );
+
+      const streamLabels = {
+        science_pcm: "Science (PCM)",
+        science_pcb: "Science (PCB)",
+        commerce: "Commerce",
+        arts: "Arts / Humanities",
+      };
+
+      const registrationContext = document.getElementById(
+        "registrationContext",
+      );
+      const registrationContextText = document.getElementById(
+        "registrationContextText",
+      );
+      const subjectsDescription = document.getElementById(
+        "subjectsDescription",
+      );
+
+      if (registeredGrade) {
+        const streamText =
+          registeredGrade === "11" || registeredGrade === "12"
+            ? ` - ${streamLabels[registeredStream] || "Selected stream"}`
+            : "";
+        registrationContextText.textContent = `Registered curriculum: Grade ${registeredGrade}${streamText}`;
+        registrationContext.hidden = false;
+        subjectsDescription.textContent =
+          "Only the subjects assigned to your registered curriculum are shown.";
+      } else {
+        subjectsDescription.textContent =
+          "Complete student registration to see your assigned subjects.";
+      }
+
+      let subjects = registeredNames.map((name) => {
+        const style = subjectStyles[name] || [
+          "fa-book",
+          "blue",
+          "progress-blue",
+          "blue-card",
+        ];
+        return {
+          name,
+          progress: 0,
+          videos: 0,
+          notes: 0,
+          quizzes: 0,
+          icon: style[0],
+          color: style[1],
+          progressColor: style[2],
+          cardColor: style[3],
+        };
+      });
 
       /* =====================================================
        RENDER SUBJECTS
