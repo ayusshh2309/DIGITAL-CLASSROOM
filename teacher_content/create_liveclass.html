@@ -1259,6 +1259,17 @@
           return false;
         }
 
+        try {
+          const parsed = new URL(link);
+          if (parsed.protocol !== "https:") {
+            alert("Please provide a valid HTTPS meeting URL.");
+            return false;
+          }
+        } catch {
+          alert("Please provide a valid HTTPS meeting URL.");
+          return false;
+        }
+
         return true;
       }
 
@@ -1306,21 +1317,43 @@
       }
 
       function scheduleLiveClass() {
+        if (!validateForm()) return;
+
         const date = document.getElementById("classDate").value;
+        const startTime = document.getElementById("startTime").value;
+        const endTime = document.getElementById("endTime").value;
+        const startDateTime = new Date(`${date}T${startTime}:00`);
+        const durationMinutes = Math.max(
+          1,
+          Math.round(
+            (new Date(`${date}T${endTime}:00`) - startDateTime) / 60000,
+          ),
+        );
 
         const liveClass = {
           id: "live_" + Date.now(),
+          teacher_id: "teacher-local",
           classId: selectedClass.id,
-          className: selectedClass.name,
-          stream: selectedClass.stream,
+          grade: String(selectedClass.name).replace(/[^0-9]/g, "") || "",
+          stream:
+            selectedClass.stream === "All Subjects" ? "" : selectedClass.stream,
           subject: selectedSubject,
-          title: document.getElementById("classTitle").value,
-          description: document.getElementById("classDescription").value,
-          date: date,
-          startTime: document.getElementById("startTime").value,
-          endTime: document.getElementById("endTime").value,
+          title: document.getElementById("classTitle").value.trim(),
+          topic: document.getElementById("classDescription").value.trim(),
+          class_title: document.getElementById("classTitle").value.trim(),
+          description: document.getElementById("classDescription").value.trim(),
+          date,
+          startTime,
+          endTime,
+          start_at: startDateTime.toISOString(),
+          duration_minutes: durationMinutes,
+          duration: durationMinutes,
           platform: document.getElementById("platform").value,
-          meetingLink: document.getElementById("meetingLink").value,
+          meeting_platform: document.getElementById("platform").value,
+          meetingLink: document.getElementById("meetingLink").value.trim(),
+          meeting_url: document.getElementById("meetingLink").value.trim(),
+          class_grade: String(selectedClass.name).replace(/[^0-9]/g, "") || "",
+          status: "Scheduled",
           students: selectedClass.students,
           createdAt: new Date().toISOString(),
         };
@@ -1333,6 +1366,9 @@
         localStorage.setItem(
           "scheduledLiveClasses",
           JSON.stringify(existingClasses),
+        );
+        window.dispatchEvent(
+          new CustomEvent("smart-learning-live-classes-updated"),
         );
 
         document.querySelectorAll(".schedule-section").forEach((section) => {
@@ -1354,9 +1390,9 @@
             year: "numeric",
           }) +
           " · " +
-          liveClass.startTime +
+          startTime +
           " – " +
-          liveClass.endTime;
+          endTime;
         document.getElementById("successStudents").textContent =
           selectedClass.students;
       }

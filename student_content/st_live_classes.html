@@ -1213,50 +1213,451 @@
     </main>
 
     <script>
-      /* =========================================
-   TAB SWITCHING
-========================================= */
+      const LIVE_CLASS_STORAGE_KEY = "scheduledLiveClasses";
+
+      function normalizeGrade(value) {
+        const str = String(value ?? "").trim();
+        const match = str.match(/\d+/);
+        return match ? match[0] : str.replace(/[^\d]/g, "");
+      }
+
+      function normalizeStream(value) {
+        const str = String(value ?? "")
+          .trim()
+          .toLowerCase();
+        if (!str || ["all subjects", "all", "none", "n/a"].includes(str))
+          return "";
+        if (str.includes("pcm")) return "science_pcm";
+        if (str.includes("pcb")) return "science_pcb";
+        if (str.includes("commerce")) return "commerce";
+        if (str.includes("arts") || str.includes("humanities"))
+          return "arts_humanities";
+        return str.replace(/[^a-z]/g, "");
+      }
+
+      function normalizeSubject(value) {
+        return String(value ?? "")
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, " ")
+          .trim();
+      }
+
+      function readScheduledClasses() {
+        try {
+          const stored = JSON.parse(
+            localStorage.getItem(LIVE_CLASS_STORAGE_KEY) || "[]",
+          );
+          return Array.isArray(stored) ? stored : [];
+        } catch {
+          return [];
+        }
+      }
+
+      function readStudentProfile() {
+        const candidates = [
+          localStorage.getItem("studentProfile"),
+          localStorage.getItem("studentData"),
+          localStorage.getItem("finalStudentRegistration"),
+          sessionStorage.getItem("finalStudentRegistration"),
+        ];
+
+        for (const value of candidates) {
+          if (!value) continue;
+          try {
+            const parsed = JSON.parse(value);
+            if (
+              parsed &&
+              (parsed.classGrade ||
+                parsed.class_grade ||
+                parsed.grade ||
+                parsed.stream ||
+                parsed.subjects)
+            ) {
+              return parsed;
+            }
+          } catch {
+            // ignore malformed storage entries
+          }
+        }
+
+        return {};
+      }
+
+      function studentEligibleSubjects(studentProfile) {
+        const grade = normalizeGrade(
+          studentProfile.classGrade ||
+            studentProfile.class_grade ||
+            studentProfile.grade ||
+            "",
+        );
+        const stream = normalizeStream(
+          studentProfile.stream || studentProfile.classStream || "",
+        );
+        const baseMap = {
+          5: ["Mathematics", "Science", "English", "Hindi", "Social Science"],
+          6: ["Mathematics", "Science", "English", "Hindi", "Social Science"],
+          7: ["Mathematics", "Science", "English", "Hindi", "Social Science"],
+          8: ["Mathematics", "Science", "English", "Hindi", "Social Science"],
+          9: [
+            "Mathematics",
+            "Physics",
+            "Chemistry",
+            "Biology",
+            "English",
+            "Hindi",
+            "Social Science",
+          ],
+          10: [
+            "Mathematics",
+            "Physics",
+            "Chemistry",
+            "Biology",
+            "English",
+            "Hindi",
+            "Social Science",
+          ],
+          11: [
+            "Mathematics",
+            "Physics",
+            "Chemistry",
+            "Biology",
+            "English",
+            "Accountancy",
+            "Business Studies",
+            "Economics",
+            "History",
+            "Geography",
+            "Political Science",
+          ],
+          12: [
+            "Mathematics",
+            "Physics",
+            "Chemistry",
+            "Biology",
+            "English",
+            "Accountancy",
+            "Business Studies",
+            "Economics",
+            "History",
+            "Geography",
+            "Political Science",
+          ],
+        };
+
+        const streamMap = {
+          science_pcm: ["Physics", "Chemistry", "Mathematics"],
+          science_pcb: ["Physics", "Chemistry", "Biology"],
+          commerce: ["Accountancy", "Business Studies", "Economics"],
+          arts_humanities: [
+            "History",
+            "Geography",
+            "Political Science",
+            "Psychology",
+          ],
+        };
+
+        const direct = Array.isArray(studentProfile.subjects)
+          ? studentProfile.subjects
+          : [];
+        const subjectList = direct.length
+          ? direct
+          : grade && (baseMap[grade] || []);
+
+        if ((grade === "11" || grade === "12") && streamMap[stream]) {
+          return [...new Set([...subjectList, ...streamMap[stream]])];
+        }
+
+        return [...new Set(subjectList)];
+      }
+
+      function getClassStartDate(item) {
+        if (item.start_at) {
+          const parsed = new Date(item.start_at);
+          if (!Number.isNaN(parsed.getTime())) return parsed;
+        }
+
+        if (item.date && item.startTime) {
+          const parsed = new Date(`${item.date}T${item.startTime}:00`);
+          if (!Number.isNaN(parsed.getTime())) return parsed;
+        }
+
+        if (item.date) {
+          const parsed = new Date(`${item.date}T09:00:00`);
+          if (!Number.isNaN(parsed.getTime())) return parsed;
+        }
+
+        return null;
+      }
+
+      function getMeetingUrl(item) {
+        return String(
+          item.meeting_url || item.meetingLink || item.link || "",
+        ).trim();
+      }
+
+      function hasValidHttpsUrl(url) {
+        if (!url) return false;
+        try {
+          const parsed = new URL(url);
+          return parsed.protocol === "https:";
+        } catch {
+          return false;
+        }
+      }
+
+      function getCountdownLabel(startDate) {
+        if (!startDate) return "Starts soon";
+        const diffMs = startDate.getTime() - Date.now();
+        const diffMinutes = Math.max(0, Math.round(diffMs / 60000));
+
+        if (diffMinutes <= 0) return "Live now";
+        if (diffMinutes < 60) return `Starting in ${diffMinutes} min`;
+        const hours = Math.floor(diffMinutes / 60);
+        const minutes = diffMinutes % 60;
+        if (minutes === 0) return `Starting in ${hours}h`;
+        return `Starting in ${hours}h ${minutes}m`;
+      }
+
+      function subjectMatches(classItem, studentProfile) {
+        const targetSubject = normalizeSubject(
+          classItem.subject ||
+            classItem.class_subject ||
+            classItem.subjectName ||
+            "",
+        );
+        if (!targetSubject) return false;
+        const allowed =
+          studentEligibleSubjects(studentProfile).map(normalizeSubject);
+        return allowed.includes(targetSubject);
+      }
+
+      function classMatchesStudent(classItem, studentProfile) {
+        const studentGrade = normalizeGrade(
+          studentProfile.classGrade ||
+            studentProfile.class_grade ||
+            studentProfile.grade ||
+            "",
+        );
+        const classGrade = normalizeGrade(
+          classItem.grade ||
+            classItem.class_grade ||
+            classItem.classId ||
+            classItem.className ||
+            "",
+        );
+        if (!studentGrade || !classGrade || studentGrade !== classGrade)
+          return false;
+
+        const studentStream = normalizeStream(
+          studentProfile.stream || studentProfile.classStream || "",
+        );
+        const classStream = normalizeStream(
+          classItem.stream || classItem.class_stream || "",
+        );
+        if (!classStream) return true;
+        if (!studentStream) return false;
+        return classStream === studentStream;
+      }
+
+      function getSubjectIcon(subject) {
+        const lower = normalizeSubject(subject);
+        if (lower.includes("physics"))
+          return { className: "physics", icon: "fa-solid fa-atom" };
+        if (lower.includes("math") || lower.includes("calculus"))
+          return { className: "math", icon: "fa-solid fa-flask" };
+        if (lower.includes("chem") || lower.includes("organic"))
+          return { className: "chemistry", icon: "fa-solid fa-book-open" };
+        if (lower.includes("computer") || lower.includes("python"))
+          return { className: "computer", icon: "fa-solid fa-code" };
+        return { className: "physics", icon: "fa-solid fa-book" };
+      }
+
+      function renderLiveClasses() {
+        const studentProfile = readStudentProfile();
+        const scheduled = readScheduledClasses()
+          .map((item) => ({
+            ...item,
+            grade: normalizeGrade(
+              item.grade || item.class_grade || item.classId || "",
+            ),
+            stream: normalizeStream(item.stream || item.class_stream || ""),
+          }))
+          .filter(
+            (item) =>
+              classMatchesStudent(item, studentProfile) &&
+              subjectMatches(item, studentProfile),
+          );
+
+        const upcoming = scheduled
+          .filter(
+            (item) =>
+              String(item.status || "Scheduled").toLowerCase() !==
+                "completed" &&
+              String(item.status || "Scheduled").toLowerCase() !==
+                "cancelled" &&
+              String(item.status || "Scheduled").toLowerCase() !== "attended",
+          )
+          .sort(
+            (a, b) =>
+              (getClassStartDate(a) || new Date()).getTime() -
+              (getClassStartDate(b) || new Date()).getTime(),
+          );
+
+        const previous = scheduled
+          .filter(
+            (item) =>
+              String(item.status || "Scheduled").toLowerCase() ===
+                "completed" ||
+              String(item.status || "Scheduled").toLowerCase() === "attended" ||
+              String(item.status || "Scheduled").toLowerCase() ===
+                "cancelled" ||
+              (getClassStartDate(item) &&
+                getClassStartDate(item).getTime() < Date.now()),
+          )
+          .sort(
+            (a, b) =>
+              (getClassStartDate(b) || new Date()).getTime() -
+              (getClassStartDate(a) || new Date()).getTime(),
+          );
+
+        const upcomingContainer = document.getElementById("upcomingClasses");
+        const previousContainer = document.getElementById("previousClasses");
+
+        upcomingContainer.innerHTML = upcoming.length
+          ? upcoming.map((item) => renderClassCard(item, false)).join("")
+          : `<div class="empty-state"><i class="fa-regular fa-calendar-days"></i><h3>No upcoming live classes</h3><p>There are no classes scheduled for your grade, stream, and subjects right now.</p></div>`;
+
+        previousContainer.innerHTML = previous.length
+          ? previous.map((item) => renderClassCard(item, true)).join("")
+          : `<div class="empty-state"><i class="fa-regular fa-clock"></i><h3>No previous classes</h3><p>Your completed or past sessions will appear here.</p></div>`;
+
+        const todayCount = upcoming.filter((item) => {
+          const date = getClassStartDate(item);
+          if (!date) return false;
+          const now = new Date();
+          return date.toDateString() === now.toDateString();
+        }).length;
+
+        const todayClassesEl = document.getElementById("todayClasses");
+        if (todayClassesEl) {
+          todayClassesEl.textContent = String(todayCount || 0);
+        }
+      }
+
+      function renderClassCard(item, isPrevious) {
+        const startDate = getClassStartDate(item);
+        const meetingUrl = getMeetingUrl(item);
+        const isValidUrl = hasValidHttpsUrl(meetingUrl);
+        const status = String(item.status || "Scheduled").trim();
+        const statusText =
+          status.toLowerCase() === "cancelled"
+            ? "Class Cancelled"
+            : status.toLowerCase() === "completed" ||
+                status.toLowerCase() === "attended"
+              ? "Completed"
+              : status.toLowerCase() === "live now"
+                ? "Live Now"
+                : getCountdownLabel(startDate);
+        const subjectMeta = getSubjectIcon(item.subject || "");
+        const buttonDisabled =
+          isPrevious ||
+          !isValidUrl ||
+          status.toLowerCase() === "cancelled" ||
+          status.toLowerCase() === "completed" ||
+          status.toLowerCase() === "attended";
+        const buttonText =
+          status.toLowerCase() === "cancelled"
+            ? "Class Cancelled"
+            : status.toLowerCase() === "completed" ||
+                status.toLowerCase() === "attended"
+              ? "Completed"
+              : !isValidUrl
+                ? "Meeting link unavailable"
+                : "Join Class";
+        const dateText = startDate
+          ? startDate.toLocaleDateString("en-IN", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })
+          : "Date unavailable";
+        const timeText = startDate
+          ? startDate.toLocaleTimeString("en-IN", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "Time unavailable";
+        const duration =
+          Number(item.duration_minutes || item.duration || 60) || 60;
+
+        return `
+          <div class="class-card">
+            <div class="class-icon ${subjectMeta.className}">
+              <i class="${subjectMeta.icon}"></i>
+            </div>
+            <div class="class-info">
+              <h2>${(item.title || item.class_title || item.subject || "Live Class").replace(/&/g, "&amp;")}</h2>
+              <div class="teacher">
+                <i class="fa-solid fa-user"></i>By ${item.teacher_name || "Teacher"}
+              </div>
+              <span class="chapter ${subjectMeta.className === "math" ? "chapter-green" : subjectMeta.className === "chemistry" ? "chapter-blue" : subjectMeta.className === "computer" ? "chapter-pink" : "chapter-purple"}">
+                ${item.topic || item.subject || "Class session"}
+              </span>
+            </div>
+            <div class="class-time">
+              <div class="time-row">
+                <i class="fa-regular fa-calendar"></i>
+                <span>${dateText}</span>
+              </div>
+              <div class="time-row">
+                <i class="fa-regular fa-clock"></i>
+                <span>${duration} min</span>
+              </div>
+            </div>
+            <div class="join-area">
+              <button class="join-button" ${buttonDisabled ? "disabled" : ""} data-meeting-url="${escapeHtml(meetingUrl)}" onclick="joinClass('${escapeHtml(String(item.id || item.title || "live-class"))}', '${escapeHtml(meetingUrl)}')">
+                <i class="fa-solid fa-video"></i> ${buttonText}
+                ${!buttonDisabled && !isPrevious ? '<i class="fa-solid fa-arrow-right"></i>' : ""}
+              </button>
+              ${!isPrevious ? `<span class="starting-badge">${statusText}</span>` : ""}
+            </div>
+          </div>
+        `;
+      }
+
+      function escapeHtml(value) {
+        return String(value || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
 
       function showUpcoming() {
         document.getElementById("upcomingClasses").classList.remove("hide");
-
         document.getElementById("previousClasses").classList.remove("show");
-
         document.getElementById("upcomingTab").classList.add("active");
-
         document.getElementById("previousTab").classList.remove("active");
       }
 
       function showPrevious() {
         document.getElementById("upcomingClasses").classList.add("hide");
-
         document.getElementById("previousClasses").classList.add("show");
-
         document.getElementById("upcomingTab").classList.remove("active");
-
         document.getElementById("previousTab").classList.add("active");
       }
 
-      /* =========================================
-   JOIN CLASS
-========================================= */
+      function joinClass(classId, meetingUrl) {
+        const safeUrl = String(meetingUrl || "").trim();
+        if (!safeUrl || !hasValidHttpsUrl(safeUrl)) {
+          alert("Meeting link unavailable for this class.");
+          return;
+        }
 
-      function joinClass(className) {
-        /*
-        Replace this with your actual
-        meeting URL from Supabase.
-
-        Example:
-
-        window.open(meetingUrl, "_blank");
-    */
-
-        alert("Joining " + className + "...");
+        window.open(safeUrl, "_blank", "noopener,noreferrer");
       }
-
-      /* =========================================
-   HELP GUIDE
-========================================= */
 
       function openGuide() {
         alert(
@@ -1267,6 +1668,19 @@
             "4. Keep your microphone muted when not speaking.",
         );
       }
+
+      window.addEventListener(
+        "smart-learning-live-classes-updated",
+        renderLiveClasses,
+      );
+      window.addEventListener("storage", (event) => {
+        if (event.key === LIVE_CLASS_STORAGE_KEY) {
+          renderLiveClasses();
+        }
+      });
+
+      renderLiveClasses();
+      showUpcoming();
     </script>
     <script src="../js/student-layout.js"></script>
   </body>

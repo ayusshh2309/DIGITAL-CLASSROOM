@@ -16,19 +16,27 @@
   const teacherId = () => window.AttendanceService?.teacherId?.() || "local-teacher";
 
   const normalize = (item) => {
-    const start = item.start_at || item.start_time || item.scheduled_at || item.datetime;
+    const start = item.start_at || item.start_time || item.scheduled_at || item.datetime || (item.date && item.startTime ? `${item.date}T${item.startTime}` : null);
     const startDate = start ? new Date(start) : null;
-    const attended = Boolean(item.attended_at) || ["attended", "completed", "previous"].includes(String(item.status || "").toLowerCase());
+    const attended = Boolean(item.attended_at) || ["attended", "completed", "previous", "live now"].includes(String(item.status || "").toLowerCase());
+    const durationMinutes = Number(item.duration_minutes || item.duration || item.durationMinutes || 60) || 60;
+    const gradeValue = item.grade || item.class_grade || item.class || item.classId || "";
+    const statusValue = String(item.status || (attended ? "Attended" : "Scheduled")).trim() || "Scheduled";
     return {
       ...item,
       id: String(item.id || `local-${Date.now()}-${Math.random().toString(36).slice(2)}`),
       teacher_id: String(item.teacher_id || teacherId()),
-      title: item.title || item.topic || "Live class",
-      class_grade: String(item.class_grade || item.grade || item.class || ""),
+      title: item.title || item.class_title || item.topic || "Live class",
+      grade: String(gradeValue || ""),
+      class_grade: String(item.class_grade || gradeValue || ""),
+      stream: item.stream || item.class_stream || "",
       subject: item.subject || "",
-      topic: item.topic || item.description || "",
+      topic: item.topic || item.description || item.chapter || "",
+      meeting_platform: item.meeting_platform || item.platform || "",
+      meeting_url: item.meeting_url || item.meetingLink || item.link || "",
       start_at: startDate && !Number.isNaN(startDate.getTime()) ? startDate.toISOString() : null,
-      status: attended ? "Attended" : "Scheduled",
+      duration_minutes: durationMinutes,
+      status: statusValue,
       attended_at: item.attended_at || null,
       created_at: item.created_at || now(),
     };
@@ -63,13 +71,20 @@
       const payload = {
         teacher_id: user.id,
         title: record.title,
-        class_grade: record.class_grade,
-        subject: record.subject,
-        topic: record.topic,
+        class_title: record.title,
+        grade: record.grade || record.class_grade || "",
+        class_grade: record.class_grade || record.grade || "",
+        stream: record.stream || "",
+        subject: record.subject || "",
+        topic: record.topic || "",
         start_at: record.start_at,
+        duration_minutes: record.duration_minutes || 60,
         status: record.status,
+        meeting_platform: record.meeting_platform || record.platform || "",
+        meeting_url: record.meeting_url || "",
         attended_at: record.attended_at,
         created_at: record.created_at,
+        updated_at: now(),
       };
       const { data, error } = await client.from("live_classes").insert(payload).select().single();
       if (!error) return normalize(data);
