@@ -49,8 +49,12 @@
 ========================================= */
 
       .page-header {
-        margin-bottom: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
         padding: 4px 4px 8px;
+        margin-bottom: 18px;
+        gap: 20px;
       }
 
       .page-eyebrow {
@@ -73,14 +77,40 @@
         margin-top: 7px;
         font-size: clamp(2rem, 3vw, 2.7rem);
         font-weight: 800;
-        color: #101b3d;
+        color: #08183e;
+        letter-spacing: -0.8px;
       }
 
       .page-header p {
         max-width: 540px;
         margin-top: 4px;
         font-size: 1.05rem;
-        color: #52658b;
+        color: #536789;
+      }
+
+      .registration-context {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        width: fit-content;
+        margin-top: 18px;
+        padding: 8px 12px;
+        border: 1px solid rgba(41, 174, 184, 0.22);
+        border-radius: 10px;
+        background: rgba(237, 250, 250, 0.72);
+        color: #315360;
+      }
+
+      .scope-label {
+        color: #087f8a;
+        font-weight: 800;
+      }
+
+      .scope-value {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
       }
 
       /* =========================================
@@ -781,14 +811,24 @@
     ======================================= -->
 
       <div class="page-header">
-        <span class="page-eyebrow">
-          <i class="fa-solid fa-video" aria-hidden="true"></i>
-          Student workspace
-        </span>
+        <div class="page-title">
+          <span class="page-eyebrow">
+            <i class="fa-solid fa-video" aria-hidden="true"></i>
+            Student workspace
+          </span>
 
-        <h1>Live Classes</h1>
+          <h1>Live Classes</h1>
 
-        <p>Join your scheduled live classes and never miss a session.</p>
+          <p>Join your scheduled live classes and never miss a session.</p>
+
+          <div class="registration-context" id="registrationContext" hidden>
+            <span class="scope-label">Your registered curriculum</span>
+            <span class="scope-value">
+              <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
+              <span id="registrationContextText"></span>
+            </span>
+          </div>
+        </div>
       </div>
 
       <div class="content-layout">
@@ -1475,6 +1515,7 @@
 
       function renderLiveClasses() {
         const studentProfile = readStudentProfile();
+        renderRegistrationContext(studentProfile);
         const scheduled = readScheduledClasses()
           .map((item) => ({
             ...item,
@@ -1543,6 +1584,30 @@
         if (todayClassesEl) {
           todayClassesEl.textContent = String(todayCount || 0);
         }
+      }
+
+      function renderRegistrationContext(studentProfile) {
+        const grade = normalizeGrade(
+          studentProfile.classGrade ||
+            studentProfile.class_grade ||
+            studentProfile.grade ||
+            "",
+        );
+        const stream = String(
+          studentProfile.stream || studentProfile.classStream || "",
+        ).trim();
+        const context = document.getElementById("registrationContext");
+        const text = document.getElementById("registrationContextText");
+        if (!grade || !context || !text) return;
+        const labels = {
+          science_pcm: "Science (PCM)",
+          science_pcb: "Science (PCB)",
+          commerce: "Commerce",
+          arts: "Arts / Humanities",
+          arts_humanities: "Arts / Humanities",
+        };
+        text.textContent = `Grade ${grade}${stream ? ` - ${labels[normalizeStream(stream)] || stream}` : ""}`;
+        context.hidden = false;
       }
 
       function renderClassCard(item, isPrevious) {

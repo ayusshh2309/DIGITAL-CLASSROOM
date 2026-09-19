@@ -97,21 +97,32 @@
       .page-title p {
         max-width: 540px;
         margin-top: 4px;
-        font-size: 14px;
-        color: #536587;
+        color: #536789;
+        font-size: 1.05rem;
       }
 
       .registration-context {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
-        margin-top: 12px;
+        gap: 10px;
+        width: fit-content;
+        margin-top: 18px;
         padding: 8px 12px;
-        border: 1px solid #dbe5f1;
-        border-radius: 8px;
-        background: #ffffff;
-        color: #526587;
-        font-size: 12px;
+        border: 1px solid rgba(41, 174, 184, 0.22);
+        border-radius: 10px;
+        background: rgba(237, 250, 250, 0.72);
+        color: #315360;
+      }
+
+      .registration-context .scope-label {
+        color: #087f8a;
+        font-weight: 800;
+      }
+
+      .registration-context .scope-value {
+        display: flex;
+        align-items: center;
+        gap: 8px;
         font-weight: 600;
       }
 
@@ -987,10 +998,13 @@
           <p>Attempt quizzes from your subjects and track your progress.</p>
 
           <div class="registration-context" id="registrationContext">
-            <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
-            <span id="registrationContextText"
-              >Registered classes: Loading...</span
-            >
+            <span class="scope-label">Your registered curriculum</span>
+            <span class="scope-value">
+              <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
+              <span id="registrationContextText"
+                >Registered classes: Loading...</span
+              >
+            </span>
           </div>
         </div>
       </div>
