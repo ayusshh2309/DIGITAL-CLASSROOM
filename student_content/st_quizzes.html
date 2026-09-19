@@ -101,6 +101,24 @@
         color: #536587;
       }
 
+      .registration-context {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 12px;
+        padding: 8px 12px;
+        border: 1px solid #dbe5f1;
+        border-radius: 8px;
+        background: #ffffff;
+        color: #526587;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .registration-context i {
+        color: #008b95;
+      }
+
       /* =====================================================
    STATISTICS
 ===================================================== */
@@ -947,6 +965,7 @@
       }
     </style>
     <link rel="stylesheet" href="../css/student-layout.css" />
+    <script src="../js/student-data.js"></script>
   </head>
 
   <body>
@@ -966,6 +985,13 @@
           <h1>Quizzes</h1>
 
           <p>Attempt quizzes from your subjects and track your progress.</p>
+
+          <div class="registration-context" id="registrationContext">
+            <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
+            <span id="registrationContextText"
+              >Registered classes: Loading...</span
+            >
+          </div>
         </div>
       </div>
 
@@ -1074,10 +1100,13 @@
           </div>
 
           <div id="quizList">
-            <div class="loading">
-              <i class="fa-solid fa-spinner fa-spin"></i>
-
-              <div>Loading quizzes...</div>
+            <div class="empty">
+              <i class="fa-solid fa-clipboard-list"></i>
+              <h3>No quizzes uploaded</h3>
+              <p>
+                No published quizzes are available for your registered class
+                yet.
+              </p>
             </div>
           </div>
         </section>
@@ -1099,7 +1128,11 @@
             </div>
 
             <div id="upcomingQuiz">
-              <div class="loading">Loading...</div>
+              <div class="empty">
+                <i class="fa-regular fa-calendar"></i>
+                <h3>No upcoming quizzes</h3>
+                <p>Your teacher's quizzes will appear here when published.</p>
+              </div>
             </div>
           </section>
 
@@ -1190,25 +1223,24 @@
 
     <script>
       /* =====================================================
-   SUPABASE CONFIGURATION
-=====================================================
+         SUPABASE CONFIGURATION
+      =====================================================
 
-   Replace these with your Supabase project details.
+         Replace these with your Supabase project details.
 
-===================================================== */
+      ===================================================== */
 
       const SUPABASE_URL = "YOUR_SUPABASE_URL";
 
       const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
 
-      const supabaseClient = window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_ANON_KEY,
-      );
+      const supabaseClient =
+        window.supabase?.createClient?.(SUPABASE_URL, SUPABASE_ANON_KEY) ||
+        null;
 
       /* =====================================================
-   GLOBAL DATA
-===================================================== */
+         GLOBAL DATA
+      ===================================================== */
 
       let allQuizzes = [];
       let allAttempts = [];
@@ -1232,6 +1264,49 @@
 
       function normalizeStream(value) {
         return normalizeText(value).replace(/\s+/g, "");
+      }
+
+      function registeredGrades(student) {
+        const rawValues = [
+          student?.grade,
+          student?.classGrade,
+          student?.class_grade,
+          student?.class,
+          ...(Array.isArray(student?.grades) ? student.grades : []),
+          ...(Array.isArray(student?.registeredClasses)
+            ? student.registeredClasses
+            : []),
+          ...(Array.isArray(student?.classes) ? student.classes : []),
+        ];
+        const grades = rawValues
+          .map((value) =>
+            typeof value === "object"
+              ? value?.grade ||
+                value?.classGrade ||
+                value?.class_grade ||
+                value?.class
+              : value,
+          )
+          .map(normalizeGrade)
+          .filter(Boolean);
+        return [...new Set(grades)].sort((a, b) => Number(a) - Number(b));
+      }
+
+      function readStoredStudentProfile() {
+        const read = (key) => {
+          try {
+            return JSON.parse(localStorage.getItem(key) || "null") || {};
+          } catch (error) {
+            return {};
+          }
+        };
+        return {
+          ...read("studentRegistrationData"),
+          ...read("studentAcademicInfo"),
+          ...read("studentData"),
+          ...read("studentProfile"),
+          ...read("finalStudentRegistration"),
+        };
       }
 
       function readLocalQuizzes() {
@@ -1259,13 +1334,10 @@
       }
 
       function quizMatchesStudent(quiz, student) {
-        const studentGrade = normalizeGrade(
-          student?.grade || student?.classGrade || student?.class_grade,
-        );
         const quizGrade = normalizeGrade(
           quiz?.grade || quiz?.class_grade || quiz?.class,
         );
-        if (!studentGrade || studentGrade !== quizGrade) return false;
+        if (!registeredGrades(student).includes(quizGrade)) return false;
 
         const quizStream = normalizeStream(quiz?.stream || quiz?.class_stream);
         const studentStream = normalizeStream(
@@ -1280,9 +1352,7 @@
 
       function quizIsAvailable(quiz) {
         const status = normalizeText(quiz?.status || "published");
-        if (!["published", "active", "scheduled"].includes(status))
-          return false;
-        return true;
+        return ["published", "active", "scheduled"].includes(status);
       }
 
       function filterEligibleQuizzes(quizzes, student) {
@@ -1291,9 +1361,37 @@
         );
       }
 
+      function renderRegistrationContext(student) {
+        const grades = registeredGrades(student);
+        const stream = student?.stream || student?.classStream;
+        const label = grades.length
+          ? grades.map((grade) => `Class ${grade}`).join(", ")
+          : "Class not registered";
+        const streamLabel = stream ? ` · ${String(stream).toUpperCase()}` : "";
+        document.getElementById("registrationContextText").textContent =
+          `Registered classes: ${label}${streamLabel}`;
+      }
+
+      function renderNoQuizzes() {
+        document.getElementById("quizList").innerHTML = `
+                <div class="empty">
+                  <i class="fa-solid fa-clipboard-list"></i>
+                  <h3>No quizzes uploaded</h3>
+                  <p>No published quizzes are available for your registered class yet.</p>
+                </div>
+              `;
+        document.getElementById("upcomingQuiz").innerHTML = `
+                <div class="empty">
+                  <i class="fa-regular fa-calendar"></i>
+                  <h3>No upcoming quizzes</h3>
+                  <p>Your teacher's quizzes will appear here when published.</p>
+                </div>
+              `;
+      }
+
       /* =====================================================
-   ICON MAPPING
-===================================================== */
+         ICON MAPPING
+      ===================================================== */
 
       function getQuizIcon(subject) {
         const value = String(subject || "").toLowerCase();
@@ -1340,8 +1438,8 @@
       }
 
       /* =====================================================
-   FORMAT DATE
-===================================================== */
+         FORMAT DATE
+      ===================================================== */
 
       function formatDate(dateValue) {
         if (!dateValue) {
@@ -1362,8 +1460,8 @@
       }
 
       /* =====================================================
-   FORMAT DATE + TIME
-===================================================== */
+         FORMAT DATE + TIME
+      ===================================================== */
 
       function formatDateTime(dateValue) {
         if (!dateValue) {
@@ -1391,8 +1489,8 @@
       }
 
       /* =====================================================
-   CALCULATE STATUS
-===================================================== */
+         CALCULATE STATUS
+      ===================================================== */
 
       function getQuizStatus(quiz, attempt) {
         if (attempt) {
@@ -1416,14 +1514,19 @@
       }
 
       /* =====================================================
-   GET CURRENT STUDENT
-===================================================== */
+         GET CURRENT STUDENT
+      ===================================================== */
 
       async function getCurrentStudent() {
-        const localProfile =
-          window.StudentData?.getStudentProfile?.() ||
-          JSON.parse(localStorage.getItem("studentProfile") || "null");
+        const localProfile = {
+          ...readStoredStudentProfile(),
+          ...(window.StudentData?.getStudentProfile?.() || {}),
+        };
         try {
+          if (!supabaseClient) {
+            studentData = localProfile;
+            return localProfile;
+          }
           const { data: { user } = {}, error: authError } =
             await supabaseClient.auth.getUser();
           if (!authError && user) {
@@ -1449,22 +1552,28 @@
       }
 
       /* =====================================================
-   LOAD QUIZZES
-===================================================== */
+         LOAD QUIZZES
+      ===================================================== */
 
       async function loadQuizzes() {
         try {
           const student = await getCurrentStudent();
-          const grade =
-            student.grade || student.classGrade || student.class_grade;
-          const remoteResult = await supabaseClient
-            .from("quizzes")
-            .select("*")
-            .eq("class_grade", `Class ${normalizeGrade(grade)}`)
-            .in("status", ["published", "active", "scheduled"])
-            .order("start_at", { ascending: false });
-          if (remoteResult.error) throw remoteResult.error;
-          allQuizzes = filterEligibleQuizzes(remoteResult.data || [], student);
+          renderRegistrationContext(student);
+          const grades = registeredGrades(student);
+          let remoteQuizzes = [];
+          if (grades.length && supabaseClient) {
+            const remoteResult = await supabaseClient
+              .from("quizzes")
+              .select("*")
+              .in(
+                "class_grade",
+                grades.map((grade) => `Class ${grade}`),
+              )
+              .in("status", ["published", "active", "scheduled"])
+              .order("start_at", { ascending: false });
+            if (!remoteResult.error) remoteQuizzes = remoteResult.data || [];
+          }
+          allQuizzes = filterEligibleQuizzes(remoteQuizzes, student);
 
           if (!allQuizzes.length) {
             allQuizzes = filterEligibleQuizzes(readLocalQuizzes(), student);
@@ -1474,16 +1583,15 @@
            * Get student's quiz attempts.
            */
 
-          const { data: attempts, error: attemptError } = await supabaseClient
-            .from("quiz_attempts")
-            .select("*")
-            .eq("student_id", student.id);
-
-          if (attemptError) {
-            throw attemptError;
+          if (supabaseClient && student.id) {
+            const { data: attempts, error: attemptError } = await supabaseClient
+              .from("quiz_attempts")
+              .select("*")
+              .eq("student_id", student.id);
+            allAttempts = attemptError ? [] : attempts || [];
+          } else {
+            allAttempts = [];
           }
-
-          allAttempts = attempts || [];
 
           populateSubjectFilter();
 
@@ -1494,33 +1602,16 @@
           renderUpcomingQuiz();
 
           updatePerformance();
+          if (!allQuizzes.length) renderNoQuizzes();
         } catch (error) {
           console.error("Quiz loading error:", error);
-
-          document.getElementById("quizList").innerHTML = `
-
-                <div class="empty">
-
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-
-                    <h3>
-                        Unable to load quizzes
-                    </h3>
-
-                    <p>
-                        Please check your Supabase configuration
-                        and student login.
-                    </p>
-
-                </div>
-
-            `;
+          renderNoQuizzes();
         }
       }
 
       /* =====================================================
-   FIND ATTEMPT
-===================================================== */
+         FIND ATTEMPT
+      ===================================================== */
 
       function getAttemptForQuiz(quizId) {
         return allAttempts.find(
@@ -1529,8 +1620,8 @@
       }
 
       /* =====================================================
-   POPULATE SUBJECT FILTER
-===================================================== */
+         POPULATE SUBJECT FILTER
+      ===================================================== */
 
       function populateSubjectFilter() {
         const select = document.getElementById("subjectFilter");
@@ -1541,11 +1632,11 @@
 
         select.innerHTML = `
 
-        <option value="all">
-            All Subjects
-        </option>
+              <option value="all">
+                  All Subjects
+              </option>
 
-    `;
+          `;
 
         subjects.forEach((subject) => {
           const option = document.createElement("option");
@@ -1559,8 +1650,8 @@
       }
 
       /* =====================================================
-   RENDER QUIZZES
-===================================================== */
+         RENDER QUIZZES
+      ===================================================== */
 
       function renderQuizzes() {
         const container = document.getElementById("quizList");
@@ -1586,21 +1677,21 @@
         if (!quizzes.length) {
           container.innerHTML = `
 
-            <div class="empty">
+                  <div class="empty">
 
-                <i class="fa-solid fa-clipboard-list"></i>
+                      <i class="fa-solid fa-clipboard-list"></i>
 
-                <h3>
-                    No quizzes available
-                </h3>
+                      <h3>
+                          No quizzes available
+                      </h3>
 
-                <p>
-                    Your teacher has not added any quizzes for your grade yet.
-                </p>
+                      <p>
+                          Your teacher has not added any quizzes for your grade yet.
+                      </p>
 
-            </div>
+                  </div>
 
-        `;
+              `;
 
           return;
         }
@@ -1611,8 +1702,8 @@
       }
 
       /* =====================================================
-   CREATE QUIZ HTML
-===================================================== */
+         CREATE QUIZ HTML
+      ===================================================== */
 
       function createQuizHTML(quiz) {
         const attempt = getAttemptForQuiz(quiz.id);
@@ -1640,192 +1731,192 @@
 
           actionHTML = `
 
-            <button
-                class="attempt-btn result-btn"
-                onclick="viewResult('${quiz.id}')">
+                  <button
+                      class="attempt-btn result-btn"
+                      onclick="viewResult('${quiz.id}')">
 
-                View Result
+                      View Result
 
-            </button>
+                  </button>
 
-            <span class="status status-completed">
+                  <span class="status status-completed">
 
-                ${score}/${total}
+                      ${score}/${total}
 
-            </span>
+                  </span>
 
-        `;
+              `;
         } else if (status.type === "overdue") {
           actionHTML = `
 
-            <button
-                class="attempt-btn"
-                onclick="attemptQuiz('${quiz.id}')">
+                  <button
+                      class="attempt-btn"
+                      onclick="attemptQuiz('${quiz.id}')">
 
-                Attempt Quiz
+                      Attempt Quiz
 
-            </button>
+                  </button>
 
-            <span class="status status-overdue">
+                  <span class="status status-overdue">
 
-                Overdue
+                      Overdue
 
-            </span>
+                  </span>
 
-        `;
+              `;
         } else {
           actionHTML = `
 
-            <button
-                class="attempt-btn"
-                onclick="attemptQuiz('${quiz.id}')">
+                  <button
+                      class="attempt-btn"
+                      onclick="attemptQuiz('${quiz.id}')">
 
-                Attempt Quiz
+                      Attempt Quiz
 
-            </button>
+                  </button>
 
-            <span class="status status-pending">
+                  <span class="status status-pending">
 
-                Not Attempted
+                      Not Attempted
 
-            </span>
+                  </span>
 
-        `;
+              `;
         }
 
         return `
 
-        <div class="quiz-item">
+              <div class="quiz-item">
 
 
-            <div
-                class="quiz-icon ${iconData.className}">
+                  <div
+                      class="quiz-icon ${iconData.className}">
 
-                <i class="fa-solid ${iconData.icon}"></i>
+                      <i class="fa-solid ${iconData.icon}"></i>
 
-            </div>
-
-
-            <div class="quiz-info">
-
-                <h3>
-                    ${escapeHTML(quiz.title || "Untitled Quiz")}
-                </h3>
+                  </div>
 
 
-                <div class="quiz-subject">
+                  <div class="quiz-info">
 
-                    ${escapeHTML(quiz.subject || "Subject")}
-
-                    &nbsp; • &nbsp;
-
-                    ${escapeHTML(quiz.chapter || "Chapter")}
-
-                </div>
+                      <h3>
+                          ${escapeHTML(quiz.title || "Untitled Quiz")}
+                      </h3>
 
 
-                <div class="quiz-meta">
+                      <div class="quiz-subject">
 
-                    <span>
+                          ${escapeHTML(quiz.subject || "Subject")}
 
-                        <i class="fa-regular fa-calendar"></i>
+                          &nbsp; • &nbsp;
 
-                        ${quiz.questions_count || 0}
-                        Questions
+                          ${escapeHTML(quiz.chapter || "Chapter")}
 
-                    </span>
-
-
-                    <span>
-
-                        <i class="fa-regular fa-star"></i>
-
-                        ${quiz.total_marks || 0}
-                        Marks
-
-                    </span>
+                      </div>
 
 
-                    <span>
+                      <div class="quiz-meta">
 
-                        <i class="fa-regular fa-clock"></i>
+                          <span>
 
-                        ${quiz.duration_minutes || 0}
-                        min
+                              <i class="fa-regular fa-calendar"></i>
 
-                    </span>
+                              ${quiz.questions_count || 0}
+                              Questions
 
-                </div>
-
-            </div>
+                          </span>
 
 
-            <div
-                class="quiz-date ${dateClass}">
+                          <span>
 
-                <div>
+                              <i class="fa-regular fa-star"></i>
 
-                    ${formatDateTime(quiz.start_time)}
+                              ${quiz.total_marks || 0}
+                              Marks
 
-                </div>
-
-
-                ${
-                  status.type === "completed"
-                    ? `
-
-                        <div>
-                            Completed
-                            ${
-                              attempt.completed_at
-                                ? " " + formatDate(attempt.completed_at)
-                                : ""
-                            }
-                        </div>
-
-                    `
-                    : status.type === "overdue"
-                      ? `
-
-                        <div>
-                            Due
-                            ${formatDate(quiz.due_time)}
-                        </div>
-
-                    `
-                      : `
-
-                        <div class="due">
-
-                            ${
-                              quiz.due_time
-                                ? "Due " + getDueText(quiz.due_time)
-                                : "No due date"
-                            }
-
-                        </div>
-
-                    `
-                }
-
-            </div>
+                          </span>
 
 
-            <div class="quiz-action">
+                          <span>
 
-                ${actionHTML}
+                              <i class="fa-regular fa-clock"></i>
 
-            </div>
+                              ${quiz.duration_minutes || 0}
+                              min
+
+                          </span>
+
+                      </div>
+
+                  </div>
 
 
-        </div>
+                  <div
+                      class="quiz-date ${dateClass}">
 
-    `;
+                      <div>
+
+                          ${formatDateTime(quiz.start_time)}
+
+                      </div>
+
+
+                      ${
+                        status.type === "completed"
+                          ? `
+
+                              <div>
+                                  Completed
+                                  ${
+                                    attempt.completed_at
+                                      ? " " + formatDate(attempt.completed_at)
+                                      : ""
+                                  }
+                              </div>
+
+                          `
+                          : status.type === "overdue"
+                            ? `
+
+                              <div>
+                                  Due
+                                  ${formatDate(quiz.due_time)}
+                              </div>
+
+                          `
+                            : `
+
+                              <div class="due">
+
+                                  ${
+                                    quiz.due_time
+                                      ? "Due " + getDueText(quiz.due_time)
+                                      : "No due date"
+                                  }
+
+                              </div>
+
+                          `
+                      }
+
+                  </div>
+
+
+                  <div class="quiz-action">
+
+                      ${actionHTML}
+
+                  </div>
+
+
+              </div>
+
+          `;
       }
 
       /* =====================================================
-   DUE TEXT
-===================================================== */
+         DUE TEXT
+      ===================================================== */
 
       function getDueText(dueDate) {
         const due = new Date(dueDate);
@@ -1848,16 +1939,16 @@
       }
 
       /* =====================================================
-   FILTER
-===================================================== */
+         FILTER
+      ===================================================== */
 
       function applyFilters() {
         renderQuizzes();
       }
 
       /* =====================================================
-   STATISTICS
-===================================================== */
+         STATISTICS
+      ===================================================== */
 
       function updateStatistics() {
         const total = allQuizzes.length;
@@ -1880,8 +1971,8 @@
       }
 
       /* =====================================================
-   PERFORMANCE
-===================================================== */
+         PERFORMANCE
+      ===================================================== */
 
       function updatePerformance() {
         if (!allAttempts.length) {
@@ -1952,8 +2043,8 @@
       }
 
       /* =====================================================
-   UPCOMING QUIZ
-===================================================== */
+         UPCOMING QUIZ
+      ===================================================== */
 
       function renderUpcomingQuiz() {
         const container = document.getElementById("upcomingQuiz");
@@ -1971,21 +2062,21 @@
         if (!upcoming) {
           container.innerHTML = `
 
-            <div class="empty">
+                  <div class="empty">
 
-                <i class="fa-solid fa-check-circle"></i>
+                      <i class="fa-solid fa-check-circle"></i>
 
-                <h3>
-                    No upcoming quizzes
-                </h3>
+                      <h3>
+                          No upcoming quizzes
+                      </h3>
 
-                <p>
-                    You're all caught up!
-                </p>
+                      <p>
+                          You're all caught up!
+                      </p>
 
-            </div>
+                  </div>
 
-        `;
+              `;
 
           return;
         }
@@ -1994,115 +2085,115 @@
 
         container.innerHTML = `
 
-        <div class="upcoming-top">
+              <div class="upcoming-top">
 
-            <div
-                class="upcoming-icon">
+                  <div
+                      class="upcoming-icon">
 
-                <i class="fa-solid ${iconData.icon}"></i>
+                      <i class="fa-solid ${iconData.icon}"></i>
 
-            </div>
-
-
-            <div class="upcoming-info">
-
-                <h3>
-
-                    ${escapeHTML(upcoming.title)}
-
-                </h3>
-
-                <p>
-
-                    ${escapeHTML(upcoming.subject || "")}
-
-                    &nbsp; • &nbsp;
-
-                    ${escapeHTML(upcoming.chapter || "")}
-
-                </p>
-
-            </div>
-
-        </div>
+                  </div>
 
 
-        <div class="upcoming-details">
+                  <div class="upcoming-info">
+
+                      <h3>
+
+                          ${escapeHTML(upcoming.title)}
+
+                      </h3>
+
+                      <p>
+
+                          ${escapeHTML(upcoming.subject || "")}
+
+                          &nbsp; • &nbsp;
+
+                          ${escapeHTML(upcoming.chapter || "")}
+
+                      </p>
+
+                  </div>
+
+              </div>
 
 
-            <div class="upcoming-detail">
-
-                <i class="fa-regular fa-calendar"></i>
-
-                ${formatDateTime(upcoming.start_time)}
-
-            </div>
+              <div class="upcoming-details">
 
 
-            <div class="upcoming-detail">
+                  <div class="upcoming-detail">
 
-                <i class="fa-regular fa-clock"></i>
+                      <i class="fa-regular fa-calendar"></i>
 
-                ${upcoming.duration_minutes || 0}
-                min
+                      ${formatDateTime(upcoming.start_time)}
 
-            </div>
-
-
-            <div class="upcoming-detail">
-
-                <i class="fa-regular fa-star"></i>
-
-                ${upcoming.total_marks || 0}
-                Marks
-
-            </div>
+                  </div>
 
 
-            <div class="upcoming-detail">
+                  <div class="upcoming-detail">
 
-                <i class="fa-regular fa-file-lines"></i>
+                      <i class="fa-regular fa-clock"></i>
 
-                ${upcoming.questions_count || 0}
-                Questions
+                      ${upcoming.duration_minutes || 0}
+                      min
 
-            </div>
-
-        </div>
+                  </div>
 
 
-        <div class="due-box">
+                  <div class="upcoming-detail">
 
-            <strong>
+                      <i class="fa-regular fa-star"></i>
 
-                Due
-                ${getDueText(upcoming.due_time)}
+                      ${upcoming.total_marks || 0}
+                      Marks
 
-            </strong>
+                  </div>
 
-            <span>
-                Be ready and don't miss it!
-            </span>
 
-        </div>
+                  <div class="upcoming-detail">
 
-    `;
+                      <i class="fa-regular fa-file-lines"></i>
+
+                      ${upcoming.questions_count || 0}
+                      Questions
+
+                  </div>
+
+              </div>
+
+
+              <div class="due-box">
+
+                  <strong>
+
+                      Due
+                      ${getDueText(upcoming.due_time)}
+
+                  </strong>
+
+                  <span>
+                      Be ready and don't miss it!
+                  </span>
+
+              </div>
+
+          `;
       }
 
       /* =====================================================
-   ATTEMPT QUIZ
-===================================================== */
+         ATTEMPT QUIZ
+      ===================================================== */
 
       function attemptQuiz(quizId) {
         /*
-       Replace this URL with your actual
-       student quiz attempt page.
+             Replace this URL with your actual
+             student quiz attempt page.
 
-       Example:
+             Example:
 
-       window.location.href =
-           `attempt-quiz.html?id=${quizId}`;
-    */
+             window.location.href =
+                 `attempt-quiz.html?id=${quizId}`;
+          */
 
         window.location.href = `attempt-quiz.html?id=${encodeURIComponent(
           quizId,
@@ -2110,8 +2201,8 @@
       }
 
       /* =====================================================
-   VIEW RESULT
-===================================================== */
+         VIEW RESULT
+      ===================================================== */
 
       function viewResult(quizId) {
         window.location.href = `quiz-result.html?id=${encodeURIComponent(
@@ -2120,8 +2211,8 @@
       }
 
       /* =====================================================
-   HTML ESCAPE
-===================================================== */
+         HTML ESCAPE
+      ===================================================== */
 
       function escapeHTML(value) {
         if (value === null || value === undefined) {
@@ -2137,10 +2228,11 @@
       }
 
       /* =====================================================
-   START
-===================================================== */
+         START
+      ===================================================== */
 
       document.addEventListener("DOMContentLoaded", () => {
+        renderRegistrationContext(readStoredStudentProfile());
         loadQuizzes();
         window.addEventListener("storage", (event) => {
           if (event.key === LOCAL_QUIZ_KEY || event.key === "studentProfile") {
