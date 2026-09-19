@@ -1372,224 +1372,226 @@
     </div>
 
     <script>
-      /* =====================================================
+      if (false) {
+        /* =====================================================
        VIDEO DATA
     ===================================================== */
 
-      const videos = [
-        {
-          id: 1,
-          subject: "Physics",
-          title: "Introduction to Motion",
-          description:
-            "Learn about types of motion, displacement, velocity and acceleration.",
-          duration: "12:45",
-          minutes: 12.75,
-          color: "purple",
-          thumbnail:
-            "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=800&q=80",
-        },
+        const videos = [
+          {
+            id: 1,
+            subject: "Physics",
+            title: "Introduction to Motion",
+            description:
+              "Learn about types of motion, displacement, velocity and acceleration.",
+            duration: "12:45",
+            minutes: 12.75,
+            color: "purple",
+            thumbnail:
+              "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=800&q=80",
+          },
 
-        {
-          id: 2,
-          subject: "Chemistry",
-          title: "Chemical Reactions and Equations",
-          description:
-            "Understand the basics of chemical reactions, balancing equations and types of reactions.",
-          duration: "15:20",
-          minutes: 15.33,
-          color: "green",
-          thumbnail:
-            "https://images.unsplash.com/photo-1532634922-8fe0b757fb13?auto=format&fit=crop&w=800&q=80",
-        },
+          {
+            id: 2,
+            subject: "Chemistry",
+            title: "Chemical Reactions and Equations",
+            description:
+              "Understand the basics of chemical reactions, balancing equations and types of reactions.",
+            duration: "15:20",
+            minutes: 15.33,
+            color: "green",
+            thumbnail:
+              "https://images.unsplash.com/photo-1532634922-8fe0b757fb13?auto=format&fit=crop&w=800&q=80",
+          },
 
-        {
-          id: 3,
-          subject: "Mathematics",
-          title: "Quadratic Equations",
-          description:
-            "Learn how to solve quadratic equations using factorization, formula and graph.",
-          duration: "18:32",
-          minutes: 18.53,
-          color: "orange",
-          thumbnail:
-            "https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=800&q=80",
-        },
+          {
+            id: 3,
+            subject: "Mathematics",
+            title: "Quadratic Equations",
+            description:
+              "Learn how to solve quadratic equations using factorization, formula and graph.",
+            duration: "18:32",
+            minutes: 18.53,
+            color: "orange",
+            thumbnail:
+              "https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=800&q=80",
+          },
 
-        {
-          id: 4,
-          subject: "English",
-          title: "Literature - Prose Analysis",
-          description:
-            "Explore the key themes, characters and main ideas in a prose passage.",
-          duration: "10:18",
-          minutes: 10.3,
-          color: "blue",
-          thumbnail:
-            "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=800&q=80",
-        },
+          {
+            id: 4,
+            subject: "English",
+            title: "Literature - Prose Analysis",
+            description:
+              "Explore the key themes, characters and main ideas in a prose passage.",
+            duration: "10:18",
+            minutes: 10.3,
+            color: "blue",
+            thumbnail:
+              "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=800&q=80",
+          },
 
-        {
-          id: 5,
-          subject: "Computer Science",
-          title: "Introduction to Python",
-          description:
-            "Get started with Python programming basics, syntax and data types.",
-          duration: "14:36",
-          minutes: 14.6,
-          color: "purple",
-          thumbnail:
-            "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=800&q=80",
-        },
+          {
+            id: 5,
+            subject: "Computer Science",
+            title: "Introduction to Python",
+            description:
+              "Get started with Python programming basics, syntax and data types.",
+            duration: "14:36",
+            minutes: 14.6,
+            color: "purple",
+            thumbnail:
+              "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=800&q=80",
+          },
 
-        {
-          id: 6,
-          subject: "Physical Education",
-          title: "Fitness and Health",
-          description:
-            "Learn about the importance of fitness, exercise and a healthy lifestyle.",
-          duration: "11:22",
-          minutes: 11.36,
-          color: "pink",
-          thumbnail:
-            "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=800&q=80",
-        },
+          {
+            id: 6,
+            subject: "Physical Education",
+            title: "Fitness and Health",
+            description:
+              "Learn about the importance of fitness, exercise and a healthy lifestyle.",
+            duration: "11:22",
+            minutes: 11.36,
+            color: "pink",
+            thumbnail:
+              "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=800&q=80",
+          },
 
-        {
-          id: 7,
-          subject: "Social Science",
-          title: "The Freedom Struggle of India",
-          description:
-            "Understand the key events, leaders and movements in India's freedom struggle.",
-          duration: "16:40",
-          minutes: 16.66,
-          color: "teal",
-          thumbnail:
-            "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=800&q=80",
-        },
+          {
+            id: 7,
+            subject: "Social Science",
+            title: "The Freedom Struggle of India",
+            description:
+              "Understand the key events, leaders and movements in India's freedom struggle.",
+            duration: "16:40",
+            minutes: 16.66,
+            color: "teal",
+            thumbnail:
+              "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=800&q=80",
+          },
 
-        {
-          id: 8,
-          subject: "Statistics",
-          title: "Introduction to Data Representation",
-          description:
-            "Learn how to represent data using tables, charts and graphs.",
-          duration: "13:15",
-          minutes: 13.25,
-          color: "yellow",
-          thumbnail:
-            "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80",
-        },
+          {
+            id: 8,
+            subject: "Statistics",
+            title: "Introduction to Data Representation",
+            description:
+              "Learn how to represent data using tables, charts and graphs.",
+            duration: "13:15",
+            minutes: 13.25,
+            color: "yellow",
+            thumbnail:
+              "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80",
+          },
 
-        {
-          id: 9,
-          subject: "Mathematics",
-          title: "Geometry Basics",
-          description:
-            "Explore basic geometric shapes, angles, triangles and their properties.",
-          duration: "17:05",
-          minutes: 17.08,
-          color: "orange",
-          thumbnail:
-            "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=800&q=80",
-        },
-      ];
+          {
+            id: 9,
+            subject: "Mathematics",
+            title: "Geometry Basics",
+            description:
+              "Explore basic geometric shapes, angles, triangles and their properties.",
+            duration: "17:05",
+            minutes: 17.08,
+            color: "orange",
+            thumbnail:
+              "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=800&q=80",
+          },
+        ];
 
-      /* =====================================================
+        /* =====================================================
        SUBJECT COLOR CLASSES
     ===================================================== */
 
-      function getSubjectClass(color) {
-        return `subject-${color}`;
-      }
+        function getSubjectClass(color) {
+          return `subject-${color}`;
+        }
 
-      function getWatchClass(color) {
-        if (color === "green") return "watch-green";
+        function getWatchClass(color) {
+          if (color === "green") return "watch-green";
 
-        if (color === "orange") return "watch-orange";
+          if (color === "orange") return "watch-orange";
 
-        if (color === "blue") return "watch-blue";
+          if (color === "blue") return "watch-blue";
 
-        if (color === "pink") return "watch-pink";
+          if (color === "pink") return "watch-pink";
 
-        if (color === "teal") return "watch-teal";
+          if (color === "teal") return "watch-teal";
 
-        if (color === "yellow") return "watch-yellow";
+          if (color === "yellow") return "watch-yellow";
 
-        return "";
-      }
+          return "";
+        }
 
-      /* =====================================================
+        /* =====================================================
        RENDER VIDEOS
     ===================================================== */
 
-      function renderVideos() {
-        const grid = document.getElementById("videoGrid");
+        function renderVideos() {
+          const grid = document.getElementById("videoGrid");
 
-        const noResults = document.getElementById("noResults");
+          const noResults = document.getElementById("noResults");
 
-        const search = document
-          .getElementById("searchInput")
-          .value.toLowerCase()
-          .trim();
+          const search = document
+            .getElementById("searchInput")
+            .value.toLowerCase()
+            .trim();
 
-        const subject = document.getElementById("subjectFilter").value;
+          const subject = document.getElementById("subjectFilter").value;
 
-        const sort = document.getElementById("sortFilter").value;
+          const sort = document.getElementById("sortFilter").value;
 
-        let filtered = videos.filter((video) => {
-          const matchesSearch =
-            video.title.toLowerCase().includes(search) ||
-            video.description.toLowerCase().includes(search) ||
-            video.subject.toLowerCase().includes(search);
+          let filtered = videos.filter((video) => {
+            const matchesSearch =
+              video.title.toLowerCase().includes(search) ||
+              video.description.toLowerCase().includes(search) ||
+              video.subject.toLowerCase().includes(search);
 
-          const matchesSubject = subject === "All" || video.subject === subject;
+            const matchesSubject =
+              subject === "All" || video.subject === subject;
 
-          return matchesSearch && matchesSubject;
-        });
+            return matchesSearch && matchesSubject;
+          });
 
-        /* SORT */
+          /* SORT */
 
-        if (sort === "az") {
-          filtered.sort((a, b) => a.title.localeCompare(b.title));
-        }
+          if (sort === "az") {
+            filtered.sort((a, b) => a.title.localeCompare(b.title));
+          }
 
-        if (sort === "oldest") {
-          filtered.sort((a, b) => a.id - b.id);
-        }
+          if (sort === "oldest") {
+            filtered.sort((a, b) => a.id - b.id);
+          }
 
-        if (sort === "latest") {
-          filtered.sort((a, b) => b.id - a.id);
-        }
+          if (sort === "latest") {
+            filtered.sort((a, b) => b.id - a.id);
+          }
 
-        if (sort === "duration") {
-          filtered.sort((a, b) => b.minutes - a.minutes);
-        }
+          if (sort === "duration") {
+            filtered.sort((a, b) => b.minutes - a.minutes);
+          }
 
-        /* REMOVE OLD CARDS */
+          /* REMOVE OLD CARDS */
 
-        grid.querySelectorAll(".video-card").forEach((card) => card.remove());
+          grid.querySelectorAll(".video-card").forEach((card) => card.remove());
 
-        /* NO RESULTS */
+          /* NO RESULTS */
 
-        if (filtered.length === 0) {
-          noResults.style.display = "block";
+          if (filtered.length === 0) {
+            noResults.style.display = "block";
 
-          updateTotal(0);
+            updateTotal(0);
 
-          return;
-        }
+            return;
+          }
 
-        noResults.style.display = "none";
+          noResults.style.display = "none";
 
-        /* CREATE CARDS */
+          /* CREATE CARDS */
 
-        filtered.forEach((video) => {
-          const card = document.createElement("article");
+          filtered.forEach((video) => {
+            const card = document.createElement("article");
 
-          card.className = "video-card";
+            card.className = "video-card";
 
-          card.innerHTML = `
+            card.innerHTML = `
 
                 <div
                     class="thumbnail"
@@ -1743,214 +1745,219 @@
 
             `;
 
-          grid.insertBefore(card, noResults);
-        });
+            grid.insertBefore(card, noResults);
+          });
 
-        updateTotal(filtered.length);
-      }
+          updateTotal(filtered.length);
+        }
 
-      /* =====================================================
+        /* =====================================================
        UPDATE TOTAL
     ===================================================== */
 
-      function updateTotal(count) {
-        document.getElementById("totalVideos").textContent = count;
+        function updateTotal(count) {
+          document.getElementById("totalVideos").textContent = count;
 
-        const percentage = Math.min(
-          100,
-          Math.round((count / videos.length) * 100),
-        );
+          const percentage = Math.min(
+            100,
+            Math.round((count / videos.length) * 100),
+          );
 
-        document.getElementById("totalProgress").style.width = percentage + "%";
-      }
+          document.getElementById("totalProgress").style.width =
+            percentage + "%";
+        }
 
-      /* =====================================================
+        /* =====================================================
        SUBJECT TAB
     ===================================================== */
 
-      document.querySelectorAll(".subject-tab").forEach((tab) => {
-        tab.addEventListener("click", function () {
-          document
-            .querySelectorAll(".subject-tab")
-            .forEach((item) => item.classList.remove("active"));
+        document.querySelectorAll(".subject-tab").forEach((tab) => {
+          tab.addEventListener("click", function () {
+            document
+              .querySelectorAll(".subject-tab")
+              .forEach((item) => item.classList.remove("active"));
 
-          this.classList.add("active");
+            this.classList.add("active");
 
-          const subject = this.dataset.subject;
+            const subject = this.dataset.subject;
 
-          document.getElementById("subjectFilter").value = subject;
+            document.getElementById("subjectFilter").value = subject;
 
-          renderVideos();
+            renderVideos();
+          });
         });
-      });
 
-      /* =====================================================
+        /* =====================================================
        SEARCH
     ===================================================== */
 
-      document
-        .getElementById("searchInput")
-        .addEventListener("input", renderVideos);
+        document
+          .getElementById("searchInput")
+          .addEventListener("input", renderVideos);
 
-      /* =====================================================
+        /* =====================================================
        FILTER
     ===================================================== */
 
-      document
-        .getElementById("subjectFilter")
-        .addEventListener("change", function () {
-          const selected = this.value;
+        document
+          .getElementById("subjectFilter")
+          .addEventListener("change", function () {
+            const selected = this.value;
 
-          document.querySelectorAll(".subject-tab").forEach((tab) => {
-            tab.classList.remove("active");
+            document.querySelectorAll(".subject-tab").forEach((tab) => {
+              tab.classList.remove("active");
 
-            if (tab.dataset.subject === selected) {
-              tab.classList.add("active");
-            }
+              if (tab.dataset.subject === selected) {
+                tab.classList.add("active");
+              }
+            });
+
+            renderVideos();
           });
 
-          renderVideos();
-        });
-
-      /* =====================================================
+        /* =====================================================
        SORT
     ===================================================== */
 
-      document
-        .getElementById("sortFilter")
-        .addEventListener("change", renderVideos);
+        document
+          .getElementById("sortFilter")
+          .addEventListener("change", renderVideos);
 
-      /* =====================================================
+        /* =====================================================
        OPEN VIDEO
     ===================================================== */
 
-      function openVideo(id) {
-        const video = videos.find((item) => item.id === id);
+        function openVideo(id) {
+          const video = videos.find((item) => item.id === id);
 
-        if (!video) return;
+          if (!video) return;
 
-        document.getElementById("modalThumbnail").src = video.thumbnail;
+          document.getElementById("modalThumbnail").src = video.thumbnail;
 
-        document.getElementById("modalTitle").textContent = video.title;
+          document.getElementById("modalTitle").textContent = video.title;
 
-        document.getElementById("modalDescription").textContent =
-          video.description;
+          document.getElementById("modalDescription").textContent =
+            video.description;
 
-        document.getElementById("videoModal").classList.add("show");
+          document.getElementById("videoModal").classList.add("show");
 
-        closeAllDropdowns();
-      }
+          closeAllDropdowns();
+        }
 
-      /* =====================================================
+        /* =====================================================
        CLOSE VIDEO MODAL
     ===================================================== */
 
-      function closeVideoModal() {
-        document.getElementById("videoModal").classList.remove("show");
-      }
+        function closeVideoModal() {
+          document.getElementById("videoModal").classList.remove("show");
+        }
 
-      /* =====================================================
+        /* =====================================================
        CLOSE MODAL ON OUTSIDE CLICK
     ===================================================== */
 
-      document
-        .getElementById("videoModal")
-        .addEventListener("click", function (event) {
-          if (event.target === this) {
-            closeVideoModal();
-          }
-        });
+        document
+          .getElementById("videoModal")
+          .addEventListener("click", function (event) {
+            if (event.target === this) {
+              closeVideoModal();
+            }
+          });
 
-      /* =====================================================
+        /* =====================================================
        CARD MENU
     ===================================================== */
 
-      function toggleCardMenu(event, id) {
-        event.stopPropagation();
+        function toggleCardMenu(event, id) {
+          event.stopPropagation();
 
-        const current = document.getElementById(`dropdown-${id}`);
+          const current = document.getElementById(`dropdown-${id}`);
 
-        document.querySelectorAll(".card-dropdown").forEach((dropdown) => {
-          if (dropdown !== current) {
-            dropdown.classList.remove("show");
-          }
-        });
+          document.querySelectorAll(".card-dropdown").forEach((dropdown) => {
+            if (dropdown !== current) {
+              dropdown.classList.remove("show");
+            }
+          });
 
-        current.classList.toggle("show");
-      }
+          current.classList.toggle("show");
+        }
 
-      /* =====================================================
+        /* =====================================================
        CLOSE ALL DROPDOWNS
     ===================================================== */
 
-      function closeAllDropdowns() {
-        document
-          .querySelectorAll(".card-dropdown")
-          .forEach((dropdown) => dropdown.classList.remove("show"));
-      }
+        function closeAllDropdowns() {
+          document
+            .querySelectorAll(".card-dropdown")
+            .forEach((dropdown) => dropdown.classList.remove("show"));
+        }
 
-      /* =====================================================
+        /* =====================================================
        SAVE VIDEO
     ===================================================== */
 
-      function saveVideo(id) {
-        const video = videos.find((item) => item.id === id);
+        function saveVideo(id) {
+          const video = videos.find((item) => item.id === id);
 
-        if (!video) return;
+          if (!video) return;
 
-        alert(`"${video.title}" has been saved.`);
+          alert(`"${video.title}" has been saved.`);
 
-        closeAllDropdowns();
-      }
+          closeAllDropdowns();
+        }
 
-      /* =====================================================
+        /* =====================================================
        SHARE VIDEO
     ===================================================== */
 
-      function shareVideo(id) {
-        const video = videos.find((item) => item.id === id);
+        function shareVideo(id) {
+          const video = videos.find((item) => item.id === id);
 
-        if (!video) return;
+          if (!video) return;
 
-        if (navigator.clipboard) {
-          navigator.clipboard.writeText(video.title);
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(video.title);
 
-          alert("Video title copied to clipboard.");
-        } else {
-          alert("Share link copied.");
+            alert("Video title copied to clipboard.");
+          } else {
+            alert("Share link copied.");
+          }
+
+          closeAllDropdowns();
         }
 
-        closeAllDropdowns();
-      }
-
-      /* =====================================================
+        /* =====================================================
        CLOSE DROPDOWN WHEN CLICKING OUTSIDE
     ===================================================== */
 
-      document.addEventListener("click", function (event) {
-        if (!event.target.closest(".card-menu")) {
-          closeAllDropdowns();
-        }
-      });
+        document.addEventListener("click", function (event) {
+          if (!event.target.closest(".card-menu")) {
+            closeAllDropdowns();
+          }
+        });
 
-      /* =====================================================
+        /* =====================================================
        ESCAPE KEY
     ===================================================== */
 
-      document.addEventListener("keydown", function (event) {
-        if (event.key === "Escape") {
-          closeVideoModal();
+        document.addEventListener("keydown", function (event) {
+          if (event.key === "Escape") {
+            closeVideoModal();
 
-          closeAllDropdowns();
-        }
-      });
+            closeAllDropdowns();
+          }
+        });
 
-      /* =====================================================
+        /* =====================================================
        INITIAL LOAD
     ===================================================== */
 
-      renderVideos();
+        renderVideos();
+      }
     </script>
+    <script src="../js/supabase.js"></script>
+    <script src="../js/teacher-data.js"></script>
+    <script src="../js/student-videos.js"></script>
     <script src="../js/student-layout.js"></script>
   </body>
 </html>

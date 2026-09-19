@@ -200,6 +200,10 @@ alter table public.materials add column if not exists grade text;
 alter table public.materials add column if not exists stream text;
 alter table public.materials add column if not exists chapter text;
 alter table public.materials add column if not exists external_url text;
+alter table public.materials add column if not exists video_url text;
+alter table public.materials add column if not exists thumbnail_url text;
+alter table public.materials add column if not exists duration text;
+alter table public.materials add column if not exists duration_seconds numeric;
 alter table public.materials add column if not exists uploaded_at timestamptz not null default now();
 alter table public.materials add column if not exists status text not null default 'published';
 update public.materials set material_id = id where material_id is null;
@@ -212,14 +216,27 @@ create table if not exists public.material_downloads (
   downloaded_at timestamptz not null default now()
 );
 
+create table if not exists public.student_video_progress (
+  student_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  video_id uuid not null references public.materials(id) on delete cascade,
+  watch_position numeric not null default 0,
+  duration numeric not null default 0,
+  completed boolean not null default false,
+  last_watched_at timestamptz not null default now(),
+  primary key (student_id, video_id)
+);
+
 alter table public.student_profiles enable row level security;
 alter table public.material_downloads enable row level security;
+alter table public.student_video_progress enable row level security;
 drop policy if exists "Students view own profile" on public.student_profiles;
 create policy "Students view own profile" on public.student_profiles for select using (auth.uid() = student_id);
 drop policy if exists "Students record own material downloads" on public.material_downloads;
 create policy "Students record own material downloads" on public.material_downloads for insert with check (auth.uid() = student_id);
 drop policy if exists "Students view own material downloads" on public.material_downloads;
 create policy "Students view own material downloads" on public.material_downloads for select using (auth.uid() = student_id);
+drop policy if exists "Students manage own video progress" on public.student_video_progress;
+create policy "Students manage own video progress" on public.student_video_progress for all using (auth.uid() = student_id) with check (auth.uid() = student_id);
 
 drop policy if exists "Students can view shared class materials" on public.materials;
 create or replace function public.get_student_materials(requested_student_id uuid)
@@ -241,5 +258,64 @@ $$;
 
 revoke all on function public.get_student_materials(uuid) from public;
 grant execute on function public.get_student_materials(uuid) to authenticated;
+
+create or replace function public.get_student_videos(requested_student_id uuid)
+returns table (
+  id uuid, material_id uuid, teacher_id uuid, teacher_name text, grade text, class_grade text,
+  stream text, subject text, material_type text, type text, title text, description text,
+  chapter text, video_url text, thumbnail_url text, duration text, duration_seconds numeric,
+  uploaded_at timestamptz, updated_at timestamptz, status text, watch_position numeric,
+  completed boolean
+)
+language sql
+security definer
+set search_path = public
+as $$
+  select material.id, material.material_id, material.teacher_id, material.teacher_name,
+    material.grade, material.class_grade, material.stream, material.subject,
+    material.material_type, material.type, material.title, material.description,
+    material.chapter, coalesce(material.video_url, material.file_url, material.external_url),
+    material.thumbnail_url, material.duration, material.duration_seconds,
+    material.uploaded_at, material.updated_at, material.status,
+    coalesce(progress.watch_position, 0), coalesce(progress.completed, false)
+  from public.materials material
+  join public.student_profiles student on student.student_id = auth.uid()
+  left join public.student_video_progress progress
+    on progress.video_id = material.id and progress.student_id = auth.uid()
+  where requested_student_id = auth.uid()
+    and material.status = 'published'
+    and lower(coalesce(material.material_type, material.type)) = 'video'
+    and material.class_grade = student.grade
+    and (material.stream is null or material.stream = '' or lower(material.stream) = lower(coalesce(student.stream, '')))
+    and lower(material.subject) = any(select lower(subject) from unnest(student.eligible_subjects) subject);
+$$;
+
+create or replace function public.save_student_video_progress(
+  requested_video_id uuid,
+  requested_position numeric,
+  requested_duration numeric,
+  requested_completed boolean
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if exists (select 1 from public.get_student_videos(auth.uid()) video where video.id = requested_video_id) then
+    insert into public.student_video_progress (student_id, video_id, watch_position, duration, completed, last_watched_at)
+    values (auth.uid(), requested_video_id, greatest(requested_position, 0), greatest(requested_duration, 0), requested_completed, now())
+    on conflict (student_id, video_id) do update set
+      watch_position = excluded.watch_position, duration = excluded.duration,
+      completed = excluded.completed, last_watched_at = now();
+  end if;
+end;
+$$;
+
+revoke all on function public.get_student_videos(uuid) from public;
+grant execute on function public.get_student_videos(uuid) to authenticated;
+revoke all on function public.save_student_video_progress(uuid, numeric, numeric, boolean) from public;
+grant execute on function public.save_student_video_progress(uuid, numeric, numeric, boolean) to authenticated;
 alter publication supabase_realtime add table public.student_profiles;
 alter publication supabase_realtime add table public.material_downloads;
+alter publication supabase_realtime add table public.student_video_progress;
