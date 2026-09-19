@@ -131,6 +131,18 @@
     const subjects = [...new Set([...registeredSubjects(state.student || {}), ...state.notes.map((note) => note.subject).filter(Boolean)])].sort();
     $("subjectFilter").innerHTML = '<option value="all">All Subjects</option>' + subjects.map((subject) => `<option value="${escape(subject)}">${escape(subject)}</option>`).join("");
     $("subjectFilter").value = [...$("subjectFilter").options].some((option) => option.value === current) ? current : "all";
+    renderRegistrationContext();
+  }
+
+  function renderRegistrationContext() {
+    const profile = state.student || {};
+    const grade = String(profile.classGrade || profile.class_grade || profile.grade || "");
+    const stream = String(profile.stream || profile.classStream || "");
+    if (!grade || !$("registrationContext") || !$("registrationContextText")) return;
+    const streamLabels = { science_pcm: "Science (PCM)", science_pcb: "Science (PCB)", commerce: "Commerce", arts: "Arts / Humanities", arts_humanities: "Arts / Humanities" };
+    const streamText = stream ? ` - ${streamLabels[stream.toLowerCase()] || stream}` : "";
+    $("registrationContextText").textContent = `Grade ${grade}${streamText}`;
+    $("registrationContext").hidden = false;
   }
 
   async function loadNotes() {

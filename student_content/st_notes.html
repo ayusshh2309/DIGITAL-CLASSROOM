@@ -51,6 +51,46 @@
         margin-bottom: 7px;
       }
 
+      .page-eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 0;
+        color: #008b95;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .page-eyebrow i {
+        font-size: 13px;
+      }
+
+      .registration-context {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        width: fit-content;
+        margin-top: 18px;
+        padding: 8px 12px;
+        border: 1px solid rgba(41, 174, 184, 0.22);
+        border-radius: 10px;
+        background: rgba(237, 250, 250, 0.72);
+        color: #315360;
+      }
+
+      .scope-label {
+        color: #087f8a;
+        font-weight: 800;
+      }
+
+      .scope-value {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
       .page-title p {
         font-size: 14px;
         color: #5d6d8f;
@@ -533,8 +573,21 @@
 
       <section class="page-header">
         <div class="page-title">
+          <span class="page-eyebrow">
+            <i class="fa-solid fa-book-open" aria-hidden="true"></i>
+            Student workspace
+          </span>
+
           <h1>My Notes</h1>
           <p>Access your subject notes and study materials anytime.</p>
+
+          <div class="registration-context" id="registrationContext" hidden>
+            <span class="scope-label">Your registered curriculum</span>
+            <span class="scope-value">
+              <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
+              <span id="registrationContextText"></span>
+            </span>
+          </div>
         </div>
       </section>
 
