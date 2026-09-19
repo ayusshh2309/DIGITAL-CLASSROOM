@@ -596,6 +596,7 @@
                 <option value="newest">Newest First</option>
                 <option value="oldest">Oldest First</option>
                 <option value="name">Name A-Z</option>
+                <option value="za">Name Z-A</option>
               </select>
             </div>
           </div>
@@ -641,51 +642,52 @@
        SUPABASE CONFIGURATION
     ===================================================== */
 
-      const SUPABASE_URL = "YOUR_SUPABASE_URL";
-      const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+      if (false) {
+        const SUPABASE_URL = "YOUR_SUPABASE_URL";
+        const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
 
-      const supabaseClient = window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_ANON_KEY,
-      );
+        const supabaseClient = window.supabase.createClient(
+          SUPABASE_URL,
+          SUPABASE_ANON_KEY,
+        );
 
-      /* =====================================================
+        /* =====================================================
        GLOBAL DATA
     ===================================================== */
 
-      let allNotes = [];
+        let allNotes = [];
 
-      /* =====================================================
+        /* =====================================================
        GET CURRENT STUDENT
     ===================================================== */
 
-      async function getCurrentStudent() {
-        const {
-          data: { user },
-          error,
-        } = await supabaseClient.auth.getUser();
+        async function getCurrentStudent() {
+          const {
+            data: { user },
+            error,
+          } = await supabaseClient.auth.getUser();
 
-        if (error || !user) {
-          console.log("Student not logged in");
-          return null;
+          if (error || !user) {
+            console.log("Student not logged in");
+            return null;
+          }
+
+          return user;
         }
 
-        return user;
-      }
-
-      /* =====================================================
+        /* =====================================================
        LOAD NOTES
     ===================================================== */
 
-      async function loadNotes() {
-        const user = await getCurrentStudent();
+        async function loadNotes() {
+          const user = await getCurrentStudent();
 
-        if (!user) {
-          showError("Please login to view your notes.");
-          return;
-        }
+          if (!user) {
+            showError("Please login to view your notes.");
+            return;
+          }
 
-        /*
+          /*
         Expected Supabase table:
 
         notes
@@ -702,46 +704,46 @@
         download_count
       */
 
-        const { data, error } = await supabaseClient
-          .from("notes")
-          .select("*")
-          .eq("student_id", user.id)
-          .order("created_at", {
-            ascending: false,
-          });
+          const { data, error } = await supabaseClient
+            .from("notes")
+            .select("*")
+            .eq("student_id", user.id)
+            .order("created_at", {
+              ascending: false,
+            });
 
-        if (error) {
-          console.error(error);
+          if (error) {
+            console.error(error);
 
-          showError(
-            "Unable to load notes. Check your Supabase table and policies.",
-          );
+            showError(
+              "Unable to load notes. Check your Supabase table and policies.",
+            );
 
-          return;
+            return;
+          }
+
+          allNotes = data || [];
+
+          populateSubjectFilter();
+
+          renderNotes(allNotes);
+
+          updateStatistics(allNotes);
+
+          renderRecentNotes(allNotes);
+
+          renderSubjectProgress(allNotes);
         }
 
-        allNotes = data || [];
-
-        populateSubjectFilter();
-
-        renderNotes(allNotes);
-
-        updateStatistics(allNotes);
-
-        renderRecentNotes(allNotes);
-
-        renderSubjectProgress(allNotes);
-      }
-
-      /* =====================================================
+        /* =====================================================
        RENDER NOTES
     ===================================================== */
 
-      function renderNotes(notes) {
-        const grid = document.getElementById("notesGrid");
+        function renderNotes(notes) {
+          const grid = document.getElementById("notesGrid");
 
-        if (!notes.length) {
-          grid.innerHTML = `
+          if (!notes.length) {
+            grid.innerHTML = `
           <div class="empty-state">
             <div class="empty-icon">📚</div>
             <h3>No Notes Available</h3>
@@ -749,16 +751,16 @@
           </div>
         `;
 
-          return;
-        }
+            return;
+          }
 
-        grid.innerHTML = notes
-          .map((note) => {
-            const icon = getSubjectIcon(note.subject);
+          grid.innerHTML = notes
+            .map((note) => {
+              const icon = getSubjectIcon(note.subject);
 
-            const iconClass = getSubjectClass(note.subject);
+              const iconClass = getSubjectClass(note.subject);
 
-            return `
+              return `
           <article class="note-card">
 
             <div class="note-top">
@@ -821,124 +823,127 @@
 
           </article>
         `;
-          })
-          .join("");
-      }
+            })
+            .join("");
+        }
 
-      /* =====================================================
+        /* =====================================================
        SUBJECT FILTER
     ===================================================== */
 
-      function populateSubjectFilter() {
-        const filter = document.getElementById("subjectFilter");
+        function populateSubjectFilter() {
+          const filter = document.getElementById("subjectFilter");
 
-        const subjects = [
-          ...new Set(allNotes.map((note) => note.subject).filter(Boolean)),
-        ];
+          const subjects = [
+            ...new Set(allNotes.map((note) => note.subject).filter(Boolean)),
+          ];
 
-        filter.innerHTML =
-          `<option value="all">All Subjects</option>` +
-          subjects
-            .map(
-              (subject) => `
+          filter.innerHTML =
+            `<option value="all">All Subjects</option>` +
+            subjects
+              .map(
+                (subject) => `
           <option value="${escapeAttribute(subject)}">
             ${escapeHTML(subject)}
           </option>
         `,
-            )
-            .join("");
-      }
-
-      document
-        .getElementById("subjectFilter")
-        .addEventListener("change", applyFilters);
-
-      document
-        .getElementById("sortFilter")
-        .addEventListener("change", applyFilters);
-
-      function applyFilters() {
-        const subject = document.getElementById("subjectFilter").value;
-
-        const sort = document.getElementById("sortFilter").value;
-
-        let filtered = [...allNotes];
-
-        if (subject !== "all") {
-          filtered = filtered.filter((note) => note.subject === subject);
+              )
+              .join("");
         }
 
-        if (sort === "newest") {
-          filtered.sort(
-            (a, b) => new Date(b.created_at) - new Date(a.created_at),
-          );
-        } else if (sort === "oldest") {
-          filtered.sort(
-            (a, b) => new Date(a.created_at) - new Date(b.created_at),
-          );
-        } else if (sort === "name") {
-          filtered.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+        document
+          .getElementById("subjectFilter")
+          .addEventListener("change", applyFilters);
+
+        document
+          .getElementById("sortFilter")
+          .addEventListener("change", applyFilters);
+
+        function applyFilters() {
+          const subject = document.getElementById("subjectFilter").value;
+
+          const sort = document.getElementById("sortFilter").value;
+
+          let filtered = [...allNotes];
+
+          if (subject !== "all") {
+            filtered = filtered.filter((note) => note.subject === subject);
+          }
+
+          if (sort === "newest") {
+            filtered.sort(
+              (a, b) => new Date(b.created_at) - new Date(a.created_at),
+            );
+          } else if (sort === "oldest") {
+            filtered.sort(
+              (a, b) => new Date(a.created_at) - new Date(b.created_at),
+            );
+          } else if (sort === "name") {
+            filtered.sort((a, b) =>
+              (a.title || "").localeCompare(b.title || ""),
+            );
+          }
+
+          renderNotes(filtered);
         }
 
-        renderNotes(filtered);
-      }
-
-      /* =====================================================
+        /* =====================================================
        STATISTICS
     ===================================================== */
 
-      function updateStatistics(notes) {
-        document.getElementById("totalNotes").textContent = notes.length;
+        function updateStatistics(notes) {
+          document.getElementById("totalNotes").textContent = notes.length;
 
-        const downloaded = notes.filter(
-          (note) => Number(note.download_count || 0) > 0,
-        ).length;
+          const downloaded = notes.filter(
+            (note) => Number(note.download_count || 0) > 0,
+          ).length;
 
-        document.getElementById("downloadedNotes").textContent = downloaded;
+          document.getElementById("downloadedNotes").textContent = downloaded;
 
-        const subjects = new Set(
-          notes.map((note) => note.subject).filter(Boolean),
-        );
+          const subjects = new Set(
+            notes.map((note) => note.subject).filter(Boolean),
+          );
 
-        document.getElementById("subjectsCovered").textContent = subjects.size;
+          document.getElementById("subjectsCovered").textContent =
+            subjects.size;
 
-        const oneWeekAgo = new Date();
+          const oneWeekAgo = new Date();
 
-        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+          oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-        const recent = notes.filter(
-          (note) => new Date(note.created_at) >= oneWeekAgo,
-        );
+          const recent = notes.filter(
+            (note) => new Date(note.created_at) >= oneWeekAgo,
+          );
 
-        document.getElementById("recentNotes").textContent = recent.length;
-      }
+          document.getElementById("recentNotes").textContent = recent.length;
+        }
 
-      /* =====================================================
+        /* =====================================================
        RECENT NOTES
     ===================================================== */
 
-      function renderRecentNotes(notes) {
-        const container = document.getElementById("recentNotesList");
+        function renderRecentNotes(notes) {
+          const container = document.getElementById("recentNotesList");
 
-        const recent = [...notes]
-          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-          .slice(0, 5);
+          const recent = [...notes]
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+            .slice(0, 5);
 
-        if (!recent.length) {
-          container.innerHTML = `<p style="font-size:11px;color:#74819a">
+          if (!recent.length) {
+            container.innerHTML = `<p style="font-size:11px;color:#74819a">
              No recent notes.
            </p>`;
 
-          return;
-        }
+            return;
+          }
 
-        container.innerHTML = recent
-          .map((note) => {
-            const icon = getSubjectIcon(note.subject);
+          container.innerHTML = recent
+            .map((note) => {
+              const icon = getSubjectIcon(note.subject);
 
-            const iconClass = getSubjectClass(note.subject);
+              const iconClass = getSubjectClass(note.subject);
 
-            return `
+              return `
             <div
               class="recent-note"
               onclick="viewNote('${note.file_url || ""}')"
@@ -965,45 +970,45 @@
 
             </div>
           `;
-          })
-          .join("");
-      }
+            })
+            .join("");
+        }
 
-      /* =====================================================
+        /* =====================================================
        SUBJECT PROGRESS
     ===================================================== */
 
-      function renderSubjectProgress(notes) {
-        const container = document.getElementById("subjectProgress");
+        function renderSubjectProgress(notes) {
+          const container = document.getElementById("subjectProgress");
 
-        const subjectCounts = {};
+          const subjectCounts = {};
 
-        notes.forEach((note) => {
-          const subject = note.subject || "Other";
+          notes.forEach((note) => {
+            const subject = note.subject || "Other";
 
-          subjectCounts[subject] = (subjectCounts[subject] || 0) + 1;
-        });
+            subjectCounts[subject] = (subjectCounts[subject] || 0) + 1;
+          });
 
-        const entries = Object.entries(subjectCounts).sort(
-          (a, b) => b[1] - a[1],
-        );
+          const entries = Object.entries(subjectCounts).sort(
+            (a, b) => b[1] - a[1],
+          );
 
-        if (!entries.length) {
-          container.innerHTML = `<p style="font-size:11px;color:#74819a">
+          if (!entries.length) {
+            container.innerHTML = `<p style="font-size:11px;color:#74819a">
              No subject data available.
            </p>`;
 
-          return;
-        }
+            return;
+          }
 
-        const max = Math.max(...entries.map((item) => item[1]));
+          const max = Math.max(...entries.map((item) => item[1]));
 
-        container.innerHTML = entries
-          .slice(0, 6)
-          .map(([subject, count]) => {
-            const percentage = Math.round((count / max) * 100);
+          container.innerHTML = entries
+            .slice(0, 6)
+            .map(([subject, count]) => {
+              const percentage = Math.round((count / max) * 100);
 
-            return `
+              return `
               <div class="subject-progress">
 
                 <div class="subject-row">
@@ -1028,165 +1033,167 @@
 
               </div>
             `;
-          })
-          .join("");
-      }
+            })
+            .join("");
+        }
 
-      /* =====================================================
+        /* =====================================================
        VIEW NOTE
     ===================================================== */
 
-      function viewNote(url) {
-        if (!url) {
-          alert("This note does not have a file attached.");
+        function viewNote(url) {
+          if (!url) {
+            alert("This note does not have a file attached.");
 
-          return;
+            return;
+          }
+
+          window.open(url, "_blank", "noopener,noreferrer");
         }
 
-        window.open(url, "_blank", "noopener,noreferrer");
-      }
-
-      /* =====================================================
+        /* =====================================================
        DOWNLOAD NOTE
     ===================================================== */
 
-      async function downloadNote(noteId, url, title) {
-        if (!url) {
-          alert("This note does not have a downloadable file.");
+        async function downloadNote(noteId, url, title) {
+          if (!url) {
+            alert("This note does not have a downloadable file.");
 
-          return;
-        }
+            return;
+          }
 
-        const link = document.createElement("a");
+          const link = document.createElement("a");
 
-        link.href = url;
-        link.download = title || "note";
+          link.href = url;
+          link.download = title || "note";
 
-        document.body.appendChild(link);
+          document.body.appendChild(link);
 
-        link.click();
+          link.click();
 
-        link.remove();
+          link.remove();
 
-        /*
+          /*
         Update download count
       */
 
-        const note = allNotes.find((item) => item.id === noteId);
+          const note = allNotes.find((item) => item.id === noteId);
 
-        if (note) {
-          const newCount = Number(note.download_count || 0) + 1;
+          if (note) {
+            const newCount = Number(note.download_count || 0) + 1;
 
-          await supabaseClient
-            .from("notes")
-            .update({
-              download_count: newCount,
-            })
-            .eq("id", noteId);
+            await supabaseClient
+              .from("notes")
+              .update({
+                download_count: newCount,
+              })
+              .eq("id", noteId);
 
-          note.download_count = newCount;
+            note.download_count = newCount;
 
-          updateStatistics(allNotes);
+            updateStatistics(allNotes);
+          }
         }
-      }
 
-      /* =====================================================
+        /* =====================================================
        NOTE MENU
     ===================================================== */
 
-      function showNoteMenu(id) {
-        const note = allNotes.find((item) => item.id === id);
+        function showNoteMenu(id) {
+          const note = allNotes.find((item) => item.id === id);
 
-        if (!note) return;
+          if (!note) return;
 
-        alert(
-          `${note.title || "Note"}\n\nSubject: ${note.subject || "General"}`,
-        );
-      }
+          alert(
+            `${note.title || "Note"}\n\nSubject: ${note.subject || "General"}`,
+          );
+        }
 
-      /* =====================================================
+        /* =====================================================
        SUBJECT ICONS
     ===================================================== */
 
-      function getSubjectIcon(subject) {
-        if (!subject) return "📄";
+        function getSubjectIcon(subject) {
+          if (!subject) return "📄";
 
-        const value = subject.toLowerCase();
+          const value = subject.toLowerCase();
 
-        if (value.includes("physics")) return "⚛";
+          if (value.includes("physics")) return "⚛";
 
-        if (value.includes("chemistry")) return "⚗";
+          if (value.includes("chemistry")) return "⚗";
 
-        if (value.includes("math") || value.includes("statistics")) return "Σ";
+          if (value.includes("math") || value.includes("statistics"))
+            return "Σ";
 
-        if (value.includes("english")) return "📖";
+          if (value.includes("english")) return "📖";
 
-        if (value.includes("computer") || value.includes("program"))
-          return "</>";
+          if (value.includes("computer") || value.includes("program"))
+            return "</>";
 
-        if (value.includes("biology")) return "🧬";
+          if (value.includes("biology")) return "🧬";
 
-        if (value.includes("history") || value.includes("social")) return "🌐";
+          if (value.includes("history") || value.includes("social"))
+            return "🌐";
 
-        return "📄";
-      }
+          return "📄";
+        }
 
-      function getSubjectClass(subject) {
-        if (!subject) return "purple";
+        function getSubjectClass(subject) {
+          if (!subject) return "purple";
 
-        const value = subject.toLowerCase();
+          const value = subject.toLowerCase();
 
-        if (value.includes("physics")) return "purple";
+          if (value.includes("physics")) return "purple";
 
-        if (value.includes("chemistry")) return "green";
+          if (value.includes("chemistry")) return "green";
 
-        if (value.includes("math") || value.includes("statistics"))
-          return "orange";
+          if (value.includes("math") || value.includes("statistics"))
+            return "orange";
 
-        if (value.includes("english")) return "blue";
+          if (value.includes("english")) return "blue";
 
-        if (value.includes("computer") || value.includes("program"))
-          return "purple";
+          if (value.includes("computer") || value.includes("program"))
+            return "purple";
 
-        return "blue";
-      }
+          return "blue";
+        }
 
-      /* =====================================================
+        /* =====================================================
        DATE FORMAT
     ===================================================== */
 
-      function formatDate(date) {
-        if (!date) return "";
+        function formatDate(date) {
+          if (!date) return "";
 
-        return new Date(date).toLocaleDateString("en-IN", {
-          day: "numeric",
-          month: "short",
-        });
-      }
+          return new Date(date).toLocaleDateString("en-IN", {
+            day: "numeric",
+            month: "short",
+          });
+        }
 
-      /* =====================================================
+        /* =====================================================
        SECURITY HELPERS
     ===================================================== */
 
-      function escapeHTML(value) {
-        return String(value)
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#039;");
-      }
+        function escapeHTML(value) {
+          return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+        }
 
-      function escapeAttribute(value) {
-        return String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-      }
+        function escapeAttribute(value) {
+          return String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+        }
 
-      /* =====================================================
+        /* =====================================================
        ERROR
     ===================================================== */
 
-      function showError(message) {
-        document.getElementById("notesGrid").innerHTML = `
+        function showError(message) {
+          document.getElementById("notesGrid").innerHTML = `
           <div class="empty-state">
 
             <div class="empty-icon">
@@ -1203,14 +1210,18 @@
 
           </div>
         `;
-      }
+        }
 
-      /* =====================================================
+        /* =====================================================
        INITIALIZE
     ===================================================== */
 
-      document.addEventListener("DOMContentLoaded", loadNotes);
+        document.addEventListener("DOMContentLoaded", loadNotes);
+      }
     </script>
+    <script src="../js/supabase.js"></script>
+    <script src="../js/teacher-data.js"></script>
+    <script src="../js/student-notes.js"></script>
     <script src="../js/student-layout.js"></script>
   </body>
 </html>

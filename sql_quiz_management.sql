@@ -183,3 +183,63 @@ for select using (bucket_id = 'teacher_resources' and auth.uid()::text = (storag
 
 alter publication supabase_realtime add table public.downloads_files;
 alter publication supabase_realtime add table public.materials;
+
+-- Student material authorization. Keep this table populated from the authenticated registration flow.
+create table if not exists public.student_profiles (
+  student_id uuid primary key references auth.users(id) on delete cascade,
+  student_code text,
+  grade text not null,
+  stream text,
+  eligible_subjects text[] not null default '{}',
+  updated_at timestamptz not null default now()
+);
+
+alter table public.materials add column if not exists material_id uuid;
+alter table public.materials add column if not exists teacher_name text;
+alter table public.materials add column if not exists grade text;
+alter table public.materials add column if not exists stream text;
+alter table public.materials add column if not exists chapter text;
+alter table public.materials add column if not exists external_url text;
+alter table public.materials add column if not exists uploaded_at timestamptz not null default now();
+alter table public.materials add column if not exists status text not null default 'published';
+update public.materials set material_id = id where material_id is null;
+update public.materials set grade = class_grade where grade is null;
+
+create table if not exists public.material_downloads (
+  id uuid primary key default gen_random_uuid(),
+  material_id uuid not null references public.materials(id) on delete cascade,
+  student_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  downloaded_at timestamptz not null default now()
+);
+
+alter table public.student_profiles enable row level security;
+alter table public.material_downloads enable row level security;
+drop policy if exists "Students view own profile" on public.student_profiles;
+create policy "Students view own profile" on public.student_profiles for select using (auth.uid() = student_id);
+drop policy if exists "Students record own material downloads" on public.material_downloads;
+create policy "Students record own material downloads" on public.material_downloads for insert with check (auth.uid() = student_id);
+drop policy if exists "Students view own material downloads" on public.material_downloads;
+create policy "Students view own material downloads" on public.material_downloads for select using (auth.uid() = student_id);
+
+drop policy if exists "Students can view shared class materials" on public.materials;
+create or replace function public.get_student_materials(requested_student_id uuid)
+returns setof public.materials
+language sql
+security definer
+set search_path = public
+as $$
+  select material.*
+  from public.materials material
+  join public.student_profiles student on student.student_id = auth.uid()
+  where requested_student_id = auth.uid()
+    and material.status = 'published'
+    and lower(coalesce(material.material_type, material.type)) in ('pdf', 'image', 'document', 'link')
+    and material.class_grade = student.grade
+    and (material.stream is null or material.stream = '' or lower(material.stream) = lower(coalesce(student.stream, '')))
+    and lower(material.subject) = any(select lower(subject) from unnest(student.eligible_subjects) subject);
+$$;
+
+revoke all on function public.get_student_materials(uuid) from public;
+grant execute on function public.get_student_materials(uuid) to authenticated;
+alter publication supabase_realtime add table public.student_profiles;
+alter publication supabase_realtime add table public.material_downloads;
