@@ -55,7 +55,7 @@
       .page {
         min-height: 100vh;
 
-        padding: 38px 40px 45px;
+        padding: 45px 48px 40px;
 
         background:
           radial-gradient(
@@ -75,52 +75,49 @@
         align-items: center;
         justify-content: space-between;
 
-        gap: 30px;
+        padding: 4px 4px 8px;
+        gap: 20px;
 
-        margin-bottom: 30px;
+        margin-bottom: 18px;
       }
 
       .title-area {
         display: flex;
-        align-items: center;
-        gap: 18px;
+        align-items: flex-start;
       }
 
       .title-icon {
-        width: 58px;
-        height: 58px;
-
-        border-radius: 14px;
-
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        background: linear-gradient(135deg, #663df2, #5128dc);
-
-        color: white;
-
-        font-size: 24px;
-
-        box-shadow: 0 8px 20px rgba(91, 56, 231, 0.22);
+        display: none;
       }
 
       .title-area h1 {
-        font-size: 31px;
-
+        margin-top: 7px;
+        font-size: clamp(2rem, 3vw, 2.7rem);
         font-weight: 800;
-
-        letter-spacing: -0.8px;
-
         color: #08183e;
-
-        margin-bottom: 5px;
+        letter-spacing: -0.8px;
       }
 
       .title-area p {
-        font-size: 14px;
-
+        max-width: 540px;
+        margin-top: 4px;
         color: #53698e;
+        font-size: 1.05rem;
+      }
+
+      .page-eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #008b95;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .page-eyebrow i {
+        font-size: 13px;
       }
 
       /* =====================================================
@@ -221,6 +218,10 @@
         gap: 9px;
 
         transition: 0.2s;
+      }
+
+      .subject-tab[hidden] {
+        display: none;
       }
 
       .subject-tab:hover {
@@ -1164,11 +1165,12 @@
 
       <header class="page-header">
         <div class="title-area">
-          <div class="title-icon">
-            <i class="fa-solid fa-play"></i>
-          </div>
-
           <div>
+            <div class="page-eyebrow">
+              <i class="fa-solid fa-play" aria-hidden="true"></i>
+              Learning Library
+            </div>
+
             <h1>Videos</h1>
 
             <p>Watch and learn from your subject-wise video lessons.</p>

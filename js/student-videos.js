@@ -5,15 +5,15 @@
   const profileKeys = ["studentProfile", "studentData", "finalStudentRegistration"];
 
   function readProfile() {
-    for (const key of profileKeys) {
+    const profiles = profileKeys.map((key) => {
       try {
-        const profile = JSON.parse(localStorage.getItem(key) || "null");
-        if (profile) return profile;
+        return JSON.parse(localStorage.getItem(key) || "null");
       } catch (error) {
         console.warn(`Could not read ${key}.`, error);
+        return null;
       }
-    }
-    return {};
+    });
+    return profiles.find((profile) => profile && (profile.classGrade || profile.class_grade)) || profiles.find(Boolean) || {};
   }
 
   function client() {
@@ -21,12 +21,10 @@
   }
 
   function subjectNames(profile) {
-    const direct = profile.registeredSubjects || profile.registered_subjects || profile.subjects;
-    if (Array.isArray(direct) && direct.length) return direct.map(String);
     const grade = String(profile.classGrade || profile.class_grade || profile.grade || "");
     const stream = String(profile.stream || profile.classStream || "").toLowerCase();
     const standard = { "5": ["English", "Mathematics", "EVS", "Hindi"], "6": ["English", "Mathematics", "Science", "Social Science", "Hindi"], "7": ["English", "Mathematics", "Science", "Social Science", "Hindi"], "8": ["English", "Mathematics", "Science", "Social Science", "Hindi"], "9": ["English", "Mathematics", "Science", "Social Science", "Hindi"], "10": ["English", "Mathematics", "Science", "Social Science", "Hindi"] };
-    const streams = { science_pcm: ["Physics", "Chemistry", "Mathematics"], science_pcb: ["Physics", "Chemistry", "Biology"], commerce: ["Accountancy", "Business Studies", "Economics"], arts: ["History", "Political Science", "Geography", "Sociology"], arts_humanities: ["History", "Political Science", "Geography", "Psychology"] };
+    const streams = { science_pcm: ["Physics", "Chemistry", "Mathematics"], science_pcb: ["Physics", "Chemistry", "Biology"], commerce: ["Accountancy", "Business Studies", "Economics"], arts: ["History", "Political Science", "Geography", "Sociology"] };
     return grade === "11" || grade === "12" ? [...(streams[stream] || []), "English", "Computer Science", "Physical Education"] : (standard[grade] || []);
   }
 
@@ -38,7 +36,7 @@
   function thumbnail(video) { return video.thumbnail_url || video.thumbnail || ""; }
   function subjectIcon(subject) { const value = String(subject || "").toLowerCase(); if (value.includes("physics")) return "fa-atom"; if (value.includes("chem")) return "fa-flask"; if (value.includes("math")) return "fa-calculator"; if (value.includes("computer")) return "fa-code"; return "fa-book"; }
 
-  function availableSubjects() { return [...new Set([...subjectNames(state.student), ...state.videos.map((video) => video.subject).filter(Boolean)])].sort(); }
+  function availableSubjects() { return [...new Set(subjectNames(state.student))].sort(); }
 
   function renderSubjectControls() {
     const subjects = availableSubjects();
