@@ -81,7 +81,7 @@
         margin-bottom: 18px;
       }
 
-      .title-area {
+      .page-title {
         display: flex;
         align-items: flex-start;
       }
@@ -90,7 +90,7 @@
         display: none;
       }
 
-      .title-area h1 {
+      .page-title h1 {
         margin-top: 7px;
         font-size: clamp(2rem, 3vw, 2.7rem);
         font-weight: 800;
@@ -98,11 +98,41 @@
         letter-spacing: -0.8px;
       }
 
-      .title-area p {
+      .page-title p {
         max-width: 540px;
         margin-top: 4px;
         color: #53698e;
         font-size: 1.05rem;
+      }
+
+      .registration-context {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        width: fit-content;
+        margin-top: 18px;
+        padding: 8px 12px;
+        border: 1px solid rgba(41, 174, 184, 0.22);
+        border-radius: 10px;
+        background: rgba(237, 250, 250, 0.72);
+        color: #315360;
+      }
+
+      .scope-label {
+        color: #087f8a;
+        font-weight: 800;
+      }
+
+      .scope-value {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+      }
+
+      .scope-value i {
+        color: #008b95;
+        font-size: 15px;
       }
 
       .page-eyebrow {
@@ -1115,11 +1145,11 @@
           padding: 22px 15px;
         }
 
-        .title-area {
+        .page-title {
           align-items: flex-start;
         }
 
-        .title-area h1 {
+        .page-title h1 {
           font-size: 27px;
         }
 
@@ -1164,16 +1194,24 @@
     ================================================== -->
 
       <header class="page-header">
-        <div class="title-area">
+        <div class="page-title">
           <div>
             <div class="page-eyebrow">
-              <i class="fa-solid fa-play" aria-hidden="true"></i>
-              Learning Library
+              <i class="fa-solid fa-book-open" aria-hidden="true"></i>
+              Student workspace
             </div>
 
             <h1>Videos</h1>
 
             <p>Watch and learn from your subject-wise video lessons.</p>
+
+            <div class="registration-context" id="registrationContext" hidden>
+              <span class="scope-label">Your registered curriculum</span>
+              <span class="scope-value">
+                <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
+                <span id="registrationContextText"></span>
+              </span>
+            </div>
           </div>
         </div>
 

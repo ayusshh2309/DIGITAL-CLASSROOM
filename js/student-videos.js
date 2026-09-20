@@ -28,6 +28,16 @@
     return grade === "11" || grade === "12" ? [...(streams[stream] || []), "English", "Computer Science", "Physical Education"] : (standard[grade] || []);
   }
 
+  function renderRegistrationContext() {
+    const grade = String(state.student.classGrade || state.student.class_grade || "");
+    if (!grade) return;
+    const stream = String(state.student.stream || state.student.classStream || "").toLowerCase();
+    const streamLabels = { science_pcm: "Science (PCM)", science_pcb: "Science (PCB)", commerce: "Commerce", arts: "Arts / Humanities" };
+    const streamText = grade === "11" || grade === "12" ? ` - ${streamLabels[stream] || "Selected stream"}` : "";
+    $("registrationContextText").textContent = `Registered curriculum: Grade ${grade}${streamText}`;
+    $("registrationContext").hidden = false;
+  }
+
   function typeOf(video) { return String(video.material_type || video.type || "").toLowerCase(); }
   function urlOf(video) { return video.video_url || video.external_url || video.file_url || ""; }
   function dateOf(video) { return new Date(video.uploaded_at || video.updated_at || video.created_at || 0); }
@@ -123,6 +133,7 @@
 
   async function loadVideos() {
     state.student = readProfile();
+    renderRegistrationContext();
     renderVideos();
     const supabase = client();
     if (!supabase) return;
