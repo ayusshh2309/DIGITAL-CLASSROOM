@@ -319,3 +319,234 @@ grant execute on function public.save_student_video_progress(uuid, numeric, nume
 alter publication supabase_realtime add table public.student_profiles;
 alter publication supabase_realtime add table public.material_downloads;
 alter publication supabase_realtime add table public.student_video_progress;
+
+-- Real-time student study tracking.
+alter table public.student_profiles
+  add column if not exists daily_study_goal_minutes integer not null default 360;
+
+create table if not exists public.study_sessions (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  subject text not null,
+  topic text,
+  start_time timestamptz not null default now(),
+  pause_time timestamptz,
+  end_time timestamptz,
+  duration_seconds bigint not null default 0 check (duration_seconds >= 0),
+  status text not null default 'active' check (status in ('active', 'paused', 'completed')),
+  last_resumed_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create unique index if not exists study_sessions_one_active_per_student
+  on public.study_sessions (student_id)
+  where status in ('active', 'paused');
+
+create index if not exists study_sessions_student_time_idx
+  on public.study_sessions (student_id, start_time desc);
+
+create table if not exists public.study_session_segments (
+  id uuid primary key default gen_random_uuid(),
+  session_id uuid not null references public.study_sessions(id) on delete cascade,
+  student_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  start_time timestamptz not null,
+  end_time timestamptz not null,
+  duration_seconds bigint not null check (duration_seconds >= 0),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists study_session_segments_student_time_idx
+  on public.study_session_segments (student_id, start_time desc);
+
+alter table public.study_sessions enable row level security;
+alter table public.study_session_segments enable row level security;
+drop policy if exists "Students manage own study sessions" on public.study_sessions;
+create policy "Students manage own study sessions" on public.study_sessions
+  for all using (auth.uid() = student_id) with check (auth.uid() = student_id);
+drop policy if exists "Students view own study segments" on public.study_session_segments;
+create policy "Students view own study segments" on public.study_session_segments
+  for select using (auth.uid() = student_id);
+
+drop policy if exists "Students update own profile goal" on public.student_profiles;
+create policy "Students update own profile goal" on public.student_profiles
+  for update using (auth.uid() = student_id) with check (auth.uid() = student_id);
+
+create or replace function public.start_student_study_session(
+  requested_subject text,
+  requested_topic text default null
+)
+returns public.study_sessions
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  existing_session public.study_sessions;
+  created_session public.study_sessions;
+begin
+  if auth.uid() is null or nullif(trim(requested_subject), '') is null then
+    raise exception 'A signed-in student and subject are required';
+  end if;
+
+  if exists (select 1 from public.student_profiles where student_id = auth.uid() and cardinality(eligible_subjects) > 0)
+     and not exists (
+       select 1 from public.student_profiles student
+       where student.student_id = auth.uid()
+         and lower(trim(requested_subject)) = any(select lower(trim(subject)) from unnest(student.eligible_subjects) subject)
+     ) then
+    raise exception 'Subject is not registered for this student';
+  end if;
+
+  select * into existing_session
+  from public.study_sessions
+  where student_id = auth.uid() and status in ('active', 'paused')
+  order by created_at desc
+  limit 1;
+
+  if existing_session.id is not null then
+    return existing_session;
+  end if;
+
+  insert into public.study_sessions (student_id, subject, topic, start_time, last_resumed_at)
+  values (auth.uid(), trim(requested_subject), nullif(trim(requested_topic), ''), now(), now())
+  returning * into created_session;
+
+  return created_session;
+end;
+$$;
+
+create or replace function public.pause_student_study_session(requested_session_id uuid)
+returns public.study_sessions
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  updated_session public.study_sessions;
+begin
+  update public.study_sessions
+  set duration_seconds = greatest(duration_seconds + extract(epoch from (now() - last_resumed_at))::bigint, 0),
+      pause_time = now(), status = 'paused', updated_at = now()
+  where id = requested_session_id and student_id = auth.uid() and status = 'active'
+  returning * into updated_session;
+
+  if updated_session.id is not null then
+    insert into public.study_session_segments (session_id, student_id, start_time, end_time, duration_seconds)
+    select id, student_id, last_resumed_at, now(), greatest(extract(epoch from (now() - last_resumed_at))::bigint, 0)
+    from public.study_sessions where id = updated_session.id;
+  end if;
+
+  if updated_session.id is null then
+    select * into updated_session from public.study_sessions
+    where id = requested_session_id and student_id = auth.uid();
+  end if;
+
+  return updated_session;
+end;
+$$;
+
+create or replace function public.resume_student_study_session(requested_session_id uuid)
+returns public.study_sessions
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  updated_session public.study_sessions;
+begin
+  update public.study_sessions
+  set last_resumed_at = now(), status = 'active', updated_at = now()
+  where id = requested_session_id and student_id = auth.uid() and status = 'paused'
+  returning * into updated_session;
+
+  if updated_session.id is null then
+    select * into updated_session from public.study_sessions
+    where id = requested_session_id and student_id = auth.uid();
+  end if;
+
+  return updated_session;
+end;
+$$;
+
+create or replace function public.finish_student_study_session(requested_session_id uuid)
+returns public.study_sessions
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  updated_session public.study_sessions;
+  previous_status text;
+begin
+  select status into previous_status
+  from public.study_sessions
+  where id = requested_session_id and student_id = auth.uid();
+
+  update public.study_sessions
+  set duration_seconds = greatest(
+        duration_seconds + case when status = 'active'
+          then extract(epoch from (now() - last_resumed_at))::bigint else 0 end,
+        0
+      ),
+      end_time = now(), status = 'completed', updated_at = now()
+  where id = requested_session_id and student_id = auth.uid() and status in ('active', 'paused')
+  returning * into updated_session;
+
+  if updated_session.id is not null and previous_status = 'active' and updated_session.end_time is not null then
+    insert into public.study_session_segments (session_id, student_id, start_time, end_time, duration_seconds)
+    select id, student_id, last_resumed_at, end_time, greatest(extract(epoch from (end_time - last_resumed_at))::bigint, 0)
+    from public.study_sessions where id = updated_session.id and status = 'completed';
+  end if;
+
+  if updated_session.id is null then
+    select * into updated_session from public.study_sessions
+    where id = requested_session_id and student_id = auth.uid();
+  end if;
+
+  return updated_session;
+end;
+$$;
+
+create or replace function public.set_student_daily_study_goal(requested_minutes integer)
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  saved_minutes integer;
+begin
+  if auth.uid() is null or requested_minutes < 1 or requested_minutes > 1440 then
+    raise exception 'Daily goal must be between 1 and 1440 minutes';
+  end if;
+
+  update public.student_profiles
+  set daily_study_goal_minutes = requested_minutes, updated_at = now()
+  where student_id = auth.uid()
+  returning daily_study_goal_minutes into saved_minutes;
+
+  return coalesce(saved_minutes, requested_minutes);
+end;
+$$;
+
+revoke all on function public.start_student_study_session(text, text) from public;
+revoke all on function public.pause_student_study_session(uuid) from public;
+revoke all on function public.resume_student_study_session(uuid) from public;
+revoke all on function public.finish_student_study_session(uuid) from public;
+revoke all on function public.set_student_daily_study_goal(integer) from public;
+grant execute on function public.start_student_study_session(text, text) to authenticated;
+grant execute on function public.pause_student_study_session(uuid) to authenticated;
+grant execute on function public.resume_student_study_session(uuid) to authenticated;
+grant execute on function public.finish_student_study_session(uuid) to authenticated;
+grant execute on function public.set_student_daily_study_goal(integer) to authenticated;
+
+do $$
+begin
+  begin
+    alter publication supabase_realtime add table public.study_sessions;
+      alter publication supabase_realtime add table public.study_session_segments;
+  exception when duplicate_object then null;
+  end;
+end;
+$$;

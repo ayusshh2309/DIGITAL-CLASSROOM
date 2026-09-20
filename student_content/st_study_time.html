@@ -19,6 +19,8 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
     />
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <style>
       * {
         margin: 0;
@@ -802,6 +804,52 @@
         line-height: 1.6;
       }
 
+      .timer-fields {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 15px;
+      }
+
+      .timer-fields select,
+      .timer-fields input {
+        height: 34px;
+        padding: 0 10px;
+        border: 1px solid #dce5ef;
+        border-radius: 8px;
+        outline: none;
+        color: #29436d;
+        background: #fff;
+        font-size: 10px;
+      }
+
+      .timer-fields select:focus,
+      .timer-fields input:focus {
+        border-color: #6847e9;
+      }
+
+      .timer-fields select {
+        min-width: 145px;
+      }
+
+      .timer-fields input {
+        width: 190px;
+      }
+
+      .timer-status {
+        min-height: 15px;
+        margin-top: 5px;
+        color: #6f819d;
+        font-size: 10px;
+      }
+
+      .empty-state {
+        padding: 20px 0;
+        color: #788aa4;
+        font-size: 11px;
+        text-align: center;
+      }
+
       .timer-display {
         font-size: 29px;
 
@@ -966,14 +1014,16 @@
               <i class="fa-solid fa-clock"></i>
             </div>
 
-            <span class="stat-change"> +18% </span>
+            <span class="stat-change" id="todayChange"> 0% </span>
           </div>
 
           <div class="stat-label">Today's Study Time</div>
 
-          <div class="stat-value">4h 32m</div>
+          <div class="stat-value" id="todayStudyTime">0m</div>
 
-          <div class="stat-small">Compared to yesterday</div>
+          <div class="stat-small" id="todayStudyNote">
+            No completed study yet
+          </div>
         </div>
 
         <!-- WEEK -->
@@ -984,14 +1034,14 @@
               <i class="fa-solid fa-calendar-week"></i>
             </div>
 
-            <span class="stat-change"> +12% </span>
+            <span class="stat-change" id="weekChange"> 0% </span>
           </div>
 
           <div class="stat-label">This Week</div>
 
-          <div class="stat-value">24h 45m</div>
+          <div class="stat-value" id="weekStudyTime">0m</div>
 
-          <div class="stat-small">Your weekly total</div>
+          <div class="stat-small" id="weekStudyNote">Monday to today</div>
         </div>
 
         <!-- AVERAGE -->
@@ -1005,9 +1055,9 @@
 
           <div class="stat-label">Daily Average</div>
 
-          <div class="stat-value">3h 32m</div>
+          <div class="stat-value" id="averageStudyTime">0m</div>
 
-          <div class="stat-small">Based on this week</div>
+          <div class="stat-small" id="averageStudyNote">Based on this week</div>
         </div>
 
         <!-- STREAK -->
@@ -1018,14 +1068,16 @@
               <i class="fa-solid fa-fire"></i>
             </div>
 
-            <span class="stat-change"> Active </span>
+            <span class="stat-change" id="streakStatus"> None </span>
           </div>
 
           <div class="stat-label">Study Streak</div>
 
-          <div class="stat-value">7 Days</div>
+          <div class="stat-value" id="studyStreak">0 Days</div>
 
-          <div class="stat-small">Keep your streak going!</div>
+          <div class="stat-small" id="streakNote">
+            Complete a session to start
+          </div>
         </div>
       </section>
 
@@ -1066,101 +1118,7 @@
               <div class="grid-line"></div>
             </div>
 
-            <div class="bars">
-              <div class="bar-group">
-                <div class="bar-wrapper">
-                  <div
-                    class="bar"
-                    style="height: 58%"
-                    title="Monday: 3h 30m"
-                  ></div>
-                </div>
-
-                <span class="hours"> 3.5h </span>
-
-                <span class="day"> Mon </span>
-              </div>
-
-              <div class="bar-group">
-                <div class="bar-wrapper">
-                  <div
-                    class="bar"
-                    style="height: 72%"
-                    title="Tuesday: 4h 20m"
-                  ></div>
-                </div>
-
-                <span class="hours"> 4.3h </span>
-
-                <span class="day"> Tue </span>
-              </div>
-
-              <div class="bar-group">
-                <div class="bar-wrapper">
-                  <div
-                    class="bar"
-                    style="height: 48%"
-                    title="Wednesday: 2h 55m"
-                  ></div>
-                </div>
-
-                <span class="hours"> 2.9h </span>
-
-                <span class="day"> Wed </span>
-              </div>
-
-              <div class="bar-group">
-                <div class="bar-wrapper">
-                  <div
-                    class="bar"
-                    style="height: 82%"
-                    title="Thursday: 4h 55m"
-                  ></div>
-                </div>
-
-                <span class="hours"> 4.9h </span>
-
-                <span class="day"> Thu </span>
-              </div>
-
-              <div class="bar-group">
-                <div class="bar-wrapper">
-                  <div class="bar" style="height: 67%" title="Friday: 4h"></div>
-                </div>
-
-                <span class="hours"> 4.0h </span>
-
-                <span class="day"> Fri </span>
-              </div>
-
-              <div class="bar-group">
-                <div class="bar-wrapper">
-                  <div
-                    class="bar"
-                    style="height: 40%"
-                    title="Saturday: 2h 25m"
-                  ></div>
-                </div>
-
-                <span class="hours"> 2.4h </span>
-
-                <span class="day"> Sat </span>
-              </div>
-
-              <div class="bar-group">
-                <div class="bar-wrapper">
-                  <div
-                    class="bar today"
-                    style="height: 75%"
-                    title="Sunday: 4h 32m"
-                  ></div>
-                </div>
-
-                <span class="hours"> 4.5h </span>
-
-                <span class="day"> Sun </span>
-              </div>
-            </div>
+            <div class="bars" id="weeklyBars"></div>
           </div>
         </div>
 
@@ -1179,9 +1137,9 @@
             </button>
           </div>
 
-          <div class="circle-progress">
+          <div class="circle-progress" id="circleProgress">
             <div class="circle-content">
-              <strong> 75% </strong>
+              <strong id="goalPercent"> 0% </strong>
 
               <span> completed </span>
             </div>
@@ -1191,13 +1149,13 @@
             <div class="goal-info-item">
               <span> Completed </span>
 
-              <strong> 4h 32m </strong>
+              <strong id="goalCompleted"> 0m </strong>
             </div>
 
             <div class="goal-info-item">
               <span> Daily Target </span>
 
-              <strong> 6h 00m </strong>
+              <strong id="goalTarget"> 6h 00m </strong>
             </div>
           </div>
         </div>
@@ -1216,87 +1174,7 @@
           </div>
         </div>
 
-        <div class="subject-list">
-          <!-- PHYSICS -->
-
-          <div class="subject-row">
-            <div class="subject-name">
-              <span class="subject-dot dot-purple"></span>
-
-              Physics
-            </div>
-
-            <div class="subject-progress">
-              <div class="subject-progress-fill fill-purple"></div>
-            </div>
-
-            <div class="subject-time">6h 20m</div>
-          </div>
-
-          <!-- CHEMISTRY -->
-
-          <div class="subject-row">
-            <div class="subject-name">
-              <span class="subject-dot dot-green"></span>
-
-              Chemistry
-            </div>
-
-            <div class="subject-progress">
-              <div class="subject-progress-fill fill-green"></div>
-            </div>
-
-            <div class="subject-time">5h 10m</div>
-          </div>
-
-          <!-- MATHEMATICS -->
-
-          <div class="subject-row">
-            <div class="subject-name">
-              <span class="subject-dot dot-orange"></span>
-
-              Mathematics
-            </div>
-
-            <div class="subject-progress">
-              <div class="subject-progress-fill fill-orange"></div>
-            </div>
-
-            <div class="subject-time">5h 45m</div>
-          </div>
-
-          <!-- COMPUTER SCIENCE -->
-
-          <div class="subject-row">
-            <div class="subject-name">
-              <span class="subject-dot dot-blue"></span>
-
-              Computer Science
-            </div>
-
-            <div class="subject-progress">
-              <div class="subject-progress-fill fill-blue"></div>
-            </div>
-
-            <div class="subject-time">3h 20m</div>
-          </div>
-
-          <!-- ENGLISH -->
-
-          <div class="subject-row">
-            <div class="subject-name">
-              <span class="subject-dot dot-pink"></span>
-
-              English
-            </div>
-
-            <div class="subject-progress">
-              <div class="subject-progress-fill fill-pink"></div>
-            </div>
-
-            <div class="subject-time">2h 30m</div>
-          </div>
-        </div>
+        <div class="subject-list" id="subjectList"></div>
       </section>
 
       <!-- =========================================
@@ -1312,71 +1190,7 @@
           </div>
         </div>
 
-        <div class="session-list">
-          <div class="session">
-            <div class="session-left">
-              <div class="session-icon purple">
-                <i class="fa-solid fa-atom"></i>
-              </div>
-
-              <div class="session-info">
-                <strong> Physics - Laws of Motion </strong>
-
-                <span> Today • 10:30 AM </span>
-              </div>
-            </div>
-
-            <div class="session-time">1h 20m</div>
-          </div>
-
-          <div class="session">
-            <div class="session-left">
-              <div class="session-icon green">
-                <i class="fa-solid fa-flask"></i>
-              </div>
-
-              <div class="session-info">
-                <strong> Chemistry - Organic Chemistry </strong>
-
-                <span> Today • 8:45 AM </span>
-              </div>
-            </div>
-
-            <div class="session-time">55m</div>
-          </div>
-
-          <div class="session">
-            <div class="session-left">
-              <div class="session-icon orange">
-                <i class="fa-solid fa-calculator"></i>
-              </div>
-
-              <div class="session-info">
-                <strong> Mathematics - Integration </strong>
-
-                <span> Yesterday • 7:20 PM </span>
-              </div>
-            </div>
-
-            <div class="session-time">1h 10m</div>
-          </div>
-
-          <div class="session">
-            <div class="session-left">
-              <div class="session-icon purple">
-                <i class="fa-solid fa-code"></i>
-              </div>
-
-              <div class="session-info">
-                <strong> Computer Science - C++ Basics </strong>
-
-                <span> Yesterday • 5:40 PM </span>
-              </div>
-            </div>
-
-            <div class="session-time">45m</div>
-          </div>
-        </div>
+        <div class="session-list" id="sessionList"></div>
       </section>
 
       <!-- =========================================
@@ -1387,12 +1201,26 @@
         <div class="timer-info">
           <h2>Start a Study Session</h2>
 
-          <p>
-            Start the timer when you begin studying. Your session can later be
-            connected to your student activity and study-time records.
+          <p id="timerDescription">
+            Start the timer when you begin studying. Your session is saved to
+            your study-time records.
           </p>
 
+          <div class="timer-fields">
+            <select id="studySubject" aria-label="Study subject">
+              <option value="">Select subject</option>
+            </select>
+            <input
+              id="studyTopic"
+              type="text"
+              maxlength="120"
+              placeholder="Chapter or topic (optional)"
+              aria-label="Chapter or topic"
+            />
+          </div>
+
           <div class="timer-display" id="timerDisplay">00:00:00</div>
+          <div class="timer-status" id="timerStatus"></div>
         </div>
 
         <div class="timer-controls">
@@ -1402,153 +1230,23 @@
             Start Studying
           </button>
 
-          <button class="timer-button reset-btn" id="resetTimer">
-            <i class="fa-solid fa-rotate-left"></i>
+          <button class="timer-button reset-btn" id="pauseTimer" disabled>
+            <i class="fa-solid fa-pause"></i>
 
-            Reset
+            Pause
+          </button>
+
+          <button class="timer-button reset-btn" id="finishTimer" disabled>
+            <i class="fa-solid fa-stop"></i>
+
+            Finish
           </button>
         </div>
       </section>
     </div>
 
-    <script>
-      /* =========================================
-       DATE
-    ========================================== */
-
-      let selectedDate = new Date();
-
-      const dateElement = document.getElementById("currentDate");
-
-      function updateDate() {
-        const options = {
-          weekday: "short",
-          month: "short",
-          day: "numeric",
-        };
-
-        const formatted = selectedDate.toLocaleDateString("en-US", options);
-
-        dateElement.textContent = formatted;
-      }
-
-      document
-        .getElementById("previousDay")
-        .addEventListener("click", function () {
-          selectedDate.setDate(selectedDate.getDate() - 1);
-
-          updateDate();
-        });
-
-      document.getElementById("nextDay").addEventListener("click", function () {
-        selectedDate.setDate(selectedDate.getDate() + 1);
-
-        updateDate();
-      });
-
-      updateDate();
-
-      /* =========================================
-       STUDY TIMER
-    ========================================== */
-
-      let timerSeconds = 0;
-
-      let timerInterval = null;
-
-      let timerRunning = false;
-
-      const timerDisplay = document.getElementById("timerDisplay");
-
-      const startButton = document.getElementById("startTimer");
-
-      const resetButton = document.getElementById("resetTimer");
-
-      function formatTime(totalSeconds) {
-        const hours = Math.floor(totalSeconds / 3600);
-
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-
-        const seconds = totalSeconds % 60;
-
-        return (
-          String(hours).padStart(2, "0") +
-          ":" +
-          String(minutes).padStart(2, "0") +
-          ":" +
-          String(seconds).padStart(2, "0")
-        );
-      }
-
-      function updateTimer() {
-        timerDisplay.textContent = formatTime(timerSeconds);
-      }
-
-      startButton.addEventListener("click", function () {
-        if (!timerRunning) {
-          timerRunning = true;
-
-          startButton.innerHTML = `
-                    <i class="fa-solid fa-pause"></i>
-                    Pause
-                `;
-
-          timerInterval = setInterval(function () {
-            timerSeconds++;
-
-            updateTimer();
-          }, 1000);
-        } else {
-          timerRunning = false;
-
-          clearInterval(timerInterval);
-
-          startButton.innerHTML = `
-                    <i class="fa-solid fa-play"></i>
-                    Resume
-                `;
-        }
-      });
-
-      resetButton.addEventListener("click", function () {
-        clearInterval(timerInterval);
-
-        timerSeconds = 0;
-
-        timerRunning = false;
-
-        updateTimer();
-
-        startButton.innerHTML = `
-                <i class="fa-solid fa-play"></i>
-                Start Studying
-            `;
-      });
-
-      /* =========================================
-       EDIT DAILY GOAL
-    ========================================== */
-
-      document
-        .getElementById("editGoal")
-        .addEventListener("click", function () {
-          const currentGoal = prompt(
-            "Enter your daily study goal in hours:",
-            "6",
-          );
-
-          if (
-            currentGoal !== null &&
-            currentGoal.trim() !== "" &&
-            !isNaN(currentGoal) &&
-            Number(currentGoal) > 0
-          ) {
-            const goal = Number(currentGoal);
-
-            alert(`Daily study goal updated to ${goal} hours.`);
-          }
-        });
-    </script>
+    <script src="../js/supabase.js"></script>
+    <script src="../js/student-study-time.js"></script>
     <script src="../js/student-layout.js"></script>
   </body>
 </html>
