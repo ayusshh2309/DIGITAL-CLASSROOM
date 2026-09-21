@@ -108,6 +108,8 @@
   function renderBadges() {
     const grid = $("badgesGrid");
     if (!grid) return;
+    $("badgesCard").style.display = state.definitions.length ? "" : "none";
+    if (!state.definitions.length) return;
     grid.innerHTML = state.definitions.map((definition) => {
       const earned = Boolean(unlockedFor(definition));
       return `<div class="badge-card ${earned ? "earned" : "locked"}" data-status="${earned ? "earned" : "locked"}" data-achievement-id="${escapeHtml(definition.id)}"><div class="badge-big ${earned ? `badge-${escapeHtml(definition.color)}` : ""}"><i class="fa-solid ${escapeHtml(definition.icon)}"></i></div><h3>${escapeHtml(definition.name)}</h3><p>${escapeHtml(definition.description)}</p><span class="${earned ? "badge-check" : "badge-lock"}"><i class="fa-solid fa-${earned ? "check" : "lock"}"></i> ${earned ? "Earned" : "Locked"}</span></div>`;
@@ -133,6 +135,7 @@
     $("progressFill").style.width = `${completion}%`;
     $("earnedLabel").textContent = `${earned} earned`;
     $("remainingLabel").textContent = `${Math.max(0, total - earned)} remaining`;
+    $("categoryCard").style.display = total ? "" : "none";
     const locked = state.definitions.filter((definition) => !unlockedFor(definition)).sort((a, b) => metricValue(b) / Number(b.requirement_value) - metricValue(a) / Number(a.requirement_value))[0];
     if (locked) {
       const current = Math.min(metricValue(locked), Number(locked.requirement_value));
@@ -142,6 +145,10 @@
       $("nextProgressFill").style.width = `${percent(current, Number(locked.requirement_value))}%`;
       $("nextProgressLabel").textContent = `${current} / ${locked.requirement_value}`;
       $("nextRemainingLabel").textContent = `${Math.max(0, Number(locked.requirement_value) - current)} more`;
+    } else {
+      $("nextProgressFill").style.width = "0%";
+      $("nextProgressLabel").textContent = "0 / 0";
+      $("nextRemainingLabel").textContent = "0 more";
     }
     const recent = [...state.unlocked].sort((a, b) => new Date(b.unlocked_at) - new Date(a.unlocked_at)).slice(0, 5).map((item) => {
       const definition = state.definitions.find((entry) => entry.id === item.achievement_id);
@@ -177,12 +184,18 @@
   async function init() {
     state.client = window.SmartLearningSupabase?.getClient?.();
     bindFilters();
+    render();
     if (!state.client) return;
     const { data: { user } } = await state.client.auth.getUser();
     state.user = user;
     if (!user) return;
     await evaluate();
-    state.client.channel(`achievements-${user.id}`).on("postgres_changes", { event: "*", schema: "public", table: "study_sessions", filter: `student_id=eq.${user.id}` }, evaluate).subscribe();
+    state.client.channel(`achievements-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "study_sessions", filter: `student_id=eq.${user.id}` }, evaluate)
+      .on("postgres_changes", { event: "*", schema: "public", table: "student_video_progress", filter: `student_id=eq.${user.id}` }, evaluate)
+      .on("postgres_changes", { event: "*", schema: "public", table: "material_downloads", filter: `student_id=eq.${user.id}` }, evaluate)
+      .on("postgres_changes", { event: "*", schema: "public", table: "student_achievements", filter: `student_id=eq.${user.id}` }, evaluate)
+      .subscribe();
   }
 
   window.StudentAchievements = { evaluate };
