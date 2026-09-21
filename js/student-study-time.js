@@ -34,6 +34,16 @@
     }).find((profile) => profile && (profile.classGrade || profile.class_grade)) || {};
   }
 
+  function renderRegistrationContext() {
+    const grade = String(state.profile.classGrade || state.profile.class_grade || state.profile.grade || "");
+    if (!grade) return;
+    const stream = String(state.profile.stream || state.profile.classStream || "").toLowerCase();
+    const streamLabels = { science_pcm: "Science (PCM)", science_pcb: "Science (PCB)", commerce: "Commerce", arts: "Arts / Humanities" };
+    const streamText = grade === "11" || grade === "12" ? ` - ${streamLabels[stream] || "Selected stream"}` : "";
+    $("registrationContextText").textContent = `Registered curriculum: Grade ${grade}${streamText}`;
+    $("registrationContext").hidden = false;
+  }
+
   function registeredSubjects(profile) {
     const grade = String(profile.classGrade || profile.class_grade || profile.grade || "");
     const stream = String(profile.stream || profile.classStream || "").toLowerCase();
@@ -351,6 +361,7 @@
   async function init() {
     bindEvents();
     state.profile = readProfile();
+    renderRegistrationContext();
     state.subjects = registeredSubjects(state.profile);
     $("studySubject").innerHTML = '<option value="">Select subject</option>' + state.subjects.map((subject) => `<option value="${escapeHtml(subject)}">${escapeHtml(subject)}</option>`).join("");
     renderAll();

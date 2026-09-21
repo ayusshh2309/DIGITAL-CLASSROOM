@@ -86,16 +86,27 @@
         align-items: flex-start;
       }
 
-      .title-icon {
-        display: none;
-      }
-
       .page-title h1 {
         margin-top: 7px;
         font-size: clamp(2rem, 3vw, 2.7rem);
         font-weight: 800;
         color: #08183e;
         letter-spacing: -0.8px;
+      }
+
+      .page-eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #008b95;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .page-eyebrow i {
+        font-size: 13px;
       }
 
       .page-title p {
@@ -1151,11 +1162,6 @@
 
         .page-title h1 {
           font-size: 27px;
-        }
-
-        .title-icon {
-          width: 50px;
-          height: 50px;
         }
 
         .video-grid {
