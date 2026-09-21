@@ -983,7 +983,7 @@
           <div class="points-text">
             <span> Total Points </span>
 
-            <strong id="totalPoints"> 2,450 XP </strong>
+            <strong id="totalPoints">0 XP</strong>
           </div>
         </div>
       </header>
@@ -1002,9 +1002,11 @@
 
           <div class="overview-label">Achievements Earned</div>
 
-          <div class="overview-value">18</div>
+          <div class="overview-value" id="earnedCount">0</div>
 
-          <div class="overview-small">Out of 30 available</div>
+          <div class="overview-small" id="availableCount">
+            Out of 0 available
+          </div>
         </div>
 
         <div class="overview-card">
@@ -1016,9 +1018,9 @@
 
           <div class="overview-label">Current Streak</div>
 
-          <div class="overview-value">7 Days</div>
+          <div class="overview-value" id="currentStreak">0 Days</div>
 
-          <div class="overview-small">Your best is 12 days</div>
+          <div class="overview-small" id="bestStreak">Your best is 0 days</div>
         </div>
 
         <div class="overview-card">
@@ -1030,9 +1032,11 @@
 
           <div class="overview-label">Challenges Completed</div>
 
-          <div class="overview-value">24</div>
+          <div class="overview-value" id="challengesCompleted">0</div>
 
-          <div class="overview-small">4 completed this month</div>
+          <div class="overview-small" id="challengesPeriod">
+            Configured challenges
+          </div>
         </div>
 
         <div class="overview-card">
@@ -1044,9 +1048,11 @@
 
           <div class="overview-label">Achievement Rank</div>
 
-          <div class="overview-value">#12</div>
+          <div class="overview-value" id="achievementRank">Not ranked</div>
 
-          <div class="overview-small">Among your classmates</div>
+          <div class="overview-small" id="rankDescription">
+            Ranking is not enabled
+          </div>
         </div>
       </section>
 
@@ -1070,29 +1076,27 @@
             <div class="progress-main">
               <div class="achievement-circle">
                 <div class="circle-content">
-                  <strong> 60% </strong>
+                  <strong id="completionPercent">0%</strong>
 
                   <span> completed </span>
                 </div>
               </div>
 
               <div class="progress-details">
-                <h3>You're doing great!</h3>
+                <h3 id="progressHeading">Keep going!</h3>
 
-                <p>
-                  You have unlocked 18 out of 30 available achievements.
-                  Complete more quizzes, study consistently, and attend classes
-                  to unlock the remaining badges.
+                <p id="progressDescription">
+                  Your achievement progress will appear here.
                 </p>
 
                 <div class="progress-bar">
-                  <div class="progress-fill"></div>
+                  <div class="progress-fill" id="progressFill"></div>
                 </div>
 
                 <div class="progress-label">
-                  <span> 18 earned </span>
+                  <span id="earnedLabel">0 earned</span>
 
-                  <span> 12 remaining </span>
+                  <span id="remainingLabel">0 remaining</span>
                 </div>
               </div>
             </div>
@@ -1116,22 +1120,24 @@
 
           <div class="next-badge">
             <div class="next-badge-icon">
-              <i class="fa-solid fa-book-open"></i>
+              <i class="fa-solid fa-book-open" id="nextAchievementIcon"></i>
             </div>
 
-            <h3>Knowledge Seeker</h3>
+            <h3 id="nextAchievementName">No locked achievements</h3>
 
-            <p>Complete 30 study sessions</p>
+            <p id="nextAchievementDescription">
+              Complete activities to unlock achievements.
+            </p>
 
             <div class="next-progress">
               <div class="next-progress-bar">
-                <div class="next-progress-fill"></div>
+                <div class="next-progress-fill" id="nextProgressFill"></div>
               </div>
 
               <div class="next-progress-text">
-                <span> 22 / 30 sessions </span>
+                <span id="nextProgressLabel">0 / 0</span>
 
-                <span> 8 more </span>
+                <span id="nextRemainingLabel">0 more</span>
               </div>
             </div>
           </div>
@@ -1151,7 +1157,7 @@
           </div>
         </div>
 
-        <div class="achievement-list">
+        <div class="achievement-list" id="recentAchievements">
           <div class="achievement-item">
             <div class="achievement-left">
               <div class="badge badge-purple">
@@ -1407,7 +1413,7 @@
           </div>
         </div>
 
-        <div class="category-grid">
+        <div class="category-grid" id="categoryGrid">
           <div class="category">
             <div class="category-top">
               <div class="category-name">
@@ -1584,7 +1590,9 @@
 
       requestAnimationFrame(animateXP);
     </script>
+    <script src="../js/supabase.js"></script>
     <script src="../js/student-context.js"></script>
+    <script src="../js/student-achievements.js"></script>
     <script src="../js/student-layout.js"></script>
   </body>
 </html>

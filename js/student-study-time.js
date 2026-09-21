@@ -319,6 +319,7 @@
       if (action.includes("start")) state.activeSession = row;
       if (action.includes("finish")) state.activeSession = null;
       await loadData();
+      if (action.includes("finish")) window.StudentAchievements?.evaluate?.();
       state.channel?.send({ type: "broadcast", event: "study-session-updated" });
     } catch (error) {
       console.error(`Study session action failed: ${action}`, error);
