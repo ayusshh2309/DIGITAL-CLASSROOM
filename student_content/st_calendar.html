@@ -915,14 +915,14 @@
         <aside class="right-column">
           <!-- UPCOMING EVENTS -->
 
-          <div class="side-card">
+          <div class="side-card" id="upcomingCard">
             <div class="side-card-header">
               <h3>Upcoming</h3>
 
               <span>Next 7 days</span>
             </div>
 
-            <div class="upcoming-event">
+            <div class="upcoming-event" data-demo="true">
               <div class="event-date">
                 <strong>08</strong>
                 <span>Sep</span>
@@ -938,7 +938,7 @@
               </div>
             </div>
 
-            <div class="upcoming-event">
+            <div class="upcoming-event" data-demo="true">
               <div class="event-date">
                 <strong>09</strong>
                 <span>Sep</span>
@@ -954,7 +954,7 @@
               </div>
             </div>
 
-            <div class="upcoming-event">
+            <div class="upcoming-event" data-demo="true">
               <div class="event-date">
                 <strong>10</strong>
                 <span>Sep</span>
@@ -970,7 +970,7 @@
               </div>
             </div>
 
-            <div class="upcoming-event">
+            <div class="upcoming-event" data-demo="true">
               <div class="event-date">
                 <strong>12</strong>
                 <span>Sep</span>
@@ -989,7 +989,7 @@
 
           <!-- RESCHEDULED CLASS -->
 
-          <div class="side-card">
+          <div class="side-card" id="classUpdateCard">
             <div class="side-card-header">
               <h3>Class Update</h3>
 
@@ -1022,14 +1022,14 @@
 
           <!-- HOLIDAYS -->
 
-          <div class="side-card">
+          <div class="side-card" id="holidaysCard">
             <div class="side-card-header">
               <h3>Upcoming Holidays</h3>
 
-              <span>September</span>
+              <span id="holidayMonthLabel"></span>
             </div>
 
-            <div class="holiday-item">
+            <div class="holiday-item" data-demo="true">
               <div class="holiday-icon">
                 <i class="fa-solid fa-umbrella-beach"></i>
               </div>
@@ -1041,7 +1041,7 @@
               </div>
             </div>
 
-            <div class="holiday-item">
+            <div class="holiday-item" data-demo="true">
               <div class="holiday-icon">
                 <i class="fa-solid fa-star"></i>
               </div>
@@ -1053,7 +1053,7 @@
               </div>
             </div>
 
-            <div class="holiday-item">
+            <div class="holiday-item" data-demo="true">
               <div class="holiday-icon">
                 <i class="fa-solid fa-calendar-days"></i>
               </div>
@@ -1068,32 +1068,32 @@
 
           <!-- QUICK STATS -->
 
-          <div class="side-card">
+          <div class="side-card" id="monthStatsCard">
             <div class="side-card-header">
               <h3>This Month</h3>
             </div>
 
             <div class="stats-grid">
               <div class="stat">
-                <strong>18</strong>
+                <strong id="classesStat">0</strong>
 
                 <span> Classes </span>
               </div>
 
               <div class="stat">
-                <strong>06</strong>
+                <strong id="assignmentsStat">0</strong>
 
                 <span> Assignments </span>
               </div>
 
               <div class="stat">
-                <strong>03</strong>
+                <strong id="assessmentsStat">0</strong>
 
                 <span> Exams / Quizzes </span>
               </div>
 
               <div class="stat">
-                <strong>04</strong>
+                <strong id="holidaysStat">0</strong>
 
                 <span> Holidays </span>
               </div>
@@ -1161,6 +1161,7 @@
       </div>
     </div>
 
+    <!-- Legacy demo calendar script retained as inert markup for layout compatibility.
     <script>
       /* =========================================
        CALENDAR STATE
@@ -1551,6 +1552,11 @@
 
       renderCalendar();
     </script>
+    -->
+    <script src="../js/supabase.js"></script>
+    <script src="../js/student-data.js"></script>
+    <script src="../js/calendar-service.js"></script>
+    <script src="../js/student-calendar.js"></script>
     <script src="../js/student-context.js"></script>
     <script src="../js/student-layout.js"></script>
   </body>

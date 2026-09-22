@@ -1,0 +1,46 @@
+(() => {
+  const state = { date: new Date(), selected: new Date(), events: [], stop: () => {} };
+  const $ = (id) => document.getElementById(id);
+  const esc = (value) => String(value ?? "").replace(/[&<>\"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[char]));
+  const key = (date) => { const value = new Date(date); return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`; };
+  const todayKey = () => key(new Date());
+  const formatDate = (date, options = {}) => new Intl.DateTimeFormat(undefined, options).format(new Date(date));
+  const icon = { class: "fa-solid fa-chalkboard-user", material: "fa-solid fa-file-lines", assignment: "fa-solid fa-pen", holiday: "fa-solid fa-umbrella-beach", rescheduled_class: "fa-solid fa-calendar-xmark", quiz: "fa-solid fa-clipboard-check", exam: "fa-solid fa-clipboard-check", announcement: "fa-solid fa-bullhorn", event: "fa-solid fa-calendar-day" };
+  const label = (type) => String(type || "event").replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+  const currentMonth = () => state.date.getMonth();
+  const currentYear = () => state.date.getFullYear();
+  const inMonth = (event) => { const date = new Date(event.start_at); return date.getMonth() === currentMonth() && date.getFullYear() === currentYear(); };
+  const eventStatus = (event) => { const now = Date.now(); const start = new Date(event.start_at).getTime(); const end = new Date(event.end_at || event.start_at).getTime(); if (event.status === "cancelled" || event.status === "canceled") return "Cancelled"; if (start <= now && end >= now) return "Live Now"; if (end < now) return "Completed"; return label(event.status || "Scheduled"); };
+  const eventTime = (event) => { if (event.type === "holiday" || !event.start_at) return "All day"; const start = formatDate(event.start_at, { hour: "numeric", minute: "2-digit" }); const end = event.end_at && key(event.end_at) === key(event.start_at) ? ` - ${formatDate(event.end_at, { hour: "numeric", minute: "2-digit" })}` : ""; return `${start}${end}`; };
+
+  function renderCalendar() {
+    const grid = $("calendarGrid"); const year = currentYear(); const month = currentMonth(); const firstDay = new Date(year, month, 1).getDay(); const days = new Date(year, month + 1, 0).getDate(); const previousDays = new Date(year, month, 0).getDate();
+    $("monthTitle").textContent = formatDate(state.date, { month: "long", year: "numeric" }); grid.innerHTML = "";
+    for (let index = firstDay - 1; index >= 0; index -= 1) createDay(previousDays - index, true, grid);
+    for (let day = 1; day <= days; day += 1) createDay(day, false, grid);
+    const remaining = (firstDay + days) % 7 === 0 ? 0 : 7 - ((firstDay + days) % 7); for (let day = 1; day <= remaining; day += 1) createDay(day, true, grid);
+    renderSidebars();
+  }
+
+  function createDay(dayNumber, otherMonth, container) {
+    const day = document.createElement("div"); day.className = "day"; if (otherMonth) day.classList.add("other-month"); const dateNumber = document.createElement("div"); dateNumber.className = "date-number"; dateNumber.textContent = dayNumber; day.appendChild(dateNumber);
+    if (!otherMonth) { const date = new Date(currentYear(), currentMonth(), dayNumber); const dateKey = key(date); if (dateKey === todayKey()) day.classList.add("today"); state.events.filter((event) => key(event.start_at) === dateKey).forEach((event) => { const eventElement = document.createElement("button"); eventElement.type = "button"; eventElement.className = `event event-${event.type}`; eventElement.innerHTML = `<i class="${icon[event.type] || icon.event}"></i><span>${esc(event.title)}</span>`; eventElement.addEventListener("click", (click) => { click.stopPropagation(); openModal(event); }); day.appendChild(eventElement); }); }
+    container.appendChild(day);
+  }
+
+  function renderSidebars() {
+    const now = new Date(); const upcoming = state.events.filter((event) => new Date(event.end_at || event.start_at) >= now).sort((a, b) => new Date(a.start_at) - new Date(b.start_at)).slice(0, 6); const upcomingCard = $("upcomingCard"); upcomingCard.querySelectorAll(".upcoming-event").forEach((item) => item.remove()); upcoming.forEach((event) => { const date = new Date(event.start_at); const item = document.createElement("div"); item.className = "upcoming-event"; item.dataset.eventId = event.id; item.innerHTML = `<div class="event-date"><strong>${String(date.getDate()).padStart(2, "0")}</strong><span>${formatDate(date, { month: "short" })}</span></div><div class="upcoming-info"><h4>${esc(event.title)}</h4><p><i class="fa-regular fa-clock"></i>${esc(eventTime(event))} · ${esc(label(event.type))}</p></div>`; item.addEventListener("click", () => openModal(event)); upcomingCard.appendChild(item); });
+    const updates = state.events.filter((event) => event.type === "rescheduled_class" || event.status === "cancelled" || event.original_start_at).slice(0, 1); const updateCard = $("classUpdateCard"); updateCard.querySelector(".reschedule-box").innerHTML = updates.length ? `<div class="reschedule-top"><div class="reschedule-icon"><i class="fa-solid fa-calendar-xmark"></i></div><h4>${esc(eventStatus(updates[0]))}</h4></div><p>${esc(updates[0].description || updates[0].title)}</p><div class="schedule-change"><span class="old-time">${updates[0].original_start_at ? esc(formatDate(updates[0].original_start_at, { dateStyle: "medium", timeStyle: "short" })) : "Previous schedule"}</span><i class="fa-solid fa-arrow-right"></i><span class="new-time">${esc(formatDate(updates[0].start_at, { dateStyle: "medium", timeStyle: "short" }))}</span></div>` : `<p>No recent class schedule changes.</p>`;
+    const holidays = state.events.filter((event) => event.type === "holiday" && new Date(event.end_at || event.start_at) >= now).sort((a, b) => new Date(a.start_at) - new Date(b.start_at)).slice(0, 4); const holidaysCard = $("holidaysCard"); holidaysCard.querySelectorAll(".holiday-item").forEach((item) => item.remove()); $("holidayMonthLabel").textContent = holidays.length ? formatDate(holidays[0].start_at, { month: "long" }) : "None"; holidays.forEach((event) => { const item = document.createElement("div"); item.className = "holiday-item"; item.innerHTML = `<div class="holiday-icon"><i class="fa-solid fa-umbrella-beach"></i></div><div class="holiday-info"><h4>${esc(event.title)}</h4><p>${esc(formatDate(event.start_at, { dateStyle: "medium" }))}${event.end_at && key(event.end_at) !== key(event.start_at) ? ` - ${esc(formatDate(event.end_at, { dateStyle: "medium" }))}` : ""}</p></div>`; item.addEventListener("click", () => openModal(event)); holidaysCard.appendChild(item); });
+    const monthEvents = state.events.filter(inMonth); $("classesStat").textContent = monthEvents.filter((event) => ["class", "rescheduled_class"].includes(event.type)).length; $("assignmentsStat").textContent = monthEvents.filter((event) => event.type === "assignment").length; $("assessmentsStat").textContent = monthEvents.filter((event) => ["quiz", "exam"].includes(event.type)).length; $("holidaysStat").textContent = monthEvents.filter((event) => event.type === "holiday").length;
+  }
+
+  function openModal(event) { $("modalTitle").textContent = event.title; $("modalDate").textContent = formatDate(event.start_at, { dateStyle: "full" }); $("modalTime").textContent = eventTime(event); $("modalSubject").textContent = event.subject || "General"; $("modalDetails").textContent = `${event.description || "No additional details."} Status: ${eventStatus(event)}${event.teacher_name ? ` Teacher: ${event.teacher_name}.` : ""}${event.duration_minutes ? ` Duration: ${event.duration_minutes} minutes.` : ""}${event.question_count ? ` Questions: ${event.question_count}.` : ""}`; $("eventModal").classList.add("show"); }
+  function closeModal() { $("eventModal").classList.remove("show"); }
+  function load() { return CalendarService.loadEvents().then((events) => { state.events = events; renderCalendar(); }); }
+  function previousMonth() { state.date = new Date(currentYear(), currentMonth() - 1, 1); renderCalendar(); }
+  function nextMonth() { state.date = new Date(currentYear(), currentMonth() + 1, 1); renderCalendar(); }
+  function goToday() { state.date = new Date(); state.selected = new Date(); renderCalendar(); }
+  window.closeModal = closeModal; window.previousMonth = previousMonth; window.nextMonth = nextMonth; window.goToday = goToday;
+  document.addEventListener("DOMContentLoaded", async () => { $("eventModal").addEventListener("click", (event) => { if (event.target === $("eventModal")) closeModal(); }); const profile = window.StudentData?.getStudentProfile?.() || {}; const context = [profile.grade || profile.class_grade || profile.classGrade, profile.stream].filter(Boolean).join(" - "); if (context) { $("registrationContext").hidden = false; $("registrationContextText").textContent = `Registered curriculum: Grade ${context}`; } await load(); state.stop = CalendarService.subscribe(load); window.addEventListener("online", load); });
+})();

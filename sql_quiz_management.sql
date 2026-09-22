@@ -317,6 +317,204 @@ grant execute on function public.get_student_videos(uuid) to authenticated;
 revoke all on function public.save_student_video_progress(uuid, numeric, numeric, boolean) from public;
 grant execute on function public.save_student_video_progress(uuid, numeric, numeric, boolean) to authenticated;
 alter publication supabase_realtime add table public.student_profiles;
+
+-- Student calendar feed. This keeps eligibility enforcement on the database side
+-- while allowing the browser to render classes, materials, and published quizzes.
+alter table public.live_classes add column if not exists stream text;
+alter table public.live_classes add column if not exists duration_minutes integer not null default 60;
+alter table public.live_classes add column if not exists updated_at timestamptz not null default now();
+
+create table if not exists public.assignments (
+  id uuid primary key default gen_random_uuid(),
+  teacher_id uuid not null references auth.users(id) on delete cascade,
+  title text not null,
+  description text,
+  instructions text,
+  class_grade text not null,
+  stream text,
+  subject text not null,
+  due_at timestamptz not null,
+  status text not null default 'published',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.academic_calendar (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text,
+  class_grade text,
+  stream text,
+  start_at timestamptz not null,
+  end_at timestamptz,
+  event_type text not null default 'holiday',
+  status text not null default 'published',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.assignments enable row level security;
+alter table public.academic_calendar enable row level security;
+create index if not exists assignments_target_due_idx on public.assignments(class_grade, stream, subject, due_at);
+create index if not exists academic_calendar_date_idx on public.academic_calendar(start_at, end_at);
+alter publication supabase_realtime add table public.assignments;
+alter publication supabase_realtime add table public.academic_calendar;
+
+create or replace function public.get_student_calendar_events(requested_student_id uuid)
+returns table (
+  id text,
+  source text,
+  event_type text,
+  title text,
+  description text,
+  class_grade text,
+  stream text,
+  subject text,
+  start_at timestamptz,
+  end_at timestamptz,
+  status text,
+  teacher_name text,
+  location text,
+  file_url text,
+  duration_minutes integer,
+  question_count integer,
+  original_start_at timestamptz
+)
+language sql
+security definer
+set search_path = public
+as $$
+  select
+    'class-' || live.id::text,
+    'live_classes',
+    case when live.status in ('Cancelled', 'Canceled') then 'rescheduled_class' else 'class' end,
+    live.title,
+    live.topic,
+    live.class_grade,
+    live.stream,
+    live.subject,
+    live.start_at,
+    live.start_at + make_interval(mins => live.duration_minutes),
+    live.status,
+    null::text,
+    live.meeting_url,
+    null::text,
+    live.duration_minutes,
+    null::integer,
+    null::timestamptz
+  from public.live_classes live
+  join public.student_profiles student on student.student_id = auth.uid()
+  where requested_student_id = auth.uid()
+    and live.class_grade = student.grade
+    and (live.stream is null or live.stream = '' or lower(live.stream) = lower(coalesce(student.stream, '')))
+    and lower(live.subject) = any(select lower(value) from unnest(student.eligible_subjects) value)
+  union all
+  select
+    'material-' || material.id::text,
+    'materials',
+    'material',
+    coalesce(material.title, material.name),
+    material.description,
+    material.class_grade,
+    material.stream,
+    material.subject,
+    material.uploaded_at,
+    material.uploaded_at,
+    material.status,
+    material.teacher_name,
+    coalesce(material.external_url, material.file_url),
+    coalesce(material.external_url, material.file_url),
+    null::integer,
+    null::integer,
+    null::timestamptz
+  from public.materials material
+  join public.student_profiles student on student.student_id = auth.uid()
+  where requested_student_id = auth.uid()
+    and material.status = 'published'
+    and material.class_grade = student.grade
+    and (material.stream is null or material.stream = '' or lower(material.stream) = lower(coalesce(student.stream, '')))
+    and lower(material.subject) = any(select lower(value) from unnest(student.eligible_subjects) value)
+  union all
+  select
+    'quiz-' || quiz.id::text,
+    'quizzes',
+    case when quiz.status = 'exam' then 'exam' else 'quiz' end,
+    quiz.title,
+    coalesce(quiz.description, quiz.instructions),
+    quiz.class_grade,
+    quiz.stream,
+    quiz.subject,
+    coalesce(quiz.start_at, quiz.published_at),
+    coalesce(quiz.end_at, quiz.start_at, quiz.published_at),
+    quiz.status,
+    null::text,
+    null::text,
+    null::text,
+    quiz.time_limit,
+    quiz.question_count,
+    null::timestamptz
+  from public.quizzes quiz
+  join public.student_profiles student on student.student_id = auth.uid()
+  where requested_student_id = auth.uid()
+    and quiz.status in ('published', 'scheduled')
+    and quiz.class_grade = student.grade
+    and (quiz.stream is null or quiz.stream = '' or lower(quiz.stream) = lower(coalesce(student.stream, '')))
+    and lower(quiz.subject) = any(select lower(value) from unnest(student.eligible_subjects) value)
+  union all
+  select
+    'assignment-' || assignment.id::text,
+    'assignments',
+    'assignment',
+    assignment.title,
+    coalesce(assignment.description, assignment.instructions),
+    assignment.class_grade,
+    assignment.stream,
+    assignment.subject,
+    assignment.due_at,
+    assignment.due_at,
+    assignment.status,
+    null::text,
+    null::text,
+    null::text,
+    null::integer,
+    null::integer,
+    null::timestamptz
+  from public.assignments assignment
+  join public.student_profiles student on student.student_id = auth.uid()
+  where requested_student_id = auth.uid()
+    and assignment.status = 'published'
+    and assignment.class_grade = student.grade
+    and (assignment.stream is null or assignment.stream = '' or lower(assignment.stream) = lower(coalesce(student.stream, '')))
+    and lower(assignment.subject) = any(select lower(value) from unnest(student.eligible_subjects) value)
+  union all
+  select
+    'holiday-' || holiday.id::text,
+    'academic_calendar',
+    holiday.event_type,
+    holiday.title,
+    holiday.description,
+    coalesce(holiday.class_grade, student.grade),
+    holiday.stream,
+    null::text,
+    holiday.start_at,
+    coalesce(holiday.end_at, holiday.start_at),
+    holiday.status,
+    null::text,
+    null::text,
+    null::text,
+    null::integer,
+    null::integer,
+    null::timestamptz
+  from public.academic_calendar holiday
+  join public.student_profiles student on student.student_id = auth.uid()
+  where requested_student_id = auth.uid()
+    and holiday.status = 'published'
+    and (holiday.class_grade is null or holiday.class_grade = '' or holiday.class_grade = student.grade)
+    and (holiday.stream is null or holiday.stream = '' or lower(holiday.stream) = lower(coalesce(student.stream, '')));
+$$;
+
+revoke all on function public.get_student_calendar_events(uuid) from public;
+grant execute on function public.get_student_calendar_events(uuid) to authenticated;
 alter publication supabase_realtime add table public.material_downloads;
 alter publication supabase_realtime add table public.student_video_progress;
 
