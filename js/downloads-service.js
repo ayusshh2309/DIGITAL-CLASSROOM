@@ -1,6 +1,10 @@
 (function () {
   const STORAGE_KEY = "smartLearningDownloadsFiles";
   const MATERIALS_KEY_PREFIX = "teacherMaterials:";
+  const OFFLINE_DB_NAME = "smartLearningDownloadsOffline";
+  const OFFLINE_DB_VERSION = 1;
+  const OFFLINE_STORE = "files";
+  const DOWNLOAD_META_KEY = "smartLearningStudentDownloads";
   const DEFAULT_STORAGE_LIMIT_BYTES = 5 * 1024 * 1024 * 1024;
 
   function readJson(key, fallback) {
@@ -187,6 +191,7 @@
       category: item.category || detectCategory(fileName, type),
       class_grade: classGrade,
       subject,
+      stream: item.stream || "",
       description: item.description || item.details || item.sub || "",
       visibility: item.visibility || "Class",
       file_size: safeNumber(item.file_size || item.size_bytes || item.size || 0),
@@ -317,6 +322,206 @@
 
   function getClient() {
     return window.SmartLearningSupabase?.getClient?.() || null;
+  }
+
+  function getStudentProfile() {
+    return window.StudentData?.getStudentProfile?.() || readJson("studentProfile", {}) || {};
+  }
+
+  function studentGrade(profile = getStudentProfile()) {
+    return normalizeGrade(profile.grade || profile.class_grade || profile.class || profile.academic?.grade || profile.academic?.class || "");
+  }
+
+  function studentStream(profile = getStudentProfile()) {
+    return String(profile.stream || profile.academic?.stream || "").trim();
+  }
+
+  function studentSubjects(profile = getStudentProfile()) {
+    const values = profile.eligible_subjects || profile.subjects || profile.selectedSubjects || profile.academic?.subjects || [];
+    return (Array.isArray(values) ? values : String(values).split(",")).map((value) => String(value).trim()).filter(Boolean);
+  }
+
+  function isEligibleMaterial(material, profile = getStudentProfile()) {
+    const grade = studentGrade(profile);
+    const stream = studentStream(profile);
+    const subjects = studentSubjects(profile).map((value) => value.toLowerCase());
+    const materialGrade = normalizeGrade(material.class_grade || material.grade || "");
+    const materialStream = String(material.stream || "").trim();
+    const subject = String(material.subject || material.subject_name || "").trim().toLowerCase();
+    return (!grade || !materialGrade || materialGrade === grade) &&
+      (!materialStream || !stream || materialStream.toLowerCase() === stream.toLowerCase()) &&
+      (!subjects.length || subjects.includes(subject));
+  }
+
+  function openOfflineDb() {
+    return new Promise((resolve, reject) => {
+      if (!window.indexedDB) return reject(new Error("Offline storage is not supported by this browser."));
+      const request = indexedDB.open(OFFLINE_DB_NAME, OFFLINE_DB_VERSION);
+      request.onupgradeneeded = () => {
+        if (!request.result.objectStoreNames.contains(OFFLINE_STORE)) request.result.createObjectStore(OFFLINE_STORE, { keyPath: "key" });
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error || new Error("Could not open offline storage."));
+    });
+  }
+
+  async function offlineGet(key) {
+    const db = await openOfflineDb();
+    return new Promise((resolve, reject) => {
+      const request = db.transaction(OFFLINE_STORE, "readonly").objectStore(OFFLINE_STORE).get(key);
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async function offlinePut(value) {
+    const db = await openOfflineDb();
+    return new Promise((resolve, reject) => {
+      const request = db.transaction(OFFLINE_STORE, "readwrite").objectStore(OFFLINE_STORE).put(value);
+      request.onsuccess = () => resolve(value);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async function offlineDelete(key) {
+    const db = await openOfflineDb();
+    return new Promise((resolve, reject) => {
+      const request = db.transaction(OFFLINE_STORE, "readwrite").objectStore(OFFLINE_STORE).delete(key);
+      request.onsuccess = () => resolve(true);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  function readDownloadMetadata() {
+    const rows = readJson(DOWNLOAD_META_KEY, []);
+    return Array.isArray(rows) ? rows : [];
+  }
+
+  function writeDownloadMetadata(rows) {
+    writeJson(DOWNLOAD_META_KEY, rows);
+  }
+
+  async function getOfflineDownload(materialId) {
+    const key = String(materialId);
+    const local = await offlineGet(key).catch(() => null);
+    return local ? { ...local, offline_available: true, status: "completed" } : null;
+  }
+
+  async function getOfflineDownloads() {
+    const rows = readDownloadMetadata();
+    const valid = [];
+    for (const row of rows) {
+      if (await getOfflineDownload(row.material_id)) valid.push({ ...row, offline_available: true, status: "completed" });
+    }
+    writeDownloadMetadata(valid);
+    return valid.sort((left, right) => new Date(right.downloaded_at || 0) - new Date(left.downloaded_at || 0));
+  }
+
+  async function getAuthenticatedStudent() {
+    const client = getClient();
+    if (client && isSupabaseConfigured()) {
+      const { data, error } = await client.auth.getUser();
+      if (error) throw error;
+      if (data?.user) return { client, user: data.user };
+    }
+    const profile = getStudentProfile();
+    return { client: null, user: profile.student_id || profile.id ? { id: profile.student_id || profile.id } : null };
+  }
+
+  async function fetchStudentMaterials() {
+    const { client, user } = await getAuthenticatedStudent();
+    if (client && user?.id) {
+      const { data, error } = await client.rpc("get_student_materials", { requested_student_id: user.id });
+      if (!error && Array.isArray(data)) return data.map((item, index) => normalizeRecord(item, index));
+      if (error) console.warn("Student material access check failed:", error.message);
+    }
+    return getLocalMaterials().filter((item) => isEligibleMaterial(item));
+  }
+
+  async function fetchStudentDownloads() {
+    const { client, user } = await getAuthenticatedStudent();
+    const local = await getOfflineDownloads();
+    if (!client || !user?.id) return local;
+    const { data, error } = await client
+      .from("material_downloads")
+      .select("*")
+      .eq("student_id", user.id)
+      .order("downloaded_at", { ascending: false });
+    if (error) {
+      console.warn("Unable to sync student download history:", error.message);
+      return local;
+    }
+    const remote = (data || []).map((item) => ({ ...item, ...(local.find((row) => String(row.material_id) === String(item.material_id)) || {}) }));
+    return [...remote, ...local.filter((row) => !remote.some((item) => String(item.material_id) === String(row.material_id)))];
+  }
+
+  async function downloadMaterial(material, onProgress = () => {}) {
+    const record = normalizeRecord(material);
+    if (!record.file_url && !record.storage_path) throw new Error("This material is online-only and has no downloadable file.");
+    if (String(record.file_type).toLowerCase() === "link") throw new Error("External links are available online only.");
+    const existing = await getOfflineDownload(record.id);
+    if (existing) return existing;
+    if (!navigator.onLine) throw new Error("Connect to the internet to download this material.");
+    const estimate = await navigator.storage?.estimate?.();
+    if (estimate?.quota && estimate.usage + record.size_bytes > estimate.quota) throw new Error("There is not enough device storage for this file.");
+
+    const url = publicUrlFromRecord(record);
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Download failed (${response.status}).`);
+    const total = Number(response.headers.get("content-length")) || record.size_bytes || 0;
+    let received = 0;
+    let blob;
+    if (response.body?.getReader) {
+      const reader = response.body.getReader();
+      const chunks = [];
+      while (true) {
+        const next = await reader.read();
+        if (next.done) break;
+        chunks.push(next.value);
+        received += next.value.byteLength;
+        onProgress(total ? Math.round((received / total) * 100) : 0);
+      }
+      blob = new Blob(chunks, { type: record.mime_type || response.headers.get("content-type") || "application/octet-stream" });
+    } else {
+      blob = await response.blob();
+      onProgress(100);
+    }
+    const downloadedAt = new Date().toISOString();
+    const metadata = {
+      student_id: (await getAuthenticatedStudent()).user?.id || null,
+      material_id: record.id,
+      file_name: record.file_name,
+      file_type: record.file_type,
+      file_size: blob.size,
+      downloaded_at: downloadedAt,
+      offline_available: true,
+      local_storage_key: String(record.id),
+      status: "completed",
+      material_metadata: { subject: record.subject, class_grade: record.class_grade, stream: record.stream || "" },
+    };
+    await offlinePut({ key: String(record.id), blob, metadata });
+    const metadataRows = readDownloadMetadata().filter((row) => String(row.material_id) !== String(record.id));
+    writeDownloadMetadata([metadata, ...metadataRows]);
+
+    const { client, user } = await getAuthenticatedStudent();
+    if (client && user?.id) {
+      const { error } = await client.from("material_downloads").upsert({ material_id: record.id, student_id: user.id, downloaded_at: downloadedAt }, { onConflict: "material_id,student_id" });
+      if (error) console.warn("Download metadata sync failed:", error.message);
+    }
+    window.dispatchEvent(new CustomEvent("smart-learning-downloads-updated"));
+    return metadata;
+  }
+
+  async function openDownloadedMaterial(materialId) {
+    const local = await getOfflineDownload(materialId);
+    if (!local) throw new Error("This material is not available offline.");
+    return URL.createObjectURL(local.blob);
+  }
+
+  async function removeStudentDownload(materialId) {
+    await offlineDelete(String(materialId));
+    writeDownloadMetadata(readDownloadMetadata().filter((row) => String(row.material_id) !== String(materialId)));
+    window.dispatchEvent(new CustomEvent("smart-learning-downloads-updated"));
   }
 
   function isSupabaseConfigured() {
@@ -739,6 +944,13 @@
     getStats,
     getTopDownloaded,
     getFilterOptions,
+    fetchStudentMaterials,
+    fetchStudentDownloads,
+    downloadMaterial,
+    openDownloadedMaterial,
+    removeStudentDownload,
+    getOfflineDownloads,
+    isEligibleMaterial,
     subscribe,
     detectFileType,
     detectCategory,

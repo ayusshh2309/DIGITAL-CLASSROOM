@@ -576,7 +576,7 @@
         <div class="storage-box">
           <div class="storage-top">
             <span>Downloaded Storage</span>
-            <span>680 MB / 2 GB</span>
+            <span id="storageValue">0 B / 2 GB</span>
           </div>
 
           <div class="storage-bar">
@@ -594,7 +594,7 @@
           </div>
 
           <div>
-            <h3>48</h3>
+            <h3>0</h3>
             <p>Available Materials</p>
           </div>
         </div>
@@ -605,7 +605,7 @@
           </div>
 
           <div>
-            <h3>26</h3>
+            <h3>0</h3>
             <p>Files Downloaded</p>
           </div>
         </div>
@@ -616,7 +616,7 @@
           </div>
 
           <div>
-            <h3>8</h3>
+            <h3>0</h3>
             <p>Subjects</p>
           </div>
         </div>
@@ -627,7 +627,7 @@
           </div>
 
           <div>
-            <h3>14</h3>
+            <h3>0</h3>
             <p>New Materials</p>
           </div>
         </div>
@@ -669,252 +669,10 @@
       <div class="section-title">
         <h2>Available Materials</h2>
 
-        <span id="materialCount">6 materials</span>
+        <span id="materialCount">0 materials</span>
       </div>
 
       <div class="downloads-container" id="downloadsList">
-        <!-- ITEM 1 -->
-
-        <div class="download-item" data-subject="Mathematics" data-type="pdf">
-          <div class="file-icon pdf">
-            <i class="fa-solid fa-file-pdf"></i>
-          </div>
-
-          <div class="file-info">
-            <h3>Quadratic Equations - Complete Notes</h3>
-
-            <div class="file-meta">
-              <span class="subject-tag"> Mathematics </span>
-
-              <span>
-                <i class="fa-regular fa-file"></i>
-                PDF
-              </span>
-
-              <span>
-                <i class="fa-solid fa-hard-drive"></i>
-                2.4 MB
-              </span>
-
-              <span>
-                <i class="fa-regular fa-calendar"></i>
-                Sep 5, 2026
-              </span>
-            </div>
-          </div>
-
-          <button
-            class="download-btn"
-            onclick="downloadFile('Quadratic Equations - Complete Notes')"
-            title="Download"
-          >
-            <i class="fa-solid fa-download"></i>
-          </button>
-        </div>
-
-        <!-- ITEM 2 -->
-
-        <div class="download-item" data-subject="Science" data-type="pdf">
-          <div class="file-icon pdf">
-            <i class="fa-solid fa-file-pdf"></i>
-          </div>
-
-          <div class="file-info">
-            <h3>Human Reproduction - Study Material</h3>
-
-            <div class="file-meta">
-              <span class="subject-tag"> Science </span>
-
-              <span>
-                <i class="fa-regular fa-file"></i>
-                PDF
-              </span>
-
-              <span>
-                <i class="fa-solid fa-hard-drive"></i>
-                3.1 MB
-              </span>
-
-              <span>
-                <i class="fa-regular fa-calendar"></i>
-                Sep 4, 2026
-              </span>
-            </div>
-          </div>
-
-          <button
-            class="download-btn"
-            onclick="downloadFile('Human Reproduction - Study Material')"
-            title="Download"
-          >
-            <i class="fa-solid fa-download"></i>
-          </button>
-        </div>
-
-        <!-- ITEM 3 -->
-
-        <div
-          class="download-item"
-          data-subject="Computer Science"
-          data-type="doc"
-        >
-          <div class="file-icon doc">
-            <i class="fa-solid fa-file-word"></i>
-          </div>
-
-          <div class="file-info">
-            <h3>Introduction to C++ Programming</h3>
-
-            <div class="file-meta">
-              <span class="subject-tag"> Computer Science </span>
-
-              <span>
-                <i class="fa-regular fa-file"></i>
-                DOCX
-              </span>
-
-              <span>
-                <i class="fa-solid fa-hard-drive"></i>
-                1.8 MB
-              </span>
-
-              <span>
-                <i class="fa-regular fa-calendar"></i>
-                Sep 3, 2026
-              </span>
-            </div>
-          </div>
-
-          <button
-            class="download-btn"
-            onclick="downloadFile('Introduction to C++ Programming')"
-            title="Download"
-          >
-            <i class="fa-solid fa-download"></i>
-          </button>
-        </div>
-
-        <!-- ITEM 4 -->
-
-        <div class="download-item" data-subject="English" data-type="ppt">
-          <div class="file-icon ppt">
-            <i class="fa-solid fa-file-powerpoint"></i>
-          </div>
-
-          <div class="file-info">
-            <h3>English Grammar - Tenses</h3>
-
-            <div class="file-meta">
-              <span class="subject-tag"> English </span>
-
-              <span>
-                <i class="fa-regular fa-file"></i>
-                PPT
-              </span>
-
-              <span>
-                <i class="fa-solid fa-hard-drive"></i>
-                4.2 MB
-              </span>
-
-              <span>
-                <i class="fa-regular fa-calendar"></i>
-                Sep 2, 2026
-              </span>
-            </div>
-          </div>
-
-          <button
-            class="download-btn"
-            onclick="downloadFile('English Grammar - Tenses')"
-            title="Download"
-          >
-            <i class="fa-solid fa-download"></i>
-          </button>
-        </div>
-
-        <!-- ITEM 5 -->
-
-        <div class="download-item" data-subject="Mathematics" data-type="xls">
-          <div class="file-icon xls">
-            <i class="fa-solid fa-file-excel"></i>
-          </div>
-
-          <div class="file-info">
-            <h3>Mathematics Practice Worksheet - Algebra</h3>
-
-            <div class="file-meta">
-              <span class="subject-tag"> Mathematics </span>
-
-              <span>
-                <i class="fa-regular fa-file"></i>
-                Worksheet
-              </span>
-
-              <span>
-                <i class="fa-solid fa-hard-drive"></i>
-                950 KB
-              </span>
-
-              <span>
-                <i class="fa-regular fa-calendar"></i>
-                Sep 1, 2026
-              </span>
-            </div>
-          </div>
-
-          <button
-            class="download-btn"
-            onclick="downloadFile('Mathematics Practice Worksheet - Algebra')"
-            title="Download"
-          >
-            <i class="fa-solid fa-download"></i>
-          </button>
-        </div>
-
-        <!-- ITEM 6 -->
-
-        <div
-          class="download-item"
-          data-subject="Social Science"
-          data-type="pdf"
-        >
-          <div class="file-icon pdf">
-            <i class="fa-solid fa-file-pdf"></i>
-          </div>
-
-          <div class="file-info">
-            <h3>Indian Constitution - Revision Notes</h3>
-
-            <div class="file-meta">
-              <span class="subject-tag"> Social Science </span>
-
-              <span>
-                <i class="fa-regular fa-file"></i>
-                PDF
-              </span>
-
-              <span>
-                <i class="fa-solid fa-hard-drive"></i>
-                2.7 MB
-              </span>
-
-              <span>
-                <i class="fa-regular fa-calendar"></i>
-                Aug 30, 2026
-              </span>
-            </div>
-          </div>
-
-          <button
-            class="download-btn"
-            onclick="downloadFile('Indian Constitution - Revision Notes')"
-            title="Download"
-          >
-            <i class="fa-solid fa-download"></i>
-          </button>
-        </div>
-
         <div class="empty-state" id="emptyState">
           <i class="fa-regular fa-folder-open"></i>
 
@@ -932,136 +690,209 @@
         <span>Last 7 days</span>
       </div>
 
-      <div class="recent-grid">
-        <div class="recent-card">
-          <div class="file-icon pdf">
-            <i class="fa-solid fa-file-pdf"></i>
-          </div>
-
-          <div class="recent-info">
-            <h3>Physics - Light Reflection Notes</h3>
-
-            <p>Downloaded yesterday · 2.1 MB</p>
-          </div>
-
-          <button
-            class="recent-download"
-            onclick="downloadFile('Physics - Light Reflection Notes')"
-          >
-            <i class="fa-solid fa-download"></i>
-          </button>
-        </div>
-
-        <div class="recent-card">
-          <div class="file-icon doc">
-            <i class="fa-solid fa-file-word"></i>
-          </div>
-
-          <div class="recent-info">
-            <h3>C++ Programming Basics</h3>
-
-            <p>Downloaded 2 days ago · 1.5 MB</p>
-          </div>
-
-          <button
-            class="recent-download"
-            onclick="downloadFile('C++ Programming Basics')"
-          >
-            <i class="fa-solid fa-download"></i>
-          </button>
-        </div>
-
-        <div class="recent-card">
-          <div class="file-icon pdf">
-            <i class="fa-solid fa-file-pdf"></i>
-          </div>
-
-          <div class="recent-info">
-            <h3>Algebra Important Questions</h3>
-
-            <p>Downloaded 4 days ago · 1.9 MB</p>
-          </div>
-
-          <button
-            class="recent-download"
-            onclick="downloadFile('Algebra Important Questions')"
-          >
-            <i class="fa-solid fa-download"></i>
-          </button>
-        </div>
-      </div>
+      <div class="recent-grid"></div>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase.js"></script>
+    <script src="../js/student-data.js"></script>
+    <script src="../js/downloads-service.js"></script>
     <script>
-      const searchInput = document.getElementById("searchInput");
-      const subjectFilter = document.getElementById("subjectFilter");
-      const typeFilter = document.getElementById("typeFilter");
+      (() => {
+        const service = window.SmartLearningDownloads;
+        const list = document.getElementById("downloadsList");
+        const emptyState = document.getElementById("emptyState");
+        const recentGrid = document.querySelector(".recent-grid");
+        const searchInput = document.getElementById("searchInput");
+        const subjectFilter = document.getElementById("subjectFilter");
+        const typeFilter = document.getElementById("typeFilter");
+        let materials = [];
+        let downloads = [];
 
-      const items = document.querySelectorAll(".download-item");
-      const emptyState = document.getElementById("emptyState");
-      const materialCount = document.getElementById("materialCount");
+        const iconFor = (type) =>
+          ({
+            PDF: ["pdf", "fa-file-pdf"],
+            Video: ["doc", "fa-file-video"],
+            Image: ["doc", "fa-file-image"],
+            Presentation: ["ppt", "fa-file-powerpoint"],
+            Document: ["doc", "fa-file-word"],
+          })[type] || ["doc", "fa-file-lines"];
+        const esc = (value) =>
+          String(value || "").replace(
+            /[&<>'"]/g,
+            (char) =>
+              ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                "'": "&#39;",
+                '"': "&quot;",
+              })[char],
+          );
+        const stateFor = (material) =>
+          downloads.some(
+            (item) => String(item.material_id) === String(material.id),
+          )
+            ? "offline"
+            : "online";
 
-      function filterMaterials() {
-        const search = searchInput.value.toLowerCase().trim();
+        function renderFilters() {
+          const subjects = [
+            ...new Set(materials.map((item) => item.subject).filter(Boolean)),
+          ].sort();
+          const types = [
+            ...new Set(materials.map((item) => item.file_type).filter(Boolean)),
+          ].sort();
+          subjectFilter.innerHTML =
+            '<option value="all">All Subjects</option>' +
+            subjects
+              .map(
+                (value) =>
+                  `<option value="${esc(value)}">${esc(value)}</option>`,
+              )
+              .join("");
+          typeFilter.innerHTML =
+            '<option value="all">All File Types</option>' +
+            types
+              .map(
+                (value) =>
+                  `<option value="${esc(value)}">${esc(value)}</option>`,
+              )
+              .join("");
+        }
 
-        const subject = subjectFilter.value;
+        function renderList() {
+          const query = searchInput.value.toLowerCase().trim();
+          const subject = subjectFilter.value;
+          const type = typeFilter.value;
+          const rows = materials.filter(
+            (item) =>
+              (!query ||
+                `${item.file_name} ${item.subject} ${item.description}`
+                  .toLowerCase()
+                  .includes(query)) &&
+              (subject === "all" || item.subject === subject) &&
+              (type === "all" || item.file_type === type),
+          );
+          list
+            .querySelectorAll(".download-item")
+            .forEach((node) => node.remove());
+          rows.forEach((item) => {
+            const [className, icon] = iconFor(item.file_type);
+            const offline = stateFor(item) === "offline";
+            const row = document.createElement("div");
+            row.className = "download-item";
+            row.innerHTML = `<div class="file-icon ${className}"><i class="fa-solid ${icon}"></i></div><div class="file-info"><h3>${esc(item.file_name)}</h3><div class="file-meta"><span class="subject-tag">${esc(item.subject)}</span><span><i class="fa-regular fa-file"></i>${esc(item.file_type)}</span><span><i class="fa-solid fa-hard-drive"></i>${service.formatBytes(item.size_bytes)}</span><span><i class="fa-regular fa-calendar"></i>${service.formatDate(item.created_at)}</span><span><i class="fa-solid fa-cloud"></i>${offline ? "Available Offline" : "Available Online"}</span></div></div><button class="download-btn" title="${offline ? "Open offline" : "Download"}"><i class="fa-solid ${offline ? "fa-folder-open" : "fa-download"}"></i></button>`;
+            row
+              .querySelector("button")
+              .addEventListener("click", () => handleMaterial(item, row));
+            list.insertBefore(row, emptyState);
+          });
+          document.getElementById("materialCount").textContent =
+            `${rows.length} ${rows.length === 1 ? "material" : "materials"}`;
+          emptyState.style.display = rows.length ? "none" : "block";
+        }
 
-        const type = typeFilter.value;
+        function renderRecent() {
+          const lookup = new Map(
+            materials.map((item) => [String(item.id), item]),
+          );
+          const rows = downloads
+            .map((item) => ({
+              ...lookup.get(String(item.material_id)),
+              ...item,
+            }))
+            .slice(0, 6);
+          recentGrid.innerHTML =
+            rows
+              .map((item) => {
+                const [className, icon] = iconFor(item.file_type);
+                return `<div class="recent-card"><div class="file-icon ${className}"><i class="fa-solid ${icon}"></i></div><div class="recent-info"><h3>${esc(item.file_name)}</h3><p>${service.formatDateTime(item.downloaded_at)} · ${service.formatBytes(item.file_size)}</p></div><button class="recent-download" title="Open offline"><i class="fa-solid fa-folder-open"></i></button></div>`;
+              })
+              .join("") || "";
+          recentGrid
+            .querySelectorAll("button")
+            .forEach((button, index) =>
+              button.addEventListener("click", () => openOffline(rows[index])),
+            );
+        }
 
-        let visibleCount = 0;
-
-        items.forEach((item) => {
-          const title = item.querySelector("h3").textContent.toLowerCase();
-
-          const itemSubject = item.dataset.subject;
-
-          const itemType = item.dataset.type;
-
-          const matchesSearch = title.includes(search);
-
-          const matchesSubject = subject === "all" || itemSubject === subject;
-
-          const matchesType = type === "all" || itemType === type;
-
-          if (matchesSearch && matchesSubject && matchesType) {
-            item.style.display = "flex";
-            visibleCount++;
-          } else {
-            item.style.display = "none";
+        async function openOffline(item) {
+          const url = await service.openDownloadedMaterial(
+            item.material_id || item.id,
+          );
+          window.open(url, "_blank", "noopener");
+        }
+        async function handleMaterial(item, row) {
+          const button = row.querySelector("button");
+          const icon = button.querySelector("i");
+          if (stateFor(item) === "offline") return openOffline(item);
+          button.disabled = true;
+          icon.className = "fa-solid fa-spinner fa-spin";
+          try {
+            await service.downloadMaterial(item, (progress) => {
+              icon.className = "fa-solid fa-spinner fa-spin";
+              button.title = `Downloading ${progress}%`;
+            });
+            await refresh();
+          } catch (error) {
+            button.title = error.message;
+            icon.className = "fa-solid fa-triangle-exclamation";
+            setTimeout(() => {
+              icon.className = "fa-solid fa-download";
+              button.disabled = false;
+            }, 2200);
           }
+        }
+
+        async function refresh() {
+          const [nextMaterials, nextDownloads] = await Promise.all([
+            service.fetchStudentMaterials(),
+            service.fetchStudentDownloads(),
+          ]);
+          materials = nextMaterials;
+          downloads = nextDownloads;
+          renderFilters();
+          renderList();
+          renderRecent();
+          const stats = document.querySelectorAll(".summary-card h3");
+          stats[0].textContent = materials.length;
+          stats[1].textContent = downloads.length;
+          stats[2].textContent = new Set(
+            materials.map((item) => item.subject).filter(Boolean),
+          ).size;
+          stats[3].textContent = materials.filter(
+            (item) =>
+              new Date(item.created_at).getTime() >= Date.now() - 30 * 86400000,
+          ).length;
+          const used = downloads.reduce(
+            (sum, item) => sum + Number(item.file_size || 0),
+            0,
+          );
+          document.querySelector(".storage-top span:last-child").textContent =
+            `${service.formatBytes(used)} / 2 GB`;
+          document.querySelector(".storage-fill").style.width =
+            `${Math.min(100, (used / (2 * 1024 * 1024 * 1024)) * 100)}%`;
+          const profile = window.StudentData?.getStudentProfile?.() || {};
+          const context = [profile.grade || profile.class_grade, profile.stream]
+            .filter(Boolean)
+            .join(" · ");
+          if (context) {
+            document.getElementById("registrationContext").hidden = false;
+            document.getElementById("registrationContextText").textContent =
+              context;
+          }
+        }
+        searchInput.addEventListener("input", renderList);
+        subjectFilter.addEventListener("change", renderList);
+        typeFilter.addEventListener("change", renderList);
+        window.addEventListener("online", refresh);
+        window.addEventListener("smart-learning-downloads-updated", refresh);
+        refresh().catch((error) => {
+          console.error(error);
+          emptyState.style.display = "block";
         });
-
-        materialCount.textContent =
-          visibleCount + (visibleCount === 1 ? " material" : " materials");
-
-        emptyState.style.display = visibleCount === 0 ? "block" : "none";
-      }
-
-      searchInput.addEventListener("input", filterMaterials);
-
-      subjectFilter.addEventListener("change", filterMaterials);
-
-      typeFilter.addEventListener("change", filterMaterials);
-
-      function downloadFile(fileName) {
-        alert("Downloading: " + fileName);
-
-        /*
-        Later connect this button
-        to your Supabase Storage file URL.
-
-        Example:
-
-        window.open(fileUrl, "_blank");
-
-        or:
-
-        const link = document.createElement("a");
-        link.href = fileUrl;
-        link.download = fileName;
-        link.click();
-      */
-      }
+      })();
     </script>
     <script src="../js/student-context.js"></script>
     <script src="../js/student-layout.js"></script>
