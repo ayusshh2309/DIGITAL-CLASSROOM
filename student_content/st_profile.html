@@ -35,7 +35,7 @@
 
       .page {
         width: 100%;
-        padding: 32px 38px 50px;
+        padding: 18px 24px 34px;
       }
 
       /* =====================================================
@@ -43,12 +43,7 @@
     ===================================================== */
 
       .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 4px 4px 8px;
-        margin-bottom: 22px;
-        gap: 20px;
+        display: none;
       }
 
       .header-left {
@@ -110,21 +105,24 @@
 
       .profile-tabs {
         display: flex;
-        gap: 8px;
-        background: #ffffff;
-        border: 1px solid #e6eaf0;
-        border-radius: 14px;
-        padding: 7px;
-        margin-bottom: 22px;
-        overflow-x: auto;
+        flex-direction: column;
+        gap: 4px;
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        padding: 0 10px;
+        margin: 0 0 14px;
+        overflow: visible;
       }
 
       .profile-tab {
         border: none;
         background: transparent;
         color: #7b8495;
-        padding: 10px 15px;
-        border-radius: 9px;
+        width: 100%;
+        padding: 9px 8px;
+        border-radius: 7px;
+        text-align: left;
         font-family: inherit;
         font-size: 11px;
         font-weight: 700;
@@ -149,9 +147,13 @@
 
       .profile-content-grid {
         display: grid;
-        grid-template-columns: 310px minmax(0, 1fr);
-        gap: 22px;
+        grid-template-columns: 190px minmax(0, 1fr);
+        gap: 12px;
         align-items: start;
+      }
+
+      .profile-content-grid > * {
+        min-width: 0;
       }
 
       /* =====================================================
@@ -161,12 +163,23 @@
       .profile-card-left {
         background: #ffffff;
         border: 1px solid #e6eaf0;
-        border-radius: 18px;
+        border-radius: 10px;
         overflow: hidden;
+        position: relative;
+      }
+
+      .profile-card-edit {
+        position: absolute;
+        top: 9px;
+        right: 9px;
+        z-index: 3;
+        padding: 6px 8px;
+        border-radius: 6px;
+        font-size: 8px;
       }
 
       .profile-banner-bg {
-        height: 92px;
+        height: 58px;
         background: linear-gradient(135deg, #6246e5, #7d65ec, #a393f3);
         position: relative;
       }
@@ -184,15 +197,15 @@
 
       .profile-avatar-wrapper {
         position: relative;
-        width: 94px;
-        height: 94px;
-        margin: -47px auto 0;
+        width: 66px;
+        height: 66px;
+        margin: -33px auto 0;
         z-index: 2;
       }
 
       .profile-main-avatar {
-        width: 94px;
-        height: 94px;
+        width: 66px;
+        height: 66px;
         border-radius: 50%;
         object-fit: cover;
         border: 5px solid white;
@@ -218,11 +231,11 @@
 
       .profile-user-info {
         text-align: center;
-        padding: 13px 18px 18px;
+        padding: 9px 10px 12px;
       }
 
       .profile-user-name {
-        font-size: 20px;
+        font-size: 13px;
         font-weight: 800;
         color: #1b2538;
         margin-bottom: 8px;
@@ -234,7 +247,7 @@
         border-radius: 7px;
         background: #eeeaff;
         color: #6246e5;
-        font-size: 10px;
+        font-size: 8px;
         font-weight: 700;
       }
 
@@ -243,18 +256,19 @@
     ===================================================== */
 
       .contact-info-list {
-        padding: 0 20px 18px;
+        padding: 0 10px 10px;
       }
 
       .contact-item {
         display: flex;
         align-items: center;
         gap: 11px;
-        padding: 10px 0;
+        padding: 7px 0;
         border-bottom: 1px solid #eef1f5;
         color: #697386;
-        font-size: 10px;
+        font-size: 8px;
         line-height: 1.4;
+        overflow-wrap: anywhere;
       }
 
       .contact-item:last-child {
@@ -277,8 +291,8 @@
     ===================================================== */
 
       .about-me-box {
-        margin: 0 20px 18px;
-        padding: 15px;
+        margin: 0 10px 10px;
+        padding: 10px;
         background: #f8f9fc;
         border-radius: 11px;
       }
@@ -301,8 +315,8 @@
     ===================================================== */
 
       .student-id-box {
-        margin: 0 20px 20px;
-        padding: 14px;
+        margin: 0 10px 10px;
+        padding: 10px;
         border-radius: 11px;
         background: #f0edff;
         border: 1px solid #e0d9ff;
@@ -330,7 +344,7 @@
       .right-profile-content {
         display: flex;
         flex-direction: column;
-        gap: 18px;
+        gap: 10px;
       }
 
       /* =====================================================
@@ -340,17 +354,17 @@
       .stats-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
-        gap: 14px;
+        gap: 10px;
       }
 
       .stat-card {
         background: #ffffff;
         border: 1px solid #e6eaf0;
-        border-radius: 15px;
-        padding: 17px;
+        border-radius: 9px;
+        padding: 10px;
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 9px;
       }
 
       .stat-icon {
@@ -404,15 +418,15 @@
       .information-card {
         background: #ffffff;
         border: 1px solid #e6eaf0;
-        border-radius: 17px;
-        padding: 21px;
+        border-radius: 10px;
+        padding: 12px;
       }
 
       .information-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 20px;
+        margin-bottom: 11px;
       }
 
       .information-title {
@@ -434,7 +448,7 @@
       }
 
       .information-title h2 {
-        font-size: 15px;
+        font-size: 12px;
         font-weight: 800;
       }
 
@@ -457,12 +471,12 @@
       .details-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
-        gap: 17px 28px;
+        gap: 9px 18px;
       }
 
       .detail-item {
         border-bottom: 1px solid #eef1f5;
-        padding-bottom: 12px;
+        padding-bottom: 7px;
       }
 
       .detail-label {
@@ -478,6 +492,7 @@
         color: #2d374b;
         font-size: 11px;
         font-weight: 700;
+        overflow-wrap: anywhere;
       }
 
       /* =====================================================
@@ -487,14 +502,14 @@
       .academic-overview {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 17px;
+        gap: 10px;
       }
 
       .academic-box {
         border: 1px solid #edf0f4;
         background: #fafbfc;
         border-radius: 13px;
-        padding: 17px;
+        padding: 10px;
       }
 
       .academic-box h3 {
@@ -508,7 +523,7 @@
         display: flex;
         justify-content: space-between;
         gap: 15px;
-        padding: 8px 0;
+        padding: 5px 0;
         border-bottom: 1px solid #edf0f4;
       }
 
@@ -526,6 +541,7 @@
         font-size: 9px;
         font-weight: 700;
         text-align: right;
+        overflow-wrap: anywhere;
       }
 
       /* =====================================================
@@ -712,6 +728,10 @@
         .stats-grid {
           grid-template-columns: repeat(2, 1fr);
         }
+
+        .profile-content-grid {
+          grid-template-columns: 270px minmax(0, 1fr);
+        }
       }
 
       @media (max-width: 850px) {
@@ -725,6 +745,10 @@
 
         .profile-card-left {
           max-width: 500px;
+        }
+
+        .profile-card-left {
+          width: 100%;
         }
 
         .academic-overview {
@@ -833,6 +857,14 @@
         <aside class="profile-card-left">
           <div class="profile-banner-bg"></div>
 
+          <button
+            class="edit-profile-btn profile-card-edit"
+            onclick="openEditModal()"
+          >
+            <i class="fa-solid fa-pen"></i>
+            Edit Profile
+          </button>
+
           <div class="profile-avatar-wrapper">
             <img
               src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80"
@@ -851,11 +883,11 @@
           </div>
 
           <div class="profile-user-info">
-            <div class="profile-user-name">Ayush Kumar</div>
+            <div class="profile-user-name">Loading profile...</div>
 
             <div class="profile-user-role-badge">
               <i class="fa-solid fa-graduation-cap"></i>
-              &nbsp; Student • Grade 12
+              &nbsp; Student
             </div>
           </div>
 
@@ -865,25 +897,25 @@
             <div class="contact-item">
               <i class="fa-solid fa-envelope"></i>
 
-              <span> ayush.kumar@smartdc.com </span>
+              <span> Loading... </span>
             </div>
 
             <div class="contact-item">
               <i class="fa-solid fa-phone"></i>
 
-              <span> +91 98765 43210 </span>
+              <span> Loading... </span>
             </div>
 
             <div class="contact-item">
               <i class="fa-solid fa-location-dot"></i>
 
-              <span> Patna, Bihar, India </span>
+              <span> Loading... </span>
             </div>
 
             <div class="contact-item">
               <i class="fa-solid fa-calendar"></i>
 
-              <span> Joined on 07 Sep 2026 </span>
+              <span> Loading... </span>
             </div>
           </div>
 
@@ -892,10 +924,7 @@
           <div class="about-me-box">
             <h4>About Me</h4>
 
-            <p>
-              Student passionate about learning, improving academic performance
-              and developing new skills.
-            </p>
+            <p id="aboutStudent">Loading profile information...</p>
           </div>
 
           <!-- STUDENT ID -->
@@ -903,7 +932,7 @@
           <div class="student-id-box">
             <span class="label"> STUDENT ID </span>
 
-            <span class="id"> SLDC-2026-5467 </span>
+            <span class="id"> Loading... </span>
           </div>
         </aside>
 
@@ -923,7 +952,7 @@
               </div>
 
               <div>
-                <strong>12</strong>
+                <strong>—</strong>
 
                 <span> Current Grade </span>
               </div>
@@ -935,7 +964,7 @@
               </div>
 
               <div>
-                <strong>6</strong>
+                <strong>0</strong>
 
                 <span> Subjects </span>
               </div>
@@ -947,7 +976,7 @@
               </div>
 
               <div>
-                <strong>94%</strong>
+                <strong>—</strong>
 
                 <span> Attendance </span>
               </div>
@@ -959,7 +988,7 @@
               </div>
 
               <div>
-                <strong>86%</strong>
+                <strong>—</strong>
 
                 <span> Average Score </span>
               </div>
@@ -990,73 +1019,73 @@
               <div class="detail-item">
                 <span class="detail-label"> Full Name </span>
 
-                <span class="detail-value"> Ayush Kumar </span>
+                <span class="detail-value"> Loading... </span>
               </div>
 
               <div class="detail-item">
                 <span class="detail-label"> Student ID </span>
 
-                <span class="detail-value"> SLDC-2026-5467 </span>
+                <span class="detail-value"> Loading... </span>
               </div>
 
               <div class="detail-item">
                 <span class="detail-label"> Date of Birth </span>
 
-                <span class="detail-value"> 15 March 2009 </span>
+                <span class="detail-value"> Loading... </span>
               </div>
 
               <div class="detail-item">
                 <span class="detail-label"> Gender </span>
 
-                <span class="detail-value"> Male </span>
+                <span class="detail-value"> Loading... </span>
               </div>
 
               <div class="detail-item">
                 <span class="detail-label"> Email Address </span>
 
-                <span class="detail-value"> ayush.kumar@smartdc.com </span>
+                <span class="detail-value"> Loading... </span>
               </div>
 
               <div class="detail-item">
                 <span class="detail-label"> Phone Number </span>
 
-                <span class="detail-value"> +91 98765 43210 </span>
+                <span class="detail-value"> Loading... </span>
               </div>
 
               <div class="detail-item">
                 <span class="detail-label"> Father's Name </span>
 
-                <span class="detail-value"> Rajesh Kumar </span>
+                <span class="detail-value"> Loading... </span>
               </div>
 
               <div class="detail-item">
                 <span class="detail-label"> Mother's Name </span>
 
-                <span class="detail-value"> Sunita Kumar </span>
+                <span class="detail-value"> Loading... </span>
               </div>
 
               <div class="detail-item">
                 <span class="detail-label"> City </span>
 
-                <span class="detail-value"> Patna </span>
+                <span class="detail-value"> Loading... </span>
               </div>
 
               <div class="detail-item">
                 <span class="detail-label"> State </span>
 
-                <span class="detail-value"> Bihar </span>
+                <span class="detail-value"> Loading... </span>
               </div>
 
               <div class="detail-item">
                 <span class="detail-label"> Country </span>
 
-                <span class="detail-value"> India </span>
+                <span class="detail-value"> Loading... </span>
               </div>
 
               <div class="detail-item">
                 <span class="detail-label"> Address </span>
 
-                <span class="detail-value"> Patna, Bihar </span>
+                <span class="detail-value"> Loading... </span>
               </div>
             </div>
           </section>
@@ -1090,31 +1119,31 @@
                 <div class="academic-row">
                   <span> Current Grade </span>
 
-                  <span> Grade 12 </span>
+                  <span> Loading... </span>
                 </div>
 
                 <div class="academic-row">
                   <span> Stream </span>
 
-                  <span> Science </span>
+                  <span> Loading... </span>
                 </div>
 
                 <div class="academic-row">
                   <span> Board </span>
 
-                  <span> CBSE </span>
+                  <span> Loading... </span>
                 </div>
 
                 <div class="academic-row">
                   <span> Academic Year </span>
 
-                  <span> 2026 - 2027 </span>
+                  <span> Loading... </span>
                 </div>
 
                 <div class="academic-row">
                   <span> Roll Number </span>
 
-                  <span> 24 </span>
+                  <span> Loading... </span>
                 </div>
               </div>
 
@@ -1126,31 +1155,31 @@
                 <div class="academic-row">
                   <span> School Name </span>
 
-                  <span> Delhi Public School </span>
+                  <span> Loading... </span>
                 </div>
 
                 <div class="academic-row">
                   <span> School City </span>
 
-                  <span> Patna </span>
+                  <span> Loading... </span>
                 </div>
 
                 <div class="academic-row">
                   <span> Admission Year </span>
 
-                  <span> 2021 </span>
+                  <span> Loading... </span>
                 </div>
 
                 <div class="academic-row">
                   <span> Class Section </span>
 
-                  <span> XII - A </span>
+                  <span> Loading... </span>
                 </div>
 
                 <div class="academic-row">
                   <span> Student Status </span>
 
-                  <span> Active </span>
+                  <span> Loading... </span>
                 </div>
               </div>
             </div>
@@ -1171,22 +1200,12 @@
               </div>
 
               <span style="color: #8a93a3; font-size: 9px; font-weight: 600">
-                6 Subjects
+                Loading subjects...
               </span>
             </div>
 
             <div class="subjects-list">
-              <span class="subject"> Mathematics </span>
-
-              <span class="subject blue"> Physics </span>
-
-              <span class="subject green"> Chemistry </span>
-
-              <span class="subject orange"> Computer Science </span>
-
-              <span class="subject"> English </span>
-
-              <span class="subject blue"> Physical Education </span>
+              <span class="detail-value"> Loading subjects... </span>
             </div>
           </section>
 
@@ -1321,116 +1340,270 @@
     <script src="../js/student-layout.js"></script>
     <script>
       (function () {
-        const profileData =
-          JSON.parse(localStorage.getItem("studentProfile") || "null") ||
-          JSON.parse(localStorage.getItem("studentData") || "null") ||
-          JSON.parse(
-            localStorage.getItem("studentRegistrationData") || "null",
-          ) ||
-          {};
-
-        function setText(selector, value, fallback = "Not provided") {
-          const node = document.querySelector(selector);
-          if (!node) return;
-          node.textContent = value && String(value).trim() ? value : fallback;
-        }
-
-        setText(
-          ".profile-user-name",
-          profileData.fullName || profileData.full_name || "Student",
-        );
-        setText(".detail-value", "", "");
-
-        const nameValue = document.querySelectorAll(".detail-value");
-        const personalValues = [
-          [
-            ".profile-user-name",
-            profileData.fullName || profileData.full_name || "Student",
-          ],
-          [
-            ".detail-item:nth-of-type(1) .detail-value",
-            profileData.fullName || profileData.full_name || "Not provided",
-          ],
-          [
-            ".detail-item:nth-of-type(2) .detail-value",
-            profileData.studentId || "Not provided",
-          ],
-          [
-            ".detail-item:nth-of-type(3) .detail-value",
-            profileData.dob || "Not provided",
-          ],
-          [
-            ".detail-item:nth-of-type(4) .detail-value",
-            profileData.gender || "Not provided",
-          ],
-          [
-            ".detail-item:nth-of-type(5) .detail-value",
-            profileData.email || "Not provided",
-          ],
-          [
-            ".detail-item:nth-of-type(6) .detail-value",
-            profileData.phone || "Not provided",
-          ],
-          [
-            ".detail-item:nth-of-type(7) .detail-value",
-            profileData.fatherName || "Not provided",
-          ],
-          [
-            ".detail-item:nth-of-type(8) .detail-value",
-            profileData.motherName || "Not provided",
-          ],
-          [
-            ".detail-item:nth-of-type(9) .detail-value",
-            profileData.city || "Not provided",
-          ],
-          [
-            ".detail-item:nth-of-type(10) .detail-value",
-            profileData.state || "Not provided",
-          ],
-          [
-            ".detail-item:nth-of-type(11) .detail-value",
-            profileData.country || "Not provided",
-          ],
-          [
-            ".detail-item:nth-of-type(12) .detail-value",
-            profileData.address || "Not provided",
-          ],
+        const profileKeys = [
+          "studentProfile",
+          "studentData",
+          "finalStudentRegistration",
+          "studentRegistrationData",
         ];
+        const fallback = "Not provided";
+        const readJson = (key) => {
+          try {
+            return JSON.parse(localStorage.getItem(key) || "null");
+          } catch {
+            return null;
+          }
+        };
+        const firstValue = (...values) =>
+          values.find(
+            (value) =>
+              value !== undefined &&
+              value !== null &&
+              String(value).trim() !== "",
+          ) || "";
+        const profileValue = (profile, ...keys) =>
+          firstValue(
+            ...keys.map((key) =>
+              key.split(".").reduce((value, part) => value?.[part], profile),
+            ),
+          );
+        const display = (value, prefix = "") =>
+          value ? `${prefix}${value}` : fallback;
+        const titleCase = (value) =>
+          String(value || "")
+            .replace(/[_-]+/g, " ")
+            .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
-        personalValues.forEach(([selector, value]) => {
-          const node = document.querySelector(selector);
-          if (node) node.textContent = value || "Not provided";
-        });
-
-        const academicRows = document.querySelectorAll(
-          ".academic-row span:last-child",
-        );
-        if (academicRows.length >= 5) {
-          academicRows[0].textContent = profileData.classGrade
-            ? `Grade ${profileData.classGrade}`
-            : "Not provided";
-          academicRows[1].textContent = profileData.stream || "Not provided";
-          academicRows[2].textContent = profileData.board || "Not provided";
-          academicRows[3].textContent =
-            profileData.academicYear || "Not provided";
-          academicRows[4].textContent =
-            profileData.rollNumber || "Not provided";
+        function getProfile() {
+          return (
+            profileKeys
+              .map(readJson)
+              .find((value) => value && typeof value === "object") || {}
+          );
         }
 
-        const schoolNameNode = document.querySelector(
-          ".academic-box:nth-of-type(2) .academic-row:nth-of-type(1) span:last-child",
-        );
-        if (schoolNameNode)
-          schoolNameNode.textContent = profileData.schoolName || "Not provided";
-
-        if (profileData.profilePhoto) {
-          const avatar = document.querySelector(".profile-main-avatar");
-          if (avatar) avatar.src = profileData.profilePhoto;
+        function setText(node, value) {
+          if (node) node.textContent = value || fallback;
         }
 
-        const studentIdBox = document.querySelector(".student-id-box .id");
-        if (studentIdBox)
-          studentIdBox.textContent = profileData.studentId || "Not provided";
+        function setRowValue(section, label, value) {
+          [...section.querySelectorAll(".detail-item, .academic-row")].forEach(
+            (row) => {
+              const labelNode = row.querySelector(
+                ".detail-label, span:first-child",
+              );
+              if (
+                labelNode?.textContent.trim().toLowerCase() ===
+                label.toLowerCase()
+              )
+                setText(
+                  row.querySelector(".detail-value, span:last-child"),
+                  value,
+                );
+            },
+          );
+        }
+
+        function renderProfile() {
+          const profile = getProfile();
+          const name = profileValue(
+            profile,
+            "fullName",
+            "full_name",
+            "personal.fullName",
+            "personal.full_name",
+            "name",
+          );
+          const studentId = profileValue(
+            profile,
+            "studentId",
+            "student_id",
+            "studentCode",
+            "student_code",
+          );
+          const grade = profileValue(
+            profile,
+            "classGrade",
+            "class_grade",
+            "grade",
+            "academic.grade",
+            "academic.class",
+          );
+          const stream = profileValue(
+            profile,
+            "stream",
+            "classStream",
+            "class_stream",
+            "academic.stream",
+          );
+          const subjects = profileValue(
+            profile,
+            "eligible_subjects",
+            "subjects",
+            "registeredSubjects",
+            "enrolledSubjects",
+            "academic.subjects",
+          );
+          const subjectList = (
+            Array.isArray(subjects)
+              ? subjects
+              : String(subjects || "").split(",")
+          )
+            .map((subject) => String(subject).trim())
+            .filter(Boolean);
+          const email = profileValue(profile, "email", "personal.email");
+          const phone = profileValue(
+            profile,
+            "phone",
+            "phoneNumber",
+            "personal.phone",
+          );
+          const photo = profileValue(
+            profile,
+            "profilePhoto",
+            "profile_photo",
+            "avatar",
+            "personal.profilePhoto",
+          );
+
+          setText(
+            document.querySelector(".profile-user-name"),
+            name || "Student",
+          );
+          setText(
+            document.querySelector(".profile-user-role-badge"),
+            `Student · ${display(grade, "Grade ")}`,
+          );
+          setText(document.querySelector(".student-id-box .id"), studentId);
+          if (photo)
+            document
+              .querySelector(".profile-main-avatar")
+              ?.setAttribute("src", photo);
+
+          const contactValues = [
+            email,
+            phone,
+            profileValue(profile, "address", "location", "city") &&
+              [
+                profileValue(profile, "address"),
+                profileValue(profile, "city"),
+                profileValue(profile, "state"),
+              ]
+                .filter(Boolean)
+                .join(", "),
+            profileValue(
+              profile,
+              "createdAt",
+              "created_at",
+              "registrationDate",
+            ) &&
+              `Joined on ${new Date(profileValue(profile, "createdAt", "created_at", "registrationDate")).toLocaleDateString()}`,
+          ];
+          document
+            .querySelectorAll(".contact-item span")
+            .forEach((node, index) => setText(node, contactValues[index]));
+
+          const personal = document.getElementById("personal");
+          [
+            ["Full Name", name],
+            ["Student ID", studentId],
+            [
+              "Date of Birth",
+              profileValue(profile, "dob", "dateOfBirth", "date_of_birth"),
+            ],
+            ["Gender", profileValue(profile, "gender")],
+            ["Email Address", email],
+            ["Phone Number", phone],
+            [
+              "Father's Name",
+              profileValue(profile, "fatherName", "father_name"),
+            ],
+            [
+              "Mother's Name",
+              profileValue(profile, "motherName", "mother_name"),
+            ],
+            ["City", profileValue(profile, "city")],
+            ["State", profileValue(profile, "state")],
+            ["Country", profileValue(profile, "country")],
+            ["Address", profileValue(profile, "address")],
+          ].forEach(([label, value]) => setRowValue(personal, label, value));
+
+          const academic = document.getElementById("academic");
+          [
+            ["Current Grade", display(grade, "Grade ")],
+            ["Stream", titleCase(stream)],
+            ["Board", profileValue(profile, "board", "academic.board")],
+            [
+              "Academic Year",
+              profileValue(profile, "academicYear", "academic_year"),
+            ],
+            ["Roll Number", profileValue(profile, "rollNumber", "roll_number")],
+            [
+              "School Name",
+              profileValue(profile, "schoolName", "school_name", "school.name"),
+            ],
+            ["School City", profileValue(profile, "schoolCity", "school_city")],
+            [
+              "Admission Year",
+              profileValue(profile, "admissionYear", "admission_year"),
+            ],
+            [
+              "Class Section",
+              profileValue(profile, "section", "classSection", "class_section"),
+            ],
+            [
+              "Student Status",
+              profileValue(profile, "status", "studentStatus") || "Active",
+            ],
+          ].forEach(([label, value]) => setRowValue(academic, label, value));
+
+          const subjectListNode = document.querySelector(".subjects-list");
+          subjectListNode.innerHTML = subjectList.length
+            ? subjectList
+                .map(
+                  (subject, index) =>
+                    `<span class="subject ${["", "blue", "green", "orange"][index % 4]}">${titleCase(subject)}</span>`,
+                )
+                .join("")
+            : `<span class="detail-value">${fallback}</span>`;
+          const subjectCard = [
+            ...document.querySelectorAll(".information-card"),
+          ].find((card) =>
+            card.querySelector("h2")?.textContent.includes("Enrolled Subjects"),
+          );
+          const subjectCount = subjectCard?.querySelector(
+            ".information-header > span",
+          );
+          if (subjectCount)
+            subjectCount.textContent = `${subjectList.length} Subject${subjectList.length === 1 ? "" : "s"}`;
+          setText(
+            document.getElementById("aboutStudent"),
+            profileValue(profile, "about", "bio", "description") ||
+              "No bio provided.",
+          );
+          const stats = document.querySelectorAll(".stat-card strong");
+          if (stats[0]) stats[0].textContent = grade || "—";
+          if (stats[1]) stats[1].textContent = subjectList.length;
+          if (stats[2])
+            stats[2].textContent = display(
+              profileValue(profile, "attendance", "attendancePercentage"),
+              "",
+            );
+          if (stats[3])
+            stats[3].textContent = display(
+              profileValue(profile, "averageScore", "average_score", "score"),
+              "",
+            );
+        }
+
+        renderProfile();
+        window.addEventListener("storage", renderProfile);
+        window.addEventListener(
+          "smart-learning-profile-updated",
+          renderProfile,
+        );
+        window.addEventListener("focus", renderProfile);
+        setInterval(renderProfile, 30000);
       })();
     </script>
   </body>
