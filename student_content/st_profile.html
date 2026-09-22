@@ -46,19 +46,44 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        padding: 4px 4px 8px;
         margin-bottom: 22px;
+        gap: 20px;
+      }
+
+      .header-left {
+        display: flex;
+        align-items: flex-start;
       }
 
       .header-left h1 {
-        font-size: 28px;
+        margin-top: 7px;
+        font-size: clamp(2rem, 3vw, 2.7rem);
         font-weight: 800;
-        color: #172033;
-        margin-bottom: 7px;
+        color: #08183e;
+        letter-spacing: -0.8px;
       }
 
       .header-left p {
-        color: #7d8798;
-        font-size: 14px;
+        max-width: 540px;
+        margin-top: 4px;
+        color: #536789;
+        font-size: 1.05rem;
+      }
+
+      .page-eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #008b95;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .page-eyebrow i {
+        font-size: 13px;
       }
 
       .edit-profile-btn {
@@ -753,9 +778,15 @@
 
       <div class="page-header">
         <div class="header-left">
-          <h1>My Profile</h1>
+          <div>
+            <div class="page-eyebrow">
+              <i class="fa-solid fa-book-open" aria-hidden="true"></i>
+              Student workspace
+            </div>
 
-          <p>View and manage your personal and academic information.</p>
+            <h1>My Profile</h1>
+            <p>View and manage your personal and academic information.</p>
+          </div>
         </div>
 
         <button class="edit-profile-btn" onclick="openEditModal()">
