@@ -990,6 +990,529 @@
       }
 
       /* =====================================================
+         MAIN DASHBOARD REDESIGN
+         STRICT SCOPE: Modify ONLY the <main> / dashboard content area.
+         Do not edit, remove, recreate, resize, recolor, or restructure
+         the existing sidebar and topbar/header code.
+      ===================================================== */
+
+      .main > :not(.dashboard-redesign) {
+        display: none;
+      }
+
+      .dashboard-redesign {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        max-width: 1440px;
+        margin: 0 auto;
+      }
+
+      .welcome-banner {
+        min-height: 146px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 22px 28px 22px 24px;
+        overflow: hidden;
+        position: relative;
+        border: 1px solid #cfeadf;
+        border-radius: 18px;
+        background: linear-gradient(
+          105deg,
+          #c8f1d8 0%,
+          #e5f8e8 55%,
+          #eaf8ee 100%
+        );
+      }
+
+      .welcome-banner::after {
+        content: "";
+        width: 250px;
+        height: 250px;
+        position: absolute;
+        right: 36px;
+        top: -116px;
+        border: 22px solid rgba(53, 157, 105, 0.1);
+        border-radius: 50%;
+      }
+
+      .welcome-copy,
+      .welcome-art {
+        position: relative;
+        z-index: 1;
+      }
+
+      .welcome-copy {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .welcome-avatar {
+        width: 76px;
+        height: 76px;
+        border: 4px solid rgba(255, 255, 255, 0.9);
+        border-radius: 50%;
+        object-fit: cover;
+        background: #b5dfc5;
+        box-shadow: 0 5px 15px rgba(32, 111, 73, 0.12);
+      }
+
+      .welcome-text h1 {
+        color: #123c32;
+        font-size: clamp(1.3rem, 2.1vw, 1.85rem);
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        margin-bottom: 7px;
+      }
+
+      .welcome-text p {
+        color: #34705a;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 13px;
+      }
+
+      .welcome-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+      }
+
+      .welcome-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 10px;
+        border: 1px solid rgba(74, 150, 108, 0.12);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.64);
+        color: #376c58;
+        font-size: 0.66rem;
+        font-weight: 700;
+      }
+
+      .welcome-pill i {
+        color: #159565;
+      }
+
+      .welcome-art {
+        color: #1c9864;
+        font-size: 4.4rem;
+        padding-right: 28px;
+        opacity: 0.78;
+      }
+
+      .dashboard-stats {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .dashboard-stat,
+      .dashboard-panel,
+      .study-progress-panel {
+        background: #ffffff;
+        border: 1px solid #dfeaf0;
+        border-radius: 13px;
+        box-shadow: 0 4px 14px rgba(31, 67, 83, 0.035);
+      }
+
+      .dashboard-stat {
+        min-height: 106px;
+        padding: 15px;
+        display: grid;
+        grid-template-columns: 40px 1fr;
+        gap: 11px;
+        align-items: center;
+      }
+
+      .dashboard-stat-icon {
+        width: 40px;
+        height: 40px;
+        display: grid;
+        place-items: center;
+        border-radius: 10px;
+        font-size: 17px;
+      }
+
+      .accent-purple {
+        background: #eee9ff;
+        color: #7147df;
+      }
+      .accent-green {
+        background: #ddf7eb;
+        color: #18a36b;
+      }
+      .accent-orange {
+        background: #fff0d8;
+        color: #f29b19;
+      }
+      .accent-blue {
+        background: #e2f1ff;
+        color: #2d83da;
+      }
+      .accent-red {
+        background: #ffe5e8;
+        color: #ef5263;
+      }
+
+      .dashboard-stat-label {
+        color: #6e7d8d;
+        font-size: 0.68rem;
+        font-weight: 700;
+        margin-bottom: 3px;
+      }
+
+      .dashboard-stat-value {
+        color: #17233a;
+        font-size: 1.25rem;
+        font-weight: 800;
+        line-height: 1.1;
+        margin-bottom: 5px;
+      }
+
+      .dashboard-stat-link,
+      .dashboard-panel-link {
+        color: #159565;
+        font-size: 0.62rem;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .dashboard-columns {
+        display: grid;
+        grid-template-columns: minmax(0, 1.02fr) minmax(0, 1fr) minmax(
+            0,
+            1.12fr
+          );
+        gap: 12px;
+        align-items: stretch;
+      }
+
+      .dashboard-panel {
+        min-width: 0;
+        padding: 16px;
+      }
+
+      .dashboard-panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+
+      .dashboard-panel-title {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        color: #1a263a;
+        font-size: 0.86rem;
+        font-weight: 800;
+      }
+
+      .dashboard-panel-title i {
+        width: 29px;
+        height: 29px;
+        display: grid;
+        place-items: center;
+        border-radius: 8px;
+        background: #ddf7eb;
+        color: #159565;
+      }
+
+      .subject-row {
+        padding: 9px 0;
+        border-bottom: 1px solid #eef3f5;
+      }
+
+      .subject-row:last-child {
+        border-bottom: none;
+      }
+
+      .subject-row-top,
+      .subject-progress-label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .subject-row-top {
+        margin-bottom: 6px;
+      }
+
+      .subject-row-name {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #30405a;
+        font-size: 0.7rem;
+        font-weight: 800;
+      }
+
+      .subject-row-name i {
+        width: 25px;
+        height: 25px;
+        display: grid;
+        place-items: center;
+        border-radius: 7px;
+        background: #e8f4ff;
+        color: #3989da;
+      }
+
+      .subject-progress-label {
+        color: #8391a1;
+        font-size: 0.61rem;
+        font-weight: 700;
+      }
+
+      .subject-progress-label strong {
+        color: #33425a;
+      }
+
+      .dashboard-progress-track {
+        height: 5px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #edf2f4;
+      }
+
+      .dashboard-progress-fill {
+        height: 100%;
+        border-radius: inherit;
+        background: #18a36b;
+      }
+
+      .material-row {
+        min-height: 49px;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        border-bottom: 1px solid #eef3f5;
+      }
+
+      .material-row:last-child {
+        border-bottom: none;
+      }
+
+      .material-type-icon {
+        width: 31px;
+        height: 31px;
+        display: grid;
+        place-items: center;
+        border-radius: 8px;
+        flex-shrink: 0;
+      }
+
+      .material-row-info {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .material-row-title {
+        overflow: hidden;
+        color: #2d3a50;
+        font-size: 0.69rem;
+        font-weight: 800;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .material-row-meta {
+        color: #8a98a7;
+        font-size: 0.58rem;
+        margin-top: 3px;
+      }
+
+      .material-menu {
+        color: #8190a0;
+        cursor: pointer;
+        padding: 5px;
+      }
+
+      .schedule-timeline {
+        position: relative;
+      }
+
+      .schedule-timeline::before {
+        content: "";
+        position: absolute;
+        left: 7px;
+        top: 12px;
+        bottom: 12px;
+        width: 1px;
+        background: #dcebe5;
+      }
+
+      .class-row {
+        display: grid;
+        grid-template-columns: 16px 54px 1fr auto;
+        align-items: center;
+        gap: 8px;
+        min-height: 55px;
+        position: relative;
+      }
+
+      .class-dot {
+        width: 15px;
+        height: 15px;
+        z-index: 1;
+        border: 3px solid #fff;
+        border-radius: 50%;
+        background: #1ca76d;
+        box-shadow: 0 0 0 1px #a9ddc5;
+      }
+
+      .class-time {
+        color: #159565;
+        font-size: 0.59rem;
+        font-weight: 800;
+      }
+
+      .class-info strong {
+        display: block;
+        color: #2c3950;
+        font-size: 0.65rem;
+      }
+
+      .class-info span {
+        color: #8a98a7;
+        font-size: 0.55rem;
+      }
+
+      .class-status {
+        padding: 5px 7px;
+        border-radius: 999px;
+        background: #e4f8ed;
+        color: #159565;
+        font-size: 0.53rem;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .class-status.upcoming {
+        background: #eaf3ff;
+        color: #3982cf;
+      }
+
+      .study-progress-panel {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 15px;
+        min-height: 96px;
+        padding: 17px 20px;
+        background: linear-gradient(100deg, #f4fff9, #ffffff);
+      }
+
+      .study-progress-icon {
+        width: 40px;
+        height: 40px;
+        display: grid;
+        place-items: center;
+        border-radius: 10px;
+        background: #ddf7eb;
+        color: #159565;
+        font-size: 18px;
+      }
+
+      .study-progress-copy h2 {
+        color: #1a263a;
+        font-size: 0.92rem;
+        margin-bottom: 4px;
+      }
+      .study-progress-copy p {
+        color: #7b8b98;
+        font-size: 0.63rem;
+        margin-bottom: 11px;
+      }
+      .study-progress-value {
+        color: #1a3450;
+        font-size: 1.1rem;
+        font-weight: 800;
+      }
+
+      .study-progress-panel .dashboard-progress-track {
+        height: 9px;
+      }
+
+      @media (max-width: 1150px) {
+        .dashboard-stats {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        .dashboard-columns {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .dashboard-columns .dashboard-panel:last-child {
+          grid-column: 1 / -1;
+        }
+      }
+
+      @media (max-width: 700px) {
+        .dashboard-redesign {
+          gap: 12px;
+        }
+
+        .welcome-banner {
+          min-height: 0;
+          padding: 18px;
+        }
+
+        .welcome-copy {
+          align-items: flex-start;
+        }
+
+        .welcome-avatar {
+          width: 58px;
+          height: 58px;
+        }
+
+        .welcome-art {
+          display: none;
+        }
+
+        .dashboard-stats {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 9px;
+        }
+
+        .dashboard-stat {
+          min-height: 92px;
+          padding: 12px;
+          grid-template-columns: 34px 1fr;
+          gap: 8px;
+        }
+
+        .dashboard-stat-icon {
+          width: 34px;
+          height: 34px;
+          font-size: 14px;
+        }
+
+        .dashboard-stat-value {
+          font-size: 1.05rem;
+        }
+
+        .dashboard-columns {
+          grid-template-columns: 1fr;
+        }
+
+        .dashboard-columns .dashboard-panel:last-child {
+          grid-column: auto;
+        }
+
+        .study-progress-panel {
+          grid-template-columns: auto 1fr auto;
+          gap: 10px;
+          padding: 15px;
+        }
+      }
+
+      /* =====================================================
    RESPONSIVE
 ===================================================== */
 
@@ -1067,6 +1590,319 @@
   <body>
     <div id="studentLayout"></div>
     <main class="main">
+      <!-- STRICT SCOPE: This redesign modifies only the main dashboard content. -->
+      <section
+        class="dashboard-redesign"
+        aria-label="Student dashboard overview"
+      >
+        <section class="welcome-banner">
+          <div class="welcome-copy">
+            <img
+              class="welcome-avatar"
+              src="../assets/student-avatar.png"
+              alt="Student profile"
+              onerror="this.style.display = 'none'"
+            />
+            <div class="welcome-text">
+              <h1 id="welcomeGreeting">Good morning, Ayush! 👋</h1>
+              <p>Stay consistent, keep learning and make today count!</p>
+              <div class="welcome-pills">
+                <span class="welcome-pill"
+                  ><i class="fa-regular fa-calendar"></i
+                  ><span id="todayDate">Today</span></span
+                >
+                <span class="welcome-pill"
+                  ><i class="fa-regular fa-clock"></i
+                  ><span id="currentTime">--:--</span></span
+                >
+                <span class="welcome-pill"
+                  ><i class="fa-solid fa-location-dot"></i
+                  ><span id="studentLocation">Learning space</span></span
+                >
+              </div>
+            </div>
+          </div>
+          <div class="welcome-art" aria-hidden="true">
+            <i class="fa-solid fa-leaf"></i>
+          </div>
+        </section>
+
+        <section class="dashboard-stats" aria-label="Learning statistics">
+          <article class="dashboard-stat">
+            <div class="dashboard-stat-icon accent-purple">
+              <i class="fa-solid fa-book-open"></i>
+            </div>
+            <div>
+              <div class="dashboard-stat-label">My Subjects</div>
+              <div class="dashboard-stat-value" id="dashboardSubjectCount">
+                5
+              </div>
+              <span class="dashboard-stat-link" onclick="viewAllSubjects()"
+                >View All →</span
+              >
+            </div>
+          </article>
+          <article class="dashboard-stat">
+            <div class="dashboard-stat-icon accent-green">
+              <i class="fa-solid fa-video"></i>
+            </div>
+            <div>
+              <div class="dashboard-stat-label">Live Classes</div>
+              <div class="dashboard-stat-value">3</div>
+              <span class="dashboard-stat-link" onclick="action('live')"
+                >View Schedule →</span
+              >
+            </div>
+          </article>
+          <article class="dashboard-stat">
+            <div class="dashboard-stat-icon accent-orange">
+              <i class="fa-regular fa-clipboard"></i>
+            </div>
+            <div>
+              <div class="dashboard-stat-label">Quizzes Available</div>
+              <div class="dashboard-stat-value">4</div>
+              <span class="dashboard-stat-link" onclick="action('quiz')"
+                >View All →</span
+              >
+            </div>
+          </article>
+          <article class="dashboard-stat">
+            <div class="dashboard-stat-icon accent-blue">
+              <i class="fa-regular fa-file-lines"></i>
+            </div>
+            <div>
+              <div class="dashboard-stat-label">Notes</div>
+              <div class="dashboard-stat-value">12</div>
+              <span class="dashboard-stat-link" onclick="action('materials')"
+                >View All →</span
+              >
+            </div>
+          </article>
+          <article class="dashboard-stat">
+            <div class="dashboard-stat-icon accent-red">
+              <i class="fa-solid fa-stopwatch"></i>
+            </div>
+            <div>
+              <div class="dashboard-stat-label">Study Time</div>
+              <div class="dashboard-stat-value">14h 32m</div>
+              <span class="dashboard-stat-link">↑ +2h 15m this week</span>
+            </div>
+          </article>
+        </section>
+
+        <section class="dashboard-columns">
+          <article class="dashboard-panel">
+            <div class="dashboard-panel-header">
+              <h2 class="dashboard-panel-title">
+                <i class="fa-solid fa-book-open"></i>Your Subjects
+              </h2>
+              <span class="dashboard-panel-link" onclick="viewAllSubjects()"
+                >View All →</span
+              >
+            </div>
+            <div class="subject-row">
+              <div class="subject-row-top">
+                <span class="subject-row-name"
+                  ><i class="fa-solid fa-sigma"></i>Mathematics</span
+                ><span class="subject-progress-label"
+                  ><strong>82%</strong></span
+                >
+              </div>
+              <div class="dashboard-progress-track">
+                <div class="dashboard-progress-fill" style="width: 82%"></div>
+              </div>
+            </div>
+            <div class="subject-row">
+              <div class="subject-row-top">
+                <span class="subject-row-name"
+                  ><i class="fa-solid fa-atom"></i>Physics</span
+                ><span class="subject-progress-label"
+                  ><strong>76%</strong></span
+                >
+              </div>
+              <div class="dashboard-progress-track">
+                <div
+                  class="dashboard-progress-fill"
+                  style="width: 76%; background: #3989da"
+                ></div>
+              </div>
+            </div>
+            <div class="subject-row">
+              <div class="subject-row-top">
+                <span class="subject-row-name"
+                  ><i class="fa-solid fa-flask"></i>Chemistry</span
+                ><span class="subject-progress-label"
+                  ><strong>65%</strong></span
+                >
+              </div>
+              <div class="dashboard-progress-track">
+                <div
+                  class="dashboard-progress-fill"
+                  style="width: 65%; background: #f29b19"
+                ></div>
+              </div>
+            </div>
+            <div class="subject-row">
+              <div class="subject-row-top">
+                <span class="subject-row-name"
+                  ><i class="fa-solid fa-book"></i>English</span
+                ><span class="subject-progress-label"
+                  ><strong>58%</strong></span
+                >
+              </div>
+              <div class="dashboard-progress-track">
+                <div
+                  class="dashboard-progress-fill"
+                  style="width: 58%; background: #8d63df"
+                ></div>
+              </div>
+            </div>
+            <div class="subject-row">
+              <div class="subject-row-top">
+                <span class="subject-row-name"
+                  ><i class="fa-solid fa-code"></i>Computer Science</span
+                ><span class="subject-progress-label"
+                  ><strong>42%</strong></span
+                >
+              </div>
+              <div class="dashboard-progress-track">
+                <div
+                  class="dashboard-progress-fill"
+                  style="width: 42%; background: #159f8b"
+                ></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="dashboard-panel">
+            <div class="dashboard-panel-header">
+              <h2 class="dashboard-panel-title">
+                <i class="fa-solid fa-file-lines"></i>Recent Materials
+              </h2>
+              <span class="dashboard-panel-link" onclick="action('materials')"
+                >View All →</span
+              >
+            </div>
+            <div class="material-row">
+              <div class="material-type-icon accent-red">
+                <i class="fa-regular fa-file-pdf"></i>
+              </div>
+              <div class="material-row-info">
+                <div class="material-row-title">Chapter 3 Notes.pdf</div>
+                <div class="material-row-meta">Mathematics · 2 hours ago</div>
+              </div>
+              <span class="material-menu">⋮</span>
+            </div>
+            <div class="material-row">
+              <div class="material-type-icon accent-red">
+                <i class="fa-regular fa-file-pdf"></i>
+              </div>
+              <div class="material-row-info">
+                <div class="material-row-title">
+                  Organic Chemistry Notes.pdf
+                </div>
+                <div class="material-row-meta">Chemistry · 5 hours ago</div>
+              </div>
+              <span class="material-menu">⋮</span>
+            </div>
+            <div class="material-row">
+              <div class="material-type-icon accent-blue">
+                <i class="fa-solid fa-video"></i>
+              </div>
+              <div class="material-row-info">
+                <div class="material-row-title">
+                  Electromagnetic Waves Video.mp4
+                </div>
+                <div class="material-row-meta">Physics · 1 day ago</div>
+              </div>
+              <span class="material-menu">⋮</span>
+            </div>
+            <div class="material-row">
+              <div class="material-type-icon accent-orange">
+                <i class="fa-regular fa-image"></i>
+              </div>
+              <div class="material-row-info">
+                <div class="material-row-title">Cell Structure Image.png</div>
+                <div class="material-row-meta">Biology · 3 days ago</div>
+              </div>
+              <span class="material-menu">⋮</span>
+            </div>
+          </article>
+
+          <article class="dashboard-panel">
+            <div class="dashboard-panel-header">
+              <h2 class="dashboard-panel-title">
+                <i class="fa-regular fa-calendar"></i>Today's Classes
+              </h2>
+              <span class="dashboard-panel-link" onclick="action('calendar')"
+                >View Schedule →</span
+              >
+            </div>
+            <div class="schedule-timeline">
+              <div class="class-row">
+                <span class="class-dot"></span
+                ><span class="class-time">08:00 AM</span>
+                <div class="class-info">
+                  <strong>Mathematics · Class 12</strong
+                  ><span>08:00 AM – 09:00 AM</span>
+                </div>
+                <span class="class-status">Live →</span>
+              </div>
+              <div class="class-row">
+                <span
+                  class="class-dot"
+                  style="background: #3989da; box-shadow: 0 0 0 1px #b9d8f5"
+                ></span
+                ><span class="class-time">10:15 AM</span>
+                <div class="class-info">
+                  <strong>Physics · Class 12</strong
+                  ><span>10:15 AM – 11:15 AM</span>
+                </div>
+                <span class="class-status upcoming">Upcoming</span>
+              </div>
+              <div class="class-row">
+                <span
+                  class="class-dot"
+                  style="background: #f29b19; box-shadow: 0 0 0 1px #f6d69c"
+                ></span
+                ><span class="class-time">12:00 PM</span>
+                <div class="class-info">
+                  <strong>Chemistry · Class 12</strong
+                  ><span>12:00 PM – 01:00 PM</span>
+                </div>
+                <span class="class-status upcoming">Upcoming</span>
+              </div>
+              <div class="class-row">
+                <span
+                  class="class-dot"
+                  style="background: #ef5263; box-shadow: 0 0 0 1px #f3b9bf"
+                ></span
+                ><span class="class-time">02:00 PM</span>
+                <div class="class-info">
+                  <strong>Biology · Class 12</strong
+                  ><span>02:00 PM – 03:00 PM</span>
+                </div>
+                <span class="class-status upcoming">Upcoming</span>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section class="study-progress-panel">
+          <div class="study-progress-icon">
+            <i class="fa-solid fa-chart-line"></i>
+          </div>
+          <div class="study-progress-copy">
+            <h2>Study Progress</h2>
+            <p>Keep going! You're doing great!</p>
+            <div class="dashboard-progress-track">
+              <div class="dashboard-progress-fill" style="width: 72%"></div>
+            </div>
+          </div>
+          <div class="study-progress-value">72%</div>
+        </section>
+      </section>
+
       <!-- =====================================================
          STATISTICS
     ====================================================== -->
