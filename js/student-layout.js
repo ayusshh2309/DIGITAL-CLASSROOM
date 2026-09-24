@@ -13,6 +13,14 @@
     document.head.appendChild(iconStylesheet);
   }
 
+  if (!document.querySelector('link[data-smart-learning-theme="global"]')) {
+    const themeStylesheet = document.createElement("link");
+    themeStylesheet.rel = "stylesheet";
+    themeStylesheet.href = "../css/theme.css";
+    themeStylesheet.dataset.smartLearningTheme = "global";
+    document.head.appendChild(themeStylesheet);
+  }
+
   fetch(componentUrl)
     .then((response) => {
       if (!response.ok) throw new Error(`Student layout request failed: ${response.status}`);

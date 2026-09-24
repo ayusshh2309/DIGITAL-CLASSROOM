@@ -1,0 +1,340 @@
+:root {
+  --brand-purple: #6d4aff !important;
+  --brand-purple-dark: #5838d6 !important;
+  --brand-cyan: #06b6d4 !important;
+  --brand-blue: #3b82f6 !important;
+  --brand-green: #10b981 !important;
+  --brand-orange: #f59e0b !important;
+  --brand-red: #ef4444 !important;
+  --surface-white: #ffffff !important;
+  --page-background: #f7f8fc !important;
+  --ink-primary: #111827 !important;
+  --ink-secondary: #64748b !important;
+  --border-subtle: #e5e7eb !important;
+  --layout-navy: #111827 !important;
+  --layout-navy-light: #172033 !important;
+  --layout-teal: #6d4aff !important;
+  --student-navy: #111827 !important;
+  --student-navy-soft: #172033 !important;
+  --student-purple: #6d4aff !important;
+  --student-purple-light: #8065ff !important;
+  --student-active: #6d4aff !important;
+  --student-border: #e5e7eb !important;
+  --student-main-bg: #f7f8fc !important;
+  --student-surface: #ffffff !important;
+  --main-bg: #f7f8fc !important;
+  --surface: #ffffff !important;
+  --surface-border: #e5e7eb !important;
+  --text-main: #111827 !important;
+  --text-muted: #64748b !important;
+  --primary: #6d4aff !important;
+  --primary-hover: #5838d6 !important;
+  --primary-purple: #6d4aff !important;
+  --primary-teal: #06b6d4 !important;
+  --danger: #ef4444 !important;
+}
+
+.announcements-page {
+  --ann-teal: var(--brand-purple) !important;
+  --ann-purple: var(--brand-cyan) !important;
+  --ann-border: var(--border-subtle) !important;
+}
+
+.calendar-page {
+  --cal-teal: var(--brand-purple) !important;
+  --cal-purple: var(--brand-cyan) !important;
+  --cal-border: var(--border-subtle) !important;
+}
+
+.attendance-page {
+  --att-primary: var(--brand-purple) !important;
+  --primary-teal: var(--brand-purple) !important;
+  --att-border: var(--border-subtle) !important;
+}
+
+.performance-page {
+  --perf-teal: var(--brand-purple) !important;
+  --perf-purple: var(--brand-cyan) !important;
+  --perf-border: var(--border-subtle) !important;
+}
+
+.materials-page,
+.downloads-page,
+.quizzes-page,
+.subjects-page,
+.videos-page,
+.study-time-page,
+.achievements-page,
+.settings-page,
+.profile-page {
+  --primary-teal: var(--brand-purple) !important;
+  --primary-purple: var(--brand-purple) !important;
+}
+
+html,
+body {
+  background: var(--page-background) !important;
+  color: var(--ink-primary) !important;
+}
+
+body,
+.page,
+.main,
+.main-content,
+.page-content,
+.main-box-container,
+.student-layout-main,
+.student-main-content,
+.layout-main {
+  background: var(--page-background) !important;
+}
+
+.sidebar,
+.student-sidebar {
+  color: #cbd5e1 !important;
+  background: linear-gradient(180deg, #111827 0%, #172033 100%) !important;
+}
+
+.sidebar-link,
+.student-nav-link {
+  color: #cbd5e1 !important;
+}
+
+.sidebar-link i,
+.student-nav-link i {
+  color: #cbd5e1 !important;
+}
+
+.sidebar-link:hover,
+.sidebar-link:focus-visible,
+.student-nav-link:hover,
+.student-nav-link:focus-visible {
+  color: #ffffff !important;
+  background: rgba(109, 74, 255, 0.18) !important;
+}
+
+.sidebar-link.active,
+.student-nav-link.active {
+  color: #ffffff !important;
+  background: var(--brand-purple) !important;
+  border-left: 3px solid var(--brand-cyan) !important;
+  box-shadow: 0 6px 16px rgba(109, 74, 255, 0.25) !important;
+}
+
+.sidebar-link.active i,
+.student-nav-link.active i {
+  color: #ffffff !important;
+}
+
+.sidebar-link-danger,
+.sidebar-link-danger i,
+.student-nav-link-danger,
+.student-nav-link-danger i {
+  color: var(--brand-red) !important;
+}
+
+.topbar,
+.student-topbar {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-bottom-color: var(--border-subtle) !important;
+}
+
+.card,
+.panel,
+.summary-card,
+.stat-card,
+.dashboard-panel,
+.dashboard-stat,
+.calendar-card,
+.side-card,
+.widget-card,
+.analytics-card,
+.details-card,
+.material-card,
+.note-card,
+.subject-card,
+.form-card,
+.settings-card,
+.modal,
+.drawer {
+  background: var(--surface-white) !important;
+  border-color: var(--border-subtle) !important;
+  box-shadow: 0 6px 20px rgba(17, 24, 39, 0.055) !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.page-title h1,
+.page-header h1,
+.performance-header h1,
+.announcement-header h1,
+.calendar-header h1,
+.attendance-heading h1,
+.dashboard-panel-title,
+.card-header h2 {
+  color: var(--ink-primary) !important;
+}
+
+.page-title p,
+.page-header p,
+.performance-header p,
+.announcement-header p,
+.calendar-header p,
+.attendance-heading p,
+.stat-title,
+.stat-label,
+.stat-lbl,
+.text-muted,
+.meta,
+.card-meta {
+  color: var(--ink-secondary) !important;
+}
+
+.page-eyebrow,
+.eyebrow,
+.scope-label,
+.dashboard-panel-link,
+.dashboard-stat-link,
+.view-all,
+.view-all-btn {
+  color: var(--brand-purple) !important;
+}
+
+button.primary,
+.btn-primary,
+.ann-button.primary,
+.cal-button.primary,
+.att-button.primary,
+.primary-button,
+.save-btn,
+.submit-btn,
+.create-btn,
+.continue-button,
+.join-button,
+.join-class,
+.view-details {
+  color: #ffffff !important;
+  background: var(--brand-purple) !important;
+  border-color: var(--brand-purple) !important;
+}
+
+button.primary:hover,
+.btn-primary:hover,
+.ann-button.primary:hover,
+.cal-button.primary:hover,
+.att-button.primary:hover,
+.primary-button:hover,
+.save-btn:hover,
+.submit-btn:hover,
+.create-btn:hover,
+.continue-button:hover,
+.join-button:hover,
+.join-class:hover,
+.view-details:hover {
+  background: var(--brand-purple-dark) !important;
+  border-color: var(--brand-purple-dark) !important;
+}
+
+button.secondary,
+.btn-secondary,
+.ann-button:not(.primary),
+.cal-button:not(.primary),
+.att-button:not(.primary),
+.secondary-button {
+  color: #0e7490 !important;
+  background: #ecfeff !important;
+  border-color: var(--brand-cyan) !important;
+}
+
+button.secondary:hover,
+.btn-secondary:hover,
+.ann-button:not(.primary):hover,
+.cal-button:not(.primary):hover,
+.att-button:not(.primary):hover,
+.secondary-button:hover {
+  color: #155e75 !important;
+  background: #cffafe !important;
+  border-color: #0891b2 !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+.att-input:focus,
+.att-select:focus {
+  border-color: var(--brand-purple) !important;
+  box-shadow: 0 0 0 3px rgba(109, 74, 255, 0.14) !important;
+  outline: none !important;
+}
+
+.progress-fill,
+.progress-bar .progress-fill,
+.dashboard-progress-fill,
+.bar-fill,
+.fill {
+  background: var(--brand-cyan) !important;
+}
+
+.success,
+.status-success,
+.completed,
+.success-badge {
+  color: var(--brand-green) !important;
+}
+
+.error,
+.status-error,
+.danger,
+.delete-btn,
+.btn-danger {
+  color: var(--brand-red) !important;
+}
+
+.warning,
+.status-warning,
+.upcoming,
+.pending,
+.deadline {
+  color: var(--brand-orange) !important;
+}
+
+.student-notification-badge,
+.notification-badge {
+  background: var(--brand-red) !important;
+}
+
+.student-search,
+.search-box,
+input,
+select,
+textarea {
+  border-color: var(--border-subtle);
+}
+
+.student-search input::placeholder,
+input::placeholder,
+textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+.announcement-scope,
+.registration-context,
+.assignment-scope,
+.scope-card {
+  border-color: rgba(6, 182, 212, 0.24) !important;
+  background: #ecfeff !important;
+  color: #164e63 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
