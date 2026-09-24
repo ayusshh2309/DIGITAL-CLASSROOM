@@ -35,7 +35,7 @@
 
       .page {
         width: 100%;
-        padding: 18px 24px 34px;
+        padding: 22px 28px 40px;
       }
 
       /* =====================================================
@@ -179,27 +179,31 @@
       .profile-tab {
         border: none;
         background: transparent;
-        color: #7b8495;
+        color: #2d4c46;
         width: 100%;
-        padding: 9px 8px;
-        border-radius: 7px;
+        padding: 14px 16px;
+        border-radius: 10px;
         text-align: left;
         font-family: inherit;
-        font-size: 11px;
+        font-size: 14px;
         font-weight: 700;
         white-space: nowrap;
         cursor: pointer;
         transition: 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
       }
 
       .profile-tab:hover {
-        background: #f4f1ff;
-        color: #6246e5;
+        background: rgba(116, 167, 136, 0.12);
+        color: #215a47;
       }
 
       .profile-tab.active {
-        background: #eeeaff;
-        color: #6246e5;
+        background: rgba(122, 195, 161, 0.22);
+        color: #1d5b4c;
+        box-shadow: inset 0 0 0 1px rgba(95, 170, 140, 0.22);
       }
 
       /* =====================================================
@@ -208,8 +212,8 @@
 
       .profile-content-grid {
         display: grid;
-        grid-template-columns: 190px minmax(0, 1fr);
-        gap: 12px;
+        grid-template-columns: 240px minmax(0, 1fr);
+        gap: 18px;
         align-items: start;
       }
 
@@ -222,11 +226,12 @@
     ===================================================== */
 
       .profile-card-left {
-        background: #ffffff;
-        border: 1px solid #e6eaf0;
-        border-radius: 10px;
+        background: #edf5f0;
+        border: 1px solid #dfece5;
+        border-radius: 18px;
         overflow: hidden;
         position: relative;
+        box-shadow: 0 8px 24px rgba(23, 36, 32, 0.04);
       }
 
       .profile-card-edit {
@@ -258,15 +263,15 @@
 
       .profile-avatar-wrapper {
         position: relative;
-        width: 66px;
-        height: 66px;
-        margin: -33px auto 0;
+        width: 90px;
+        height: 90px;
+        margin: -45px auto 0;
         z-index: 2;
       }
 
       .profile-main-avatar {
-        width: 66px;
-        height: 66px;
+        width: 90px;
+        height: 90px;
         border-radius: 50%;
         object-fit: cover;
         border: 5px solid white;
@@ -296,7 +301,7 @@
       }
 
       .profile-user-name {
-        font-size: 13px;
+        font-size: 18px;
         font-weight: 800;
         color: #1b2538;
         margin-bottom: 8px;
@@ -304,11 +309,11 @@
 
       .profile-user-role-badge {
         display: inline-flex;
-        padding: 6px 11px;
+        padding: 7px 12px;
         border-radius: 7px;
         background: #eeeaff;
         color: #6246e5;
-        font-size: 8px;
+        font-size: 11px;
         font-weight: 700;
       }
 
@@ -324,10 +329,10 @@
         display: flex;
         align-items: center;
         gap: 11px;
-        padding: 7px 0;
+        padding: 10px 0;
         border-bottom: 1px solid #eef1f5;
         color: #697386;
-        font-size: 8px;
+        font-size: 12px;
         line-height: 1.4;
         overflow-wrap: anywhere;
       }
@@ -359,15 +364,15 @@
       }
 
       .about-me-box h4 {
-        font-size: 11px;
+        font-size: 14px;
         font-weight: 800;
-        margin-bottom: 7px;
+        margin-bottom: 8px;
         color: #354055;
       }
 
       .about-me-box p {
-        font-size: 10px;
-        line-height: 1.6;
+        font-size: 12px;
+        line-height: 1.7;
         color: #858e9e;
       }
 
@@ -386,14 +391,14 @@
       .student-id-box .label {
         display: block;
         color: #7b70b0;
-        font-size: 8px;
+        font-size: 10px;
         font-weight: 800;
         letter-spacing: 0.7px;
-        margin-bottom: 5px;
+        margin-bottom: 6px;
       }
 
       .student-id-box .id {
-        font-size: 13px;
+        font-size: 16px;
         font-weight: 800;
         color: #6246e5;
       }
@@ -415,27 +420,27 @@
       .stats-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
-        gap: 10px;
+        gap: 12px;
       }
 
       .stat-card {
         background: #ffffff;
         border: 1px solid #e6eaf0;
-        border-radius: 9px;
-        padding: 10px;
+        border-radius: 12px;
+        padding: 16px 14px;
         display: flex;
         align-items: center;
-        gap: 9px;
+        gap: 12px;
       }
 
       .stat-icon {
-        width: 39px;
-        height: 39px;
-        border-radius: 10px;
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 14px;
+        font-size: 18px;
         flex-shrink: 0;
       }
 
@@ -461,14 +466,14 @@
 
       .stat-card strong {
         display: block;
-        font-size: 17px;
+        font-size: 28px;
         font-weight: 800;
         margin-bottom: 3px;
       }
 
       .stat-card span {
         color: #8a93a3;
-        font-size: 9px;
+        font-size: 12px;
         font-weight: 600;
       }
 
@@ -479,8 +484,8 @@
       .information-card {
         background: #ffffff;
         border: 1px solid #e6eaf0;
-        border-radius: 10px;
-        padding: 12px;
+        border-radius: 14px;
+        padding: 18px 18px 14px;
       }
 
       .information-header {
@@ -509,7 +514,7 @@
       }
 
       .information-title h2 {
-        font-size: 12px;
+        font-size: 18px;
         font-weight: 800;
       }
 
@@ -517,10 +522,10 @@
         border: 1px solid #e2e5eb;
         background: white;
         color: #6246e5;
-        padding: 7px 11px;
+        padding: 8px 12px;
         border-radius: 8px;
         font-family: inherit;
-        font-size: 9px;
+        font-size: 11px;
         font-weight: 700;
         cursor: pointer;
       }
@@ -543,15 +548,15 @@
       .detail-label {
         display: block;
         color: #929aaa;
-        font-size: 9px;
+        font-size: 11px;
         font-weight: 600;
-        margin-bottom: 5px;
+        margin-bottom: 6px;
       }
 
       .detail-value {
         display: block;
         color: #2d374b;
-        font-size: 11px;
+        font-size: 14px;
         font-weight: 700;
         overflow-wrap: anywhere;
       }
@@ -570,11 +575,11 @@
         border: 1px solid #edf0f4;
         background: #fafbfc;
         border-radius: 13px;
-        padding: 10px;
+        padding: 14px 12px;
       }
 
       .academic-box h3 {
-        font-size: 12px;
+        font-size: 14px;
         font-weight: 800;
         margin-bottom: 13px;
         color: #303a4e;
@@ -584,7 +589,7 @@
         display: flex;
         justify-content: space-between;
         gap: 15px;
-        padding: 5px 0;
+        padding: 8px 0;
         border-bottom: 1px solid #edf0f4;
       }
 
@@ -594,12 +599,12 @@
 
       .academic-row span:first-child {
         color: #8a93a3;
-        font-size: 9px;
+        font-size: 11px;
       }
 
       .academic-row span:last-child {
         color: #303a4e;
-        font-size: 9px;
+        font-size: 12px;
         font-weight: 700;
         text-align: right;
         overflow-wrap: anywhere;
@@ -616,11 +621,11 @@
       }
 
       .subject {
-        padding: 7px 11px;
+        padding: 9px 12px;
         border-radius: 8px;
         background: #f0edff;
         color: #6246e5;
-        font-size: 9px;
+        font-size: 11px;
         font-weight: 700;
       }
 
@@ -671,22 +676,22 @@
       }
 
       .status-left h4 {
-        font-size: 11px;
+        font-size: 14px;
         font-weight: 800;
         margin-bottom: 3px;
       }
 
       .status-left p {
         color: #7e8a87;
-        font-size: 9px;
+        font-size: 11px;
       }
 
       .verified {
         background: #dff5e8;
         color: #26955c;
-        padding: 6px 9px;
+        padding: 7px 10px;
         border-radius: 7px;
-        font-size: 8px;
+        font-size: 9px;
         font-weight: 800;
       }
 
@@ -951,6 +956,28 @@
               <i class="fa-solid fa-graduation-cap"></i>
               &nbsp; Student
             </div>
+          </div>
+
+          <div class="profile-tabs">
+            <button class="profile-tab active" onclick="switchTab(this)">
+              <i class="fa-solid fa-user"></i>
+              <span>Profile Overview</span>
+            </button>
+
+            <button class="profile-tab" onclick="scrollToSection('personal')">
+              <i class="fa-regular fa-id-card"></i>
+              <span>Personal Details</span>
+            </button>
+
+            <button class="profile-tab" onclick="scrollToSection('academic')">
+              <i class="fa-solid fa-graduation-cap"></i>
+              <span>Academic Details</span>
+            </button>
+
+            <button class="profile-tab" onclick="scrollToSection('account')">
+              <i class="fa-solid fa-shield-halved"></i>
+              <span>Account Status</span>
+            </button>
           </div>
 
           <!-- CONTACT -->
