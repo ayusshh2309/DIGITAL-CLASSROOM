@@ -1006,7 +1006,18 @@
         gap: 16px;
         width: 100%;
         max-width: none;
+        min-height: calc(100vh - var(--student-topbar-height) - 48px);
         margin: 0;
+      }
+
+      .student-page-content:has(.dashboard-redesign) {
+        min-height: auto;
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
       }
 
       .welcome-banner {
@@ -1191,6 +1202,7 @@
           );
         gap: 12px;
         align-items: stretch;
+        flex: 1;
       }
 
       .dashboard-panel {
