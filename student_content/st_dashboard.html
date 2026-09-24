@@ -1207,7 +1207,9 @@
 
       .dashboard-panel {
         min-width: 0;
-        padding: 16px;
+        padding: 22px;
+        display: flex;
+        flex-direction: column;
       }
 
       .dashboard-panel-header {
@@ -1215,7 +1217,7 @@
         align-items: center;
         justify-content: space-between;
         gap: 10px;
-        margin-bottom: 12px;
+        margin-bottom: 18px;
       }
 
       .dashboard-panel-title {
@@ -1223,13 +1225,13 @@
         align-items: center;
         gap: 9px;
         color: #1a263a;
-        font-size: 0.86rem;
+        font-size: 1.05rem;
         font-weight: 800;
       }
 
       .dashboard-panel-title i {
-        width: 29px;
-        height: 29px;
+        width: 38px;
+        height: 38px;
         display: grid;
         place-items: center;
         border-radius: 8px;
@@ -1238,7 +1240,8 @@
       }
 
       .subject-row {
-        padding: 9px 0;
+        flex: 1;
+        padding: 14px 0;
         border-bottom: 1px solid #eef3f5;
       }
 
@@ -1255,21 +1258,21 @@
       }
 
       .subject-row-top {
-        margin-bottom: 6px;
+        margin-bottom: 10px;
       }
 
       .subject-row-name {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 11px;
         color: #30405a;
-        font-size: 0.7rem;
+        font-size: 0.86rem;
         font-weight: 800;
       }
 
       .subject-row-name i {
-        width: 25px;
-        height: 25px;
+        width: 32px;
+        height: 32px;
         display: grid;
         place-items: center;
         border-radius: 7px;
@@ -1279,7 +1282,7 @@
 
       .subject-progress-label {
         color: #8391a1;
-        font-size: 0.61rem;
+        font-size: 0.74rem;
         font-weight: 700;
       }
 
@@ -1288,7 +1291,7 @@
       }
 
       .dashboard-progress-track {
-        height: 5px;
+        height: 8px;
         overflow: hidden;
         border-radius: 999px;
         background: #edf2f4;
@@ -1301,10 +1304,11 @@
       }
 
       .material-row {
-        min-height: 49px;
+        flex: 1;
+        min-height: 72px;
         display: flex;
         align-items: center;
-        gap: 9px;
+        gap: 14px;
         border-bottom: 1px solid #eef3f5;
       }
 
@@ -1313,8 +1317,8 @@
       }
 
       .material-type-icon {
-        width: 31px;
-        height: 31px;
+        width: 44px;
+        height: 44px;
         display: grid;
         place-items: center;
         border-radius: 8px;
@@ -1329,7 +1333,7 @@
       .material-row-title {
         overflow: hidden;
         color: #2d3a50;
-        font-size: 0.69rem;
+        font-size: 0.82rem;
         font-weight: 800;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -1337,8 +1341,8 @@
 
       .material-row-meta {
         color: #8a98a7;
-        font-size: 0.58rem;
-        margin-top: 3px;
+        font-size: 0.68rem;
+        margin-top: 5px;
       }
 
       .material-menu {
@@ -1349,6 +1353,9 @@
 
       .schedule-timeline {
         position: relative;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
       }
 
       .schedule-timeline::before {
@@ -1363,16 +1370,17 @@
 
       .class-row {
         display: grid;
-        grid-template-columns: 16px 54px 1fr auto;
+        grid-template-columns: 20px 76px 1fr auto;
         align-items: center;
-        gap: 8px;
-        min-height: 55px;
+        gap: 12px;
+        flex: 1;
+        min-height: 70px;
         position: relative;
       }
 
       .class-dot {
-        width: 15px;
-        height: 15px;
+        width: 18px;
+        height: 18px;
         z-index: 1;
         border: 3px solid #fff;
         border-radius: 50%;
@@ -1382,27 +1390,27 @@
 
       .class-time {
         color: #159565;
-        font-size: 0.59rem;
+        font-size: 0.72rem;
         font-weight: 800;
       }
 
       .class-info strong {
         display: block;
         color: #2c3950;
-        font-size: 0.65rem;
+        font-size: 0.78rem;
       }
 
       .class-info span {
         color: #8a98a7;
-        font-size: 0.55rem;
+        font-size: 0.65rem;
       }
 
       .class-status {
-        padding: 5px 7px;
+        padding: 7px 10px;
         border-radius: 999px;
         background: #e4f8ed;
         color: #159565;
-        font-size: 0.53rem;
+        font-size: 0.65rem;
         font-weight: 800;
         white-space: nowrap;
       }
