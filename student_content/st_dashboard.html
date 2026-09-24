@@ -1194,6 +1194,14 @@
         cursor: pointer;
       }
 
+      .dashboard-stat-link i,
+      .dashboard-panel-link i,
+      .class-status i,
+      .material-menu i {
+        margin-left: 4px;
+        font-size: 0.78em;
+      }
+
       .dashboard-columns {
         display: grid;
         grid-template-columns: minmax(0, 1.02fr) minmax(0, 1fr) minmax(
@@ -1270,7 +1278,8 @@
         font-weight: 800;
       }
 
-      .subject-row-name i {
+      .subject-row-name i,
+      .subject-row-name .subject-icon {
         width: 32px;
         height: 32px;
         display: grid;
@@ -1278,6 +1287,31 @@
         border-radius: 7px;
         background: #e8f4ff;
         color: #3989da;
+      }
+
+      .subject-row-name .subject-icon-math {
+        background: #eee9ff;
+        color: #7147df;
+      }
+
+      .subject-row-name .subject-icon-physics {
+        background: #e2f1ff;
+        color: #3989da;
+      }
+
+      .subject-row-name .subject-icon-chemistry {
+        background: #fff0d8;
+        color: #f29b19;
+      }
+
+      .subject-row-name .subject-icon-english {
+        background: #ffe5e8;
+        color: #ef5263;
+      }
+
+      .subject-row-name .subject-icon-computer {
+        background: #ddf7eb;
+        color: #159f8b;
       }
 
       .subject-progress-label {
@@ -1349,6 +1383,11 @@
         color: #8190a0;
         cursor: pointer;
         padding: 5px;
+      }
+
+      .material-menu i {
+        margin-left: 0;
+        font-size: 1rem;
       }
 
       .schedule-timeline {
@@ -1659,7 +1698,7 @@
                 5
               </div>
               <span class="dashboard-stat-link" onclick="viewAllSubjects()"
-                >View All →</span
+                >View All <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span
               >
             </div>
           </article>
@@ -1671,7 +1710,7 @@
               <div class="dashboard-stat-label">Live Classes</div>
               <div class="dashboard-stat-value">3</div>
               <span class="dashboard-stat-link" onclick="action('live')"
-                >View Schedule →</span
+                >View Schedule <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span
               >
             </div>
           </article>
@@ -1683,7 +1722,7 @@
               <div class="dashboard-stat-label">Quizzes Available</div>
               <div class="dashboard-stat-value">4</div>
               <span class="dashboard-stat-link" onclick="action('quiz')"
-                >View All →</span
+                >View All <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span
               >
             </div>
           </article>
@@ -1695,7 +1734,7 @@
               <div class="dashboard-stat-label">Notes</div>
               <div class="dashboard-stat-value">12</div>
               <span class="dashboard-stat-link" onclick="action('materials')"
-                >View All →</span
+                >View All <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span
               >
             </div>
           </article>
@@ -1706,7 +1745,8 @@
             <div>
               <div class="dashboard-stat-label">Study Time</div>
               <div class="dashboard-stat-value">14h 32m</div>
-              <span class="dashboard-stat-link">↑ +2h 15m this week</span>
+              <span class="dashboard-stat-link"
+                ><i class="fa-solid fa-arrow-trend-up" aria-hidden="true"></i> +2h 15m this week</span
             </div>
           </article>
         </section>
@@ -1718,13 +1758,15 @@
                 <i class="fa-solid fa-book-open"></i>Your Subjects
               </h2>
               <span class="dashboard-panel-link" onclick="viewAllSubjects()"
-                >View All →</span
+                >View All <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span
               >
             </div>
             <div class="subject-row">
               <div class="subject-row-top">
                 <span class="subject-row-name"
-                  ><i class="fa-solid fa-sigma"></i>Mathematics</span
+                  ><span class="subject-icon subject-icon-math" aria-hidden="true"
+                    >&pi;</span
+                  >Mathematics</span
                 ><span class="subject-progress-label"
                   ><strong>82%</strong></span
                 >
@@ -1736,7 +1778,8 @@
             <div class="subject-row">
               <div class="subject-row-top">
                 <span class="subject-row-name"
-                  ><i class="fa-solid fa-atom"></i>Physics</span
+                  ><i class="fa-solid fa-atom subject-icon-physics"></i
+                  >Physics</span
                 ><span class="subject-progress-label"
                   ><strong>76%</strong></span
                 >
@@ -1751,7 +1794,8 @@
             <div class="subject-row">
               <div class="subject-row-top">
                 <span class="subject-row-name"
-                  ><i class="fa-solid fa-flask"></i>Chemistry</span
+                  ><i class="fa-solid fa-flask subject-icon-chemistry"></i
+                  >Chemistry</span
                 ><span class="subject-progress-label"
                   ><strong>65%</strong></span
                 >
@@ -1766,7 +1810,8 @@
             <div class="subject-row">
               <div class="subject-row-top">
                 <span class="subject-row-name"
-                  ><i class="fa-solid fa-book"></i>English</span
+                  ><i class="fa-solid fa-book subject-icon-english"></i
+                  >English</span
                 ><span class="subject-progress-label"
                   ><strong>58%</strong></span
                 >
@@ -1781,7 +1826,8 @@
             <div class="subject-row">
               <div class="subject-row-top">
                 <span class="subject-row-name"
-                  ><i class="fa-solid fa-code"></i>Computer Science</span
+                  ><i class="fa-solid fa-code subject-icon-computer"></i
+                  >Computer Science</span
                 ><span class="subject-progress-label"
                   ><strong>42%</strong></span
                 >
@@ -1801,7 +1847,7 @@
                 <i class="fa-solid fa-file-lines"></i>Recent Materials
               </h2>
               <span class="dashboard-panel-link" onclick="action('materials')"
-                >View All →</span
+                >View All <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span
               >
             </div>
             <div class="material-row">
@@ -1812,7 +1858,9 @@
                 <div class="material-row-title">Chapter 3 Notes.pdf</div>
                 <div class="material-row-meta">Mathematics · 2 hours ago</div>
               </div>
-              <span class="material-menu">⋮</span>
+              <span class="material-menu" aria-label="More material actions"
+                ><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i
+              ></span>
             </div>
             <div class="material-row">
               <div class="material-type-icon accent-red">
@@ -1824,7 +1872,9 @@
                 </div>
                 <div class="material-row-meta">Chemistry · 5 hours ago</div>
               </div>
-              <span class="material-menu">⋮</span>
+              <span class="material-menu" aria-label="More material actions"
+                ><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i
+              ></span>
             </div>
             <div class="material-row">
               <div class="material-type-icon accent-blue">
@@ -1836,7 +1886,9 @@
                 </div>
                 <div class="material-row-meta">Physics · 1 day ago</div>
               </div>
-              <span class="material-menu">⋮</span>
+              <span class="material-menu" aria-label="More material actions"
+                ><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i
+              ></span>
             </div>
             <div class="material-row">
               <div class="material-type-icon accent-orange">
@@ -1846,7 +1898,9 @@
                 <div class="material-row-title">Cell Structure Image.png</div>
                 <div class="material-row-meta">Biology · 3 days ago</div>
               </div>
-              <span class="material-menu">⋮</span>
+              <span class="material-menu" aria-label="More material actions"
+                ><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i
+              ></span>
             </div>
           </article>
 
@@ -1856,7 +1910,7 @@
                 <i class="fa-regular fa-calendar"></i>Today's Classes
               </h2>
               <span class="dashboard-panel-link" onclick="action('calendar')"
-                >View Schedule →</span
+                >View Schedule <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span
               >
             </div>
             <div class="schedule-timeline">
@@ -1867,7 +1921,7 @@
                   <strong>Mathematics · Class 12</strong
                   ><span>08:00 AM – 09:00 AM</span>
                 </div>
-                <span class="class-status">Live →</span>
+                <span class="class-status">Live <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
               </div>
               <div class="class-row">
                 <span
@@ -1879,7 +1933,7 @@
                   <strong>Physics · Class 12</strong
                   ><span>10:15 AM – 11:15 AM</span>
                 </div>
-                <span class="class-status upcoming">Upcoming</span>
+                <span class="class-status upcoming">Upcoming <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
               </div>
               <div class="class-row">
                 <span
@@ -1891,7 +1945,7 @@
                   <strong>Chemistry · Class 12</strong
                   ><span>12:00 PM – 01:00 PM</span>
                 </div>
-                <span class="class-status upcoming">Upcoming</span>
+                <span class="class-status upcoming">Upcoming <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
               </div>
               <div class="class-row">
                 <span
@@ -1903,7 +1957,7 @@
                   <strong>Biology · Class 12</strong
                   ><span>02:00 PM – 03:00 PM</span>
                 </div>
-                <span class="class-status upcoming">Upcoming</span>
+                <span class="class-status upcoming">Upcoming <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
               </div>
             </div>
           </article>
