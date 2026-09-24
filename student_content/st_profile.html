@@ -358,37 +358,12 @@
       }
 
       /* =====================================================
-       ABOUT STUDENT
-    ===================================================== */
-
-      .about-me-box {
-        margin: 14px 0 12px;
-        padding: 12px 10px;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 12px;
-        border: 1px solid rgba(125, 154, 134, 0.18);
-      }
-
-      .about-me-box h4 {
-        font-size: 13px;
-        font-weight: 800;
-        margin-bottom: 8px;
-        color: #2d4d47;
-      }
-
-      .about-me-box p {
-        font-size: 12px;
-        line-height: 1.7;
-        color: #677b73;
-      }
-
-      /* =====================================================
        STUDENT ID
     ===================================================== */
 
       .student-id-box {
-        margin: 10px 0 0;
-        padding: 12px 8px 0;
+        margin: 12px 0 0;
+        padding: 0;
         border-radius: 0;
         background: transparent;
         border: none;
@@ -404,9 +379,11 @@
       }
 
       .student-id-box .id {
-        font-size: 16px;
+        display: block;
+        font-size: 15px;
         font-weight: 800;
         color: #1e6c59;
+        line-height: 1.5;
       }
 
       /* =====================================================
@@ -938,15 +915,6 @@
             Edit Profile
           </button>
 
-          <div class="profile-user-info">
-            <div class="profile-user-name">Loading profile...</div>
-
-            <div class="profile-user-role-badge">
-              <i class="fa-solid fa-graduation-cap"></i>
-              &nbsp; Student
-            </div>
-          </div>
-
           <div class="profile-tabs">
             <button class="profile-tab active" onclick="switchTab(this)">
               <i class="fa-solid fa-user"></i>
@@ -995,14 +963,6 @@
 
               <span> Loading... </span>
             </div>
-          </div>
-
-          <!-- ABOUT -->
-
-          <div class="about-me-box">
-            <h4>About Me</h4>
-
-            <p id="aboutStudent">Loading profile information...</p>
           </div>
 
           <!-- STUDENT ID -->
