@@ -1472,6 +1472,44 @@
             .replace(/[_-]+/g, " ")
             .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
+        const classSubjects = {
+          5: ["English", "Mathematics", "EVS", "Hindi"],
+          6: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
+          7: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
+          8: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
+          9: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
+          10: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
+        };
+
+        const streamSubjects = {
+          science_pcm: ["Physics", "Chemistry", "Mathematics"],
+          science_pcb: ["Physics", "Chemistry", "Biology"],
+          commerce: ["Accountancy", "Business Studies", "Economics"],
+          arts: ["History", "Geography", "Political Science", "Psychology"],
+          arts_humanities: [
+            "History",
+            "Geography",
+            "Political Science",
+            "Psychology",
+          ],
+        };
+
+        function subjectsForRegistration(grade, stream) {
+          const gradeNumber = Number(String(grade).match(/\d+/)?.[0]);
+          if (gradeNumber >= 11) {
+            const streamKey = String(stream || "")
+              .toLowerCase()
+              .replace(/[()\s/-]+/g, "_");
+            return [
+              ...(streamSubjects[streamKey] || []),
+              "English",
+              "Physical Education",
+              "Computer Science",
+            ];
+          }
+          return classSubjects[gradeNumber] || [];
+        }
+
         function getProfile() {
           return (
             profileKeys
@@ -1542,13 +1580,20 @@
             "enrolledSubjects",
             "academic.subjects",
           );
-          const subjectList = (
+          const storedSubjectList = (
             Array.isArray(subjects)
               ? subjects
               : String(subjects || "").split(",")
           )
             .map((subject) => String(subject).trim())
             .filter(Boolean);
+          const subjectList = [
+            ...new Set(
+              storedSubjectList.length
+                ? storedSubjectList
+                : subjectsForRegistration(grade, stream),
+            ),
+          ];
           const email = profileValue(profile, "email", "personal.email");
           const phone = profileValue(
             profile,
