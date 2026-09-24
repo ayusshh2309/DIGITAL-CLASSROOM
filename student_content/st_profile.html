@@ -43,27 +43,88 @@
     ===================================================== */
 
       .page-header {
-        display: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        background: linear-gradient(
+          135deg,
+          #dfeee6 0%,
+          #dfeee6 55%,
+          #d7e9dc 100%
+        );
+        border: 1px solid rgba(41, 129, 99, 0.12);
+        border-radius: 22px;
+        padding: 22px 26px;
+        margin-bottom: 18px;
+        box-shadow: 0 8px 24px rgba(30, 60, 44, 0.04);
       }
 
       .header-left {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
+        gap: 18px;
+        flex: 1;
       }
 
-      .header-left h1 {
-        margin-top: 7px;
-        font-size: clamp(2rem, 3vw, 2.7rem);
+      .header-avatar {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid rgba(255, 255, 255, 0.8);
+        box-shadow: 0 8px 18px rgba(47, 89, 52, 0.12);
+      }
+
+      .header-profile-copy {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .header-profile-copy .profile-user-name {
+        margin: 0;
+        font-size: clamp(1.75rem, 2vw, 2.3rem);
         font-weight: 800;
-        color: #08183e;
-        letter-spacing: -0.8px;
+        color: #0f1f2d;
+        letter-spacing: -0.05em;
       }
 
-      .header-left p {
-        max-width: 540px;
-        margin-top: 4px;
-        color: #536789;
-        font-size: 1.05rem;
+      .profile-grade-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        width: fit-content;
+        background: rgba(255, 255, 255, 0.38);
+        color: #2d5a45;
+        border: 1px solid rgba(42, 112, 74, 0.12);
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: 0.76rem;
+        font-weight: 700;
+      }
+
+      .header-meta-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 18px;
+        color: #2d4a42;
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+
+      .header-meta-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 20px;
+      }
+
+      .header-meta-item i {
+        font-size: 0.85rem;
+        color: #2d7a5d;
       }
 
       .page-eyebrow {
@@ -802,14 +863,41 @@
 
       <div class="page-header">
         <div class="header-left">
-          <div>
-            <div class="page-eyebrow">
-              <i class="fa-solid fa-book-open" aria-hidden="true"></i>
-              Student workspace
+          <img
+            class="header-avatar"
+            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80"
+            alt="Student profile"
+          />
+
+          <div class="header-profile-copy">
+            <h1 class="profile-user-name">Loading profile...</h1>
+
+            <div class="profile-grade-badge">
+              <i class="fa-solid fa-graduation-cap"></i>
+              Grade 12 • PCM
             </div>
 
-            <h1>My Profile</h1>
-            <p>View and manage your personal and academic information.</p>
+            <div class="header-meta-row">
+              <span class="header-meta-item">
+                <i class="fa-solid fa-envelope"></i>
+                <span>Loading...</span>
+              </span>
+
+              <span class="header-meta-item">
+                <i class="fa-solid fa-phone"></i>
+                <span>Loading...</span>
+              </span>
+
+              <span class="header-meta-item">
+                <i class="fa-solid fa-location-dot"></i>
+                <span>Loading...</span>
+              </span>
+
+              <span class="header-meta-item">
+                <i class="fa-solid fa-calendar"></i>
+                <span>Loading...</span>
+              </span>
+            </div>
           </div>
         </div>
 
@@ -1466,19 +1554,30 @@
             "personal.profilePhoto",
           );
 
-          setText(
-            document.querySelector(".profile-user-name"),
-            name || "Student",
+          const headerName = document.querySelector(
+            ".page-header .profile-user-name",
           );
+          const sidebarName = document.querySelector(
+            ".profile-card-left .profile-user-name",
+          );
+          const headerGrade = document.querySelector(".profile-grade-badge");
+          const headerAvatar = document.querySelector(".header-avatar");
+
+          if (headerName) setText(headerName, name || "Student");
+          if (sidebarName) setText(sidebarName, name || "Student");
+          if (headerGrade)
+            headerGrade.innerHTML = `<i class="fa-solid fa-graduation-cap"></i> ${grade ? `Grade ${grade} • ${profileValue(profile, "stream") || "PCM"}` : "Student profile"}`;
+          if (headerAvatar && photo) headerAvatar.setAttribute("src", photo);
           setText(
             document.querySelector(".profile-user-role-badge"),
             `Student · ${display(grade, "Grade ")}`,
           );
           setText(document.querySelector(".student-id-box .id"), studentId);
-          if (photo)
+          if (photo) {
             document
               .querySelector(".profile-main-avatar")
               ?.setAttribute("src", photo);
+          }
 
           const contactValues = [
             email,
@@ -1502,6 +1601,45 @@
           document
             .querySelectorAll(".contact-item span")
             .forEach((node, index) => setText(node, contactValues[index]));
+
+          document
+            .querySelectorAll(".header-meta-item span:last-child")
+            .forEach((node, index) =>
+              setText(
+                node,
+                [
+                  email,
+                  phone,
+                  profileValue(profile, "address", "city", "state")
+                    ? [
+                        profileValue(profile, "city"),
+                        profileValue(profile, "state"),
+                      ]
+                        .filter(Boolean)
+                        .join(", ")
+                    : "",
+                  profileValue(
+                    profile,
+                    "createdAt",
+                    "created_at",
+                    "registrationDate",
+                  )
+                    ? new Date(
+                        profileValue(
+                          profile,
+                          "createdAt",
+                          "created_at",
+                          "registrationDate",
+                        ),
+                      ).toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })
+                    : "",
+                ][index] || "",
+              ),
+            );
 
           const personal = document.getElementById("personal");
           [
