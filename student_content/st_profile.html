@@ -176,12 +176,32 @@
         overflow: visible;
       }
 
+      .profile-heading {
+        background: rgba(122, 195, 161, 0.12);
+        border: 1px solid rgba(107, 164, 136, 0.12);
+        border-radius: 10px;
+        color: #1a2f2a;
+        font-size: 15px;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        padding: 12px 12px;
+        margin-bottom: 8px;
+        box-shadow: inset 0 0 0 1px rgba(74, 136, 109, 0.03);
+        cursor: default;
+        pointer-events: none;
+      }
+
+      .profile-heading i {
+        color: #2f7d5d;
+      }
+
       .profile-tab {
         border: none;
-        background: transparent;
+        background: #ffffff;
+        border: 1px solid #e6ebf1;
         color: #2d4c46;
         width: 100%;
-        padding: 12px 10px;
+        padding: 11px 12px;
         border-radius: 10px;
         text-align: left;
         font-family: inherit;
@@ -193,18 +213,22 @@
         display: flex;
         align-items: center;
         gap: 10px;
-        margin-bottom: 4px;
+        margin-bottom: 5px;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
       }
 
       .profile-tab:hover {
-        background: rgba(116, 167, 136, 0.12);
+        background: #f5faf7;
+        border-color: rgba(101, 158, 128, 0.28);
         color: #215a47;
+        transform: translateY(-1px);
       }
 
       .profile-tab.active {
-        background: rgba(122, 195, 161, 0.22);
+        background: rgba(122, 195, 161, 0.12);
         color: #1d5b4c;
-        box-shadow: inset 0 0 0 1px rgba(95, 170, 140, 0.22);
+        border-color: rgba(95, 170, 140, 0.22);
+        box-shadow: inset 0 0 0 1px rgba(95, 170, 140, 0.12);
       }
 
       /* =====================================================
@@ -402,28 +426,38 @@
 
       .stats-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 12px;
       }
 
       .stat-card {
-        background: #ffffff;
-        border: 1px solid #e6eaf0;
-        border-radius: 12px;
-        padding: 16px 14px;
+        background: rgba(255, 255, 255, 0.34);
+        border: 1px solid rgba(133, 156, 146, 0.22);
+        border-radius: 14px;
+        padding: 14px 16px;
         display: flex;
         align-items: center;
         gap: 12px;
+        min-height: 82px;
+        box-shadow: 0 2px 8px rgba(17, 24, 39, 0.02);
+        transition:
+          transform 0.18s ease,
+          box-shadow 0.18s ease;
+      }
+
+      .stat-card:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(17, 24, 39, 0.05);
       }
 
       .stat-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 18px;
+        font-size: 16px;
         flex-shrink: 0;
       }
 
@@ -447,17 +481,29 @@
         color: #dc8d27;
       }
 
+      .stat-card > div:last-child {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-width: 0;
+      }
+
       .stat-card strong {
         display: block;
-        font-size: 28px;
+        font-size: 24px;
+        line-height: 1.1;
         font-weight: 800;
-        margin-bottom: 3px;
+        margin-bottom: 2px;
+        color: #1d2b3a;
+        letter-spacing: -0.04em;
       }
 
       .stat-card span {
-        color: #8a93a3;
+        display: block;
+        color: #5c6b7a;
         font-size: 12px;
         font-weight: 600;
+        line-height: 1.2;
       }
 
       /* =====================================================
@@ -775,11 +821,7 @@
         }
 
         .stats-grid {
-          grid-template-columns: repeat(2, 1fr);
-        }
-
-        .profile-content-grid {
-          grid-template-columns: 270px minmax(0, 1fr);
+          grid-template-columns: repeat(2, minmax(0, 1fr));
         }
       }
 
@@ -916,22 +958,34 @@
           </button>
 
           <div class="profile-tabs">
-            <button class="profile-tab active" onclick="switchTab(this)">
+            <button class="profile-tab profile-heading" type="button">
               <i class="fa-solid fa-user"></i>
               <span>Profile Overview</span>
             </button>
 
-            <button class="profile-tab" onclick="scrollToSection('personal')">
+            <button
+              class="profile-tab"
+              type="button"
+              onclick="scrollToSection('personal')"
+            >
               <i class="fa-regular fa-id-card"></i>
               <span>Personal Details</span>
             </button>
 
-            <button class="profile-tab" onclick="scrollToSection('academic')">
+            <button
+              class="profile-tab"
+              type="button"
+              onclick="scrollToSection('academic')"
+            >
               <i class="fa-solid fa-graduation-cap"></i>
               <span>Academic Details</span>
             </button>
 
-            <button class="profile-tab" onclick="scrollToSection('account')">
+            <button
+              class="profile-tab"
+              type="button"
+              onclick="scrollToSection('account')"
+            >
               <i class="fa-solid fa-shield-halved"></i>
               <span>Account Status</span>
             </button>
