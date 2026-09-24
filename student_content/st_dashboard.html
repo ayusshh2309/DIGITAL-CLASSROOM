@@ -1314,6 +1314,49 @@
         color: #159f8b;
       }
 
+      .subject-row-name .subject-icon-biology {
+        background: #e3f8ed;
+        color: #1ca76d;
+      }
+
+      .subject-row-name .subject-icon-history,
+      .subject-row-name .subject-icon-default {
+        background: #e8f4ff;
+        color: #3989da;
+      }
+
+      .dashboard-empty {
+        flex: 1;
+        min-height: 150px;
+        display: grid;
+        place-content: center;
+        justify-items: center;
+        gap: 10px;
+        color: #8291a1;
+        font-size: 0.8rem;
+        text-align: center;
+      }
+
+      .dashboard-empty i {
+        color: #31a979;
+        font-size: 1.8rem;
+      }
+
+      .dashboard-loading {
+        min-height: 220px;
+        display: grid;
+        place-content: center;
+        justify-items: center;
+        gap: 12px;
+        color: #8291a1;
+        font-size: 0.8rem;
+      }
+
+      .dashboard-loading i {
+        color: #31a979;
+        font-size: 1.5rem;
+      }
+
       .subject-progress-label {
         color: #8391a1;
         font-size: 0.74rem;
@@ -2715,6 +2758,10 @@
 
       setInterval(updateCountdown, 1000);
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase.js"></script>
+    <script src="../js/student-data.js"></script>
+    <script src="../js/student-dashboard.js"></script>
     <script src="../js/student-layout.js"></script>
   </body>
 </html>
