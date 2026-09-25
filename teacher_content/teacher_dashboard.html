@@ -15,7 +15,7 @@
 
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="../js/supabase-client.js"></script>
+    <script src="../js/supabase.js"></script>
 
     <style>
       /* ── DESIGN SYSTEM & TOKENS ── */                    
@@ -1016,11 +1016,12 @@
       }
     </style>
       <link rel="stylesheet" href="../css/layout.css" />
+      <link rel="stylesheet" href="../css/teacher-dashboard.css" />
   </head>
   <body>
     <div id="layout"></div>
     
-    <main class="page-content main-box-container">
+    <main class="page-content teacher-dashboard" id="teacherDashboard">
         <div class="welcome-banner">
           <div class="welcome-main">
             <div class="welcome-icon">📚</div>
@@ -1299,8 +1300,12 @@
     <script src="../js/teacher-data.js"></script>
     <script src="../js/attendance-service.js"></script>
     <script src="../js/live-class-service.js"></script>
+    <script src="../js/performance-service.js"></script>
+    <script src="../js/announcement-service.js"></script>
+    <script src="../js/teacher-dashboard.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", async () => {
+        if (window.teacherDashboardRedesigned) return;
         const dashboardDate = document.getElementById("dashboardDate");
         const dashboardTime = document.getElementById("dashboardTime");
 
