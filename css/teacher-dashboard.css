@@ -218,20 +218,44 @@
 .event-dialog p { margin: 5px 0; color: #63788b; font-size: 12px; line-height: 1.5; }
 .event-dialog button { float: right; border: 0; color: #3979d6; background: transparent; font-weight: 700; cursor: pointer; }
 
-.subject-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 9px; }
-.subject-card { display: flex; min-width: 0; align-items: center; gap: 9px; padding: 9px; border: 1px solid #e6edf3; border-radius: 8px; background: #fbfdff; }
-.subject-icon { display: grid; width: 31px; height: 31px; flex: 0 0 31px; place-items: center; border-radius: 8px; color: #3979d6; background: #eaf2ff; font-size: 12px; }
-.subject-copy { min-width: 0; flex: 1; }
-.subject-copy strong { display: block; overflow: hidden; color: #344d63; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
-.subject-progress { height: 4px; margin-top: 7px; overflow: hidden; border-radius: 999px; background: #e1eaf2; }
-.subject-progress span { display: block; height: 100%; border-radius: inherit; background: #3979d6; }
-.subject-value { flex: 0 0 auto; color: #435a70; font-size: 9px; font-weight: 800; }
+.subject-classes { display: flex; min-width: 0; flex-direction: column; gap: 14px; }
+.subject-class-panel { min-width: 0; overflow: hidden; border: 1px solid #e1e9f2; border-radius: 10px; background: #fff; }
+.subject-class-header { display: flex; min-height: 62px; align-items: center; gap: 14px; padding: 10px 14px; border-bottom: 1px solid #e5edf6; background: #f1f7ff; }
+.subject-class-panel:nth-child(even) .subject-class-header { border-bottom-color: #e1efea; background: #f0faf7; }
+.subject-class-identity { display: flex; min-width: 0; flex: 1; align-items: center; gap: 14px; }
+.subject-class-badge { display: inline-flex; min-height: 36px; flex: 0 0 auto; align-items: center; padding: 0 15px; border-radius: 10px; color: #fff; background: #2879e8; font-size: 13px; font-weight: 800; }
+.subject-class-panel:nth-child(even) .subject-class-badge { background: #10a987; }
+.subject-class-identity h3 { min-width: 0; margin: 0; overflow: hidden; color: #1d3553; font-size: 14px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.subject-stream-badge { display: inline-flex; min-height: 27px; flex: 0 0 auto; align-items: center; gap: 6px; padding: 4px 9px; border: 1px solid #dce8fa; border-radius: 8px; color: #637995; background: #f8fbff; font-size: 9px; }
+.subject-stream-badge i { color: #4287e8; }
+.subject-stream-badge strong { color: #2c6ed0; font-weight: 800; }
+.subject-class-active { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 20px; color: #11885d; background: #e5f7ef; font-size: 9px; font-weight: 800; }
+.subject-class-active i { font-size: 7px; }
+.subject-class-link { display: inline-flex; min-height: 34px; flex: 0 0 auto; align-items: center; gap: 8px; padding: 0 11px; border: 1px solid #dce7f5; border-radius: 8px; color: #316cae !important; background: rgba(255,255,255,.75); font-size: 10px; font-weight: 700; text-decoration: none; }
+.subject-class-link:hover { border-color: #b8d0ed; background: #fff; }
+.subject-class-subjects { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; padding: 10px 12px 12px; }
+.subject-card { display: grid; min-width: 0; min-height: 86px; grid-template-columns: 38px minmax(0, 1fr) 10px; align-items: center; gap: 10px; padding: 10px 11px; border: 1px solid #e5ebf3; border-radius: 9px; color: inherit; background: #fff; text-decoration: none; transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease; }
+.subject-card:hover, .subject-card:focus-visible { transform: translateY(-1px); border-color: #cbdaf0; box-shadow: 0 5px 14px rgba(29, 62, 103, .07); outline: none; }
+.subject-icon { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 50%; color: #236bd0; background: #e8f1ff; font-size: 15px; }
+.subject-card.tone-purple .subject-icon { color: #6750d6; background: #eeeaff; }
+.subject-card.tone-green .subject-icon { color: #15946d; background: #ddf4e9; }
+.subject-card.tone-cyan .subject-icon { color: #1598b6; background: #def6fa; }
+.subject-copy { display: block; min-width: 0; }
+.subject-topline { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 6px; }
+.subject-copy strong { display: block; min-width: 0; overflow: hidden; color: #263f5c; font-size: 11px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.subject-assigned { flex: 0 0 auto; padding: 4px 7px; border-radius: 12px; color: #14865f; background: #e7f7ef; font-size: 8px; font-weight: 700; }
+.subject-progress { display: block; height: 5px; margin-top: 10px; overflow: hidden; border-radius: 999px; background: #e7edf5; }
+.subject-progress span { display: block; height: 100%; border-radius: inherit; background: #347fe4; }
+.subject-card.tone-purple .subject-progress span { background: #7c5be5; }
+.subject-card.tone-green .subject-progress span { background: #16a37a; }
+.subject-card.tone-cyan .subject-progress span { background: #18aec4; }
+.subject-chevron { color: #8fa2ba; font-size: 9px; }
 
 @media (max-width: 1050px) {
   .dashboard-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .dashboard-analytics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dashboard-analytics > :first-child { grid-column: 1 / -1; }
-  .subject-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .subject-class-subjects { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
   .dashboard-analytics { grid-template-columns: 1fr; }
@@ -250,6 +274,13 @@
   .stat-icon { width: 29px; height: 29px; flex-basis: 29px; font-size: 11px; }
   .stat-value { font-size: 18px; }
   .dashboard-panel { padding: 14px; }
-  .subject-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .subject-class-header { flex-wrap: wrap; gap: 8px; padding: 10px; }
+  .subject-class-identity { flex-wrap: wrap; gap: 8px; }
+  .subject-class-badge { min-height: 31px; padding: 0 10px; font-size: 11px; }
+  .subject-class-identity h3 { font-size: 12px; }
+  .subject-class-active { margin-left: auto; }
+  .subject-class-link { min-height: 30px; }
+  .subject-class-subjects { grid-template-columns: 1fr; gap: 8px; padding: 9px; }
+  .subject-card { min-height: 76px; }
   .panel-heading { align-items: flex-start; }
 }

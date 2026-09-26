@@ -38,8 +38,8 @@
       </section>
     </div>
     <section class="dashboard-panel">
-      <div class="panel-heading"><div><h2>Your subjects</h2><div class="panel-kicker">Only subjects assigned to your registered classes</div></div></div>
-      <div class="subject-grid" id="subjectGrid"></div>
+      <div class="panel-heading"><div><h2><i class="fa-solid fa-book-open" aria-hidden="true"></i> Your Classes &amp; Subjects</h2><div class="panel-kicker">Subjects assigned to your registered classes</div></div></div>
+      <div class="subject-classes" id="subjectGrid"></div>
     </section>
     <dialog class="event-dialog" id="eventDialog"><button type="button" id="closeEventDialog">Close</button><h2 id="eventDialogTitle"></h2><p id="eventDialogDate"></p><p id="eventDialogDescription"></p></dialog>`;
 
@@ -306,17 +306,40 @@
   }
 
   function renderSubjects() {
-    const rows = state.classes.flatMap((grade) => [...(state.assignments.get(grade) || [])].map((subject) => {
-      const performance = (state.performance.get(grade) || []).filter((row) => row.subject === subject && assignedRow(row));
-      const average = performance.length ? Math.round(performance.reduce((sum, row) => sum + Number(row.percentage || 0), 0) / performance.length) : null;
-      const attendance = state.attendance.filter((row) => gradeOf(row) === grade && subjectOf(row) === subject);
-      const present = attendance.filter((row) => ["present", "late"].includes(String(row.status || "").toLowerCase())).length;
-      const rate = attendance.length ? `${Math.round(present / attendance.length * 100)}% attendance` : "No attendance data";
-      const progress = average ?? (attendance.length ? Math.round(present / attendance.length * 100) : null);
-      const progressLabel = progress === null ? "No performance data" : `${progress}% performance`;
-      return `<article class="subject-card"><span class="subject-icon"><i class="fa-solid fa-book-open" aria-hidden="true"></i></span><div class="subject-copy"><strong>${escapeHtml(subject)}</strong><div class="subject-progress" role="img" aria-label="${progressLabel}"><span style="width:${progress ?? 0}%"></span></div></div><span class="subject-value">${progress === null ? "--" : `${progress}%`}</span></article>`;
-    }));
-    $("subjectGrid").innerHTML = rows.length ? rows.join("") : `<div class="dashboard-empty" style="grid-column:1/-1">No subjects assigned yet.</div>`;
+    const iconBySubject = {
+      Physics: ["fa-atom", "blue"], Chemistry: ["fa-flask", "purple"], Mathematics: ["fa-square-root-variable", "blue"],
+      Biology: ["fa-leaf", "green"], English: ["fa-book-open", "cyan"], "Computer Science": ["fa-code", "green"],
+    };
+    const streamInfo = (grade, subjects) => {
+      if (Number(grade) < 11) return null;
+      const subjectSet = new Set(subjects.map((subject) => subject.toLowerCase()));
+      if (subjectSet.has("biology")) return { label: "Science (PCB)", code: "PCB" };
+      if (subjectSet.has("physics") && subjectSet.has("mathematics")) return { label: "Science (PCM)", code: "PCM" };
+      if (subjectSet.has("accountancy") || subjectSet.has("business studies")) return { label: "Commerce", code: "Commerce" };
+      if (subjectSet.has("history") || subjectSet.has("political science")) return { label: "Arts / Humanities", code: "Arts" };
+      const registeredStreams = registration.professional?.streams || registration.professional?.selected_streams || [];
+      const labels = { science_pcm: ["Science (PCM)", "PCM"], science_pcb: ["Science (PCB)", "PCB"], commerce: ["Commerce", "Commerce"], arts_humanities: ["Arts / Humanities", "Arts"] };
+      return registeredStreams.length === 1 && labels[registeredStreams[0]]
+        ? { label: labels[registeredStreams[0]][0], code: labels[registeredStreams[0]][1] }
+        : null;
+    };
+    const sections = state.classes.map((grade) => {
+      const subjects = [...(state.assignments.get(grade) || [])].sort((first, second) => first.localeCompare(second));
+      const stream = streamInfo(grade, subjects);
+      const subjectCards = subjects.map((subject) => {
+        const performance = (state.performance.get(grade) || []).filter((row) => row.subject === subject && assignedRow(row));
+        const average = performance.length ? Math.round(performance.reduce((sum, row) => sum + Number(row.percentage || 0), 0) / performance.length) : null;
+        const attendance = state.attendance.filter((row) => gradeOf(row) === grade && subjectOf(row) === subject);
+        const present = attendance.filter((row) => ["present", "late"].includes(String(row.status || "").toLowerCase())).length;
+        const progress = average ?? (attendance.length ? Math.round(present / attendance.length * 100) : null);
+        const progressLabel = progress === null ? "No performance data" : `${progress}% performance`;
+        const [icon, tone] = iconBySubject[subject] || ["fa-book-open", "blue"];
+        return `<a class="subject-card tone-${tone}" href="my_classes.html?class_grade=${encodeURIComponent(grade)}" aria-label="View ${escapeHtml(subject)} in Class ${escapeHtml(grade)}"><span class="subject-icon"><i class="fa-solid ${icon}" aria-hidden="true"></i></span><span class="subject-copy"><span class="subject-topline"><strong>${escapeHtml(subject)}</strong><span class="subject-assigned">Assigned</span></span><span class="subject-progress" role="img" aria-label="${progressLabel}"><span style="width:${progress ?? 0}%"></span></span></span><i class="fa-solid fa-chevron-right subject-chevron" aria-hidden="true"></i></a>`;
+      }).join("");
+      const heading = stream ? stream.label : `${subjects.length} Assigned Subjects`;
+      return `<section class="subject-class-panel"><header class="subject-class-header"><div class="subject-class-identity"><span class="subject-class-badge">Class ${escapeHtml(grade)}</span><h3>${escapeHtml(heading)}</h3>${stream ? `<span class="subject-stream-badge"><i class="fa-solid fa-flask" aria-hidden="true"></i> Stream <strong>${escapeHtml(stream.code)}</strong></span>` : ""}</div><span class="subject-class-active"><i class="fa-solid fa-circle" aria-hidden="true"></i> Active</span><a class="subject-class-link" href="my_classes.html?class_grade=${encodeURIComponent(grade)}">View subjects <i class="fa-solid fa-chevron-down" aria-hidden="true"></i></a></header><div class="subject-class-subjects">${subjectCards}</div></section>`;
+    });
+    $("subjectGrid").innerHTML = sections.length ? sections.join("") : `<div class="dashboard-empty">No subjects assigned yet.</div>`;
   }
 
   function renderAll() {
