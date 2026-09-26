@@ -189,7 +189,15 @@
   }
 
   function statMarkup(icon, tone, value, label, note) {
-    return `<article class="dashboard-stat"><span class="stat-icon ${tone}"><i class="fa-solid ${icon}" aria-hidden="true"></i></span><div class="stat-copy"><span class="stat-value">${escapeHtml(value)}</span><span class="stat-label">${escapeHtml(label)}</span><span class="stat-note">${escapeHtml(note)}</span></div></article>`;
+    return `<article class="dashboard-stat tone-${tone || "blue"}"><span class="stat-icon ${tone}"><i class="fa-solid ${icon}" aria-hidden="true"></i></span><div class="stat-copy"><span class="stat-value">${escapeHtml(value)}</span><span class="stat-label">${escapeHtml(label)}</span><span class="stat-note">${escapeHtml(note)}</span></div></article>`;
+  }
+
+  function emptyStateMarkup(variant, icon, title, description, href, actionLabel) {
+    const artwork = variant === "chart"
+      ? `<div class="empty-artwork chart-artwork" aria-hidden="true"><div class="mini-chart-card"><div class="mini-chart-lines"></div><div class="mini-chart-bars"><i></i><i></i><i></i><i></i></div><i class="fa-solid fa-arrow-trend-up mini-chart-trend"></i></div></div>`
+      : `<div class="empty-artwork schedule-artwork" aria-hidden="true"><i class="fa-regular ${icon}"></i><i class="fa-regular fa-clock schedule-clock"></i></div>`;
+    const actionIcon = actionLabel === "View Classes" ? "fa-chalkboard" : variant === "chart" ? "fa-chart-line" : "fa-circle-plus";
+    return `<div class="dashboard-blank-state ${variant}-blank-state">${artwork}<strong>${escapeHtml(title)}</strong><p>${escapeHtml(description)}</p><a class="empty-state-action" href="${escapeHtml(href)}"><i class="fa-solid ${actionIcon}" aria-hidden="true"></i>${escapeHtml(actionLabel)}</a></div>`;
   }
 
   function renderStats() {
@@ -229,7 +237,14 @@
     });
     const hasData = rows.some((row) => row.score !== null || row.attendance !== null);
     if (!rows.length || !hasData) {
-      $("performanceChart").innerHTML = `<div class="chart-empty">${rows.length ? "Performance data will appear after students complete assessments or attendance is recorded." : "No classes registered yet."}</div>`;
+      $("performanceChart").innerHTML = emptyStateMarkup(
+        "chart",
+        "",
+        rows.length ? "Performance data will appear here" : "No classes registered yet",
+        rows.length ? "After students complete assessments or attendance is recorded, you'll see class insights and trends." : "Register your classes to start tracking performance.",
+        rows.length ? "student_performance.html" : "my_classes.html",
+        rows.length ? "View Analytics" : "View Classes",
+      );
       return;
     }
     const chartClasses = rows.map((row) => {
@@ -265,7 +280,7 @@
       const action = status !== "Completed" ? `<a class="class-open" href="${escapeHtml(joinUrl || "live_classes.html")}" ${joinUrl ? 'target="_blank" rel="noopener"' : ""}>${status === "Live" ? "Join" : "Open"}</a>` : "";
       const stream = item.stream || item.class_stream;
       return `<article class="today-class"><div class="class-time">${fmtTime(start)}<br>${fmtTime(end)}</div><div class="class-detail"><strong>${escapeHtml(item.subject || item.title || "Class")}</strong><span>Class ${escapeHtml(gradeOf(item))}${stream ? ` · ${escapeHtml(stream)}` : ""}${item.topic ? ` · ${escapeHtml(item.topic)}` : ""}</span></div><div class="class-actions"><span class="status-pill ${status.toLowerCase()}">${status}</span>${action}</div></article>`;
-    }).join("") : `<div class="dashboard-empty">No classes scheduled today.</div>`;
+    }).join("") : emptyStateMarkup("schedule", "fa-calendar-days", "No classes scheduled today", "Your planned classes will appear here once you schedule them.", "create_liveclass.html", "Schedule a class");
   }
 
   function eventRows() {
@@ -295,7 +310,7 @@
     $("calendarGrid").innerHTML = weekdays + days;
     const now = new Date();
     const upcoming = allEvents.filter((row) => new Date(row.eventDate) >= new Date(now.getFullYear(), now.getMonth(), now.getDate())).slice(0, 5);
-    $("eventList").innerHTML = upcoming.length ? upcoming.map((event, index) => `<button class="event-button" type="button" data-event-index="${index}"><span class="event-marker ${event.eventType}"></span><span class="event-copy"><strong>${escapeHtml(event.title)}</strong><span>${escapeHtml(fmtDate(new Date(event.eventDate), { month: "short", day: "numeric" }))} · ${escapeHtml(event.subject || event.type || event.eventType)}</span></span></button>`).join("") : `<div class="dashboard-empty" style="min-height:48px;padding:8px">No upcoming events.</div>`;
+    $("eventList").innerHTML = upcoming.length ? upcoming.map((event, index) => `<button class="event-button" type="button" data-event-index="${index}"><span class="event-marker ${event.eventType}"></span><span class="event-copy"><strong>${escapeHtml(event.title)}</strong><span>${escapeHtml(fmtDate(new Date(event.eventDate), { month: "short", day: "numeric" }))} · ${escapeHtml(event.subject || event.type || event.eventType)}</span></span></button>`).join("") : `<div class="calendar-empty"><span><i class="fa-regular fa-calendar-days" aria-hidden="true"></i></span><div><strong>No upcoming events</strong><small>You don't have any events scheduled.</small></div></div>`;
     $("eventList").querySelectorAll("[data-event-index]").forEach((button) => button.addEventListener("click", () => {
       const event = upcoming[Number(button.dataset.eventIndex)];
       $("eventDialogTitle").textContent = event.title;
