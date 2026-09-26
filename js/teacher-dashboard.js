@@ -5,33 +5,34 @@
 
   root.innerHTML = `
     <section class="dashboard-hero" aria-labelledby="greetingEl">
+      <span class="hero-mark" aria-hidden="true"><i class="fa-solid fa-graduation-cap"></i></span>
       <div class="hero-copy">
-        <div class="hero-eyebrow">Teacher dashboard</div>
         <h1 id="greetingEl">Good morning!</h1>
         <p>Here's what's happening in your classroom today.</p>
+        <div class="hero-meta" aria-label="Current local date and time">
+          <span class="hero-meta-pill"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i><span id="dashboardDate"></span></span>
+          <span class="hero-meta-pill"><i class="fa-regular fa-clock" aria-hidden="true"></i><span id="dashboardTime"></span></span>
+        </div>
       </div>
-      <div class="hero-clock" aria-label="Current local date and time">
-        <div class="hero-date" id="dashboardDate"></div>
-        <div class="hero-time" id="dashboardTime"></div>
-      </div>
+      <div class="hero-quote"><span>“Better Teaching<br>Builds Brighter Futures”</span><i class="fa-solid fa-seedling" aria-hidden="true"></i></div>
     </section>
     <section class="dashboard-stats" aria-label="Classroom statistics" id="dashboardStats"></section>
-    <section class="dashboard-panel">
-      <div class="panel-heading">
-        <div><h2>Class performance</h2><div class="panel-kicker">Assessment scores and attendance for your assigned classes</div></div>
-        <select class="period-select" id="performancePeriod" aria-label="Performance period">
-          <option value="week">This Week</option><option value="month">This Month</option><option value="term">This Term</option>
-        </select>
-      </div>
-      <div class="chart-wrap" id="performanceChart"></div>
-    </section>
-    <div class="dashboard-lower">
+    <div class="dashboard-analytics">
       <section class="dashboard-panel">
-        <div class="panel-heading"><div><h2>Today's classes</h2><div class="panel-kicker" id="todaySummary"></div></div><a class="panel-link" href="live_classes.html">Full schedule</a></div>
+        <div class="panel-heading">
+          <div><h2><i class="fa-solid fa-chart-column" aria-hidden="true"></i> Class performance overview</h2><div class="panel-kicker">Assessment scores and attendance</div></div>
+          <select class="period-select" id="performancePeriod" aria-label="Performance period">
+            <option value="week">This Week</option><option value="month">This Month</option><option value="term">This Term</option>
+          </select>
+        </div>
+        <div class="chart-wrap" id="performanceChart"></div>
+      </section>
+      <section class="dashboard-panel">
+        <div class="panel-heading"><div><h2><i class="fa-solid fa-calendar-day" aria-hidden="true"></i> Today's classes</h2><div class="panel-kicker" id="todaySummary"></div></div><a class="panel-link" href="live_classes.html">View all <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div>
         <div class="today-list" id="todayClasses"></div>
       </section>
       <section class="dashboard-panel">
-        <div class="panel-heading"><div><h2>Calendar & events</h2><div class="panel-kicker">Your classes and academic events</div></div><a class="panel-link" href="calendar.html">Open calendar</a></div>
+        <div class="panel-heading"><div><h2><i class="fa-solid fa-calendar-days" aria-hidden="true"></i> Calendar</h2></div><a class="panel-link" href="calendar.html">View all <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div>
         <div class="calendar-top"><span class="calendar-month" id="calendarMonth"></span><div class="calendar-nav"><button type="button" id="calendarPrevious" aria-label="Previous month">‹</button><button type="button" id="calendarNext" aria-label="Next month">›</button></div></div>
         <div class="calendar-grid" id="calendarGrid"></div><div class="event-list" id="eventList"></div>
       </section>
@@ -311,7 +312,9 @@
       const attendance = state.attendance.filter((row) => gradeOf(row) === grade && subjectOf(row) === subject);
       const present = attendance.filter((row) => ["present", "late"].includes(String(row.status || "").toLowerCase())).length;
       const rate = attendance.length ? `${Math.round(present / attendance.length * 100)}% attendance` : "No attendance data";
-      return `<article class="subject-card"><span class="subject-icon"><i class="fa-solid fa-book-open" aria-hidden="true"></i></span><div class="subject-copy"><strong>${escapeHtml(subject)}</strong><span>Class ${escapeHtml(grade)} · ${average === null ? "No assessment data" : `${average}% average`} · ${rate}</span></div></article>`;
+      const progress = average ?? (attendance.length ? Math.round(present / attendance.length * 100) : null);
+      const progressLabel = progress === null ? "No performance data" : `${progress}% performance`;
+      return `<article class="subject-card"><span class="subject-icon"><i class="fa-solid fa-book-open" aria-hidden="true"></i></span><div class="subject-copy"><strong>${escapeHtml(subject)}</strong><div class="subject-progress" role="img" aria-label="${progressLabel}"><span style="width:${progress ?? 0}%"></span></div></div><span class="subject-value">${progress === null ? "--" : `${progress}%`}</span></article>`;
     }));
     $("subjectGrid").innerHTML = rows.length ? rows.join("") : `<div class="dashboard-empty" style="grid-column:1/-1">No subjects assigned yet.</div>`;
   }
