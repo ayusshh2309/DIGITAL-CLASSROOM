@@ -1301,6 +1301,8 @@
 
     <div class="toast" id="toast"></div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../js/supabase.js"></script>
     <script src="../js/teacher-data.js"></script>
     <script>
       /* ==========================================
@@ -2571,12 +2573,106 @@
         document.getElementById("publishModal").classList.remove("show");
       }
 
-      function publishQuiz() {
+      async function savePublishedQuizToSupabase(client) {
+        const { data: authData, error: authError } =
+          await client.auth.getUser();
+        if (authError || !authData?.user) {
+          throw new Error(
+            "Sign in as a teacher before publishing to Supabase.",
+          );
+        }
+
+        const teacherId = authData.user.id;
+        const now = new Date().toISOString();
+        const quizRecord = {
+          teacher_id: teacherId,
+          title: quizData.title,
+          grade: normalizeQuizGrade(quizData.class),
+          class_grade: quizData.class,
+          stream: quizData.stream || null,
+          subject: quizData.subject,
+          topic: quizData.topic || quizData.title,
+          description: quizData.description,
+          instructions: quizData.instructions,
+          difficulty: "Medium",
+          status: "published",
+          time_limit: quizData.duration,
+          attempts_allowed: Number(quizData.settings.attemptsAllowed) || 1,
+          marks_per_question: Number(quizData.questions[0]?.marks) || 1,
+          negative_marking: 0,
+          passing_percentage: 40,
+          shuffle_questions: Boolean(quizData.settings.shuffleQuestions),
+          shuffle_options: Boolean(quizData.settings.shuffleOptions),
+          start_at:
+            quizData.settings.startDate && quizData.settings.startTime
+              ? new Date(
+                  `${quizData.settings.startDate}T${quizData.settings.startTime}`,
+                ).toISOString()
+              : null,
+          end_at:
+            quizData.settings.endDate && quizData.settings.endTime
+              ? new Date(
+                  `${quizData.settings.endDate}T${quizData.settings.endTime}`,
+                ).toISOString()
+              : null,
+          published_at: now,
+          question_count: quizData.questions.length,
+          total_marks: calculateTotalMarks(),
+          response_count: 0,
+          average_score: 0,
+          created_at: quizData.createdAt || now,
+          updated_at: now,
+        };
+        const { data: savedQuiz, error: quizError } = await client
+          .from("quizzes")
+          .insert(quizRecord)
+          .select("id")
+          .single();
+        if (quizError) throw quizError;
+
+        const questionTypes = {
+          multiple_choice: "Multiple Choice",
+          true_false: "True/False",
+          short_answer: "Short Answer",
+        };
+        const questions = quizData.questions.map((question, index) => ({
+          quiz_id: savedQuiz.id,
+          teacher_id: teacherId,
+          position: index + 1,
+          text: question.text,
+          type: questionTypes[question.type] || "Multiple Choice",
+          marks: Number(question.marks) || 1,
+          options: Array.isArray(question.options) ? question.options : [],
+          correct_answer: question.correctAnswer,
+          explanation: question.explanation || null,
+        }));
+        const { error: questionsError } = await client
+          .from("quiz_questions")
+          .insert(questions);
+        if (questionsError) {
+          await client
+            .from("quizzes")
+            .delete()
+            .eq("id", savedQuiz.id)
+            .eq("teacher_id", teacherId);
+          throw questionsError;
+        }
+        return { quizId: savedQuiz.id, teacherId };
+      }
+
+      async function publishQuiz() {
         collectQuizInformation();
 
         if (!validateStep1() || !validateQuestions()) {
           return;
         }
+
+        const publishButton = document.querySelector(
+          "#publishModal .btn-success",
+        );
+        if (publishButton.disabled) return;
+        publishButton.disabled = true;
+        publishButton.textContent = "Publishing…";
 
         quizData.id = quizData.id || "quiz_" + Date.now();
 
@@ -2586,10 +2682,6 @@
 
         quizData.updatedAt = new Date().toISOString();
 
-        const teacher = window.TeacherData?.getTeacherData?.() || {};
-        const teacherUser = window.TeacherData?.getCurrentUser?.() || {};
-        quizData.teacher_id =
-          teacherUser.id || teacher.id || teacher.teacher_id || null;
         quizData.grade = normalizeQuizGrade(quizData.class);
         quizData.class_grade = quizData.class;
         quizData.topic = quizData.topic || quizData.title;
@@ -2607,18 +2699,37 @@
             ? `${quizData.settings.endDate}T${quizData.settings.endTime}`
             : null;
 
-        /*
-       LOCAL STORAGE DEMO
-
-       Later this section can be replaced
-       with Supabase INSERT/UPDATE logic.
-    */
+        try {
+          const client =
+            window.TeacherData?.getSupabaseClient?.() ||
+            window.SmartLearningSupabase?.getClient?.();
+          if (client) {
+            const saved = await savePublishedQuizToSupabase(client);
+            quizData.id = saved.quizId;
+            quizData.teacher_id = saved.teacherId;
+          }
+        } catch (error) {
+          showToast(
+            `Could not publish quiz: ${error.message || "Please try again."}`,
+          );
+          publishButton.disabled = false;
+          publishButton.textContent = "Publish Quiz";
+          return;
+        }
 
         const existing = JSON.parse(
           localStorage.getItem("smartLearningDC_published_quizzes") || "[]",
         );
 
-        existing.push(JSON.parse(JSON.stringify(quizData)));
+        const publishedQuiz = JSON.parse(JSON.stringify(quizData));
+        const existingIndex = existing.findIndex(
+          (quiz) => String(quiz.id) === String(publishedQuiz.id),
+        );
+        if (existingIndex === -1) {
+          existing.push(publishedQuiz);
+        } else {
+          existing[existingIndex] = publishedQuiz;
+        }
 
         localStorage.setItem(
           "smartLearningDC_published_quizzes",
@@ -2632,15 +2743,8 @@
         showToast("Quiz published successfully!");
 
         setTimeout(function () {
-          /*
-            You can redirect here later:
-
-            window.location.href =
-                "quiz.html";
-        */
-
-          goToStep(4);
-        }, 1200);
+          window.location.href = `quizzes.html?published=${encodeURIComponent(quizData.id)}`;
+        }, 900);
       }
 
       /* ==========================================

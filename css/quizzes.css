@@ -10,6 +10,28 @@
   background: radial-gradient(circle at 92% 0%, rgba(91, 82, 235, 0.1), transparent 28%), linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(246, 249, 255, 0.9)) !important;
 }
 
+.publish-analysis {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 19px;
+  border: 1px solid #cfe9df;
+  border-radius: 12px;
+  background: linear-gradient(110deg, #f0fbf6, #f5f7ff);
+}
+
+.publish-analysis[hidden] { display: none; }
+.publish-analysis-heading { min-width: 0; }
+.publish-live-label { display: inline-flex; align-items: center; gap: 6px; color: #18845b; font-size: 0.68rem; font-weight: 800; text-transform: uppercase; }
+.publish-live-label i { font-size: 0.48rem; }
+.publish-analysis h2 { margin-top: 5px; color: var(--quiz-ink); font-size: 1rem; }
+.publish-analysis p { margin-top: 4px; color: var(--quiz-muted); font-size: 0.78rem; }
+.publish-analysis-metrics { display: flex; align-items: stretch; gap: 10px; }
+.publish-analysis-metrics > div { display: flex; min-width: 108px; flex-direction: column; justify-content: center; gap: 4px; padding: 10px 13px; border: 1px solid #e2e7f0; border-radius: 9px; background: rgba(255,255,255,.82); }
+.publish-analysis-metrics span { color: #7988a3; font-size: 0.68rem; }
+.publish-analysis-metrics strong { color: var(--quiz-ink); font-size: 1.2rem; }
+
 .quizzes-page .page-header {
   align-items: center;
   padding: 4px 4px 8px;
@@ -305,6 +327,15 @@
   background: #fafbff;
 }
 
+.quizzes-page .data-table tbody tr.just-published {
+  background: #effaf5;
+  box-shadow: inset 3px 0 #20a66c;
+}
+
+.quizzes-page .data-table tbody tr.just-published:hover {
+  background: #e7f7ef;
+}
+
 .quizzes-page .data-table tbody tr:last-child td {
   border-bottom: 0;
 }
@@ -507,6 +538,13 @@
   border-color: var(--quiz-indigo);
 }
 
+.quizzes-page .page-btn:disabled {
+  color: #aab4c6;
+  background: #f4f6fa;
+  cursor: not-allowed;
+  opacity: .65;
+}
+
 .quiz-empty-state {
   height: 220px;
   padding: 40px 20px !important;
@@ -560,6 +598,9 @@
 }
 
 @media (max-width: 560px) {
+  .publish-analysis { grid-template-columns: 1fr; }
+  .publish-analysis-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .publish-analysis-metrics > div { min-width: 0; }
   .assignment-scope {
     align-items: flex-start;
     flex-direction: column;

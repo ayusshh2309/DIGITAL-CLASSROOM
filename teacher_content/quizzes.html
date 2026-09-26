@@ -783,6 +783,18 @@
           </div>
         </div>
 
+        <section class="publish-analysis" id="publishedQuizAnalysis" aria-live="polite" hidden>
+          <div class="publish-analysis-heading">
+            <span class="publish-live-label"><i class="fa-solid fa-circle" aria-hidden="true"></i> Live analysis</span>
+            <h2 id="publishedQuizTitle">Published quiz</h2>
+            <p id="publishedQuizMeta"></p>
+          </div>
+          <div class="publish-analysis-metrics">
+            <div><span>Responses</span><strong id="publishedQuizResponses">0</strong></div>
+            <div><span>Average score</span><strong id="publishedQuizAverage">0%</strong></div>
+          </div>
+        </section>
+
         <!-- METRICS ARE KEPT FOR EXISTING DATA SUPPORT -->
         <div class="stats-grid">
           <div class="stat-card">
@@ -1290,6 +1302,7 @@
     </div>
     <div id="quizToastRegion" class="quiz-toast-region" aria-live="polite"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../js/supabase.js"></script>
     <script src="../js/teacher-data.js"></script>
     <script src="../js/quizzes.js"></script>
     <script src="../js/layout.js"></script>
