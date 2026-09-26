@@ -27,6 +27,53 @@
     }
   }
 
+  function renderRegisteredClassScope() {
+    const scopeValue = $("classScopeValue");
+    if (!scopeValue) return;
+    const professional = window.TeacherData?.getTeacherData?.()?.professional || {};
+    const assignments = professional.specialistAssignments || professional.specialist_assignments || [];
+    const groupGrades = { grades_5_6: [5, 6], grades_7_8: [7, 8], grades_9_10: [9, 10], grades_11_12: [11, 12] };
+    const savedGroups = Array.isArray(professional.selected_grade_groups)
+      ? professional.selected_grade_groups.flatMap((group) => groupGrades[group] || [])
+      : [];
+    const savedGrades = Array.isArray(professional.grades)
+      ? professional.grades
+      : Array.isArray(professional.selected_grades) ? professional.selected_grades : [];
+    const grades = [...new Set((savedGroups.length ? savedGroups : savedGrades).map(Number).filter(Boolean))].sort((a, b) => a - b);
+    const streamSubjects = {
+      science_pcm: ["Physics", "Chemistry", "Mathematics"],
+      science_pcb: ["Physics", "Chemistry", "Biology"],
+      commerce: ["Accountancy", "Business Studies", "Economics"],
+      arts_humanities: ["History", "Geography", "Political Science", "Psychology"],
+    };
+    const selectedStreams = professional.streams || professional.selected_streams || [];
+    const seniorSubjects = [...new Set([...selectedStreams.flatMap((stream) => streamSubjects[stream] || []), "English", "Physical Education", "Computer Science"])];
+    const standardSubjects = {
+      5: ["English", "Mathematics", "EVS", "Hindi"],
+      6: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
+      7: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
+      8: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
+      9: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
+      10: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
+    };
+    const classes = new Map();
+    const addSubject = (grade, subject) => {
+      const number = Number(grade);
+      if (!number || !subject) return;
+      if (!classes.has(number)) classes.set(number, new Set());
+      classes.get(number).add(subject);
+    };
+    if (assignments.length) {
+      assignments.forEach((assignment) => (assignment.grades || []).forEach((grade) => addSubject(grade, assignment.subject)));
+    } else {
+      grades.forEach((grade) => (grade >= 11 ? seniorSubjects : standardSubjects[grade] || []).forEach((subject) => addSubject(grade, subject)));
+    }
+    const selectedClasses = [...classes.entries()].sort(([first], [second]) => first - second);
+    scopeValue.textContent = selectedClasses.length
+      ? selectedClasses.map(([grade, subjects]) => `Class ${grade} · ${subjects.size} ${subjects.size === 1 ? "subject" : "subjects"}`).join("  •  ")
+      : "No registered classes found";
+  }
+
   function mergeQuizzes(remote, local) {
     const merged = new Map(remote.map((quiz) => [String(quiz.id), quiz]));
     local.forEach((quiz) => { if (!merged.has(String(quiz.id))) merged.set(String(quiz.id), quiz); });
@@ -121,5 +168,5 @@
   }
   async function remove(id) { if (!confirm("Delete this quiz and its questions?")) return; const local = localQuizzes(); if (local.some((quiz) => String(quiz.id) === String(id))) { localStorage.setItem(localQuizKey, JSON.stringify(local.filter((quiz) => String(quiz.id) !== String(id)))); } else { const result = await supabase().from("quizzes").delete().eq("id", id).eq("teacher_id", state.user.id); if (result.error) return toast(result.error.message, "error"); } state.quizzes = state.quizzes.filter((quiz) => String(quiz.id) !== String(id)); render(); toast("Quiz deleted.", "success"); }
 
-  document.addEventListener("DOMContentLoaded", async () => { $("createQuizBtn")?.addEventListener("click", () => { window.location.href = "create_quiz.html"; }); $("questionBankBtn")?.addEventListener("click", () => toast("Question Bank is available inside the Create Quiz workflow.")); $("quizSearch").addEventListener("input", () => { state.query = $("quizSearch").value.trim(); state.page = 1; render(); }); $("quizClassFilter")?.addEventListener("change", (event) => { state.classFilter = event.target.value; state.page = 1; render(); }); $("quizSubjectFilter")?.addEventListener("change", (event) => { state.subjectFilter = event.target.value; state.page = 1; render(); }); $("quizSort").addEventListener("change", () => { state.page = 1; render(); }); document.querySelectorAll(".tab[data-status]").forEach((tab) => tab.addEventListener("click", () => { document.querySelectorAll(".tab[data-status]").forEach((item) => item.classList.remove("active")); tab.classList.add("active"); state.status = tab.dataset.status; state.page = 1; render(); })); $("quizTableBody").addEventListener("click", (event) => { const button = event.target.closest("[data-delete]"); if (button) remove(button.dataset.delete); }); $("quizPaginationControls").addEventListener("click", (event) => { const button = event.target.closest("[data-page]"); if (button) { state.page = Number(button.dataset.page); render(); } }); window.addEventListener("storage", (event) => { if (event.key === localQuizKey) { state.quizzes = mergeQuizzes(state.quizzes.filter((quiz) => !String(quiz.id).startsWith("local-")), localQuizzes()); state.page = 1; render(); } }); window.addEventListener("focus", () => load().catch(() => {})); const client = supabase(); if (!client) { await load(); return; } const auth = await client.auth.getUser(); state.user = auth.data.user; try { await load(); if (state.user) client.channel("teacher-quizzes").on("postgres_changes", { event: "*", schema: "public", table: "quizzes", filter: `teacher_id=eq.${state.user.id}` }, load).subscribe(); } catch (error) { state.quizzes = localQuizzes(); render(); toast(error.message || "Could not load quizzes.", "error"); } });
+  document.addEventListener("DOMContentLoaded", async () => { renderRegisteredClassScope(); $("createQuizBtn")?.addEventListener("click", () => { window.location.href = "create_quiz.html"; }); $("questionBankBtn")?.addEventListener("click", () => toast("Question Bank is available inside the Create Quiz workflow.")); $("quizSearch").addEventListener("input", () => { state.query = $("quizSearch").value.trim(); state.page = 1; render(); }); $("quizClassFilter")?.addEventListener("change", (event) => { state.classFilter = event.target.value; state.page = 1; render(); }); $("quizSubjectFilter")?.addEventListener("change", (event) => { state.subjectFilter = event.target.value; state.page = 1; render(); }); $("quizSort").addEventListener("change", () => { state.page = 1; render(); }); document.querySelectorAll(".tab[data-status]").forEach((tab) => tab.addEventListener("click", () => { document.querySelectorAll(".tab[data-status]").forEach((item) => item.classList.remove("active")); tab.classList.add("active"); state.status = tab.dataset.status; state.page = 1; render(); })); $("quizTableBody").addEventListener("click", (event) => { const button = event.target.closest("[data-delete]"); if (button) remove(button.dataset.delete); }); $("quizPaginationControls").addEventListener("click", (event) => { const button = event.target.closest("[data-page]"); if (button) { state.page = Number(button.dataset.page); render(); } }); window.addEventListener("storage", (event) => { if (event.key === localQuizKey) { state.quizzes = mergeQuizzes(state.quizzes.filter((quiz) => !String(quiz.id).startsWith("local-")), localQuizzes()); state.page = 1; render(); } }); window.addEventListener("focus", () => load().catch(() => {})); const client = supabase(); if (!client) { await load(); return; } const auth = await client.auth.getUser(); state.user = auth.data.user; try { await load(); if (state.user) client.channel("teacher-quizzes").on("postgres_changes", { event: "*", schema: "public", table: "quizzes", filter: `teacher_id=eq.${state.user.id}` }, load).subscribe(); } catch (error) { state.quizzes = localQuizzes(); render(); toast(error.message || "Could not load quizzes.", "error"); } });
 })();
