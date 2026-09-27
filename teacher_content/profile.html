@@ -740,6 +740,21 @@
         text-align: left;
       }
 
+      .profile-page .profile-overview-heading .profile-tab {
+        min-height: 48px;
+        font-size: 0.95rem;
+        font-weight: 700;
+      }
+
+      .profile-page .profile-tabs > .profile-tab {
+        width: calc(100% - 12px);
+        min-height: 38px;
+        margin-left: 12px;
+        padding: 8px 10px;
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+
       .profile-page .profile-tab.active,
       .profile-page .profile-tab:hover {
         border-color: rgba(95, 170, 140, 0.22);
@@ -1017,16 +1032,18 @@
 
         <div class="profile-content-grid">
           <div class="profile-card-left" id="overview">
-            <div class="profile-tabs">
-              <a href="#overview" class="profile-tab active"
-                >👤 Profile Overview</a
-              >
+            <nav class="profile-tabs" aria-label="Profile sections">
+              <h2 class="profile-overview-heading">
+                <a href="#overview" class="profile-tab active"
+                  >👤 Profile Overview</a
+                >
+              </h2>
               <a href="#personal" class="profile-tab">📋 Personal Details</a>
               <a href="#professional" class="profile-tab"
                 >💼 Professional Details</a
               >
               <a href="#account" class="profile-tab">🔒 Account & Security</a>
-            </div>
+            </nav>
 
             <div class="contact-info-list">
               <div class="contact-item">
