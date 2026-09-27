@@ -15,7 +15,6 @@
 
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="../js/supabase-client.js"></script>
 
     <style>
       /* ── DESIGN SYSTEM & TOKENS ── */
@@ -703,6 +702,131 @@
         background: #2f7d5d;
       }
 
+      .profile-edit-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: none;
+        place-items: center;
+        padding: 20px;
+        background: rgba(15, 31, 45, 0.48);
+      }
+
+      .profile-edit-overlay.open {
+        display: grid;
+      }
+
+      .profile-edit-dialog {
+        width: min(100%, 680px);
+        max-height: min(90vh, 800px);
+        overflow-y: auto;
+        padding: 24px;
+        border: 1px solid #dfece5;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 20px 60px rgba(15, 31, 45, 0.2);
+      }
+
+      .profile-edit-heading {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+
+      .profile-edit-heading h2 {
+        color: #17392f;
+        font-size: 1.35rem;
+      }
+
+      .profile-edit-heading p {
+        margin-top: 4px;
+        color: #64748b;
+        font-size: 0.88rem;
+      }
+
+      .profile-edit-close {
+        width: 36px;
+        height: 36px;
+        border: 1px solid #dce7e1;
+        border-radius: 9px;
+        color: #315246;
+        background: #f6faf7;
+        font-size: 1.1rem;
+        cursor: pointer;
+      }
+
+      .profile-edit-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .profile-edit-field {
+        display: grid;
+        gap: 6px;
+        color: #344b42;
+        font-size: 0.83rem;
+        font-weight: 700;
+      }
+
+      .profile-edit-field input,
+      .profile-edit-field select {
+        width: 100%;
+        min-height: 42px;
+        padding: 9px 11px;
+        border: 1px solid #d7e3dc;
+        border-radius: 8px;
+        color: #172c25;
+        background: #fff;
+        font: inherit;
+        font-weight: 400;
+      }
+
+      .profile-edit-field input:focus,
+      .profile-edit-field select:focus {
+        outline: 3px solid rgba(47, 125, 93, 0.16);
+        border-color: #2f7d5d;
+      }
+
+      .profile-edit-status {
+        min-height: 22px;
+        margin-top: 14px;
+        color: #52645b;
+        font-size: 0.84rem;
+      }
+
+      .profile-edit-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .profile-edit-actions button {
+        min-height: 40px;
+        padding: 9px 15px;
+        border: 1px solid #d7e3dc;
+        border-radius: 8px;
+        color: #315246;
+        background: #fff;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .profile-edit-actions .profile-edit-save {
+        border-color: #2f7d5d;
+        color: #fff;
+        background: #2f7d5d;
+      }
+
+      .profile-edit-actions button:disabled {
+        cursor: wait;
+        opacity: 0.65;
+      }
+
       .profile-page .profile-content-grid {
         grid-template-columns: 260px minmax(0, 1fr);
         gap: 18px;
@@ -865,6 +989,15 @@
       }
 
       @media (max-width: 600px) {
+        .profile-edit-dialog {
+          padding: 18px;
+        }
+
+        .profile-edit-grid {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 12px;
+        }
+
         .profile-page .page-header {
           align-items: flex-start;
           flex-direction: column;
@@ -1027,8 +1160,118 @@
               </div>
             </div>
           </div>
-          <button class="btn-edit-header"><span>✎</span> Edit Profile</button>
+          <button class="btn-edit-header" id="openProfileEditor" type="button">
+            <span>✎</span> Edit Profile
+          </button>
         </header>
+
+        <div
+          class="profile-edit-overlay"
+          id="profileEditOverlay"
+          aria-hidden="true"
+        >
+          <section
+            class="profile-edit-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="profileEditTitle"
+          >
+            <div class="profile-edit-heading">
+              <div>
+                <h2 id="profileEditTitle">Edit Profile</h2>
+                <p>
+                  Changes sync to your teacher profile when Supabase is
+                  connected.
+                </p>
+              </div>
+              <button
+                class="profile-edit-close"
+                id="closeProfileEditor"
+                type="button"
+                aria-label="Close profile editor"
+              >
+                ×
+              </button>
+            </div>
+            <form id="profileEditForm">
+              <div class="profile-edit-grid">
+                <label class="profile-edit-field">
+                  Full name
+                  <input name="full_name" autocomplete="name" required />
+                </label>
+                <label class="profile-edit-field">
+                  Phone
+                  <input name="phone" type="tel" autocomplete="tel" />
+                </label>
+                <label class="profile-edit-field">
+                  Date of birth
+                  <input name="date_of_birth" type="date" />
+                </label>
+                <label class="profile-edit-field">
+                  Gender
+                  <input name="gender" />
+                </label>
+                <label class="profile-edit-field">
+                  City
+                  <input name="city" autocomplete="address-level2" />
+                </label>
+                <label class="profile-edit-field">
+                  State
+                  <input name="state" autocomplete="address-level1" />
+                </label>
+                <label class="profile-edit-field">
+                  Country
+                  <input name="country" autocomplete="country-name" />
+                </label>
+                <label class="profile-edit-field">
+                  Address
+                  <input name="address" autocomplete="street-address" />
+                </label>
+                <label class="profile-edit-field">
+                  Institution
+                  <input name="institution_name" autocomplete="organization" />
+                </label>
+                <label class="profile-edit-field">
+                  Institution type
+                  <input name="institution_type" />
+                </label>
+                <label class="profile-edit-field">
+                  Years of experience
+                  <input
+                    name="experience_years"
+                    type="number"
+                    min="0"
+                    step="1"
+                  />
+                </label>
+                <label class="profile-edit-field">
+                  Highest qualification
+                  <input name="highest_qualification" />
+                </label>
+                <label class="profile-edit-field">
+                  Teaching mode
+                  <input name="teaching_mode" />
+                </label>
+              </div>
+              <p
+                class="profile-edit-status"
+                id="profileEditStatus"
+                role="status"
+                aria-live="polite"
+              ></p>
+              <div class="profile-edit-actions">
+                <button id="cancelProfileEditor" type="button">Cancel</button>
+                <button
+                  class="profile-edit-save"
+                  id="saveProfileButton"
+                  type="submit"
+                >
+                  Save changes
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
 
         <div class="profile-content-grid">
           <div class="profile-card-left" id="overview">
@@ -1253,73 +1496,321 @@
     <script src="../js/teacher-data.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        const registration = TeacherData.getTeacherData() || {};
-        const personal = registration.personal || {};
-        const professional = registration.professional || {};
-        const name = personal.fullName || personal.full_name || "Teacher";
-        const location = [personal.city, personal.state, personal.country]
-          .filter(Boolean)
-          .join(", ");
-        const role = `Teacher • ${professional.teachingMode === "subject_specialist" ? "Subject Specialist" : "Educator"}`;
-        const subjects = professional.specialistAssignments?.length
-          ? professional.specialistAssignments.map((item) => item.subject)
-          : professional.subjects || [];
+        const editor = document.getElementById("profileEditOverlay");
+        const form = document.getElementById("profileEditForm");
+        const status = document.getElementById("profileEditStatus");
+        const saveButton = document.getElementById("saveProfileButton");
+        const openButton = document.getElementById("openProfileEditor");
+        let registration = TeacherData.getTeacherData() || {};
+        registration.personal ||= {};
+        registration.professional ||= {};
+        let client = null;
+        let authUser = null;
+        let channel = null;
+        let connectionMessage = "";
+
         const setText = (id, value) => {
           const element = document.getElementById(id);
-          if (element) element.textContent = value || "-";
+          if (element) {
+            element.textContent =
+              value === null || value === undefined || value === ""
+                ? "-"
+                : value;
+          }
         };
 
-        setText("profileNameEl", name);
-        setText("profileHeaderName", name);
-        setText("profileHeaderRole", role);
-        setText("detailFullName", name);
-        setText("profileEmail", personal.email);
-        setText("detailEmail", personal.email);
-        setText("profilePhone", personal.phone);
-        setText("detailPhone", personal.phone);
-        setText("profileLocation", location);
-        setText("headerProfileEmail", personal.email);
-        setText("headerProfilePhone", personal.phone);
-        setText("headerProfileLocation", location);
-        setText(
-          "headerProfileJoined",
-          personal.registrationDate ||
-            registration.createdAt ||
-            "Registration date unavailable",
-        );
-        setText("detailAddress", personal.address);
-        setText("detailDob", personal.dob);
-        setText("detailCountry", personal.country);
-        setText("detailGender", personal.gender);
-        setText("detailLanguages", (professional.languages || []).join(", "));
-        setText("detailQualification", professional.highestQualification);
-        setText("detailDepartment", professional.institutionType);
-        setText("detailExperience", professional.experienceYears);
-        setText("detailInstitution", professional.institutionName);
-        setText("detailTeacherId", registration.teacherId);
-        setText(
-          "profileRoleEl",
-          `Teacher • ${professional.teachingMode === "subject_specialist" ? "Subject Specialist" : "Educator"}`,
-        );
-        setText("profileRoleBadge", role);
-        setText(
-          "profileAbout",
-          `Teaching ${subjects.join(", ") || "selected classes and subjects"} at ${professional.institutionName || "the registered institution"}.`,
-        );
+        function renderProfile() {
+          const personal = registration.personal || {};
+          const professional = registration.professional || {};
+          const name = personal.fullName || personal.full_name || "Teacher";
+          const location = [personal.city, personal.state, personal.country]
+            .filter(Boolean)
+            .join(", ");
+          const role = `Teacher • ${professional.teachingMode === "subject_specialist" ? "Subject Specialist" : "Educator"}`;
+          const subjects = professional.specialistAssignments?.length
+            ? professional.specialistAssignments.map((item) => item.subject)
+            : professional.subjects || [];
 
-        const subjectContainer = document.getElementById("detailSubjects");
-        if (subjectContainer) {
-          subjectContainer.innerHTML = subjects.length
-            ? subjects
-                .map((subject) => `<span class="sub-badge">${subject}</span>`)
-                .join("")
-            : '<span class="sub-badge">-</span>';
+          setText("profileNameEl", name);
+          setText("profileHeaderName", name);
+          setText("profileHeaderRole", role);
+          setText("detailFullName", name);
+          setText("profileEmail", personal.email);
+          setText("detailEmail", personal.email);
+          setText("profilePhone", personal.phone);
+          setText("detailPhone", personal.phone);
+          setText("profileLocation", location);
+          setText("headerProfileEmail", personal.email);
+          setText("headerProfilePhone", personal.phone);
+          setText("headerProfileLocation", location);
+          setText(
+            "headerProfileJoined",
+            personal.registrationDate ||
+              registration.createdAt ||
+              "Registration date unavailable",
+          );
+          setText("detailAddress", personal.address);
+          setText("detailDob", personal.dob);
+          setText("detailCountry", personal.country);
+          setText("detailGender", personal.gender);
+          setText("detailLanguages", (professional.languages || []).join(", "));
+          setText("detailQualification", professional.highestQualification);
+          setText("detailDepartment", professional.institutionType);
+          setText("detailExperience", professional.experienceYears);
+          setText("detailInstitution", professional.institutionName);
+          setText("detailTeacherId", registration.teacherId);
+          setText("profileRoleEl", role);
+          setText("profileRoleBadge", role);
+          setText(
+            "profileAbout",
+            `Teaching ${subjects.join(", ") || "selected classes and subjects"} at ${professional.institutionName || "the registered institution"}.`,
+          );
+
+          const subjectContainer = document.getElementById("detailSubjects");
+          if (subjectContainer) {
+            subjectContainer.replaceChildren();
+            if (subjects.length) {
+              subjects.forEach((subject) => {
+                const badge = document.createElement("span");
+                badge.className = "sub-badge";
+                badge.textContent = subject;
+                subjectContainer.append(badge);
+              });
+            } else {
+              const badge = document.createElement("span");
+              badge.className = "sub-badge";
+              badge.textContent = "-";
+              subjectContainer.append(badge);
+            }
+          }
+
+          if (personal.profilePhoto) {
+            document.getElementById("avatarImg").src = personal.profilePhoto;
+            document.getElementById("profileHeaderAvatar").src =
+              personal.profilePhoto;
+          }
         }
-        if (personal.profilePhoto) {
-          document.getElementById("avatarImg").src = personal.profilePhoto;
-          document.getElementById("profileHeaderAvatar").src =
-            personal.profilePhoto;
+
+        function applyTeacherRow(row) {
+          const personal = registration.personal;
+          const professional = registration.professional;
+          Object.assign(personal, {
+            fullName: row.full_name ?? personal.fullName,
+            email: row.email ?? personal.email,
+            phone: row.phone ?? personal.phone,
+            dob: row.date_of_birth ?? personal.dob,
+            gender: row.gender ?? personal.gender,
+            country: row.country ?? personal.country,
+            state: row.state ?? personal.state,
+            city: row.city ?? personal.city,
+            address: row.address ?? personal.address,
+            profilePhoto: row.profile_photo ?? personal.profilePhoto,
+          });
+          Object.assign(professional, {
+            institutionName:
+              row.institution_name ?? professional.institutionName,
+            institutionType:
+              row.institution_type ?? professional.institutionType,
+            experienceYears:
+              row.experience_years ?? professional.experienceYears,
+            highestQualification:
+              row.highest_qualification ?? professional.highestQualification,
+            teachingMode: row.teaching_mode ?? professional.teachingMode,
+          });
+          TeacherData.saveTeacherData(registration);
+          renderProfile();
         }
+
+        function getFormValues() {
+          const values = Object.fromEntries(new FormData(form).entries());
+          const numericExperience = values.experience_years.trim();
+          return {
+            full_name: values.full_name.trim(),
+            phone: values.phone.trim() || null,
+            date_of_birth: values.date_of_birth || null,
+            gender: values.gender.trim() || null,
+            city: values.city.trim() || null,
+            state: values.state.trim() || null,
+            country: values.country.trim() || null,
+            address: values.address.trim() || null,
+            institution_name: values.institution_name.trim() || null,
+            institution_type: values.institution_type.trim() || null,
+            experience_years: numericExperience
+              ? Number(numericExperience)
+              : null,
+            highest_qualification: values.highest_qualification.trim() || null,
+            teaching_mode: values.teaching_mode.trim() || null,
+          };
+        }
+
+        function openEditor() {
+          const personal = registration.personal;
+          const professional = registration.professional;
+          const values = {
+            full_name: personal.fullName || personal.full_name,
+            phone: personal.phone,
+            date_of_birth: personal.dob || personal.date_of_birth,
+            gender: personal.gender,
+            city: personal.city,
+            state: personal.state,
+            country: personal.country,
+            address: personal.address,
+            institution_name:
+              professional.institutionName || professional.institution_name,
+            institution_type:
+              professional.institutionType || professional.institution_type,
+            experience_years:
+              professional.experienceYears || professional.experience_years,
+            highest_qualification:
+              professional.highestQualification ||
+              professional.highest_qualification,
+            teaching_mode:
+              professional.teachingMode || professional.teaching_mode,
+          };
+          Object.entries(values).forEach(([name, value]) => {
+            form.elements.namedItem(name).value = value ?? "";
+          });
+          status.textContent = connectionMessage;
+          editor.classList.add("open");
+          editor.setAttribute("aria-hidden", "false");
+          form.elements.namedItem("full_name").focus();
+        }
+
+        function closeEditor() {
+          editor.classList.remove("open");
+          editor.setAttribute("aria-hidden", "true");
+          openButton.focus();
+        }
+
+        async function initializeSupabase() {
+          client = TeacherData.getSupabaseClient();
+          if (!client) {
+            connectionMessage =
+              "Supabase is not configured. Saves will stay on this device.";
+            return;
+          }
+
+          const { data: authData, error: authError } =
+            await client.auth.getUser();
+          if (authError) throw authError;
+          authUser = authData.user;
+          if (!authUser) {
+            connectionMessage =
+              "Sign in to sync profile changes with Supabase.";
+            return;
+          }
+
+          const { data, error } = await client
+            .from("teachers")
+            .select("*")
+            .eq("id", authUser.id)
+            .maybeSingle();
+          if (error) throw error;
+          if (data) applyTeacherRow(data);
+
+          channel = client
+            .channel(`teacher-profile-${authUser.id}`)
+            .on(
+              "postgres_changes",
+              {
+                event: "*",
+                schema: "public",
+                table: "teachers",
+                filter: `id=eq.${authUser.id}`,
+              },
+              (event) => {
+                if (event.new) {
+                  applyTeacherRow(event.new);
+                  connectionMessage = "Profile synced with a realtime update.";
+                  if (editor.classList.contains("open"))
+                    status.textContent = connectionMessage;
+                }
+              },
+            )
+            .subscribe((subscriptionStatus) => {
+              if (subscriptionStatus === "SUBSCRIBED") {
+                connectionMessage =
+                  "Connected to Supabase. Profile updates sync in real time.";
+              } else if (
+                subscriptionStatus === "CHANNEL_ERROR" ||
+                subscriptionStatus === "TIMED_OUT"
+              ) {
+                connectionMessage =
+                  "Profile saves work, but realtime updates are unavailable.";
+              }
+            });
+        }
+
+        openButton.addEventListener("click", openEditor);
+        document
+          .getElementById("closeProfileEditor")
+          .addEventListener("click", closeEditor);
+        document
+          .getElementById("cancelProfileEditor")
+          .addEventListener("click", closeEditor);
+        editor.addEventListener("click", (event) => {
+          if (event.target === editor) closeEditor();
+        });
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape" && editor.classList.contains("open"))
+            closeEditor();
+        });
+
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const values = getFormValues();
+          saveButton.disabled = true;
+          saveButton.textContent = "Saving...";
+          status.textContent = "Saving profile changes...";
+
+          try {
+            if (client) {
+              if (!authUser) {
+                const { data, error } = await client.auth.getUser();
+                if (error) throw error;
+                authUser = data.user;
+              }
+              if (!authUser)
+                throw new Error(
+                  "Sign in before saving your profile to Supabase.",
+                );
+
+              const { data, error } = await client
+                .from("teachers")
+                .upsert({ id: authUser.id, ...values }, { onConflict: "id" })
+                .select()
+                .maybeSingle();
+              if (error) throw error;
+              applyTeacherRow(data || { ...values });
+              connectionMessage =
+                "Connected to Supabase. Profile updates sync in real time.";
+              status.textContent = "Profile saved to Supabase.";
+            } else {
+              applyTeacherRow(values);
+              connectionMessage =
+                "Supabase is not configured. Saves will stay on this device.";
+              status.textContent = connectionMessage;
+            }
+          } catch (error) {
+            status.textContent =
+              error.message || "Could not save profile changes.";
+          } finally {
+            saveButton.disabled = false;
+            saveButton.textContent = "Save changes";
+          }
+        });
+
+        window.addEventListener("beforeunload", () => {
+          if (channel && client) client.removeChannel(channel);
+        });
+
+        renderProfile();
+        initializeSupabase().catch((error) => {
+          connectionMessage =
+            error.message || "Could not load the Supabase profile.";
+          if (editor.classList.contains("open"))
+            status.textContent = connectionMessage;
+        });
       });
     </script>
     <script src="../js/layout.js"></script>
