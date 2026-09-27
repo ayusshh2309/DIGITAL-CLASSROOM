@@ -15,7 +15,7 @@
 
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="../js/supabase-client.js"></script>
+    <script src="../js/supabase.js"></script>
 
     <style>
       /* ── DESIGN SYSTEM & TOKENS ── */
@@ -568,6 +568,7 @@
       }
 
       .btn-edit-profile {
+        display: block;
         width: 100%;
         margin-top: 16px;
         background: #fff;
@@ -577,6 +578,8 @@
         font-weight: 700;
         font-size: 0.9rem;
         color: var(--text-main);
+        text-align: center;
+        text-decoration: none;
         cursor: pointer;
       }
 
@@ -802,10 +805,10 @@
               </div>
             </div>
             <div class="setting-control">
-              <select>
-                <option>English</option>
-                <option>Spanish</option>
-                <option>French</option>
+              <select id="settingLanguage" data-setting="language">
+                <option value="English">English</option>
+                <option value="Spanish">Spanish</option>
+                <option value="French">French</option>
               </select>
             </div>
           </div>
@@ -819,9 +822,11 @@
               </div>
             </div>
             <div class="setting-control">
-              <select>
-                <option>(GMT+05:30) Asia/Kolkata</option>
-                <option>(GMT+00:00) UTC</option>
+              <select id="settingTimezone" data-setting="timezone">
+                <option value="Asia/Kolkata">(GMT+05:30) Asia/Kolkata</option>
+                <option value="UTC">(GMT+00:00) UTC</option>
+                <option value="Asia/Dubai">(GMT+04:00) Asia/Dubai</option>
+                <option value="Europe/London">Europe/London</option>
               </select>
             </div>
           </div>
@@ -835,9 +840,9 @@
               </div>
             </div>
             <div class="setting-control">
-              <select>
-                <option>17 May 2026 (DD MMM YYYY)</option>
-                <option>YYYY-MM-DD</option>
+              <select id="settingDateFormat" data-setting="date_format">
+                <option value="DD MMM YYYY">17 May 2026 (DD MMM YYYY)</option>
+                <option value="YYYY-MM-DD">YYYY-MM-DD</option>
               </select>
             </div>
           </div>
@@ -853,10 +858,10 @@
             <div class="setting-control">
               <div class="radio-group-inline">
                 <label class="radio-label">
-                  <input type="radio" name="timeFormat" checked /> 12 Hours
+                  <input type="radio" name="timeFormat" data-setting="time_format" value="12h" checked /> 12 Hours
                 </label>
                 <label class="radio-label">
-                  <input type="radio" name="timeFormat" /> 24 Hours
+                  <input type="radio" name="timeFormat" data-setting="time_format" value="24h" /> 24 Hours
                 </label>
               </div>
             </div>
@@ -871,9 +876,9 @@
               </div>
             </div>
             <div class="setting-control">
-              <select>
-                <option>Monday</option>
-                <option>Sunday</option>
+              <select id="settingWeekStart" data-setting="week_start_day">
+                <option value="Monday">Monday</option>
+                <option value="Sunday">Sunday</option>
               </select>
             </div>
           </div>
@@ -894,7 +899,7 @@
             </div>
             <div class="setting-control">
               <label class="switch">
-                <input type="checkbox" checked />
+                <input type="checkbox" data-setting="auto_save" checked />
                 <span class="slider"></span>
               </label>
             </div>
@@ -910,7 +915,7 @@
             </div>
             <div class="setting-control">
               <label class="switch">
-                <input type="checkbox" checked />
+                <input type="checkbox" data-setting="email_notifications" checked />
                 <span class="slider"></span>
               </label>
             </div>
@@ -926,7 +931,7 @@
             </div>
             <div class="setting-control">
               <label class="switch">
-                <input type="checkbox" checked />
+                <input type="checkbox" data-setting="sound_notifications" checked />
                 <span class="slider"></span>
               </label>
             </div>
@@ -942,7 +947,7 @@
             </div>
             <div class="setting-control">
               <label class="switch">
-                <input type="checkbox" />
+                <input type="checkbox" data-setting="compact_view" />
                 <span class="slider"></span>
               </label>
             </div>
@@ -958,14 +963,15 @@
             </div>
             <div class="setting-control">
               <label class="switch">
-                <input type="checkbox" checked />
+                <input type="checkbox" data-setting="show_tips" checked />
                 <span class="slider"></span>
               </label>
             </div>
           </div>
 
           <div class="btn-save-container">
-            <button class="btn-save">Save Changes</button>
+            <button class="btn-save" id="saveSettingsButton" type="button">Save Changes</button>
+            <p id="settingsStatus" role="status" aria-live="polite"></p>
           </div>
         </div>
 
@@ -975,16 +981,18 @@
           <div class="card-box">
             <div class="account-mini-profile">
               <img
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
-                alt="Avatar"
+                src=""
+                alt="Teacher profile"
                 class="account-avatar"
+                id="settingsAvatar"
+                hidden
               />
-              <div class="account-name">Ayush Kumar</div>
-              <div class="account-email">ayush.kumar@smartdc.com</div>
-              <div class="account-phone">+91 98765 43210</div>
-              <span class="role-pill">Teacher • Subject Specialist</span>
+              <div class="account-name" id="settingsTeacherName">Loading profile...</div>
+              <div class="account-email" id="settingsTeacherEmail">-</div>
+              <div class="account-phone" id="settingsTeacherPhone">-</div>
+              <span class="role-pill" id="settingsTeacherRole">Teacher</span>
             </div>
-            <button class="btn-edit-profile">Edit Profile</button>
+            <a class="btn-edit-profile" href="profile.html">Edit Profile</a>
           </div>
 
           <!-- Storage Usage Card -->
@@ -994,28 +1002,32 @@
               <a href="#" class="storage-link">View Details</a>
             </div>
             <div class="progress-bar-bg">
-              <div class="progress-bar-fill"></div>
+              <div class="progress-bar-fill" id="storageBar" style="width: 0%"></div>
             </div>
-            <div class="storage-sub">4.9 GB of 5 GB used (98%)</div>
+            <div class="storage-sub" id="storageUsage">Storage report unavailable</div>
           </div>
 
           <!-- Quick Links Card -->
           <div class="card-box">
             <div class="quick-links-title">Quick Links</div>
-            <a href="#" class="quick-link-item">
+            <a href="#" class="quick-link-item" data-action="change-password">
               <div class="quick-link-left">🔒 Change Password</div>
               <span>›</span>
             </a>
-            <a href="#" class="quick-link-item">
+            <a href="#" class="quick-link-item" data-action="download-data">
               <div class="quick-link-left">📥 Download My Data</div>
               <span>›</span>
             </a>
-            <a href="#" class="quick-link-item">
+            <a href="#" class="quick-link-item" data-action="devices">
               <div class="quick-link-left">💻 Connected Devices</div>
               <span>›</span>
             </a>
-            <a href="#" class="quick-link-item">
+            <a href="#" class="quick-link-item" data-action="delete-account">
               <div class="quick-link-left">🗑️ Delete Account</div>
+              <span>›</span>
+            </a>
+            <a href="#" class="quick-link-item" data-action="change-email">
+              <div class="quick-link-left">✉️ Change Email</div>
               <span>›</span>
             </a>
           </div>
@@ -1033,6 +1045,8 @@
       </div>
     </div>
     </main>
+    <script src="../js/teacher-data.js"></script>
+    <script src="../js/teacher-settings.js"></script>
     <script src="../js/layout.js"></script>
   </body>
 </html>

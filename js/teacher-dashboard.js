@@ -45,23 +45,18 @@
 
   const $ = (id) => document.getElementById(id);
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
-  const readArray = (key) => {
-    try { const value = JSON.parse(localStorage.getItem(key) || "[]"); return Array.isArray(value) ? value : []; } catch { return []; }
-  };
-  const registration = window.TeacherData?.getTeacherData?.() || {};
-  const profile = registration.personal || {};
-  const teacherName = profile.fullName || profile.full_name || registration.fullName || registration.full_name || "Teacher";
+  let teacherName = "Teacher";
   const profileName = document.getElementById("profileNameEl");
-  if (profileName) profileName.textContent = teacherName;
   const avatar = document.getElementById("avatarImg");
-  if (avatar && profile.profilePhoto) avatar.src = profile.profilePhoto;
-  const localTeacherIds = new Set([window.AttendanceService?.teacherId?.(), registration.authUserId, registration.id, registration.teacher_id, registration.teacherId, profile.email].filter(Boolean).map(String));
-  const teacherId = () => state.user?.id || window.AttendanceService?.teacherId?.() || "local-teacher";
-  const state = { user: null, client: null, classes: [], assignments: new Map(), materials: [], quizzes: [], students: [], attendance: [], performance: new Map(), liveClasses: [], announcements: [], calendarDate: new Date(), events: [], refreshTimer: null, refreshing: false };
+  if (profileName) profileName.textContent = "Loading profile...";
+  if (avatar) avatar.hidden = true;
+    const teacherId = () => state.user?.id || "";
+    const state = { user: null, profile: null, client: null, classes: [], assignments: new Map(), materials: [], quizzes: [], students: [], attendance: [], performance: new Map(), liveClasses: [], announcements: [], calendarDate: new Date(), events: [], refreshTimer: null, refreshing: false };
+  let profileChannel = null;
+  let stopAuthWatch = null;
   const gradeOf = (row) => String(row.class_grade ?? row.grade ?? row.class ?? row.class_number ?? "").match(/\d+/)?.[0] || "";
   const subjectOf = (row) => String(row.subject ?? row.subject_name ?? "").trim();
   const dateOf = (row) => row.start_at || row.scheduled_at || row.start_time || row.exam_at || row.due_date || row.published_at || row.created_at || null;
-  const localOwned = (rows) => rows.filter((row) => row.teacher_id && String(row.teacher_id) !== "local-teacher" && localTeacherIds.has(String(row.teacher_id)));
   const assignedRow = (row) => state.assignments.has(gradeOf(row)) && (!subjectOf(row) || state.assignments.get(gradeOf(row)).has(subjectOf(row)));
   const fmtDate = (date, options = { weekday: "long", day: "numeric", month: "long", year: "numeric" }) => new Intl.DateTimeFormat(undefined, options).format(date);
   const fmtTime = (date) => new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(date);
@@ -77,12 +72,6 @@
 
   function setupAssignments(databaseAssignments = []) {
     const assignments = new Map();
-    const localMatchesUser = !state.user || localTeacherIds.has(String(state.user.id));
-    const localGrades = localMatchesUser ? window.AttendanceService?.loadTeacherClasses?.() || [] : [];
-    localGrades.forEach((grade) => {
-      const subjects = window.AttendanceService?.loadTeacherSubjects?.(grade) || [];
-      if (subjects.length) assignments.set(String(grade), new Set(subjects.map(String)));
-    });
     databaseAssignments.forEach((row) => {
       const grade = gradeOf(row);
       const subject = subjectOf(row);
@@ -116,22 +105,52 @@
     };
   }
 
-  function localAssessmentRows() {
-    const rows = ["performanceRecords", "studentPerformance", "quizResults", "quizAttempts"].flatMap(readArray);
-    return rows
-      .filter((row) => row.teacher_id && localTeacherIds.has(String(row.teacher_id)))
-      .map(normalizeAssessment)
-      .filter(assignedRow);
-  }
-
   async function loadData() {
     state.client = window.TeacherData?.getSupabaseClient?.() || window.SmartLearningSupabase?.getClient?.() || null;
-    state.user = null;
-    if (state.client) {
+    if (!state.client) {
+      window.location.assign("../teacher_registration/login.html");
+      return;
+    }
+    let currentTeacher;
+    try {
+      currentTeacher = await window.TeacherData.loadCurrentTeacherProfile();
+    } catch (error) {
+      console.error("Unable to load the authenticated teacher profile.", error);
+      if (profileName) profileName.textContent = "Unable to load profile";
+      return;
+    }
+    state.client = currentTeacher.client;
+    state.user = currentTeacher.user;
+    state.profile = currentTeacher.profile;
+    teacherName = currentTeacher.profile.full_name || "Teacher";
+    if (profileName) profileName.textContent = teacherName;
+    updateClock();
+    if (avatar && currentTeacher.profile.profile_photo_url) {
       try {
-        const { data, error } = await state.client.auth.getUser();
-        if (!error && data?.user) state.user = data.user;
-      } catch { state.user = null; }
+        avatar.src = await window.TeacherData.getTeacherProfilePhotoUrl(currentTeacher.profile.profile_photo_url);
+        avatar.hidden = false;
+      } catch { avatar.hidden = true; }
+    }
+    if (!profileChannel) {
+      profileChannel = window.TeacherData.subscribeToTeacherProfile(state.user.id, (event) => {
+        if (event.eventType === "DELETE") {
+          window.__currentTeacherProfile = null;
+          window.location.assign("../teacher_registration/login.html");
+          return;
+        }
+        if (!event.new) return;
+        teacherName = event.new.full_name || "Teacher";
+        if (profileName) profileName.textContent = teacherName;
+        updateClock();
+        if (avatar && event.new.profile_photo_url) {
+          window.TeacherData.getTeacherProfilePhotoUrl(event.new.profile_photo_url)
+            .then((url) => { avatar.src = url; avatar.hidden = false; })
+            .catch(() => { avatar.hidden = true; });
+        }
+      });
+      stopAuthWatch = window.TeacherData.watchAuthState(() => {
+        window.location.assign("../teacher_registration/login.html");
+      });
     }
     let dbAssignments = [];
     if (state.client && state.user) {
@@ -141,7 +160,7 @@
       } catch { /* Optional assignment table; local registration remains the source. */ }
     }
     setupAssignments(dbAssignments);
-    const id = state.user?.id || "";
+    const id = state.profile.id;
 
     if (state.client && state.user) {
       const [materials, quizzes, students, attendance, liveClasses, announcements] = await Promise.all([
@@ -154,20 +173,8 @@
       state.attendance = attendance;
       state.liveClasses = liveClasses;
       state.announcements = announcements;
-    } else {
-      const studentRows = localOwned(readArray("teacherStudents"));
-      state.students = studentRows.filter(assignedRow).filter((student) => String(student.status || "Active").toLowerCase() !== "inactive");
-      state.materials = localOwned(readArray(`teacherMaterials:${[...localTeacherIds][0] || "local-teacher"}`)).filter(assignedRow);
-      state.quizzes = localOwned(readArray("smartLearningDC_published_quizzes")).filter(assignedRow).filter((quiz) => String(quiz.status || "published").toLowerCase() === "published");
-      state.attendance = localOwned(readArray("smartLearningAttendance")).filter(assignedRow);
-      state.liveClasses = localOwned(readArray("smartLearningLiveClasses")).filter(assignedRow);
-      state.announcements = localOwned(readArray("smartLearningAnnouncements")).filter(assignedRow);
     }
 
-    const ownedLiveRows = state.liveClasses;
-    if (!state.client || !state.user) {
-      state.liveClasses = localOwned(ownedLiveRows).filter(assignedRow);
-    }
     if (state.client && state.user) {
       const [performanceRecords, quizAttempts] = await Promise.all([
         queryTeacherTable("student_performance"),
@@ -181,9 +188,6 @@
         try { return await window.AttendanceService?.getAttendanceHistory?.(grade, subject) || []; } catch { return []; }
       })));
       state.attendance = histories.flat().filter((row) => String(row.teacher_id) === String(id) && assignedRow(row));
-    } else {
-      const assessments = localAssessmentRows();
-      state.performance = new Map(state.classes.map((grade) => [grade, assessments.filter((row) => gradeOf(row) === grade)]));
     }
     renderAll();
   }
@@ -332,7 +336,7 @@
       if (subjectSet.has("physics") && subjectSet.has("mathematics")) return { label: "Science (PCM)", code: "PCM" };
       if (subjectSet.has("accountancy") || subjectSet.has("business studies")) return { label: "Commerce", code: "Commerce" };
       if (subjectSet.has("history") || subjectSet.has("political science")) return { label: "Arts / Humanities", code: "Arts" };
-      const registeredStreams = registration.professional?.streams || registration.professional?.selected_streams || [];
+      const registeredStreams = state.profile.streams || state.profile.selected_streams || [];
       const labels = { science_pcm: ["Science (PCM)", "PCM"], science_pcb: ["Science (PCB)", "PCB"], commerce: ["Commerce", "Commerce"], arts_humanities: ["Arts / Humanities", "Arts"] };
       return registeredStreams.length === 1 && labels[registeredStreams[0]]
         ? { label: labels[registeredStreams[0]][0], code: labels[registeredStreams[0]][1] }
@@ -369,13 +373,16 @@
     if (state.client && state.user) {
       const channel = state.client.channel(`teacher-dashboard-${state.user.id}`);
       ["teacher_subjects", "materials", "quizzes", "students", "attendance", "live_classes", "announcements", "student_performance", "quiz_attempts"].forEach((table) => {
-        channel.on("postgres_changes", { event: "*", schema: "public", table, filter: `teacher_id=eq.${state.user.id}` }, scheduleRefresh);
+        channel.on("postgres_changes", { event: "*", schema: "public", table, filter: `teacher_id=eq.${teacherId()}` }, scheduleRefresh);
       });
       channel.subscribe();
-      window.addEventListener("beforeunload", () => state.client?.removeChannel(channel), { once: true });
+      window.addEventListener("beforeunload", () => {
+        state.client?.removeChannel(channel);
+        if (profileChannel) state.client?.removeChannel(profileChannel);
+        stopAuthWatch?.();
+      }, { once: true });
     }
     ["smart-learning-live-classes-updated", "smart-learning-announcements-updated", "smart-learning-performance-updated", "smart-learning-calendar-updated"].forEach((eventName) => window.addEventListener(eventName, scheduleRefresh));
-    window.addEventListener("storage", scheduleRefresh);
     state.refreshTimer = window.setInterval(scheduleRefresh, 30000);
   }
 

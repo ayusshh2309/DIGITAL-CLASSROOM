@@ -24,40 +24,66 @@
     document.head.appendChild(themeStylesheet);
   }
 
+  let profileChannel = null;
+  let stopAuthWatch = null;
+
   fetch(layoutPath)
     .then((response) => {
       if (!response.ok) throw new Error(`Layout request failed: ${response.status}`);
       return response.text();
     })
-    .then((html) => {
+    .then(async (html) => {
       layoutHost.innerHTML = html;
 
-      const readStoredTeacher = (key) => {
+      const profileName = document.getElementById("profileNameEl");
+      const teacherRole = document.getElementById("profileRoleEl");
+      const avatar = document.getElementById("avatarImg");
+      const renderIdentity = async (profile, user) => {
+        if (profileName) profileName.textContent = profile.full_name || "Teacher";
+        if (teacherRole) {
+          teacherRole.textContent = profile.teaching_mode === "subject_specialist"
+            ? "Teacher · Subject Specialist"
+            : "Teacher · Educator";
+        }
+        if (!avatar || !profile.profile_photo_url) {
+          if (avatar) avatar.hidden = true;
+          return;
+        }
         try {
-          return JSON.parse(localStorage.getItem(key) || "null");
-        } catch (error) {
-          return null;
+          avatar.src = await window.TeacherData.getTeacherProfilePhotoUrl(profile.profile_photo_url);
+          avatar.alt = profile.full_name ? `${profile.full_name}'s profile photo` : "Teacher profile photo";
+          avatar.hidden = false;
+        } catch {
+          avatar.hidden = true;
         }
       };
 
-      const teacherData =
-        readStoredTeacher("teacherRegistration") ||
-        readStoredTeacher("teacherProfile") ||
-        readStoredTeacher("teacherData");
-      const teacherName =
-        teacherData?.personal?.fullName ||
-        teacherData?.personal?.full_name ||
-        teacherData?.fullName ||
-        teacherData?.full_name;
-      const profileName = document.getElementById("profileNameEl");
-      if (profileName && teacherName) profileName.textContent = teacherName;
-
-      const teacherRole = document.getElementById("profileRoleEl");
-      if (teacherRole && teacherData?.professional?.teachingMode) {
-        teacherRole.textContent =
-          teacherData.professional.teachingMode === "subject_specialist"
-            ? "Teacher · Subject Specialist"
-            : "Teacher · All Subjects";
+      if (window.TeacherData?.loadCurrentTeacherProfile) {
+        try {
+          const { client, user, profile } = await window.TeacherData.loadCurrentTeacherProfile();
+          await renderIdentity(profile, user);
+          profileChannel = window.TeacherData.subscribeToTeacherProfile(user.id, (event) => {
+            if (event.eventType === "DELETE") {
+              window.__currentTeacherProfile = null;
+              window.location.assign("../teacher_registration/login.html");
+              return;
+            }
+            if (event.new) renderIdentity(event.new, user);
+          });
+          stopAuthWatch = window.TeacherData.watchAuthState(() => {
+            window.location.assign("../teacher_registration/login.html");
+          });
+          window.addEventListener("beforeunload", () => {
+            if (profileChannel) client.removeChannel(profileChannel);
+            stopAuthWatch?.();
+          });
+        } catch (error) {
+          if (profileName) profileName.textContent = "Unable to load profile";
+          if (avatar) avatar.hidden = true;
+          if (error.code !== "AUTH_REQUIRED") {
+            console.error("Unable to load the shared teacher profile.", error);
+          }
+        }
       }
 
       const legacySidebar = document.querySelector("body > .sidebar");
@@ -85,9 +111,15 @@
         link.addEventListener("click", () => document.body.classList.remove("sidebar-open"));
       });
 
-      document.getElementById("logoutBtn")?.addEventListener("click", () => {
-        window.localStorage.removeItem("teacherProfile");
-        window.localStorage.removeItem("teacherData");
+      document.getElementById("logoutBtn")?.addEventListener("click", async (event) => {
+        event.preventDefault();
+        try {
+          const client = window.TeacherData?.getSupabaseClient?.();
+          if (client) await client.auth.signOut();
+        } catch (error) {
+          console.error("Unable to sign out.", error);
+        }
+        window.location.assign("../teacher_registration/login.html");
       });
     })
     .catch((error) => console.error("Unable to load shared dashboard layout.", error));

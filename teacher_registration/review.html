@@ -2080,6 +2080,7 @@
   ========================================== -->
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../js/supabase.js"></script>
     <script src="../js/teacher-data.js"></script>
     <script>
   /* =========================================================
@@ -2813,7 +2814,6 @@
       )
     );
 
-    TeacherData.saveTeacherData(finalTeacherData);
 
 
     /* =====================================================
@@ -2840,12 +2840,32 @@
        Remove this timeout when Supabase is connected.
       */
 
-      await TeacherData.saveToSupabase(finalTeacherData);
+      const saveResult = await TeacherData.saveToSupabase(finalTeacherData);
+      if (!saveResult.saved) {
+        if (saveResult.reason === "not-authenticated") {
+          alert("Confirm your email and sign in to finish teacher registration.");
+          window.location.href = "login.html";
+          return;
+        }
+        throw new Error(
+          saveResult.reason === "not-configured"
+            ? "Supabase is not configured. Registration was not saved."
+            : "Sign in to Supabase before completing teacher registration.",
+        );
+      }
 
 
       alert(
         `Teacher registration completed successfully!\n\nTeacher ID: ${generatedTeacherId}`
       );
+
+      [
+        "teacherPersonalInfo",
+        "teacherProfessionalInfo",
+        "teacherProfilePhotoName",
+        "teacherRegistrationNeedsLogin",
+        "finalTeacherRegistration",
+      ].forEach((key) => sessionStorage.removeItem(key));
 
 
       /* -----------------------------------------
@@ -2863,9 +2883,7 @@
         error
       );
 
-      alert(
-        "Something went wrong while creating your account. Please try again."
-      );
+      alert(error.message || "Registration was not saved. Please try again.");
 
     } finally {
 

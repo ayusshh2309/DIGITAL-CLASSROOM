@@ -772,7 +772,8 @@
       }
 
       .profile-edit-field input,
-      .profile-edit-field select {
+      .profile-edit-field select,
+      .profile-edit-field textarea {
         width: 100%;
         min-height: 42px;
         padding: 9px 11px;
@@ -785,9 +786,22 @@
       }
 
       .profile-edit-field input:focus,
-      .profile-edit-field select:focus {
+      .profile-edit-field select:focus,
+      .profile-edit-field textarea:focus {
         outline: 3px solid rgba(47, 125, 93, 0.16);
         border-color: #2f7d5d;
+      }
+
+      .profile-edit-field textarea {
+        min-height: 88px;
+        resize: vertical;
+      }
+
+      .profile-edit-error {
+        min-height: 14px;
+        color: #b42318;
+        font-size: 0.75rem;
+        font-weight: 500;
       }
 
       .profile-edit-status {
@@ -1119,12 +1133,7 @@
           <span class="notif-badge">3</span>
         </div>
         <div class="user-profile">
-          <img
-            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
-            alt="Avatar"
-            class="user-avatar"
-            id="avatarImg"
-          />
+          <img src="" alt="Avatar" class="user-avatar" id="avatarImg" hidden />
           <div class="user-info">
             <span class="user-name" id="profileNameEl">Ayush Kumar</span>
             <span class="user-role" id="profileRoleEl"
@@ -1140,7 +1149,7 @@
             <img
               class="header-avatar"
               id="profileHeaderAvatar"
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80"
+              src=""
               alt="Teacher profile"
             />
             <div class="header-profile-copy">
@@ -1160,10 +1169,21 @@
               </div>
             </div>
           </div>
-          <button class="btn-edit-header" id="openProfileEditor" type="button">
+          <button
+            class="btn-edit-header"
+            id="openProfileEditor"
+            type="button"
+            disabled
+          >
             <span>✎</span> Edit Profile
           </button>
         </header>
+        <p
+          id="profileLoadStatus"
+          class="profile-edit-status"
+          role="status"
+          aria-live="polite"
+        ></p>
 
         <div
           class="profile-edit-overlay"
@@ -1197,15 +1217,32 @@
               <div class="profile-edit-grid">
                 <label class="profile-edit-field">
                   Full name
-                  <input name="full_name" autocomplete="name" required />
+                  <input
+                    name="full_name"
+                    autocomplete="name"
+                    maxlength="100"
+                    required
+                  />
+                  <span
+                    class="profile-edit-error"
+                    data-error-for="full_name"
+                  ></span>
                 </label>
                 <label class="profile-edit-field">
                   Phone
-                  <input name="phone" type="tel" autocomplete="tel" />
+                  <input name="phone_number" type="tel" autocomplete="tel" />
+                  <span
+                    class="profile-edit-error"
+                    data-error-for="phone_number"
+                  ></span>
                 </label>
                 <label class="profile-edit-field">
                   Date of birth
                   <input name="date_of_birth" type="date" />
+                  <span
+                    class="profile-edit-error"
+                    data-error-for="date_of_birth"
+                  ></span>
                 </label>
                 <label class="profile-edit-field">
                   Gender
@@ -1238,11 +1275,15 @@
                 <label class="profile-edit-field">
                   Years of experience
                   <input
-                    name="experience_years"
+                    name="years_experience"
                     type="number"
                     min="0"
                     step="1"
                   />
+                  <span
+                    class="profile-edit-error"
+                    data-error-for="years_experience"
+                  ></span>
                 </label>
                 <label class="profile-edit-field">
                   Highest qualification
@@ -1251,6 +1292,31 @@
                 <label class="profile-edit-field">
                   Teaching mode
                   <input name="teaching_mode" />
+                </label>
+                <label class="profile-edit-field">
+                  Employment status
+                  <input name="employment_status" />
+                </label>
+                <label class="profile-edit-field">
+                  Languages
+                  <input name="languages" />
+                </label>
+                <label class="profile-edit-field">
+                  Profile photo
+                  <input
+                    name="profile_photo_file"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                  />
+                  <span
+                    class="profile-edit-error"
+                    data-error-for="profile_photo_file"
+                  ></span>
+                </label>
+                <label class="profile-edit-field">
+                  About me
+                  <textarea name="bio" maxlength="1000"></textarea>
+                  <span class="profile-edit-error" data-error-for="bio"></span>
                 </label>
               </div>
               <p
@@ -1309,10 +1375,7 @@
 
             <div class="about-me-box">
               <h4>About Me</h4>
-              <p id="profileAbout">
-                Passionate educator with a strong commitment to student success
-                and interactive learning.
-              </p>
+              <p id="profileAbout">Loading profile...</p>
             </div>
 
             <div class="social-links-box">
@@ -1329,19 +1392,29 @@
             <div class="stats-grid">
               <div class="stat-card">
                 <div class="stat-icon">📚</div>
-                <div><strong>12</strong><span>Classes</span></div>
+                <div>
+                  <strong id="profileClassCount">-</strong><span>Classes</span>
+                </div>
               </div>
               <div class="stat-card">
                 <div class="stat-icon">👥</div>
-                <div><strong>156</strong><span>Students</span></div>
+                <div>
+                  <strong id="profileStudentCount">-</strong
+                  ><span>Students</span>
+                </div>
               </div>
               <div class="stat-card">
                 <div class="stat-icon">🎓</div>
-                <div><strong>8</strong><span>Subjects</span></div>
+                <div>
+                  <strong id="profileSubjectCount">-</strong
+                  ><span>Subjects</span>
+                </div>
               </div>
               <div class="stat-card">
                 <div class="stat-icon">★</div>
-                <div><strong>4.8</strong><span>Rating</span></div>
+                <div>
+                  <strong id="profileRating">-</strong><span>Rating</span>
+                </div>
               </div>
             </div>
 
@@ -1358,7 +1431,7 @@
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Father's Name</span>
-                  <span class="detail-value">Rajesh Kumar</span>
+                  <span class="detail-value">-</span>
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Email Address</span>
@@ -1366,7 +1439,7 @@
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Mother's Name</span>
-                  <span class="detail-value">Sushila Devi</span>
+                  <span class="detail-value">-</span>
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Phone Number</span>
@@ -1374,9 +1447,7 @@
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Address</span>
-                  <span class="detail-value" id="detailAddress"
-                    >Boring Road, Patna<br />Bihar - 800001, India</span
-                  >
+                  <span class="detail-value" id="detailAddress">-</span>
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Date of Birth</span>
@@ -1438,7 +1509,7 @@
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Joining Date</span>
-                  <span class="detail-value">10 January 2023</span>
+                  <span class="detail-value" id="detailJoiningDate">-</span>
                 </div>
               </div>
             </div>
@@ -1457,7 +1528,9 @@
                 <div class="detail-row-item">
                   <span class="detail-label">Two-Factor Authentication</span>
                   <div>
-                    <span class="status-badge-green">Enabled</span>
+                    <span class="status-badge-green" id="mfaStatus"
+                      >Checking...</span
+                    >
                   </div>
                 </div>
                 <div class="detail-row-item">
@@ -1466,12 +1539,30 @@
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Last Login</span>
-                  <span class="detail-value">17 May 2026, 09:30 AM</span>
+                  <span class="detail-value" id="lastLoginValue">-</span>
                 </div>
                 <div class="detail-row-item" style="justify-content: center">
-                  <button class="btn-session-manage" style="width: fit-content">
+                  <button
+                    class="btn-session-manage"
+                    id="changeProfilePassword"
+                    type="button"
+                    style="width: fit-content"
+                  >
                     Change Password
                   </button>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">Login Email</span>
+                  <div>
+                    <span class="detail-value" id="authEmailValue">-</span>
+                    <button
+                      class="btn-session-manage"
+                      id="changeProfileEmail"
+                      type="button"
+                    >
+                      Change Email
+                    </button>
+                  </div>
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Active Sessions</span>
@@ -1483,8 +1574,14 @@
                       margin-top: 4px;
                     "
                   >
-                    <span class="detail-value">2 Devices</span>
-                    <button class="btn-session-manage">Manage Sessions</button>
+                    <span class="detail-value">Manage signed-in sessions</span>
+                    <button
+                      class="btn-session-manage"
+                      id="manageSessions"
+                      type="button"
+                    >
+                      Manage Sessions
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1493,6 +1590,7 @@
         </div>
       </main>
     </div>
+    <script src="../js/supabase.js"></script>
     <script src="../js/teacher-data.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
@@ -1501,13 +1599,15 @@
         const status = document.getElementById("profileEditStatus");
         const saveButton = document.getElementById("saveProfileButton");
         const openButton = document.getElementById("openProfileEditor");
-        let registration = TeacherData.getTeacherData() || {};
-        registration.personal ||= {};
-        registration.professional ||= {};
+        const loadStatus = document.getElementById("profileLoadStatus");
+        let profile = null;
         let client = null;
         let authUser = null;
         let channel = null;
+        let stopAuthWatch = null;
         let connectionMessage = "";
+        let teacherSubjects = [];
+        let savingProfile = false;
 
         const setText = (id, value) => {
           const element = document.getElementById(id);
@@ -1520,113 +1620,102 @@
         };
 
         function renderProfile() {
-          const personal = registration.personal || {};
-          const professional = registration.professional || {};
-          const name = personal.fullName || personal.full_name || "Teacher";
-          const location = [personal.city, personal.state, personal.country]
+          if (!profile || !authUser) return;
+          const location = [profile.city, profile.state, profile.country]
             .filter(Boolean)
             .join(", ");
-          const role = `Teacher • ${professional.teachingMode === "subject_specialist" ? "Subject Specialist" : "Educator"}`;
-          const subjects = professional.specialistAssignments?.length
-            ? professional.specialistAssignments.map((item) => item.subject)
-            : professional.subjects || [];
+          const role = `Teacher • ${profile.teaching_mode === "subject_specialist" ? "Subject Specialist" : "Educator"}`;
+          const subjects = teacherSubjects;
+          const fullName = profile.full_name || "";
+          const photoPath = profile.profile_photo_url || "";
 
-          setText("profileNameEl", name);
-          setText("profileHeaderName", name);
+          setText("profileNameEl", fullName);
+          setText("profileHeaderName", fullName);
           setText("profileHeaderRole", role);
-          setText("detailFullName", name);
-          setText("profileEmail", personal.email);
-          setText("detailEmail", personal.email);
-          setText("profilePhone", personal.phone);
-          setText("detailPhone", personal.phone);
+          setText("detailFullName", fullName);
+          setText("profileEmail", authUser.email);
+          setText("detailEmail", authUser.email);
+          setText("authEmailValue", authUser.email);
+          setText("profilePhone", profile.phone_number);
+          setText("detailPhone", profile.phone_number);
           setText("profileLocation", location);
-          setText("headerProfileEmail", personal.email);
-          setText("headerProfilePhone", personal.phone);
+          setText("headerProfileEmail", authUser.email);
+          setText("headerProfilePhone", profile.phone_number);
           setText("headerProfileLocation", location);
           setText(
             "headerProfileJoined",
-            personal.registrationDate ||
-              registration.createdAt ||
-              "Registration date unavailable",
+            profile.created_at
+              ? new Date(profile.created_at).toLocaleDateString()
+              : "-",
           );
-          setText("detailAddress", personal.address);
-          setText("detailDob", personal.dob);
-          setText("detailCountry", personal.country);
-          setText("detailGender", personal.gender);
-          setText("detailLanguages", (professional.languages || []).join(", "));
-          setText("detailQualification", professional.highestQualification);
-          setText("detailDepartment", professional.institutionType);
-          setText("detailExperience", professional.experienceYears);
-          setText("detailInstitution", professional.institutionName);
-          setText("detailTeacherId", registration.teacherId);
+          setText("detailAddress", profile.address);
+          setText("detailDob", profile.date_of_birth);
+          setText("detailCountry", profile.country);
+          setText("detailGender", profile.gender);
+          setText("detailLanguages", (profile.languages || []).join(", "));
+          setText("detailQualification", profile.highest_qualification);
+          setText("detailDepartment", profile.institution_type);
+          setText("detailExperience", profile.years_experience);
+          setText("detailInstitution", profile.institution_name);
+          setText("detailTeacherId", profile.teacher_id);
+          setText(
+            "detailJoiningDate",
+            profile.created_at
+              ? new Date(profile.created_at).toLocaleDateString()
+              : "-",
+          );
           setText("profileRoleEl", role);
           setText("profileRoleBadge", role);
+          setText("profileAbout", profile.bio);
           setText(
-            "profileAbout",
-            `Teaching ${subjects.join(", ") || "selected classes and subjects"} at ${professional.institutionName || "the registered institution"}.`,
+            "lastLoginValue",
+            authUser.last_sign_in_at
+              ? new Date(authUser.last_sign_in_at).toLocaleString()
+              : "-",
           );
 
           const subjectContainer = document.getElementById("detailSubjects");
           if (subjectContainer) {
             subjectContainer.replaceChildren();
-            if (subjects.length) {
+            if (!subjects.length) {
+              const badge = document.createElement("span");
+              badge.className = "sub-badge";
+              badge.textContent = "-";
+              subjectContainer.append(badge);
+            } else {
               subjects.forEach((subject) => {
                 const badge = document.createElement("span");
                 badge.className = "sub-badge";
                 badge.textContent = subject;
                 subjectContainer.append(badge);
               });
-            } else {
-              const badge = document.createElement("span");
-              badge.className = "sub-badge";
-              badge.textContent = "-";
-              subjectContainer.append(badge);
             }
           }
 
-          if (personal.profilePhoto) {
-            document.getElementById("avatarImg").src = personal.profilePhoto;
-            document.getElementById("profileHeaderAvatar").src =
-              personal.profilePhoto;
-          }
-        }
-
-        function applyTeacherRow(row) {
-          const personal = registration.personal;
-          const professional = registration.professional;
-          Object.assign(personal, {
-            fullName: row.full_name ?? personal.fullName,
-            email: row.email ?? personal.email,
-            phone: row.phone ?? personal.phone,
-            dob: row.date_of_birth ?? personal.dob,
-            gender: row.gender ?? personal.gender,
-            country: row.country ?? personal.country,
-            state: row.state ?? personal.state,
-            city: row.city ?? personal.city,
-            address: row.address ?? personal.address,
-            profilePhoto: row.profile_photo ?? personal.profilePhoto,
+          ["avatarImg", "profileHeaderAvatar"].forEach(async (id) => {
+            const image = document.getElementById(id);
+            if (!image) return;
+            if (!photoPath) {
+              image.hidden = true;
+              return;
+            }
+            try {
+              image.src =
+                await TeacherData.getTeacherProfilePhotoUrl(photoPath);
+              image.hidden = false;
+            } catch {
+              image.hidden = true;
+            }
           });
-          Object.assign(professional, {
-            institutionName:
-              row.institution_name ?? professional.institutionName,
-            institutionType:
-              row.institution_type ?? professional.institutionType,
-            experienceYears:
-              row.experience_years ?? professional.experienceYears,
-            highestQualification:
-              row.highest_qualification ?? professional.highestQualification,
-            teachingMode: row.teaching_mode ?? professional.teachingMode,
-          });
-          TeacherData.saveTeacherData(registration);
-          renderProfile();
+          document.getElementById("openProfileEditor").disabled = false;
         }
 
         function getFormValues() {
           const values = Object.fromEntries(new FormData(form).entries());
-          const numericExperience = values.experience_years.trim();
+          const numericExperience = values.years_experience.trim();
           return {
             full_name: values.full_name.trim(),
-            phone: values.phone.trim() || null,
+            phone_number: values.phone_number.trim() || null,
             date_of_birth: values.date_of_birth || null,
             gender: values.gender.trim() || null,
             city: values.city.trim() || null,
@@ -1635,41 +1724,103 @@
             address: values.address.trim() || null,
             institution_name: values.institution_name.trim() || null,
             institution_type: values.institution_type.trim() || null,
-            experience_years: numericExperience
+            years_experience: numericExperience
               ? Number(numericExperience)
               : null,
             highest_qualification: values.highest_qualification.trim() || null,
             teaching_mode: values.teaching_mode.trim() || null,
+            employment_status: values.employment_status.trim() || null,
+            languages: values.languages
+              .split(",")
+              .map((language) => language.trim())
+              .filter(Boolean),
+            bio: values.bio.trim() || null,
           };
         }
 
-        function openEditor() {
-          const personal = registration.personal;
-          const professional = registration.professional;
-          const values = {
-            full_name: personal.fullName || personal.full_name,
-            phone: personal.phone,
-            date_of_birth: personal.dob || personal.date_of_birth,
-            gender: personal.gender,
-            city: personal.city,
-            state: personal.state,
-            country: personal.country,
-            address: personal.address,
-            institution_name:
-              professional.institutionName || professional.institution_name,
-            institution_type:
-              professional.institutionType || professional.institution_type,
-            experience_years:
-              professional.experienceYears || professional.experience_years,
-            highest_qualification:
-              professional.highestQualification ||
-              professional.highest_qualification,
-            teaching_mode:
-              professional.teachingMode || professional.teaching_mode,
+        function validateForm() {
+          const errors = {
+            full_name: "",
+            phone_number: "",
+            date_of_birth: "",
+            years_experience: "",
+            profile_photo_file: "",
+            bio: "",
           };
+          const values = getFormValues();
+          if (values.full_name.length < 2 || values.full_name.length > 100) {
+            errors.full_name = "Enter a name between 2 and 100 characters.";
+          }
+          if (
+            values.phone_number &&
+            !/^[+]?[0-9().\s-]{7,20}$/.test(values.phone_number)
+          ) {
+            errors.phone_number = "Enter a valid phone number.";
+          }
+          if (
+            values.date_of_birth &&
+            values.date_of_birth > new Date().toISOString().slice(0, 10)
+          ) {
+            errors.date_of_birth = "Date of birth cannot be in the future.";
+          }
+          if (
+            values.years_experience !== null &&
+            (!Number.isInteger(values.years_experience) ||
+              values.years_experience < 0)
+          ) {
+            errors.years_experience = "Enter a non-negative whole number.";
+          }
+          if (values.bio && values.bio.length > 1000) {
+            errors.bio = "About me must be 1,000 characters or fewer.";
+          }
+          const photo = form.elements.namedItem("profile_photo_file").files[0];
+          const allowedPhotoTypes = ["image/jpeg", "image/png", "image/webp"];
+          if (
+            photo &&
+            (!allowedPhotoTypes.includes(photo.type) ||
+              photo.size > 5 * 1024 * 1024)
+          ) {
+            errors.profile_photo_file =
+              "Choose a JPG, PNG, or WEBP image up to 5 MB.";
+          }
+          Object.entries(errors).forEach(([name, message]) => {
+            const element = document.querySelector(
+              `[data-error-for="${name}"]`,
+            );
+            if (element) element.textContent = message;
+          });
+          return !Object.values(errors).some(Boolean);
+        }
+
+        function openEditor() {
+          if (!profile) return;
+          const values = {
+            full_name: profile.full_name,
+            phone_number: profile.phone_number,
+            date_of_birth: profile.date_of_birth,
+            gender: profile.gender,
+            city: profile.city,
+            state: profile.state,
+            country: profile.country,
+            address: profile.address,
+            institution_name: profile.institution_name,
+            institution_type: profile.institution_type,
+            years_experience: profile.years_experience,
+            highest_qualification: profile.highest_qualification,
+            teaching_mode: profile.teaching_mode,
+            employment_status: profile.employment_status,
+            languages: (profile.languages || []).join(", "),
+            bio: profile.bio,
+          };
+          form.reset();
           Object.entries(values).forEach(([name, value]) => {
             form.elements.namedItem(name).value = value ?? "";
           });
+          document
+            .querySelectorAll(".profile-edit-error")
+            .forEach((element) => {
+              element.textContent = "";
+            });
           status.textContent = connectionMessage;
           editor.classList.add("open");
           editor.setAttribute("aria-hidden", "false");
@@ -1683,62 +1834,78 @@
         }
 
         async function initializeSupabase() {
-          client = TeacherData.getSupabaseClient();
-          if (!client) {
-            connectionMessage =
-              "Supabase is not configured. Saves will stay on this device.";
-            return;
-          }
+          const loaded = await TeacherData.loadCurrentTeacherProfile();
+          ({ client, user: authUser, profile } = loaded);
+          window.__currentTeacherProfile = profile;
+          connectionMessage = "Connected to Supabase.";
+          loadStatus.textContent = "";
+          renderProfile();
 
-          const { data: authData, error: authError } =
-            await client.auth.getUser();
-          if (authError) throw authError;
-          authUser = authData.user;
-          if (!authUser) {
-            connectionMessage =
-              "Sign in to sync profile changes with Supabase.";
-            return;
-          }
-
-          const { data, error } = await client
-            .from("teachers")
-            .select("*")
-            .eq("id", authUser.id)
-            .maybeSingle();
-          if (error) throw error;
-          if (data) applyTeacherRow(data);
-
-          channel = client
-            .channel(`teacher-profile-${authUser.id}`)
-            .on(
-              "postgres_changes",
-              {
-                event: "*",
-                schema: "public",
-                table: "teachers",
-                filter: `id=eq.${authUser.id}`,
-              },
-              (event) => {
-                if (event.new) {
-                  applyTeacherRow(event.new);
-                  connectionMessage = "Profile synced with a realtime update.";
-                  if (editor.classList.contains("open"))
-                    status.textContent = connectionMessage;
-                }
-              },
-            )
-            .subscribe((subscriptionStatus) => {
-              if (subscriptionStatus === "SUBSCRIBED") {
-                connectionMessage =
-                  "Connected to Supabase. Profile updates sync in real time.";
-              } else if (
-                subscriptionStatus === "CHANNEL_ERROR" ||
-                subscriptionStatus === "TIMED_OUT"
-              ) {
-                connectionMessage =
-                  "Profile saves work, but realtime updates are unavailable.";
-              }
+          const { data: assignments, error: assignmentError } = await client
+            .from("teacher_subjects")
+            .select("grade, subject")
+            .eq("teacher_id", authUser.id);
+          if (!assignmentError) {
+            teacherSubjects = [
+              ...new Set(
+                (assignments || []).map((item) => item.subject).filter(Boolean),
+              ),
+            ];
+            const classCount = new Set(
+              (assignments || []).map((item) => item.grade).filter(Boolean),
+            ).size;
+            setText("profileClassCount", classCount);
+            setText("profileSubjectCount", teacherSubjects.length);
+            const subjectContainer = document.getElementById("detailSubjects");
+            subjectContainer.replaceChildren();
+            teacherSubjects.forEach((subject) => {
+              const badge = document.createElement("span");
+              badge.className = "sub-badge";
+              badge.textContent = subject;
+              subjectContainer.append(badge);
             });
+          }
+
+          const { count: studentCount, error: studentError } = await client
+            .from("students")
+            .select("id", { count: "exact", head: true })
+            .eq("teacher_id", authUser.id);
+          if (!studentError && studentCount !== null)
+            setText("profileStudentCount", studentCount);
+
+          const { data: factors, error: mfaError } =
+            await client.auth.mfa.listFactors();
+          const hasVerifiedFactor = (factors?.all || []).some(
+            (factor) => factor.status === "verified",
+          );
+          setText(
+            "mfaStatus",
+            mfaError
+              ? "Unavailable"
+              : hasVerifiedFactor
+                ? "Enabled"
+                : "Not enabled",
+          );
+          renderProfile();
+
+          channel = TeacherData.subscribeToTeacherProfile(
+            authUser.id,
+            (event) => {
+              if (event.eventType === "DELETE") {
+                window.__currentTeacherProfile = null;
+                window.location.assign("../teacher_registration/login.html");
+                return;
+              }
+              if (event.new) {
+                profile = event.new;
+                window.__currentTeacherProfile = profile;
+                renderProfile();
+              }
+            },
+          );
+          stopAuthWatch = TeacherData.watchAuthState(() => {
+            window.location.assign("../teacher_registration/login.html");
+          });
         }
 
         openButton.addEventListener("click", openEditor);
@@ -1758,58 +1925,148 @@
 
         form.addEventListener("submit", async (event) => {
           event.preventDefault();
+          if (savingProfile) return;
+          if (!validateForm()) return;
+          if (!navigator.onLine) {
+            status.textContent =
+              "You are offline. Reconnect before saving profile changes.";
+            return;
+          }
           const values = getFormValues();
+          const selectedPhoto =
+            form.elements.namedItem("profile_photo_file").files[0];
+          const previousPhotoPath = profile.profile_photo_url;
+          let uploadedPhotoPath = null;
+          let profileWriteSucceeded = false;
+          savingProfile = true;
           saveButton.disabled = true;
           saveButton.textContent = "Saving...";
           status.textContent = "Saving profile changes...";
 
           try {
-            if (client) {
-              if (!authUser) {
-                const { data, error } = await client.auth.getUser();
-                if (error) throw error;
-                authUser = data.user;
-              }
-              if (!authUser)
-                throw new Error(
-                  "Sign in before saving your profile to Supabase.",
-                );
-
-              const { data, error } = await client
-                .from("teachers")
-                .upsert({ id: authUser.id, ...values }, { onConflict: "id" })
-                .select()
-                .maybeSingle();
-              if (error) throw error;
-              applyTeacherRow(data || { ...values });
-              connectionMessage =
-                "Connected to Supabase. Profile updates sync in real time.";
-              status.textContent = "Profile saved to Supabase.";
-            } else {
-              applyTeacherRow(values);
-              connectionMessage =
-                "Supabase is not configured. Saves will stay on this device.";
-              status.textContent = connectionMessage;
+            if (selectedPhoto) {
+              uploadedPhotoPath =
+                await TeacherData.uploadTeacherProfilePhoto(selectedPhoto);
+              values.profile_photo_url = uploadedPhotoPath;
             }
+            profile = await TeacherData.updateCurrentTeacherProfile(values);
+            profileWriteSucceeded = true;
+            window.__currentTeacherProfile = profile;
+            try {
+              const refreshed = await TeacherData.loadCurrentTeacherProfile();
+              profile = refreshed.profile;
+              authUser = refreshed.user;
+            } catch (refreshError) {
+              console.warn("Profile saved, but refresh failed.", refreshError);
+            }
+            renderProfile();
+
+            if (
+              previousPhotoPath &&
+              uploadedPhotoPath &&
+              previousPhotoPath !== uploadedPhotoPath
+            ) {
+              await TeacherData.deleteTeacherProfilePhoto(
+                previousPhotoPath,
+              ).catch((cleanupError) => {
+                console.warn(
+                  "The previous profile photo could not be removed.",
+                  cleanupError,
+                );
+              });
+            }
+            status.textContent = "Profile saved successfully.";
+            loadStatus.textContent = "Profile saved successfully.";
+            closeEditor();
           } catch (error) {
-            status.textContent =
-              error.message || "Could not save profile changes.";
+            if (uploadedPhotoPath && !profileWriteSucceeded) {
+              await TeacherData.deleteTeacherProfilePhoto(
+                uploadedPhotoPath,
+              ).catch(() => {});
+            }
+            console.error("Unable to save teacher profile.", error);
+            status.textContent = navigator.onLine
+              ? "Unable to save changes. Please check your connection and try again."
+              : "You are offline. Changes were not saved.";
           } finally {
+            savingProfile = false;
             saveButton.disabled = false;
             saveButton.textContent = "Save changes";
           }
         });
 
+        document
+          .getElementById("changeProfileEmail")
+          .addEventListener("click", async () => {
+            const email = window.prompt("Enter your new login email:");
+            if (!email) return;
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+              loadStatus.textContent = "Enter a valid email address.";
+              return;
+            }
+            try {
+              await TeacherData.updateAuthEmail(email.trim());
+              loadStatus.textContent =
+                "Check your inbox to confirm the email change.";
+            } catch (error) {
+              console.error("Unable to update login email.", error);
+              loadStatus.textContent =
+                "Unable to request the email change. Please try again.";
+            }
+          });
+
+        document
+          .getElementById("changeProfilePassword")
+          .addEventListener("click", async () => {
+            const password = window.prompt(
+              "Enter a new password (at least 8 characters):",
+            );
+            if (!password) return;
+            if (password.length < 8) {
+              loadStatus.textContent =
+                "Use a password with at least 8 characters.";
+              return;
+            }
+            const confirmation = window.prompt("Confirm your new password:");
+            if (password !== confirmation) {
+              loadStatus.textContent = "The passwords do not match.";
+              return;
+            }
+            try {
+              await TeacherData.updateAuthPassword(password);
+              loadStatus.textContent = "Password updated successfully.";
+            } catch (error) {
+              console.error("Unable to update password.", error);
+              loadStatus.textContent =
+                "Unable to update your password. Please try again.";
+            }
+          });
+
+        document
+          .getElementById("manageSessions")
+          .addEventListener("click", async () => {
+            if (
+              !window.confirm("Sign out all other sessions for this account?")
+            )
+              return;
+            const { error } = await client.auth.signOut({ scope: "others" });
+            loadStatus.textContent = error
+              ? "Unable to manage other sessions."
+              : "Other sessions have been signed out.";
+          });
+
         window.addEventListener("beforeunload", () => {
           if (channel && client) client.removeChannel(channel);
+          stopAuthWatch?.();
         });
 
-        renderProfile();
+        loadStatus.textContent = "Loading your profile...";
         initializeSupabase().catch((error) => {
-          connectionMessage =
-            error.message || "Could not load the Supabase profile.";
-          if (editor.classList.contains("open"))
-            status.textContent = connectionMessage;
+          console.error("Unable to load teacher profile.", error);
+          setText("profileHeaderName", "Unable to load profile");
+          loadStatus.textContent =
+            "Unable to load your profile. Please sign in again or try later.";
+          openButton.disabled = true;
         });
       });
     </script>

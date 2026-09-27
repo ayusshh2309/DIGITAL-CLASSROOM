@@ -1516,6 +1516,9 @@
        JAVASCRIPT
   ========================================================== -->
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/teacher-data.js"></script>
   <script>
 
     /* =========================================================
@@ -1666,6 +1669,44 @@
             );
           }
 
+          const supabaseClient = TeacherData.getSupabaseClient();
+          if (!supabaseClient) {
+            alert("Supabase is not configured. Registration was not started.");
+            return;
+          }
+
+          const submitButton = document.getElementById("personalNextBtn");
+          submitButton.disabled = true;
+          submitButton.textContent = "Creating account...";
+          try {
+            const { data: currentAuth, error: currentAuthError } =
+              await supabaseClient.auth.getUser();
+            if (currentAuthError) throw currentAuthError;
+            if (currentAuth.user && currentAuth.user.email !== personalData.email) {
+              throw new Error("Sign out before registering a different teacher account.");
+            }
+            if (!currentAuth.user) {
+              const { data: signupData, error: signupError } =
+                await supabaseClient.auth.signUp({
+                  email: personalData.email,
+                  password,
+                  options: {
+                    data: { role: "teacher", full_name: personalData.full_name },
+                  },
+                });
+              if (signupError) throw signupError;
+              if (!signupData.user) throw new Error("Supabase did not create the account.");
+              if (!signupData.session) {
+                sessionStorage.setItem("teacherRegistrationNeedsLogin", "true");
+              }
+            }
+          } catch (error) {
+            alert(error.message || "Unable to create your teacher account.");
+            submitButton.disabled = false;
+            submitButton.textContent = "Next Step →";
+            return;
+          }
+
 
           /* Save temporary registration data */
 
@@ -1737,7 +1778,6 @@
           country: document.getElementById("country").value,
           state: document.getElementById("state").value.trim(),
           city: document.getElementById("city").value.trim(),
-          password: password,
           address: document.getElementById("address").value.trim(),
         };
 

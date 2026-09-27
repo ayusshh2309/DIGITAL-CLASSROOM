@@ -16,6 +16,8 @@
 
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../js/supabase.js"></script>
+    <script src="../js/teacher-data.js"></script>
 
     <style>
       :root {
@@ -692,16 +694,11 @@
     </div>
 
     <script>
-      const SUPABASE_URL = "YOUR_SUPABASE_URL_HERE";
-      const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY_HERE";
-
-      const supabaseClient = window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_ANON_KEY,
-      );
+      const supabaseClient = window.TeacherData.getSupabaseClient();
 
       async function handleOAuthLogin(providerName) {
         try {
+          if (!supabaseClient) throw new Error("Supabase is not configured.");
           const { data, error } = await supabaseClient.auth.signInWithOAuth({
             provider: providerName,
             options: {
@@ -729,6 +726,7 @@
         submitBtn.disabled = true;
 
         try {
+          if (!supabaseClient) throw new Error("Supabase is not configured.");
           const { data: authData, error: authError } =
             await supabaseClient.auth.signInWithPassword({
               email: email,
@@ -739,6 +737,26 @@
 
           const user = authData.user;
           let role = user?.user_metadata?.role;
+
+          const { data: teacherProfile, error: teacherProfileError } =
+            await supabaseClient
+              .from("teachers")
+              .select("id")
+              .eq("user_id", user.id)
+              .maybeSingle();
+          if (teacherProfileError) throw teacherProfileError;
+          if (teacherProfile) {
+            window.location.href = "../teacher_content/teacher_dashboard.html";
+            return;
+          }
+
+          const hasPendingTeacherRegistration =
+            Boolean(sessionStorage.getItem("teacherPersonalInfo")) &&
+            Boolean(sessionStorage.getItem("teacherProfessionalInfo"));
+          if (role === "teacher" && hasPendingTeacherRegistration) {
+            window.location.href = "review.html";
+            return;
+          }
 
           if (!role) {
             const { data: profileData, error: profileError } =
@@ -754,19 +772,13 @@
           }
 
           if (role === "teacher") {
-            window.location.href = "../teacher_content/teacher_dashboard.html";
+            throw new Error("No teacher profile is linked to this account.");
           } else if (role === "student" || role === "learner") {
             window.location.href = "student_dashboard.html";
           } else {
-            const savedRole = localStorage.getItem("selected_role");
-            if (savedRole === "teacher") {
-              window.location.href =
-                "../teacher_content/teacher_dashboard.html";
-            } else if (savedRole === "student") {
-              window.location.href = "student_dashboard.html";
-            } else {
-              window.location.href = "../user_role.html";
-            }
+            throw new Error(
+              "No profile is linked to this account. Contact support.",
+            );
           }
         } catch (err) {
           showError(
