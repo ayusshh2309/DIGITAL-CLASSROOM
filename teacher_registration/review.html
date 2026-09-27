@@ -2083,844 +2083,339 @@
     <script src="../js/supabase.js"></script>
     <script src="../js/teacher-data.js"></script>
     <script>
-  /* =========================================================
-     SMART LEARNING DC
-     TEACHER REGISTRATION — REVIEW & SUBMIT
-  ========================================================= */
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/teacher-registration-storage.js"></script>
+  <script src="../js/teacher-registration.js"></script>
+  <script>
+    const draft = window.TeacherRegistrationStorage?.getRegistrationDraft?.() || { step1: {}, step2: {}, confirmed: false };
+    const step1 = draft.step1 || {};
+    const step2 = draft.step2 || {};
 
-  /* =========================================================
-     1. GET DATA FROM PREVIOUS STEPS
-  ========================================================= */
-
-  const personalInfo =
-    JSON.parse(sessionStorage.getItem("teacherPersonalInfo")) || {};
-
-  const professionalInfo =
-    JSON.parse(sessionStorage.getItem("teacherProfessionalInfo")) || {};
-
-  const professional = {
-    employmentStatus:
-      professionalInfo.employmentStatus || professionalInfo.employment_status,
-    institutionName:
-      professionalInfo.institutionName || professionalInfo.institution_name,
-    institutionType:
-      professionalInfo.institutionType || professionalInfo.institution_type,
-    experienceYears:
-      professionalInfo.experienceYears || professionalInfo.experience_years,
-    highestQualification:
-      professionalInfo.highestQualification ||
-      professionalInfo.highest_qualification,
-    degreeName:
-      professionalInfo.degreeName || professionalInfo.degree_name,
-    specialization: professionalInfo.specialization,
-    university: professionalInfo.university,
-    gradYear: professionalInfo.gradYear || professionalInfo.graduation_year,
-    teachingMode:
-      professionalInfo.teachingMode ||
-      professionalInfo.teachMode ||
-      professionalInfo.teaching_mode,
-  };
-
-
-  /* =========================================================
-     2. HELPER — SAFE DISPLAY
-  ========================================================= */
-
-  function displayValue(id, value) {
-    const element = document.getElementById(id);
-
-    if (!element) return;
-
-    if (
-      value === undefined ||
-      value === null ||
-      value === "" ||
-      value === "null" ||
-      value === "undefined"
-    ) {
-      element.textContent = "Not provided";
-      element.classList.add("empty-value");
-    } else {
-      element.textContent = value;
-      element.classList.remove("empty-value");
-    }
-  }
-
-
-  /* =========================================================
-     3. FORMAT TEXT
-  ========================================================= */
-
-  function formatText(value) {
-    if (
-      value === undefined ||
-      value === null ||
-      value === ""
-    ) {
-      return "Not provided";
+    function displayValue(id, value, fallback = "Not provided") {
+      const element = document.getElementById(id);
+      if (!element) return;
+      const safeValue = value === undefined || value === null || value === "" ? fallback : value;
+      element.textContent = safeValue;
+      element.classList.toggle("empty-value", safeValue === fallback);
     }
 
-    return String(value)
-      .replaceAll("_", " ")
-      .replace(/\b\w/g, (char) => char.toUpperCase());
-  }
-
-
-  /* =========================================================
-     4. FORMAT TEACHING MODE
-  ========================================================= */
-
-  function formatTeachingMode(value) {
-    switch (value) {
-      case "all":
-      case "teach_all":
-        return "🌐 Teach All Subjects";
-
-      case "specialist":
-      case "subject_specialist":
-        return "🎯 Subject Specialist";
-
-      default:
-        return formatText(value);
+    function formatText(value) {
+      if (value === undefined || value === null || value === "") return "Not provided";
+      return String(value).replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
     }
-  }
 
+    function formatTeachingMode(value) {
+      if (!value) return "Not provided";
+      if (value === "teach_all") return "🌐 Teach All Subjects";
+      if (value === "subject_specialist") return "🎯 Subject Specialist";
+      return formatText(value);
+    }
 
-  /* =========================================================
-     5. PERSONAL INFORMATION
-  ========================================================= */
+    function renderTags(containerId, items) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.innerHTML = "";
+      const values = Array.isArray(items) ? items : [];
+      if (!values.length) {
+        const empty = document.createElement("span");
+        empty.className = "empty-value";
+        empty.textContent = "No information provided";
+        container.appendChild(empty);
+        return;
+      }
+      values.forEach((value) => {
+        const tag = document.createElement("span");
+        tag.className = "tag";
+        tag.textContent = formatText(value);
+        container.appendChild(tag);
+      });
+    }
 
-  displayValue(
-    "fullNameReview",
-    personalInfo.fullName || personalInfo.full_name
-  );
+    function safePhone() {
+      const countryCode = step1.countryCode || "";
+      const phoneNumber = step1.phoneNumber || "";
+      if (!countryCode && !phoneNumber) return "Not provided";
+      return `${countryCode} ${phoneNumber}`.trim();
+    }
 
-  displayValue(
-    "emailReview",
-    personalInfo.email
-  );
+    displayValue("fullNameReview", step1.fullName || "Not provided");
+    displayValue("emailReview", step1.email || "Not provided");
+    displayValue("phoneReview", safePhone());
+    displayValue("dobReview", step1.dateOfBirth || "Not provided");
+    displayValue("genderReview", formatText(step1.gender));
+    displayValue("countryReview", step1.country || "Not provided");
+    displayValue("stateReview", step1.state || "Not provided");
+    displayValue("cityReview", step1.city || "Not provided");
+    displayValue("addressReview", step1.address || "Not provided");
 
-  const phoneNumber =
-    (personalInfo.countryCode || personalInfo.country_code) && personalInfo.phone
-      ? `${personalInfo.countryCode || personalInfo.country_code} ${personalInfo.phone}`
-      : personalInfo.phone;
-
-  displayValue(
-    "phoneReview",
-    phoneNumber
-  );
-
-  displayValue(
-    "dobReview",
-    personalInfo.dob
-  );
-
-  displayValue(
-    "genderReview",
-    formatText(personalInfo.gender)
-  );
-
-  displayValue(
-    "countryReview",
-    personalInfo.country
-  );
-
-  displayValue(
-    "stateReview",
-    personalInfo.state
-  );
-
-  displayValue(
-    "cityReview",
-    personalInfo.city
-  );
-
-  displayValue(
-    "addressReview",
-    personalInfo.address
-  );
-
-  const profilePhoto =
-    personalInfo.profile_photo_data || personalInfo.profilePhotoData || "";
-
-  if (profilePhoto) {
-    const photoElement = document.getElementById("profilePhotoReview");
+    const profilePhotoContainer = document.getElementById("profilePhotoReview");
     const emptyPhoto = document.getElementById("profilePhotoEmpty");
-    photoElement.src = profilePhoto;
-    photoElement.hidden = false;
-    emptyPhoto.hidden = true;
-  }
-
-
-  /* =========================================================
-     6. PROFESSIONAL INFORMATION
-  ========================================================= */
-
-  displayValue(
-    "employmentReview",
-    formatText(
-      professional.employmentStatus
-    )
-  );
-
-  displayValue(
-    "institutionReview",
-    professional.institutionName
-  );
-
-  displayValue(
-    "institutionTypeReview",
-    formatText(
-      professional.institutionType
-    )
-  );
-
-  displayValue(
-    "experienceReview",
-    professional.experienceYears
-  );
-
-  displayValue(
-    "qualificationReview",
-    formatText(
-      professional.highestQualification
-    )
-  );
-
-  displayValue(
-    "degreeReview",
-    professional.degreeName
-  );
-
-  displayValue(
-    "specializationReview",
-    professional.specialization
-  );
-
-  displayValue(
-    "universityReview",
-    professional.university
-  );
-
-  displayValue(
-    "gradYearReview",
-    professional.gradYear
-  );
-
-
-  /* =========================================================
-     7. TEACHING MODE
-  ========================================================= */
-
-  const teachingMode = professional.teachingMode || "";
-
-  displayValue(
-    "teachingModeReview",
-    teachingMode
-      ? formatTeachingMode(teachingMode)
-      : "Not selected"
-  );
-
-
-  /* =========================================================
-     8. GET ASSIGNMENT DATA
-  ========================================================= */
-
-  const grades =
-    Array.isArray(professionalInfo.grades)
-      ? professionalInfo.grades
-      : Array.isArray(professionalInfo.selected_grades)
-        ? professionalInfo.selected_grades
-      : [];
-
-  const gradeGroups = Array.isArray(professionalInfo.selected_grade_groups)
-    ? professionalInfo.selected_grade_groups
-    : [];
-
-  const groupGrades = {
-    grades_5_6: ["5", "6"],
-    grades_7_8: ["7", "8"],
-    grades_9_10: ["9", "10"],
-    grades_11_12: ["11", "12"],
-  };
-
-  const selectedGrades = grades.length
-    ? grades
-    : gradeGroups.flatMap((group) => groupGrades[group] || []);
-
-  const streams =
-    Array.isArray(professionalInfo.streams)
-      ? professionalInfo.streams
-      : Array.isArray(professionalInfo.selected_streams)
-        ? professionalInfo.selected_streams
-      : [];
-
-  const subjects =
-    Array.isArray(professionalInfo.subjects)
-      ? professionalInfo.subjects
-      : [];
-
-  const specialistAssignments =
-    Array.isArray(professionalInfo.specialist_assignments)
-      ? professionalInfo.specialist_assignments
-      : [];
-
-  const languages =
-    Array.isArray(professionalInfo.languages)
-      ? professionalInfo.languages
-      : [];
-
-
-  /* =========================================================
-     9. RENDER TAGS
-  ========================================================= */
-
-  function renderTags(containerId, values) {
-    const container =
-      document.getElementById(containerId);
-
-    if (!container) return;
-
-    container.innerHTML = "";
-
-    if (
-      !Array.isArray(values) ||
-      values.length === 0
-    ) {
-      const empty =
-        document.createElement("span");
-
-      empty.className = "empty-value";
-
-      empty.textContent =
-        "No information provided";
-
-      container.appendChild(empty);
-
-      return;
+    if (step1.profilePhotoName) {
+      if (profilePhotoContainer) {
+        profilePhotoContainer.hidden = false;
+        profilePhotoContainer.alt = step1.profilePhotoName;
+      }
+      if (emptyPhoto) emptyPhoto.hidden = true;
     }
 
-    values.forEach((value) => {
-      const tag =
-        document.createElement("span");
+    displayValue("employmentReview", formatText(step2.employmentStatus));
+    displayValue("institutionReview", step2.institutionName || "Not provided");
+    displayValue("institutionTypeReview", formatText(step2.institutionType));
+    displayValue("experienceReview", step2.yearsExperience || "Not provided");
+    displayValue("qualificationReview", formatText(step2.highestQualification));
+    displayValue("degreeReview", step2.degreeCourse || "Not provided");
+    displayValue("specializationReview", step2.specialization || "Not provided");
+    displayValue("universityReview", step2.universityCollege || "Not provided");
+    displayValue("gradYearReview", step2.graduationYear || "Not provided");
+    displayValue("teachingModeReview", formatTeachingMode(step2.teachingMode));
 
-      tag.className = "tag";
+    renderTags("gradesReview", Array.isArray(step2.gradeGroups) ? step2.gradeGroups.map((value) => value.replace("grades_", "Classes ").replace("_", "-").replace("grades", "Classes")) : []);
+    renderTags("streamsReview", Array.isArray(step2.streams) ? step2.streams : []);
+    renderTags("subjectsReview", Array.isArray(step2.subjects) ? step2.subjects : []);
+    renderTags("languagesReview", Array.isArray(step2.languages) ? step2.languages : []);
 
-      tag.textContent = formatText(value);
-
-      container.appendChild(tag);
-    });
-  }
-
-  function formatGradeGroup(value) {
-    const labels = {
-      grades_5_6: "Classes 5-6",
-      grades_7_8: "Classes 7-8",
-      grades_9_10: "Classes 9-10",
-      grades_11_12: "Classes 11-12",
-    };
-
-    return labels[value] || formatText(value);
-  }
-
-  function renderSpecialistAssignments(assignments) {
-    const container = document.getElementById("subjectsReview");
-
-    if (!container) return;
-
-    container.innerHTML = "";
-
-    if (!Array.isArray(assignments) || assignments.length === 0) {
-      const empty = document.createElement("span");
-      empty.className = "empty-value";
-      empty.textContent = "No subject assignments selected";
-      container.appendChild(empty);
-      return;
+    function generateTeacherId() {
+      const year = new Date().getFullYear();
+      const randomNumber = Math.floor(10000 + Math.random() * 90000);
+      return `TCH-${year}-${randomNumber}`;
     }
 
-    assignments.forEach((assignment) => {
-      const tag = document.createElement("span");
-      tag.className = "tag";
-      const grades = Array.isArray(assignment.grades)
-        ? assignment.grades.join(", ")
-        : "";
-      tag.textContent = `${assignment.subject}: Classes ${grades}`;
-      container.appendChild(tag);
-    });
-  }
+    let generatedTeacherId = sessionStorage.getItem("teacherId");
+    if (!generatedTeacherId) {
+      generatedTeacherId = generateTeacherId();
+      sessionStorage.setItem("teacherId", generatedTeacherId);
+    }
+    const teacherIdElement = document.getElementById("teacherId");
+    if (teacherIdElement) teacherIdElement.textContent = generatedTeacherId;
 
-
-  /* =========================================================
-     10. DISPLAY ASSIGNMENT TAGS
-  ========================================================= */
-
-  renderTags(
-    "gradesReview",
-    gradeGroups.length > 0 ? gradeGroups.map(formatGradeGroup) : grades
-  );
-
-  renderTags(
-    "streamsReview",
-    streams
-  );
-
-  if (specialistAssignments.length > 0) {
-    renderSpecialistAssignments(specialistAssignments);
-  } else {
-    renderTags("subjectsReview", subjects);
-  }
-
-  renderTags(
-    "languagesReview",
-    languages
-  );
-
-
-  /* =========================================================
-     11. TEACHER ID
-     
-     IMPORTANT:
-     Generate only once.
-     Refreshing the Review page should NOT create
-     another Teacher ID.
-  ========================================================= */
-
-  function generateTeacherId() {
-    const year =
-      new Date().getFullYear();
-
-    const randomNumber =
-      Math.floor(
-        10000 + Math.random() * 90000
-      );
-
-    return `TCH-${year}-${randomNumber}`;
-  }
-
-
-  let generatedTeacherId =
-    sessionStorage.getItem("teacherId");
-
-
-  if (!generatedTeacherId) {
-    generatedTeacherId =
-      generateTeacherId();
-
-    sessionStorage.setItem(
-      "teacherId",
-      generatedTeacherId
-    );
-  }
-
-
-  const teacherIdElement =
-    document.getElementById("teacherId");
-
-  if (teacherIdElement) {
-    teacherIdElement.textContent =
-      generatedTeacherId;
-  }
-
-
-  /* =========================================================
-     12. EDIT PERSONAL INFORMATION
-  ========================================================= */
-
-  function editPersonalInfo() {
-    window.location.href =
-      "/teacher_registration/teacher-personal.html";
-  }
-
-
-  /* =========================================================
-     13. EDIT PROFESSIONAL INFORMATION
-  ========================================================= */
-
-  function editProfessionalInfo() {
-    window.location.href =
-      "/teacher_registration/teacher_professtional.html";
-  }
-
-
-  /* =========================================================
-     14. BACK BUTTON
-  ========================================================= */
-
-  function goBack() {
-    window.location.href =
-      "/teacher_registration/teacher_professtional.html";
-  }
-
-
-  /* =========================================================
-     15. VALIDATE REGISTRATION DATA
-  ========================================================= */
-
-  function validateRegistrationData() {
-
-    if (!(personalInfo.fullName || personalInfo.full_name)) {
-      alert(
-        "Personal information is missing. Please go back and complete it."
-      );
-
-      return false;
+    function editPersonalInfo() {
+      window.location.href = "teacher_personal.html";
     }
 
-    if (!personalInfo.email) {
-      alert(
-        "Email address is missing. Please go back and complete it."
-      );
-
-      return false;
+    function editProfessionalInfo() {
+      window.location.href = "teacher_professtional.html";
     }
 
-    const isCurrentlyTeaching =
-      professional.employmentStatus === "teaching";
-
-    if (
-      isCurrentlyTeaching &&
-      (!professional.institutionName ||
-        !professional.institutionType ||
-        !professional.experienceYears)
-    ) {
-      alert(
-        "Please complete your institution and teaching experience details."
-      );
-
-      return false;
+    function goBack() {
+      window.location.href = "teacher_professtional.html";
     }
 
-    if (!teachingMode) {
-      alert(
-        "Teaching mode is missing. Please go back and select your teaching mode."
-      );
-
-      return false;
+    function validateRegistrationDraft() {
+      if (!step1.fullName || !step1.email) {
+        alert("Personal information is incomplete. Please complete Step 1 first.");
+        return false;
+      }
+      if (!window.TeacherRegistration.isValidEmail(step1.email)) {
+        alert("The email address in your draft is invalid.");
+        return false;
+      }
+      if (!window.TeacherRegistration.isPasswordValid(step1.password)) {
+        alert("A valid password is required before account creation.");
+        return false;
+      }
+      if (!step2.teachingMode) {
+        alert("Please set the teaching mode before creating the account.");
+        return false;
+      }
+      if (step2.teachingMode === "teach_all" && (!Array.isArray(step2.gradeGroups) || !step2.gradeGroups.length)) {
+        alert("Please select at least one grade group.");
+        return false;
+      }
+      if (step2.teachingMode === "subject_specialist" && (!Array.isArray(step2.subjects) || !step2.subjects.length)) {
+        alert("Please select the subject(s) for subject specialist mode.");
+        return false;
+      }
+      return true;
     }
 
-    return true;
-  }
-
-
-  /* =========================================================
-     16. CREATE FINAL TEACHER DATA OBJECT
-  ========================================================= */
-
-  function buildFinalTeacherData() {
-
-    return {
-
-      /* -----------------------------------------
-         Teacher ID
-      ----------------------------------------- */
-
-      teacherId: generatedTeacherId,
-
-
-      /* -----------------------------------------
-         Personal Information
-      ----------------------------------------- */
-
-      personal: {
-        fullName:
-          personalInfo.fullName || personalInfo.full_name || "",
-
-        email:
-          personalInfo.email || "",
-
-        countryCode:
-          personalInfo.countryCode || personalInfo.country_code || "",
-
-        phone:
-          personalInfo.phone || "",
-
-        dob:
-          personalInfo.dob || "",
-
-        gender:
-          personalInfo.gender || "",
-
-        country:
-          personalInfo.country || "",
-
-        state:
-          personalInfo.state || "",
-
-        city:
-          personalInfo.city || "",
-
-        address:
-          personalInfo.address || personalInfo.address || "",
-
-        profilePhoto:
-          personalInfo.profile_photo_data || personalInfo.profilePhotoData || "",
-      },
-
-
-      /* -----------------------------------------
-         Professional Information
-      ----------------------------------------- */
-
-      professional: {
-
-        employmentStatus:
-          professional.employmentStatus || professional.employment_status || "",
-
-        institutionName:
-          professional.institutionName || professional.institution_name || "",
-
-        institutionType:
-          professional.institutionType || professional.institution_type || "",
-
-        experienceYears:
-          professional.experienceYears || professional.experience_years || "",
-
-        highestQualification:
-          professional.highestQualification || professional.highest_qualification || "",
-
-        degreeName:
-          professional.degreeName || professional.degree_name || "",
-
-        specialization:
-          professional.specialization || "",
-
-        university:
-          professional.university || "",
-
-        gradYear:
-          professional.gradYear || professional.graduation_year || "",
-
-
-        /* ---------------------------------------
-           Teaching Assignment
-        --------------------------------------- */
-
-        teachingMode:
-          teachingMode,
-
-        grades:
-          selectedGrades,
-
-        streams:
-          streams.length > 0 ? streams : professional.selected_streams || [],
-
-        subjects:
-          subjects.length > 0
-            ? subjects
-            : specialistAssignments.map((assignment) => assignment.subject),
-
-        specialistAssignments:
-          specialistAssignments,
-
-        languages:
-          languages.length > 0 ? languages : professional.languages || []
-      },
-
-
-      /* -----------------------------------------
-         Submission Information
-      ----------------------------------------- */
-
-      submittedAt:
-        new Date().toISOString()
-    };
-  }
-
-
-  /* =========================================================
-     17. FINAL SUBMISSION
-  ========================================================= */
-
-  async function submitTeacherRegistration() {
-
-    /* -----------------------------------------
-       Check confirmation
-    ----------------------------------------- */
-
-    const confirmInformation =
-      document.getElementById(
-        "confirmInformation"
-      ).checked;
-
-    const confirmTerms =
-      document.getElementById(
-        "confirmTerms"
-      ).checked;
-
-
-    if (!confirmInformation) {
-
-      alert(
-        "Please confirm that all your information is accurate and complete."
-      );
-
-      return;
+    async function uploadProfilePhotoIfNeeded(client, userId, photoMeta) {
+      if (!photoMeta || !photoMeta.name || !photoMeta.type) return null;
+      const file = window.__teacherRegistrationPhotoFile;
+      if (!file) return null;
+      const extension = photoMeta.type.includes("png") ? "png" : photoMeta.type.includes("gif") ? "gif" : "jpg";
+      const path = `teachers/${userId}/profile.${extension}`;
+      const { error } = await client.storage.from("teacher-profiles").upload(path, file, { upsert: true, contentType: file.type });
+      if (error) throw error;
+      return path;
     }
 
+    async function createTeacherRecord(client, user, profilePayload) {
+      const teacherInsert = {
+        user_id: user.id,
+        teacher_id: profilePayload.teacherId,
+        full_name: profilePayload.fullName,
+        email: profilePayload.email,
+        country_code: profilePayload.countryCode,
+        phone_number: profilePayload.phoneNumber,
+        date_of_birth: profilePayload.dateOfBirth || null,
+        gender: profilePayload.gender,
+        country: profilePayload.country,
+        state: profilePayload.state,
+        city: profilePayload.city,
+        address: profilePayload.address,
+        profile_photo_url: profilePayload.profilePhotoUrl || null,
+        employment_status: profilePayload.employmentStatus,
+        institution_name: profilePayload.institutionName,
+        institution_type: profilePayload.institutionType,
+        years_experience: profilePayload.yearsExperience || null,
+        highest_qualification: profilePayload.highestQualification,
+        degree_course: profilePayload.degreeCourse,
+        specialization: profilePayload.specialization,
+        university_college: profilePayload.universityCollege,
+        graduation_year: profilePayload.graduationYear || null,
+        teaching_mode: profilePayload.teachingMode,
+      };
 
-    if (!confirmTerms) {
-
-      alert(
-        "Please accept the Terms & Conditions and Privacy Policy."
-      );
-
-      return;
+      const { data, error } = await client.from("teachers").insert([teacherInsert]).select("id").single();
+      if (error) throw error;
+      return data;
     }
 
+    async function createAcademicRecords(client, teacherRecord, profilePayload) {
+      if (Array.isArray(step2.gradeGroups) && step2.gradeGroups.length) {
+        const gradeRows = step2.gradeGroups.flatMap((group) => {
+          const grades = group === "grades56" ? [5, 6] : group === "grades78" ? [7, 8] : group === "grades910" ? [9, 10] : [11, 12];
+          return grades.map((grade) => ({
+            teacher_id: teacherRecord.id,
+            grade,
+            stream: (grade >= 11 && Array.isArray(step2.streams) && step2.streams.length) ? step2.streams[0] : null,
+            teach_all_subjects: true,
+          }));
+        });
 
-    /* -----------------------------------------
-       Validate stored registration data
-    ----------------------------------------- */
-
-    if (!validateRegistrationData()) {
-      return;
-    }
-
-
-    /* -----------------------------------------
-       Button state
-    ----------------------------------------- */
-
-    const submitBtn =
-      document.getElementById(
-        "submitBtn"
-      );
-
-    submitBtn.disabled = true;
-
-    submitBtn.textContent =
-      "Creating Account...";
-
-
-    /* -----------------------------------------
-       Build final object
-    ----------------------------------------- */
-
-    const finalTeacherData =
-      buildFinalTeacherData();
-
-
-    /* -----------------------------------------
-       Save final registration temporarily
-       
-       This is useful until Supabase
-       submission is connected.
-    ----------------------------------------- */
-
-    sessionStorage.setItem(
-      "finalTeacherRegistration",
-      JSON.stringify(
-        finalTeacherData
-      )
-    );
-
-
-
-    /* =====================================================
-       SUPABASE CONNECTION GOES HERE
-       
-       Later this section will:
-       
-       1. Create Supabase Auth account
-       2. Insert teacher into teachers table
-       3. Insert subjects into teacher_subjects
-       4. Upload profile photo if applicable
-       5. Clear registration session
-       6. Redirect to teacher dashboard
-    ===================================================== */
-
-
-    try {
-
-      /*
-       ----------------------------------------------------
-       TEMPORARY SUCCESS
-       ----------------------------------------------------
-       
-       Remove this timeout when Supabase is connected.
-      */
-
-      const saveResult = await TeacherData.saveToSupabase(finalTeacherData);
-      if (!saveResult.saved) {
-        if (saveResult.reason === "not-authenticated") {
-          alert("Confirm your email and sign in to finish teacher registration.");
-          window.location.href = "login.html";
-          return;
+        if (gradeRows.length) {
+          const { error: gradeError } = await client.from("teacher_grade_groups").insert(gradeRows);
+          if (gradeError) throw gradeError;
         }
-        throw new Error(
-          saveResult.reason === "not-configured"
-            ? "Supabase is not configured. Registration was not saved."
-            : "Sign in to Supabase before completing teacher registration.",
-        );
       }
 
+      if (step2.teachingMode === "subject_specialist" && Array.isArray(step2.subjects) && step2.subjects.length) {
+        const subjects = Array.isArray(step2.subjects) ? step2.subjects : [];
+        const assignmentRows = [];
+        for (const subject of subjects) {
+          for (const grade of [11, 12]) {
+            assignmentRows.push({
+              teacher_id: teacherRecord.id,
+              subject: subject,
+              grade,
+              stream: Array.isArray(step2.streams) && step2.streams.length ? step2.streams[0] : null,
+            });
+          }
+        }
+        if (assignmentRows.length) {
+          const { error: subjectError } = await client.from("teacher_subject_assignments").insert(assignmentRows);
+          if (subjectError) throw subjectError;
+        }
+      }
 
-      alert(
-        `Teacher registration completed successfully!\n\nTeacher ID: ${generatedTeacherId}`
-      );
-
-      [
-        "teacherPersonalInfo",
-        "teacherProfessionalInfo",
-        "teacherProfilePhotoName",
-        "teacherRegistrationNeedsLogin",
-        "finalTeacherRegistration",
-      ].forEach((key) => sessionStorage.removeItem(key));
-
-
-      /* -----------------------------------------
-         OPTIONAL:
-         Redirect after successful registration
-      ----------------------------------------- */
-
-      window.location.href = "../teacher_content/teacher_dashboard.html";
-
-
-    } catch (error) {
-
-      console.error(
-        "Teacher registration error:",
-        error
-      );
-
-      alert(error.message || "Registration was not saved. Please try again.");
-
-    } finally {
-
-      submitBtn.disabled = false;
-
-      submitBtn.textContent =
-        "Create Teacher Account →";
-    }
-  }
-
-
-  /* =========================================================
-     18. PREVENT ACCIDENTAL PAGE LEAVE
-     
-     Only useful if you later add an actual
-     registration request.
-  ========================================================= */
-
-  window.addEventListener(
-    "beforeunload",
-    function (event) {
-
-      const submitBtn =
-        document.getElementById(
-          "submitBtn"
-        );
-
-      if (
-        submitBtn &&
-        submitBtn.disabled
-      ) {
-        event.preventDefault();
-        event.returnValue = "";
+      if (Array.isArray(step2.languages) && step2.languages.length) {
+        const languageRows = step2.languages.map((language) => ({ teacher_id: teacherRecord.id, language: language }));
+        const { error: languageError } = await client.from("teacher_languages").insert(languageRows);
+        if (languageError) throw languageError;
       }
     }
-  );
-</script>
+
+    async function submitTeacherRegistration() {
+      const confirmInformation = document.getElementById("confirmInformation")?.checked;
+      const confirmTerms = document.getElementById("confirmTerms")?.checked;
+
+      if (!confirmInformation) {
+        alert("Please confirm that all the information provided above is accurate and complete.");
+        return;
+      }
+
+      if (!confirmTerms) {
+        alert("Please agree to the Smart Learning DC Terms & Conditions and Privacy Policy.");
+        return;
+      }
+
+      if (!validateRegistrationDraft()) return;
+
+      const submitBtn = document.getElementById("submitBtn");
+      if (!submitBtn) return;
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Creating Account...";
+
+      try {
+        const client = window.SmartLearningSupabase?.getClient?.();
+        if (!client) {
+          throw new Error("Supabase is not configured. Add your project URL and publishable key before continuing.");
+        }
+
+        const { data: authResult, error: signupError } = await client.auth.signUp({
+          email: step1.email,
+          password: step1.password,
+          options: {
+            data: {
+              role: "teacher",
+              full_name: step1.fullName,
+            },
+          },
+        });
+
+        if (signupError) throw signupError;
+        if (!authResult?.user) throw new Error("The teacher account could not be created. Please try again.");
+
+        const user = authResult.user;
+        const finalTeacherId = generatedTeacherId;
+
+        let profilePhotoUrl = null;
+        try {
+          profilePhotoUrl = await uploadProfilePhotoIfNeeded(client, user.id, step1.profilePhoto);
+        } catch (error) {
+          console.error("Profile photo upload failed.", error);
+          throw new Error("Profile photo upload failed. Please try again or continue without a photo.");
+        }
+
+        const profilePayload = {
+          teacherId: finalTeacherId,
+          fullName: step1.fullName,
+          email: step1.email,
+          countryCode: step1.countryCode || "",
+          phoneNumber: step1.phoneNumber || "",
+          dateOfBirth: step1.dateOfBirth || null,
+          gender: step1.gender || "",
+          country: step1.country || "",
+          state: step1.state || "",
+          city: step1.city || "",
+          address: step1.address || "",
+          profilePhotoUrl,
+          employmentStatus: step2.employmentStatus || "fresher",
+          institutionName: step2.institutionName || "",
+          institutionType: step2.institutionType || "",
+          yearsExperience: step2.yearsExperience || "",
+          highestQualification: step2.highestQualification || "",
+          degreeCourse: step2.degreeCourse || "",
+          specialization: step2.specialization || "",
+          universityCollege: step2.universityCollege || "",
+          graduationYear: step2.graduationYear || null,
+          teachingMode: step2.teachingMode || "teach_all",
+        };
+
+        const teacherRecord = await createTeacherRecord(client, user, profilePayload);
+        await createAcademicRecords(client, teacherRecord, profilePayload);
+
+        window.TeacherRegistrationStorage.clearRegistrationDraft();
+        sessionStorage.removeItem("teacherId");
+        sessionStorage.removeItem("teacherRegistrationNeedsLogin");
+        alert("Teacher account created successfully.");
+        window.location.href = "../teacher_content/teacher_dashboard.html";
+      } catch (error) {
+        console.error("Teacher registration error:", error);
+        alert(error.message || "Unable to create your teacher account right now. Please try again.");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Create Teacher Account →";
+      }
+    }
+
+    window.submitTeacherRegistration = submitTeacherRegistration;
+    window.editPersonalInfo = editPersonalInfo;
+    window.editProfessionalInfo = editProfessionalInfo;
+    window.goBack = goBack;
+  </script>
+
   </body>
 </html>
 ```

@@ -1621,183 +1621,306 @@
     </div>
     here is the html or css
     <script>
-      if (false) {
-        /* =========================================================
-         GLOBAL STATE
-      ========================================================== */
-
+      (function () {
         let employmentStatus = "fresher";
         let teachingMode = "teach_all";
 
-        /* =========================================================
-         GRADE CHECKBOX GENERATOR
-      ========================================================== */
-
-        function generateGradeCheckboxes(subject, startGrade, endGrade) {
-          let html = "";
-
-          for (let grade = startGrade; grade <= endGrade; grade++) {
-            const id = "subject_" + subject + "_class_" + grade;
-
-            html += `
-            <div class="checkbox-card">
-
-              <input
-                type="checkbox"
-                id="${id}"
-                name="subject_grades_${subject}[]"
-                value="${grade}"
-                data-subject="${subject}"
-                data-grade="${grade}"
-              />
-
-              <label for="${id}">
-                ${grade}
-              </label>
-
-            </div>
-          `;
-          }
-
-          return html;
+        function getDraft() {
+          return window.TeacherRegistrationStorage?.getRegistrationDraft?.() || {
+            step1: {},
+            step2: {},
+            confirmed: false,
+          };
         }
 
-        /* =========================================================
-         EMPLOYMENT STATUS
-      ========================================================== */
+        function saveDraft(step2Data) {
+          return window.TeacherRegistrationStorage?.updateStep2?.(step2Data);
+        }
 
         function setEmploymentStatus(status) {
           employmentStatus = status;
-
           const fresherButton = document.getElementById("btnFresher");
-
           const teachingButton = document.getElementById("btnTeaching");
-
           const teachingPanel = document.getElementById("teachingDetailsPanel");
 
-          if (status === "fresher") {
-            fresherButton.classList.add("active");
-            teachingButton.classList.remove("active");
-
-            teachingPanel.classList.remove("show");
+          if (status === "teaching") {
+            fresherButton?.classList.remove("active");
+            teachingButton?.classList.add("active");
+            teachingPanel?.classList.add("show");
           } else {
-            teachingButton.classList.add("active");
-            fresherButton.classList.remove("active");
-
-            teachingPanel.classList.add("show");
+            fresherButton?.classList.add("active");
+            teachingButton?.classList.remove("active");
+            teachingPanel?.classList.remove("show");
           }
         }
-
-        /* =========================================================
-         TEACHING MODE
-      ========================================================== */
 
         function setTeachingMode(mode) {
-          teachingMode = mode;
-
+          teachingMode = mode === "subject_specialist" ? "subject_specialist" : "teach_all";
           const teachAllButton = document.getElementById("btnTeachAll");
-
           const specialistButton = document.getElementById("btnSpecialist");
-
           const teachAllPanel = document.getElementById("teachAllPanel");
+          const specialistPanel = document.getElementById("subjectSpecialistPanel");
 
-          const specialistPanel = document.getElementById(
-            "subjectSpecialistPanel",
-          );
-
-          if (mode === "teach_all") {
-            teachAllButton.classList.add("active");
-            specialistButton.classList.remove("active");
-
-            teachAllPanel.classList.add("show");
-            specialistPanel.classList.remove("show");
+          if (teachingMode === "subject_specialist") {
+            specialistButton?.classList.add("active");
+            teachAllButton?.classList.remove("active");
+            specialistPanel?.classList.add("show");
+            teachAllPanel?.classList.remove("show");
           } else {
-            specialistButton.classList.add("active");
-            teachAllButton.classList.remove("active");
-
-            teachAllPanel.classList.remove("show");
-            specialistPanel.classList.add("show");
+            teachAllButton?.classList.add("active");
+            specialistButton?.classList.remove("active");
+            teachAllPanel?.classList.add("show");
+            specialistPanel?.classList.remove("show");
           }
-        }
 
-        /* =========================================================
-         SENIOR STREAM PANEL
-      ========================================================== */
+          toggleSeniorStreamPanel();
+        }
 
         function toggleSeniorStreamPanel() {
           const grades1112 = document.getElementById("grades1112");
-
           const streamPanel = document.getElementById("streamSelectPanel");
+          const shouldShow = Boolean(grades1112 && grades1112.checked);
 
-          if (grades1112.checked) {
-            streamPanel.classList.add("show");
-          } else {
-            streamPanel.classList.remove("show");
+          if (streamPanel) {
+            streamPanel.classList.toggle("show", shouldShow);
+          }
 
-            document
-              .querySelectorAll("#streamSelectPanel input[type='checkbox']")
-              .forEach((checkbox) => {
-                checkbox.checked = false;
-              });
+          if (!shouldShow) {
+            document.querySelectorAll("#streamSelectPanel input[type='checkbox']").forEach((checkbox) => {
+              checkbox.checked = false;
+            });
           }
         }
 
-        /* =========================================================
-         LANGUAGE TAGS
-      ========================================================== */
-
         function addLanguageTag(select) {
           const language = select.value;
-
-          if (!language) {
-            return;
-          }
+          if (!language) return;
 
           const tagsContainer = document.getElementById("languageTags");
+          if (!tagsContainer) return;
 
-          const existingTags = Array.from(
-            tagsContainer.querySelectorAll(".tag"),
-          );
-
-          const alreadyExists = existingTags.some(
-            (tag) => tag.textContent.replace("×", "").trim() === language,
-          );
-
-          if (alreadyExists) {
+          const existing = Array.from(tagsContainer.querySelectorAll(".tag")).map((tag) => tag.dataset.language);
+          if (existing.includes(language)) {
             select.value = "";
             return;
           }
 
           const tag = document.createElement("div");
-
           tag.className = "tag";
-
-          tag.innerHTML = `
-          ${language}
-          <span onclick="removeTag(this)">×</span>
-        `;
-
+          tag.dataset.language = language;
+          tag.innerHTML = `${language}<span onclick="this.parentElement.remove()"> × </span>`;
           tagsContainer.appendChild(tag);
-
           select.value = "";
         }
 
-        function removeTag(element) {
-          const tag = element.parentElement;
-
-          tag.remove();
+        function getSelectedLanguages() {
+          return Array.from(document.querySelectorAll("#languageTags .tag")).map((tag) => tag.dataset.language).filter(Boolean);
         }
 
-        /* =========================================================
-         NAVIGATION
-      ========================================================== */
-
-        function goToPersonalInfo() {
-          window.location.href = "teacher-personal.html";
+        function getSelectedGradeGroups() {
+          return ["grades56", "grades78", "grades910", "grades1112"]
+            .map((id) => document.getElementById(id))
+            .filter((input) => input && input.checked)
+            .map((input) => input.value);
         }
 
-        /* =========================================================
-         GRADUATION YEAR
+        function getSelectedStreams() {
+          return Array.from(document.querySelectorAll("#streamSelectPanel input[type='checkbox']"))
+            .filter((checkbox) => checkbox.checked)
+            .map((checkbox) => checkbox.value);
+        }
+
+        function getSelectedSubjectAssignments() {
+          const assignments = Array.from(document.querySelectorAll('#subjectSpecialistPanel input[type="checkbox"][data-subject]:checked'));
+          const grouped = {};
+          assignments.forEach((checkbox) => {
+            const subject = checkbox.dataset.subject;
+            const grade = Number(checkbox.dataset.grade);
+            if (!subject || !grade) return;
+            if (!grouped[subject]) grouped[subject] = [];
+            grouped[subject].push(grade);
+          });
+          return Object.entries(grouped).flatMap(([subject, grades]) => [{ subject, grades }]);
+        }
+
+        function loadDraftIntoForm() {
+          const draft = getDraft();
+          const step2 = draft.step2 || {};
+
+          setEmploymentStatus(step2.employmentStatus || "fresher");
+          setTeachingMode(step2.teachingMode || "teach_all");
+
+          const { institutionName, institutionType, yearsExperience, highestQualification, degreeCourse, specialization, universityCollege, graduationYear } = step2;
+          const fields = {
+            institutionName,
+            institutionType,
+            experienceYears: yearsExperience,
+            highestQualification,
+            degreeName: degreeCourse,
+            specialization,
+            university: universityCollege,
+            gradYear: graduationYear,
+          };
+
+          Object.entries(fields).forEach(([id, value]) => {
+            const field = document.getElementById(id);
+            if (field) field.value = value || "";
+          });
+
+          const gradeGroups = Array.isArray(step2.gradeGroups) ? step2.gradeGroups : [];
+          ["grades56", "grades78", "grades910", "grades1112"].forEach((id) => {
+            const checkbox = document.getElementById(id);
+            if (checkbox) checkbox.checked = gradeGroups.includes(checkbox.value);
+          });
+
+          if (gradeGroups.includes("grades_11_12") || gradeGroups.includes("grades1112")) {
+            const streamCheckbox = document.getElementById("grades1112");
+            if (streamCheckbox) streamCheckbox.checked = true;
+            toggleSeniorStreamPanel();
+          }
+
+          const streams = Array.isArray(step2.streams) ? step2.streams : [];
+          document.querySelectorAll("#streamSelectPanel input[type='checkbox']").forEach((checkbox) => {
+            checkbox.checked = streams.includes(checkbox.value);
+          });
+
+          const subjects = Array.isArray(step2.subjects) ? step2.subjects : [];
+          if (Array.isArray(step2.subjects) && step2.subjects.length) {
+            const selected = new Map();
+            step2.subjects.forEach((subject) => {
+              const normalized = String(subject || "").trim();
+              const match = normalized.toLowerCase().replace(/\s+/g, "_");
+              selected.set(match, true);
+            });
+            document.querySelectorAll('#subjectSpecialistPanel input[type="checkbox"][data-subject]').forEach((checkbox) => {
+              const key = String(checkbox.dataset.subject || "").toLowerCase().replace(/\s+/g, "_");
+              checkbox.checked = Boolean(selected.get(key));
+            });
+          }
+
+          const languages = Array.isArray(step2.languages) ? step2.languages : [];
+          const tagsContainer = document.getElementById("languageTags");
+          if (tagsContainer) {
+            tagsContainer.innerHTML = "";
+            languages.forEach((language) => {
+              const tag = document.createElement("div");
+              tag.className = "tag";
+              tag.dataset.language = language;
+              tag.innerHTML = `${language}<span onclick="this.parentElement.remove()"> × </span>`;
+              tagsContainer.appendChild(tag);
+            });
+          }
+        }
+
+        function parseProfessionalForm() {
+          const step2Data = {
+            employmentStatus,
+            institutionName: document.getElementById("institutionName")?.value.trim() || "",
+            institutionType: document.getElementById("institutionType")?.value || "",
+            yearsExperience: document.getElementById("experienceYears")?.value || "",
+            highestQualification: document.getElementById("highestQualification")?.value || "",
+            degreeCourse: document.getElementById("degreeName")?.value.trim() || "",
+            specialization: document.getElementById("specialization")?.value.trim() || "",
+            universityCollege: document.getElementById("university")?.value.trim() || "",
+            graduationYear: document.getElementById("gradYear")?.value || "",
+            teachingMode,
+            gradeGroups: getSelectedGradeGroups(),
+            streams: getSelectedStreams(),
+            subjects: getSelectedSubjectAssignments().flatMap((entry) => entry.subject ? [entry.subject] : []),
+            languages: getSelectedLanguages(),
+          };
+          return step2Data;
+        }
+
+        function validateProfessionalForm() {
+          const step2Data = parseProfessionalForm();
+
+          if (employmentStatus === "teaching") {
+            if (!step2Data.institutionName || !step2Data.institutionType || !step2Data.yearsExperience) {
+              alert("Please complete your institution and teaching experience details.");
+              return false;
+            }
+          }
+
+          if (!step2Data.highestQualification || !step2Data.degreeCourse || !step2Data.specialization || !step2Data.universityCollege || !step2Data.graduationYear) {
+            alert("Please complete all educational qualification fields.");
+            return false;
+          }
+
+          if (!step2Data.teachingMode) {
+            alert("Please select a teaching mode.");
+            return false;
+          }
+
+          if (step2Data.teachingMode === "teach_all") {
+            if (!step2Data.gradeGroups.length) {
+              alert("Please select at least one grade group.");
+              return false;
+            }
+            const containsSeniorGrades = step2Data.gradeGroups.some((group) => group === "grades1112" || group === "grades_11_12");
+            if (containsSeniorGrades && !step2Data.streams.length) {
+              alert("Please select at least one stream for Classes 11–12.");
+              return false;
+            }
+          }
+
+          if (step2Data.teachingMode === "subject_specialist") {
+            const subjectAssignments = getSelectedSubjectAssignments();
+            if (!subjectAssignments.length) {
+              alert("Please select at least one subject for subject specialist mode.");
+              return false;
+            }
+          }
+
+          return true;
+        }
+
+        document.getElementById("profForm").addEventListener("submit", function (event) {
+          event.preventDefault();
+
+          if (!validateProfessionalForm()) {
+            return;
+          }
+
+          const nextDraft = parseProfessionalForm();
+          saveDraft(nextDraft);
+          window.location.href = "review.html";
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+          populateGraduationYears();
+          loadDraftIntoForm();
+          const draft = getDraft();
+          const step2 = draft.step2 || {};
+          if (step2.teachingMode === "subject_specialist") {
+            setTeachingMode("subject_specialist");
+          } else {
+            setTeachingMode("teach_all");
+          }
+        });
+
+        function populateGraduationYears() {
+          const select = document.getElementById("gradYear");
+          if (!select || select.options.length > 1) return;
+          const currentYear = new Date().getFullYear();
+          for (let year = currentYear; year >= 1970; year--) {
+            const option = document.createElement("option");
+            option.value = year;
+            option.textContent = year;
+            select.appendChild(option);
+          }
+        }
+
+        window.goToPersonalInfo = function () {
+          window.location.href = "teacher_personal.html";
+        };
+        window.addLanguageTag = addLanguageTag;
+        window.setEmploymentStatus = setEmploymentStatus;
+        window.setTeachingMode = setTeachingMode;
+        window.toggleSeniorStreamPanel = toggleSeniorStreamPanel;
+      })();
+    </script>
+
       ========================================================== */
 
         function populateGraduationYears() {

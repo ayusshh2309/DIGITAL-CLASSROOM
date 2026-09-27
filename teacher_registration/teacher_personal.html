@@ -1518,214 +1518,169 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="../js/supabase.js"></script>
-  <script src="../js/teacher-data.js"></script>
+  <script src="../js/teacher-registration-storage.js"></script>
+  <script src="../js/teacher-registration.js"></script>
   <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const profilePhotoInput = document.getElementById("profilePhotoInput");
+      const uploadText = document.getElementById("uploadText");
+      const dobInput = document.getElementById("dob");
+      const form = document.getElementById("personalForm");
 
-    /* =========================================================
-       FILE UPLOAD
-    ========================================================= */
+      if (dobInput) {
+        dobInput.max = new Date().toISOString().split("T")[0];
+      }
 
-    const profilePhotoInput =
-      document.getElementById("profilePhotoInput");
+      const draft = window.TeacherRegistrationStorage?.getRegistrationDraft?.() || { step1: {}, step2: {}, confirmed: false };
+      const step1 = draft.step1 || {};
 
-    const uploadText =
-      document.getElementById("uploadText");
+      const setValue = (id, value) => {
+        const field = document.getElementById(id);
+        if (field) field.value = value ?? "";
+      };
 
+      setValue("fullName", step1.fullName);
+      setValue("email", step1.email);
+      setValue("countryCode", step1.countryCode || "+91");
+      setValue("phone", step1.phoneNumber);
+      setValue("dob", step1.dateOfBirth);
+      setValue("gender", step1.gender);
+      setValue("country", step1.country);
+      setValue("state", step1.state);
+      setValue("city", step1.city);
+      setValue("password", step1.password || "");
+      setValue("confirmPassword", step1.password || "");
+      setValue("address", step1.address);
 
-    profilePhotoInput.addEventListener(
-      "change",
-      function () {
+      if (step1.profilePhotoName) {
+        uploadText.innerHTML = `
+          <strong>${step1.profilePhotoName}</strong>
+          <br>
+          <span style="font-size: 0.78rem; color: #94a3b8;">Stored for final account creation</span>
+        `;
+      }
 
+      profilePhotoInput.addEventListener("change", function () {
         const file = this.files[0];
-
         if (!file) return;
 
-
-        /* Maximum 2 MB */
-
-        if (file.size > 2 * 1024 * 1024) {
-
-          alert(
-            "Profile photo must be smaller than 2 MB."
-          );
-
+        const allowed = ["image/jpeg", "image/png", "image/gif"];
+        if (!allowed.includes(file.type)) {
+          alert("Only JPG, JPEG, PNG, and GIF images are allowed.");
           this.value = "";
-
           return;
         }
 
+        if (file.size > 2 * 1024 * 1024) {
+          alert("Profile photo must be smaller than 2 MB.");
+          this.value = "";
+          return;
+        }
+
+        window.__teacherRegistrationPhotoFile = file;
+        window.TeacherRegistrationStorage.updateStep1({
+          profilePhotoName: file.name,
+          profilePhoto: {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            lastModified: file.lastModified,
+          },
+        });
 
         uploadText.innerHTML = `
           <strong>${file.name}</strong>
           <br>
-          <span
-            style="
-              font-size: 0.78rem;
-              color: #94a3b8;
-            "
-          >
-            ${(file.size / 1024 / 1024).toFixed(2)} MB
-          </span>
+          <span style="font-size: 0.78rem; color: #94a3b8;">${(file.size / 1024 / 1024).toFixed(2)} MB</span>
         `;
+      });
 
-      }
-    );
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
 
-
-    /* =========================================================
-       FORM SUBMIT
-    ========================================================= */
-
-    document
-      .getElementById("personalForm")
-      .addEventListener(
-        "submit",
-        async function (event) {
-
-          event.preventDefault();
-
-
-          /* Browser validation */
-
-          if (!this.checkValidity()) {
-
-            this.reportValidity();
-
-            return;
-          }
-
-
-          /* Password confirmation */
-
-          const password =
-            document.getElementById("password").value;
-
-          const confirmPassword =
-            document.getElementById("confirmPassword").value;
-
-
-          if (password !== confirmPassword) {
-
-            alert(
-              "Password and Confirm Password do not match."
-            );
-
-            document
-              .getElementById("confirmPassword")
-              .focus();
-
-            return;
-          }
-
-
-          /* Collect personal information */
-
-          const personalData = {
-
-            full_name:
-              document.getElementById("fullName").value.trim(),
-
-            email:
-              document.getElementById("email").value.trim(),
-
-            country_code:
-              document.getElementById("countryCode").value,
-
-            phone:
-              document.getElementById("phone").value.trim(),
-
-            dob:
-              document.getElementById("dob").value,
-
-            gender:
-              document.getElementById("gender").value,
-
-            country:
-              document.getElementById("country").value,
-
-            state:
-              document.getElementById("state").value.trim(),
-
-            city:
-              document.getElementById("city").value.trim(),
-
-            address:
-              document.getElementById("address").value.trim(),
-
-            /* Do NOT store password in sessionStorage */
-          };
-
-          const profilePhotoFile = profilePhotoInput.files[0];
-
-          if (profilePhotoFile) {
-            personalData.profilePhotoData = await new Promise(
-              (resolve, reject) => {
-                const reader = new FileReader();
-
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = () => reject(reader.error);
-                reader.readAsDataURL(profilePhotoFile);
-              },
-            );
-          }
-
-          const supabaseClient = TeacherData.getSupabaseClient();
-          if (!supabaseClient) {
-            alert("Supabase is not configured. Registration was not started.");
-            return;
-          }
-
-          const submitButton = document.getElementById("personalNextBtn");
-          submitButton.disabled = true;
-          submitButton.textContent = "Creating account...";
-          try {
-            const { data: currentAuth, error: currentAuthError } =
-              await supabaseClient.auth.getUser();
-            if (currentAuthError) throw currentAuthError;
-            if (currentAuth.user && currentAuth.user.email !== personalData.email) {
-              throw new Error("Sign out before registering a different teacher account.");
-            }
-            if (!currentAuth.user) {
-              const { data: signupData, error: signupError } =
-                await supabaseClient.auth.signUp({
-                  email: personalData.email,
-                  password,
-                  options: {
-                    data: { role: "teacher", full_name: personalData.full_name },
-                  },
-                });
-              if (signupError) throw signupError;
-              if (!signupData.user) throw new Error("Supabase did not create the account.");
-              if (!signupData.session) {
-                sessionStorage.setItem("teacherRegistrationNeedsLogin", "true");
-              }
-            }
-          } catch (error) {
-            alert(error.message || "Unable to create your teacher account.");
-            submitButton.disabled = false;
-            submitButton.textContent = "Next Step →";
-            return;
-          }
-
-
-          /* Save temporary registration data */
-
-          sessionStorage.setItem(
-            "teacherPersonalInfo",
-            JSON.stringify(personalData)
-          );
-
-
-          /* ===================================================
-             GO TO PROFESSIONAL INFORMATION
-          =================================================== */
-
-          window.location.href =
-            "/teacher_registration/teacher_professtional.html";
-
+        if (!this.checkValidity()) {
+          this.reportValidity();
+          return;
         }
-      );
 
+        const fullName = document.getElementById("fullName").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const countryCode = document.getElementById("countryCode").value;
+        const phoneNumber = document.getElementById("phone").value.trim();
+        const dobValue = document.getElementById("dob").value;
+        const gender = document.getElementById("gender").value;
+        const country = document.getElementById("country").value;
+        const state = document.getElementById("state").value.trim();
+        const city = document.getElementById("city").value.trim();
+        const password = document.getElementById("password").value;
+        const confirmPassword = document.getElementById("confirmPassword").value;
+        const address = document.getElementById("address").value.trim();
+
+        if (!window.TeacherRegistration.isValidEmail(email)) {
+          alert("Please enter a valid email address.");
+          document.getElementById("email").focus();
+          return;
+        }
+
+        if (!window.TeacherRegistration.isValidPhoneNumber(phoneNumber)) {
+          alert("Please enter a valid phone number.");
+          document.getElementById("phone").focus();
+          return;
+        }
+
+        if (!dobValue) {
+          alert("Please select your date of birth.");
+          document.getElementById("dob").focus();
+          return;
+        }
+
+        const dobDate = new Date(dobValue + "T00:00:00");
+        if (Number.isNaN(dobDate.getTime()) || dobDate > new Date()) {
+          alert("Please enter a valid date of birth.");
+          document.getElementById("dob").focus();
+          return;
+        }
+
+        if (!window.TeacherRegistration.isPasswordValid(password)) {
+          alert("Password must be at least 8 characters long.");
+          document.getElementById("password").focus();
+          return;
+        }
+
+        if (password !== confirmPassword) {
+          alert("Password and Confirm Password do not match.");
+          document.getElementById("confirmPassword").focus();
+          return;
+        }
+
+        const photoMeta = window.__teacherRegistrationPhotoFile
+          ? {
+              name: window.__teacherRegistrationPhotoFile.name,
+              size: window.__teacherRegistrationPhotoFile.size,
+              type: window.__teacherRegistrationPhotoFile.type,
+              lastModified: window.__teacherRegistrationPhotoFile.lastModified,
+            }
+          : (step1.profilePhoto || null);
+
+        window.TeacherRegistration.updateStep1({
+          fullName,
+          email,
+          countryCode,
+          phoneNumber,
+          dateOfBirth: dobValue,
+          gender,
+          country,
+          state,
+          city,
+          password,
+          address,
+          profilePhoto: photoMeta,
+          profilePhotoName: photoMeta ? photoMeta.name : "",
+        });
+
+        window.location.href = "teacher_professtional.html";
+      });
+    });
   </script>
 
 </body>
