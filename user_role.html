@@ -14,9 +14,6 @@
       rel="stylesheet"
     />
 
-    <!-- Supabase JS SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-
     <style>
       :root {
         --bg-page: #e8f3f1;
@@ -465,16 +462,6 @@
     </div>
 
     <script>
-      // 1. SUPABASE INITIALIZATION
-      const SUPABASE_URL = "YOUR_SUPABASE_URL_HERE";
-      const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY_HERE";
-
-      const supabaseClient = window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_ANON_KEY,
-      );
-
-      // 2. SELECTION LOGIC & REDIRECTION
       function selectRole(role) {
         localStorage.setItem("selected_role", role);
 

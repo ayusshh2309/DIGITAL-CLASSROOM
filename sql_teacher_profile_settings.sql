@@ -141,9 +141,78 @@ create table if not exists public.teacher_subjects (
   teacher_id uuid not null references auth.users(id) on delete cascade,
   subject text not null,
   grade text not null,
+  stream text,
   created_at timestamptz not null default now(),
   primary key (teacher_id, subject, grade)
 );
+
+alter table public.teacher_subjects
+  add column if not exists stream text;
+
+create table if not exists public.teacher_grade_groups (
+  teacher_id uuid not null references public.teachers(id) on delete cascade,
+  grade smallint not null check (grade between 1 and 12),
+  grade_group text,
+  created_at timestamptz not null default now(),
+  primary key (teacher_id, grade)
+);
+
+create table if not exists public.teacher_subject_assignments (
+  id uuid primary key default gen_random_uuid(),
+  teacher_id uuid not null references public.teachers(id) on delete cascade,
+  grade smallint not null check (grade between 1 and 12),
+  subject text not null,
+  subject_id uuid,
+  stream text,
+  created_at timestamptz not null default now(),
+  constraint teacher_subject_assignments_unique
+    unique nulls not distinct (teacher_id, grade, subject, stream)
+);
+
+create table if not exists public.teacher_languages (
+  id uuid primary key default gen_random_uuid(),
+  teacher_id uuid not null references public.teachers(id) on delete cascade,
+  language text not null,
+  language_id uuid,
+  created_at timestamptz not null default now(),
+  constraint teacher_languages_unique unique (teacher_id, language)
+);
+
+do $$
+begin
+  if to_regclass('public.subjects') is not null
+    and exists (
+      select 1 from information_schema.columns
+      where table_schema = 'public' and table_name = 'subjects'
+        and column_name = 'id' and data_type = 'uuid'
+    )
+    and not exists (
+      select 1 from pg_constraint
+      where conrelid = 'public.teacher_subject_assignments'::regclass
+        and conname = 'teacher_subject_assignments_subject_id_fkey'
+    ) then
+    alter table public.teacher_subject_assignments
+      add constraint teacher_subject_assignments_subject_id_fkey
+      foreign key (subject_id) references public.subjects(id) on delete set null;
+  end if;
+
+  if to_regclass('public.languages') is not null
+    and exists (
+      select 1 from information_schema.columns
+      where table_schema = 'public' and table_name = 'languages'
+        and column_name = 'id' and data_type = 'uuid'
+    )
+    and not exists (
+      select 1 from pg_constraint
+      where conrelid = 'public.teacher_languages'::regclass
+        and conname = 'teacher_languages_language_id_fkey'
+    ) then
+    alter table public.teacher_languages
+      add constraint teacher_languages_language_id_fkey
+      foreign key (language_id) references public.languages(id) on delete set null;
+  end if;
+end;
+$$;
 
 create or replace function public.set_updated_at()
 returns trigger
@@ -168,6 +237,9 @@ for each row execute function public.set_updated_at();
 alter table public.teachers enable row level security;
 alter table public.teacher_settings enable row level security;
 alter table public.teacher_subjects enable row level security;
+alter table public.teacher_grade_groups enable row level security;
+alter table public.teacher_subject_assignments enable row level security;
+alter table public.teacher_languages enable row level security;
 
 do $$
 declare
@@ -214,6 +286,84 @@ for update to authenticated
 using (teacher_id = (select auth.uid()))
 with check (teacher_id = (select auth.uid()));
 
+drop policy if exists teacher_grade_groups_select_own on public.teacher_grade_groups;
+create policy teacher_grade_groups_select_own on public.teacher_grade_groups
+for select to authenticated using (exists (
+  select 1 from public.teachers
+  where teachers.id = teacher_grade_groups.teacher_id
+    and teachers.user_id = (select auth.uid())
+));
+drop policy if exists teacher_grade_groups_insert_own on public.teacher_grade_groups;
+create policy teacher_grade_groups_insert_own on public.teacher_grade_groups
+for insert to authenticated with check (exists (
+  select 1 from public.teachers
+  where teachers.id = teacher_grade_groups.teacher_id
+    and teachers.user_id = (select auth.uid())
+));
+drop policy if exists teacher_grade_groups_update_own on public.teacher_grade_groups;
+create policy teacher_grade_groups_update_own on public.teacher_grade_groups
+for update to authenticated using (exists (
+  select 1 from public.teachers
+  where teachers.id = teacher_grade_groups.teacher_id
+    and teachers.user_id = (select auth.uid())
+)) with check (exists (
+  select 1 from public.teachers
+  where teachers.id = teacher_grade_groups.teacher_id
+    and teachers.user_id = (select auth.uid())
+));
+
+drop policy if exists teacher_subject_assignments_select_own on public.teacher_subject_assignments;
+create policy teacher_subject_assignments_select_own on public.teacher_subject_assignments
+for select to authenticated using (exists (
+  select 1 from public.teachers
+  where teachers.id = teacher_subject_assignments.teacher_id
+    and teachers.user_id = (select auth.uid())
+));
+drop policy if exists teacher_subject_assignments_insert_own on public.teacher_subject_assignments;
+create policy teacher_subject_assignments_insert_own on public.teacher_subject_assignments
+for insert to authenticated with check (exists (
+  select 1 from public.teachers
+  where teachers.id = teacher_subject_assignments.teacher_id
+    and teachers.user_id = (select auth.uid())
+));
+drop policy if exists teacher_subject_assignments_update_own on public.teacher_subject_assignments;
+create policy teacher_subject_assignments_update_own on public.teacher_subject_assignments
+for update to authenticated using (exists (
+  select 1 from public.teachers
+  where teachers.id = teacher_subject_assignments.teacher_id
+    and teachers.user_id = (select auth.uid())
+)) with check (exists (
+  select 1 from public.teachers
+  where teachers.id = teacher_subject_assignments.teacher_id
+    and teachers.user_id = (select auth.uid())
+));
+
+drop policy if exists teacher_languages_select_own on public.teacher_languages;
+create policy teacher_languages_select_own on public.teacher_languages
+for select to authenticated using (exists (
+  select 1 from public.teachers
+  where teachers.id = teacher_languages.teacher_id
+    and teachers.user_id = (select auth.uid())
+));
+drop policy if exists teacher_languages_insert_own on public.teacher_languages;
+create policy teacher_languages_insert_own on public.teacher_languages
+for insert to authenticated with check (exists (
+  select 1 from public.teachers
+  where teachers.id = teacher_languages.teacher_id
+    and teachers.user_id = (select auth.uid())
+));
+drop policy if exists teacher_languages_update_own on public.teacher_languages;
+create policy teacher_languages_update_own on public.teacher_languages
+for update to authenticated using (exists (
+  select 1 from public.teachers
+  where teachers.id = teacher_languages.teacher_id
+    and teachers.user_id = (select auth.uid())
+)) with check (exists (
+  select 1 from public.teachers
+  where teachers.id = teacher_languages.teacher_id
+    and teachers.user_id = (select auth.uid())
+));
+
 create policy teacher_settings_select_own on public.teacher_settings
 for select to authenticated
 using (
@@ -256,9 +406,19 @@ revoke delete on public.teachers from authenticated;
 grant select, insert, update on public.teachers to authenticated;
 revoke all on public.teacher_subjects from anon;
 grant select, insert, update on public.teacher_subjects to authenticated;
+revoke all on public.teacher_grade_groups from anon;
+grant select, insert, update on public.teacher_grade_groups to authenticated;
+revoke all on public.teacher_subject_assignments from anon;
+grant select, insert, update on public.teacher_subject_assignments to authenticated;
+revoke all on public.teacher_languages from anon;
+grant select, insert, update on public.teacher_languages to authenticated;
 revoke update on public.teachers from authenticated;
 grant update (
+  user_id,
+  teacher_id,
   full_name,
+  email,
+  country_code,
   phone_number,
   date_of_birth,
   gender,
@@ -269,6 +429,10 @@ grant update (
   profile_photo_url,
   bio,
   highest_qualification,
+  degree_course,
+  specialization,
+  university_college,
+  graduation_year,
   languages,
   employment_status,
   institution_name,

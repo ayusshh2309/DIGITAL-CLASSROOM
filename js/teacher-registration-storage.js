@@ -12,6 +12,7 @@
     state: "",
     city: "",
     password: "",
+    confirmPassword: "",
     address: "",
     profilePhoto: null,
     profilePhotoName: "",
@@ -29,8 +30,10 @@
     graduationYear: "",
     teachingMode: "",
     gradeGroups: [],
+    selectedGrades: [],
     streams: [],
     subjects: [],
+    subjectAssignments: [],
     languages: [],
   };
 
@@ -91,6 +94,7 @@
   function clearPasswordFromDraft() {
     const draft = getRegistrationDraft();
     draft.step1.password = "";
+    draft.step1.confirmPassword = "";
     saveRegistrationDraft(draft);
   }
 

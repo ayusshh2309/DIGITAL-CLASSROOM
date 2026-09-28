@@ -1516,8 +1516,6 @@
        JAVASCRIPT
   ========================================================== -->
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="../js/supabase.js"></script>
   <script src="../js/teacher-registration-storage.js"></script>
   <script src="../js/teacher-registration.js"></script>
   <script>
@@ -1549,7 +1547,7 @@
       setValue("state", step1.state);
       setValue("city", step1.city);
       setValue("password", step1.password || "");
-      setValue("confirmPassword", step1.password || "");
+      setValue("confirmPassword", step1.confirmPassword || step1.password || "");
       setValue("address", step1.address);
 
       if (step1.profilePhotoName) {
@@ -1688,6 +1686,7 @@
           state,
           city,
           password,
+          confirmPassword,
           address,
           profilePhoto: photoMeta,
           profilePhotoName: photoMeta ? photoMeta.name : "",
@@ -1700,7 +1699,7 @@
 
 </body>
 </html>
-    <script>
+    <script type="application/json">
       function goToProfessionalInfo() {
         const requiredFields = document.querySelectorAll(
           "#fullName, #email, #phone, #dob, #gender, #country, #state, #city, #password, #confirmPassword, #address",

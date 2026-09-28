@@ -1703,6 +1703,7 @@
         };
       const step1 = draft.step1 || {};
       const step2 = draft.step2 || {};
+      let registrationInProgress = false;
 
       function displayValue(id, value, fallback = "Not provided") {
         const element = document.getElementById(id);
@@ -1813,17 +1814,28 @@
         formatTeachingMode(step2.teachingMode),
       );
 
-      renderTags(
-        "gradesReview",
-        Array.isArray(step2.gradeGroups)
-          ? step2.gradeGroups.map((value) =>
-              value
-                .replace("grades_", "Classes ")
-                .replace("_", "-")
-                .replace("grades", "Classes"),
-            )
-          : [],
-      );
+      renderTags("gradesReview", [
+        ...(Array.isArray(step2.gradeGroups)
+          ? step2.gradeGroups.map((value) => {
+              const labels = {
+                grades56: "Classes 5-6",
+                grades78: "Classes 7-8",
+                grades910: "Classes 9-10",
+                grades1112: "Classes 11-12",
+              };
+              return (
+                labels[value] ||
+                String(value)
+                  .replace("grades_", "Classes ")
+                  .replace("_", "-")
+                  .replace("grades", "Classes")
+              );
+            })
+          : []),
+        ...(Array.isArray(step2.selectedGrades)
+          ? step2.selectedGrades.map((grade) => `Class ${grade}`)
+          : []),
+      ]);
       renderTags(
         "streamsReview",
         Array.isArray(step2.streams) ? step2.streams : [],
@@ -1872,7 +1884,20 @@
       }
 
       function validateRegistrationDraft() {
-        if (!step1.fullName || !step1.email) {
+        const requiredPersonalFields = [
+          step1.fullName,
+          step1.email,
+          step1.phoneNumber,
+          step1.dateOfBirth,
+          step1.gender,
+          step1.country,
+          step1.state,
+          step1.city,
+          step1.address,
+        ];
+        if (
+          requiredPersonalFields.some((value) => !String(value || "").trim())
+        ) {
           alert(
             "Personal information is incomplete. Please complete Step 1 first.",
           );
@@ -1882,26 +1907,94 @@
           alert("The email address in your draft is invalid.");
           return false;
         }
+        if (!window.TeacherRegistration.isValidPhoneNumber(step1.phoneNumber)) {
+          alert("The phone number in your draft is invalid.");
+          return false;
+        }
+        const birthDate = new Date(`${step1.dateOfBirth}T00:00:00`);
+        if (Number.isNaN(birthDate.getTime()) || birthDate > new Date()) {
+          alert("The date of birth in your draft is invalid.");
+          return false;
+        }
         if (!window.TeacherRegistration.isPasswordValid(step1.password)) {
           alert("A valid password is required before account creation.");
           return false;
         }
-        if (!step2.teachingMode) {
+        if (step1.password !== step1.confirmPassword) {
+          alert(
+            "Password and confirmation do not match. Edit Step 1 to correct them.",
+          );
+          return false;
+        }
+        if (
+          !step2.highestQualification ||
+          !step2.degreeCourse ||
+          !step2.specialization ||
+          !step2.universityCollege ||
+          !step2.graduationYear
+        ) {
+          alert(
+            "Professional qualification details are incomplete. Please edit Step 2.",
+          );
+          return false;
+        }
+        if (
+          step2.employmentStatus === "teaching" &&
+          (!step2.institutionName ||
+            !step2.institutionType ||
+            !step2.yearsExperience)
+        ) {
+          alert("Employment details are incomplete. Please edit Step 2.");
+          return false;
+        }
+        if (
+          !Array.isArray(step2.languages) ||
+          !step2.languages.some((language) => String(language).trim())
+        ) {
+          alert("Select at least one language in Step 2.");
+          return false;
+        }
+        if (!["teach_all", "subject_specialist"].includes(step2.teachingMode)) {
           alert("Please set the teaching mode before creating the account.");
           return false;
         }
-        if (
-          step2.teachingMode === "teach_all" &&
-          (!Array.isArray(step2.gradeGroups) || !step2.gradeGroups.length)
+        const gradeGroups = Array.isArray(step2.gradeGroups)
+          ? step2.gradeGroups
+          : [];
+        const selectedGrades = Array.isArray(step2.selectedGrades)
+          ? step2.selectedGrades
+          : [];
+        const assignments = Array.isArray(step2.subjectAssignments)
+          ? step2.subjectAssignments
+          : [];
+        if (step2.teachingMode === "teach_all") {
+          if (!gradeGroups.length && !selectedGrades.length) {
+            alert("Select at least one grade group in Step 2.");
+            return false;
+          }
+          const hasSeniorGrades =
+            gradeGroups.some((group) =>
+              ["grades1112", "grades_11_12"].includes(group),
+            ) ||
+            selectedGrades.some((grade) =>
+              ["11", "12", 11, 12].includes(grade),
+            );
+          if (
+            hasSeniorGrades &&
+            (!Array.isArray(step2.streams) || !step2.streams.length)
+          ) {
+            alert("Select a stream for Classes 11-12 in Step 2.");
+            return false;
+          }
+        } else if (
+          !assignments.some(
+            (assignment) =>
+              assignment.subject &&
+              Array.isArray(assignment.grades) &&
+              assignment.grades.length,
+          )
         ) {
-          alert("Please select at least one grade group.");
-          return false;
-        }
-        if (
-          step2.teachingMode === "subject_specialist" &&
-          (!Array.isArray(step2.subjects) || !step2.subjects.length)
-        ) {
-          alert("Please select the subject(s) for subject specialist mode.");
+          alert("Select at least one subject and grade in Step 2.");
           return false;
         }
         return true;
@@ -1925,7 +2018,7 @@
             : photoMeta.type === "image/webp"
               ? "webp"
               : "jpg";
-        const path = `${userId}/profile-${Date.now()}.${extension}`;
+        const path = `${userId}/profile.${extension}`;
         const { error } = await client.storage
           .from("teacher-profile-images")
           .upload(path, file, { upsert: true, contentType: file.type });
@@ -1957,16 +2050,12 @@
           specialization: profilePayload.specialization,
           university_college: profilePayload.universityCollege,
           graduation_year: profilePayload.graduationYear || null,
-          languages: profilePayload.languages,
-          subjects: profilePayload.subjects,
-          grades: profilePayload.grades,
-          streams: profilePayload.streams,
           teaching_mode: profilePayload.teachingMode,
         };
 
         const { data, error } = await client
           .from("teachers")
-          .insert([teacherInsert])
+          .upsert(teacherInsert, { onConflict: "user_id" })
           .select("id")
           .single();
         if (error?.code === "PGRST204") {
@@ -1978,12 +2067,67 @@
         return data;
       }
 
-      async function createAcademicRecords(client, user) {
-        const gradeGroups = {
+      async function resolveCatalogIds(client, tableName, names) {
+        const ids = new Map();
+        const uniqueNames = [...new Set(names.filter(Boolean))];
+        if (!uniqueNames.length) return ids;
+
+        const { data, error } = await client
+          .from(tableName)
+          .select("*")
+          .limit(500);
+        if (error) {
+          if (["PGRST205", "42P01"].includes(error.code)) return ids;
+          throw new Error(`Unable to read ${tableName}: ${error.message}`);
+        }
+
+        const nameFields =
+          tableName === "subjects"
+            ? ["name", "subject", "subject_name", "label", "title"]
+            : ["name", "language", "language_name", "label", "title"];
+        for (const name of uniqueNames) {
+          const normalizedName = String(name).trim().toLowerCase();
+          const match = (data || []).find((row) =>
+            nameFields.some(
+              (field) =>
+                String(row[field] || "")
+                  .trim()
+                  .toLowerCase() === normalizedName,
+            ),
+          );
+          const id = match?.id || match?.[`${tableName.slice(0, -1)}_id`];
+          if (
+            id &&
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+              String(id),
+            )
+          ) {
+            ids.set(normalizedName, id);
+          }
+        }
+        return ids;
+      }
+
+      async function createAcademicRecords(client, user, teacherProfileId) {
+        const groupGrades = {
           grades56: [5, 6],
+          grades_5_6: [5, 6],
           grades78: [7, 8],
+          grades_7_8: [7, 8],
           grades910: [9, 10],
+          grades_9_10: [9, 10],
           grades1112: [11, 12],
+          grades_11_12: [11, 12],
+        };
+        const gradeGroupLabels = {
+          5: "Classes 5-6",
+          6: "Classes 5-6",
+          7: "Classes 7-8",
+          8: "Classes 7-8",
+          9: "Classes 9-10",
+          10: "Classes 9-10",
+          11: "Classes 11-12",
+          12: "Classes 11-12",
         };
         const standardSubjects = {
           5: ["English", "Mathematics", "EVS", "Hindi"],
@@ -2004,59 +2148,148 @@
             "Psychology",
           ],
         };
-        const rows = [];
+        const selectedStreams = Array.isArray(step2.streams)
+          ? step2.streams
+          : [];
+        const selectedGrades = new Set(
+          (step2.gradeGroups || []).flatMap(
+            (group) => groupGrades[group] || [],
+          ),
+        );
+        (step2.selectedGrades || []).forEach((grade) => {
+          const numericGrade = Number(grade);
+          if (numericGrade >= 1 && numericGrade <= 12)
+            selectedGrades.add(numericGrade);
+        });
+        (step2.subjectAssignments || []).forEach((assignment) => {
+          (assignment.grades || []).forEach((grade) => {
+            const numericGrade = Number(grade);
+            if (numericGrade >= 1 && numericGrade <= 12)
+              selectedGrades.add(numericGrade);
+          });
+        });
+        const gradeRows = [...selectedGrades]
+          .sort((a, b) => a - b)
+          .map((grade) => ({
+            teacher_id: teacherProfileId,
+            grade,
+            grade_group: gradeGroupLabels[grade] || null,
+          }));
+        const assignmentMap = new Map();
+        const addAssignment = (subject, grade, stream = null) => {
+          const normalizedSubject = String(subject || "").trim();
+          const numericGrade = Number(grade);
+          if (!normalizedSubject || numericGrade < 1 || numericGrade > 12)
+            return;
+          const key = `${numericGrade}|${normalizedSubject.toLowerCase()}|${stream || ""}`;
+          assignmentMap.set(key, {
+            teacher_id: teacherProfileId,
+            grade: numericGrade,
+            subject: normalizedSubject,
+            subject_id: null,
+            stream: stream || null,
+          });
+        };
 
         if (step2.teachingMode === "subject_specialist") {
           (Array.isArray(step2.subjectAssignments)
             ? step2.subjectAssignments
             : []
           ).forEach((assignment) => {
-            (assignment.grades || []).forEach((grade) =>
-              rows.push({
-                teacher_id: user.id,
-                subject: assignment.subject,
-                grade: String(grade),
-              }),
-            );
+            (assignment.grades || []).forEach((grade) => {
+              const streams =
+                Number(grade) >= 11 && selectedStreams.length
+                  ? selectedStreams
+                  : [null];
+              streams.forEach((stream) =>
+                addAssignment(assignment.subject, grade, stream),
+              );
+            });
           });
         } else {
-          const grades = [
-            ...new Set(
-              (step2.gradeGroups || []).flatMap(
-                (group) => gradeGroups[group] || [],
-              ),
-            ),
-          ];
-          grades.forEach((grade) => {
-            const subjects =
-              grade < 11
-                ? standardSubjects[grade] || []
-                : [
-                    ...new Set(
-                      (step2.streams || [])
-                        .flatMap((stream) => streamSubjects[stream] || [])
-                        .concat([
-                          "English",
-                          "Physical Education",
-                          "Computer Science",
-                        ]),
-                    ),
-                  ];
-            subjects.forEach((subject) =>
-              rows.push({ teacher_id: user.id, subject, grade: String(grade) }),
-            );
+          [...selectedGrades].forEach((grade) => {
+            if (grade < 11) {
+              (standardSubjects[grade] || []).forEach((subject) =>
+                addAssignment(subject, grade),
+              );
+              return;
+            }
+            selectedStreams.forEach((stream) => {
+              const subjects = new Set([
+                ...(streamSubjects[stream] || []),
+                "English",
+                "Physical Education",
+                "Computer Science",
+              ]);
+              subjects.forEach((subject) =>
+                addAssignment(subject, grade, stream),
+              );
+            });
           });
         }
 
-        if (rows.length) {
+        const assignmentRows = [...assignmentMap.values()];
+        const [subjectIds, languageIds] = await Promise.all([
+          resolveCatalogIds(
+            client,
+            "subjects",
+            assignmentRows.map((row) => row.subject),
+          ),
+          resolveCatalogIds(client, "languages", step2.languages || []),
+        ]);
+        assignmentRows.forEach((row) => {
+          row.subject_id = subjectIds.get(row.subject.toLowerCase()) || null;
+        });
+
+        if (gradeRows.length) {
           const { error } = await client
+            .from("teacher_grade_groups")
+            .upsert(gradeRows, { onConflict: "teacher_id,grade" });
+          if (error)
+            throw new Error(`Unable to save selected grades: ${error.message}`);
+        }
+        if (assignmentRows.length) {
+          const { error } = await client
+            .from("teacher_subject_assignments")
+            .upsert(assignmentRows, {
+              onConflict: "teacher_id,grade,subject,stream",
+            });
+          if (error)
+            throw new Error(
+              `Unable to save subject assignments: ${error.message}`,
+            );
+
+          const dashboardRows = assignmentRows.map((row) => ({
+            teacher_id: user.id,
+            subject: row.subject,
+            grade: String(row.grade),
+            stream: row.stream,
+          }));
+          const { error: dashboardError } = await client
             .from("teacher_subjects")
-            .upsert(rows, { onConflict: "teacher_id,subject,grade" });
-          if (error) throw error;
+            .upsert(dashboardRows, { onConflict: "teacher_id,subject,grade" });
+          if (dashboardError)
+            throw new Error(
+              `Unable to sync dashboard subjects: ${dashboardError.message}`,
+            );
+        }
+        const languageRows = (step2.languages || []).map((language) => ({
+          teacher_id: teacherProfileId,
+          language,
+          language_id:
+            languageIds.get(String(language).trim().toLowerCase()) || null,
+        }));
+        if (languageRows.length) {
+          const { error } = await client
+            .from("teacher_languages")
+            .upsert(languageRows, { onConflict: "teacher_id,language" });
+          if (error)
+            throw new Error(`Unable to save languages: ${error.message}`);
         }
       }
 
       async function submitTeacherRegistration() {
+        if (registrationInProgress) return;
         const confirmInformation =
           document.getElementById("confirmInformation")?.checked;
         const confirmTerms = document.getElementById("confirmTerms")?.checked;
@@ -2079,8 +2312,9 @@
 
         const submitBtn = document.getElementById("submitBtn");
         if (!submitBtn) return;
+        registrationInProgress = true;
         submitBtn.disabled = true;
-        submitBtn.textContent = "Creating Account...";
+        submitBtn.textContent = "Creating your teacher account...";
 
         try {
           const client = window.SmartLearningSupabase?.getClient?.();
@@ -2120,7 +2354,28 @@
                 },
               });
 
-            if (signupError) throw signupError;
+            if (signupError) {
+              if (
+                signupError.code === "user_already_exists" ||
+                /already (registered|exists)|email.*in use/i.test(
+                  signupError.message || "",
+                )
+              ) {
+                throw new Error(
+                  "An account already exists for this email. Sign in with that account or use a different email address.",
+                );
+              }
+              if (
+                /failed to fetch|network|load failed/i.test(
+                  signupError.message || "",
+                )
+              ) {
+                throw new Error(
+                  "Network error while creating your account. Check your connection and try again.",
+                );
+              }
+              throw signupError;
+            }
             if (!authResult?.user) {
               throw new Error(
                 "The teacher account could not be created. Please try again.",
@@ -2187,6 +2442,7 @@
                         grades1112: [11, 12],
                       })[group] || [],
                   )
+                  .concat((step2.selectedGrades || []).map(Number))
                   .concat(
                     (step2.subjectAssignments || []).flatMap(
                       (assignment) => assignment.grades || [],
@@ -2202,7 +2458,7 @@
             user,
             profilePayload,
           );
-          await createAcademicRecords(client, user);
+          await createAcademicRecords(client, user, teacherRecord.id);
 
           window.TeacherRegistrationStorage.clearRegistrationDraft();
           sessionStorage.removeItem("teacherId");
@@ -2215,11 +2471,16 @@
           window.location.href = "../teacher_content/teacher_dashboard.html";
         } catch (error) {
           console.error("Teacher registration error:", error);
+          const errorMessage =
+            error?.message ||
+            "Unable to create your teacher account right now. Please try again.";
           alert(
-            error.message ||
-              "Unable to create your teacher account right now. Please try again.",
+            /failed to fetch|network|load failed/i.test(errorMessage)
+              ? "Network error while saving your teacher profile. Check your connection and retry; your form data is still saved."
+              : errorMessage,
           );
         } finally {
+          registrationInProgress = false;
           submitBtn.disabled = false;
           submitBtn.textContent = "Create Teacher Account →";
         }
