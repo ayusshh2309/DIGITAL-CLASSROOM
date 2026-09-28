@@ -1969,6 +1969,11 @@
           .insert([teacherInsert])
           .select("id")
           .single();
+        if (error?.code === "PGRST204") {
+          throw new Error(
+            "Supabase is missing teacher profile columns. Run sql_teacher_profile_settings.sql in the Supabase SQL Editor, then retry this registration.",
+          );
+        }
         if (error) throw error;
         return data;
       }
