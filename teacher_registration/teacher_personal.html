@@ -1560,13 +1560,13 @@
         `;
       }
 
-      profilePhotoInput.addEventListener("change", function () {
+      profilePhotoInput.addEventListener("change", async function () {
         const file = this.files[0];
         if (!file) return;
 
-        const allowed = ["image/jpeg", "image/png", "image/gif"];
+        const allowed = ["image/jpeg", "image/png", "image/webp"];
         if (!allowed.includes(file.type)) {
-          alert("Only JPG, JPEG, PNG, and GIF images are allowed.");
+          alert("Only JPG, PNG, and WEBP images are allowed.");
           this.value = "";
           return;
         }
@@ -1578,8 +1578,23 @@
         }
 
         window.__teacherRegistrationPhotoFile = file;
+        const profilePhotoData = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(file);
+        }).catch((error) => {
+          console.error("Profile photo could not be saved for review.", error);
+          alert("The profile photo could not be saved. Please choose it again.");
+          return null;
+        });
+        if (!profilePhotoData) {
+          this.value = "";
+          return;
+        }
         window.TeacherRegistrationStorage.updateStep1({
           profilePhotoName: file.name,
+          profilePhotoData,
           profilePhoto: {
             name: file.name,
             size: file.size,

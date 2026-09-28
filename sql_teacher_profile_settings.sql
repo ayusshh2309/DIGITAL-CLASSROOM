@@ -41,6 +41,8 @@ $$;
 alter table public.teachers
   add column if not exists user_id uuid,
   add column if not exists full_name text,
+  add column if not exists email text,
+  add column if not exists country_code text,
   add column if not exists phone_number text,
   add column if not exists profile_photo_url text,
   add column if not exists date_of_birth date,
@@ -51,7 +53,12 @@ alter table public.teachers
   add column if not exists address text,
   add column if not exists bio text,
   add column if not exists highest_qualification text,
+  add column if not exists degree_course text,
+  add column if not exists specialization text,
+  add column if not exists university_college text,
+  add column if not exists graduation_year integer,
   add column if not exists languages text[] not null default '{}',
+  add column if not exists subjects text[] not null default '{}',
   add column if not exists employment_status text,
   add column if not exists institution_name text,
   add column if not exists institution_type text,
@@ -130,6 +137,14 @@ create table if not exists public.teacher_settings (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.teacher_subjects (
+  teacher_id uuid not null references auth.users(id) on delete cascade,
+  subject text not null,
+  grade text not null,
+  created_at timestamptz not null default now(),
+  primary key (teacher_id, subject, grade)
+);
+
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
@@ -152,6 +167,7 @@ for each row execute function public.set_updated_at();
 
 alter table public.teachers enable row level security;
 alter table public.teacher_settings enable row level security;
+alter table public.teacher_subjects enable row level security;
 
 do $$
 declare
@@ -183,6 +199,20 @@ create policy teachers_update_own on public.teachers
 for update to authenticated
 using (user_id = (select auth.uid()))
 with check (user_id = (select auth.uid()));
+
+drop policy if exists teacher_subjects_select_own on public.teacher_subjects;
+create policy teacher_subjects_select_own on public.teacher_subjects
+for select to authenticated using (teacher_id = (select auth.uid()));
+
+drop policy if exists teacher_subjects_insert_own on public.teacher_subjects;
+create policy teacher_subjects_insert_own on public.teacher_subjects
+for insert to authenticated with check (teacher_id = (select auth.uid()));
+
+drop policy if exists teacher_subjects_update_own on public.teacher_subjects;
+create policy teacher_subjects_update_own on public.teacher_subjects
+for update to authenticated
+using (teacher_id = (select auth.uid()))
+with check (teacher_id = (select auth.uid()));
 
 create policy teacher_settings_select_own on public.teacher_settings
 for select to authenticated
@@ -224,6 +254,8 @@ with check (
 revoke all on public.teachers from anon;
 revoke delete on public.teachers from authenticated;
 grant select, insert, update on public.teachers to authenticated;
+revoke all on public.teacher_subjects from anon;
+grant select, insert, update on public.teacher_subjects to authenticated;
 revoke update on public.teachers from authenticated;
 grant update (
   full_name,

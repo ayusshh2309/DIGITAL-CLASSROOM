@@ -80,6 +80,11 @@
 
   function clearRegistrationDraft() {
     localStorage.removeItem(DRAFT_KEY);
+    [
+      "teacherPersonalInfo",
+      "teacherProfessionalInfo",
+      "teacherProfilePhotoName",
+    ].forEach((key) => sessionStorage.removeItem(key));
     return true;
   }
 

@@ -1620,6 +1620,8 @@
       </main>
     </div>
     here is the html or css
+    <script src="../js/teacher-registration-storage.js"></script>
+    <script src="../js/teacher-registration.js"></script>
     <script>
       (function () {
         let employmentStatus = "fresher";
@@ -1826,6 +1828,7 @@
             teachingMode,
             gradeGroups: getSelectedGradeGroups(),
             streams: getSelectedStreams(),
+            subjectAssignments: getSelectedSubjectAssignments(),
             subjects: getSelectedSubjectAssignments().flatMap((entry) => entry.subject ? [entry.subject] : []),
             languages: getSelectedLanguages(),
           };
