@@ -1208,26 +1208,20 @@
     <script src="../js/teacher-data.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", async () => {
-        const registration = TeacherData.getTeacherData() || {};
-        const professional = registration.professional || {};
-        const personal = registration.personal || {};
-        const assignments =
-          professional.specialistAssignments ||
-          professional.specialist_assignments ||
-          [];
-
-        const name = personal.fullName || personal.full_name || "Teacher";
         const profileNameElement = document.getElementById("profileNameEl");
-        if (profileNameElement) profileNameElement.textContent = name;
-
         const avatarElement = document.getElementById("avatarImg");
-        if (personal.profilePhoto && avatarElement) {
-          avatarElement.src = personal.profilePhoto;
-        }
-
         const classesGrid = document.getElementById("classesGrid");
         const gridViewButton = document.getElementById("gridViewButton");
         const listViewButton = document.getElementById("listViewButton");
+        const scopeValue = document.getElementById("classScopeValue");
+        const escapeHtml = (value) =>
+          String(value ?? "").replace(/[&<>'"]/g, (character) => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            "'": "&#39;",
+            '"': "&quot;",
+          })[character]);
         const setView = (view) => {
           const isList = view === "list";
           classesGrid?.classList.toggle("list-view", isList);
@@ -1242,7 +1236,99 @@
         listViewButton?.addEventListener("click", () => setView("list"));
         setView(localStorage.getItem("teacherClassesView") || "grid");
 
-        const supabase = TeacherData.getSupabaseClient();
+        let supabase = null;
+        let user = null;
+        let teacherProfile = null;
+        let classLoadError = "";
+        const classesByGrade = new Map();
+
+        try {
+          const currentTeacher = await TeacherData.loadCurrentTeacherProfile();
+          supabase = currentTeacher.client;
+          user = currentTeacher.user;
+          teacherProfile = currentTeacher.profile;
+
+          if (profileNameElement) {
+            profileNameElement.textContent = teacherProfile.full_name || "Teacher";
+          }
+          if (teacherProfile.profile_photo_url && avatarElement) {
+            try {
+              avatarElement.src = await TeacherData.getTeacherProfilePhotoUrl(
+                teacherProfile.profile_photo_url,
+              );
+            } catch {
+              avatarElement.hidden = true;
+            }
+          }
+
+          const [gradeGroupsResult, assignmentsResult] = await Promise.all([
+            supabase
+              .from("teacher_grade_groups")
+              .select("grade, stream, teach_all_subjects")
+              .eq("teacher_id", teacherProfile.id),
+            supabase
+              .from("teacher_subject_assignments")
+              .select("subject_id, grade, stream")
+              .eq("teacher_id", teacherProfile.id),
+          ]);
+          if (gradeGroupsResult.error) throw gradeGroupsResult.error;
+          if (assignmentsResult.error) throw assignmentsResult.error;
+
+          const gradeGroups = gradeGroupsResult.data || [];
+          const subjectAssignments = assignmentsResult.data || [];
+          const subjectIds = [...new Set(
+            subjectAssignments
+              .map((assignment) => assignment.subject_id)
+              .filter((id) => id !== null && id !== undefined),
+          )];
+          let subjects = [];
+          if (subjectIds.length) {
+            const { data, error } = await supabase
+              .from("subjects")
+              .select("id, name")
+              .in("id", subjectIds);
+            if (error) throw error;
+            subjects = data || [];
+          }
+
+          const subjectNames = new Map(
+            subjects.map((subject) => [String(subject.id), subject.name]),
+          );
+          const classKey = (grade, stream) => `${Number(grade)}|${stream || ""}`;
+          const ensureClass = (grade, stream, teachAllSubjects = false) => {
+            const numericGrade = Number(grade);
+            if (!Number.isInteger(numericGrade) || numericGrade < 1 || numericGrade > 12) {
+              return null;
+            }
+            const normalizedStream = numericGrade >= 11 ? stream || null : null;
+            const key = classKey(numericGrade, normalizedStream);
+            if (!classesByGrade.has(key)) {
+              classesByGrade.set(key, {
+                grade: numericGrade,
+                stream: normalizedStream,
+                teachAllSubjects,
+                subjects: new Set(),
+              });
+            }
+            return classesByGrade.get(key);
+          };
+
+          gradeGroups.forEach((group) => {
+            ensureClass(group.grade, group.stream, group.teach_all_subjects);
+          });
+          subjectAssignments.forEach((assignment) => {
+            const subjectName = subjectNames.get(String(assignment.subject_id));
+            if (!subjectName) {
+              throw new Error(
+                `A registered subject (ID ${assignment.subject_id}) could not be found in public.subjects.`,
+              );
+            }
+            ensureClass(assignment.grade, assignment.stream)?.subjects.add(subjectName);
+          });
+        } catch (error) {
+          console.error("Unable to load registered teacher classes from Supabase.", error);
+          classLoadError = error?.message || "Unable to load registered classes from the database.";
+        }
 
         const subjectDetails = {
           English: ["Aa", "var(--chip-purple)"],
@@ -1267,104 +1353,37 @@
           "Computer Science": ["⌘", "var(--chip-amber)"],
         };
 
-        const groupGrades = {
-          grades_5_6: [5, 6],
-          grades_7_8: [7, 8],
-          grades_9_10: [9, 10],
-          grades_11_12: [11, 12],
+        const streamLabels = {
+          science_pcm: "PCM",
+          science_pcb: "PCB",
+          commerce: "Commerce",
+          arts_humanities: "Arts / Humanities",
         };
-
-        const streamSubjects = {
-          science_pcm: ["Physics", "Chemistry", "Mathematics"],
-          science_pcb: ["Physics", "Chemistry", "Biology"],
-          commerce: ["Accountancy", "Business Studies", "Economics"],
-          arts_humanities: ["History", "Geography", "Political Science", "Psychology"],
-        };
-
-        const standardSubjects = {
-          5: ["English", "Mathematics", "EVS", "Hindi"],
-          6: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-          7: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-          8: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-          9: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-          10: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-        };
-
-        const normalizeGrades = () => {
-          const savedGroups = Array.isArray(professional.selected_grade_groups)
-            ? professional.selected_grade_groups.flatMap(
-                (group) => groupGrades[group] || [],
-              )
-            : [];
-          const savedGrades = Array.isArray(professional.grades)
-            ? professional.grades
-            : Array.isArray(professional.selected_grades)
-              ? professional.selected_grades
-              : [];
-          const values = savedGroups.length ? savedGroups : savedGrades;
-
-          return [...new Set(values.map((value) => Number(value)).filter(Boolean))].sort(
-            (a, b) => a - b,
-          );
-        };
-
-        const selectedGrades = normalizeGrades();
-        const selectedStreams = professional.streams || professional.selected_streams || [];
-        const seniorSubjects = [
-          ...new Set([
-            ...selectedStreams.flatMap((stream) => streamSubjects[stream] || []),
-            "English",
-            "Physical Education",
-            "Computer Science",
-          ]),
-        ];
-
-        const classesByGrade = new Map();
-        const addSubject = (grade, subject) => {
-          if (!classesByGrade.has(grade)) classesByGrade.set(grade, new Set());
-          classesByGrade.get(grade).add(subject);
-        };
-
-        if (assignments.length) {
-          assignments.forEach((assignment) => {
-            (assignment.grades || []).forEach((grade) => addSubject(Number(grade), assignment.subject));
-          });
-        } else {
-          selectedGrades.forEach((grade) => {
-            const subjects = grade >= 11 ? seniorSubjects : standardSubjects[grade] || [];
-            subjects.forEach((subject) => addSubject(grade, subject));
-          });
-        }
-
-        const allSelectedClasses = [...classesByGrade.entries()].sort(([a], [b]) => a - b);
+        const allSelectedClasses = [...classesByGrade.entries()].sort(
+          ([, left], [, right]) =>
+            left.grade - right.grade || String(left.stream || "").localeCompare(String(right.stream || "")),
+        );
         const query = new URLSearchParams(window.location.search);
         const requestedGrade = Number(query.get("class_grade"));
         const pageSize = 4;
         let currentPage = Math.max(1, Number(query.get("page")) || 1);
-        const selectedClasses = requestedGrade && allSelectedClasses.some(([grade]) => grade === requestedGrade)
-          ? allSelectedClasses.filter(([grade]) => grade === requestedGrade)
+        const selectedClasses = requestedGrade && allSelectedClasses.some(([, item]) => item.grade === requestedGrade)
+          ? allSelectedClasses.filter(([, item]) => item.grade === requestedGrade)
           : allSelectedClasses;
         const totalPages = Math.max(1, Math.ceil(selectedClasses.length / pageSize));
         currentPage = Math.min(currentPage, totalPages);
         const pageClasses = () => selectedClasses.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-        const scopeValue = document.getElementById("classScopeValue");
         if (scopeValue) {
-          scopeValue.textContent = selectedClasses.length
-            ? selectedClasses.map(([grade, subjects]) => `Class ${grade} · ${subjects.size} ${subjects.size === 1 ? "subject" : "subjects"}`).join("  •  ")
-            : "No registered classes found";
+          scopeValue.textContent = classLoadError
+            ? "Unable to load registered classes."
+            : selectedClasses.length
+              ? selectedClasses.map(([, item]) => `Class ${item.grade}${item.stream ? ` (${streamLabels[item.stream] || item.stream})` : ""} · ${item.subjects.size} ${item.subjects.size === 1 ? "subject" : "subjects"}`).join("  •  ")
+              : "No classes registered yet.";
         }
         const subjectIcon = (subject) => subjectDetails[subject] || ["•", "var(--primary)"];
-        const escapeHtml = (value) =>
-          String(value).replace(/[&<>'"]/g, (character) => ({
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            "'": "&#39;",
-            '"': "&quot;",
-          })[character]);
 
         const classStats = new Map(
-          selectedClasses.map(([grade]) => [grade, { students: 0, lessons: 0 }]),
+          [...new Set(selectedClasses.map(([, item]) => item.grade))].map((grade) => [grade, { students: 0, lessons: 0 }]),
         );
 
         const getRecordGrade = (record) => {
@@ -1377,11 +1396,11 @@
           return match ? Number(match[0]) : null;
         };
 
-        if (supabase && selectedClasses.length) {
-          const registeredGrades = selectedClasses.map(([grade]) => grade);
+        if (supabase && user && teacherProfile && selectedClasses.length && !classLoadError) {
+          const registeredGrades = [...new Set(selectedClasses.map(([, item]) => item.grade))];
           const [studentsResult, materialsResult] = await Promise.all([
-            supabase.from("students").select("class_grade"),
-            supabase.from("materials").select("class_grade, grade, class, class_number"),
+            supabase.from("students").select("class_grade").eq("teacher_id", user.id),
+            supabase.from("materials").select("class_grade, grade, class, class_number").eq("teacher_id", user.id),
           ]);
 
           if (!studentsResult.error) {
@@ -1400,8 +1419,11 @@
         }
 
         if (classesGrid) {
-          classesGrid.innerHTML = selectedClasses.length
-            ? pageClasses().map(([grade, subjects]) => {
+          classesGrid.innerHTML = classLoadError
+            ? `<p class="empty-state">Database error: ${escapeHtml(classLoadError)}</p>`
+            : selectedClasses.length
+              ? pageClasses().map(([, classInfo]) => {
+                const { grade, stream, subjects } = classInfo;
                 const subjectArray = [...subjects];
                 const stats = classStats.get(grade) || { students: 0, lessons: 0 };
                 const subjectCards = subjectArray.map((subject) => {
@@ -1417,7 +1439,7 @@
                     <div class="class-card-top">
                       <div class="class-icon-wrapper" style="background-color: ${accent}">📚</div>
                       <div class="class-info-header">
-                        <h3>Class ${grade}</h3>
+                        <h3>Class ${grade}${stream ? ` · ${escapeHtml(streamLabels[stream] || stream)}` : ""}</h3>
                         <p>${subjectArray.length} registered subjects</p>
                       </div>
                     </div>
@@ -1434,7 +1456,7 @@
                   </div>
                 `;
               }).join("")
-            : '<p class="empty-state">No classes or subjects registered yet.</p>';
+                : '<p class="empty-state">No classes registered yet.</p>';
 
           const pager = document.createElement("nav");
           pager.className = "classes-pager";
@@ -1466,33 +1488,6 @@
         document.getElementById("totalStudentsMetric").textContent = totalStudents;
         document.getElementById("totalLessonsMetric").textContent = totalLessons;
 
-        async function loadUserProfile() {
-          if (!supabase) return;
-          try {
-            const {
-              data: { user },
-            } = await supabase.auth.getUser();
-            if (user) {
-              const { data: profile } = await supabase
-                .from("profiles")
-                .select("*")
-                .eq("id", user.id)
-                .single();
-
-              if (profile) {
-                if (profileNameElement) {
-                  profileNameElement.textContent = profile.full_name || "Ready";
-                }
-                if (profile.avatar_url && avatarElement) {
-                  avatarElement.src = profile.avatar_url;
-                }
-              }
-            }
-          } catch (err) {
-            console.warn("Supabase context offline.");
-          }
-        }
-
         document
           .getElementById("logoutBtn")
           ?.addEventListener("click", async () => {
@@ -1501,8 +1496,6 @@
             }
             window.location.href = "index.html";
           });
-
-        loadUserProfile();
       });
     </script>
     <script src="../js/layout.js"></script>

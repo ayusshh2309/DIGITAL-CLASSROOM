@@ -2027,6 +2027,9 @@
       }
 
       async function createTeacherRecord(client, user, profilePayload) {
+        const experienceMatch = String(profilePayload.yearsExperience || "")
+          .trim()
+          .match(/^\d+/);
         const teacherInsert = {
           user_id: user.id,
           teacher_id: profilePayload.teacherId,
@@ -2044,7 +2047,7 @@
           employment_status: profilePayload.employmentStatus,
           institution_name: profilePayload.institutionName,
           institution_type: profilePayload.institutionType,
-          years_experience: profilePayload.yearsExperience || null,
+          years_experience: experienceMatch ? Number(experienceMatch[0]) : null,
           highest_qualification: profilePayload.highestQualification,
           degree_course: profilePayload.degreeCourse,
           specialization: profilePayload.specialization,
@@ -2059,12 +2062,29 @@
           .select("id")
           .single();
         if (error?.code === "PGRST204") {
-          throw new Error(
+          throw createRegistrationOperationError(
+            "teachers upsert",
+            error,
             "Supabase is missing teacher profile columns. Run sql_teacher_profile_settings.sql in the Supabase SQL Editor, then retry this registration.",
           );
         }
-        if (error) throw error;
+        if (error)
+          throw createRegistrationOperationError("teachers upsert", error);
         return data;
+      }
+
+      function createRegistrationOperationError(operation, error, message) {
+        const originalMessage = error?.message || "Supabase request failed.";
+        const wrappedError = new Error(
+          `${operation}: ${originalMessage}${message ? ` (${message})` : ""}`,
+        );
+        wrappedError.name = error?.name || "RegistrationOperationError";
+        wrappedError.operation = operation;
+        wrappedError.code = error?.code;
+        wrappedError.details = error?.details;
+        wrappedError.hint = error?.hint;
+        wrappedError.cause = error;
+        return wrappedError;
       }
 
       async function resolveCatalogIds(client, tableName, names) {
@@ -2116,7 +2136,8 @@
         const { data, error } = await client
           .from("subjects")
           .select("id, name");
-        if (error) throw new Error(`Unable to read subjects: ${error.message}`);
+        if (error)
+          throw createRegistrationOperationError("subjects select", error);
 
         for (const name of uniqueNames) {
           const normalizedName = String(name).trim().toLowerCase();
@@ -2142,7 +2163,7 @@
           .from("languages")
           .select("id, name");
         if (error)
-          throw new Error(`Unable to read languages: ${error.message}`);
+          throw createRegistrationOperationError("languages select", error);
 
         for (const name of uniqueNames) {
           const normalizedName = String(name).trim().toLowerCase();
@@ -2309,7 +2330,10 @@
               onConflict: "teacher_id,grade,stream",
             });
           if (error)
-            throw new Error(`Unable to save selected grades: ${error.message}`);
+            throw createRegistrationOperationError(
+              "teacher_grade_groups upsert",
+              error,
+            );
         }
         if (assignmentRows.length) {
           const subjectAssignmentRows = assignmentRows.map((row) => ({
@@ -2322,8 +2346,9 @@
             .from("teacher_subject_assignments")
             .insert(subjectAssignmentRows);
           if (error)
-            throw new Error(
-              `Unable to save subject assignments: ${error.message}`,
+            throw createRegistrationOperationError(
+              "teacher_subject_assignments insert",
+              error,
             );
         }
         if (languageRows.length) {
@@ -2331,7 +2356,10 @@
             .from("teacher_languages")
             .insert(languageRows);
           if (error)
-            throw new Error(`Unable to save languages: ${error.message}`);
+            throw createRegistrationOperationError(
+              "teacher_languages insert",
+              error,
+            );
         }
         if (assignmentRows.length) {
           const dashboardRows = assignmentRows.map((row) => ({
@@ -2344,8 +2372,9 @@
             .from("teacher_subjects")
             .upsert(dashboardRows, { onConflict: "teacher_id,subject,grade" });
           if (error)
-            throw new Error(
-              `Unable to sync dashboard subjects: ${error.message}`,
+            throw createRegistrationOperationError(
+              "teacher_subjects upsert",
+              error,
             );
         }
       }
@@ -2388,7 +2417,11 @@
 
           const { data: sessionData, error: sessionError } =
             await client.auth.getSession();
-          if (sessionError) throw sessionError;
+          if (sessionError)
+            throw createRegistrationOperationError(
+              "auth.getSession",
+              sessionError,
+            );
 
           let user = sessionData.session?.user || null;
           if (
@@ -2397,7 +2430,11 @@
               String(step1.email).trim().toLowerCase()
           ) {
             const { error: signOutError } = await client.auth.signOut();
-            if (signOutError) throw signOutError;
+            if (signOutError)
+              throw createRegistrationOperationError(
+                "auth.signOut",
+                signOutError,
+              );
             user = null;
           }
 
@@ -2423,20 +2460,16 @@
                   signupError.message || "",
                 )
               ) {
-                throw new Error(
+                throw createRegistrationOperationError(
+                  "auth.signUp",
+                  signupError,
                   "An account already exists for this email. Sign in with that account or use a different email address.",
                 );
               }
-              if (
-                /failed to fetch|network|load failed/i.test(
-                  signupError.message || "",
-                )
-              ) {
-                throw new Error(
-                  "Network error while creating your account. Check your connection and try again.",
-                );
-              }
-              throw signupError;
+              throw createRegistrationOperationError(
+                "auth.signUp",
+                signupError,
+              );
             }
             if (!authResult?.user) {
               throw new Error(
@@ -2532,15 +2565,19 @@
           );
           window.location.href = "../teacher_content/teacher_dashboard.html";
         } catch (error) {
-          console.error("Teacher registration error:", error);
+          console.error("Teacher registration failed:", error);
+          console.error(
+            "Failed operation:",
+            error?.operation || "Unknown operation",
+          );
+          console.error("Error message:", error?.message);
+          console.error("Error code:", error?.code);
+          console.error("Error details:", error?.details);
+          console.error("Error hint:", error?.hint);
           const errorMessage =
             error?.message ||
             "Unable to create your teacher account right now. Please try again.";
-          alert(
-            /failed to fetch|network|load failed/i.test(errorMessage)
-              ? "Network error while saving your teacher profile. Check your connection and retry; your form data is still saved."
-              : errorMessage,
-          );
+          alert(errorMessage);
         } finally {
           registrationInProgress = false;
           submitBtn.disabled = false;
