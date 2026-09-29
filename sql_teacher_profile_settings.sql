@@ -150,12 +150,63 @@ alter table public.teacher_subjects
   add column if not exists stream text;
 
 create table if not exists public.teacher_grade_groups (
+  id uuid primary key default gen_random_uuid(),
   teacher_id uuid not null references public.teachers(id) on delete cascade,
   grade smallint not null check (grade between 1 and 12),
-  grade_group text,
-  created_at timestamptz not null default now(),
-  primary key (teacher_id, grade)
+  stream text,
+  teach_all_subjects boolean not null default false,
+  created_at timestamptz not null default now()
 );
+
+alter table public.teacher_grade_groups
+  add column if not exists id uuid default gen_random_uuid(),
+  add column if not exists stream text,
+  add column if not exists teach_all_subjects boolean not null default false;
+
+update public.teacher_grade_groups
+set id = gen_random_uuid()
+where id is null;
+
+alter table public.teacher_grade_groups
+  alter column id set default gen_random_uuid(),
+  alter column id set not null;
+
+do $$
+declare
+  primary_key_name text;
+  primary_key_has_id boolean;
+begin
+  select constraint_record.conname,
+    exists (
+      select 1
+      from unnest(constraint_record.conkey) as key_column(attnum)
+      join pg_attribute as column_record
+        on column_record.attrelid = constraint_record.conrelid
+        and column_record.attnum = key_column.attnum
+      where column_record.attname = 'id'
+    )
+  into primary_key_name, primary_key_has_id
+  from pg_constraint as constraint_record
+  where constraint_record.conrelid = 'public.teacher_grade_groups'::regclass
+    and constraint_record.contype = 'p';
+
+  if primary_key_name is not null and not primary_key_has_id then
+    execute format(
+      'alter table public.teacher_grade_groups drop constraint %I',
+      primary_key_name
+    );
+    primary_key_name := null;
+  end if;
+
+  if primary_key_name is null then
+    alter table public.teacher_grade_groups
+      add constraint teacher_grade_groups_pkey primary key (id);
+  end if;
+end;
+$$;
+
+create unique index if not exists teacher_grade_groups_teacher_grade_stream_key
+  on public.teacher_grade_groups (teacher_id, grade, stream) nulls not distinct;
 
 create table if not exists public.teacher_subject_assignments (
   id uuid primary key default gen_random_uuid(),

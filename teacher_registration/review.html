@@ -2108,6 +2108,31 @@
         return ids;
       }
 
+      async function resolveSubjectIds(client, names) {
+        const ids = new Map();
+        const uniqueNames = [...new Set(names.filter(Boolean))];
+        if (!uniqueNames.length) return ids;
+
+        const { data, error } = await client
+          .from("subjects")
+          .select("id, name");
+        if (error) throw new Error(`Unable to read subjects: ${error.message}`);
+
+        for (const name of uniqueNames) {
+          const normalizedName = String(name).trim().toLowerCase();
+          const match = (data || []).find(
+            (row) =>
+              String(row.name || "")
+                .trim()
+                .toLowerCase() === normalizedName,
+          );
+          if (match?.id !== undefined && match?.id !== null) {
+            ids.set(normalizedName, match.id);
+          }
+        }
+        return ids;
+      }
+
       async function createAcademicRecords(client, user, teacherProfileId) {
         const groupGrades = {
           grades56: [5, 6],
@@ -2118,16 +2143,6 @@
           grades_9_10: [9, 10],
           grades1112: [11, 12],
           grades_11_12: [11, 12],
-        };
-        const gradeGroupLabels = {
-          5: "Classes 5-6",
-          6: "Classes 5-6",
-          7: "Classes 7-8",
-          8: "Classes 7-8",
-          9: "Classes 9-10",
-          10: "Classes 9-10",
-          11: "Classes 11-12",
-          12: "Classes 11-12",
         };
         const standardSubjects = {
           5: ["English", "Mathematics", "EVS", "Hindi"],
@@ -2168,13 +2183,6 @@
               selectedGrades.add(numericGrade);
           });
         });
-        const gradeRows = [...selectedGrades]
-          .sort((a, b) => a - b)
-          .map((grade) => ({
-            teacher_id: teacherProfileId,
-            grade,
-            grade_group: gradeGroupLabels[grade] || null,
-          }));
         const assignmentMap = new Map();
         const addAssignment = (subject, grade, stream = null) => {
           const normalizedSubject = String(subject || "").trim();
@@ -2185,8 +2193,7 @@
           assignmentMap.set(key, {
             teacher_id: teacherProfileId,
             grade: numericGrade,
-            subject: normalizedSubject,
-            subject_id: null,
+            subjectName: normalizedSubject,
             stream: stream || null,
           });
         };
@@ -2229,48 +2236,55 @@
         }
 
         const assignmentRows = [...assignmentMap.values()];
+        const gradeRowsByKey = new Map();
+        assignmentRows.forEach((assignment) => {
+          const key = `${assignment.grade}|${assignment.stream || ""}`;
+          gradeRowsByKey.set(key, {
+            teacher_id: teacherProfileId,
+            grade: assignment.grade,
+            stream: assignment.stream,
+            teach_all_subjects: step2.teachingMode === "teach_all",
+          });
+        });
+        const gradeRows = [...gradeRowsByKey.values()];
         const [subjectIds, languageIds] = await Promise.all([
-          resolveCatalogIds(
+          resolveSubjectIds(
             client,
-            "subjects",
-            assignmentRows.map((row) => row.subject),
+            assignmentRows.map((row) => row.subjectName),
           ),
           resolveCatalogIds(client, "languages", step2.languages || []),
         ]);
         assignmentRows.forEach((row) => {
-          row.subject_id = subjectIds.get(row.subject.toLowerCase()) || null;
+          row.subject_id = subjectIds.get(row.subjectName.toLowerCase());
+          if (row.subject_id === undefined) {
+            throw new Error(
+              `Unable to save subject assignments: '${row.subjectName}' was not found in public.subjects.`,
+            );
+          }
         });
 
         if (gradeRows.length) {
           const { error } = await client
             .from("teacher_grade_groups")
-            .upsert(gradeRows, { onConflict: "teacher_id,grade" });
+            .upsert(gradeRows, {
+              onConflict: "teacher_id,grade,stream",
+            });
           if (error)
             throw new Error(`Unable to save selected grades: ${error.message}`);
         }
         if (assignmentRows.length) {
+          const subjectAssignmentRows = assignmentRows.map((row) => ({
+            teacher_id: row.teacher_id,
+            subject_id: row.subject_id,
+            grade: row.grade,
+            stream: row.stream || null,
+          }));
           const { error } = await client
             .from("teacher_subject_assignments")
-            .upsert(assignmentRows, {
-              onConflict: "teacher_id,grade,subject,stream",
-            });
+            .insert(subjectAssignmentRows);
           if (error)
             throw new Error(
               `Unable to save subject assignments: ${error.message}`,
-            );
-
-          const dashboardRows = assignmentRows.map((row) => ({
-            teacher_id: user.id,
-            subject: row.subject,
-            grade: String(row.grade),
-            stream: row.stream,
-          }));
-          const { error: dashboardError } = await client
-            .from("teacher_subjects")
-            .upsert(dashboardRows, { onConflict: "teacher_id,subject,grade" });
-          if (dashboardError)
-            throw new Error(
-              `Unable to sync dashboard subjects: ${dashboardError.message}`,
             );
         }
         const languageRows = (step2.languages || []).map((language) => ({
@@ -2285,6 +2299,21 @@
             .upsert(languageRows, { onConflict: "teacher_id,language" });
           if (error)
             throw new Error(`Unable to save languages: ${error.message}`);
+        }
+        if (assignmentRows.length) {
+          const dashboardRows = assignmentRows.map((row) => ({
+            teacher_id: user.id,
+            subject: row.subjectName,
+            grade: String(row.grade),
+            stream: row.stream,
+          }));
+          const { error } = await client
+            .from("teacher_subjects")
+            .upsert(dashboardRows, { onConflict: "teacher_id,subject,grade" });
+          if (error)
+            throw new Error(
+              `Unable to sync dashboard subjects: ${error.message}`,
+            );
         }
       }
 
