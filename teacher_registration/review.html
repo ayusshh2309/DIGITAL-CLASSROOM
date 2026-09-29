@@ -2198,7 +2198,7 @@
         return ids;
       }
 
-      async function createAcademicRecords(client, user, teacherProfileId) {
+      async function createAcademicRecords(client, authUserId, teacherDbId) {
         const groupGrades = {
           grades56: [5, 6],
           grades_5_6: [5, 6],
@@ -2256,7 +2256,7 @@
             return;
           const key = `${numericGrade}|${normalizedSubject.toLowerCase()}|${stream || ""}`;
           assignmentMap.set(key, {
-            teacher_id: teacherProfileId,
+            teacher_id: teacherDbId,
             grade: numericGrade,
             subjectName: normalizedSubject,
             stream: stream || null,
@@ -2305,7 +2305,7 @@
         assignmentRows.forEach((assignment) => {
           const key = `${assignment.grade}|${assignment.stream || ""}`;
           gradeRowsByKey.set(key, {
-            teacher_id: teacherProfileId,
+            teacher_id: teacherDbId,
             grade: assignment.grade,
             stream: assignment.stream,
             teach_all_subjects: step2.teachingMode === "teach_all",
@@ -2336,7 +2336,7 @@
             );
           }
           return {
-            teacher_id: teacherProfileId,
+            teacher_id: teacherDbId,
             language_id: languageId,
           };
         });
@@ -2390,10 +2390,10 @@
         if (assignmentRows.length) {
           const dashboardRowMap = new Map();
           assignmentRows.forEach((row) => {
-            const key = `${teacherProfileId}|${row.subjectName.toLowerCase()}|${row.grade}`;
+            const key = `${authUserId}|${row.subjectName.toLowerCase()}|${row.grade}`;
             if (!dashboardRowMap.has(key)) {
               dashboardRowMap.set(key, {
-                teacher_id: teacherProfileId,
+                teacher_id: authUserId,
                 subject: row.subjectName,
                 grade: String(row.grade),
                 stream: row.stream,
@@ -2608,7 +2608,13 @@
             authUserId,
             profilePayload,
           );
-          await createAcademicRecords(client, user, teacherRecord.id);
+          if (!teacherRecord?.id) {
+            throw new Error(
+              "Supabase did not return the teacher database record. Registration data was kept so you can retry.",
+            );
+          }
+          const teacherDbId = teacherRecord.id;
+          await createAcademicRecords(client, authUserId, teacherDbId);
 
           window.TeacherRegistrationStorage.clearRegistrationDraft();
           sessionStorage.removeItem("teacherId");
