@@ -2,6 +2,71 @@
   const layoutHost = document.getElementById("layout");
   if (!layoutHost) return;
 
+  if (!window.__teacherPageAuthGateInstalled) {
+    window.__teacherPageAuthGateInstalled = true;
+    const originalVisibility = document.documentElement.style.visibility;
+    let replayingDOMContentLoaded = false;
+    document.documentElement.style.visibility = "hidden";
+
+    document.addEventListener(
+      "DOMContentLoaded",
+      (event) => {
+        if (replayingDOMContentLoaded) return;
+        event.stopImmediatePropagation();
+
+        const showValidationError = (error) => {
+          let panel = document.getElementById("teacherValidationError");
+          if (!panel) {
+            panel = document.createElement("main");
+            panel.id = "teacherValidationError";
+            panel.setAttribute("role", "alert");
+            panel.style.cssText = "position:fixed;inset:0;z-index:2147483647;display:grid;place-content:center;gap:14px;padding:24px;background:#f8fafc;color:#172638;font:16px/1.5 sans-serif;visibility:visible;text-align:center";
+            const heading = document.createElement("h1");
+            heading.textContent = "Unable to verify your teacher account";
+            const message = document.createElement("p");
+            message.id = "teacherValidationErrorMessage";
+            const retryButton = document.createElement("button");
+            retryButton.type = "button";
+            retryButton.textContent = "Retry";
+            retryButton.style.cssText = "justify-self:center;padding:10px 18px;border:0;border-radius:6px;background:#00818a;color:#fff;font:inherit;font-weight:700;cursor:pointer";
+            retryButton.addEventListener("click", () => {
+              panel.remove();
+              void validateAndContinue();
+            });
+            panel.append(heading, message, retryButton);
+            document.body.append(panel);
+          }
+          panel.querySelector("#teacherValidationErrorMessage").textContent =
+            `${error?.message || "A database or network error occurred."} You can retry without signing out.`;
+        };
+
+        const validateAndContinue = async () => {
+          try {
+            const teacher = await window.TeacherData.requireTeacher();
+            if (!teacher) return;
+            document.getElementById("teacherValidationError")?.remove();
+            if (originalVisibility) {
+              document.documentElement.style.visibility = originalVisibility;
+            } else {
+              document.documentElement.style.removeProperty("visibility");
+            }
+            replayingDOMContentLoaded = true;
+            document.dispatchEvent(
+              new Event("DOMContentLoaded", { bubbles: true }),
+            );
+            replayingDOMContentLoaded = false;
+          } catch (error) {
+            console.error("Teacher account validation failed.", error);
+            showValidationError(error);
+          }
+        };
+
+        void validateAndContinue();
+      },
+      { capture: true, once: true },
+    );
+  }
+
   const layoutPath = new URL("../components/layout.html", window.location.href);
   const requestedPage = window.location.pathname.split("/").pop();
   const currentPage = !requestedPage || requestedPage === "index.html"
@@ -64,8 +129,7 @@
           await renderIdentity(profile, user);
           profileChannel = window.TeacherData.subscribeToTeacherProfile(user.id, (event) => {
             if (event.eventType === "DELETE") {
-              window.__currentTeacherProfile = null;
-              window.location.assign("../teacher_registration/login.html");
+              void window.TeacherData.handleUnavailableTeacher(client);
               return;
             }
             if (event.new) renderIdentity(event.new, user);
@@ -78,11 +142,11 @@
             stopAuthWatch?.();
           });
         } catch (error) {
+          if (["AUTH_REQUIRED", "TEACHER_UNAVAILABLE"].includes(error.code)) return;
           if (profileName) profileName.textContent = "Unable to load profile";
           if (avatar) avatar.hidden = true;
-          if (error.code !== "AUTH_REQUIRED") {
-            console.error("Unable to load the shared teacher profile.", error);
-          }
+          console.error("Unable to load the shared teacher profile.", error);
+          return;
         }
       }
 

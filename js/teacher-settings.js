@@ -247,8 +247,7 @@
 
     profileChannel = TeacherData.subscribeToTeacherProfile(user.id, (event) => {
       if (event.eventType === "DELETE") {
-        window.__currentTeacherProfile = null;
-        window.location.assign("../teacher_registration/login.html");
+        void TeacherData.handleUnavailableTeacher(client);
         return;
       }
       if (event.new) {
@@ -270,10 +269,12 @@
     });
   }
 
-  initialize().catch((error) => {
-    console.error("Unable to load teacher settings.", error);
-    setStatus("Unable to load your settings. Please sign in again or try later.");
-    const saveControl = document.getElementById("saveSettingsButton");
-    if (saveControl) saveControl.disabled = true;
+  document.addEventListener("DOMContentLoaded", () => {
+    initialize().catch((error) => {
+      console.error("Unable to load teacher settings.", error);
+      setStatus("Unable to load your settings. Please sign in again or try later.");
+      const saveControl = document.getElementById("saveSettingsButton");
+      if (saveControl) saveControl.disabled = true;
+    });
   });
 })();

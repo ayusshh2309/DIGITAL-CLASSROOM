@@ -85,16 +85,37 @@
     );
   }
 
-  async function loadCurrentTeacherProfile() {
+  let teacherValidationPromise = null;
+  let teacherAccountUnavailable = false;
+
+  function clearTemporaryRegistrationDraft() {
+    try {
+      if (window.TeacherRegistrationStorage?.clearRegistrationDraft) {
+        window.TeacherRegistrationStorage.clearRegistrationDraft();
+      } else {
+        localStorage.removeItem("smartLearningTeacherRegistration");
+        [
+          "teacherPersonalInfo",
+          "teacherProfessionalInfo",
+          "teacherProfilePhotoName",
+        ].forEach((key) => sessionStorage.removeItem(key));
+      }
+    } catch (error) {
+      console.warn("Temporary teacher registration data could not be cleared.", error);
+    }
+  }
+
+  async function validateTeacherAccount() {
     const client = getSupabaseClient();
     if (!client) throw new Error("Supabase is not configured.");
+    if (teacherAccountUnavailable) return null;
 
-    let user;
-    try {
-      user = await getAuthenticatedUser(client);
-    } catch (error) {
-      if (error.code === "AUTH_REQUIRED") redirectToLogin();
-      throw error;
+    const { data: authData, error: authError } = await client.auth.getUser();
+    if (authError) throw authError;
+    const user = authData?.user;
+    if (!user) {
+      redirectToLogin();
+      return null;
     }
 
     const { data, error } = await client
@@ -104,11 +125,50 @@
       .maybeSingle();
     if (error) throw error;
     if (!data) {
-      throw new Error("Your teacher profile was not found. Please contact support.");
+      await handleUnavailableTeacher(client);
+      return null;
     }
 
     window.__currentTeacherProfile = data;
     return { client, user, profile: data };
+  }
+
+  async function handleUnavailableTeacher(client = getSupabaseClient()) {
+    if (teacherAccountUnavailable) return;
+    teacherAccountUnavailable = true;
+    window.__currentTeacherProfile = null;
+    clearTemporaryRegistrationDraft();
+    try {
+      const { error } = await client.auth.signOut();
+      if (error) {
+        console.error("Unable to sign out after teacher account removal.", error);
+      }
+    } catch (error) {
+      console.error("Unable to sign out after teacher account removal.", error);
+    }
+    redirectToLogin();
+  }
+
+  function requireTeacher() {
+    if (teacherValidationPromise) return teacherValidationPromise;
+    const validation = validateTeacherAccount();
+    teacherValidationPromise = validation.finally(() => {
+      if (teacherValidationPromise === wrappedValidation) {
+        teacherValidationPromise = null;
+      }
+    });
+    const wrappedValidation = teacherValidationPromise;
+    return wrappedValidation;
+  }
+
+  async function loadCurrentTeacherProfile() {
+    const teacher = await requireTeacher();
+    if (!teacher) {
+      throw Object.assign(new Error("The teacher account is unavailable."), {
+        code: "TEACHER_UNAVAILABLE",
+      });
+    }
+    return teacher;
   }
 
   async function updateCurrentTeacherProfile(changes) {
@@ -398,7 +458,7 @@
             ? [assignment.subject]
             : assignment.subjects || [];
           return subjects.map((subject) => ({
-          teacher_id: authData.user.id,
+          teacher_id: teacherRecord.id,
           subject,
           grade: String(grade),
           }));
@@ -420,6 +480,8 @@
     saveTeacherData,
     getSupabaseClient,
     saveToSupabase,
+    requireTeacher,
+    handleUnavailableTeacher,
     loadCurrentTeacherProfile,
     updateCurrentTeacherProfile,
     loadCurrentTeacherSettings,

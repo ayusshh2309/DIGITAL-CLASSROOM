@@ -1844,7 +1844,7 @@
           const { data: assignments, error: assignmentError } = await client
             .from("teacher_subjects")
             .select("grade, subject")
-            .eq("teacher_id", authUser.id);
+            .eq("teacher_id", profile.id);
           if (!assignmentError) {
             teacherSubjects = [
               ...new Set(
@@ -1892,8 +1892,7 @@
             authUser.id,
             (event) => {
               if (event.eventType === "DELETE") {
-                window.__currentTeacherProfile = null;
-                window.location.assign("../teacher_registration/login.html");
+                void TeacherData.handleUnavailableTeacher(client);
                 return;
               }
               if (event.new) {

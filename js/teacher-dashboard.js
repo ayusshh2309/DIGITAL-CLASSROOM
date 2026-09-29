@@ -134,8 +134,7 @@
     if (!profileChannel) {
       profileChannel = window.TeacherData.subscribeToTeacherProfile(state.user.id, (event) => {
         if (event.eventType === "DELETE") {
-          window.__currentTeacherProfile = null;
-          window.location.assign("../teacher_registration/login.html");
+          void window.TeacherData.handleUnavailableTeacher(state.client);
           return;
         }
         if (!event.new) return;
@@ -155,7 +154,7 @@
     let dbAssignments = [];
     if (state.client && state.user) {
       try {
-        const { data, error } = await state.client.from("teacher_subjects").select("grade,subject").eq("teacher_id", state.user.id);
+        const { data, error } = await state.client.from("teacher_subjects").select("grade,subject").eq("teacher_id", state.profile.id);
         if (!error) dbAssignments = data || [];
       } catch { /* Optional assignment table; local registration remains the source. */ }
     }
@@ -398,6 +397,8 @@
   $("closeEventDialog").addEventListener("click", () => $("eventDialog").close());
   updateClock();
   window.setInterval(updateClock, 1000);
-  state.refreshing = true;
-  loadData().finally(() => { state.refreshing = false; subscribeRealtime(); });
+  document.addEventListener("DOMContentLoaded", () => {
+    state.refreshing = true;
+    loadData().finally(() => { state.refreshing = false; subscribeRealtime(); });
+  });
 })();

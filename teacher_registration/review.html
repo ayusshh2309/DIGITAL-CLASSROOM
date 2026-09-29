@@ -711,7 +711,6 @@
       /* =========================================================
          TAGS
       ========================================================= */
-
       .tag-container {
         display: flex;
 
@@ -1859,15 +1858,14 @@
 
       function generateTeacherId() {
         const year = new Date().getFullYear();
-        const randomNumber = Math.floor(10000 + Math.random() * 90000);
+        const randomValues = new Uint32Array(1);
+        window.crypto.getRandomValues(randomValues);
+        const randomNumber = 10000 + (randomValues[0] % 90000);
         return `TCH-${year}-${randomNumber}`;
       }
 
-      let generatedTeacherId = sessionStorage.getItem("teacherId");
-      if (!generatedTeacherId) {
-        generatedTeacherId = generateTeacherId();
-        sessionStorage.setItem("teacherId", generatedTeacherId);
-      }
+      sessionStorage.removeItem("teacherId");
+      let generatedTeacherId = generateTeacherId();
       const teacherIdElement = document.getElementById("teacherId");
       if (teacherIdElement) teacherIdElement.textContent = generatedTeacherId;
 
@@ -2026,12 +2024,12 @@
         return path;
       }
 
-      async function createTeacherRecord(client, user, profilePayload) {
+      async function createTeacherRecord(client, authUserId, profilePayload) {
         const experienceMatch = String(profilePayload.yearsExperience || "")
           .trim()
           .match(/^\d+/);
         const teacherInsert = {
-          user_id: user.id,
+          user_id: authUserId,
           teacher_id: profilePayload.teacherId,
           full_name: profilePayload.fullName,
           email: profilePayload.email,
@@ -2056,21 +2054,41 @@
           teaching_mode: profilePayload.teachingMode,
         };
 
-        const { data, error } = await client
-          .from("teachers")
-          .upsert(teacherInsert, { onConflict: "user_id" })
-          .select("id")
-          .single();
-        if (error?.code === "PGRST204") {
-          throw createRegistrationOperationError(
-            "teachers upsert",
-            error,
-            "Supabase is missing teacher profile columns. Run sql_teacher_profile_settings.sql in the Supabase SQL Editor, then retry this registration.",
-          );
+        for (let attempt = 0; attempt < 5; attempt += 1) {
+          if (attempt > 0) {
+            generatedTeacherId = generateTeacherId();
+            teacherInsert.teacher_id = generatedTeacherId;
+            if (teacherIdElement) {
+              teacherIdElement.textContent = generatedTeacherId;
+            }
+          }
+
+          const { data, error } = await client
+            .from("teachers")
+            .upsert(teacherInsert, { onConflict: "user_id" })
+            .select("id")
+            .single();
+          if (!error) return data;
+          if (error.code === "PGRST204") {
+            throw createRegistrationOperationError(
+              "teachers upsert",
+              error,
+              "Supabase is missing teacher profile columns. Run sql_teacher_profile_settings.sql in the Supabase SQL Editor, then retry this registration.",
+            );
+          }
+
+          const constraintDetails = `${error.constraint || ""} ${error.message || ""} ${error.details || ""}`;
+          const isTeacherIdCollision =
+            error.code === "23505" &&
+            constraintDetails.includes("teachers_teacher_id_key");
+          if (!isTeacherIdCollision || attempt === 4) {
+            throw createRegistrationOperationError("teachers upsert", error);
+          }
         }
-        if (error)
-          throw createRegistrationOperationError("teachers upsert", error);
-        return data;
+
+        throw new Error(
+          "Unable to generate a unique Teacher ID. Please retry.",
+        );
       }
 
       function createRegistrationOperationError(operation, error, message) {
@@ -2336,18 +2354,26 @@
             );
         }
         if (assignmentRows.length) {
-          const subjectAssignmentRows = assignmentRows.map((row) => ({
-            teacher_id: row.teacher_id,
-            subject_id: row.subject_id,
-            grade: row.grade,
-            stream: row.stream || null,
-          }));
+          const uniqueSubjectAssignments = new Map();
+          assignmentRows.forEach((row) => {
+            const key = `${row.teacher_id}|${row.subject_id}|${row.grade}|${row.stream || ""}`;
+            if (!uniqueSubjectAssignments.has(key)) {
+              uniqueSubjectAssignments.set(key, {
+                teacher_id: row.teacher_id,
+                subject_id: row.subject_id,
+                grade: row.grade,
+                stream: row.stream || null,
+              });
+            }
+          });
           const { error } = await client
             .from("teacher_subject_assignments")
-            .insert(subjectAssignmentRows);
+            .upsert([...uniqueSubjectAssignments.values()], {
+              onConflict: "teacher_id,subject_id,grade,stream",
+            });
           if (error)
             throw createRegistrationOperationError(
-              "teacher_subject_assignments insert",
+              "teacher_subject_assignments upsert",
               error,
             );
         }
@@ -2362,12 +2388,19 @@
             );
         }
         if (assignmentRows.length) {
-          const dashboardRows = assignmentRows.map((row) => ({
-            teacher_id: user.id,
-            subject: row.subjectName,
-            grade: String(row.grade),
-            stream: row.stream,
-          }));
+          const dashboardRowMap = new Map();
+          assignmentRows.forEach((row) => {
+            const key = `${teacherProfileId}|${row.subjectName.toLowerCase()}|${row.grade}`;
+            if (!dashboardRowMap.has(key)) {
+              dashboardRowMap.set(key, {
+                teacher_id: teacherProfileId,
+                subject: row.subjectName,
+                grade: String(row.grade),
+                stream: row.stream,
+              });
+            }
+          });
+          const dashboardRows = [...dashboardRowMap.values()];
           const { error } = await client
             .from("teacher_subjects")
             .upsert(dashboardRows, { onConflict: "teacher_id,subject,grade" });
@@ -2424,6 +2457,7 @@
             );
 
           let user = sessionData.session?.user || null;
+          let authUserId = user?.id || null;
           if (
             user &&
             user.email?.toLowerCase() !==
@@ -2436,6 +2470,7 @@
                 signOutError,
               );
             user = null;
+            authUserId = null;
           }
 
           if (!user) {
@@ -2476,6 +2511,7 @@
                 "The teacher account could not be created. Please try again.",
               );
             }
+            authUserId = authResult.user.id;
             if (!authResult.session) {
               alert(
                 "Your account was created. Verify your email using the link we sent, then return here and click Create Teacher Account again to save your profile.",
@@ -2484,6 +2520,25 @@
             }
             user = authResult.user;
           }
+          if (!authUserId) {
+            throw new Error(
+              "Supabase Auth did not return a user ID. The teacher profile was not saved.",
+            );
+          }
+          const { data: verifiedAuthData, error: verifyAuthError } =
+            await client.auth.getUser();
+          if (verifyAuthError)
+            throw createRegistrationOperationError(
+              "auth.getUser",
+              verifyAuthError,
+            );
+          if (!verifiedAuthData?.user?.id) {
+            throw new Error(
+              "Supabase could not verify the Auth account. The teacher profile was not saved.",
+            );
+          }
+          user = verifiedAuthData.user;
+          authUserId = verifiedAuthData.user.id;
 
           const finalTeacherId = generatedTeacherId;
 
@@ -2492,7 +2547,7 @@
           try {
             profilePhotoUrl = await uploadProfilePhotoIfNeeded(
               client,
-              user.id,
+              authUserId,
               step1.profilePhoto,
             );
           } catch (error) {
@@ -2550,7 +2605,7 @@
 
           const teacherRecord = await createTeacherRecord(
             client,
-            user,
+            authUserId,
             profilePayload,
           );
           await createAcademicRecords(client, user, teacherRecord.id);

@@ -325,17 +325,33 @@ with check (user_id = (select auth.uid()));
 
 drop policy if exists teacher_subjects_select_own on public.teacher_subjects;
 create policy teacher_subjects_select_own on public.teacher_subjects
-for select to authenticated using (teacher_id = (select auth.uid()));
+for select to authenticated using (exists (
+  select 1 from public.teachers as t
+  where t.id = teacher_subjects.teacher_id
+    and t.user_id = (select auth.uid())
+));
 
 drop policy if exists teacher_subjects_insert_own on public.teacher_subjects;
 create policy teacher_subjects_insert_own on public.teacher_subjects
-for insert to authenticated with check (teacher_id = (select auth.uid()));
+for insert to authenticated with check (exists (
+  select 1 from public.teachers as t
+  where t.id = teacher_subjects.teacher_id
+    and t.user_id = (select auth.uid())
+));
 
 drop policy if exists teacher_subjects_update_own on public.teacher_subjects;
 create policy teacher_subjects_update_own on public.teacher_subjects
 for update to authenticated
-using (teacher_id = (select auth.uid()))
-with check (teacher_id = (select auth.uid()));
+using (exists (
+  select 1 from public.teachers as t
+  where t.id = teacher_subjects.teacher_id
+    and t.user_id = (select auth.uid())
+))
+with check (exists (
+  select 1 from public.teachers as t
+  where t.id = teacher_subjects.teacher_id
+    and t.user_id = (select auth.uid())
+));
 
 drop policy if exists teacher_grade_groups_select_own on public.teacher_grade_groups;
 create policy teacher_grade_groups_select_own on public.teacher_grade_groups
