@@ -2133,6 +2133,32 @@
         return ids;
       }
 
+      async function resolveLanguageIds(client, names) {
+        const ids = new Map();
+        const uniqueNames = [...new Set(names.filter(Boolean))];
+        if (!uniqueNames.length) return ids;
+
+        const { data, error } = await client
+          .from("languages")
+          .select("id, name");
+        if (error)
+          throw new Error(`Unable to read languages: ${error.message}`);
+
+        for (const name of uniqueNames) {
+          const normalizedName = String(name).trim().toLowerCase();
+          const match = (data || []).find(
+            (row) =>
+              String(row.name || "")
+                .trim()
+                .toLowerCase() === normalizedName,
+          );
+          if (match?.id !== undefined && match?.id !== null) {
+            ids.set(normalizedName, match.id);
+          }
+        }
+        return ids;
+      }
+
       async function createAcademicRecords(client, user, teacherProfileId) {
         const groupGrades = {
           grades56: [5, 6],
@@ -2252,7 +2278,7 @@
             client,
             assignmentRows.map((row) => row.subjectName),
           ),
-          resolveCatalogIds(client, "languages", step2.languages || []),
+          resolveLanguageIds(client, step2.languages || []),
         ]);
         assignmentRows.forEach((row) => {
           row.subject_id = subjectIds.get(row.subjectName.toLowerCase());
@@ -2261,6 +2287,19 @@
               `Unable to save subject assignments: '${row.subjectName}' was not found in public.subjects.`,
             );
           }
+        });
+        const languageRows = (step2.languages || []).map((language) => {
+          const normalizedLanguage = String(language).trim().toLowerCase();
+          const languageId = languageIds.get(normalizedLanguage);
+          if (languageId === undefined) {
+            throw new Error(
+              `Unable to save languages: '${String(language).trim()}' was not found in public.languages.`,
+            );
+          }
+          return {
+            teacher_id: teacherProfileId,
+            language_id: languageId,
+          };
         });
 
         if (gradeRows.length) {
@@ -2287,16 +2326,10 @@
               `Unable to save subject assignments: ${error.message}`,
             );
         }
-        const languageRows = (step2.languages || []).map((language) => ({
-          teacher_id: teacherProfileId,
-          language,
-          language_id:
-            languageIds.get(String(language).trim().toLowerCase()) || null,
-        }));
         if (languageRows.length) {
           const { error } = await client
             .from("teacher_languages")
-            .upsert(languageRows, { onConflict: "teacher_id,language" });
+            .insert(languageRows);
           if (error)
             throw new Error(`Unable to save languages: ${error.message}`);
         }
