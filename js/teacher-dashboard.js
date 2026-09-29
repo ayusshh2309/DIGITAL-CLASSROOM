@@ -86,7 +86,8 @@
   async function queryTeacherTable(table, fields = "*", applyAssignmentScope = true) {
     if (!state.client || !state.user) return [];
     try {
-      const { data, error } = await state.client.from(table).select(fields).eq("teacher_id", state.user.id);
+      const teacherOwnerId = table === "materials" ? state.profile?.id : state.user.id;
+      const { data, error } = await state.client.from(table).select(fields).eq("teacher_id", teacherOwnerId);
         if (error) {
           console.error(`Unable to load dashboard ${table}.`, error);
           return [];
@@ -379,7 +380,8 @@
     if (state.client && state.user) {
       const channel = state.client.channel(`teacher-dashboard-${state.user.id}`);
       ["teacher_subjects", "materials", "quizzes", "students", "attendance", "live_classes", "announcements", "student_performance", "quiz_attempts"].forEach((table) => {
-        channel.on("postgres_changes", { event: "*", schema: "public", table, filter: `teacher_id=eq.${teacherId()}` }, scheduleRefresh);
+        const ownerId = table === "materials" ? state.profile.id : teacherId();
+        channel.on("postgres_changes", { event: "*", schema: "public", table, filter: `teacher_id=eq.${ownerId}` }, scheduleRefresh);
       });
       channel.subscribe();
       window.addEventListener("beforeunload", () => {

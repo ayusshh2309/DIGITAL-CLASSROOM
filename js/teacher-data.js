@@ -69,7 +69,15 @@
 
   async function getAuthenticatedUser(client) {
     const { data, error } = await client.auth.getUser();
-    if (error) throw error;
+    if (error) {
+      if (error.name === "AuthSessionMissingError" || error.code === "session_not_found") {
+        throw Object.assign(new Error("Your session has expired. Please sign in again."), {
+          code: "AUTH_REQUIRED",
+          cause: error,
+        });
+      }
+      throw error;
+    }
     if (!data.user) {
       throw Object.assign(new Error("Your session has expired. Please sign in again."), {
         code: "AUTH_REQUIRED",
@@ -111,7 +119,13 @@
     if (teacherAccountUnavailable) return null;
 
     const { data: authData, error: authError } = await client.auth.getUser();
-    if (authError) throw authError;
+    if (authError) {
+      if (authError.name === "AuthSessionMissingError" || authError.code === "session_not_found") {
+        redirectToLogin();
+        return null;
+      }
+      throw authError;
+    }
     const user = authData?.user;
     if (!user) {
       redirectToLogin();

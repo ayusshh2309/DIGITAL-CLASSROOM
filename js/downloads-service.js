@@ -545,17 +545,28 @@
         return mergeDownloadRecords(getLocalRecords(), getLocalMaterials());
       }
 
-      const [downloadsResponse, materialsResponse] = await Promise.all([
-        client
-          .from("downloads_files")
-          .select("*")
-          .eq("teacher_id", userData.user.id)
-          .order("created_at", { ascending: false }),
-        client
+      const currentTeacher = window.TeacherData?.loadCurrentTeacherProfile
+        ? await window.TeacherData.loadCurrentTeacherProfile()
+        : null;
+      if (currentTeacher && String(currentTeacher.user.id) !== String(userData.user.id)) {
+        throw new Error("Authenticated teacher changed while loading downloads.");
+      }
+      const downloadsQuery = client
+        .from("downloads_files")
+        .select("*")
+        .eq("teacher_id", userData.user.id)
+        .order("created_at", { ascending: false });
+      let materialsQuery = Promise.resolve({ data: [], error: null });
+      if (currentTeacher) {
+        materialsQuery = client
           .from("materials")
           .select("*")
-          .eq("teacher_id", userData.user.id)
-          .order("created_at", { ascending: false }),
+          .eq("teacher_id", currentTeacher.profile.id)
+          .order("created_at", { ascending: false });
+      }
+      const [downloadsResponse, materialsResponse] = await Promise.all([
+        downloadsQuery,
+        materialsQuery,
       ]);
 
       const downloads = downloadsResponse.error
@@ -651,9 +662,13 @@
       }
 
       if (parsed.sync_to_materials) {
+        const currentTeacher = await window.TeacherData.loadCurrentTeacherProfile();
+        if (String(currentTeacher.user.id) !== String(userData.user.id)) {
+          throw new Error("Authenticated teacher changed before material sync.");
+        }
         const materialRecord = {
           id: record.id,
-          teacher_id: userData.user.id,
+          teacher_id: currentTeacher.profile.id,
           title: record.file_name,
           name: record.file_name,
           type: record.file_type.toLowerCase(),
@@ -775,7 +790,8 @@
       if (error) throw error;
 
       try {
-        await client.from("materials").delete().eq("source_download_id", recordId).eq("teacher_id", userData.user.id);
+        const currentTeacher = await window.TeacherData.loadCurrentTeacherProfile();
+        await client.from("materials").delete().eq("source_download_id", recordId).eq("teacher_id", currentTeacher.profile.id);
       } catch (materialError) {
         console.warn("Material metadata cleanup warning:", materialError);
       }

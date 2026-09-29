@@ -91,7 +91,7 @@ create table if not exists public.downloads_files (
 
 create table if not exists public.materials (
   id uuid primary key default gen_random_uuid(),
-  teacher_id uuid not null references auth.users(id) on delete cascade,
+  teacher_id uuid not null references public.teachers(id) on delete cascade,
   title text not null,
   name text,
   description text,
@@ -147,19 +147,33 @@ for all
 using (auth.uid() = teacher_id)
 with check (auth.uid() = teacher_id);
 
-create policy "Teachers manage their own materials" on public.materials
-for all
-using (auth.uid() = teacher_id)
-with check (auth.uid() = teacher_id);
-
-create policy "Students can view shared class materials" on public.materials
-for select
-using (
-  auth.uid() is not null and
-  teacher_id is not null and
-  class_grade is not null and
-  subject is not null
-);
+drop policy if exists "Teachers manage their own materials" on public.materials;
+drop policy if exists "Students can view shared class materials" on public.materials;
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'materials'
+      and policyname = 'materials_teacher_insert_assigned'
+  ) then
+    execute $policy$
+      create policy "Teachers manage their own materials" on public.materials
+      for all to authenticated
+      using (exists (
+        select 1 from public.teachers as teacher
+        where teacher.id = materials.teacher_id
+          and teacher.user_id = (select auth.uid())
+      ))
+      with check (exists (
+        select 1 from public.teachers as teacher
+        where teacher.id = materials.teacher_id
+          and teacher.user_id = (select auth.uid())
+      ))
+    $policy$;
+  end if;
+end;
+$$;
 
 create policy "Students can view shared downloads" on public.downloads_files
 for select
@@ -169,17 +183,43 @@ using (
   visibility in ('Class', 'Department')
 );
 
+drop policy if exists "Teachers can upload to teacher_resources" on storage.objects;
 create policy "Teachers can upload to teacher_resources" on storage.objects
-for insert with check (bucket_id = 'teacher_resources' and auth.role() = 'authenticated');
+for insert to authenticated with check (
+  bucket_id = 'teacher_resources'
+  and (storage.foldername(name))[1] = 'teacher-resources'
+  and (storage.foldername(name))[2] = (select auth.uid())::text
+);
 
+drop policy if exists "Teachers can update their own resource files" on storage.objects;
 create policy "Teachers can update their own resource files" on storage.objects
-for update using (bucket_id = 'teacher_resources' and auth.uid()::text = (storage.foldername(name))[1]);
+for update to authenticated
+using (
+  bucket_id = 'teacher_resources'
+  and (storage.foldername(name))[1] = 'teacher-resources'
+  and (storage.foldername(name))[2] = (select auth.uid())::text
+)
+with check (
+  bucket_id = 'teacher_resources'
+  and (storage.foldername(name))[1] = 'teacher-resources'
+  and (storage.foldername(name))[2] = (select auth.uid())::text
+);
 
+drop policy if exists "Teachers can delete their own resource files" on storage.objects;
 create policy "Teachers can delete their own resource files" on storage.objects
-for delete using (bucket_id = 'teacher_resources' and auth.uid()::text = (storage.foldername(name))[1]);
+for delete to authenticated using (
+  bucket_id = 'teacher_resources'
+  and (storage.foldername(name))[1] = 'teacher-resources'
+  and (storage.foldername(name))[2] = (select auth.uid())::text
+);
 
+drop policy if exists "Teachers can view their own resource files" on storage.objects;
 create policy "Teachers can view their own resource files" on storage.objects
-for select using (bucket_id = 'teacher_resources' and auth.uid()::text = (storage.foldername(name))[1]);
+for select to authenticated using (
+  bucket_id = 'teacher_resources'
+  and (storage.foldername(name))[1] = 'teacher-resources'
+  and (storage.foldername(name))[2] = (select auth.uid())::text
+);
 
 alter publication supabase_realtime add table public.downloads_files;
 alter publication supabase_realtime add table public.materials;

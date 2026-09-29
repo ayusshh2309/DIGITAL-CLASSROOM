@@ -866,12 +866,14 @@
             <label><span class="field-label"><i class="fa-solid fa-user"></i> Subject</span><select id="materialSubject" required disabled><option value="">Select a subject</option></select></label>
           </div>
           <div class="form-row">
-            <label><span class="field-label"><i class="fa-solid fa-file-lines"></i> Material type</span><select id="materialType" required><option value="">Select a type</option><option value="note">Note</option><option value="pdf">PDF</option><option value="video">Video</option><option value="image">Image</option><option value="document">Document</option><option value="link">Link</option></select></label>
+            <label id="materialStreamField" hidden><span class="field-label"><i class="fa-solid fa-flask"></i> Stream</span><select id="materialStream"><option value="">Select a stream</option></select></label>
+          </div>
+          <div class="form-row">
+            <label><span class="field-label"><i class="fa-solid fa-file-lines"></i> Material type</span><select id="materialType" required><option value="">Select a type</option><option value="pdf">PDF</option><option value="video">Video</option><option value="image">Image / photo</option></select></label>
             <label><span class="field-label"><i class="fa-solid fa-file-signature"></i> Title</span><input id="materialTitle" required maxlength="160" placeholder="e.g. Chapter 3 revision"></label>
           </div>
           <label><span class="field-label"><i class="fa-solid fa-align-left"></i> Description <small>Optional</small></span><textarea id="materialDescription" maxlength="1000"></textarea></label>
-          <label id="fileField" class="material-dropzone"><span class="dropzone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></span><span class="dropzone-copy"><strong>File</strong><small>Maximum 25 MB</small><span class="file-picker"><i class="fa-regular fa-folder-open"></i> Choose file</span></span><input id="materialFile" type="file"><span class="file-name" id="fileName">No file chosen</span></label>
-          <label id="linkField" hidden><span class="field-label"><i class="fa-solid fa-link"></i> External URL</span><input id="materialLink" type="url" placeholder="https://example.com/resource"></label>
+          <label id="fileField" class="material-dropzone"><span class="dropzone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></span><span class="dropzone-copy"><strong>File</strong><small>Maximum 25 MB</small><span class="file-picker"><i class="fa-regular fa-folder-open"></i> Choose file</span></span><input id="materialFile" type="file" accept=".pdf,video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/webp"><span class="file-name" id="fileName">No file chosen</span></label>
           <p class="material-help assignment-message" id="assignmentMessage"><i class="fa-solid fa-circle-info"></i> Select a class to load your assigned subjects.</p>
           <div class="material-modal-actions"><button class="btn-secondary" id="cancelMaterialModal" type="button">Cancel</button><button class="btn-primary" id="submitMaterial" type="submit"><i class="fa-solid fa-cloud-arrow-up"></i> Save material</button></div>
         </form>
@@ -881,7 +883,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="../js/supabase.js"></script>
     <script src="../js/teacher-data.js"></script>
-    <script src="../js/materials.js"></script>
+    <script src="../js/teacher-materials.js"></script>
     <script src="../js/layout.js"></script>
   </body>
 </html>
