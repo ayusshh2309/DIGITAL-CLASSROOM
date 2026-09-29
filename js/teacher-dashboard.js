@@ -87,7 +87,10 @@
     if (!state.client || !state.user) return [];
     try {
       const { data, error } = await state.client.from(table).select(fields).eq("teacher_id", state.user.id);
-      if (error) return [];
+        if (error) {
+          console.error(`Unable to load dashboard ${table}.`, error);
+          return [];
+        }
       return applyAssignmentScope ? (data || []).filter(assignedRow) : data || [];
     } catch { return []; }
   }
@@ -126,10 +129,9 @@
     if (profileName) profileName.textContent = teacherName;
     updateClock();
     if (avatar && currentTeacher.profile.profile_photo_url) {
-      try {
-        avatar.src = await window.TeacherData.getTeacherProfilePhotoUrl(currentTeacher.profile.profile_photo_url);
-        avatar.hidden = false;
-      } catch { avatar.hidden = true; }
+      window.TeacherData.getTeacherProfilePhotoUrl(currentTeacher.profile.profile_photo_url)
+        .then((url) => { avatar.src = url; avatar.hidden = false; })
+        .catch(() => { avatar.hidden = true; });
     }
     if (!profileChannel) {
       profileChannel = window.TeacherData.subscribeToTeacherProfile(state.user.id, (event) => {
@@ -154,11 +156,16 @@
     let dbAssignments = [];
     if (state.client && state.user) {
       try {
-        const { data, error } = await state.client.from("teacher_subjects").select("grade,subject").eq("teacher_id", state.profile.id);
+        const { data, error } = await state.client.from("teacher_subjects").select("grade,subject").eq("teacher_id", state.user.id);
         if (!error) dbAssignments = data || [];
-      } catch { /* Optional assignment table; local registration remains the source. */ }
+        else console.error("Unable to load registered teacher subjects.", error);
+      } catch (error) {
+        console.error("Unable to load registered teacher subjects.", error);
+      }
     }
     setupAssignments(dbAssignments);
+    renderSubjects();
+    renderCalendar();
     const id = state.profile.id;
 
     if (state.client && state.user) {
@@ -386,9 +393,23 @@
   }
 
   let refreshTimeout;
+  let refreshPending = false;
   function scheduleRefresh() {
     window.clearTimeout(refreshTimeout);
-    refreshTimeout = window.setTimeout(() => { if (!state.refreshing) void loadData(); }, 250);
+    refreshTimeout = window.setTimeout(() => {
+      if (state.refreshing) {
+        refreshPending = true;
+        return;
+      }
+      state.refreshing = true;
+      void loadData().finally(() => {
+        state.refreshing = false;
+        if (refreshPending) {
+          refreshPending = false;
+          scheduleRefresh();
+        }
+      });
+    }, 250);
   }
 
   $("performancePeriod").addEventListener("change", renderChart);
@@ -399,6 +420,13 @@
   window.setInterval(updateClock, 1000);
   document.addEventListener("DOMContentLoaded", () => {
     state.refreshing = true;
-    loadData().finally(() => { state.refreshing = false; subscribeRealtime(); });
+    loadData().finally(() => {
+      state.refreshing = false;
+      subscribeRealtime();
+      if (refreshPending) {
+        refreshPending = false;
+        scheduleRefresh();
+      }
+    });
   });
 })();
