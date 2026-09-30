@@ -327,7 +327,7 @@
       /* Stat Cards */
       .stats-grid {
         display: grid;
-        grid-template-columns: repeat(5, 1fr);
+        grid-template-columns: repeat(6, minmax(0, 1fr));
         gap: 18px;
       }
 
@@ -630,7 +630,6 @@
           </div>
           <div class="action-buttons">
             <button class="btn-primary" id="uploadMaterialBtn" type="button">📤 Upload Material</button>
-            <button class="btn-secondary" id="newFolderBtn" type="button">📁 New Folder</button>
           </div>
         </div>
 
@@ -669,11 +668,19 @@
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon" style="background: #00818a">🗂️</div>
+            <div class="stat-icon" style="background: #5d65c9"><i class="fa-solid fa-file-lines" aria-hidden="true"></i></div>
             <div>
-              <div class="stat-val" id="statFolders">0</div>
-              <div class="stat-lbl">Folders</div>
-              <div class="stat-trend">Organize your library</div>
+              <div class="stat-val" id="statDocuments">0</div>
+              <div class="stat-lbl">Documents</div>
+              <div class="stat-trend">Uploaded resources</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #3d77b9"><i class="fa-solid fa-link" aria-hidden="true"></i></div>
+            <div>
+              <div class="stat-val" id="statLinks">0</div>
+              <div class="stat-lbl">Links</div>
+              <div class="stat-trend">Shared resources</div>
             </div>
           </div>
         </div>
@@ -683,12 +690,11 @@
           <div class="table-toolbar">
             <div class="tabs">
               <button class="tab active" type="button" data-type="all"><i class="fa-solid fa-grip"></i> All Materials</button>
-              <button class="tab" type="button" data-type="note"><i class="fa-regular fa-file-lines"></i> Notes</button>
               <button class="tab" type="button" data-type="pdf"><i class="fa-solid fa-file-pdf"></i> PDFs</button>
+              <button class="tab" type="button" data-type="document"><i class="fa-solid fa-file-lines"></i> Documents</button>
               <button class="tab" type="button" data-type="video"><i class="fa-regular fa-circle-play"></i> Videos</button>
               <button class="tab" type="button" data-type="image"><i class="fa-regular fa-image"></i> Images</button>
               <button class="tab" type="button" data-type="link"><i class="fa-solid fa-link"></i> Links</button>
-              <button class="tab" type="button" data-type="folder"><i class="fa-regular fa-folder"></i> Folders</button>
             </div>
             <div class="filter-controls">
               <input
@@ -869,11 +875,12 @@
             <label id="materialStreamField" hidden><span class="field-label"><i class="fa-solid fa-flask"></i> Stream</span><select id="materialStream"><option value="">Select a stream</option></select></label>
           </div>
           <div class="form-row">
-            <label><span class="field-label"><i class="fa-solid fa-file-lines"></i> Material type</span><select id="materialType" required><option value="">Select a type</option><option value="pdf">PDF</option><option value="video">Video</option><option value="image">Image / photo</option></select></label>
+            <label><span class="field-label"><i class="fa-solid fa-file-lines"></i> Material type</span><select id="materialType" required><option value="">Select a type</option><option value="pdf">PDF</option><option value="video">Video</option><option value="image">Image / photo</option><option value="document">Document</option><option value="link">Link</option></select></label>
             <label><span class="field-label"><i class="fa-solid fa-file-signature"></i> Title</span><input id="materialTitle" required maxlength="160" placeholder="e.g. Chapter 3 revision"></label>
           </div>
           <label><span class="field-label"><i class="fa-solid fa-align-left"></i> Description <small>Optional</small></span><textarea id="materialDescription" maxlength="1000"></textarea></label>
-          <label id="fileField" class="material-dropzone"><span class="dropzone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></span><span class="dropzone-copy"><strong>File</strong><small>Maximum 25 MB</small><span class="file-picker"><i class="fa-regular fa-folder-open"></i> Choose file</span></span><input id="materialFile" type="file" accept=".pdf,video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/webp"><span class="file-name" id="fileName">No file chosen</span></label>
+          <label id="fileField" class="material-dropzone"><span class="dropzone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></span><span class="dropzone-copy"><strong>File</strong><small>Maximum 25 MB</small><span class="file-picker"><i class="fa-regular fa-folder-open"></i> Choose file</span></span><input id="materialFile" type="file" accept=".pdf,video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/webp,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.rtf,.odt,.ods"><span class="file-name" id="fileName">No file chosen</span></label>
+          <label id="linkField" hidden><span class="field-label"><i class="fa-solid fa-link"></i> Link URL</span><input id="materialLink" type="url" placeholder="https://example.com/resource"></label>
           <p class="material-help assignment-message" id="assignmentMessage"><i class="fa-solid fa-circle-info"></i> Select a class to load your assigned subjects.</p>
           <div class="material-modal-actions"><button class="btn-secondary" id="cancelMaterialModal" type="button">Cancel</button><button class="btn-primary" id="submitMaterial" type="submit"><i class="fa-solid fa-cloud-arrow-up"></i> Save material</button></div>
         </form>

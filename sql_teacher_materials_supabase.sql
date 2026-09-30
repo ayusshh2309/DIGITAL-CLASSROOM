@@ -249,7 +249,7 @@ drop policy if exists materials_bucket_owner_access on storage.objects;
 create policy materials_bucket_owner_access on storage.objects
 for all to authenticated
 using (
-  bucket_id in ('pdf', 'videos', 'photos')
+  bucket_id in ('pdfs', 'videos', 'photos', 'documents')
   and exists (
     select 1 from public.teachers as teacher
     where teacher.id::text = (storage.foldername(name))[1]
@@ -257,7 +257,7 @@ using (
   )
 )
 with check (
-  bucket_id in ('pdf', 'videos', 'photos')
+  bucket_id in ('pdfs', 'videos', 'photos', 'documents')
   and exists (
     select 1 from public.teachers as teacher
     where teacher.id::text = (storage.foldername(name))[1]

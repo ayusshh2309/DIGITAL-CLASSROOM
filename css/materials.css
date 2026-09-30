@@ -63,6 +63,7 @@
 .materials-page .table-section,
 .materials-page .storage-card { border-color: rgba(210, 224, 231, 0.9); box-shadow: 0 10px 28px rgba(24, 63, 78, 0.07); }
 .materials-page .tabs { row-gap: 12px; }
+.materials-page .table-toolbar { flex-wrap: wrap; row-gap: 14px; }
 .materials-page .tab { display: inline-flex; align-items: center; gap: 8px; padding: 7px 10px 10px; color: #748693; transition: color 160ms ease, background 160ms ease, box-shadow 160ms ease; }
 .materials-page .tab i { color: #526aa3; font-size: .95rem; }
 .materials-page .tab[data-type="pdf"] i { color: #ed3c72; }
@@ -200,11 +201,16 @@
 }
 
 .materials-page .tabs {
-  flex-wrap: wrap;
-  gap: 16px;
+  min-width: 0;
+  flex: 1 1 100%;
+  flex-wrap: nowrap;
+  gap: 12px;
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 
 .materials-page .tab {
+  flex: 0 0 auto;
   border: 0;
   background: transparent;
   font: inherit;

@@ -51,11 +51,17 @@
     pdf: "PDF",
     video: "Video",
     image: "Image",
+    photo: "Image",
+    document: "Document",
+    link: "Link",
   }[String(type || "").toLowerCase()] || "File");
   const materialIcon = (type) => ({
     pdf: "fa-file-pdf",
     video: "fa-circle-play",
     image: "fa-image",
+    photo: "fa-image",
+    document: "fa-file-lines",
+    link: "fa-link",
   }[String(type || "").toLowerCase()] || "fa-file-lines");
   const bucketForType = (type) => ({
     pdf: "pdfs",
@@ -70,7 +76,13 @@
     photo: "photo",
     image: "photo",
     document: "document",
+    link: "document",
   })[String(type ?? "").trim().toLowerCase()] || null;
+  const displayMaterialType = (item) => item.external_url && !item.file_path
+    ? "link"
+    : String(item.material_type || "").toLowerCase() === "photo"
+      ? "image"
+      : String(item.material_type || "").toLowerCase();
   const gradeValue = (grade) => String(grade ?? "").replace(/^class\s+/i, "").trim();
 
   function setLoadError(error) {
@@ -240,8 +252,7 @@
     const filtered = state.materials.filter((item) => {
       const grade = gradeValue(item.grade);
       const subject = state.subjectsById.get(String(item.subject_id))?.name || "";
-      const storedType = String(item.material_type || "").toLowerCase();
-      const type = storedType === "photo" ? "image" : storedType;
+      const type = displayMaterialType(item);
       const searchable = `${item.title} ${item.description || ""} ${grade} ${subject} ${type} ${item.file_name || ""}`.toLowerCase();
       return (!classFilter || classFilter === grade) &&
         (!subjectFilter || subjectFilter === String(item.subject_id)) &&
@@ -264,8 +275,7 @@
     const visible = all.slice(start, start + state.pageSize);
     $("materialsBody").innerHTML = visible.length
       ? visible.map((item) => {
-        const storedType = String(item.material_type || "").toLowerCase();
-        const type = storedType === "photo" ? "image" : storedType;
+        const type = displayMaterialType(item);
         const subject = state.subjectsById.get(String(item.subject_id))?.name || "-";
         const grade = gradeValue(item.grade) || "-";
         const fileUrl = item.file_url || item.external_url || "";
@@ -285,16 +295,14 @@
       `<button class="page-btn ${index + 1 === state.page ? "active" : ""}" data-page="${index + 1}">${index + 1}</button>`,
     ).join("");
 
-    const types = [null, "video", "pdf", "image"];
-    ["statTotal", "statVideos", "statPdfs", "statImages"].forEach((id, index) => {
+    const types = [null, "video", "pdf", "image", "document", "link"];
+    ["statTotal", "statVideos", "statPdfs", "statImages", "statDocuments", "statLinks"].forEach((id, index) => {
       $(id).textContent = types[index]
         ? state.materials.filter((item) => {
-          const materialType = String(item.material_type || "").toLowerCase();
-          return (materialType === "photo" ? "image" : materialType) === types[index];
+          return displayMaterialType(item) === types[index];
         }).length
         : state.materials.length;
     });
-    $("statFolders").textContent = "0";
     const totalBytes = state.materials.reduce((sum, item) => sum + Number(item.file_size || 0), 0);
     const storagePercent = Math.min(100, Math.round((totalBytes / (10 * 1024 * 1024 * 1024)) * 100));
     $("storageUsed").textContent = formatSize(totalBytes);
@@ -303,7 +311,8 @@
     $("storageVideos").textContent = formatSize(state.materials.filter((item) => item.storage_bucket === "videos").reduce((sum, item) => sum + Number(item.file_size || 0), 0));
     $("storagePdfs").textContent = formatSize(state.materials.filter((item) => item.storage_bucket === "pdfs").reduce((sum, item) => sum + Number(item.file_size || 0), 0));
     $("storageImages").textContent = formatSize(state.materials.filter((item) => item.storage_bucket === "photos").reduce((sum, item) => sum + Number(item.file_size || 0), 0));
-    $("storageOthers").textContent = "0 B";
+    const otherBytes = state.materials.filter((item) => item.storage_bucket && !["videos", "pdfs", "photos"].includes(item.storage_bucket)).reduce((sum, item) => sum + Number(item.file_size || 0), 0);
+    $("storageOthers").textContent = formatSize(otherBytes);
   }
 
   async function loadMaterials() {
@@ -381,20 +390,33 @@
     if (type === "image" && (!file.type.startsWith("image/") || !["jpg", "jpeg", "png", "webp"].includes(extension))) {
       throw new Error("Unsupported file type. Choose a JPG, PNG, or WebP image.");
     }
+    if (type === "document" && !["doc", "docx", "ppt", "pptx", "xls", "xlsx", "txt", "rtf", "odt", "ods"].includes(extension)) {
+      throw new Error("Unsupported file type. Choose a document, spreadsheet, presentation, or text file.");
+    }
     if (!bucketForType(type)) throw new Error("Unsupported material type.");
+  }
+
+  function syncUploadFields(editing = Boolean(state.editing)) {
+    const isLink = $("materialType").value === "link";
+    $("fileField").hidden = isLink || editing;
+    $("linkField").hidden = !isLink;
+    $("materialLink").required = isLink;
+    $("materialFile").required = !editing && !isLink;
   }
 
   function setUploadMode(material = null) {
     state.editing = material;
     const editing = Boolean(material);
+    const isLink = Boolean(material?.external_url && !material?.file_path);
     $("materialModalTitle").textContent = editing ? "Edit material details" : "Upload material";
     $("submitMaterial").textContent = editing ? "Save changes" : "Save material";
     $("materialType").disabled = editing;
     $("materialFile").disabled = editing;
-    $("fileField").hidden = editing;
     $("materialTitle").value = material?.title || "";
     $("materialDescription").value = material?.description || "";
-    $("materialType").value = material?.material_type || material?.type || "";
+    $("materialType").value = isLink ? "link" : material?.material_type === "photo" ? "image" : material?.material_type || material?.type || "";
+    $("materialLink").value = material?.external_url || "";
+    syncUploadFields(editing);
     $("materialClass").value = material ? gradeValue(material.grade) : "";
     renderStreams(material ? material.stream || "" : null);
     renderSubjects(material?.subject_id || "");
@@ -407,6 +429,9 @@
     $("materialForm").reset();
     $("materialType").disabled = false;
     $("materialFile").disabled = false;
+    $("materialLink").required = false;
+    $("materialFile").required = false;
+    $("linkField").hidden = true;
     $("fileField").hidden = false;
     $("materialStreamField").hidden = true;
     $("materialStream").required = false;
@@ -433,11 +458,18 @@
       const description = $("materialDescription").value.trim();
 
       if (state.editing) {
+        const linkUrl = state.editing.external_url && !state.editing.file_path ? $("materialLink").value.trim() : null;
+        if (linkUrl) {
+          let parsedUrl;
+          try { parsedUrl = new URL(linkUrl); } catch { throw new Error("Enter a valid link URL."); }
+          if (!["http:", "https:"].includes(parsedUrl.protocol)) throw new Error("Enter a valid HTTP or HTTPS link URL.");
+        }
         const { data, error } = await state.client
           .from("materials")
           .update({
             title,
             description,
+            ...(linkUrl ? { external_url: linkUrl } : {}),
             grade,
             stream: selected.stream,
             subject_id: selected.subject.id,
@@ -459,17 +491,28 @@
       const type = $("materialType").value;
       const normalizedMaterialType = normalizeMaterialType(type);
       if (!normalizedMaterialType) throw new Error("Choose a supported material type.");
-      const file = $("materialFile").files[0];
-      validateFile(type, file);
-      const bucket = bucketForType(type);
-      const uniqueId = window.crypto.randomUUID();
-      const path = `${state.teacher.id}/${grade}/${selected.subject.id}/${uniqueId}-${safeFileName(file.name)}`;
-      const { error: uploadError } = await state.client.storage
-        .from(bucket)
-        .upload(path, file, { upsert: false, contentType: file.type });
-      if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`);
-      uploadedPath = path;
-      uploadedBucket = bucket;
+      const isLink = type === "link";
+      const linkUrl = isLink ? $("materialLink").value.trim() : "";
+      if (isLink) {
+        let parsedUrl;
+        try { parsedUrl = new URL(linkUrl); } catch { throw new Error("Enter a valid link URL."); }
+        if (!["http:", "https:"].includes(parsedUrl.protocol)) throw new Error("Enter a valid HTTP or HTTPS link URL.");
+      }
+      const file = isLink ? null : $("materialFile").files[0];
+      let bucket = null;
+      let path = null;
+      if (!isLink) {
+        validateFile(type, file);
+        bucket = bucketForType(type);
+        const uniqueId = window.crypto.randomUUID();
+        path = `${state.teacher.id}/${grade}/${selected.subject.id}/${uniqueId}-${safeFileName(file.name)}`;
+        const { error: uploadError } = await state.client.storage
+          .from(bucket)
+          .upload(path, file, { upsert: false, contentType: file.type });
+        if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`);
+        uploadedPath = path;
+        uploadedBucket = bucket;
+      }
 
       const timestamp = new Date().toISOString();
       const payload = {
@@ -480,11 +523,12 @@
         title,
         description: description || null,
         material_type: normalizedMaterialType,
-        file_name: file.name,
+        file_name: file?.name || null,
         file_path: path,
         storage_bucket: bucket,
-        file_size: file.size,
-        mime_type: file.type || null,
+        file_size: file?.size || 0,
+        mime_type: file?.type || null,
+        external_url: isLink ? linkUrl : null,
         updated_at: timestamp,
       };
       const { data, error } = await state.client
@@ -493,13 +537,15 @@
         .select("*")
         .single();
       if (error) {
-        try {
-          const { error: cleanupError } = await state.client.storage.from(bucket).remove([path]);
-          if (cleanupError) console.error("Uploaded file rollback failed.", cleanupError);
-        } catch (cleanupError) {
-          console.error("Uploaded file rollback failed.", cleanupError);
+        if (path && bucket) {
+          try {
+            const { error: cleanupError } = await state.client.storage.from(bucket).remove([path]);
+            if (cleanupError) console.error("Uploaded file rollback failed.", cleanupError);
+          } catch (cleanupError) {
+            console.error("Uploaded file rollback failed.", cleanupError);
+          }
+          uploadedPath = null;
         }
-        uploadedPath = null;
         throw new Error(`Material record could not be created: ${error.message}`);
       }
 
@@ -530,13 +576,16 @@
     const material = state.materials.find((item) => String(item.id) === String(id));
     if (!material) return;
     try {
-      if (!material.storage_bucket || !material.file_path) {
+      const isLink = Boolean(material.external_url && !material.file_path);
+      if (!isLink && (!material.storage_bucket || !material.file_path)) {
         throw new Error("Storage bucket or file path is missing; the material was not deleted.");
       }
-      const { error: storageError } = await state.client.storage
-        .from(material.storage_bucket)
-        .remove([material.file_path]);
-      if (storageError) throw new Error(`Storage deletion failed: ${storageError.message}`);
+      if (!isLink) {
+        const { error: storageError } = await state.client.storage
+          .from(material.storage_bucket)
+          .remove([material.file_path]);
+        if (storageError) throw new Error(`Storage deletion failed: ${storageError.message}`);
+      }
 
       const { error: dbError } = await state.client
         .from("materials")
@@ -607,11 +656,11 @@
 
   function setupEvents() {
     $("uploadMaterialBtn").addEventListener("click", () => setUploadMode());
-    $("newFolderBtn").addEventListener("click", () => toast("Folders are not supported by the materials database.", "error"));
     $("closeMaterialModal").addEventListener("click", closeModal);
     $("cancelMaterialModal").addEventListener("click", closeModal);
     $("materialClass").addEventListener("change", () => renderStreams());
     $("materialStream").addEventListener("change", () => renderSubjects());
+    $("materialType").addEventListener("change", () => syncUploadFields(false));
     $("materialForm").addEventListener("submit", uploadMaterial);
     $("materialFile").addEventListener("change", (event) => {
       $("fileName").textContent = event.target.files[0]?.name || "No file chosen";
