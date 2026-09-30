@@ -17,11 +17,6 @@
       </div>
       <div class="hero-quote"><span>“Better Teaching<br>Builds Brighter Futures”</span><i class="fa-solid fa-seedling" aria-hidden="true"></i></div>
     </section>
-    <section class="dashboard-panel" aria-labelledby="teacherProfileHeading">
-      <div class="panel-heading"><div><h2 id="teacherProfileHeading">Teacher Profile</h2></div><a class="panel-link" href="profile.html">View profile <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div>
-      <dl class="teacher-profile-grid" id="teacherProfileDetails"></dl>
-      <p class="teacher-languages" id="teacherLanguages"></p>
-    </section>
     <section class="dashboard-stats" aria-label="Classroom statistics" id="dashboardStats"></section>
     <div class="dashboard-analytics">
       <section class="dashboard-panel">
@@ -60,7 +55,7 @@
   const avatar = () => document.getElementById("avatarImg");
   if (profileName()) profileName().textContent = "Loading profile...";
   if (avatar()) avatar().hidden = true;
-  const state = { user: null, profile: null, client: null, classes: [], gradeGroups: [], assignmentRows: [], assignments: new Map(), languages: [], materials: [], quizzes: [], students: [], attendance: [], performance: new Map(), liveClasses: [], announcements: [], calendarDate: new Date(), events: [], refreshTimer: null, refreshing: false, warning: "" };
+  const state = { user: null, profile: null, client: null, classes: [], gradeGroups: [], assignmentRows: [], assignments: new Map(), materials: [], quizzes: [], students: [], attendance: [], performance: new Map(), liveClasses: [], announcements: [], calendarDate: new Date(), events: [], refreshTimer: null, refreshing: false };
   let profileChannel = null;
   let stopAuthWatch = null;
   const gradeOf = (row) => String(row.class_grade ?? row.grade ?? row.class ?? row.class_number ?? "").match(/\d+/)?.[0] || "";
@@ -123,7 +118,7 @@
       expected.forEach((name) => {
         const subject = subjectCatalog.find((item) => String(item.name).trim().toLowerCase() === name.toLowerCase());
         if (!subject) {
-          state.warning = [state.warning, `Subject '${name}' is missing from public.subjects.`].filter(Boolean).join(" · ");
+          console.warn(`Subject '${name}' is missing from public.subjects.`);
           return;
         }
         const key = `${group.grade}|${group.stream || ""}|${subject.id}`;
@@ -145,7 +140,7 @@
     if (error) {
       console.error(`Unable to load dashboard ${table}.`, error);
       if (options.optional) {
-        state.warning = [state.warning, `${table}: ${error.message}`].filter(Boolean).join(" · ");
+        console.warn(`Optional dashboard data unavailable for ${table}:`, error);
         return [];
       }
       throw new Error(`Unable to load ${table}. Check your access permissions. ${error.message}`);
@@ -174,35 +169,6 @@
     notice.setAttribute("role", isError ? "alert" : "status");
   }
 
-  function renderProfile() {
-    const profile = state.profile;
-    const value = (item) => item === null || item === undefined || String(item).trim() === "" ? "N/A" : String(item);
-    const rows = [
-      ["Full name", profile.full_name],
-      ["Teacher ID", profile.teacher_id],
-      ["Email", profile.email || state.user.email],
-      ["Phone", [profile.country_code, profile.phone_number].filter(Boolean).join(" ")],
-      ["Date of birth", profile.date_of_birth],
-      ["Gender", profile.gender],
-      ["Country", profile.country],
-      ["State", profile.state],
-      ["City", profile.city],
-      ["Address", profile.address],
-      ["Employment status", profile.employment_status],
-      ["Institution / school", profile.institution_name],
-      ["Institution type", profile.institution_type],
-      ["Qualification", profile.highest_qualification],
-      ["Degree / course", profile.degree_course],
-      ["Specialization", profile.specialization],
-      ["University / college", profile.university_college],
-      ["Graduation year", profile.graduation_year],
-      ["Years of experience", profile.years_experience],
-      ["Teaching mode", profile.teaching_mode],
-    ];
-    $("teacherProfileDetails").innerHTML = rows.map(([label, item]) => `<div class="teacher-profile-item"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value(item))}</dd></div>`).join("");
-    $("teacherLanguages").textContent = `Languages: ${state.languages.length ? state.languages.join(", ") : "N/A"}`;
-  }
-
   function renderMaterials() {
     const rows = [...state.materials].sort((left, right) => new Date(right.created_at || 0) - new Date(left.created_at || 0)).slice(0, 5);
     $("dashboardMaterials").innerHTML = rows.length ? rows.map((item) => {
@@ -214,7 +180,6 @@
 
   async function loadData() {
     renderDataNotice("Loading your dashboard data...");
-    state.warning = "";
     try {
       state.client = window.TeacherData?.getSupabaseClient?.() || null;
       if (!state.client) throw new Error("Supabase is unavailable. Check the shared Supabase client configuration.");
@@ -237,13 +202,12 @@
       state.profile = profile;
 
       const teacherDbId = profile.id;
-      const [gradeResult, assignmentResult, languageResult, materialResult] = await Promise.all([
+      const [gradeResult, assignmentResult, materialResult] = await Promise.all([
         state.client.from("teacher_grade_groups").select("grade, stream, teach_all_subjects").eq("teacher_id", teacherDbId),
         state.client.from("teacher_subject_assignments").select("subject_id, grade, stream, subjects(name)").eq("teacher_id", teacherDbId),
-        state.client.from("teacher_languages").select("language_id, languages(name)").eq("teacher_id", teacherDbId),
         state.client.from("materials").select("id, title, grade, stream, subject_id, material_type, created_at, subjects(name)").eq("teacher_id", teacherDbId).order("created_at", { ascending: false }),
       ]);
-      for (const [name, result] of [["teacher_grade_groups", gradeResult], ["teacher_subject_assignments", assignmentResult], ["teacher_languages", languageResult], ["materials", materialResult]]) {
+      for (const [name, result] of [["teacher_grade_groups", gradeResult], ["teacher_subject_assignments", assignmentResult], ["materials", materialResult]]) {
         if (result.error) throw new Error(`Unable to load ${name}. Check your access permissions. ${result.error.message}`);
       }
       const gradeGroups = gradeResult.data || [];
@@ -255,12 +219,6 @@
         subjectCatalog = data || [];
       }
       setupAssignments(gradeGroups, assignmentRows, subjectCatalog);
-      const languageRows = languageResult.data || [];
-      state.languages = languageRows.map((row) => {
-        const language = Array.isArray(row.languages) ? row.languages[0] : row.languages;
-        if (!language?.name) throw new Error(`Registered language ID ${row.language_id} is missing from public.languages.`);
-        return language.name;
-      }).filter((name, index, names) => names.indexOf(name) === index);
       state.materials = materialResult.data || [];
 
       teacherName = profile.full_name || "N/A";
@@ -279,7 +237,6 @@
           avatar().hidden = true;
         }
       }
-      renderProfile();
       renderMaterials();
       updateClock();
 
@@ -302,7 +259,7 @@
       const assessments = [...performanceRecords, ...quizAttempts].map(normalizeAssessment).filter((row) => Number.isFinite(row.percentage) && assignedRow(row));
       state.performance = new Map(state.classes.map((grade) => [grade, assessments.filter((row) => gradeOf(row) === grade)]));
       renderAll();
-      renderDataNotice(state.warning);
+      renderDataNotice();
 
       if (!profileChannel && window.TeacherData?.subscribeToTeacherProfile) {
         profileChannel = state.client.channel(`teacher-dashboard-profile-${state.user.id}`)
@@ -489,7 +446,7 @@
   function subscribeRealtime() {
     if (state.client && state.user && state.profile?.id) {
       const channel = state.client.channel(`teacher-dashboard-${state.user.id}`);
-      const teacherProfileTables = ["teacher_grade_groups", "teacher_subject_assignments", "teacher_languages", "materials"];
+      const teacherProfileTables = ["teacher_grade_groups", "teacher_subject_assignments", "materials"];
       const authOwnedTables = ["quizzes", "students", "attendance", "live_classes", "announcements", "student_performance", "quiz_attempts"];
       teacherProfileTables.forEach((table) => {
         channel.on("postgres_changes", { event: "*", schema: "public", table, filter: `teacher_id=eq.${state.profile.id}` }, scheduleRefresh);
