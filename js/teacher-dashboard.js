@@ -4,6 +4,7 @@
   window.teacherDashboardRedesigned = true;
 
   root.innerHTML = `
+    <div class="dashboard-data-notice" id="dashboardDataNotice" role="status" aria-live="polite">Loading your dashboard data...</div>
     <section class="dashboard-hero" aria-labelledby="greetingEl">
       <span class="hero-mark" aria-hidden="true"><i class="fa-solid fa-graduation-cap"></i></span>
       <div class="hero-copy">
@@ -15,6 +16,11 @@
         </div>
       </div>
       <div class="hero-quote"><span>“Better Teaching<br>Builds Brighter Futures”</span><i class="fa-solid fa-seedling" aria-hidden="true"></i></div>
+    </section>
+    <section class="dashboard-panel" aria-labelledby="teacherProfileHeading">
+      <div class="panel-heading"><div><h2 id="teacherProfileHeading">Teacher Profile</h2></div><a class="panel-link" href="profile.html">View profile <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div>
+      <dl class="teacher-profile-grid" id="teacherProfileDetails"></dl>
+      <p class="teacher-languages" id="teacherLanguages"></p>
     </section>
     <section class="dashboard-stats" aria-label="Classroom statistics" id="dashboardStats"></section>
     <div class="dashboard-analytics">
@@ -41,23 +47,28 @@
       <div class="panel-heading"><div><h2><i class="fa-solid fa-book-open" aria-hidden="true"></i> Your Classes &amp; Subjects</h2><div class="panel-kicker">Subjects assigned to your registered classes</div></div></div>
       <div class="subject-classes" id="subjectGrid"></div>
     </section>
+    <section class="dashboard-panel">
+      <div class="panel-heading"><div><h2><i class="fa-solid fa-folder-open" aria-hidden="true"></i> Recent Materials</h2><div class="panel-kicker">Materials uploaded by you</div></div><a class="panel-link" href="materials.html">View all <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div>
+      <div class="dashboard-material-list" id="dashboardMaterials"></div>
+    </section>
     <dialog class="event-dialog" id="eventDialog"><button type="button" id="closeEventDialog">Close</button><h2 id="eventDialogTitle"></h2><p id="eventDialogDate"></p><p id="eventDialogDescription"></p></dialog>`;
 
   const $ = (id) => document.getElementById(id);
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
-  let teacherName = "Teacher";
-  const profileName = document.getElementById("profileNameEl");
-  const avatar = document.getElementById("avatarImg");
-  if (profileName) profileName.textContent = "Loading profile...";
-  if (avatar) avatar.hidden = true;
-    const teacherId = () => state.user?.id || "";
-    const state = { user: null, profile: null, client: null, classes: [], assignments: new Map(), materials: [], quizzes: [], students: [], attendance: [], performance: new Map(), liveClasses: [], announcements: [], calendarDate: new Date(), events: [], refreshTimer: null, refreshing: false };
+  let teacherName = "N/A";
+  const profileName = () => document.getElementById("profileNameEl");
+  const avatar = () => document.getElementById("avatarImg");
+  if (profileName()) profileName().textContent = "Loading profile...";
+  if (avatar()) avatar().hidden = true;
+  const state = { user: null, profile: null, client: null, classes: [], gradeGroups: [], assignmentRows: [], assignments: new Map(), languages: [], materials: [], quizzes: [], students: [], attendance: [], performance: new Map(), liveClasses: [], announcements: [], calendarDate: new Date(), events: [], refreshTimer: null, refreshing: false, warning: "" };
   let profileChannel = null;
   let stopAuthWatch = null;
   const gradeOf = (row) => String(row.class_grade ?? row.grade ?? row.class ?? row.class_number ?? "").match(/\d+/)?.[0] || "";
   const subjectOf = (row) => String(row.subject ?? row.subject_name ?? "").trim();
   const dateOf = (row) => row.start_at || row.scheduled_at || row.start_time || row.exam_at || row.due_date || row.published_at || row.created_at || null;
-  const assignedRow = (row) => state.assignments.has(gradeOf(row)) && (!subjectOf(row) || state.assignments.get(gradeOf(row)).has(subjectOf(row)));
+  const streamOf = (row) => String(row.stream ?? row.class_stream ?? "").trim();
+  const registeredGroup = (row) => state.gradeGroups.some((group) => String(group.grade) === gradeOf(row) && (!streamOf(row) || String(group.stream || "") === streamOf(row)));
+  const assignedRow = (row) => registeredGroup(row) && (!subjectOf(row) || state.assignmentRows.some((assignment) => String(assignment.grade) === gradeOf(row) && assignment.subject.toLowerCase() === subjectOf(row).toLowerCase() && (!streamOf(row) || String(assignment.stream || "") === streamOf(row))));
   const fmtDate = (date, options = { weekday: "long", day: "numeric", month: "long", year: "numeric" }) => new Intl.DateTimeFormat(undefined, options).format(date);
   const fmtTime = (date) => new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(date);
 
@@ -70,30 +81,76 @@
     renderToday();
   }
 
-  function setupAssignments(databaseAssignments = []) {
+  function setupAssignments(gradeGroups = [], databaseAssignments = [], subjectCatalog = []) {
     const assignments = new Map();
-    databaseAssignments.forEach((row) => {
-      const grade = gradeOf(row);
-      const subject = subjectOf(row);
-      if (!grade || !subject) return;
+    const groupKeys = new Set();
+    state.gradeGroups = gradeGroups.filter((row) => {
+      const key = `${row.grade}|${row.stream || ""}`;
+      if (groupKeys.has(key)) return false;
+      groupKeys.add(key);
+      return true;
+    });
+    state.classes = [...new Set(state.gradeGroups.map((row) => String(row.grade)))].sort((a, b) => Number(a) - Number(b));
+    const assignmentKeys = new Set();
+    state.assignmentRows = databaseAssignments.map((row) => {
+      const joinedSubject = Array.isArray(row.subjects) ? row.subjects[0] : row.subjects;
+      if (!joinedSubject?.name) throw new Error(`Registered subject ID ${row.subject_id} is missing from public.subjects.`);
+      return { grade: Number(row.grade), stream: row.stream || null, subject: joinedSubject.name, subject_id: row.subject_id };
+    }).filter((row) => {
+      const key = `${row.grade}|${row.stream || ""}|${row.subject_id}`;
+      if (assignmentKeys.has(key)) return false;
+      assignmentKeys.add(key);
+      return true;
+    });
+    const standardSubjects = {
+      5: ["English", "Mathematics", "EVS", "Hindi"],
+      6: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
+      7: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
+      8: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
+      9: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
+      10: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
+    };
+    const streamSubjects = {
+      science_pcm: ["Physics", "Chemistry", "Mathematics"],
+      science_pcb: ["Physics", "Chemistry", "Biology"],
+      commerce: ["Accountancy", "Business Studies", "Economics"],
+      arts_humanities: ["History", "Geography", "Political Science", "Psychology"],
+    };
+    state.gradeGroups.filter((group) => group.teach_all_subjects).forEach((group) => {
+      const expected = Number(group.grade) < 11
+        ? standardSubjects[Number(group.grade)] || []
+        : [...(streamSubjects[group.stream] || []), "English", "Physical Education", "Computer Science"];
+      expected.forEach((name) => {
+        const subject = subjectCatalog.find((item) => String(item.name).trim().toLowerCase() === name.toLowerCase());
+        if (!subject) {
+          state.warning = [state.warning, `Subject '${name}' is missing from public.subjects.`].filter(Boolean).join(" · ");
+          return;
+        }
+        const key = `${group.grade}|${group.stream || ""}|${subject.id}`;
+        if (assignmentKeys.has(key)) return;
+        assignmentKeys.add(key);
+        state.assignmentRows.push({ grade: Number(group.grade), stream: group.stream || null, subject: subject.name, subject_id: subject.id });
+      });
+    });
+    state.assignmentRows.forEach((row) => {
+      const grade = String(row.grade);
       if (!assignments.has(grade)) assignments.set(grade, new Set());
-      assignments.get(grade).add(subject);
+      assignments.get(grade).add(row.subject);
     });
     state.assignments = assignments;
-    state.classes = [...assignments.keys()].sort((a, b) => Number(a) - Number(b));
   }
 
-  async function queryTeacherTable(table, fields = "*", applyAssignmentScope = true) {
-    if (!state.client || !state.user) return [];
-    try {
-      const teacherOwnerId = table === "materials" ? state.profile?.id : state.user.id;
-      const { data, error } = await state.client.from(table).select(fields).eq("teacher_id", teacherOwnerId);
-        if (error) {
-          console.error(`Unable to load dashboard ${table}.`, error);
-          return [];
-        }
-      return applyAssignmentScope ? (data || []).filter(assignedRow) : data || [];
-    } catch { return []; }
+  async function queryTeacherTable(table, ownerId, fields = "*", options = {}) {
+    const { data, error } = await state.client.from(table).select(fields).eq("teacher_id", ownerId);
+    if (error) {
+      console.error(`Unable to load dashboard ${table}.`, error);
+      if (options.optional) {
+        state.warning = [state.warning, `${table}: ${error.message}`].filter(Boolean).join(" · ");
+        return [];
+      }
+      throw new Error(`Unable to load ${table}. Check your access permissions. ${error.message}`);
+    }
+    return data || [];
   }
 
   function normalizeAssessment(row) {
@@ -109,94 +166,155 @@
     };
   }
 
+  function renderDataNotice(message = "", isError = false) {
+    const notice = $("dashboardDataNotice");
+    notice.textContent = message;
+    notice.hidden = !message;
+    notice.classList.toggle("is-error", isError);
+    notice.setAttribute("role", isError ? "alert" : "status");
+  }
+
+  function renderProfile() {
+    const profile = state.profile;
+    const value = (item) => item === null || item === undefined || String(item).trim() === "" ? "N/A" : String(item);
+    const rows = [
+      ["Full name", profile.full_name],
+      ["Teacher ID", profile.teacher_id],
+      ["Email", profile.email || state.user.email],
+      ["Phone", [profile.country_code, profile.phone_number].filter(Boolean).join(" ")],
+      ["Date of birth", profile.date_of_birth],
+      ["Gender", profile.gender],
+      ["Country", profile.country],
+      ["State", profile.state],
+      ["City", profile.city],
+      ["Address", profile.address],
+      ["Employment status", profile.employment_status],
+      ["Institution / school", profile.institution_name],
+      ["Institution type", profile.institution_type],
+      ["Qualification", profile.highest_qualification],
+      ["Degree / course", profile.degree_course],
+      ["Specialization", profile.specialization],
+      ["University / college", profile.university_college],
+      ["Graduation year", profile.graduation_year],
+      ["Years of experience", profile.years_experience],
+      ["Teaching mode", profile.teaching_mode],
+    ];
+    $("teacherProfileDetails").innerHTML = rows.map(([label, item]) => `<div class="teacher-profile-item"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value(item))}</dd></div>`).join("");
+    $("teacherLanguages").textContent = `Languages: ${state.languages.length ? state.languages.join(", ") : "N/A"}`;
+  }
+
+  function renderMaterials() {
+    const rows = [...state.materials].sort((left, right) => new Date(right.created_at || 0) - new Date(left.created_at || 0)).slice(0, 5);
+    $("dashboardMaterials").innerHTML = rows.length ? rows.map((item) => {
+      const subject = Array.isArray(item.subjects) ? item.subjects[0] : item.subjects;
+      const details = [`Grade ${item.grade ?? "N/A"}`, item.stream, subject?.name, item.material_type, item.created_at ? fmtDate(new Date(item.created_at), { day: "numeric", month: "short", year: "numeric" }) : "N/A"].filter(Boolean);
+      return `<article class="dashboard-material-row"><strong>${escapeHtml(item.title || "Untitled material")}</strong><span>${escapeHtml(details.join(" · "))}</span></article>`;
+    }).join("") : '<p class="dashboard-empty">No materials uploaded yet.</p>';
+  }
+
   async function loadData() {
-    state.client = window.TeacherData?.getSupabaseClient?.() || window.SmartLearningSupabase?.getClient?.() || null;
-    if (!state.client) {
-      window.location.assign("../teacher_registration/login.html");
-      return;
-    }
-    let currentTeacher;
+    renderDataNotice("Loading your dashboard data...");
+    state.warning = "";
     try {
-      currentTeacher = await window.TeacherData.loadCurrentTeacherProfile();
-    } catch (error) {
-      console.error("Unable to load the authenticated teacher profile.", error);
-      if (profileName) profileName.textContent = "Unable to load profile";
-      return;
-    }
-    state.client = currentTeacher.client;
-    state.user = currentTeacher.user;
-    state.profile = currentTeacher.profile;
-    teacherName = currentTeacher.profile.full_name || "Teacher";
-    if (profileName) profileName.textContent = teacherName;
-    updateClock();
-    if (avatar && currentTeacher.profile.profile_photo_url) {
-      window.TeacherData.getTeacherProfilePhotoUrl(currentTeacher.profile.profile_photo_url)
-        .then((url) => { avatar.src = url; avatar.hidden = false; })
-        .catch(() => { avatar.hidden = true; });
-    }
-    if (!profileChannel) {
-      profileChannel = window.TeacherData.subscribeToTeacherProfile(state.user.id, (event) => {
-        if (event.eventType === "DELETE") {
-          void window.TeacherData.handleUnavailableTeacher(state.client);
+      state.client = window.TeacherData?.getSupabaseClient?.() || null;
+      if (!state.client) throw new Error("Supabase is unavailable. Check the shared Supabase client configuration.");
+      const { data: authData, error: authError } = await state.client.auth.getUser();
+      if (authError) {
+        if (authError.name === "AuthSessionMissingError" || authError.code === "session_not_found") {
+          window.location.assign("../teacher_registration/login.html");
           return;
         }
-        if (!event.new) return;
-        teacherName = event.new.full_name || "Teacher";
-        if (profileName) profileName.textContent = teacherName;
-        updateClock();
-        if (avatar && event.new.profile_photo_url) {
-          window.TeacherData.getTeacherProfilePhotoUrl(event.new.profile_photo_url)
-            .then((url) => { avatar.src = url; avatar.hidden = false; })
-            .catch(() => { avatar.hidden = true; });
-        }
-      });
-      stopAuthWatch = window.TeacherData.watchAuthState(() => {
-        window.location.assign("../teacher_registration/login.html");
-      });
-    }
-    let dbAssignments = [];
-    if (state.client && state.user) {
-      try {
-        const { data, error } = await state.client.from("teacher_subjects").select("grade,subject").eq("teacher_id", state.user.id);
-        if (!error) dbAssignments = data || [];
-        else console.error("Unable to load registered teacher subjects.", error);
-      } catch (error) {
-        console.error("Unable to load registered teacher subjects.", error);
+        throw authError;
       }
-    }
-    setupAssignments(dbAssignments);
-    renderSubjects();
-    renderCalendar();
-    const id = state.profile.id;
+      if (!authData.user) {
+        window.location.assign("../teacher_registration/login.html");
+        return;
+      }
+      state.user = authData.user;
+      const { data: profile, error: profileError } = await state.client.from("teachers").select("*").eq("user_id", state.user.id).maybeSingle();
+      if (profileError) throw new Error(`Unable to load your teacher profile. Check your access permissions. ${profileError.message}`);
+      if (!profile) throw new Error("No teacher record was found for the authenticated account.");
+      state.profile = profile;
 
-    if (state.client && state.user) {
-      const [materials, quizzes, students, attendance, liveClasses, announcements] = await Promise.all([
-        queryTeacherTable("materials"), queryTeacherTable("quizzes"), queryTeacherTable("students"),
-        queryTeacherTable("attendance"), queryTeacherTable("live_classes"), queryTeacherTable("announcements"),
+      const teacherDbId = profile.id;
+      const [gradeResult, assignmentResult, languageResult, materialResult] = await Promise.all([
+        state.client.from("teacher_grade_groups").select("grade, stream, teach_all_subjects").eq("teacher_id", teacherDbId),
+        state.client.from("teacher_subject_assignments").select("subject_id, grade, stream, subjects(name)").eq("teacher_id", teacherDbId),
+        state.client.from("teacher_languages").select("language_id, languages(name)").eq("teacher_id", teacherDbId),
+        state.client.from("materials").select("id, title, grade, stream, subject_id, material_type, created_at, subjects(name)").eq("teacher_id", teacherDbId).order("created_at", { ascending: false }),
       ]);
-      state.materials = materials;
+      for (const [name, result] of [["teacher_grade_groups", gradeResult], ["teacher_subject_assignments", assignmentResult], ["teacher_languages", languageResult], ["materials", materialResult]]) {
+        if (result.error) throw new Error(`Unable to load ${name}. Check your access permissions. ${result.error.message}`);
+      }
+      const gradeGroups = gradeResult.data || [];
+      const assignmentRows = assignmentResult.data || [];
+      let subjectCatalog = [];
+      if (gradeGroups.some((group) => group.teach_all_subjects)) {
+        const { data, error } = await state.client.from("subjects").select("id, name");
+        if (error) throw new Error(`Unable to load subjects for teach-all assignments. ${error.message}`);
+        subjectCatalog = data || [];
+      }
+      setupAssignments(gradeGroups, assignmentRows, subjectCatalog);
+      const languageRows = languageResult.data || [];
+      state.languages = languageRows.map((row) => {
+        const language = Array.isArray(row.languages) ? row.languages[0] : row.languages;
+        if (!language?.name) throw new Error(`Registered language ID ${row.language_id} is missing from public.languages.`);
+        return language.name;
+      }).filter((name, index, names) => names.indexOf(name) === index);
+      state.materials = materialResult.data || [];
+
+      teacherName = profile.full_name || "N/A";
+      if (profileName()) profileName().textContent = teacherName;
+      if (avatar()) {
+        if (profile.profile_photo_url) {
+          try {
+            avatar().src = await window.TeacherData.getTeacherProfilePhotoUrl(profile.profile_photo_url);
+            avatar().hidden = false;
+          } catch (photoError) {
+            console.error("Unable to load teacher profile photo.", photoError);
+            avatar().hidden = true;
+          }
+        } else {
+          avatar().removeAttribute("src");
+          avatar().hidden = true;
+        }
+      }
+      renderProfile();
+      renderMaterials();
+      updateClock();
+
+      const optionalQueries = [
+        ["quizzes", state.user.id, "*"],
+        ["students", state.user.id, "*"],
+        ["attendance", state.user.id, "*"],
+        ["live_classes", state.user.id, "*"],
+        ["announcements", state.user.id, "*"],
+        ["student_performance", state.user.id, "*"],
+        ["quiz_attempts", state.user.id, "*"],
+      ];
+      const optionalData = await Promise.all(optionalQueries.map(([table, ownerId]) => queryTeacherTable(table, ownerId, "*", { optional: true })));
+      const [quizzes, students, attendance, liveClasses, announcements, performanceRecords, quizAttempts] = optionalData;
       state.quizzes = quizzes;
       state.students = students.filter((student) => String(student.status || "Active").toLowerCase() !== "inactive");
       state.attendance = attendance;
       state.liveClasses = liveClasses;
       state.announcements = announcements;
-    }
-
-    if (state.client && state.user) {
-      const [performanceRecords, quizAttempts] = await Promise.all([
-        queryTeacherTable("student_performance"),
-        queryTeacherTable("quiz_attempts", "*", false),
-      ]);
-      const assessments = [...performanceRecords, ...quizAttempts]
-        .map(normalizeAssessment)
-        .filter((row) => Number.isFinite(row.percentage) && assignedRow(row));
+      const assessments = [...performanceRecords, ...quizAttempts].map(normalizeAssessment).filter((row) => Number.isFinite(row.percentage) && assignedRow(row));
       state.performance = new Map(state.classes.map((grade) => [grade, assessments.filter((row) => gradeOf(row) === grade)]));
-      const histories = await Promise.all(state.classes.flatMap((grade) => [...(state.assignments.get(grade) || [])].map(async (subject) => {
-        try { return await window.AttendanceService?.getAttendanceHistory?.(grade, subject) || []; } catch { return []; }
-      })));
-      state.attendance = histories.flat().filter((row) => String(row.teacher_id) === String(id) && assignedRow(row));
+      renderAll();
+      renderDataNotice(state.warning);
+
+      if (!profileChannel && window.TeacherData?.subscribeToTeacherProfile) {
+        profileChannel = state.client.channel(`teacher-dashboard-profile-${state.user.id}`)
+          .on("postgres_changes", { event: "*", schema: "public", table: "teachers", filter: `user_id=eq.${state.user.id}` }, scheduleRefresh)
+          .subscribe();
+        stopAuthWatch = window.TeacherData.watchAuthState(() => window.location.assign("../teacher_registration/login.html"));
+      }
+    } catch (error) {
+      console.error("Unable to load teacher dashboard data.", error);
+      if (profileName()) profileName().textContent = "Unable to load profile";
+      renderDataNotice(error?.message || "Dashboard data could not be loaded.", true);
     }
-    renderAll();
   }
 
   function statMarkup(icon, tone, value, label, note) {
@@ -215,8 +333,9 @@
     const attendancePresent = state.attendance.filter((row) => ["present", "late"].includes(String(row.status || "").toLowerCase())).length;
     const attendanceRate = state.attendance.length ? `${Math.round(attendancePresent / state.attendance.length * 100)}%` : "--";
     const studentCount = new Set(state.students.map((row) => String(row.student_id || row.id))).size;
+    const subjectCount = state.assignmentRows.length;
     const values = [
-      ["fa-chalkboard", "", state.classes.length || "0", "My Classes", state.classes.length ? "Registered classes" : "No classes registered yet"],
+      ["fa-chalkboard", "", state.classes.length || "0", "My Classes", state.classes.length ? `${subjectCount} registered subject assignments` : "No classes registered yet"],
       ["fa-folder-open", "teal", state.materials.length || "0", "Materials Uploaded", state.materials.length ? "Teacher-owned materials" : "No materials uploaded yet"],
       ["fa-clipboard-check", "purple", state.quizzes.length || "0", "Quizzes Created", state.quizzes.length ? "Published assessments" : "No quizzes created yet"],
       ["fa-user-group", "green", studentCount || "0", "Total Students", studentCount ? "In your assigned classes" : "No linked students yet"],
@@ -336,34 +455,25 @@
       Physics: ["fa-atom", "blue"], Chemistry: ["fa-flask", "purple"], Mathematics: ["fa-square-root-variable", "blue"],
       Biology: ["fa-leaf", "green"], English: ["fa-book-open", "cyan"], "Computer Science": ["fa-code", "green"],
     };
-    const streamInfo = (grade, subjects) => {
-      if (Number(grade) < 11) return null;
-      const subjectSet = new Set(subjects.map((subject) => subject.toLowerCase()));
-      if (subjectSet.has("biology")) return { label: "Science (PCB)", code: "PCB" };
-      if (subjectSet.has("physics") && subjectSet.has("mathematics")) return { label: "Science (PCM)", code: "PCM" };
-      if (subjectSet.has("accountancy") || subjectSet.has("business studies")) return { label: "Commerce", code: "Commerce" };
-      if (subjectSet.has("history") || subjectSet.has("political science")) return { label: "Arts / Humanities", code: "Arts" };
-      const registeredStreams = state.profile.streams || state.profile.selected_streams || [];
-      const labels = { science_pcm: ["Science (PCM)", "PCM"], science_pcb: ["Science (PCB)", "PCB"], commerce: ["Commerce", "Commerce"], arts_humanities: ["Arts / Humanities", "Arts"] };
-      return registeredStreams.length === 1 && labels[registeredStreams[0]]
-        ? { label: labels[registeredStreams[0]][0], code: labels[registeredStreams[0]][1] }
-        : null;
-    };
-    const sections = state.classes.map((grade) => {
-      const subjects = [...(state.assignments.get(grade) || [])].sort((first, second) => first.localeCompare(second));
-      const stream = streamInfo(grade, subjects);
-      const subjectCards = subjects.map((subject) => {
-        const performance = (state.performance.get(grade) || []).filter((row) => row.subject === subject && assignedRow(row));
+    const streamLabels = { science_pcm: "PCM", science_pcb: "PCB", commerce: "Commerce", arts_humanities: "Arts / Humanities" };
+    const sections = state.gradeGroups.map((group) => {
+      const grade = String(group.grade);
+      const stream = group.stream || null;
+      const assignments = state.assignmentRows.filter((row) => row.grade === Number(grade) && String(row.stream || "") === String(stream || ""));
+      const subjects = assignments.map((row) => row.subject).sort((first, second) => first.localeCompare(second));
+      const subjectCards = assignments.map((assignment) => {
+        const subject = assignment.subject;
+        const performance = (state.performance.get(grade) || []).filter((row) => row.subject === subject && String(row.stream || "") === String(stream || "") && assignedRow(row));
         const average = performance.length ? Math.round(performance.reduce((sum, row) => sum + Number(row.percentage || 0), 0) / performance.length) : null;
-        const attendance = state.attendance.filter((row) => gradeOf(row) === grade && subjectOf(row) === subject);
+        const attendance = state.attendance.filter((row) => gradeOf(row) === grade && subjectOf(row) === subject && String(streamOf(row) || "") === String(stream || ""));
         const present = attendance.filter((row) => ["present", "late"].includes(String(row.status || "").toLowerCase())).length;
         const progress = average ?? (attendance.length ? Math.round(present / attendance.length * 100) : null);
         const progressLabel = progress === null ? "No performance data" : `${progress}% performance`;
         const [icon, tone] = iconBySubject[subject] || ["fa-book-open", "blue"];
-        return `<a class="subject-card tone-${tone}" href="my_classes.html?class_grade=${encodeURIComponent(grade)}" aria-label="View ${escapeHtml(subject)} in Class ${escapeHtml(grade)}"><span class="subject-icon"><i class="fa-solid ${icon}" aria-hidden="true"></i></span><span class="subject-copy"><span class="subject-topline"><strong>${escapeHtml(subject)}</strong><span class="subject-assigned">Assigned</span></span><span class="subject-progress" role="img" aria-label="${progressLabel}"><span style="width:${progress ?? 0}%"></span></span></span><i class="fa-solid fa-chevron-right subject-chevron" aria-hidden="true"></i></a>`;
+        return `<a class="subject-card tone-${tone}" href="my_classes.html?class_grade=${encodeURIComponent(grade)}${stream ? `&stream=${encodeURIComponent(stream)}` : ""}" aria-label="View ${escapeHtml(subject)} in Class ${escapeHtml(grade)}${stream ? ` ${escapeHtml(stream)}` : ""}"><span class="subject-icon"><i class="fa-solid ${icon}" aria-hidden="true"></i></span><span class="subject-copy"><span class="subject-topline"><strong>${escapeHtml(subject)}</strong><span class="subject-assigned">Assigned</span></span><span class="subject-progress" role="img" aria-label="${progressLabel}"><span style="width:${progress ?? 0}%"></span></span></span><i class="fa-solid fa-chevron-right subject-chevron" aria-hidden="true"></i></a>`;
       }).join("");
-      const heading = stream ? stream.label : `${subjects.length} Assigned Subjects`;
-      return `<section class="subject-class-panel"><header class="subject-class-header"><div class="subject-class-identity"><span class="subject-class-badge">Class ${escapeHtml(grade)}</span><h3>${escapeHtml(heading)}</h3>${stream ? `<span class="subject-stream-badge"><i class="fa-solid fa-flask" aria-hidden="true"></i> Stream <strong>${escapeHtml(stream.code)}</strong></span>` : ""}</div><span class="subject-class-active"><i class="fa-solid fa-circle" aria-hidden="true"></i> Active</span><a class="subject-class-link" href="my_classes.html?class_grade=${encodeURIComponent(grade)}">View subjects <i class="fa-solid fa-chevron-down" aria-hidden="true"></i></a></header><div class="subject-class-subjects">${subjectCards}</div></section>`;
+      const heading = `${subjects.length} Assigned Subjects`;
+      return `<section class="subject-class-panel"><header class="subject-class-header"><div class="subject-class-identity"><span class="subject-class-badge">Class ${escapeHtml(grade)}</span><h3>${escapeHtml(heading)}</h3>${stream ? `<span class="subject-stream-badge"><i class="fa-solid fa-flask" aria-hidden="true"></i> Stream <strong>${escapeHtml(streamLabels[stream] || stream)}</strong></span>` : ""}</div><span class="subject-class-active"><i class="fa-solid fa-circle" aria-hidden="true"></i> Registered</span><a class="subject-class-link" href="my_classes.html?class_grade=${encodeURIComponent(grade)}${stream ? `&stream=${encodeURIComponent(stream)}` : ""}">View subjects <i class="fa-solid fa-chevron-down" aria-hidden="true"></i></a></header><div class="subject-class-subjects">${subjectCards || '<p class="dashboard-empty">No subjects registered for this grade and stream.</p>'}</div></section>`;
     });
     $("subjectGrid").innerHTML = sections.length ? sections.join("") : `<div class="dashboard-empty">No subjects assigned yet.</div>`;
   }
@@ -377,10 +487,15 @@
   }
 
   function subscribeRealtime() {
-    if (state.client && state.user) {
+    if (state.client && state.user && state.profile?.id) {
       const channel = state.client.channel(`teacher-dashboard-${state.user.id}`);
-      ["teacher_subjects", "materials", "quizzes", "students", "attendance", "live_classes", "announcements", "student_performance", "quiz_attempts"].forEach((table) => {
-        const ownerId = table === "materials" ? state.profile.id : teacherId();
+      const teacherProfileTables = ["teacher_grade_groups", "teacher_subject_assignments", "teacher_languages", "materials"];
+      const authOwnedTables = ["quizzes", "students", "attendance", "live_classes", "announcements", "student_performance", "quiz_attempts"];
+      teacherProfileTables.forEach((table) => {
+        channel.on("postgres_changes", { event: "*", schema: "public", table, filter: `teacher_id=eq.${state.profile.id}` }, scheduleRefresh);
+      });
+      authOwnedTables.forEach((table) => {
+        const ownerId = state.user.id;
         channel.on("postgres_changes", { event: "*", schema: "public", table, filter: `teacher_id=eq.${ownerId}` }, scheduleRefresh);
       });
       channel.subscribe();
@@ -392,6 +507,10 @@
     }
     ["smart-learning-live-classes-updated", "smart-learning-announcements-updated", "smart-learning-performance-updated", "smart-learning-calendar-updated"].forEach((eventName) => window.addEventListener(eventName, scheduleRefresh));
     state.refreshTimer = window.setInterval(scheduleRefresh, 30000);
+    window.addEventListener("beforeunload", () => {
+      window.clearInterval(state.refreshTimer);
+      window.clearTimeout(refreshTimeout);
+    }, { once: true });
   }
 
   let refreshTimeout;

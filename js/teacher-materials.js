@@ -530,19 +530,20 @@
     const material = state.materials.find((item) => String(item.id) === String(id));
     if (!material) return;
     try {
-      const bucket = material.storage_bucket || (material.file_path ? "teacher_resources" : null);
-      if (material.file_path && bucket) {
-        const { error: storageError } = await state.client.storage
-          .from(bucket)
-          .remove([material.file_path]);
-        if (storageError) throw new Error(`Storage deletion failed: ${storageError.message}`);
+      if (!material.storage_bucket || !material.file_path) {
+        throw new Error("Storage bucket or file path is missing; the material was not deleted.");
       }
-      const { error } = await state.client
+      const { error: storageError } = await state.client.storage
+        .from(material.storage_bucket)
+        .remove([material.file_path]);
+      if (storageError) throw new Error(`Storage deletion failed: ${storageError.message}`);
+
+      const { error: dbError } = await state.client
         .from("materials")
         .delete()
         .eq("id", material.id)
         .eq("teacher_id", state.teacher.id);
-      if (error) throw error;
+      if (dbError) throw new Error(`Material record deletion failed: ${dbError.message}`);
       state.materials = state.materials.filter((item) => String(item.id) !== String(id));
       render();
       toast("Material deleted.", "success");
