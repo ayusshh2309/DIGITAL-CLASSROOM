@@ -1400,7 +1400,7 @@
           const registeredGrades = [...new Set(selectedClasses.map(([, item]) => item.grade))];
           const [studentsResult, materialsResult] = await Promise.all([
             supabase.from("students").select("class_grade").eq("teacher_id", user.id),
-            supabase.from("materials").select("class_grade, grade, class, class_number").eq("teacher_id", teacherProfile.id),
+            supabase.from("materials").select("grade").eq("teacher_id", teacherProfile.id),
           ]);
 
           if (!studentsResult.error) {
