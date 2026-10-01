@@ -784,7 +784,7 @@
               <div class="form-group">
                 <label> Select Class <span class="required">*</span> </label>
 
-                <select id="quizClass" onchange="updateQuizSubjects()">
+                <select id="quizClass" onchange="handleQuizGradeChange()">
                   <option value="">Loading classes...</option>
                 </select>
                 <small class="quiz-field-error" id="quizClassError"></small>
@@ -792,7 +792,7 @@
 
               <div class="form-group stream-field" id="quizStreamField" hidden>
                 <label> Select Stream <span class="required">*</span> </label>
-                <select id="quizStream" onchange="updateQuizSubjects()">
+                <select id="quizStream" onchange="handleQuizStreamChange()">
                   <option value="">Select stream</option>
                 </select>
                 <small class="quiz-field-error" id="quizStreamError"></small>
@@ -1325,6 +1325,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="../js/supabase.js"></script>
     <script src="../js/teacher-data.js"></script>
+    <script src="../js/quiz-subject-rules.js"></script>
     <script type="application/x-disabled">
             /* ==========================================
          QUIZ DATA

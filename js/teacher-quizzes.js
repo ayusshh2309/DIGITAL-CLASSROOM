@@ -3,6 +3,19 @@
   const $ = (id) => document.getElementById(id);
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
   const subjectName = (quiz) => state.subjects.get(String(quiz.subject_id)) || quiz.subject_name || "Unknown subject";
+  const standardSubjectsFor = (group) => window.TeacherQuizSubjectRules.subjectsFor(
+    group.grade,
+    window.TeacherQuizSubjectRules.normalizeStream(group.stream),
+  );
+  const registeredStandardSubjectsFor = (group) => {
+    const standardSubjects = new Set(standardSubjectsFor(group).map((subject) => subject.trim().toLocaleLowerCase()));
+    return group.subjects.filter((subject) => standardSubjects.has(subject.trim().toLocaleLowerCase()));
+  };
+  const isRegisteredStandardQuizSubject = (quiz) => state.groups.some((group) =>
+    Number(group.grade) === Number(quiz.grade) &&
+    window.TeacherQuizSubjectRules.normalizeStream(group.stream) === window.TeacherQuizSubjectRules.normalizeStream(quiz.stream) &&
+    registeredStandardSubjectsFor(group).some((subject) => subject.trim().toLocaleLowerCase() === subjectName(quiz).trim().toLocaleLowerCase()),
+  );
 
   function toast(message, isError = false) {
     const region = $("quizToastRegion");
@@ -31,9 +44,10 @@
     }
     const values = state.groups.map((group) => {
       const header = `Grade ${group.grade}${group.stream ? ` · ${group.stream}` : ""}`;
-      return `${header} · ${group.subjects.length ? group.subjects.join(", ") : "No subjects assigned"}`;
+      const subjects = registeredStandardSubjectsFor(group);
+      return `${header} · ${subjects.length ? subjects.join(", ") : "No standard subjects assigned"}`;
     });
-    $("classScopeValue").textContent = values.length && values.some((value) => !value.endsWith("No subjects assigned"))
+    $("classScopeValue").textContent = values.length && values.some((value) => !value.endsWith("No standard subjects assigned"))
       ? values.join("  |  ")
       : "No registered classes or subjects found.";
   }
@@ -42,7 +56,8 @@
     const gradeSelect = $("quizClassFilter");
     const subjectSelect = $("quizSubjectFilter");
     const grades = [...new Set(state.quizzes.map((quiz) => String(quiz.grade || "")).filter(Boolean))].sort((a, b) => Number(a) - Number(b));
-    const subjects = [...new Set(state.quizzes.map(subjectName))].sort((a, b) => a.localeCompare(b));
+    const subjects = [...new Set(state.quizzes.filter(isRegisteredStandardQuizSubject).map(subjectName))]
+      .sort((a, b) => a.localeCompare(b));
     gradeSelect.replaceChildren(new Option("All Grades", ""), ...grades.map((grade) => new Option(`Grade ${grade}`, grade)));
     subjectSelect.replaceChildren(new Option("All Subjects", ""), ...subjects.map((subject) => new Option(subject, subject)));
     gradeSelect.value = state.grade;

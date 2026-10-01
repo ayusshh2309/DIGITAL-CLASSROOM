@@ -17,6 +17,7 @@
   };
 
   const $ = (id) => document.getElementById(id);
+  const subjectRules = window.TeacherQuizSubjectRules;
   const escapeHTML = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
   })[character]);
@@ -24,7 +25,7 @@
     const match = String(value ?? "").match(/\d+/);
     return match ? Number(match[0]) : null;
   };
-  const groupKey = (grade, stream) => `${Number(grade)}|${String(stream || "").trim()}`;
+  const groupKey = (grade, stream) => `${Number(grade)}|${subjectRules.usesStream(grade) ? subjectRules.normalizeStream(stream) : ""}`;
   const totalMarks = () => state.questions.reduce((total, question) => total + Number(question.marks || 0), 0);
   const makeQuestion = () => ({ id: crypto.randomUUID(), type: "", text: "", options: ["", "", "", ""], correctAnswer: "", marks: 1, explanation: "" });
 
@@ -66,11 +67,12 @@
   }
 
   function gradeHasStreams(grade) {
-    return gradeGroups(grade).some((group) => group.stream);
+    return subjectRules.usesStream(grade);
   }
 
   function streamValues(grade) {
-    return [...new Set(gradeGroups(grade).map((group) => group.stream).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    const valid = new Set(subjectRules.validStreams(grade));
+    return [...new Set(gradeGroups(grade).map((group) => group.stream).filter((stream) => valid.has(stream)))].sort((a, b) => a.localeCompare(b));
   }
 
   function assignmentsFor(grade, stream = "") {
@@ -97,16 +99,30 @@
     const streamSelect = $("quizStream");
     const subjectSelect = $("quizSubject");
     const hasStreams = gradeHasStreams(grade);
-    const currentStream = streamSelect.value;
+    const currentStream = subjectRules.normalizeStream(streamSelect.value);
     streamField.hidden = !hasStreams;
     streamSelect.disabled = !hasStreams;
-    fillSelect(streamSelect, hasStreams ? "Select stream" : "No stream required", hasStreams ? streamValues(grade) : [], (stream) => stream, (stream) => stream);
+    fillSelect(streamSelect, hasStreams ? "Select stream" : "No stream required", hasStreams ? streamValues(grade) : [], (stream) => stream, (stream) => subjectRules.streamLabels[stream]);
     if (hasStreams && streamValues(grade).includes(currentStream)) streamSelect.value = currentStream;
-    const stream = hasStreams ? streamSelect.value : "";
-    const subjects = grade ? assignmentsFor(grade, stream) : [];
+    const stream = hasStreams ? subjectRules.normalizeStream(streamSelect.value) : "";
+    const validNames = new Set(subjectRules.subjectsFor(grade, stream).map((name) => name.trim().toLocaleLowerCase()));
+    const subjects = grade && (!hasStreams || stream)
+      ? assignmentsFor(grade, stream).filter((item) => validNames.has(item.name.trim().toLocaleLowerCase()))
+      : [];
     fillSelect(subjectSelect, grade ? (hasStreams && !stream ? "Select a stream first" : "Select assigned subject") : "Select a class first", subjects, (item) => item.subject_id, (item) => item.name);
     subjectSelect.disabled = !subjects.length;
     if (updateSummary) updateSummary();
+  }
+
+  function handleQuizGradeChange() {
+    $("quizStream").value = "";
+    $("quizSubject").value = "";
+    updateQuizSubjects();
+  }
+
+  function handleQuizStreamChange() {
+    $("quizSubject").value = "";
+    updateQuizSubjects();
   }
 
   async function loadScope() {
