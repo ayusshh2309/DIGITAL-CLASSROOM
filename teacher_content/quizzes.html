@@ -780,8 +780,11 @@
                 <option value="">All Subjects</option>
               </select>
             </label>
+            <a class="btn-primary quiz-create-link" id="createQuizBtn" href="create_quiz.html"><i class="fa-solid fa-plus" aria-hidden="true"></i> Create Quiz</a>
           </div>
         </div>
+
+        <p class="quiz-page-message" id="quizPageMessage" role="status" aria-live="polite"></p>
 
         <section class="publish-analysis" id="publishedQuizAnalysis" aria-live="polite" hidden>
           <div class="publish-analysis-heading">
@@ -793,20 +796,6 @@
             <div><span>Responses</span><strong id="publishedQuizResponses">0</strong></div>
             <div><span>Average score</span><strong id="publishedQuizAverage">0%</strong></div>
           </div>
-        </section>
-
-        <section class="quiz-upload-panel" aria-labelledby="quizUploadHeading">
-          <div class="quiz-upload-heading"><div><h2 id="quizUploadHeading">Upload a quiz file</h2><p>Choose one of your registered grades, streams, and subjects.</p></div></div>
-          <p class="quiz-page-message" id="quizPageMessage" role="status" aria-live="polite">Loading teacher assignments...</p>
-          <form class="quiz-upload-grid" id="quizUploadForm">
-            <label>Grade<select id="quizUploadGrade" required disabled><option value="">Loading grades...</option></select></label>
-            <label id="quizUploadStreamWrap" hidden>Stream<select id="quizUploadStream" disabled><option value="">Select stream</option></select></label>
-            <label>Subject<select id="quizUploadSubject" required disabled><option value="">Select a grade first</option></select></label>
-            <label>Quiz title<input id="quizUploadTitle" type="text" maxlength="160" required placeholder="e.g. Motion and Force"></label>
-            <label class="quiz-upload-description">Description<textarea id="quizUploadDescription" maxlength="1000" rows="2" placeholder="Optional details"></textarea></label>
-            <label class="quiz-upload-file">Quiz file<input id="quizUploadFile" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required><small>PDF or DOC/DOCX, up to 25 MB</small></label>
-            <button class="btn-primary quiz-upload-submit" id="quizUploadSubmit" type="submit" disabled><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i> Upload quiz</button>
-          </form>
         </section>
 
         <!-- METRICS ARE KEPT FOR EXISTING DATA SUPPORT -->
@@ -859,7 +848,7 @@
             <div class="tabs">
               <button class="tab active" type="button" data-status="all"><i class="fa-solid fa-grip"></i> All Quizzes <span class="tab-count" id="allQuizCount">0</span></button>
               <button class="tab" type="button" data-status="published"><i class="fa-solid fa-circle-play"></i> Active Quizzes <span class="tab-count" id="publishedQuizCount">0</span></button>
-              <button class="tab" type="button" data-status="archived"><i class="fa-solid fa-box-archive"></i> Archived Quizzes <span class="tab-count" id="archivedQuizCount">0</span></button>
+              <button class="tab" type="button" data-status="draft"><i class="fa-solid fa-pen-to-square"></i> Drafts <span class="tab-count" id="draftQuizCount">0</span></button>
             </div>
             <select class="select-sort" id="quizSort" aria-label="Sort quizzes">
               <option value="recent">Sort by: Recent</option>
@@ -877,10 +866,10 @@
                 <th><i class="fa-solid fa-graduation-cap"></i> Class</th>
                 <th><i class="fa-solid fa-book-open"></i> Subject</th>
                 <th><i class="fa-solid fa-flask"></i> Stream</th>
-                <th><i class="fa-solid fa-paperclip"></i> File</th>
-                <th><i class="fa-regular fa-calendar-days"></i> Uploaded</th>
-                <th><i class="fa-solid fa-file-circle-check"></i> Type / Size</th>
+                <th><i class="fa-solid fa-list-ol"></i> Questions</th>
+                <th><i class="fa-solid fa-star"></i> Total Marks</th>
                 <th><i class="fa-solid fa-shield-halved"></i> Status</th>
+                <th><i class="fa-regular fa-calendar-days"></i> Created</th>
                 <th><i class="fa-solid fa-atom"></i> Actions</th>
               </tr>
             </thead>
@@ -1127,10 +1116,6 @@
           <div class="pagination-bar">
             <div id="quizPaginationSummary">Loading quizzes...</div>
             <div class="page-controls" id="quizPaginationControls"></div>
-          </div>
-          <div class="quiz-table-actions">
-            <button class="btn-secondary" id="questionBankBtn" type="button"><i class="fa-solid fa-book-open"></i> Question Bank</button>
-            <button class="btn-primary" id="createQuizBtn" type="button"><i class="fa-solid fa-plus"></i> Create Quiz</button>
           </div>
         </div>
 

@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Smart Learning DC - Create Quiz</title>
-    <meta http-equiv="refresh" content="0; url=quizzes.html#quizUploadForm" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -713,11 +712,22 @@
     </style>
     <link rel="stylesheet" href="../css/layout.css" />
     <link rel="stylesheet" href="../css/create-quiz.css" />
+    <link rel="stylesheet" href="../css/question-quiz.css" />
   </head>
 
   <body>
     <div id="layout"></div>
-    <main class="page-content main-box-container main-content">
+    <main
+      id="questionQuizApp"
+      class="page-content main-box-container question-quiz-page"
+    >
+      <div id="quizBuilderMount"></div>
+    </main>
+    <main
+      id="legacyQuizBuilder"
+      class="page-content main-box-container main-content"
+      hidden
+    >
       <!-- PAGE HEADER -->
 
       <div class="page-header">
@@ -1305,1506 +1315,1507 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="../js/supabase.js"></script>
     <script src="../js/teacher-data.js"></script>
-    <script>
-      /* ==========================================
-   QUIZ DATA
-========================================== */
+    <script type="application/x-disabled">
+            /* ==========================================
+         QUIZ DATA
+      ========================================== */
 
-      let currentStep = 1;
+            let currentStep = 1;
 
-      let quizData = {
-        id: null,
-        class: "",
-        subject: "",
-        stream: "",
-        title: "",
-        description: "",
-        instructions: "",
-        duration: 30,
+            let quizData = {
+              id: null,
+              class: "",
+              subject: "",
+              stream: "",
+              title: "",
+              description: "",
+              instructions: "",
+              duration: 30,
 
-        questions: [],
+              questions: [],
 
-        settings: {
-          startDate: "",
-          startTime: "",
-          endDate: "",
-          endTime: "",
-          attemptsAllowed: "1",
-          shuffleQuestions: false,
-          shuffleOptions: false,
-          showQuestionNumbers: true,
-          showScore: true,
-          showAnswers: false,
-          showExplanations: false,
-          studentAccess: "class",
-        },
+              settings: {
+                startDate: "",
+                startTime: "",
+                endDate: "",
+                endTime: "",
+                attemptsAllowed: "1",
+                shuffleQuestions: false,
+                shuffleOptions: false,
+                showQuestionNumbers: true,
+                showScore: true,
+                showAnswers: false,
+                showExplanations: false,
+                studentAccess: "class",
+              },
 
-        status: "draft",
-        createdAt: null,
-        updatedAt: null,
-      };
+              status: "draft",
+              createdAt: null,
+              updatedAt: null,
+            };
 
-      const quizTeacherAssignments = {
-        grades: [],
-        subjectsByGrade: {},
-        registeredSubjects: [],
-        streams: [],
-      };
+            const quizTeacherAssignments = {
+              grades: [],
+              subjectsByGrade: {},
+              registeredSubjects: [],
+              streams: [],
+            };
 
-      const quizStreamSubjects = {
-        science_pcm: [
-          "Mathematics",
-          "Physics",
-          "Chemistry",
-          "Computer Science",
-          "English",
-        ],
-        science_pcb: [
-          "Biology",
-          "Physics",
-          "Chemistry",
-          "Physical Education",
-          "English",
-        ],
-        commerce: [
-          "Accountancy",
-          "Business Studies",
-          "Economics",
-          "Mathematics",
-          "English",
-        ],
-        arts_humanities: [
-          "History",
-          "Geography",
-          "Economics",
-          "English",
-          "Hindi",
-        ],
-      };
+            const quizStreamSubjects = {
+              science_pcm: [
+                "Mathematics",
+                "Physics",
+                "Chemistry",
+                "Computer Science",
+                "English",
+              ],
+              science_pcb: [
+                "Biology",
+                "Physics",
+                "Chemistry",
+                "Physical Education",
+                "English",
+              ],
+              commerce: [
+                "Accountancy",
+                "Business Studies",
+                "Economics",
+                "Mathematics",
+                "English",
+              ],
+              arts_humanities: [
+                "History",
+                "Geography",
+                "Economics",
+                "English",
+                "Hindi",
+              ],
+            };
 
-      const quizStreamLabels = {
-        science_pcm: "Science (PCM)",
-        science_pcb: "Science (PCB)",
-        commerce: "Commerce",
-        arts_humanities: "Arts / Humanities",
-      };
+            const quizStreamLabels = {
+              science_pcm: "Science (PCM)",
+              science_pcb: "Science (PCB)",
+              commerce: "Commerce",
+              arts_humanities: "Arts / Humanities",
+            };
 
-      function normalizeQuizGrade(value) {
-        const match = String(value ?? "").match(/\d+/);
-        return match ? match[0] : "";
-      }
+            function normalizeQuizGrade(value) {
+              const match = String(value ?? "").match(/\d+/);
+              return match ? match[0] : "";
+            }
 
-      function addQuizAssignment(subject, grades) {
-        if (!subject || !Array.isArray(grades)) return;
+            function addQuizAssignment(subject, grades) {
+              if (!subject || !Array.isArray(grades)) return;
 
-        grades.forEach((gradeValue) => {
-          const grade = normalizeQuizGrade(gradeValue);
-          if (!grade) return;
+              grades.forEach((gradeValue) => {
+                const grade = normalizeQuizGrade(gradeValue);
+                if (!grade) return;
 
-          if (!quizTeacherAssignments.grades.includes(grade)) {
-            quizTeacherAssignments.grades.push(grade);
-          }
+                if (!quizTeacherAssignments.grades.includes(grade)) {
+                  quizTeacherAssignments.grades.push(grade);
+                }
 
-          quizTeacherAssignments.subjectsByGrade[grade] ||= [];
-          if (
-            !quizTeacherAssignments.subjectsByGrade[grade].includes(subject)
-          ) {
-            quizTeacherAssignments.subjectsByGrade[grade].push(subject);
-          }
-        });
-      }
+                quizTeacherAssignments.subjectsByGrade[grade] ||= [];
+                if (
+                  !quizTeacherAssignments.subjectsByGrade[grade].includes(subject)
+                ) {
+                  quizTeacherAssignments.subjectsByGrade[grade].push(subject);
+                }
+              });
+            }
 
-      function populateQuizTeacherAssignments() {
-        const teacherData = window.TeacherData?.getTeacherData?.();
-        let sessionProfessional = {};
-        try {
-          sessionProfessional = JSON.parse(
-            sessionStorage.getItem("teacherProfessionalInfo") || "{}",
-          );
-        } catch (error) {
-          sessionProfessional = {};
-        }
-        const professional = {
-          ...sessionProfessional,
-          ...(teacherData?.professional || {}),
-        };
-        const gradeGroups = {
-          grades_5_6: ["5", "6"],
-          grades_7_8: ["7", "8"],
-          grades_9_10: ["9", "10"],
-          grades_11_12: ["11", "12"],
-        };
-        const registeredGrades = Array.isArray(professional.grades)
-          ? professional.grades
-          : Array.isArray(professional.selected_grades)
-            ? professional.selected_grades
-            : (professional.selected_grade_groups || []).flatMap(
-                (group) => gradeGroups[group] || [],
+            function populateQuizTeacherAssignments() {
+              const teacherData = window.TeacherData?.getTeacherData?.();
+              let sessionProfessional = {};
+              try {
+                sessionProfessional = JSON.parse(
+                  sessionStorage.getItem("teacherProfessionalInfo") || "{}",
+                );
+              } catch (error) {
+                sessionProfessional = {};
+              }
+              const professional = {
+                ...sessionProfessional,
+                ...(teacherData?.professional || {}),
+              };
+              const gradeGroups = {
+                grades_5_6: ["5", "6"],
+                grades_7_8: ["7", "8"],
+                grades_9_10: ["9", "10"],
+                grades_11_12: ["11", "12"],
+              };
+              const registeredGrades = Array.isArray(professional.grades)
+                ? professional.grades
+                : Array.isArray(professional.selected_grades)
+                  ? professional.selected_grades
+                  : (professional.selected_grade_groups || []).flatMap(
+                      (group) => gradeGroups[group] || [],
+                    );
+              const subjects = Array.isArray(professional.subjects)
+                ? professional.subjects
+                : [];
+              const registeredStreams = Array.isArray(professional.streams)
+                ? professional.streams
+                : Array.isArray(professional.selected_streams)
+                  ? professional.selected_streams
+                  : [];
+              const assignmentCandidates = [
+                professional.specialistAssignments,
+                professional.specialist_assignments,
+                professional.subjectAssignments,
+                professional.subject_assignments,
+                sessionProfessional.specialistAssignments,
+                sessionProfessional.specialist_assignments,
+                sessionProfessional.subjectAssignments,
+                sessionProfessional.subject_assignments,
+              ];
+              const assignments =
+                assignmentCandidates.find((value) =>
+                  Array.isArray(value)
+                    ? value.length
+                    : value && typeof value === "object" && Object.keys(value).length,
+                ) || [];
+
+              if (Array.isArray(assignments)) {
+                assignments.forEach((assignment) => {
+                  addQuizAssignment(
+                    assignment.subject || assignment.subjectName,
+                    assignment.grades || assignment.selectedGrades || [],
+                  );
+                });
+              } else if (assignments && typeof assignments === "object") {
+                Object.entries(assignments).forEach(([subject, grades]) => {
+                  addQuizAssignment(subject, grades);
+                });
+              }
+
+              if (!Object.keys(quizTeacherAssignments.subjectsByGrade).length) {
+                registeredGrades.forEach((gradeValue) => {
+                  const grade = normalizeQuizGrade(gradeValue);
+                  if (!grade) return;
+                  if (!quizTeacherAssignments.grades.includes(grade)) {
+                    quizTeacherAssignments.grades.push(grade);
+                  }
+                  quizTeacherAssignments.subjectsByGrade[grade] = [...subjects];
+                });
+              } else {
+                registeredGrades.forEach((gradeValue) => {
+                  const grade = normalizeQuizGrade(gradeValue);
+                  if (grade && !quizTeacherAssignments.grades.includes(grade)) {
+                    quizTeacherAssignments.grades.push(grade);
+                  }
+                });
+              }
+
+              quizTeacherAssignments.grades.sort(
+                (left, right) => Number(left) - Number(right),
               );
-        const subjects = Array.isArray(professional.subjects)
-          ? professional.subjects
-          : [];
-        const registeredStreams = Array.isArray(professional.streams)
-          ? professional.streams
-          : Array.isArray(professional.selected_streams)
-            ? professional.selected_streams
-            : [];
-        const assignmentCandidates = [
-          professional.specialistAssignments,
-          professional.specialist_assignments,
-          professional.subjectAssignments,
-          professional.subject_assignments,
-          sessionProfessional.specialistAssignments,
-          sessionProfessional.specialist_assignments,
-          sessionProfessional.subjectAssignments,
-          sessionProfessional.subject_assignments,
-        ];
-        const assignments =
-          assignmentCandidates.find((value) =>
-            Array.isArray(value)
-              ? value.length
-              : value && typeof value === "object" && Object.keys(value).length,
-          ) || [];
-
-        if (Array.isArray(assignments)) {
-          assignments.forEach((assignment) => {
-            addQuizAssignment(
-              assignment.subject || assignment.subjectName,
-              assignment.grades || assignment.selectedGrades || [],
-            );
-          });
-        } else if (assignments && typeof assignments === "object") {
-          Object.entries(assignments).forEach(([subject, grades]) => {
-            addQuizAssignment(subject, grades);
-          });
-        }
-
-        if (!Object.keys(quizTeacherAssignments.subjectsByGrade).length) {
-          registeredGrades.forEach((gradeValue) => {
-            const grade = normalizeQuizGrade(gradeValue);
-            if (!grade) return;
-            if (!quizTeacherAssignments.grades.includes(grade)) {
-              quizTeacherAssignments.grades.push(grade);
+              quizTeacherAssignments.registeredSubjects = [
+                ...new Set([
+                  ...subjects,
+                  ...Object.values(quizTeacherAssignments.subjectsByGrade).flat(),
+                ]),
+              ];
+              quizTeacherAssignments.streams = [
+                ...new Set(
+                  registeredStreams.filter((stream) => quizStreamLabels[stream]),
+                ),
+              ];
+              if (!quizTeacherAssignments.registeredSubjects.length) {
+                const standardSubjects = ["Mathematics", "English", "Science", "SST"];
+                quizTeacherAssignments.registeredSubjects = [
+                  ...new Set([
+                    ...standardSubjects,
+                    ...quizTeacherAssignments.streams.flatMap(
+                      (stream) => quizStreamSubjects[stream] || [],
+                    ),
+                  ]),
+                ];
+                quizTeacherAssignments.grades.forEach((grade) => {
+                  if (!(quizTeacherAssignments.subjectsByGrade[grade] || []).length) {
+                    quizTeacherAssignments.subjectsByGrade[grade] =
+                      Number(grade) >= 11
+                        ? [...quizTeacherAssignments.registeredSubjects]
+                        : [...standardSubjects];
+                  }
+                });
+              }
+              const classSelect = document.getElementById("quizClass");
+              const streamField = document.getElementById("quizStreamField");
+              const streamSelect = document.getElementById("quizStream");
+              const subjectSelect = document.getElementById("quizSubject");
+              classSelect.innerHTML = quizTeacherAssignments.grades.length
+                ? '<option value="">Select registered class</option>'
+                : '<option value="">No registered classes found</option>';
+              quizTeacherAssignments.grades.forEach((grade) => {
+                const option = document.createElement("option");
+                option.value = `Class ${grade}`;
+                option.textContent = `Class ${grade}`;
+                classSelect.appendChild(option);
+              });
+              streamSelect.innerHTML = '<option value="">Select stream</option>';
+              quizTeacherAssignments.streams.forEach((stream) => {
+                const option = document.createElement("option");
+                option.value = stream;
+                option.textContent = quizStreamLabels[stream];
+                streamSelect.appendChild(option);
+              });
+              streamField.hidden = true;
+              streamSelect.disabled = true;
+              subjectSelect.innerHTML =
+                '<option value="">Select a class first</option>';
+              subjectSelect.disabled = true;
+              classSelect.addEventListener("change", updateQuizSubjects);
             }
-            quizTeacherAssignments.subjectsByGrade[grade] = [...subjects];
-          });
-        } else {
-          registeredGrades.forEach((gradeValue) => {
-            const grade = normalizeQuizGrade(gradeValue);
-            if (grade && !quizTeacherAssignments.grades.includes(grade)) {
-              quizTeacherAssignments.grades.push(grade);
+
+            function updateQuizSubjects() {
+              const grade = normalizeQuizGrade(
+                document.getElementById("quizClass").value,
+              );
+              const streamField = document.getElementById("quizStreamField");
+              const streamSelect = document.getElementById("quizStream");
+              const subjectSelect = document.getElementById("quizSubject");
+              const isSeniorGrade = grade === "11" || grade === "12";
+              const registeredForGrade = (
+                quizTeacherAssignments.subjectsByGrade[grade] || []
+              ).length
+                ? quizTeacherAssignments.subjectsByGrade[grade]
+                : quizTeacherAssignments.registeredSubjects;
+              const streamSubjects = quizStreamSubjects[streamSelect.value] || [];
+              const subjects = isSeniorGrade
+                ? streamSubjects.filter((subject) =>
+                    registeredForGrade.includes(subject),
+                  )
+                : registeredForGrade;
+              streamField.hidden = !isSeniorGrade;
+              streamSelect.disabled =
+                !isSeniorGrade || !quizTeacherAssignments.streams.length;
+              subjectSelect.innerHTML = subjects.length
+                ? '<option value="">Select assigned subject</option>'
+                : isSeniorGrade && !streamSelect.value
+                  ? '<option value="">Select a stream first</option>'
+                  : '<option value="">No registered subjects for this selection</option>';
+              subjects.sort().forEach((subject) => {
+                const option = document.createElement("option");
+                option.value = subject;
+                option.textContent = subject;
+                subjectSelect.appendChild(option);
+              });
+              subjectSelect.disabled = !subjects.length;
+              if (isSeniorGrade && !streamSelect.value) {
+                subjectSelect.disabled = true;
+              }
+              updateSummary();
             }
-          });
-        }
 
-        quizTeacherAssignments.grades.sort(
-          (left, right) => Number(left) - Number(right),
-        );
-        quizTeacherAssignments.registeredSubjects = [
-          ...new Set([
-            ...subjects,
-            ...Object.values(quizTeacherAssignments.subjectsByGrade).flat(),
-          ]),
-        ];
-        quizTeacherAssignments.streams = [
-          ...new Set(
-            registeredStreams.filter((stream) => quizStreamLabels[stream]),
-          ),
-        ];
-        if (!quizTeacherAssignments.registeredSubjects.length) {
-          const standardSubjects = ["Mathematics", "English", "Science", "SST"];
-          quizTeacherAssignments.registeredSubjects = [
-            ...new Set([
-              ...standardSubjects,
-              ...quizTeacherAssignments.streams.flatMap(
-                (stream) => quizStreamSubjects[stream] || [],
-              ),
-            ]),
-          ];
-          quizTeacherAssignments.grades.forEach((grade) => {
-            if (!(quizTeacherAssignments.subjectsByGrade[grade] || []).length) {
-              quizTeacherAssignments.subjectsByGrade[grade] =
-                Number(grade) >= 11
-                  ? [...quizTeacherAssignments.registeredSubjects]
-                  : [...standardSubjects];
+            /* ==========================================
+         INITIALIZE
+      ========================================== */
+
+            document.addEventListener("DOMContentLoaded", function () {
+              populateQuizTeacherAssignments();
+              loadDraft();
+
+              setupCharacterCounters();
+
+              if (quizData.questions.length === 0) {
+                addQuestion();
+              }
+
+              renderQuestions();
+              updateSummary();
+            });
+
+            /* ==========================================
+         CHARACTER COUNTERS
+      ========================================== */
+
+            function setupCharacterCounters() {
+              const title = document.getElementById("quizTitle");
+
+              const description = document.getElementById("quizDescription");
+
+              const instructions = document.getElementById("quizInstructions");
+
+              title.addEventListener("input", function () {
+                document.getElementById("titleCount").textContent = this.value.length;
+              });
+
+              description.addEventListener("input", function () {
+                document.getElementById("descriptionCount").textContent =
+                  this.value.length;
+              });
+
+              instructions.addEventListener("input", function () {
+                document.getElementById("instructionCount").textContent =
+                  this.value.length;
+              });
             }
-          });
-        }
-        const classSelect = document.getElementById("quizClass");
-        const streamField = document.getElementById("quizStreamField");
-        const streamSelect = document.getElementById("quizStream");
-        const subjectSelect = document.getElementById("quizSubject");
-        classSelect.innerHTML = quizTeacherAssignments.grades.length
-          ? '<option value="">Select registered class</option>'
-          : '<option value="">No registered classes found</option>';
-        quizTeacherAssignments.grades.forEach((grade) => {
-          const option = document.createElement("option");
-          option.value = `Class ${grade}`;
-          option.textContent = `Class ${grade}`;
-          classSelect.appendChild(option);
-        });
-        streamSelect.innerHTML = '<option value="">Select stream</option>';
-        quizTeacherAssignments.streams.forEach((stream) => {
-          const option = document.createElement("option");
-          option.value = stream;
-          option.textContent = quizStreamLabels[stream];
-          streamSelect.appendChild(option);
-        });
-        streamField.hidden = true;
-        streamSelect.disabled = true;
-        subjectSelect.innerHTML =
-          '<option value="">Select a class first</option>';
-        subjectSelect.disabled = true;
-        classSelect.addEventListener("change", updateQuizSubjects);
-      }
-
-      function updateQuizSubjects() {
-        const grade = normalizeQuizGrade(
-          document.getElementById("quizClass").value,
-        );
-        const streamField = document.getElementById("quizStreamField");
-        const streamSelect = document.getElementById("quizStream");
-        const subjectSelect = document.getElementById("quizSubject");
-        const isSeniorGrade = grade === "11" || grade === "12";
-        const registeredForGrade = (
-          quizTeacherAssignments.subjectsByGrade[grade] || []
-        ).length
-          ? quizTeacherAssignments.subjectsByGrade[grade]
-          : quizTeacherAssignments.registeredSubjects;
-        const streamSubjects = quizStreamSubjects[streamSelect.value] || [];
-        const subjects = isSeniorGrade
-          ? streamSubjects.filter((subject) =>
-              registeredForGrade.includes(subject),
-            )
-          : registeredForGrade;
-        streamField.hidden = !isSeniorGrade;
-        streamSelect.disabled =
-          !isSeniorGrade || !quizTeacherAssignments.streams.length;
-        subjectSelect.innerHTML = subjects.length
-          ? '<option value="">Select assigned subject</option>'
-          : isSeniorGrade && !streamSelect.value
-            ? '<option value="">Select a stream first</option>'
-            : '<option value="">No registered subjects for this selection</option>';
-        subjects.sort().forEach((subject) => {
-          const option = document.createElement("option");
-          option.value = subject;
-          option.textContent = subject;
-          subjectSelect.appendChild(option);
-        });
-        subjectSelect.disabled = !subjects.length;
-        if (isSeniorGrade && !streamSelect.value) {
-          subjectSelect.disabled = true;
-        }
-        updateSummary();
-      }
-
-      /* ==========================================
-   INITIALIZE
-========================================== */
-
-      document.addEventListener("DOMContentLoaded", function () {
-        populateQuizTeacherAssignments();
-        loadDraft();
-
-        setupCharacterCounters();
-
-        if (quizData.questions.length === 0) {
-          addQuestion();
-        }
-
-        renderQuestions();
-        updateSummary();
-      });
-
-      /* ==========================================
-   CHARACTER COUNTERS
-========================================== */
-
-      function setupCharacterCounters() {
-        const title = document.getElementById("quizTitle");
-
-        const description = document.getElementById("quizDescription");
-
-        const instructions = document.getElementById("quizInstructions");
-
-        title.addEventListener("input", function () {
-          document.getElementById("titleCount").textContent = this.value.length;
-        });
 
-        description.addEventListener("input", function () {
-          document.getElementById("descriptionCount").textContent =
-            this.value.length;
-        });
+            /* ==========================================
+         ADD QUESTION
+      ========================================== */
 
-        instructions.addEventListener("input", function () {
-          document.getElementById("instructionCount").textContent =
-            this.value.length;
-        });
-      }
+            function addQuestion() {
+              const question = {
+                id: Date.now(),
 
-      /* ==========================================
-   ADD QUESTION
-========================================== */
+                type: "multiple_choice",
 
-      function addQuestion() {
-        const question = {
-          id: Date.now(),
+                text: "",
 
-          type: "multiple_choice",
+                options: ["", "", "", ""],
 
-          text: "",
+                correctAnswer: 0,
 
-          options: ["", "", "", ""],
+                marks: 1,
 
-          correctAnswer: 0,
+                explanation: "",
+              };
 
-          marks: 1,
+              quizData.questions.push(question);
 
-          explanation: "",
-        };
+              renderQuestions();
 
-        quizData.questions.push(question);
+              updateSummary();
+            }
 
-        renderQuestions();
+            /* ==========================================
+         RENDER QUESTIONS
+      ========================================== */
 
-        updateSummary();
-      }
+            function renderQuestions() {
+              const container = document.getElementById("questionList");
 
-      /* ==========================================
-   RENDER QUESTIONS
-========================================== */
+              container.innerHTML = "";
 
-      function renderQuestions() {
-        const container = document.getElementById("questionList");
+              if (quizData.questions.length === 0) {
+                container.innerHTML = `
+                  <div class="empty-state">
 
-        container.innerHTML = "";
+                      <div class="empty-state-icon">?</div>
 
-        if (quizData.questions.length === 0) {
-          container.innerHTML = `
-            <div class="empty-state">
+                      <h3>No questions yet</h3>
 
-                <div class="empty-state-icon">?</div>
+                      <p>Add your first question to continue.</p>
 
-                <h3>No questions yet</h3>
+                  </div>
+              `;
 
-                <p>Add your first question to continue.</p>
+                return;
+              }
 
-            </div>
-        `;
+              quizData.questions.forEach(function (question, index) {
+                const card = document.createElement("div");
 
-          return;
-        }
+                card.className = "question-card";
 
-        quizData.questions.forEach(function (question, index) {
-          const card = document.createElement("div");
+                card.innerHTML = `
 
-          card.className = "question-card";
+                  <div class="question-top">
 
-          card.innerHTML = `
+                      <div class="question-number">
+                          Question ${index + 1}
+                      </div>
 
-            <div class="question-top">
+                      <div class="question-tools">
 
-                <div class="question-number">
-                    Question ${index + 1}
-                </div>
+                          <button
+                              class="icon-btn"
+                              title="Duplicate"
+                              onclick="duplicateQuestion(${index})">
+                              ⧉
+                          </button>
 
-                <div class="question-tools">
+                          <button
+                              class="icon-btn"
+                              title="Delete"
+                              onclick="deleteQuestion(${index})">
+                              🗑
+                          </button>
 
-                    <button
-                        class="icon-btn"
-                        title="Duplicate"
-                        onclick="duplicateQuestion(${index})">
-                        ⧉
-                    </button>
+                      </div>
 
-                    <button
-                        class="icon-btn"
-                        title="Delete"
-                        onclick="deleteQuestion(${index})">
-                        🗑
-                    </button>
+                  </div>
 
-                </div>
 
-            </div>
+                  <div class="form-group">
 
+                      <label>
+                          Question <span class="required">*</span>
+                      </label>
 
-            <div class="form-group">
+                      <textarea
+                          placeholder="Enter your question here..."
+                          oninput="updateQuestion(${index}, 'text', this.value)"
+                      >${escapeHTML(question.text)}</textarea>
 
-                <label>
-                    Question <span class="required">*</span>
-                </label>
+                  </div>
 
-                <textarea
-                    placeholder="Enter your question here..."
-                    oninput="updateQuestion(${index}, 'text', this.value)"
-                >${escapeHTML(question.text)}</textarea>
 
-            </div>
+                  <div class="form-grid">
 
+                      <div class="form-group">
 
-            <div class="form-grid">
+                          <label>Question Type</label>
 
-                <div class="form-group">
+                          <select
+                              onchange="changeQuestionType(${index}, this.value)">
 
-                    <label>Question Type</label>
+                              <option value="multiple_choice"
+                                  ${question.type === "multiple_choice" ? "selected" : ""}>
+                                  Multiple Choice
+                              </option>
 
-                    <select
-                        onchange="changeQuestionType(${index}, this.value)">
+                              <option value="true_false"
+                                  ${question.type === "true_false" ? "selected" : ""}>
+                                  True / False
+                              </option>
 
-                        <option value="multiple_choice"
-                            ${question.type === "multiple_choice" ? "selected" : ""}>
-                            Multiple Choice
-                        </option>
+                              <option value="short_answer"
+                                  ${question.type === "short_answer" ? "selected" : ""}>
+                                  Short Answer
+                              </option>
 
-                        <option value="true_false"
-                            ${question.type === "true_false" ? "selected" : ""}>
-                            True / False
-                        </option>
+                          </select>
 
-                        <option value="short_answer"
-                            ${question.type === "short_answer" ? "selected" : ""}>
-                            Short Answer
-                        </option>
+                      </div>
 
-                    </select>
+                      <div class="form-group">
 
-                </div>
+                          <label>Marks</label>
 
-                <div class="form-group">
+                          <input
+                              type="number"
+                              min="1"
+                              value="${question.marks}"
+                              onchange="updateQuestion(${index}, 'marks', Number(this.value))"
+                          >
 
-                    <label>Marks</label>
+                      </div>
 
-                    <input
-                        type="number"
-                        min="1"
-                        value="${question.marks}"
-                        onchange="updateQuestion(${index}, 'marks', Number(this.value))"
-                    >
+                  </div>
 
-                </div>
 
-            </div>
+                  ${renderQuestionType(question, index)}
 
+              `;
 
-            ${renderQuestionType(question, index)}
+                container.appendChild(card);
+              });
 
-        `;
+              updateTotalMarks();
+            }
 
-          container.appendChild(card);
-        });
+            /* ==========================================
+         QUESTION TYPE
+      ========================================== */
 
-        updateTotalMarks();
-      }
-
-      /* ==========================================
-   QUESTION TYPE
-========================================== */
-
-      function renderQuestionType(question, index) {
-        if (question.type === "true_false") {
-          return `
-
-            <div class="form-group">
-
-                <label>
-                    Correct Answer
-                </label>
-
-                <select
-                    onchange="updateQuestion(${index}, 'correctAnswer', this.value)">
-
-                    <option value="0"
-                        ${question.correctAnswer == 0 ? "selected" : ""}>
-                        True
-                    </option>
-
-                    <option value="1"
-                        ${question.correctAnswer == 1 ? "selected" : ""}>
-                        False
-                    </option>
-
-                </select>
-
-            </div>
-
-        `;
-        }
-
-        if (question.type === "short_answer") {
-          return `
-
-            <div class="form-group">
-
-                <label>
-                    Correct Answer
-                </label>
-
-                <input
-                    type="text"
-                    value="${escapeHTML(question.options[0])}"
-                    placeholder="Enter the expected answer..."
-                    oninput="updateShortAnswer(${index}, this.value)"
-                >
-
-            </div>
-
-            <div class="form-group">
-
-                <label>
-                    Explanation
-                </label>
-
-                <textarea
-                    placeholder="Optional explanation..."
-                    oninput="updateQuestion(${index}, 'explanation', this.value)"
-                >${escapeHTML(question.explanation)}</textarea>
-
-            </div>
-
-        `;
-        }
-
-        return `
-
-        <label>
-            Answer Options
-            <span class="required">*</span>
-        </label>
-
-        <div class="option-grid">
-
-            ${question.options
-              .map(function (option, optionIndex) {
+            function renderQuestionType(question, index) {
+              if (question.type === "true_false") {
                 return `
 
-                    <div class="option-item">
+                  <div class="form-group">
 
-                        <span class="option-letter">
-                            ${String.fromCharCode(65 + optionIndex)}
-                        </span>
+                      <label>
+                          Correct Answer
+                      </label>
 
-                        <input
-                            type="text"
-                            value="${escapeHTML(option)}"
-                            placeholder="Option ${optionIndex + 1}"
-                            oninput="updateOption(${index}, ${optionIndex}, this.value)"
-                        >
+                      <select
+                          onchange="updateQuestion(${index}, 'correctAnswer', this.value)">
 
-                    </div>
+                          <option value="0"
+                              ${question.correctAnswer == 0 ? "selected" : ""}>
+                              True
+                          </option>
 
-                `;
-              })
-              .join("")}
+                          <option value="1"
+                              ${question.correctAnswer == 1 ? "selected" : ""}>
+                              False
+                          </option>
 
-        </div>
+                      </select>
 
+                  </div>
 
-        <div class="form-group" style="margin-top:18px;">
+              `;
+              }
 
-            <label>
-                Correct Answer
-            </label>
+              if (question.type === "short_answer") {
+                return `
 
-            <select
-                onchange="updateQuestion(${index}, 'correctAnswer', Number(this.value))">
+                  <div class="form-group">
 
-                ${question.options
-                  .map(function (option, i) {
-                    return `
-                        <option value="${i}"
-                            ${question.correctAnswer === i ? "selected" : ""}>
-                            ${String.fromCharCode(65 + i)} — ${option || "Option " + (i + 1)}
-                        </option>
-                    `;
-                  })
-                  .join("")}
+                      <label>
+                          Correct Answer
+                      </label>
 
-            </select>
+                      <input
+                          type="text"
+                          value="${escapeHTML(question.options[0])}"
+                          placeholder="Enter the expected answer..."
+                          oninput="updateShortAnswer(${index}, this.value)"
+                      >
 
-        </div>
+                  </div>
 
+                  <div class="form-group">
 
-        <div class="form-group">
+                      <label>
+                          Explanation
+                      </label>
 
-            <label>
-                Explanation
-            </label>
+                      <textarea
+                          placeholder="Optional explanation..."
+                          oninput="updateQuestion(${index}, 'explanation', this.value)"
+                      >${escapeHTML(question.explanation)}</textarea>
 
-            <textarea
-                placeholder="Optional explanation shown after submission..."
-                oninput="updateQuestion(${index}, 'explanation', this.value)"
-            >${escapeHTML(question.explanation)}</textarea>
+                  </div>
 
-        </div>
+              `;
+              }
 
-    `;
-      }
+              return `
 
-      /* ==========================================
-   UPDATE QUESTION
-========================================== */
+              <label>
+                  Answer Options
+                  <span class="required">*</span>
+              </label>
 
-      function updateQuestion(index, property, value) {
-        quizData.questions[index][property] = value;
+              <div class="option-grid">
 
-        if (property === "marks") {
-          updateTotalMarks();
-        }
+                  ${question.options
+                    .map(function (option, optionIndex) {
+                      return `
 
-        updateSummary();
-      }
+                          <div class="option-item">
 
-      /* ==========================================
-   UPDATE OPTION
-========================================== */
+                              <span class="option-letter">
+                                  ${String.fromCharCode(65 + optionIndex)}
+                              </span>
 
-      function updateOption(questionIndex, optionIndex, value) {
-        quizData.questions[questionIndex].options[optionIndex] = value;
-      }
+                              <input
+                                  type="text"
+                                  value="${escapeHTML(option)}"
+                                  placeholder="Option ${optionIndex + 1}"
+                                  oninput="updateOption(${index}, ${optionIndex}, this.value)"
+                              >
 
-      /* ==========================================
-   SHORT ANSWER
-========================================== */
+                          </div>
 
-      function updateShortAnswer(index, value) {
-        quizData.questions[index].options[0] = value;
-      }
+                      `;
+                    })
+                    .join("")}
 
-      /* ==========================================
-   CHANGE TYPE
-========================================== */
+              </div>
 
-      function changeQuestionType(index, type) {
-        quizData.questions[index].type = type;
 
-        if (type === "true_false") {
-          quizData.questions[index].options = ["True", "False"];
+              <div class="form-group" style="margin-top:18px;">
 
-          quizData.questions[index].correctAnswer = 0;
-        } else if (type === "short_answer") {
-          quizData.questions[index].options = [""];
+                  <label>
+                      Correct Answer
+                  </label>
 
-          quizData.questions[index].correctAnswer = 0;
-        } else {
-          quizData.questions[index].options = ["", "", "", ""];
+                  <select
+                      onchange="updateQuestion(${index}, 'correctAnswer', Number(this.value))">
 
-          quizData.questions[index].correctAnswer = 0;
-        }
+                      ${question.options
+                        .map(function (option, i) {
+                          return `
+                              <option value="${i}"
+                                  ${question.correctAnswer === i ? "selected" : ""}>
+                                  ${String.fromCharCode(65 + i)} — ${option || "Option " + (i + 1)}
+                              </option>
+                          `;
+                        })
+                        .join("")}
 
-        renderQuestions();
-      }
+                  </select>
 
-      /* ==========================================
-   DUPLICATE
-========================================== */
+              </div>
 
-      function duplicateQuestion(index) {
-        const copy = JSON.parse(JSON.stringify(quizData.questions[index]));
 
-        copy.id = Date.now();
+              <div class="form-group">
 
-        quizData.questions.splice(index + 1, 0, copy);
+                  <label>
+                      Explanation
+                  </label>
 
-        renderQuestions();
+                  <textarea
+                      placeholder="Optional explanation shown after submission..."
+                      oninput="updateQuestion(${index}, 'explanation', this.value)"
+                  >${escapeHTML(question.explanation)}</textarea>
 
-        updateSummary();
+              </div>
 
-        showToast("Question duplicated.");
-      }
+          `;
+            }
 
-      /* ==========================================
-   DELETE
-========================================== */
+            /* ==========================================
+         UPDATE QUESTION
+      ========================================== */
 
-      function deleteQuestion(index) {
-        if (quizData.questions.length === 1) {
-          showToast("At least one question is required.");
+            function updateQuestion(index, property, value) {
+              quizData.questions[index][property] = value;
 
-          return;
-        }
+              if (property === "marks") {
+                updateTotalMarks();
+              }
 
-        if (!confirm("Delete this question?")) {
-          return;
-        }
+              updateSummary();
+            }
 
-        quizData.questions.splice(index, 1);
+            /* ==========================================
+         UPDATE OPTION
+      ========================================== */
 
-        renderQuestions();
+            function updateOption(questionIndex, optionIndex, value) {
+              quizData.questions[questionIndex].options[optionIndex] = value;
+            }
 
-        updateSummary();
-      }
+            /* ==========================================
+         SHORT ANSWER
+      ========================================== */
 
-      /* ==========================================
-   TOTAL MARKS
-========================================== */
+            function updateShortAnswer(index, value) {
+              quizData.questions[index].options[0] = value;
+            }
 
-      function calculateTotalMarks() {
-        return quizData.questions.reduce(function (total, question) {
-          return total + Number(question.marks || 0);
-        }, 0);
-      }
+            /* ==========================================
+         CHANGE TYPE
+      ========================================== */
 
-      function updateTotalMarks() {
-        const total = calculateTotalMarks();
+            function changeQuestionType(index, type) {
+              quizData.questions[index].type = type;
 
-        document.getElementById("totalMarks").value = total;
+              if (type === "true_false") {
+                quizData.questions[index].options = ["True", "False"];
 
-        document.getElementById("summaryMarks").textContent = total;
-      }
+                quizData.questions[index].correctAnswer = 0;
+              } else if (type === "short_answer") {
+                quizData.questions[index].options = [""];
 
-      /* ==========================================
-   SUMMARY
-========================================== */
+                quizData.questions[index].correctAnswer = 0;
+              } else {
+                quizData.questions[index].options = ["", "", "", ""];
 
-      function updateSummary() {
-        const classValue = document.getElementById("quizClass").value;
+                quizData.questions[index].correctAnswer = 0;
+              }
 
-        const subjectValue = document.getElementById("quizSubject").value;
+              renderQuestions();
+            }
 
-        const title = document.getElementById("quizTitle").value;
+            /* ==========================================
+         DUPLICATE
+      ========================================== */
 
-        const duration = document.getElementById("quizDuration").value;
+            function duplicateQuestion(index) {
+              const copy = JSON.parse(JSON.stringify(quizData.questions[index]));
 
-        document.getElementById("summaryClass").textContent = classValue || "—";
+              copy.id = Date.now();
 
-        document.getElementById("summarySubject").textContent =
-          subjectValue || "—";
+              quizData.questions.splice(index + 1, 0, copy);
 
-        document.getElementById("summaryQuestions").textContent =
-          quizData.questions.length;
+              renderQuestions();
 
-        document.getElementById("summaryDuration").textContent =
-          duration || "0";
+              updateSummary();
 
-        document.getElementById("summaryMarks").textContent =
-          calculateTotalMarks();
-      }
+              showToast("Question duplicated.");
+            }
 
-      /* ==========================================
-   COLLECT FORM DATA
-========================================== */
+            /* ==========================================
+         DELETE
+      ========================================== */
 
-      function collectQuizInformation() {
-        quizData.class = document.getElementById("quizClass").value;
+            function deleteQuestion(index) {
+              if (quizData.questions.length === 1) {
+                showToast("At least one question is required.");
 
-        quizData.subject = document.getElementById("quizSubject").value;
+                return;
+              }
 
-        quizData.stream = document.getElementById("quizStream").value;
+              if (!confirm("Delete this question?")) {
+                return;
+              }
 
-        quizData.title = document.getElementById("quizTitle").value.trim();
+              quizData.questions.splice(index, 1);
 
-        quizData.description = document
-          .getElementById("quizDescription")
-          .value.trim();
+              renderQuestions();
 
-        quizData.instructions = document
-          .getElementById("quizInstructions")
-          .value.trim();
+              updateSummary();
+            }
 
-        quizData.duration = Number(
-          document.getElementById("quizDuration").value,
-        );
+            /* ==========================================
+         TOTAL MARKS
+      ========================================== */
 
-        quizData.settings.startDate =
-          document.getElementById("startDate").value;
+            function calculateTotalMarks() {
+              return quizData.questions.reduce(function (total, question) {
+                return total + Number(question.marks || 0);
+              }, 0);
+            }
 
-        quizData.settings.startTime =
-          document.getElementById("startTime").value;
+            function updateTotalMarks() {
+              const total = calculateTotalMarks();
 
-        quizData.settings.endDate = document.getElementById("endDate").value;
+              document.getElementById("totalMarks").value = total;
 
-        quizData.settings.endTime = document.getElementById("endTime").value;
+              document.getElementById("summaryMarks").textContent = total;
+            }
 
-        quizData.settings.attemptsAllowed =
-          document.getElementById("attemptsAllowed").value;
+            /* ==========================================
+         SUMMARY
+      ========================================== */
 
-        quizData.settings.shuffleQuestions =
-          document.getElementById("shuffleQuestions").checked;
+            function updateSummary() {
+              const classValue = document.getElementById("quizClass").value;
 
-        quizData.settings.shuffleOptions =
-          document.getElementById("shuffleOptions").checked;
+              const subjectValue = document.getElementById("quizSubject").value;
 
-        quizData.settings.showQuestionNumbers = document.getElementById(
-          "showQuestionNumbers",
-        ).checked;
+              const title = document.getElementById("quizTitle").value;
 
-        quizData.settings.showScore =
-          document.getElementById("showScore").checked;
+              const duration = document.getElementById("quizDuration").value;
 
-        quizData.settings.showAnswers =
-          document.getElementById("showAnswers").checked;
+              document.getElementById("summaryClass").textContent = classValue || "—";
 
-        quizData.settings.showExplanations =
-          document.getElementById("showExplanations").checked;
+              document.getElementById("summarySubject").textContent =
+                subjectValue || "—";
 
-        quizData.settings.studentAccess =
-          document.getElementById("studentAccess").value;
-      }
+              document.getElementById("summaryQuestions").textContent =
+                quizData.questions.length;
 
-      /* ==========================================
-   VALIDATE STEP 1
-========================================== */
+              document.getElementById("summaryDuration").textContent =
+                duration || "0";
 
-      function validateStep1() {
-        collectQuizInformation();
+              document.getElementById("summaryMarks").textContent =
+                calculateTotalMarks();
+            }
 
-        if (!quizData.class) {
-          showToast("Please select a class.");
+            /* ==========================================
+         COLLECT FORM DATA
+      ========================================== */
 
-          return false;
-        }
+            function collectQuizInformation() {
+              quizData.class = document.getElementById("quizClass").value;
 
-        if (!quizData.subject) {
-          showToast("Please select a subject.");
+              quizData.subject = document.getElementById("quizSubject").value;
 
-          return false;
-        }
+              quizData.stream = document.getElementById("quizStream").value;
 
-        const selectedGrade = normalizeQuizGrade(quizData.class);
-        const selectedStream = document.getElementById("quizStream").value;
-        const assignedSubjects =
-          quizTeacherAssignments.subjectsByGrade[selectedGrade] || [];
-        const streamSubjects = quizStreamSubjects[selectedStream] || [];
-        const allowedSubjects =
-          selectedGrade === "11" || selectedGrade === "12"
-            ? streamSubjects.filter((subject) =>
-                (
-                  quizTeacherAssignments.subjectsByGrade[selectedGrade] ||
-                  quizTeacherAssignments.registeredSubjects
-                ).includes(subject),
-              )
-            : assignedSubjects;
-        if (
-          !quizTeacherAssignments.grades.includes(selectedGrade) ||
-          ((selectedGrade === "11" || selectedGrade === "12") &&
-            (!quizTeacherAssignments.streams.includes(selectedStream) ||
-              !allowedSubjects.includes(quizData.subject))) ||
-          (selectedGrade !== "11" &&
-            selectedGrade !== "12" &&
-            !allowedSubjects.includes(quizData.subject))
-        ) {
-          showToast(
-            selectedGrade === "11" || selectedGrade === "12"
-              ? "Please choose a registered stream and subject."
-              : "Please choose a subject assigned to the selected class.",
-          );
+              quizData.title = document.getElementById("quizTitle").value.trim();
 
-          return false;
-        }
+              quizData.description = document
+                .getElementById("quizDescription")
+                .value.trim();
 
-        if (!quizData.title) {
-          showToast("Please enter a quiz title.");
+              quizData.instructions = document
+                .getElementById("quizInstructions")
+                .value.trim();
 
-          return false;
-        }
+              quizData.duration = Number(
+                document.getElementById("quizDuration").value,
+              );
 
-        if (!quizData.description) {
-          showToast("Please enter a description.");
+              quizData.settings.startDate =
+                document.getElementById("startDate").value;
 
-          return false;
-        }
+              quizData.settings.startTime =
+                document.getElementById("startTime").value;
 
-        if (!quizData.instructions) {
-          showToast("Please enter quiz instructions.");
+              quizData.settings.endDate = document.getElementById("endDate").value;
 
-          return false;
-        }
+              quizData.settings.endTime = document.getElementById("endTime").value;
 
-        if (!quizData.duration || quizData.duration < 1) {
-          showToast("Please enter a valid duration.");
+              quizData.settings.attemptsAllowed =
+                document.getElementById("attemptsAllowed").value;
 
-          return false;
-        }
+              quizData.settings.shuffleQuestions =
+                document.getElementById("shuffleQuestions").checked;
 
-        return true;
-      }
+              quizData.settings.shuffleOptions =
+                document.getElementById("shuffleOptions").checked;
 
-      /* ==========================================
-   VALIDATE QUESTIONS
-========================================== */
+              quizData.settings.showQuestionNumbers = document.getElementById(
+                "showQuestionNumbers",
+              ).checked;
 
-      function validateQuestions() {
-        if (quizData.questions.length === 0) {
-          showToast("Please add at least one question.");
+              quizData.settings.showScore =
+                document.getElementById("showScore").checked;
 
-          return false;
-        }
+              quizData.settings.showAnswers =
+                document.getElementById("showAnswers").checked;
 
-        for (let i = 0; i < quizData.questions.length; i++) {
-          const question = quizData.questions[i];
+              quizData.settings.showExplanations =
+                document.getElementById("showExplanations").checked;
 
-          if (!question.text.trim()) {
-            showToast(`Please enter Question ${i + 1}.`);
+              quizData.settings.studentAccess =
+                document.getElementById("studentAccess").value;
+            }
 
-            return false;
-          }
+            /* ==========================================
+         VALIDATE STEP 1
+      ========================================== */
 
-          if (question.type === "multiple_choice") {
-            for (let j = 0; j < 4; j++) {
-              if (!question.options[j].trim()) {
-                showToast(`Please fill all options in Question ${i + 1}.`);
+            function validateStep1() {
+              collectQuizInformation();
+
+              if (!quizData.class) {
+                showToast("Please select a class.");
 
                 return false;
               }
-            }
-          }
 
-          if (question.type === "short_answer") {
-            if (!question.options[0].trim()) {
-              showToast(
-                `Please enter the correct answer for Question ${i + 1}.`,
+              if (!quizData.subject) {
+                showToast("Please select a subject.");
+
+                return false;
+              }
+
+              const selectedGrade = normalizeQuizGrade(quizData.class);
+              const selectedStream = document.getElementById("quizStream").value;
+              const assignedSubjects =
+                quizTeacherAssignments.subjectsByGrade[selectedGrade] || [];
+              const streamSubjects = quizStreamSubjects[selectedStream] || [];
+              const allowedSubjects =
+                selectedGrade === "11" || selectedGrade === "12"
+                  ? streamSubjects.filter((subject) =>
+                      (
+                        quizTeacherAssignments.subjectsByGrade[selectedGrade] ||
+                        quizTeacherAssignments.registeredSubjects
+                      ).includes(subject),
+                    )
+                  : assignedSubjects;
+              if (
+                !quizTeacherAssignments.grades.includes(selectedGrade) ||
+                ((selectedGrade === "11" || selectedGrade === "12") &&
+                  (!quizTeacherAssignments.streams.includes(selectedStream) ||
+                    !allowedSubjects.includes(quizData.subject))) ||
+                (selectedGrade !== "11" &&
+                  selectedGrade !== "12" &&
+                  !allowedSubjects.includes(quizData.subject))
+              ) {
+                showToast(
+                  selectedGrade === "11" || selectedGrade === "12"
+                    ? "Please choose a registered stream and subject."
+                    : "Please choose a subject assigned to the selected class.",
+                );
+
+                return false;
+              }
+
+              if (!quizData.title) {
+                showToast("Please enter a quiz title.");
+
+                return false;
+              }
+
+              if (!quizData.description) {
+                showToast("Please enter a description.");
+
+                return false;
+              }
+
+              if (!quizData.instructions) {
+                showToast("Please enter quiz instructions.");
+
+                return false;
+              }
+
+              if (!quizData.duration || quizData.duration < 1) {
+                showToast("Please enter a valid duration.");
+
+                return false;
+              }
+
+              return true;
+            }
+
+            /* ==========================================
+         VALIDATE QUESTIONS
+      ========================================== */
+
+            function validateQuestions() {
+              if (quizData.questions.length === 0) {
+                showToast("Please add at least one question.");
+
+                return false;
+              }
+
+              for (let i = 0; i < quizData.questions.length; i++) {
+                const question = quizData.questions[i];
+
+                if (!question.text.trim()) {
+                  showToast(`Please enter Question ${i + 1}.`);
+
+                  return false;
+                }
+
+                if (question.type === "multiple_choice") {
+                  for (let j = 0; j < 4; j++) {
+                    if (!question.options[j].trim()) {
+                      showToast(`Please fill all options in Question ${i + 1}.`);
+
+                      return false;
+                    }
+                  }
+                }
+
+                if (question.type === "short_answer") {
+                  if (!question.options[0].trim()) {
+                    showToast(
+                      `Please enter the correct answer for Question ${i + 1}.`,
+                    );
+
+                    return false;
+                  }
+                }
+
+                if (!question.marks || question.marks < 1) {
+                  showToast(`Question ${i + 1} must have at least 1 mark.`);
+
+                  return false;
+                }
+              }
+
+              return true;
+            }
+
+            /* ==========================================
+         STEP NAVIGATION
+      ========================================== */
+
+            function nextFromStep1() {
+              if (!validateStep1()) {
+                return;
+              }
+
+              goToStep(2);
+            }
+
+            function nextFromStep2() {
+              collectQuizInformation();
+
+              if (!validateQuestions()) {
+                return;
+              }
+
+              goToStep(3);
+            }
+
+            /* ==========================================
+         GO TO STEP
+      ========================================== */
+
+            function goToStep(step) {
+              collectQuizInformation();
+
+              currentStep = step;
+
+              for (let i = 1; i <= 4; i++) {
+                document
+                  .getElementById("step" + i)
+                  .classList.toggle("hidden", i !== step);
+              }
+
+              updateStepper(step);
+
+              if (step === 2) {
+                renderQuestions();
+              }
+
+              if (step === 4) {
+                renderPreview();
+              }
+
+              window.scrollTo({
+                top: 0,
+                behavior: "smooth",
+              });
+            }
+
+            /* ==========================================
+         STEPPER
+      ========================================== */
+
+            function updateStepper(step) {
+              for (let i = 1; i <= 4; i++) {
+                const indicator = document.getElementById("stepIndicator" + i);
+
+                indicator.classList.remove("active", "completed");
+
+                if (i < step) {
+                  indicator.classList.add("completed");
+                } else if (i === step) {
+                  indicator.classList.add("active");
+                }
+              }
+
+              for (let i = 1; i <= 3; i++) {
+                document
+                  .getElementById("line" + i)
+                  .classList.toggle("completed", i < step);
+              }
+            }
+
+            /* ==========================================
+         RENDER PREVIEW
+      ========================================== */
+
+            function renderPreview() {
+              collectQuizInformation();
+
+              document.getElementById("previewTitle").textContent =
+                quizData.title || "Untitled Quiz";
+
+              document.getElementById("previewDescription").textContent =
+                quizData.description;
+
+              document.getElementById("previewClass").textContent = quizData.class;
+
+              document.getElementById("previewSubject").textContent =
+                quizData.subject;
+
+              document.getElementById("previewDuration").textContent =
+                quizData.duration + " min";
+
+              document.getElementById("previewMarks").textContent =
+                calculateTotalMarks();
+
+              const container = document.getElementById("previewQuestions");
+
+              container.innerHTML = "";
+
+              quizData.questions.forEach(function (question, index) {
+                const wrapper = document.createElement("div");
+
+                wrapper.className = "preview-question";
+
+                let questionNumber = quizData.settings.showQuestionNumbers
+                  ? `${index + 1}. `
+                  : "";
+
+                let optionsHTML = "";
+
+                if (question.type === "multiple_choice") {
+                  optionsHTML = question.options
+                    .map(function (option, i) {
+                      return `
+                              <div class="preview-option">
+                                  <strong>
+                                      ${String.fromCharCode(65 + i)}.
+                                  </strong>
+                                  ${escapeHTML(option)}
+                              </div>
+                          `;
+                    })
+                    .join("");
+                } else if (question.type === "true_false") {
+                  optionsHTML = `
+
+                      <div class="preview-option">
+                          <strong>A.</strong> True
+                      </div>
+
+                      <div class="preview-option">
+                          <strong>B.</strong> False
+                      </div>
+
+                  `;
+                } else {
+                  optionsHTML = `
+
+                      <div class="preview-option">
+                          Short answer
+                      </div>
+
+                  `;
+                }
+
+                wrapper.innerHTML = `
+
+                  <div class="preview-question-title">
+
+                      ${questionNumber}
+                      ${escapeHTML(question.text)}
+
+                  </div>
+
+                  ${optionsHTML}
+
+                  <div style="
+                      margin-top:12px;
+                      color:#6b7c93;
+                      font-size:11px;
+                  ">
+                      ${question.marks} mark${question.marks > 1 ? "s" : ""}
+                  </div>
+
+              `;
+
+                container.appendChild(wrapper);
+              });
+            }
+
+            /* ==========================================
+         SAVE DRAFT
+      ========================================== */
+
+            function saveDraft() {
+              collectQuizInformation();
+
+              if (!quizData.id) {
+                quizData.id = "quiz_" + Date.now();
+              }
+
+              quizData.status = "draft";
+
+              if (!quizData.createdAt) {
+                quizData.createdAt = new Date().toISOString();
+              }
+
+              quizData.updatedAt = new Date().toISOString();
+
+              localStorage.setItem(
+                "smartLearningDC_quiz_draft",
+                JSON.stringify(quizData),
               );
 
-              return false;
+              showToast("Quiz saved as draft.");
             }
-          }
 
-          if (!question.marks || question.marks < 1) {
-            showToast(`Question ${i + 1} must have at least 1 mark.`);
+            /* ==========================================
+         LOAD DRAFT
+      ========================================== */
 
-            return false;
-          }
-        }
+            function loadDraft() {
+              const saved = localStorage.getItem("smartLearningDC_quiz_draft");
 
-        return true;
-      }
+              if (!saved) {
+                return;
+              }
 
-      /* ==========================================
-   STEP NAVIGATION
-========================================== */
+              try {
+                const data = JSON.parse(saved);
 
-      function nextFromStep1() {
-        if (!validateStep1()) {
-          return;
-        }
+                quizData = data;
 
-        goToStep(2);
-      }
+                document.getElementById("quizClass").value =
+                  quizTeacherAssignments.grades.includes(
+                    normalizeQuizGrade(quizData.class),
+                  )
+                    ? quizData.class
+                    : "";
 
-      function nextFromStep2() {
-        collectQuizInformation();
+                updateQuizSubjects();
+                document.getElementById("quizStream").value = quizData.stream || "";
+                updateQuizSubjects();
+                document.getElementById("quizSubject").value = quizData.subject || "";
 
-        if (!validateQuestions()) {
-          return;
-        }
+                document.getElementById("quizTitle").value = quizData.title || "";
 
-        goToStep(3);
-      }
-
-      /* ==========================================
-   GO TO STEP
-========================================== */
-
-      function goToStep(step) {
-        collectQuizInformation();
-
-        currentStep = step;
-
-        for (let i = 1; i <= 4; i++) {
-          document
-            .getElementById("step" + i)
-            .classList.toggle("hidden", i !== step);
-        }
-
-        updateStepper(step);
-
-        if (step === 2) {
-          renderQuestions();
-        }
-
-        if (step === 4) {
-          renderPreview();
-        }
-
-        window.scrollTo({
-          top: 0,
-          behavior: "smooth",
-        });
-      }
-
-      /* ==========================================
-   STEPPER
-========================================== */
-
-      function updateStepper(step) {
-        for (let i = 1; i <= 4; i++) {
-          const indicator = document.getElementById("stepIndicator" + i);
-
-          indicator.classList.remove("active", "completed");
-
-          if (i < step) {
-            indicator.classList.add("completed");
-          } else if (i === step) {
-            indicator.classList.add("active");
-          }
-        }
-
-        for (let i = 1; i <= 3; i++) {
-          document
-            .getElementById("line" + i)
-            .classList.toggle("completed", i < step);
-        }
-      }
-
-      /* ==========================================
-   RENDER PREVIEW
-========================================== */
-
-      function renderPreview() {
-        collectQuizInformation();
-
-        document.getElementById("previewTitle").textContent =
-          quizData.title || "Untitled Quiz";
-
-        document.getElementById("previewDescription").textContent =
-          quizData.description;
-
-        document.getElementById("previewClass").textContent = quizData.class;
-
-        document.getElementById("previewSubject").textContent =
-          quizData.subject;
-
-        document.getElementById("previewDuration").textContent =
-          quizData.duration + " min";
-
-        document.getElementById("previewMarks").textContent =
-          calculateTotalMarks();
-
-        const container = document.getElementById("previewQuestions");
-
-        container.innerHTML = "";
-
-        quizData.questions.forEach(function (question, index) {
-          const wrapper = document.createElement("div");
-
-          wrapper.className = "preview-question";
-
-          let questionNumber = quizData.settings.showQuestionNumbers
-            ? `${index + 1}. `
-            : "";
-
-          let optionsHTML = "";
-
-          if (question.type === "multiple_choice") {
-            optionsHTML = question.options
-              .map(function (option, i) {
-                return `
-                        <div class="preview-option">
-                            <strong>
-                                ${String.fromCharCode(65 + i)}.
-                            </strong>
-                            ${escapeHTML(option)}
-                        </div>
-                    `;
-              })
-              .join("");
-          } else if (question.type === "true_false") {
-            optionsHTML = `
-
-                <div class="preview-option">
-                    <strong>A.</strong> True
-                </div>
-
-                <div class="preview-option">
-                    <strong>B.</strong> False
-                </div>
-
-            `;
-          } else {
-            optionsHTML = `
-
-                <div class="preview-option">
-                    Short answer
-                </div>
-
-            `;
-          }
-
-          wrapper.innerHTML = `
-
-            <div class="preview-question-title">
-
-                ${questionNumber}
-                ${escapeHTML(question.text)}
-
-            </div>
-
-            ${optionsHTML}
-
-            <div style="
-                margin-top:12px;
-                color:#6b7c93;
-                font-size:11px;
-            ">
-                ${question.marks} mark${question.marks > 1 ? "s" : ""}
-            </div>
-
-        `;
-
-          container.appendChild(wrapper);
-        });
-      }
-
-      /* ==========================================
-   SAVE DRAFT
-========================================== */
-
-      function saveDraft() {
-        collectQuizInformation();
-
-        if (!quizData.id) {
-          quizData.id = "quiz_" + Date.now();
-        }
-
-        quizData.status = "draft";
-
-        if (!quizData.createdAt) {
-          quizData.createdAt = new Date().toISOString();
-        }
-
-        quizData.updatedAt = new Date().toISOString();
-
-        localStorage.setItem(
-          "smartLearningDC_quiz_draft",
-          JSON.stringify(quizData),
-        );
-
-        showToast("Quiz saved as draft.");
-      }
-
-      /* ==========================================
-   LOAD DRAFT
-========================================== */
-
-      function loadDraft() {
-        const saved = localStorage.getItem("smartLearningDC_quiz_draft");
-
-        if (!saved) {
-          return;
-        }
-
-        try {
-          const data = JSON.parse(saved);
-
-          quizData = data;
-
-          document.getElementById("quizClass").value =
-            quizTeacherAssignments.grades.includes(
-              normalizeQuizGrade(quizData.class),
-            )
-              ? quizData.class
-              : "";
-
-          updateQuizSubjects();
-          document.getElementById("quizStream").value = quizData.stream || "";
-          updateQuizSubjects();
-          document.getElementById("quizSubject").value = quizData.subject || "";
-
-          document.getElementById("quizTitle").value = quizData.title || "";
-
-          document.getElementById("quizDescription").value =
-            quizData.description || "";
-
-          document.getElementById("quizInstructions").value =
-            quizData.instructions || "";
-
-          document.getElementById("quizDuration").value =
-            quizData.duration || 30;
-
-          const settings = quizData.settings || {};
-
-          document.getElementById("startDate").value = settings.startDate || "";
-
-          document.getElementById("startTime").value = settings.startTime || "";
-
-          document.getElementById("endDate").value = settings.endDate || "";
-
-          document.getElementById("endTime").value = settings.endTime || "";
-
-          document.getElementById("attemptsAllowed").value =
-            settings.attemptsAllowed || "1";
-
-          document.getElementById("shuffleQuestions").checked =
-            settings.shuffleQuestions || false;
-
-          document.getElementById("shuffleOptions").checked =
-            settings.shuffleOptions || false;
-
-          document.getElementById("showQuestionNumbers").checked =
-            settings.showQuestionNumbers !== false;
-
-          document.getElementById("showScore").checked =
-            settings.showScore !== false;
-
-          document.getElementById("showAnswers").checked =
-            settings.showAnswers || false;
-
-          document.getElementById("showExplanations").checked =
-            settings.showExplanations || false;
-
-          document.getElementById("studentAccess").value =
-            settings.studentAccess || "class";
-
-          showToast("Draft loaded.");
-        } catch (error) {
-          console.error(error);
-        }
-      }
-
-      /* ==========================================
-   PUBLISH
-========================================== */
-
-      function openPublishModal() {
-        if (!validateStep1()) {
-          return;
-        }
-
-        if (!validateQuestions()) {
-          return;
-        }
-
-        collectQuizInformation();
-
-        document.getElementById("publishModal").classList.add("show");
-      }
-
-      function closePublishModal() {
-        document.getElementById("publishModal").classList.remove("show");
-      }
-
-      async function savePublishedQuizToSupabase(client) {
-        const { data: authData, error: authError } =
-          await client.auth.getUser();
-        if (authError || !authData?.user) {
-          throw new Error(
-            "Sign in as a teacher before publishing to Supabase.",
-          );
-        }
-
-        const teacherId = authData.user.id;
-        const now = new Date().toISOString();
-        const quizRecord = {
-          teacher_id: teacherId,
-          title: quizData.title,
-          grade: normalizeQuizGrade(quizData.class),
-          class_grade: quizData.class,
-          stream: quizData.stream || null,
-          subject: quizData.subject,
-          topic: quizData.topic || quizData.title,
-          description: quizData.description,
-          instructions: quizData.instructions,
-          difficulty: "Medium",
-          status: "published",
-          time_limit: quizData.duration,
-          attempts_allowed: Number(quizData.settings.attemptsAllowed) || 1,
-          marks_per_question: Number(quizData.questions[0]?.marks) || 1,
-          negative_marking: 0,
-          passing_percentage: 40,
-          shuffle_questions: Boolean(quizData.settings.shuffleQuestions),
-          shuffle_options: Boolean(quizData.settings.shuffleOptions),
-          start_at:
-            quizData.settings.startDate && quizData.settings.startTime
-              ? new Date(
-                  `${quizData.settings.startDate}T${quizData.settings.startTime}`,
-                ).toISOString()
-              : null,
-          end_at:
-            quizData.settings.endDate && quizData.settings.endTime
-              ? new Date(
-                  `${quizData.settings.endDate}T${quizData.settings.endTime}`,
-                ).toISOString()
-              : null,
-          published_at: now,
-          question_count: quizData.questions.length,
-          total_marks: calculateTotalMarks(),
-          response_count: 0,
-          average_score: 0,
-          created_at: quizData.createdAt || now,
-          updated_at: now,
-        };
-        const { data: savedQuiz, error: quizError } = await client
-          .from("quizzes")
-          .insert(quizRecord)
-          .select("id")
-          .single();
-        if (quizError) throw quizError;
-
-        const questionTypes = {
-          multiple_choice: "Multiple Choice",
-          true_false: "True/False",
-          short_answer: "Short Answer",
-        };
-        const questions = quizData.questions.map((question, index) => ({
-          quiz_id: savedQuiz.id,
-          teacher_id: teacherId,
-          position: index + 1,
-          text: question.text,
-          type: questionTypes[question.type] || "Multiple Choice",
-          marks: Number(question.marks) || 1,
-          options: Array.isArray(question.options) ? question.options : [],
-          correct_answer: question.correctAnswer,
-          explanation: question.explanation || null,
-        }));
-        const { error: questionsError } = await client
-          .from("quiz_questions")
-          .insert(questions);
-        if (questionsError) {
-          await client
-            .from("quizzes")
-            .delete()
-            .eq("id", savedQuiz.id)
-            .eq("teacher_id", teacherId);
-          throw questionsError;
-        }
-        return { quizId: savedQuiz.id, teacherId };
-      }
-
-      async function publishQuiz() {
-        collectQuizInformation();
-
-        if (!validateStep1() || !validateQuestions()) {
-          return;
-        }
-
-        const publishButton = document.querySelector(
-          "#publishModal .btn-success",
-        );
-        if (publishButton.disabled) return;
-        publishButton.disabled = true;
-        publishButton.textContent = "Publishing…";
-
-        quizData.id = quizData.id || "quiz_" + Date.now();
-
-        quizData.status = "published";
-
-        quizData.createdAt = quizData.createdAt || new Date().toISOString();
-
-        quizData.updatedAt = new Date().toISOString();
-
-        quizData.grade = normalizeQuizGrade(quizData.class);
-        quizData.class_grade = quizData.class;
-        quizData.topic = quizData.topic || quizData.title;
-        quizData.chapter = quizData.topic;
-        quizData.question_count = quizData.questions.length;
-        quizData.total_questions = quizData.questions.length;
-        quizData.total_marks = calculateTotalMarks();
-        quizData.published_at = quizData.updatedAt;
-        quizData.start_at =
-          quizData.settings.startDate && quizData.settings.startTime
-            ? `${quizData.settings.startDate}T${quizData.settings.startTime}`
-            : null;
-        quizData.end_at =
-          quizData.settings.endDate && quizData.settings.endTime
-            ? `${quizData.settings.endDate}T${quizData.settings.endTime}`
-            : null;
-
-        try {
-          const client =
-            window.TeacherData?.getSupabaseClient?.() ||
-            window.SmartLearningSupabase?.getClient?.();
-          if (client) {
-            const saved = await savePublishedQuizToSupabase(client);
-            quizData.id = saved.quizId;
-            quizData.teacher_id = saved.teacherId;
-          }
-        } catch (error) {
-          showToast(
-            `Could not publish quiz: ${error.message || "Please try again."}`,
-          );
-          publishButton.disabled = false;
-          publishButton.textContent = "Publish Quiz";
-          return;
-        }
-
-        const existing = JSON.parse(
-          localStorage.getItem("smartLearningDC_published_quizzes") || "[]",
-        );
-
-        const publishedQuiz = JSON.parse(JSON.stringify(quizData));
-        const existingIndex = existing.findIndex(
-          (quiz) => String(quiz.id) === String(publishedQuiz.id),
-        );
-        if (existingIndex === -1) {
-          existing.push(publishedQuiz);
-        } else {
-          existing[existingIndex] = publishedQuiz;
-        }
-
-        localStorage.setItem(
-          "smartLearningDC_published_quizzes",
-          JSON.stringify(existing),
-        );
-
-        localStorage.removeItem("smartLearningDC_quiz_draft");
-
-        closePublishModal();
-
-        showToast("Quiz published successfully!");
-
-        setTimeout(function () {
-          window.location.href = `quizzes.html?published=${encodeURIComponent(quizData.id)}`;
-        }, 900);
-      }
-
-      /* ==========================================
-   BACK
-========================================== */
-
-      function goBack() {
-        if (currentStep === 1) {
-          /*
-           Change this to your actual
-           teacher dashboard / quiz page.
-
-           Example:
-
-           window.location.href =
-               "quiz.html";
-        */
-
-          if (confirm("Leave quiz creation? Unsaved changes may be lost.")) {
-            window.history.back();
-          }
-        } else {
-          goToStep(currentStep - 1);
-        }
-      }
-
-      /* ==========================================
-   TOAST
-========================================== */
-
-      function showToast(message) {
-        const toast = document.getElementById("toast");
-
-        toast.textContent = message;
-
-        toast.classList.add("show");
-
-        setTimeout(function () {
-          toast.classList.remove("show");
-        }, 2500);
-      }
-
-      /* ==========================================
-   ESCAPE HTML
-========================================== */
-
-      function escapeHTML(value) {
-        if (value === null || value === undefined) {
-          return "";
-        }
-
-        return String(value)
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#039;");
-      }
+                document.getElementById("quizDescription").value =
+                  quizData.description || "";
+
+                document.getElementById("quizInstructions").value =
+                  quizData.instructions || "";
+
+                document.getElementById("quizDuration").value =
+                  quizData.duration || 30;
+
+                const settings = quizData.settings || {};
+
+                document.getElementById("startDate").value = settings.startDate || "";
+
+                document.getElementById("startTime").value = settings.startTime || "";
+
+                document.getElementById("endDate").value = settings.endDate || "";
+
+                document.getElementById("endTime").value = settings.endTime || "";
+
+                document.getElementById("attemptsAllowed").value =
+                  settings.attemptsAllowed || "1";
+
+                document.getElementById("shuffleQuestions").checked =
+                  settings.shuffleQuestions || false;
+
+                document.getElementById("shuffleOptions").checked =
+                  settings.shuffleOptions || false;
+
+                document.getElementById("showQuestionNumbers").checked =
+                  settings.showQuestionNumbers !== false;
+
+                document.getElementById("showScore").checked =
+                  settings.showScore !== false;
+
+                document.getElementById("showAnswers").checked =
+                  settings.showAnswers || false;
+
+                document.getElementById("showExplanations").checked =
+                  settings.showExplanations || false;
+
+                document.getElementById("studentAccess").value =
+                  settings.studentAccess || "class";
+
+                showToast("Draft loaded.");
+              } catch (error) {
+                console.error(error);
+              }
+            }
+
+            /* ==========================================
+         PUBLISH
+      ========================================== */
+
+            function openPublishModal() {
+              if (!validateStep1()) {
+                return;
+              }
+
+              if (!validateQuestions()) {
+                return;
+              }
+
+              collectQuizInformation();
+
+              document.getElementById("publishModal").classList.add("show");
+            }
+
+            function closePublishModal() {
+              document.getElementById("publishModal").classList.remove("show");
+            }
+
+            async function savePublishedQuizToSupabase(client) {
+              const { data: authData, error: authError } =
+                await client.auth.getUser();
+              if (authError || !authData?.user) {
+                throw new Error(
+                  "Sign in as a teacher before publishing to Supabase.",
+                );
+              }
+
+              const teacherId = authData.user.id;
+              const now = new Date().toISOString();
+              const quizRecord = {
+                teacher_id: teacherId,
+                title: quizData.title,
+                grade: normalizeQuizGrade(quizData.class),
+                class_grade: quizData.class,
+                stream: quizData.stream || null,
+                subject: quizData.subject,
+                topic: quizData.topic || quizData.title,
+                description: quizData.description,
+                instructions: quizData.instructions,
+                difficulty: "Medium",
+                status: "published",
+                time_limit: quizData.duration,
+                attempts_allowed: Number(quizData.settings.attemptsAllowed) || 1,
+                marks_per_question: Number(quizData.questions[0]?.marks) || 1,
+                negative_marking: 0,
+                passing_percentage: 40,
+                shuffle_questions: Boolean(quizData.settings.shuffleQuestions),
+                shuffle_options: Boolean(quizData.settings.shuffleOptions),
+                start_at:
+                  quizData.settings.startDate && quizData.settings.startTime
+                    ? new Date(
+                        `${quizData.settings.startDate}T${quizData.settings.startTime}`,
+                      ).toISOString()
+                    : null,
+                end_at:
+                  quizData.settings.endDate && quizData.settings.endTime
+                    ? new Date(
+                        `${quizData.settings.endDate}T${quizData.settings.endTime}`,
+                      ).toISOString()
+                    : null,
+                published_at: now,
+                question_count: quizData.questions.length,
+                total_marks: calculateTotalMarks(),
+                response_count: 0,
+                average_score: 0,
+                created_at: quizData.createdAt || now,
+                updated_at: now,
+              };
+              const { data: savedQuiz, error: quizError } = await client
+                .from("quizzes")
+                .insert(quizRecord)
+                .select("id")
+                .single();
+              if (quizError) throw quizError;
+
+              const questionTypes = {
+                multiple_choice: "Multiple Choice",
+                true_false: "True/False",
+                short_answer: "Short Answer",
+              };
+              const questions = quizData.questions.map((question, index) => ({
+                quiz_id: savedQuiz.id,
+                teacher_id: teacherId,
+                position: index + 1,
+                text: question.text,
+                type: questionTypes[question.type] || "Multiple Choice",
+                marks: Number(question.marks) || 1,
+                options: Array.isArray(question.options) ? question.options : [],
+                correct_answer: question.correctAnswer,
+                explanation: question.explanation || null,
+              }));
+              const { error: questionsError } = await client
+                .from("quiz_questions")
+                .insert(questions);
+              if (questionsError) {
+                await client
+                  .from("quizzes")
+                  .delete()
+                  .eq("id", savedQuiz.id)
+                  .eq("teacher_id", teacherId);
+                throw questionsError;
+              }
+              return { quizId: savedQuiz.id, teacherId };
+            }
+
+            async function publishQuiz() {
+              collectQuizInformation();
+
+              if (!validateStep1() || !validateQuestions()) {
+                return;
+              }
+
+              const publishButton = document.querySelector(
+                "#publishModal .btn-success",
+              );
+              if (publishButton.disabled) return;
+              publishButton.disabled = true;
+              publishButton.textContent = "Publishing…";
+
+              quizData.id = quizData.id || "quiz_" + Date.now();
+
+              quizData.status = "published";
+
+              quizData.createdAt = quizData.createdAt || new Date().toISOString();
+
+              quizData.updatedAt = new Date().toISOString();
+
+              quizData.grade = normalizeQuizGrade(quizData.class);
+              quizData.class_grade = quizData.class;
+              quizData.topic = quizData.topic || quizData.title;
+              quizData.chapter = quizData.topic;
+              quizData.question_count = quizData.questions.length;
+              quizData.total_questions = quizData.questions.length;
+              quizData.total_marks = calculateTotalMarks();
+              quizData.published_at = quizData.updatedAt;
+              quizData.start_at =
+                quizData.settings.startDate && quizData.settings.startTime
+                  ? `${quizData.settings.startDate}T${quizData.settings.startTime}`
+                  : null;
+              quizData.end_at =
+                quizData.settings.endDate && quizData.settings.endTime
+                  ? `${quizData.settings.endDate}T${quizData.settings.endTime}`
+                  : null;
+
+              try {
+                const client =
+                  window.TeacherData?.getSupabaseClient?.() ||
+                  window.SmartLearningSupabase?.getClient?.();
+                if (client) {
+                  const saved = await savePublishedQuizToSupabase(client);
+                  quizData.id = saved.quizId;
+                  quizData.teacher_id = saved.teacherId;
+                }
+              } catch (error) {
+                showToast(
+                  `Could not publish quiz: ${error.message || "Please try again."}`,
+                );
+                publishButton.disabled = false;
+                publishButton.textContent = "Publish Quiz";
+                return;
+              }
+
+              const existing = JSON.parse(
+                localStorage.getItem("smartLearningDC_published_quizzes") || "[]",
+              );
+
+              const publishedQuiz = JSON.parse(JSON.stringify(quizData));
+              const existingIndex = existing.findIndex(
+                (quiz) => String(quiz.id) === String(publishedQuiz.id),
+              );
+              if (existingIndex === -1) {
+                existing.push(publishedQuiz);
+              } else {
+                existing[existingIndex] = publishedQuiz;
+              }
+
+              localStorage.setItem(
+                "smartLearningDC_published_quizzes",
+                JSON.stringify(existing),
+              );
+
+              localStorage.removeItem("smartLearningDC_quiz_draft");
+
+              closePublishModal();
+
+              showToast("Quiz published successfully!");
+
+              setTimeout(function () {
+                window.location.href = `quizzes.html?published=${encodeURIComponent(quizData.id)}`;
+              }, 900);
+            }
+
+            /* ==========================================
+         BACK
+      ========================================== */
+
+            function goBack() {
+              if (currentStep === 1) {
+                /*
+                 Change this to your actual
+                 teacher dashboard / quiz page.
+
+                 Example:
+
+                 window.location.href =
+                     "quiz.html";
+              */
+
+                if (confirm("Leave quiz creation? Unsaved changes may be lost.")) {
+                  window.history.back();
+                }
+              } else {
+                goToStep(currentStep - 1);
+              }
+            }
+
+            /* ==========================================
+         TOAST
+      ========================================== */
+
+            function showToast(message) {
+              const toast = document.getElementById("toast");
+
+              toast.textContent = message;
+
+              toast.classList.add("show");
+
+              setTimeout(function () {
+                toast.classList.remove("show");
+              }, 2500);
+            }
+
+            /* ==========================================
+         ESCAPE HTML
+      ========================================== */
+
+            function escapeHTML(value) {
+              if (value === null || value === undefined) {
+                return "";
+              }
+
+              return String(value)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+            }
     </script>
+    <script src="../js/question-quiz-builder.js"></script>
     <script src="../js/layout.js"></script>
   </body>
 </html>
