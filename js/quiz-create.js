@@ -111,19 +111,31 @@
 
   async function loadScope() {
     const [groupsResult, assignmentsResult] = await Promise.all([
-      state.client.from("teacher_grade_groups").select("grade, stream").eq("teacher_id", state.teacher.id).order("grade", { ascending: true }).order("stream", { ascending: true }),
+      state.client.from("teacher_grade_groups").select("grade, stream, teach_all_subjects").eq("teacher_id", state.teacher.id).order("grade", { ascending: true }).order("stream", { ascending: true }),
       state.client.from("teacher_subject_assignments").select("grade, stream, subject_id").eq("teacher_id", state.teacher.id).order("grade", { ascending: true }).order("stream", { ascending: true }),
     ]);
-    if (groupsResult.error) throw new Error(`Could not load registered classes. ${groupsResult.error.message}`);
-    if (assignmentsResult.error) throw new Error(`Could not load registered subjects. ${assignmentsResult.error.message}`);
+    if (groupsResult.error) {
+      console.error("Registered scope loading error:", groupsResult.error);
+      throw new Error(`Could not load registered classes. ${groupsResult.error.message}`);
+    }
+    if (assignmentsResult.error) {
+      console.error("Registered scope loading error:", assignmentsResult.error);
+      throw new Error(`Could not load registered subjects. ${assignmentsResult.error.message}`);
+    }
 
-    state.groups = (groupsResult.data || []).map((row) => ({ grade: Number(row.grade), stream: String(row.stream || "").trim() })).filter((row) => Number.isInteger(row.grade));
+    state.groups = (groupsResult.data || []).map((row) => ({ grade: Number(row.grade), stream: String(row.stream || "").trim(), teach_all_subjects: Boolean(row.teach_all_subjects) })).filter((row) => Number.isInteger(row.grade));
     const groupKeys = new Set(state.groups.map((group) => groupKey(group.grade, group.stream)));
     const rows = (assignmentsResult.data || []).filter((row) => row.subject_id && groupKeys.has(groupKey(row.grade, row.stream)));
     const subjectIds = [...new Set(rows.map((row) => String(row.subject_id)))];
-    if (subjectIds.length) {
-      const { data, error } = await state.client.from("subjects").select("id, name").in("id", subjectIds);
-      if (error) throw new Error(`Could not resolve assigned subjects. ${error.message}`);
+    const hasTeachAll = state.groups.some((group) => group.teach_all_subjects);
+    if (subjectIds.length || hasTeachAll) {
+      let subjectQuery = state.client.from("subjects").select("id, name");
+      if (subjectIds.length && !hasTeachAll) subjectQuery = subjectQuery.in("id", subjectIds);
+      const { data, error } = await subjectQuery;
+      if (error) {
+        console.error("Registered scope loading error:", error);
+        throw new Error(`Could not resolve assigned subjects. ${error.message}`);
+      }
       (data || []).forEach((subject) => state.subjects.set(String(subject.id), subject.name));
     }
     state.assignments = new Map();
@@ -133,6 +145,10 @@
       const key = groupKey(row.grade, row.stream);
       if (!state.assignments.has(key)) state.assignments.set(key, []);
       state.assignments.get(key).push({ subject_id: String(row.subject_id), name });
+    });
+    state.groups.filter((group) => group.teach_all_subjects).forEach((group) => {
+      const key = groupKey(group.grade, group.stream);
+      state.assignments.set(key, [...state.subjects].map(([subject_id, name]) => ({ subject_id, name })));
     });
     populateGrades();
   }
@@ -145,7 +161,7 @@
       grade: selectedGrade(),
       classLabel: $("quizClass").value,
       stream: gradeHasStreams(selectedGrade()) ? $("quizStream").value : "",
-      subjectId: $("quizSubject").value,
+      subjectId: /^\d+$/.test($("quizSubject").value) ? Number($("quizSubject").value) : $("quizSubject").value,
       subject: state.subjects.get(String($("quizSubject").value)) || "",
       duration: Number($("quizDuration").value),
     };
@@ -179,7 +195,7 @@
     const fail = (id, message, elementId) => { $(id).textContent = message; firstInvalid ||= elementId; };
     if (!info.grade || !state.groups.some((group) => group.grade === info.grade)) fail("quizClassError", "Select a class registered to your teacher profile.", "quizClass");
     if (info.grade && gradeHasStreams(info.grade) && !streamValues(info.grade).includes(info.stream)) fail("quizStreamError", "Select a stream registered for this class.", "quizStream");
-    if (!info.subjectId || !assignmentsFor(info.grade, info.stream).some((item) => item.subject_id === info.subjectId)) fail("quizSubjectError", "Select a subject assigned to this class and stream.", "quizSubject");
+    if (!info.subjectId || !assignmentsFor(info.grade, info.stream).some((item) => String(item.subject_id) === String(info.subjectId))) fail("quizSubjectError", "Select a subject assigned to this class and stream.", "quizSubject");
     if (!info.title) fail("quizTitleError", "Enter a quiz title.", "quizTitle");
     if (info.title.length > 100) fail("quizTitleError", "Use 100 characters or fewer.", "quizTitle");
     if (!info.instructions) fail("quizInstructionsError", "Enter quiz instructions.", "quizInstructions");
@@ -460,6 +476,7 @@
       stream: info.stream || null,
       subject_id: info.subjectId,
       duration_minutes: info.duration,
+      total_marks: totalMarks(),
       attempts_allowed: settings.attemptsAllowed === "unlimited" ? 2147483647 : Number(settings.attemptsAllowed),
       shuffle_questions: settings.shuffleQuestions,
       shuffle_options: settings.shuffleOptions,
@@ -555,47 +572,32 @@
   }
 
   async function loadExistingQuiz() {
-    const { data: quiz, error } = await state.client.from("quizzes").select("id, teacher_id, title, grade, class_grade, stream, subject_id, description, instructions, time_limit, attempts_allowed, shuffle_questions, shuffle_options, start_at, end_at, show_question_numbers, show_score, show_answers, show_explanations, student_access, builder_draft, status").eq("id", state.quizId).eq("teacher_id", state.teacher.id).maybeSingle();
+    const { data: quiz, error } = await state.client.from("quizzes").select("id, teacher_id, title, grade, stream, subject_id, description, instructions, duration_minutes, status").eq("id", state.quizId).eq("teacher_id", state.teacher.id).maybeSingle();
     if (error) throw new Error(`Could not load quiz draft. ${error.message}`);
     if (!quiz) throw new Error("This quiz could not be found under your teacher account.");
     $("quizTitle").value = quiz.title || "";
     $("quizDescription").value = quiz.description || "";
     $("quizInstructions").value = quiz.instructions || "";
-    $("quizDuration").value = String(quiz.time_limit || 30);
+    $("quizDuration").value = String(quiz.duration_minutes || 30);
     populateGrades(quiz.grade ?? quiz.class_grade);
     const stream = quiz.stream || "";
     if (gradeHasStreams(selectedGrade())) $("quizStream").value = stream;
     updateQuizSubjects(false);
     $("quizSubject").value = String(quiz.subject_id || "");
-    const datePart = (value) => value ? new Date(value).toISOString() : "";
-    $("startDate").value = quiz.start_at ? datePart(quiz.start_at).slice(0, 10) : "";
-    $("startTime").value = quiz.start_at ? datePart(quiz.start_at).slice(11, 16) : "";
-    $("endDate").value = quiz.end_at ? datePart(quiz.end_at).slice(0, 10) : "";
-    $("endTime").value = quiz.end_at ? datePart(quiz.end_at).slice(11, 16) : "";
-    $("attemptsAllowed").value = Number(quiz.attempts_allowed) >= 2147483647 ? "unlimited" : String(quiz.attempts_allowed || 1);
-    $("shuffleQuestions").checked = Boolean(quiz.shuffle_questions);
-    $("shuffleOptions").checked = Boolean(quiz.shuffle_options);
-    $("showQuestionNumbers").checked = quiz.show_question_numbers !== false;
-    $("showScore").checked = quiz.show_score !== false;
-    $("showAnswers").checked = false;
-    $("showExplanations").checked = Boolean(quiz.show_explanations);
-    $("studentAccess").value = quiz.student_access || "class";
-    const { data: rows, error: questionsError } = await state.client.from("quiz_questions").select("question_number, question_type, question_text, options, correct_answer, marks, explanation, position, type, text").eq("quiz_id", quiz.id).order("question_number", { ascending: true });
+    const { data: rows, error: questionsError } = await state.client.from("quiz_questions").select("question_number, question_type, question_text, options, correct_answer, marks").eq("quiz_id", quiz.id).order("question_number", { ascending: true });
     if (questionsError) throw new Error(`Could not load quiz questions. ${questionsError.message}`);
     state.questions = (rows || []).map((row) => {
-      const type = row.question_type === "mcq" || row.type === "Multiple Choice" ? "multiple_choice" : row.question_type === "true_false" || row.type === "True/False" ? "true_false" : "short_answer";
+      const type = row.question_type === "mcq" ? "multiple_choice" : row.question_type === "true_false" ? "true_false" : "short_answer";
       let options = row.options;
       if (typeof options === "string") { try { options = JSON.parse(options); } catch { options = []; } }
       if (!Array.isArray(options)) options = [];
       if (options.length && typeof options[0] === "object") options = ["A", "B", "C", "D"].map((letter) => options.find((option) => option.id === letter)?.text || "");
       let answer = row.correct_answer;
       if (typeof answer === "string") { try { answer = JSON.parse(answer); } catch {} }
-      return { id: crypto.randomUUID(), type, text: row.question_text || row.text || "", options: type === "true_false" ? ["", "", "", ""] : type === "short_answer" ? [String(answer ?? ""), "", "", ""] : options.concat(["", "", "", ""]).slice(0, 4), correctAnswer: type === "mcq" ? (typeof answer === "number" ? answer : Math.max(0, ["A", "B", "C", "D"].indexOf(String(answer)))) : type === "true_false" ? (String(answer).toLowerCase() === "false" || String(answer) === "1" ? "1" : "0") : "", marks: Number(row.marks || 1), explanation: row.explanation || "" };
+      return { id: crypto.randomUUID(), type, text: row.question_text || "", options: type === "true_false" ? ["", "", "", ""] : type === "short_answer" ? [String(answer ?? ""), "", "", ""] : options.concat(["", "", "", ""]).slice(0, 4), correctAnswer: type === "mcq" ? (typeof answer === "number" ? answer : Math.max(0, ["A", "B", "C", "D"].indexOf(String(answer)))) : type === "true_false" ? (String(answer).toLowerCase() === "false" || String(answer) === "1" ? "1" : "0") : "", marks: Number(row.marks || 1), explanation: "" };
     });
-    state.draft = quiz.builder_draft?.question
-      ? { ...makeQuestion(), ...quiz.builder_draft.question }
-      : makeQuestion();
-    state.editingIndex = Number.isInteger(quiz.builder_draft?.editing_index) ? quiz.builder_draft.editing_index : -1;
+    state.draft = makeQuestion();
+    state.editingIndex = -1;
     updateSummary();
     renderQuestions();
   }
@@ -614,7 +616,7 @@
         return;
       }
       state.user = authData.user;
-      const { data: teacher, error: teacherError } = await state.client.from("teachers").select("id, user_id").eq("user_id", state.user.id).maybeSingle();
+      const { data: teacher, error: teacherError } = await state.client.from("teachers").select("id, user_id").eq("user_id", state.user.id).single();
       if (teacherError) throw new Error(`Could not load teacher profile. ${teacherError.message}`);
       if (!teacher || teacher.user_id !== state.user.id) throw new Error("No teacher profile is linked to the authenticated account.");
       state.teacher = teacher;
@@ -629,6 +631,7 @@
       updateStepper(1);
       window.addEventListener("beforeunload", warnBeforeLeaving);
     } catch (error) {
+      console.error("Teacher loading error:", error);
       showToast(error.message || "Could not initialize quiz creation.", true);
     }
   }

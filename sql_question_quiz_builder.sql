@@ -77,7 +77,6 @@ alter table public.quizzes
   add column if not exists published_at timestamptz,
   add column if not exists duration_minutes integer not null default 30,
   add column if not exists instructions text,
-  add column if not exists time_limit integer not null default 30,
   add column if not exists attempts_allowed integer not null default 1,
   add column if not exists shuffle_questions boolean not null default false,
   add column if not exists shuffle_options boolean not null default false,
@@ -110,9 +109,16 @@ update public.quizzes
 set grade = nullif(substring(coalesce(nullif(grade::text, ''), class_grade) from '(1[0-2]|[1-9])'), '')::integer
 where grade is null;
 
-update public.quizzes
-set duration_minutes = time_limit
-where duration_minutes = 30 and time_limit <> 30;
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'quizzes' and column_name = 'time_limit'
+  ) then
+    execute 'update public.quizzes set duration_minutes = time_limit where duration_minutes = 30 and time_limit <> 30';
+  end if;
+end;
+$$;
 
 alter table public.quizzes
   alter column class_grade drop not null,
@@ -536,7 +542,6 @@ begin
         subject_id = quiz_subject_id,
         description = quiz_description,
         instructions = quiz_instructions,
-        time_limit = quiz_duration,
         duration_minutes = quiz_duration,
         attempts_allowed = quiz_attempts,
         shuffle_questions = coalesce((p_quiz->>'shuffle_questions')::boolean, false),
@@ -566,14 +571,14 @@ begin
   else
     insert into public.quizzes (
       teacher_id, title, grade, class_grade, stream, subject_id, subject, topic,
-      description, instructions, time_limit, duration_minutes, attempts_allowed, shuffle_questions,
+      description, instructions, duration_minutes, attempts_allowed, shuffle_questions,
       shuffle_options, start_at, end_at, show_question_numbers, show_score,
       show_answers, show_explanations, student_access, builder_draft, status, question_count,
       total_marks, published_at, updated_at
     )
     select teacher_record_id, quiz_title, quiz_grade, 'Class ' || quiz_grade::text,
       quiz_stream, quiz_subject_id, subject_record.name, quiz_title,
-      quiz_description, quiz_instructions, quiz_duration, quiz_duration, quiz_attempts,
+      quiz_description, quiz_instructions, quiz_duration, quiz_attempts,
       coalesce((p_quiz->>'shuffle_questions')::boolean, false),
       coalesce((p_quiz->>'shuffle_options')::boolean, false), quiz_start_at, quiz_end_at,
       coalesce((p_quiz->>'show_question_numbers')::boolean, true),

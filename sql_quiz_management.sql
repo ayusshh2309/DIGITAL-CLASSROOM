@@ -2,7 +2,7 @@
 -- Run with the public anon key only; never expose the service-role key in the browser.
 create table if not exists public.quizzes (
   id uuid primary key default gen_random_uuid(),
-  teacher_id uuid not null references auth.users(id) on delete cascade,
+  teacher_id uuid not null references public.teachers(id) on delete cascade,
   title text not null,
   grade text,
   class_grade text not null,
@@ -13,7 +13,7 @@ create table if not exists public.quizzes (
   instructions text,
   difficulty text not null default 'Medium' check (difficulty in ('Easy', 'Medium', 'Hard')),
   status text not null default 'draft' check (status in ('draft', 'published', 'scheduled', 'archived')),
-  time_limit integer not null default 30 check (time_limit > 0),
+  duration_minutes integer not null default 30 check (duration_minutes > 0),
   attempts_allowed integer not null default 1 check (attempts_allowed > 0),
   marks_per_question numeric not null default 1 check (marks_per_question > 0),
   negative_marking numeric not null default 0 check (negative_marking <= 0),
@@ -35,6 +35,18 @@ create table if not exists public.quizzes (
 alter table public.quizzes add column if not exists grade text;
 alter table public.quizzes add column if not exists stream text;
 alter table public.quizzes add column if not exists published_at timestamptz;
+alter table public.quizzes add column if not exists duration_minutes integer not null default 30;
+
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'quizzes' and column_name = 'time_limit'
+  ) then
+    execute 'update public.quizzes set duration_minutes = time_limit where duration_minutes = 30 and time_limit <> 30';
+  end if;
+end;
+$$;
 
 create table if not exists public.quiz_questions (
   id uuid primary key default gen_random_uuid(),
@@ -490,7 +502,7 @@ as $$
     null::text,
     null::text,
     null::text,
-    quiz.time_limit,
+    quiz.duration_minutes,
     quiz.question_count,
     null::timestamptz
   from public.quizzes quiz
