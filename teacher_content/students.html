@@ -995,7 +995,7 @@
             <p>Here's an overview of your students across all your classes.</p>
             <div class="assignment-scope" id="studentTeachingScope">
               <span class="scope-label">Your teaching scope</span>
-              <span class="scope-value" id="selectedClassContext">Class 11 / Physics, Chemistry, Biology</span>
+              <span class="scope-value" id="selectedClassContext">Loading teacher...</span>
             </div>
           </div>
         </div>
@@ -1043,18 +1043,18 @@
             <div class="student-filter-bar">
               <label class="student-filter-field">
                 <span>Class / Grade</span>
-                <select id="classFilter" onchange="selectClassFilter(this.value, this)"></select>
+                <select id="classFilter"></select>
               </label>
               <label class="student-filter-field">
                 <span>Subjects</span>
-                <select id="subjectFilter" onchange="filterStudents()">
-                  <option value="">All Subjects (6)</option>
+                <select id="subjectFilter">
+                  <option value="">Loading subjects...</option>
                 </select>
               </label>
               <label class="student-filter-field">
                 <span>Stream</span>
-                <select id="streamFilter" onchange="filterStudents()">
-                  <option value="">All Streams</option>
+                <select id="streamFilter">
+                  <option value="">Loading streams...</option>
                 </select>
               </label>
               <div class="student-count-pill"><i class="fa-solid fa-users"></i><span id="studentCountPill">0 Students</span></div>
@@ -1068,7 +1068,7 @@
               <div class="filter-controls">
                 <div class="search-input-box">
                   <i class="fa-solid fa-magnifying-glass"></i>
-                  <input type="text" id="studentSearchInput" placeholder="Search students..." onkeyup="filterStudents()" />
+                  <input type="text" id="studentSearchInput" placeholder="Search students..." />
                 </div>
               </div>
             </div>
@@ -1091,16 +1091,8 @@
             </table>
 
             <div class="pagination-bar">
-              <div id="paginationInfo">No students loaded</div>
-              <div class="page-controls">
-                <span class="page-btn">‹</span>
-                <span class="page-btn active">1</span>
-                <span class="page-btn">2</span>
-                <span class="page-btn">3</span>
-                <span class="page-btn">...</span>
-                <span class="page-btn">7</span>
-                <span class="page-btn">›</span>
-              </div>
+              <div id="paginationInfo">Loading students...</div>
+              <div class="page-controls" id="paginationControls"></div>
             </div>
           </div>
         </div>
@@ -1108,296 +1100,12 @@
       </main>
     </div>
 
-    <script>
-      const STUDENTS_STORAGE_KEY = "teacherStudents";
-      let currentStudents = [];
-      let teachingClasses = [];
-      let selectedClass = null;
-
-      function normalizeGrade(value) { return String(value ?? "").match(/\d+/)?.[0] || String(value ?? ""); }
-      function getLocalTeacher() {
-        for (const key of ["teacherRegistration", "teacherProfile", "teacherData", "finalTeacherRegistration"]) {
-          try { const value = JSON.parse((localStorage.getItem(key) || sessionStorage.getItem(key) || "null")); if (value) return value; } catch (_) {}
-        }
-        return null;
-      }
-      const gradeGroups = {
-        grades_5_6: ["5", "6"],
-        grades_7_8: ["7", "8"],
-        grades_9_10: ["9", "10"],
-        grades_11_12: ["11", "12"],
-      };
-      const standardSubjects = {
-        "5": ["English", "Mathematics", "EVS", "Hindi"],
-        "6": ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-        "7": ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-        "8": ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-        "9": ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-        "10": ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-      };
-      const streamSubjects = {
-        science_pcm: ["Physics", "Chemistry", "Mathematics"],
-        science_pcb: ["Physics", "Chemistry", "Biology"],
-        commerce: ["Accountancy", "Business Studies", "Economics"],
-        arts_humanities: ["History", "Geography", "Political Science", "Psychology"],
-      };
-      function localTeachingAssignments() {
-        const professional = getLocalTeacher()?.professional || {};
-        const assignments = new Map();
-        const addSubject = (grade, subject) => {
-          const normalizedGrade = normalizeGrade(grade);
-          if (!normalizedGrade || !subject) return;
-          if (!assignments.has(normalizedGrade)) assignments.set(normalizedGrade, new Set());
-          assignments.get(normalizedGrade).add(String(subject));
-        };
-        const rawAssignments = professional.specialistAssignments || professional.specialist_assignments || [];
-        const assignmentList = Array.isArray(rawAssignments)
-          ? rawAssignments
-          : Object.entries(rawAssignments).map(([subject, grades]) => ({ subject, grades }));
-        assignmentList.forEach((assignment) => (assignment.grades || []).forEach((grade) => addSubject(grade, assignment.subject)));
-
-        const selectedGroups = Array.isArray(professional.selected_grade_groups)
-          ? professional.selected_grade_groups
-          : Array.isArray(professional.gradeGroups) ? professional.gradeGroups : [];
-        const selectedGrades = Array.isArray(professional.grades)
-          ? professional.grades
-          : Array.isArray(professional.selected_grades) ? professional.selected_grades : [];
-        const grades = selectedGroups.flatMap((group) => gradeGroups[group] || []).concat(selectedGrades.map(normalizeGrade));
-        const selectedStreams = professional.streams || professional.selected_streams || [];
-        const seniorSubjects = [...new Set(selectedStreams.flatMap((stream) => streamSubjects[stream] || []).concat(["English", "Physical Education", "Computer Science"]))];
-        if (!assignmentList.length) {
-          [...new Set(grades.filter(Boolean))].forEach((grade) => {
-            (Number(grade) >= 11 ? seniorSubjects : standardSubjects[grade] || professional.subjects || []).forEach((subject) => addSubject(grade, subject));
-          });
-        }
-        if (!assignments.size && Array.isArray(professional.subjects)) {
-          grades.forEach((grade) => professional.subjects.forEach((subject) => addSubject(grade, subject)));
-        }
-        return assignments;
-      }
-      function localTeachingClasses() {
-        return [...localTeachingAssignments().keys()].sort((a, b) => Number(a) - Number(b));
-      }
-      function readLocalStudents() {
-        try {
-          const storedStudents = JSON.parse(localStorage.getItem(STUDENTS_STORAGE_KEY) || "[]");
-          return Array.isArray(storedStudents) ? storedStudents : [];
-        } catch (error) {
-          console.warn("Could not read local students.", error);
-          return [];
-        }
-      }
-      function saveLocalStudents() {
-        localStorage.setItem(STUDENTS_STORAGE_KEY, JSON.stringify(currentStudents));
-      }
-      function normalizeStudent(student) {
-        const grade = normalizeGrade(student.class_grade || student.grade || student.class);
-        return {
-          ...student,
-          id: student.id || `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          name: student.name || student.full_name || "Unnamed student",
-          student_id: String(student.student_id || student.id || ""),
-          class: grade,
-          grade_badge: student.grade_badge || classLabel(grade),
-          badge_type: student.badge_type || student.stream || "Student",
-          stream: student.stream || student.stream_name || "--",
-          status: student.status || (student.is_active === false ? "Inactive" : "Active"),
-          subjects: student.subjects || student.subject || "Not assigned",
-          attendance: Number(student.attendance ?? 0),
-          rating: student.rating || "--",
-          perf_label: student.perf_label || "Not rated",
-          avatar: student.avatar || `https://i.pravatar.cc/100?u=${encodeURIComponent(student.student_id || student.id || student.name)}`,
-        };
-      }
-      function classLabel(grade) { return `Class ${grade}`; }
-      function showPageMessage(message) {
-        document.getElementById("studentTableBody").innerHTML = `<tr><td colspan="7" class="empty-table-state">${message}</td></tr>`;
-      }
-      function renderClasses() {
-        const teachingAssignments = localTeachingAssignments();
-        const selectedSubjects = [...(teachingAssignments.get(selectedClass) || [])];
-        document.getElementById("selectedClassContext").textContent = selectedClass
-          ? `${classLabel(selectedClass)} / ${selectedSubjects.slice(0, 3).join(", ") || "Subjects not specified"}`
-          : "No registered classes";
-        const classFilter = document.getElementById("classFilter");
-        classFilter.innerHTML = teachingClasses.length
-          ? teachingClasses.map((grade) => `<option value="${grade}">${classLabel(grade)}</option>`).join("")
-          : `<option value="">No registered classes</option>`;
-        classFilter.value = selectedClass || "";
-        document.getElementById("statClasses").textContent = teachingClasses.length;
-        document.getElementById("studentCountPill").textContent = `${currentStudents.length} Students`;
-
-        const registeredClassSummary = document.getElementById("registeredClassSummary");
-        registeredClassSummary.innerHTML = teachingClasses.length
-          ? teachingClasses.map((grade) => `<button class="registered-class-card${grade === selectedClass ? " active" : ""}" type="button" onclick="selectClassFilter('${grade}', this)"><strong>${classLabel(grade)}</strong><span class="registered-class-subjects">${[...(teachingAssignments.get(grade) || [])].join(" · ") || "Subjects not specified"}</span></button>`).join("")
-          : `<div class="registered-class-subjects">No registered classes found.</div>`;
-
-        const subjects = [...new Set([...teachingAssignments.values()].flatMap((subjectSet) => [...subjectSet]).concat(currentStudents.flatMap((student) => String(student.subjects).split(",").map((subject) => subject.trim()).filter(Boolean))))].sort();
-        const subjectFilter = document.getElementById("subjectFilter");
-        subjectFilter.innerHTML = `<option value="">All Subjects (${subjects.length || 6})</option>${subjects.map((subject) => `<option value="${subject}">${subject}</option>`).join("")}`;
-
-        const streams = [...new Set(currentStudents.map((student) => student.badge_type).filter(Boolean))].sort();
-        const streamFilter = document.getElementById("streamFilter");
-        streamFilter.innerHTML = `<option value="">All Streams</option>${streams.map((stream) => `<option value="${stream}">${stream}</option>`).join("")}`;
-      }
-      async function loadTeachingClasses() {
-        teachingClasses = localTeachingClasses();
-      }
-      async function loadStudents() {
-        await loadTeachingClasses();
-        currentStudents = readLocalStudents().map(normalizeStudent);
-        if (!selectedClass || !teachingClasses.includes(selectedClass)) selectedClass = teachingClasses[0] || null;
-        renderClasses();
-        renderTable();
-        updateStats();
-      }
-
-      /* Render Student Table Rows */
-      function renderTable() {
-        const tbody = document.getElementById("studentTableBody");
-        const searchQuery = document
-          .getElementById("studentSearchInput")
-          .value.toLowerCase();
-
-        tbody.innerHTML = "";
-
-        let filtered = currentStudents.filter((student) => {
-          const matchesClass = student.class === selectedClass;
-          const selectedSubject = document.getElementById("subjectFilter").value;
-          const selectedStream = document.getElementById("streamFilter").value;
-          const matchesSubject = !selectedSubject || String(student.subjects).split(",").map((subject) => subject.trim()).includes(selectedSubject);
-          const matchesStream = !selectedStream || student.badge_type === selectedStream;
-          const matchesQuery =
-            student.name.toLowerCase().includes(searchQuery) ||
-            student.student_id.toLowerCase().includes(searchQuery);
-          return matchesClass && matchesSubject && matchesStream && matchesQuery;
-        });
-
-        if (filtered.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="7" class="empty-table-state"><span class="empty-state-icon"><i class="fa-solid fa-user-plus"></i></span><strong>No students found for this class.</strong><small>Try selecting a different class, subject or stream.</small></td></tr>`;
-          document.getElementById("paginationInfo").innerText =
-            `Showing 0 of 0 students`;
-          return;
-        }
-
-        filtered.forEach((student) => {
-          const tr = document.createElement("tr");
-          const subjectChips = String(student.subjects).split(",").map((subject) => subject.trim()).filter(Boolean).slice(0, 3).map((subject, index) => `<span class="subject-chip subject-chip-${index}">${subject}</span>`).join("");
-          const remainingSubjects = String(student.subjects).split(",").filter((subject) => subject.trim()).length - 3;
-          const isActive = String(student.status || "Active").toLowerCase() !== "inactive";
-          tr.innerHTML = `
-          <td>
-            <div class="student-info-cell">
-              <img src="${student.avatar}" class="student-avatar" alt="${student.name}" />
-              <div>
-                <div class="student-name">${student.name}</div>
-              </div>
-            </div>
-          </td>
-          <td class="student-id-cell">${student.student_id}</td>
-          <td>
-            <div class="grade-cell">${student.grade_badge}</div>
-          </td>
-          <td><span class="stream-value">${student.stream || "--"}</span></td>
-          <td><div class="subject-chips">${subjectChips}${remainingSubjects > 0 ? `<span class="subject-chip subject-chip-more">+${remainingSubjects} more</span>` : ""}</div></td>
-          <td><span class="status-chip${isActive ? "" : " inactive"}">${isActive ? "Active" : "Inactive"}</span></td>
-          <td class="actions-cell">
-            <button class="profile-action" title="View student profile" onclick="viewStudent('${String(student.id).replace(/'/g, "\\'")}')">View Profile <i class="fa-solid fa-arrow-right"></i></button>
-            <button class="action-btn-more" title="Remove student" onclick="deleteStudent('${String(student.id).replace(/'/g, "\\'")}')"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-          </td>
-        `;
-          tbody.appendChild(tr);
-        });
-
-        document.getElementById("paginationInfo").innerText =
-          `Showing 1 to ${filtered.length} of ${filtered.length} students`;
-      }
-
-      function updateStats() {
-        const studentsInClasses = currentStudents.filter((student) => teachingClasses.includes(student.class));
-        const attendanceValues = studentsInClasses.map((student) => student.attendance).filter((value) => Number.isFinite(value) && value > 0);
-        const ratings = studentsInClasses.map((student) => Number(student.rating)).filter((value) => Number.isFinite(value));
-        document.getElementById("statTotal").textContent = studentsInClasses.length;
-        document.getElementById("statAttendance").textContent = attendanceValues.length
-          ? `${Math.round(attendanceValues.reduce((total, value) => total + value, 0) / attendanceValues.length)}%`
-          : "--";
-        document.getElementById("statPerformance").textContent = ratings.length
-          ? (ratings.reduce((total, value) => total + value, 0) / ratings.length).toFixed(1)
-          : "--";
-      }
-
-      /* Class Selection Logic */
-      function selectClassFilter(className, element) {
-        selectedClass = className;
-        document.getElementById("classFilter").value = className;
-        renderClasses();
-        renderTable();
-      }
-
-      function viewStudent(id) {
-        const student = currentStudents.find((item) => String(item.id) === String(id));
-        if (student) alert(`${student.name}\n${student.student_id}\n${classLabel(student.class)}`);
-      }
-
-      /* Search Filter Function */
-      function filterStudents() {
-        renderTable();
-      }
-
-      /* Kept for local testing and future student-registration wiring. */
-      async function addStudentPrompt() {
-        const name = prompt("Enter Student Name:", "Priya Sharma");
-        if (!name) return;
-
-        const studentId = prompt("Enter Student ID:", "SLDC1006");
-
-        const newStudent = {
-          name: name,
-          student_id: studentId || `SLDC100${Date.now().toString().slice(-2)}`,
-          class: selectedClass,
-          grade_badge:
-            selectedClass.split(" ")[0] + " " + selectedClass.split(" ")[1],
-          badge_type: "Science",
-          subjects: "Physics, Chemistry, Mathematics",
-          attendance: 90,
-          rating: "4.5",
-          perf_label: "Excellent",
-          avatar: `https://i.pravatar.cc/100?img=${Math.floor(Math.random() * 50)}`,
-        };
-
-        try {
-          currentStudents.push(normalizeStudent(newStudent));
-          saveLocalStudents();
-        } catch (err) {
-          console.warn("Could not save local student:", err);
-        }
-
-        renderClasses();
-        renderTable();
-        updateStats();
-      }
-
-      /* Delete Student Logic */
-      async function deleteStudent(id) {
-        if (!confirm("Are you sure you want to remove this student?")) return;
-
-        currentStudents = currentStudents.filter((s) => s.id !== id);
-        saveLocalStudents();
-        renderClasses();
-        renderTable();
-        updateStats();
-      }
-
-      // Initialize Page
-      document.addEventListener("DOMContentLoaded", () => {
-        loadStudents();
-      });
-    </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/supabase.js"></script>
     <script src="../js/teacher-data.js"></script>
+    <script src="../js/quiz-subject-rules.js"></script>
+    <script src="../js/students.js"></script>
     <script src="../js/layout.js"></script>
   </body>
 </html>
-
 
