@@ -517,6 +517,20 @@
         border: 1px solid #a7f3d0;
       }
 
+      .message.status {
+        display: block;
+        color: #334155;
+        background: #f1f5f9;
+        border: 1px solid #cbd5e1;
+      }
+
+      .message.warning {
+        display: block;
+        color: #92400e;
+        background: #fffbeb;
+        border: 1px solid #fcd34d;
+      }
+
       .footer-note {
         text-align: center;
         font-size: 0.85rem;
@@ -734,7 +748,7 @@
                 Personal Information
               </div>
 
-              <a href="personal_info.html" class="edit-btn-badge"> Edit </a>
+              <a href="personal_details.html" class="edit-btn-badge"> Edit </a>
             </div>
 
             <div class="review-box-content" id="personalInfoContainer"></div>
@@ -749,7 +763,7 @@
                 Profile Information
               </div>
 
-              <a href="personal_info.html" class="edit-btn-badge"> Edit </a>
+              <a href="personal_details.html" class="edit-btn-badge"> Edit </a>
             </div>
 
             <div class="review-box-content" id="profileInfoContainer"></div>
@@ -810,193 +824,8 @@
          SUPABASE + PAGE JAVASCRIPT
     ========================= -->
 
+    <script src="../js/supabase.js"></script>
     <script src="../js/student-data.js"></script>
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        const draftData = StudentData?.getStudentDraft?.() || {};
-        const personalInfo =
-          JSON.parse(localStorage.getItem("studentPersonalInfo") || "null") ||
-          {};
-        const academicInfo =
-          JSON.parse(localStorage.getItem("studentAcademicInfo") || "null") ||
-          {};
-        const regData = {
-          ...draftData,
-          ...personalInfo,
-          ...academicInfo,
-        };
-
-        function createRow(label, value) {
-          if (value === undefined || value === null || value === "") {
-            return "";
-          }
-
-          return `
-            <div class="review-row">
-              <span class="review-label">${label}</span>
-              <span class="review-value">${value}</span>
-            </div>
-          `;
-        }
-
-        let personalHTML = "";
-        personalHTML += createRow("Full Name", regData.fullName);
-        personalHTML += createRow("Email Address", regData.email);
-        personalHTML += createRow("Phone Number", regData.phone);
-        personalHTML += createRow("Date of Birth", regData.dob);
-        personalHTML += createRow("Gender", regData.gender);
-        personalHTML += createRow("Father's Name", regData.fatherName);
-        personalHTML += createRow("Father's Phone", regData.fatherPhone);
-        personalHTML += createRow("Mother's Name", regData.motherName);
-        personalHTML += createRow("Mother's Phone", regData.motherPhone);
-        document.getElementById("personalInfoContainer").innerHTML =
-          personalHTML ||
-          `
-          <div class="review-row">
-            <span class="review-value" style="width:100%;text-align:left;color:var(--muted-text);">
-              No details provided
-            </span>
-          </div>
-          `;
-
-        let profileHTML = "";
-
-        if (regData.profilePhoto) {
-          profileHTML += `
-            <div class="profile-photo-group">
-              <span class="review-label">Profile Photo</span>
-              <img src="${regData.profilePhoto}" alt="Profile Preview" class="uploaded-photo-preview" />
-            </div>
-          `;
-        }
-
-        profileHTML += createRow("Address", regData.address);
-        profileHTML += createRow("City", regData.city);
-        profileHTML += createRow("State", regData.state);
-        profileHTML += createRow("Country", regData.country);
-        document.getElementById("profileInfoContainer").innerHTML =
-          profileHTML ||
-          `
-          <div class="review-row">
-            <span class="review-value" style="width:100%;text-align:left;color:var(--muted-text);">
-              No profile details provided
-            </span>
-          </div>
-          `;
-
-        let academicHTML = "";
-        academicHTML += createRow(
-          "Class / Grade",
-          regData.classGrade ? `Class ${regData.classGrade}` : "",
-        );
-        academicHTML += createRow("Stream", regData.stream);
-        academicHTML += createRow("School Name", regData.schoolName);
-        academicHTML += createRow(
-          "Board",
-          regData.board ? regData.board.toUpperCase() : "",
-        );
-        academicHTML += createRow("Academic Year", regData.academicYear);
-        academicHTML += createRow("Medium of Instruction", regData.medium);
-        document.getElementById("academicInfoContainer").innerHTML =
-          academicHTML ||
-          `
-          <div class="review-row">
-            <span class="review-value" style="width:100%;text-align:left;color:var(--muted-text);">
-              No academic details provided
-            </span>
-          </div>
-          `;
-
-        let otherHTML = "";
-        otherHTML += createRow("Roll Number", regData.rollNumber);
-        otherHTML += createRow(
-          "Student ID",
-          "Will be generated after successful registration",
-        );
-        document.getElementById("otherInfoContainer").innerHTML = otherHTML;
-
-        document
-          .getElementById("submitRegistrationBtn")
-          .addEventListener("click", function () {
-            const submitButton = document.getElementById(
-              "submitRegistrationBtn",
-            );
-            const message = document.getElementById("registrationMessage");
-
-            if (!regData.fullName) {
-              message.textContent = "Personal information is incomplete.";
-              message.className = "message error";
-              message.style.display = "block";
-              return;
-            }
-
-            if (!regData.email) {
-              message.textContent = "Email address is required.";
-              message.className = "message error";
-              message.style.display = "block";
-              return;
-            }
-
-            if (!regData.classGrade) {
-              message.textContent = "Please select your class/grade.";
-              message.className = "message error";
-              message.style.display = "block";
-              return;
-            }
-
-            if (!regData.schoolName) {
-              message.textContent = "School name is required.";
-              message.className = "message error";
-              message.style.display = "block";
-              return;
-            }
-
-            submitButton.disabled = true;
-            submitButton.textContent = "Creating Account...";
-            message.className = "message";
-            message.style.display = "none";
-
-            try {
-              const studentId = `SLDC-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
-              const finalStudentData = {
-                ...regData,
-                studentId,
-                profilePhoto: regData.profilePhoto || "",
-                registrationStatus: "completed",
-                createdAt: new Date().toISOString(),
-              };
-
-              StudentData?.saveStudentProfile?.(finalStudentData);
-              localStorage.setItem(
-                "studentProfile",
-                JSON.stringify(finalStudentData),
-              );
-              localStorage.setItem(
-                "studentData",
-                JSON.stringify(finalStudentData),
-              );
-              localStorage.removeItem("studentRegistrationData");
-              localStorage.removeItem("studentPersonalInfo");
-              localStorage.removeItem("studentAcademicInfo");
-
-              submitButton.textContent = "Registration Completed ✓";
-              submitButton.style.background = "#10b981";
-              message.textContent = `Account created successfully. Your Student ID is ${studentId}`;
-              message.className = "message success";
-
-              setTimeout(() => {
-                window.location.href = "../student_content/st_profile.html";
-              }, 1200);
-            } catch (error) {
-              console.error("Student registration error:", error);
-              submitButton.disabled = false;
-              submitButton.textContent = "Create Account 🚀";
-              message.textContent = "Registration failed. Please try again.";
-              message.className = "message error";
-              message.style.display = "block";
-            }
-          });
-      });
-    </script>
+    <script src="../js/student-registration.js"></script>
   </body>
 </html>

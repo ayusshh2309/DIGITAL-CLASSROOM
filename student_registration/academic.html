@@ -911,7 +911,7 @@
 
                   <option value="commerce">Commerce</option>
 
-                  <option value="arts">Arts / Humanities</option>
+                  <option value="arts_humanities">Arts / Humanities</option>
                 </select>
               </div>
             </div>
@@ -1043,77 +1043,6 @@
     ========================================================= -->
 
     <script src="../js/student-data.js"></script>
-    <script>
-      const classGradeSelect = document.getElementById("classGrade");
-      const streamContainer = document.getElementById("streamContainer");
-      const streamSelect = document.getElementById("stream");
-
-      const registrationKey =
-        StudentData?.DRAFT_KEY || "studentRegistrationData";
-      let savedData = StudentData?.getStudentDraft?.() || {};
-
-      const academicFieldIds = [
-        "classGrade",
-        "stream",
-        "schoolName",
-        "board",
-        "academicYear",
-        "rollNumber",
-      ];
-
-      academicFieldIds.forEach((id) => {
-        const field = document.getElementById(id);
-        if (field && savedData[id] !== undefined && savedData[id] !== null) {
-          field.value = savedData[id];
-        }
-      });
-
-      if (savedData.medium) {
-        const mediumRadio = document.querySelector(
-          `input[name="medium"][value="${savedData.medium}"]`,
-        );
-
-        if (mediumRadio) {
-          mediumRadio.checked = true;
-        }
-      }
-
-      function updateStreamVisibility() {
-        const requiresStream = ["11", "12"].includes(classGradeSelect.value);
-
-        streamContainer.classList.toggle("hidden", !requiresStream);
-        streamSelect.required = requiresStream;
-
-        if (!requiresStream) {
-          streamSelect.value = "";
-        }
-      }
-
-      updateStreamVisibility();
-
-      classGradeSelect.addEventListener("change", updateStreamVisibility);
-
-      document
-        .getElementById("academicForm")
-        .addEventListener("submit", function (event) {
-          event.preventDefault();
-
-          const formData = { ...savedData };
-
-          academicFieldIds.forEach((id) => {
-            const field = document.getElementById(id);
-            if (field) {
-              formData[id] = field.value.trim();
-            }
-          });
-
-          formData.medium =
-            document.querySelector('input[name="medium"]:checked')?.value || "";
-
-          StudentData.saveStudentDraft(formData);
-          localStorage.setItem("studentAcademicInfo", JSON.stringify(formData));
-          window.location.href = "st_review.html";
-        });
-    </script>
+    <script src="../js/student-registration.js"></script>
   </body>
 </html>

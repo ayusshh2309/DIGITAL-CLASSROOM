@@ -33,10 +33,6 @@
   const eventId = (event) => String(event.source_id || event.id || "").replace(/^[^-]+-/, "");
   const now = () => new Date();
 
-  function getLocalProfile() {
-    return window.StudentData?.getStudentProfile?.() || {};
-  }
-
   function getSubjects(profile) {
     const values = profile.eligible_subjects || profile.registeredSubjects || profile.registered_subjects || profile.subjects || profile.academic?.subjects || [];
     const direct = (Array.isArray(values) ? values : String(values).split(",")).map((value) => String(value).trim()).filter(Boolean);
@@ -285,7 +281,8 @@
     if (!state.client || !state.user) return;
     state.loading = true;
     try {
-      const [eventsResult, materialsResult, videosResult, sessionsResult, segmentsResult, attemptsResult, downloadsResult] = await Promise.all([
+      const [profileResult, eventsResult, materialsResult, videosResult, sessionsResult, segmentsResult, attemptsResult, downloadsResult] = await Promise.all([
+        state.client.from("students").select("*").eq("user_id", state.user.id).maybeSingle(),
         state.client.rpc("get_student_calendar_events", { requested_student_id: state.user.id }),
         state.client.rpc("get_student_materials", { requested_student_id: state.user.id }),
         state.client.rpc("get_student_videos", { requested_student_id: state.user.id }),
@@ -294,6 +291,16 @@
         state.client.from("quiz_attempts").select("quiz_id,score,total_marks,completed_at").eq("student_id", state.user.id),
         state.client.from("material_downloads").select("material_id,downloaded_at").eq("student_id", state.user.id),
       ]);
+      if (profileResult.error) throw profileResult.error;
+      if (!profileResult.data) throw new Error("No student profile is linked to this account.");
+      state.profile = {
+        ...profileResult.data,
+        name: profileResult.data.full_name,
+        grade: String(profileResult.data.grade),
+        classGrade: String(profileResult.data.grade),
+        class_grade: String(profileResult.data.grade),
+      };
+      state.subjects = getSubjects(state.profile);
       if (eventsResult.error) throw eventsResult.error;
       if (materialsResult.error) throw materialsResult.error;
       state.events = eventsResult.data || [];
@@ -317,26 +324,21 @@
 
   async function loadProfileAndData() {
     renderLoading();
-    state.profile = getLocalProfile();
     state.client = window.SmartLearningSupabase?.getClient?.() || null;
     if (!state.client) {
-      state.subjects = getSubjects(state.profile);
       state.loading = false;
+      state.error = "Student services are not configured.";
       renderAll();
       return;
     }
     const { data: { user } = {}, error } = await state.client.auth.getUser();
     if (error || !user) {
-      state.subjects = getSubjects(state.profile);
       state.loading = false;
       state.error = "Sign in to view your personalized dashboard.";
       renderAll();
       return;
     }
     state.user = user;
-    const profileResult = await state.client.from("student_profiles").select("*").eq("student_id", user.id).maybeSingle();
-    if (!profileResult.error && profileResult.data) state.profile = { ...state.profile, ...profileResult.data };
-    state.subjects = getSubjects(state.profile);
     await loadData();
     subscribe();
   }
@@ -345,8 +347,12 @@
     if (!state.client || !state.user) return;
     state.channel?.unsubscribe();
     state.channel = state.client.channel(`student-dashboard-${state.user.id}`);
-    ["student_profiles", "study_sessions", "study_session_segments", "quiz_attempts", "material_downloads", "student_video_progress", "materials", "live_classes", "quizzes", "assignments"].forEach((table) => {
-      const filter = ["student_profiles", "study_sessions", "study_session_segments", "quiz_attempts", "material_downloads", "student_video_progress"].includes(table) ? `student_id=eq.${state.user.id}` : undefined;
+    ["students", "student_profiles", "study_sessions", "study_session_segments", "quiz_attempts", "material_downloads", "student_video_progress", "materials", "live_classes", "quizzes", "assignments"].forEach((table) => {
+      const filter = table === "students"
+        ? `user_id=eq.${state.user.id}`
+        : ["student_profiles", "study_sessions", "study_session_segments", "quiz_attempts", "material_downloads", "student_video_progress"].includes(table)
+          ? `student_id=eq.${state.user.id}`
+          : undefined;
       state.channel.on("postgres_changes", { event: "*", schema: "public", table, ...(filter ? { filter } : {}) }, loadData);
     });
     state.channel.subscribe((status) => {
