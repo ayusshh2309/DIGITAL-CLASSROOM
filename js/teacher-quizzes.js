@@ -16,7 +16,6 @@
     window.TeacherQuizSubjectRules.normalizeStream(group.stream) === window.TeacherQuizSubjectRules.normalizeStream(quiz.stream) &&
     registeredStandardSubjectsFor(group).some((subject) => subject.trim().toLocaleLowerCase() === subjectName(quiz).trim().toLocaleLowerCase()),
   );
-
   function toast(message, isError = false) {
     const region = $("quizToastRegion");
     if (!region) return;
@@ -42,14 +41,10 @@
       $("classScopeValue").textContent = `Could not load registered scope: ${state.scopeError}`;
       return;
     }
-    const values = state.groups.map((group) => {
-      const header = `Grade ${group.grade}${group.stream ? ` · ${group.stream}` : ""}`;
-      const subjects = registeredStandardSubjectsFor(group);
-      return `${header} · ${subjects.length ? subjects.join(", ") : "No standard subjects assigned"}`;
-    });
-    $("classScopeValue").textContent = values.length && values.some((value) => !value.endsWith("No standard subjects assigned"))
-      ? values.join("  |  ")
-      : "No registered classes or subjects found.";
+    const classes = [...new Set(state.groups.map((group) => Number(group.grade)).filter(Number.isInteger))]
+      .sort((left, right) => left - right)
+      .map((grade) => `Class ${grade}`);
+    $("classScopeValue").textContent = classes.length ? classes.join(" · ") : "No registered classes found";
   }
 
   function renderFilters() {

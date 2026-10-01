@@ -109,7 +109,12 @@
     const subjects = grade && (!hasStreams || stream)
       ? assignmentsFor(grade, stream).filter((item) => validNames.has(item.name.trim().toLocaleLowerCase()))
       : [];
-    fillSelect(subjectSelect, grade ? (hasStreams && !stream ? "Select a stream first" : "Select assigned subject") : "Select a class first", subjects, (item) => item.subject_id, (item) => item.name);
+    const subjectPlaceholder = !grade
+      ? "Select a class first"
+      : hasStreams && !stream
+        ? "Select a stream first"
+        : subjects.length ? "Select assigned subject" : "No standard subjects assigned";
+    fillSelect(subjectSelect, subjectPlaceholder, subjects, (item) => item.subject_id, (item) => item.name);
     subjectSelect.disabled = !subjects.length;
     if (updateSummary) updateSummary();
   }
@@ -662,6 +667,8 @@
   window.goBack = goBack;
   window.updateSummary = updateSummary;
   window.updateQuizSubjects = updateQuizSubjects;
+  window.handleQuizGradeChange = handleQuizGradeChange;
+  window.handleQuizStreamChange = handleQuizStreamChange;
   window.nextFromStep1 = nextFromStep1;
   window.nextFromStep2 = nextFromStep2;
   window.goToStep = goToStep;
