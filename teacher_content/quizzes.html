@@ -795,6 +795,20 @@
           </div>
         </section>
 
+        <section class="quiz-upload-panel" aria-labelledby="quizUploadHeading">
+          <div class="quiz-upload-heading"><div><h2 id="quizUploadHeading">Upload a quiz file</h2><p>Choose one of your registered grades, streams, and subjects.</p></div></div>
+          <p class="quiz-page-message" id="quizPageMessage" role="status" aria-live="polite">Loading teacher assignments...</p>
+          <form class="quiz-upload-grid" id="quizUploadForm">
+            <label>Grade<select id="quizUploadGrade" required disabled><option value="">Loading grades...</option></select></label>
+            <label id="quizUploadStreamWrap" hidden>Stream<select id="quizUploadStream" disabled><option value="">Select stream</option></select></label>
+            <label>Subject<select id="quizUploadSubject" required disabled><option value="">Select a grade first</option></select></label>
+            <label>Quiz title<input id="quizUploadTitle" type="text" maxlength="160" required placeholder="e.g. Motion and Force"></label>
+            <label class="quiz-upload-description">Description<textarea id="quizUploadDescription" maxlength="1000" rows="2" placeholder="Optional details"></textarea></label>
+            <label class="quiz-upload-file">Quiz file<input id="quizUploadFile" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required><small>PDF or DOC/DOCX, up to 25 MB</small></label>
+            <button class="btn-primary quiz-upload-submit" id="quizUploadSubmit" type="submit" disabled><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i> Upload quiz</button>
+          </form>
+        </section>
+
         <!-- METRICS ARE KEPT FOR EXISTING DATA SUPPORT -->
         <div class="stats-grid">
           <div class="stat-card">
@@ -862,15 +876,18 @@
                 <th><i class="fa-solid fa-file-lines"></i> Quiz</th>
                 <th><i class="fa-solid fa-graduation-cap"></i> Class</th>
                 <th><i class="fa-solid fa-book-open"></i> Subject</th>
-                <th><i class="fa-solid fa-star"></i> Total Marks</th>
-                <th><i class="fa-regular fa-clock"></i> Duration</th>
-                <th><i class="fa-solid fa-list-check"></i> Questions</th>
-                <th><i class="fa-regular fa-calendar-days"></i> Created On</th>
+                <th><i class="fa-solid fa-flask"></i> Stream</th>
+                <th><i class="fa-solid fa-paperclip"></i> File</th>
+                <th><i class="fa-regular fa-calendar-days"></i> Uploaded</th>
+                <th><i class="fa-solid fa-file-circle-check"></i> Type / Size</th>
                 <th><i class="fa-solid fa-shield-halved"></i> Status</th>
                 <th><i class="fa-solid fa-atom"></i> Actions</th>
               </tr>
             </thead>
             <tbody id="quizTableBody">
+              <tr><td colspan="9" class="quiz-loading-row">Loading quizzes...</td></tr>
+              <!-- The authenticated Supabase quiz list is rendered here. -->
+              <!--
               <tr>
                 <td>
                   <div class="item-title">
@@ -1103,7 +1120,7 @@
                 </td>
                 <td><div class="action-icons">📅 &nbsp; ⚙️</div></td>
               </tr>
-            </tbody>
+              --></tbody>
           </table>
           </div>
 
@@ -1118,7 +1135,7 @@
         </div>
 
         <!-- ANALYTICS LOWER ROW (Matching screenshot exactly) -->
-        <div class="analytics-grid">
+        <div class="analytics-grid" hidden>
           <!-- Quiz Performance Overview -->
           <div class="analytics-card">
             <div class="analytics-header">
@@ -1304,7 +1321,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="../js/supabase.js"></script>
     <script src="../js/teacher-data.js"></script>
-    <script src="../js/quizzes.js"></script>
+    <script src="../js/teacher-quizzes.js"></script>
     <script src="../js/layout.js"></script>
   </body>
 </html>

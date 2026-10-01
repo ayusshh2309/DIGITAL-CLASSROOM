@@ -241,7 +241,7 @@
       updateClock();
 
       const optionalQueries = [
-        ["quizzes", state.user.id, "*"],
+        ["quizzes", state.profile.id, "*"],
         ["students", state.user.id, "*"],
         ["attendance", state.user.id, "*"],
         ["live_classes", state.user.id, "*"],
@@ -446,8 +446,8 @@
   function subscribeRealtime() {
     if (state.client && state.user && state.profile?.id) {
       const channel = state.client.channel(`teacher-dashboard-${state.user.id}`);
-      const teacherProfileTables = ["teacher_grade_groups", "teacher_subject_assignments", "materials"];
-      const authOwnedTables = ["quizzes", "students", "attendance", "live_classes", "announcements", "student_performance", "quiz_attempts"];
+      const teacherProfileTables = ["teacher_grade_groups", "teacher_subject_assignments", "materials", "quizzes"];
+      const authOwnedTables = ["students", "attendance", "live_classes", "announcements", "student_performance", "quiz_attempts"];
       teacherProfileTables.forEach((table) => {
         channel.on("postgres_changes", { event: "*", schema: "public", table, filter: `teacher_id=eq.${state.profile.id}` }, scheduleRefresh);
       });
