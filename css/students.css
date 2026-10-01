@@ -1,13 +1,12 @@
 .page-content.main-box-container:has(.students-content-layout) {
-  gap: 16px;
-  padding: 14px 18px 28px !important;
+  gap: 24px;
+  padding: 32px !important;
   min-height: auto !important;
-  background: radial-gradient(circle at 92% 0%, rgba(41, 174, 184, 0.1), transparent 27%), linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(246, 251, 252, 0.9)) !important;
+  background: radial-gradient(circle at 92% 0%, rgba(41, 174, 184, 0.12), transparent 27%), linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(246, 251, 252, 0.88)) !important;
 }
 
 .page-content.main-box-container:has(.students-content-layout) .page-header {
-  min-height: 72px;
-  align-items: flex-start;
+  align-items: center;
   padding: 4px 4px 8px;
 }
 
@@ -28,20 +27,13 @@
 
 .page-content.main-box-container:has(.students-content-layout) .page-title h1 {
   margin-top: 5px;
-  color: #172b5e;
-  font-size: clamp(1.55rem, 2.2vw, 1.9rem);
-  font-weight: 800;
-  letter-spacing: -0.025em;
-  line-height: 1.1;
+  letter-spacing: -0.035em;
+  font-size: clamp(2rem, 3vw, 2.7rem);
 }
 
 .page-content.main-box-container:has(.students-content-layout) .page-title p {
   max-width: 540px;
-  margin-top: 4px;
-  color: #70829a;
-  font-size: 0.82rem;
-  font-weight: 500;
-  line-height: 1.45;
+  color: #647887;
 }
 
 .page-content.main-box-container:has(.students-content-layout) .assignment-scope {
@@ -137,9 +129,7 @@
 }
 
 @media (max-width: 560px) {
-  .page-content.main-box-container:has(.students-content-layout) { padding: 12px 10px 20px !important; }
-  .page-content.main-box-container:has(.students-content-layout) .page-header { align-items: flex-start; flex-direction: column; gap: 12px; }
-  .page-content.main-box-container:has(.students-content-layout) .assignment-scope { align-items: flex-start; flex-wrap: wrap; }
+  .page-content.main-box-container:has(.students-content-layout) { padding: 20px !important; }
   .student-filter-bar { grid-template-columns: 1fr; }
   .student-count-pill { grid-column: auto; }
   .table-toolbar { align-items: flex-start; flex-direction: column; gap: 10px; }

@@ -143,11 +143,10 @@
   }
 
   function renderScope() {
-    const group = selectedGroup();
-    const streamName = group?.stream ? streamLabels[normalizedStream(group.stream)] || group.stream : "";
-    $("selectedClassContext").textContent = group
-      ? `${classLabel(group.grade)}${streamName ? ` · ${streamName}` : ""}`
-      : state.selectedGrade ? `${classLabel(state.selectedGrade)} · Select a stream` : "No registered classes";
+    const classes = [...new Set(state.groups.map((group) => group.grade))]
+      .sort((left, right) => left - right)
+      .map(classLabel);
+    $("selectedClassContext").textContent = classes.length ? classes.join(" · ") : "No registered classes";
   }
 
   function renderFilters() {
