@@ -1,5 +1,5 @@
 (() => {
-  const state = { client: null, user: null, teacher: null, groups: [], quizzes: [], subjects: new Map(), status: "all", query: "", grade: "", subject: "", page: 1, pageSize: 8, channel: null, loading: false };
+  const state = { client: null, user: null, teacher: null, groups: [], quizzes: [], subjects: new Map(), status: "all", query: "", grade: "", subject: "", page: 1, pageSize: 8, channel: null, loading: false, refreshQueued: false };
   const $ = (id) => document.getElementById(id);
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
   const subjectName = (quiz) => state.subjects.get(String(quiz.subject_id)) || quiz.subject_name || quiz.subject || "Unknown subject";
@@ -59,8 +59,8 @@
       const id = escapeHtml(quiz.id);
       const status = String(quiz.status || "draft").toLowerCase();
       const created = quiz.created_at ? new Date(quiz.created_at).toLocaleDateString() : "—";
-      return `<tr><td><div class="item-title"><div class="item-icon" aria-hidden="true"><i class="fa-solid fa-list-check"></i></div><div><div class="quiz-title-text">${escapeHtml(quiz.title || "Untitled quiz")}</div><div class="quiz-subtitle-text">${escapeHtml(quiz.description || "Question-based quiz")}</div></div></div></td><td>Grade ${escapeHtml(quiz.grade)}</td><td>${escapeHtml(subjectName(quiz))}</td><td>${escapeHtml(quiz.stream || "—")}</td><td>${Number(quiz.question_count || 0)}</td><td>${Number(quiz.total_marks || 0)}</td><td><span class="badge-status status-${escapeHtml(status)}">${escapeHtml(status)}</span></td><td>${escapeHtml(created)}</td><td><span class="quiz-file-actions"><button type="button" data-action="view" data-id="${id}" title="View quiz" aria-label="View ${escapeHtml(quiz.title)}"><i class="fa-regular fa-eye"></i></button><button type="button" data-action="edit" data-id="${id}" title="Edit quiz" aria-label="Edit ${escapeHtml(quiz.title)}"><i class="fa-solid fa-pen"></i></button><button type="button" data-action="toggle" data-id="${id}" title="${status === "published" ? "Unpublish" : "Publish"}" aria-label="${status === "published" ? "Unpublish" : "Publish"} ${escapeHtml(quiz.title)}"><i class="fa-solid ${status === "published" ? "fa-eye-slash" : "fa-paper-plane"}"></i></button><button type="button" data-action="delete" data-id="${id}" title="Delete quiz" aria-label="Delete ${escapeHtml(quiz.title)}"><i class="fa-solid fa-trash-can"></i></button></span></td></tr>`;
-    }).join("") : `<tr><td colspan="9" class="quiz-empty-state">${state.loading ? "Loading quizzes…" : "No quizzes found. Create your first question-based quiz."}</td></tr>`;
+      return `<tr><td><div class="item-title"><div class="item-icon" aria-hidden="true"><i class="fa-solid fa-list-check"></i></div><div><div class="quiz-title-text">${escapeHtml(quiz.title || "Untitled quiz")}</div><div class="quiz-subtitle-text">${escapeHtml(quiz.description || "Question-based quiz")}</div></div></div></td><td>Grade ${escapeHtml(quiz.grade)}</td><td>${escapeHtml(subjectName(quiz))}</td><td>${escapeHtml(quiz.stream || "—")}</td><td>${Number(quiz.question_count || 0)}</td><td>${Number(quiz.total_marks || 0)}</td><td>${Number(quiz.time_limit || 0)} min</td><td><span class="badge-status status-${escapeHtml(status)}">${escapeHtml(status)}</span></td><td>${escapeHtml(created)}</td><td><span class="quiz-file-actions"><button type="button" data-action="view" data-id="${id}" title="View quiz" aria-label="View ${escapeHtml(quiz.title)}"><i class="fa-regular fa-eye"></i></button><button type="button" data-action="edit" data-id="${id}" title="Edit quiz" aria-label="Edit ${escapeHtml(quiz.title)}"><i class="fa-solid fa-pen"></i></button><button type="button" data-action="toggle" data-id="${id}" title="${status === "published" ? "Unpublish" : "Publish"}" aria-label="${status === "published" ? "Unpublish" : "Publish"} ${escapeHtml(quiz.title)}"><i class="fa-solid ${status === "published" ? "fa-eye-slash" : "fa-paper-plane"}"></i></button><button type="button" data-action="delete" data-id="${id}" title="Delete quiz" aria-label="Delete ${escapeHtml(quiz.title)}"><i class="fa-solid fa-trash-can"></i></button></span></td></tr>`;
+    }).join("") : `<tr><td colspan="10" class="quiz-empty-state">${state.loading ? "Loading quizzes…" : "No quizzes found. Create your first question-based quiz."}</td></tr>`;
     $("quizPaginationSummary").textContent = filtered.length ? `Showing ${start + 1} to ${Math.min(start + state.pageSize, filtered.length)} of ${filtered.length} quizzes` : "No quizzes to show";
     $("quizPaginationControls").innerHTML = filtered.length ? [`<button class="page-btn" data-page="${state.page - 1}" ${state.page === 1 ? "disabled" : ""} aria-label="Previous page">‹</button>`, ...Array.from({ length: pages }, (_, index) => `<button class="page-btn ${index + 1 === state.page ? "active" : ""}" data-page="${index + 1}">${index + 1}</button>`), `<button class="page-btn" data-page="${state.page + 1}" ${state.page === pages ? "disabled" : ""} aria-label="Next page">›</button>`].join("") : "";
     document.querySelectorAll(".tab[data-status]").forEach((tab) => tab.classList.toggle("active", tab.dataset.status === state.status));
@@ -73,7 +73,7 @@
   }
 
   async function loadQuizzes() {
-    const { data, error } = await state.client.from("quizzes").select("id, teacher_id, title, grade, stream, subject_id, description, status, question_count, total_marks, created_at, updated_at").eq("teacher_id", state.teacher.id).order("created_at", { ascending: false });
+    const { data, error } = await state.client.from("quizzes").select("id, teacher_id, title, grade, stream, subject_id, description, status, time_limit, duration_minutes, question_count, total_marks, created_at, updated_at").eq("teacher_id", state.teacher.id).order("created_at", { ascending: false });
     if (error) throw new Error(`Could not load quizzes: ${error.message}`);
     state.quizzes = data || [];
     const subjectIds = [...new Set(state.quizzes.map((quiz) => quiz.subject_id).filter(Boolean).map(String))];
@@ -86,11 +86,21 @@
   }
 
   async function reload() {
-    if (state.loading) return;
+    if (state.loading) {
+      state.refreshQueued = true;
+      return;
+    }
     state.loading = true;
     try { await loadQuizzes(); }
     catch (error) { notify(error.message, true); }
-    finally { state.loading = false; renderTable(); }
+    finally {
+      state.loading = false;
+      renderTable();
+      if (state.refreshQueued) {
+        state.refreshQueued = false;
+        void reload();
+      }
+    }
   }
 
   async function showQuiz(id) {
@@ -111,6 +121,10 @@
   }
 
   async function setStatus(quiz) {
+    if (String(quiz.status).toLowerCase() !== "published") {
+      location.assign(`create_quiz.html?id=${encodeURIComponent(quiz.id)}`);
+      return;
+    }
     const nextStatus = String(quiz.status).toLowerCase() === "published" ? "draft" : "published";
     const { error } = await state.client.from("quizzes").update({ status: nextStatus, published_at: nextStatus === "published" ? new Date().toISOString() : null, updated_at: new Date().toISOString() }).eq("id", quiz.id).eq("teacher_id", state.teacher.id);
     if (error) return toast(`Could not update quiz status: ${error.message}`, true);
@@ -146,9 +160,12 @@
       state.channel = state.client.channel(`teacher-quizzes-${teacher.id}`).on("postgres_changes", { event: "*", schema: "public", table: "quizzes", filter: `teacher_id=eq.${teacher.id}` }, () => { void reload(); }).subscribe((status) => {
         if (["CHANNEL_ERROR", "TIMED_OUT"].includes(status)) console.warn("Quiz realtime subscription is unavailable.", status);
       });
+      window.addEventListener("beforeunload", () => {
+        if (state.channel) void state.client.removeChannel(state.channel);
+      }, { once: true });
     } catch (error) {
       notify(error.message || "Could not load quiz management.", true);
-      $("quizTableBody").innerHTML = `<tr><td colspan="9" class="quiz-empty-state">${escapeHtml(error.message || "Quiz data could not be loaded.")}</td></tr>`;
+      $("quizTableBody").innerHTML = `<tr><td colspan="10" class="quiz-empty-state">${escapeHtml(error.message || "Quiz data could not be loaded.")}</td></tr>`;
     }
   }
 

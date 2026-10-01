@@ -14,12 +14,105 @@ begin
 end;
 $$;
 
+do $$
+declare
+  quiz_teacher_attnum smallint;
+  foreign_key record;
+begin
+  select attnum into quiz_teacher_attnum
+  from pg_attribute
+  where attrelid = 'public.quizzes'::regclass
+    and attname = 'teacher_id'
+    and not attisdropped;
+  if quiz_teacher_attnum is null then
+    raise exception 'public.quizzes.teacher_id is required';
+  end if;
+
+  if exists (
+    select 1 from public.quizzes quiz
+    where not exists (
+      select 1 from public.teachers teacher
+      where teacher.id = quiz.teacher_id or teacher.user_id = quiz.teacher_id
+    )
+  ) then
+    raise exception 'Some existing quizzes cannot be mapped to public.teachers; resolve them before migrating';
+  end if;
+
+  for foreign_key in
+    select constraint_record.conname
+    from pg_constraint constraint_record
+    where constraint_record.conrelid = 'public.quizzes'::regclass
+      and constraint_record.contype = 'f'
+      and quiz_teacher_attnum = any(constraint_record.conkey)
+      and constraint_record.confrelid = 'auth.users'::regclass
+  loop
+    execute format('alter table public.quizzes drop constraint %I', foreign_key.conname);
+  end loop;
+
+  update public.quizzes quiz
+  set teacher_id = teacher.id
+  from public.teachers teacher
+  where quiz.teacher_id = teacher.user_id
+    and not exists (select 1 from public.teachers current_teacher where current_teacher.id = quiz.teacher_id);
+
+  if not exists (
+    select 1 from pg_constraint constraint_record
+    where constraint_record.conrelid = 'public.quizzes'::regclass
+      and constraint_record.confrelid = 'public.teachers'::regclass
+      and constraint_record.contype = 'f'
+      and quiz_teacher_attnum = any(constraint_record.conkey)
+  ) then
+    alter table public.quizzes
+      add constraint quizzes_teacher_id_fkey
+      foreign key (teacher_id) references public.teachers(id) on delete cascade;
+  end if;
+end;
+$$;
+
 alter table public.quizzes
   add column if not exists grade integer,
   add column if not exists stream text,
   add column if not exists question_count integer not null default 0,
   add column if not exists total_marks numeric not null default 0,
-  add column if not exists published_at timestamptz;
+  add column if not exists published_at timestamptz,
+  add column if not exists duration_minutes integer not null default 30,
+  add column if not exists instructions text,
+  add column if not exists time_limit integer not null default 30,
+  add column if not exists attempts_allowed integer not null default 1,
+  add column if not exists shuffle_questions boolean not null default false,
+  add column if not exists shuffle_options boolean not null default false,
+  add column if not exists start_at timestamptz,
+  add column if not exists end_at timestamptz,
+  add column if not exists show_question_numbers boolean not null default true,
+  add column if not exists show_score boolean not null default true,
+  add column if not exists show_answers boolean not null default false,
+  add column if not exists show_explanations boolean not null default false,
+  add column if not exists student_access text not null default 'class',
+  add column if not exists builder_draft jsonb;
+
+do $$
+declare
+  grade_type oid;
+begin
+  select atttypid into grade_type
+  from pg_attribute
+  where attrelid = 'public.quizzes'::regclass and attname = 'grade' and not attisdropped;
+  if grade_type <> 'int4'::regtype then
+    execute $migration$
+      alter table public.quizzes alter column grade type integer
+      using nullif(substring(coalesce(nullif(grade::text, ''), class_grade) from '(1[0-2]|[1-9])'), '')::integer
+    $migration$;
+  end if;
+end;
+$$;
+
+update public.quizzes
+set grade = nullif(substring(coalesce(nullif(grade::text, ''), class_grade) from '(1[0-2]|[1-9])'), '')::integer
+where grade is null;
+
+update public.quizzes
+set duration_minutes = time_limit
+where duration_minutes = 30 and time_limit <> 30;
 
 alter table public.quizzes
   alter column class_grade drop not null,
@@ -71,7 +164,9 @@ create index if not exists quizzes_teacher_grade_stream_subject_idx
 alter table public.quiz_questions
   add column if not exists question_number integer,
   add column if not exists question_type text,
-  add column if not exists question_text text;
+  add column if not exists question_text text,
+  add column if not exists explanation text,
+  add column if not exists updated_at timestamptz not null default now();
 
 alter table public.quiz_questions alter column options drop not null;
 
@@ -149,7 +244,7 @@ with check (exists (
   where assignment.teacher_id = quizzes.teacher_id
     and assignment.grade = quizzes.grade
     and assignment.stream is not distinct from quizzes.stream
-    and assignment.subject_id = quizzes.subject_id
+    and assignment.subject_id::text = quizzes.subject_id::text
 ));
 
 create policy quizzes_teacher_update_own on public.quizzes
@@ -171,7 +266,7 @@ with check (exists (
     where assignment.teacher_id = quizzes.teacher_id
       and assignment.grade = quizzes.grade
       and assignment.stream is not distinct from quizzes.stream
-      and assignment.subject_id = quizzes.subject_id
+      and assignment.subject_id::text = quizzes.subject_id::text
   )
 ));
 
@@ -230,7 +325,7 @@ with check (
     where assignment.teacher_id = quizzes.teacher_id
       and assignment.grade = quizzes.grade
       and assignment.stream is not distinct from quizzes.stream
-      and assignment.subject_id = quizzes.subject_id
+      and assignment.subject_id::text = quizzes.subject_id::text
   )
 );
 
@@ -295,8 +390,9 @@ using (exists (
 
 grant select, update, delete on public.quizzes to authenticated;
 grant select on public.quiz_questions to authenticated;
-revoke insert, update, delete on public.quiz_questions from authenticated;
-revoke all on public.quizzes, public.quiz_questions from anon;
+revoke insert on public.quizzes from public, anon, authenticated;
+revoke insert, update, delete on public.quiz_questions from public, anon, authenticated;
+revoke all on public.quizzes, public.quiz_questions from public, anon;
 
 create or replace function public.save_teacher_question_quiz(p_quiz jsonb, p_questions jsonb)
 returns uuid
@@ -313,7 +409,12 @@ declare
   quiz_subject_id public.subjects.id%TYPE;
   quiz_title text;
   quiz_description text;
+  quiz_instructions text;
   quiz_status text;
+  quiz_duration integer;
+  quiz_attempts integer;
+  quiz_start_at timestamptz;
+  quiz_end_at timestamptz;
   question_item jsonb;
   question_index integer := 0;
   question_kind text;
@@ -335,9 +436,8 @@ begin
   end if;
 
   if jsonb_typeof(p_quiz) is distinct from 'object'
-    or jsonb_typeof(p_questions) is distinct from 'array'
-    or coalesce(jsonb_array_length(p_questions), 0) = 0 then
-    raise exception 'A quiz and at least one question are required.';
+    or jsonb_typeof(p_questions) is distinct from 'array' then
+    raise exception 'A quiz and a question list are required.';
   end if;
 
   quiz_title := nullif(btrim(p_quiz->>'title'), '');
@@ -345,13 +445,27 @@ begin
   quiz_stream := nullif(btrim(p_quiz->>'stream'), '');
   quiz_subject_id := nullif(p_quiz->>'subject_id', '');
   quiz_description := nullif(btrim(p_quiz->>'description'), '');
+  quiz_instructions := nullif(btrim(p_quiz->>'instructions'), '');
   quiz_status := coalesce(nullif(p_quiz->>'status', ''), 'published');
+  quiz_duration := coalesce(nullif(p_quiz->>'duration_minutes', '')::integer, 30);
+  quiz_attempts := coalesce(nullif(p_quiz->>'attempts_allowed', '')::integer, 1);
+  quiz_start_at := nullif(p_quiz->>'start_at', '')::timestamptz;
+  quiz_end_at := nullif(p_quiz->>'end_at', '')::timestamptz;
 
   if quiz_title is null or quiz_grade is null or quiz_subject_id is null then
     raise exception 'Quiz title, grade, and subject are required.';
   end if;
   if quiz_status not in ('draft', 'published') then
     raise exception 'Quiz status must be draft or published.';
+  end if;
+  if quiz_duration < 1 or quiz_attempts < 1 then
+    raise exception 'Duration and attempts must be positive.';
+  end if;
+  if quiz_status = 'published' and coalesce(jsonb_array_length(p_questions), 0) = 0 then
+    raise exception 'A published quiz must contain at least one complete question.';
+  end if;
+  if quiz_end_at is not null and quiz_start_at is not null and quiz_end_at <= quiz_start_at then
+    raise exception 'The end time must be after the start time.';
   end if;
 
   if not exists (
@@ -367,7 +481,7 @@ begin
     where assignment.teacher_id = teacher_record_id
       and assignment.grade = quiz_grade
       and assignment.stream is not distinct from quiz_stream
-      and assignment.subject_id = quiz_subject_id
+      and assignment.subject_id::text = quiz_subject_id::text
   ) then
     raise exception 'The selected subject is not assigned to this grade and stream.';
   end if;
@@ -421,12 +535,26 @@ begin
         stream = quiz_stream,
         subject_id = quiz_subject_id,
         description = quiz_description,
+        instructions = quiz_instructions,
+        time_limit = quiz_duration,
+        duration_minutes = quiz_duration,
+        attempts_allowed = quiz_attempts,
+        shuffle_questions = coalesce((p_quiz->>'shuffle_questions')::boolean, false),
+        shuffle_options = coalesce((p_quiz->>'shuffle_options')::boolean, false),
+        start_at = quiz_start_at,
+        end_at = quiz_end_at,
+        show_question_numbers = coalesce((p_quiz->>'show_question_numbers')::boolean, true),
+        show_score = coalesce((p_quiz->>'show_score')::boolean, true),
+        show_answers = coalesce((p_quiz->>'show_answers')::boolean, false),
+        show_explanations = coalesce((p_quiz->>'show_explanations')::boolean, false),
+        student_access = coalesce(nullif(p_quiz->>'student_access', ''), 'class'),
+        builder_draft = case when quiz_status = 'draft' then p_quiz->'builder_draft' else null end,
         status = quiz_status,
         class_grade = 'Class ' || quiz_grade::text,
         subject = subject_record.name,
         topic = quiz_title,
-        question_count = jsonb_array_length(p_questions),
-        total_marks = (select sum((question_value->>'marks')::numeric) from jsonb_array_elements(p_questions) as question_rows(question_value)),
+        question_count = coalesce(jsonb_array_length(p_questions), 0),
+        total_marks = coalesce((select sum((question_value->>'marks')::numeric) from jsonb_array_elements(p_questions) as question_rows(question_value)), 0),
         published_at = case when quiz_status = 'published' then coalesce(quiz.published_at, now()) else null end,
         updated_at = now()
     from public.subjects subject_record
@@ -438,12 +566,24 @@ begin
   else
     insert into public.quizzes (
       teacher_id, title, grade, class_grade, stream, subject_id, subject, topic,
-      description, status, question_count, total_marks, published_at, updated_at
+      description, instructions, time_limit, duration_minutes, attempts_allowed, shuffle_questions,
+      shuffle_options, start_at, end_at, show_question_numbers, show_score,
+      show_answers, show_explanations, student_access, builder_draft, status, question_count,
+      total_marks, published_at, updated_at
     )
     select teacher_record_id, quiz_title, quiz_grade, 'Class ' || quiz_grade::text,
       quiz_stream, quiz_subject_id, subject_record.name, quiz_title,
-      quiz_description, quiz_status, jsonb_array_length(p_questions),
-      (select sum((question_value->>'marks')::numeric) from jsonb_array_elements(p_questions) as question_rows(question_value)),
+      quiz_description, quiz_instructions, quiz_duration, quiz_duration, quiz_attempts,
+      coalesce((p_quiz->>'shuffle_questions')::boolean, false),
+      coalesce((p_quiz->>'shuffle_options')::boolean, false), quiz_start_at, quiz_end_at,
+      coalesce((p_quiz->>'show_question_numbers')::boolean, true),
+      coalesce((p_quiz->>'show_score')::boolean, true),
+      coalesce((p_quiz->>'show_answers')::boolean, false),
+      coalesce((p_quiz->>'show_explanations')::boolean, false),
+      coalesce(nullif(p_quiz->>'student_access', ''), 'class'),
+      case when quiz_status = 'draft' then p_quiz->'builder_draft' else null end,
+      quiz_status, coalesce(jsonb_array_length(p_questions), 0),
+      coalesce((select sum((question_value->>'marks')::numeric) from jsonb_array_elements(p_questions) as question_rows(question_value)), 0),
       case when quiz_status = 'published' then now() else null end, now()
     from public.subjects subject_record
     where subject_record.id = quiz_subject_id
@@ -464,12 +604,12 @@ begin
     question_answer := btrim(question_item->>'correct_answer');
     insert into public.quiz_questions (
       quiz_id, teacher_id, position, text, type, marks, options, correct_answer,
-      question_number, question_type, question_text
+      question_number, question_type, question_text, explanation, updated_at
     ) values (
       quiz_id, authenticated_user_id, question_index, question_text_value,
       case question_kind when 'mcq' then 'Multiple Choice' when 'true_false' then 'True/False' else 'Short Answer' end,
       question_marks, question_options, to_jsonb(question_answer), question_index,
-      question_kind, question_text_value
+      question_kind, question_text_value, nullif(btrim(question_item->>'explanation'), ''), now()
     );
   end loop;
 

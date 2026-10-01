@@ -712,22 +712,11 @@
     </style>
     <link rel="stylesheet" href="../css/layout.css" />
     <link rel="stylesheet" href="../css/create-quiz.css" />
-    <link rel="stylesheet" href="../css/question-quiz.css" />
   </head>
 
   <body>
     <div id="layout"></div>
-    <main
-      id="questionQuizApp"
-      class="page-content main-box-container question-quiz-page"
-    >
-      <div id="quizBuilderMount"></div>
-    </main>
-    <main
-      id="legacyQuizBuilder"
-      class="page-content main-box-container main-content"
-      hidden
-    >
+    <main class="page-content main-box-container main-content">
       <!-- PAGE HEADER -->
 
       <div class="page-header">
@@ -795,17 +784,10 @@
               <div class="form-group">
                 <label> Select Class <span class="required">*</span> </label>
 
-                <select id="quizClass" onchange="updateSummary()">
-                  <option value="">Select class</option>
-                  <option value="Class 5">Class 5</option>
-                  <option value="Class 6">Class 6</option>
-                  <option value="Class 7">Class 7</option>
-                  <option value="Class 8">Class 8</option>
-                  <option value="Class 9">Class 9</option>
-                  <option value="Class 10">Class 10</option>
-                  <option value="Class 11">Class 11</option>
-                  <option value="Class 12">Class 12</option>
+                <select id="quizClass" onchange="updateQuizSubjects()">
+                  <option value="">Loading classes...</option>
                 </select>
+                <small class="quiz-field-error" id="quizClassError"></small>
               </div>
 
               <div class="form-group stream-field" id="quizStreamField" hidden>
@@ -813,21 +795,16 @@
                 <select id="quizStream" onchange="updateQuizSubjects()">
                   <option value="">Select stream</option>
                 </select>
+                <small class="quiz-field-error" id="quizStreamError"></small>
               </div>
 
               <div class="form-group">
                 <label> Select Subject <span class="required">*</span> </label>
 
                 <select id="quizSubject" onchange="updateSummary()">
-                  <option value="">Select subject</option>
-                  <option value="Mathematics">Mathematics</option>
-                  <option value="Science">Science</option>
-                  <option value="English">English</option>
-                  <option value="Physics">Physics</option>
-                  <option value="Chemistry">Chemistry</option>
-                  <option value="Biology">Biology</option>
-                  <option value="Computer Science">Computer Science</option>
+                  <option value="">Select a class first</option>
                 </select>
+                <small class="quiz-field-error" id="quizSubjectError"></small>
               </div>
 
               <div class="form-group full">
@@ -842,6 +819,7 @@
                 />
 
                 <div class="small-text"><span id="titleCount">0</span>/100</div>
+                <small class="quiz-field-error" id="quizTitleError"></small>
               </div>
 
               <div class="form-group full">
@@ -868,11 +846,16 @@
                   id="quizInstructions"
                   maxlength="500"
                   placeholder="Write instructions for students..."
+                  oninput="updateSummary()"
                 ></textarea>
 
                 <div class="small-text">
                   <span id="instructionCount">0</span>/500
                 </div>
+                <small
+                  class="quiz-field-error"
+                  id="quizInstructionsError"
+                ></small>
               </div>
 
               <div class="form-group">
@@ -884,8 +867,9 @@
                   value="30"
                   min="1"
                   max="300"
-                  onchange="updateSummary()"
+                  oninput="updateSummary()"
                 />
+                <small class="quiz-field-error" id="quizDurationError"></small>
               </div>
 
               <div class="form-group">
@@ -994,8 +978,19 @@
 
           <div id="questionList"></div>
 
-          <button class="add-question" onclick="addQuestion()">
-            + Add New Question
+          <div
+            class="quiz-form-message"
+            id="quizQuestionMessage"
+            role="status"
+            aria-live="polite"
+            hidden
+          ></div>
+          <button
+            class="add-question"
+            id="addQuestionButton"
+            onclick="addQuestion()"
+          >
+            + Add Question
           </button>
 
           <div class="action-bar">
@@ -1153,15 +1148,21 @@
 
               <div class="toggle-row">
                 <div>
-                  <div class="toggle-title">Show Correct Answers</div>
+                  <div class="toggle-title">Correct Answers</div>
 
                   <div class="toggle-description">
-                    Students can see the correct answers.
+                    Correct answers remain private to teachers and are never
+                    sent to student devices.
                   </div>
                 </div>
 
                 <label class="switch">
-                  <input type="checkbox" id="showAnswers" />
+                  <input
+                    type="checkbox"
+                    id="showAnswers"
+                    disabled
+                    aria-label="Correct answers remain teacher-only"
+                  />
                   <span class="slider"></span>
                 </label>
               </div>
@@ -1244,6 +1245,10 @@
                   Subject:
                   <strong id="previewSubject">—</strong>
                 </span>
+                <span id="previewStreamMeta" hidden>
+                  Stream:
+                  <strong id="previewStream">—</strong>
+                </span>
 
                 <span>
                   Duration:
@@ -1254,8 +1259,13 @@
                   Marks:
                   <strong id="previewMarks">—</strong>
                 </span>
+                <span>
+                  Questions:
+                  <strong id="previewQuestionCount">0</strong>
+                </span>
               </div>
             </div>
+            <p id="previewInstructions" class="preview-instructions"></p>
 
             <div id="previewQuestions"></div>
           </div>
@@ -1425,19 +1435,8 @@
             }
 
             function populateQuizTeacherAssignments() {
-              const teacherData = window.TeacherData?.getTeacherData?.();
-              let sessionProfessional = {};
-              try {
-                sessionProfessional = JSON.parse(
-                  sessionStorage.getItem("teacherProfessionalInfo") || "{}",
-                );
-              } catch (error) {
-                sessionProfessional = {};
-              }
-              const professional = {
-                ...sessionProfessional,
-                ...(teacherData?.professional || {}),
-              };
+              const teacherData = {};
+              const professional = teacherData;
               const gradeGroups = {
                 grades_5_6: ["5", "6"],
                 grades_7_8: ["7", "8"],
@@ -2461,26 +2460,7 @@
       ========================================== */
 
             function saveDraft() {
-              collectQuizInformation();
-
-              if (!quizData.id) {
-                quizData.id = "quiz_" + Date.now();
-              }
-
-              quizData.status = "draft";
-
-              if (!quizData.createdAt) {
-                quizData.createdAt = new Date().toISOString();
-              }
-
-              quizData.updatedAt = new Date().toISOString();
-
-              localStorage.setItem(
-                "smartLearningDC_quiz_draft",
-                JSON.stringify(quizData),
-              );
-
-              showToast("Quiz saved as draft.");
+              showToast("Draft saving is handled by the Supabase quiz controller.");
             }
 
             /* ==========================================
@@ -2488,78 +2468,7 @@
       ========================================== */
 
             function loadDraft() {
-              const saved = localStorage.getItem("smartLearningDC_quiz_draft");
-
-              if (!saved) {
-                return;
-              }
-
-              try {
-                const data = JSON.parse(saved);
-
-                quizData = data;
-
-                document.getElementById("quizClass").value =
-                  quizTeacherAssignments.grades.includes(
-                    normalizeQuizGrade(quizData.class),
-                  )
-                    ? quizData.class
-                    : "";
-
-                updateQuizSubjects();
-                document.getElementById("quizStream").value = quizData.stream || "";
-                updateQuizSubjects();
-                document.getElementById("quizSubject").value = quizData.subject || "";
-
-                document.getElementById("quizTitle").value = quizData.title || "";
-
-                document.getElementById("quizDescription").value =
-                  quizData.description || "";
-
-                document.getElementById("quizInstructions").value =
-                  quizData.instructions || "";
-
-                document.getElementById("quizDuration").value =
-                  quizData.duration || 30;
-
-                const settings = quizData.settings || {};
-
-                document.getElementById("startDate").value = settings.startDate || "";
-
-                document.getElementById("startTime").value = settings.startTime || "";
-
-                document.getElementById("endDate").value = settings.endDate || "";
-
-                document.getElementById("endTime").value = settings.endTime || "";
-
-                document.getElementById("attemptsAllowed").value =
-                  settings.attemptsAllowed || "1";
-
-                document.getElementById("shuffleQuestions").checked =
-                  settings.shuffleQuestions || false;
-
-                document.getElementById("shuffleOptions").checked =
-                  settings.shuffleOptions || false;
-
-                document.getElementById("showQuestionNumbers").checked =
-                  settings.showQuestionNumbers !== false;
-
-                document.getElementById("showScore").checked =
-                  settings.showScore !== false;
-
-                document.getElementById("showAnswers").checked =
-                  settings.showAnswers || false;
-
-                document.getElementById("showExplanations").checked =
-                  settings.showExplanations || false;
-
-                document.getElementById("studentAccess").value =
-                  settings.studentAccess || "class";
-
-                showToast("Draft loaded.");
-              } catch (error) {
-                console.error(error);
-              }
+              return;
             }
 
             /* ==========================================
@@ -2728,27 +2637,6 @@
                 return;
               }
 
-              const existing = JSON.parse(
-                localStorage.getItem("smartLearningDC_published_quizzes") || "[]",
-              );
-
-              const publishedQuiz = JSON.parse(JSON.stringify(quizData));
-              const existingIndex = existing.findIndex(
-                (quiz) => String(quiz.id) === String(publishedQuiz.id),
-              );
-              if (existingIndex === -1) {
-                existing.push(publishedQuiz);
-              } else {
-                existing[existingIndex] = publishedQuiz;
-              }
-
-              localStorage.setItem(
-                "smartLearningDC_published_quizzes",
-                JSON.stringify(existing),
-              );
-
-              localStorage.removeItem("smartLearningDC_quiz_draft");
-
               closePublishModal();
 
               showToast("Quiz published successfully!");
@@ -2815,7 +2703,7 @@
                 .replace(/'/g, "&#039;");
             }
     </script>
-    <script src="../js/question-quiz-builder.js"></script>
+    <script src="../js/quiz-create.js"></script>
     <script src="../js/layout.js"></script>
   </body>
 </html>
