@@ -138,6 +138,156 @@
     registeredTeachingScope = Array.isArray(groups) ? groups : [];
     return registeredTeachingScope;
   }
+  async function initializeAttendance() {
+    const client = window.TeacherData?.getSupabaseClient?.();
+    if (!client) throw new Error("Supabase is not configured.");
+    const { data: authData, error: authError } = await client.auth.getUser();
+    if (authError) throw authError;
+    if (!authData?.user) {
+      const error = new Error("Sign in with a teacher account to manage attendance.");
+      error.code = "AUTH_REQUIRED";
+      throw error;
+    }
+    const { data: teacherProfile, error: teacherError } = await client
+      .from("teachers")
+      .select("id, user_id, full_name")
+      .eq("user_id", authData.user.id)
+      .single();
+    if (teacherError) throw teacherError;
+    if (!teacherProfile || teacherProfile.user_id !== authData.user.id) {
+      throw new Error("No teacher profile is linked to this account.");
+    }
+    const groups = await window.TeacherData.loadRegisteredTeachingScope(client, teacherProfile.id);
+    registeredTeachingScope = groups;
+    return { client, user: authData.user, teacher: teacherProfile, groups };
+  }
+  async function loadAuthorizedAttendanceStudents(client, grade, stream) {
+    let query = client
+      .from("students")
+      .select("id, student_id, full_name, grade, stream, roll_number")
+      .eq("grade", Number(grade))
+      .order("full_name", { ascending: true });
+    query = stream ? query.eq("stream", stream) : query.is("stream", null);
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  }
+  async function loadAttendanceSelection(client, teacherIdValue, grade, stream, subjectId) {
+    let query = client
+      .from("attendance_sessions")
+      .select("id, teacher_id, grade, stream, subject_id, attendance_date, status, created_at, updated_at")
+      .eq("teacher_id", teacherIdValue)
+      .eq("grade", Number(grade))
+      .eq("subject_id", subjectId)
+      .order("attendance_date", { ascending: false });
+    query = stream ? query.eq("stream", stream) : query.is("stream", null);
+    const { data: sessions, error: sessionError } = await query;
+    if (sessionError) throw sessionError;
+    const sessionRows = sessions || [];
+    if (!sessionRows.length) return { sessions: [], records: [] };
+    const { data: records, error: recordsError } = await client
+      .from("attendance_records")
+      .select("id, session_id, student_id, status, check_in, check_out, duration_minutes, remarks, created_at, updated_at")
+      .in("session_id", sessionRows.map((session) => session.id));
+    if (recordsError) throw recordsError;
+    const sessionById = new Map(sessionRows.map((session) => [String(session.id), session]));
+    return {
+      sessions: sessionRows,
+      records: (records || []).map((record) => {
+        const session = sessionById.get(String(record.session_id));
+        return {
+          ...record,
+          grade: session?.grade,
+          stream: session?.stream,
+          subject_id: session?.subject_id,
+          attendance_date: session?.attendance_date,
+        };
+      }),
+    };
+  }
+  async function saveAttendanceSession(client, { grade, stream, subjectId, date, records }) {
+    const preparedRecords = records.map((record) => {
+      const checkIn = record.check_in ? new Date(`${date}T${record.check_in}:00`) : null;
+      const checkOut = record.check_out ? new Date(`${date}T${record.check_out}:00`) : null;
+      if ((checkIn && Number.isNaN(checkIn.getTime())) || (checkOut && Number.isNaN(checkOut.getTime()))) {
+        throw new Error("Enter a valid check-in and check-out time.");
+      }
+      if (checkIn && checkOut && checkOut < checkIn) {
+        throw new Error("Check-out must be later than check-in.");
+      }
+      return {
+        student_id: record.student_id,
+        status: record.status || "not_marked",
+        check_in: checkIn ? checkIn.toISOString() : null,
+        check_out: checkOut ? checkOut.toISOString() : null,
+        duration_minutes: checkIn && checkOut
+          ? Math.round((checkOut.getTime() - checkIn.getTime()) / 60000)
+          : null,
+        remarks: record.remarks || null,
+      };
+    });
+    const { data, error } = await client.rpc("save_teacher_attendance", {
+      requested_grade: Number(grade),
+      requested_stream: stream || null,
+      requested_subject_id: subjectId,
+      requested_attendance_date: date,
+      requested_records: preparedRecords,
+    });
+    if (error) throw error;
+    return data;
+  }
+  function subscribeToAttendanceRealtime(client, teacherIdValue, onChange) {
+    const channel = client
+      .channel(`teacher-attendance-${teacherIdValue}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "attendance_sessions",
+        filter: `teacher_id=eq.${teacherIdValue}`,
+      }, onChange)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "attendance_records",
+      }, onChange)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "students",
+      }, onChange)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "teacher_grade_groups",
+        filter: `teacher_id=eq.${teacherIdValue}`,
+      }, onChange)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "teacher_subject_assignments",
+        filter: `teacher_id=eq.${teacherIdValue}`,
+      }, onChange)
+      .subscribe((status) => {
+        if (["CHANNEL_ERROR", "TIMED_OUT"].includes(status)) {
+          console.error("Attendance realtime subscription is unavailable.", status);
+        }
+      });
+    return () => client.removeChannel(channel);
+  }
+  function formatAttendanceTime(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? ""
+      : `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  }
+  function formatDate(value) {
+    return new Intl.DateTimeFormat("en", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(new Date(`${value}T00:00:00`));
+  }
   function loadRegisteredStudents(grade) {
     const stored = readJson(STUDENTS_KEY, []);
     const filtered = stored.filter(
@@ -356,6 +506,13 @@
     loadTeacherSubjects,
     loadRegisteredTeachingScope,
     setRegisteredTeachingScope,
+    initializeAttendance,
+    loadAuthorizedAttendanceStudents,
+    loadAttendanceSelection,
+    saveAttendanceSession,
+    subscribeToAttendanceRealtime,
+    formatAttendanceTime,
+    formatDate,
     loadRegisteredStudents,
     loadAttendance,
     saveAttendance,
