@@ -1259,9 +1259,7 @@
           <div class="form-group">
             <label>Subject & Grade</label>
             <select id="matSubject">
-              <option value="Physics • Class 12">Physics • Class 12</option>
-              <option value="Chemistry • Class 12">Chemistry • Class 12</option>
-              <option value="Science • Class 9">Science • Class 9</option>
+              <option value="">Loading registered subjects...</option>
             </select>
           </div>
           <div class="form-group">
@@ -1568,8 +1566,40 @@
         setInterval(() => { loadSchedule(); }, 60 * 1000);
       });
     </script>
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        const subjectSelect = document.getElementById("matSubject");
+        if (!subjectSelect) return;
+        subjectSelect.replaceChildren(new Option("Loading registered subjects...", ""));
+        try {
+          const currentTeacher = await window.TeacherData.loadCurrentTeacherProfile();
+          const groups = await window.TeacherData.loadRegisteredTeachingScope(
+            currentTeacher.client,
+            currentTeacher.profile.id,
+          );
+          const options = groups.flatMap((group) => group.subjects.map((subject) => {
+            const streamLabels = {
+              science_pcm: "Science (PCM)",
+              science_pcb: "Science (PCB)",
+              commerce: "Commerce",
+              arts_humanities: "Arts / Humanities",
+            };
+            const scopeLabel = [`Class ${group.grade}`, streamLabels[group.stream]].filter(Boolean).join(" · ");
+            return { value: subject.name, label: `${subject.name} · ${scopeLabel}` };
+          }));
+          subjectSelect.replaceChildren(
+            ...(options.length
+              ? options.map(({ value, label }) => new Option(label, value))
+              : [new Option("No registered subjects", "")]),
+          );
+        } catch (error) {
+          console.error("Unable to load dashboard subject options.", error);
+          subjectSelect.replaceChildren(
+            new Option(`Could not load registered subjects. ${error.message || "Please try again."}`, ""),
+          );
+        }
+      });
+    </script>
     <script src="../js/layout.js"></script>
   </body>
 </html>
-
-

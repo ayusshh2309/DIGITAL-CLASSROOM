@@ -94,61 +94,24 @@
   }
 
   async function fetchTeachingScope(client, teacherDbId) {
-    const [gradeResult, assignmentResult] = await Promise.all([
-      client
-        .from("teacher_grade_groups")
-        .select("grade, stream")
-        .eq("teacher_id", teacherDbId),
-      client
-        .from("teacher_subject_assignments")
-        .select("subject_id, grade, stream")
-        .eq("teacher_id", teacherDbId),
-    ]);
-    if (gradeResult.error) throw gradeResult.error;
-    if (assignmentResult.error) throw assignmentResult.error;
-
-    const classRows = gradeResult.data || [];
-    const assignmentRows = assignmentResult.data || [];
-    const registeredKeys = new Set(
-      classRows.map((row) => assignmentKey(row.grade, row.stream)),
-    );
-    const subjectIds = [...new Set(
-      assignmentRows
-        .filter((row) => registeredKeys.has(assignmentKey(row.grade, row.stream)))
-        .map((row) => row.subject_id)
-        .filter((id) => id !== null && id !== undefined),
-    )];
-    let subjects = [];
-    if (subjectIds.length) {
-      const { data, error } = await client
-        .from("subjects")
-        .select("id, name")
-        .in("id", subjectIds);
-      if (error) throw error;
-      subjects = data || [];
-    }
-
-    const subjectMap = new Map(subjects.map((subject) => [String(subject.id), subject]));
+    const registeredGroups = await window.TeacherData.loadRegisteredTeachingScope(client, teacherDbId);
     const classes = new Map();
-    classRows.forEach((row) => {
-      const grade = gradeValue(row.grade);
+    const assignments = new Map();
+    const subjectMap = new Map();
+    registeredGroups.forEach((group) => {
+      const grade = gradeValue(group.grade);
       if (!grade) return;
       if (!classes.has(grade)) classes.set(grade, new Set());
-      classes.get(grade).add(normalizedStream(row.stream));
-    });
-
-    const assignments = new Map();
-    assignmentRows.forEach((row) => {
-      const grade = gradeValue(row.grade);
-      const stream = normalizedStream(row.stream);
+      const stream = normalizedStream(group.stream);
+      classes.get(grade).add(stream);
       const key = assignmentKey(grade, stream);
-      if (!classes.has(grade) || !registeredKeys.has(key)) return;
-      const subject = subjectMap.get(String(row.subject_id));
-      if (!subject?.name) {
-        throw new Error(`Registered subject ID ${row.subject_id} is missing from public.subjects.`);
-      }
-      if (!assignments.has(key)) assignments.set(key, new Map());
-      assignments.get(key).set(String(subject.id), subject);
+      const groupSubjects = new Map();
+      group.subjects.forEach((subject) => {
+        const normalized = { id: subject.id, name: subject.name };
+        subjectMap.set(String(subject.id), normalized);
+        groupSubjects.set(String(subject.id), normalized);
+      });
+      assignments.set(key, groupSubjects);
     });
 
     return { classes, assignments, subjectsById: subjectMap };

@@ -1841,30 +1841,24 @@
           loadStatus.textContent = "";
           renderProfile();
 
-          const { data: assignments, error: assignmentError } = await client
-            .from("teacher_subjects")
-            .select("grade, subject")
-            .eq("teacher_id", profile.id);
-          if (!assignmentError) {
-            teacherSubjects = [
-              ...new Set(
-                (assignments || []).map((item) => item.subject).filter(Boolean),
-              ),
-            ];
-            const classCount = new Set(
-              (assignments || []).map((item) => item.grade).filter(Boolean),
-            ).size;
-            setText("profileClassCount", classCount);
-            setText("profileSubjectCount", teacherSubjects.length);
-            const subjectContainer = document.getElementById("detailSubjects");
-            subjectContainer.replaceChildren();
-            teacherSubjects.forEach((subject) => {
-              const badge = document.createElement("span");
-              badge.className = "sub-badge";
-              badge.textContent = subject;
-              subjectContainer.append(badge);
-            });
-          }
+          const registeredGroups = await TeacherData.loadRegisteredTeachingScope(
+            client,
+            profile.id,
+          );
+          teacherSubjects = [
+            ...new Set(registeredGroups.flatMap((group) => group.subjects.map((subject) => subject.name))),
+          ];
+          const classCount = new Set(registeredGroups.map((group) => group.grade)).size;
+          setText("profileClassCount", classCount);
+          setText("profileSubjectCount", teacherSubjects.length);
+          const subjectContainer = document.getElementById("detailSubjects");
+          subjectContainer.replaceChildren();
+          teacherSubjects.forEach((subject) => {
+            const badge = document.createElement("span");
+            badge.className = "sub-badge";
+            badge.textContent = subject;
+            subjectContainer.append(badge);
+          });
 
           const { count: studentCount, error: studentError } = await client
             .from("students")

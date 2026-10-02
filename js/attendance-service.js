@@ -36,6 +36,7 @@
     "Karan Mehta",
     "Diya Nair",
   ];
+  let registeredTeachingScope = null;
 
   const readJson = (key, fallback) => {
     try {
@@ -111,10 +112,31 @@
   };
 
   function loadTeacherClasses() {
+    if (registeredTeachingScope) {
+      return [...new Set(registeredTeachingScope.map((group) => String(group.grade)))]
+        .sort((left, right) => Number(left) - Number(right));
+    }
     return [...assignments().keys()].sort((a, b) => Number(a) - Number(b));
   }
   function loadTeacherSubjects(grade) {
+    if (registeredTeachingScope) {
+      const names = registeredTeachingScope
+        .filter((group) => String(group.grade) === normalizeGrade(grade))
+        .flatMap((group) => group.subjects.map((subject) => subject.name));
+      return [...new Set(names)].sort((left, right) => left.localeCompare(right));
+    }
     return [...(assignments().get(normalizeGrade(grade)) || [])];
+  }
+  async function loadRegisteredTeachingScope() {
+    const currentTeacher = await window.TeacherData.loadCurrentTeacherProfile();
+    return setRegisteredTeachingScope(await window.TeacherData.loadRegisteredTeachingScope(
+      currentTeacher.client,
+      currentTeacher.profile.id,
+    ));
+  }
+  function setRegisteredTeachingScope(groups) {
+    registeredTeachingScope = Array.isArray(groups) ? groups : [];
+    return registeredTeachingScope;
   }
   function loadRegisteredStudents(grade) {
     const stored = readJson(STUDENTS_KEY, []);
@@ -332,6 +354,8 @@
   window.AttendanceService = {
     loadTeacherClasses,
     loadTeacherSubjects,
+    loadRegisteredTeachingScope,
+    setRegisteredTeachingScope,
     loadRegisteredStudents,
     loadAttendance,
     saveAttendance,

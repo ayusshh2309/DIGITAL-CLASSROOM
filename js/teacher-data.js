@@ -185,6 +185,64 @@
     return teacher;
   }
 
+  async function loadRegisteredTeachingScope(client, teacherId) {
+    const [groupsResult, assignmentsResult] = await Promise.all([
+      client
+        .from("teacher_grade_groups")
+        .select("id, grade, stream, teach_all_subjects")
+        .eq("teacher_id", teacherId)
+        .order("grade", { ascending: true })
+        .order("stream", { ascending: true }),
+      client
+        .from("teacher_subject_assignments")
+        .select("grade, stream, subject_id")
+        .eq("teacher_id", teacherId)
+        .order("grade", { ascending: true })
+        .order("stream", { ascending: true }),
+    ]);
+    if (groupsResult.error) throw groupsResult.error;
+    if (assignmentsResult.error) throw assignmentsResult.error;
+
+    const groupKey = (grade, stream) =>
+      `${Number(grade)}|${String(stream || "").trim().toLowerCase()}`;
+    const groups = (groupsResult.data || []).map((row) => ({
+      id: row.id,
+      grade: Number(row.grade),
+      stream: String(row.stream || "").trim().toLowerCase(),
+      teachAllSubjects: Boolean(row.teach_all_subjects),
+      subjects: [],
+    })).filter((group) => Number.isInteger(group.grade) && group.grade >= 1 && group.grade <= 12);
+    const groupByKey = new Map(groups.map((group) => [groupKey(group.grade, group.stream), group]));
+    const assignments = (assignmentsResult.data || []).filter((row) =>
+      row.subject_id && groupByKey.has(groupKey(row.grade, row.stream)),
+    );
+    const subjectIds = [...new Set(assignments.map((row) => String(row.subject_id)))];
+    let subjectsById = new Map();
+    if (subjectIds.length) {
+      const { data, error } = await client
+        .from("subjects")
+        .select("id, name")
+        .in("id", subjectIds);
+      if (error) throw error;
+      subjectsById = new Map((data || []).map((subject) => [String(subject.id), subject]));
+    }
+
+    assignments.forEach((assignment) => {
+      const subject = subjectsById.get(String(assignment.subject_id));
+      if (!subject?.name) {
+        throw new Error(`Registered subject ID ${assignment.subject_id} is missing from public.subjects.`);
+      }
+      const group = groupByKey.get(groupKey(assignment.grade, assignment.stream));
+      if (!group.subjects.some((existing) => String(existing.id) === String(subject.id))) {
+        group.subjects.push({ id: subject.id, name: subject.name });
+      }
+    });
+    groups.forEach((group) => {
+      group.subjects.sort((left, right) => left.name.localeCompare(right.name));
+    });
+    return groups;
+  }
+
   async function updateCurrentTeacherProfile(changes) {
     const { client, user } = await loadCurrentTeacherProfile();
     const updates = Object.fromEntries(
@@ -497,6 +555,7 @@
     requireTeacher,
     handleUnavailableTeacher,
     loadCurrentTeacherProfile,
+    loadRegisteredTeachingScope,
     updateCurrentTeacherProfile,
     loadCurrentTeacherSettings,
     updateCurrentTeacherSettings,

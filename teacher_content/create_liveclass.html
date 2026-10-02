@@ -1025,42 +1025,32 @@
     <script src="../js/layout.js"></script>
 
     <script>
-      const registeredClasses = [
-        {
-          id: "grade5",
-          name: "Grade 5",
-          stream: "All Subjects",
-          students: 32,
-          subjects: [
-            "Mathematics",
-            "Science",
-            "English",
-            "Hindi",
-            "Social Science",
-          ],
-        },
-        {
-          id: "grade8",
-          name: "Grade 8",
-          stream: "Mathematics",
-          students: 28,
-          subjects: ["Mathematics"],
-        },
-        {
-          id: "grade10",
-          name: "Grade 10",
-          stream: "Science",
-          students: 31,
-          subjects: ["Science"],
-        },
-        {
-          id: "grade12pcm",
-          name: "Grade 12",
-          stream: "PCM",
-          students: 24,
-          subjects: ["Physics", "Chemistry", "Mathematics"],
-        },
-      ];
+      let registeredClasses = [];
+      let authenticatedTeacherId = "";
+
+      const streamLabels = {
+        science_pcm: "Science (PCM)",
+        science_pcb: "Science (PCB)",
+        commerce: "Commerce",
+        arts_humanities: "Arts / Humanities",
+      };
+
+      async function loadRegisteredClasses() {
+        const currentTeacher = await window.TeacherData.loadCurrentTeacherProfile();
+        authenticatedTeacherId = currentTeacher.profile.id;
+        const groups = await window.TeacherData.loadRegisteredTeachingScope(
+          currentTeacher.client,
+          currentTeacher.profile.id,
+        );
+        registeredClasses = groups.map((group) => ({
+          id: `${group.grade}|${group.stream || ""}`,
+          grade: group.grade,
+          name: `Class ${group.grade}`,
+          stream: group.stream || "",
+          streamLabel: streamLabels[group.stream] || "",
+          subjects: group.subjects.map((subject) => subject.name),
+        }));
+      }
 
       let selectedClass = null;
       let selectedSubject = null;
@@ -1078,10 +1068,7 @@
         const platformValue = document.getElementById("platform").value;
 
         summaryClass.textContent = selectedClass
-          ? selectedClass.name +
-            (selectedClass.stream !== "All Subjects"
-              ? " • " + selectedClass.stream
-              : "")
+          ? [selectedClass.name, selectedClass.streamLabel].filter(Boolean).join(" · ")
           : "—";
 
         summarySubject.textContent = selectedSubject || "—";
@@ -1103,26 +1090,25 @@
         const container = document.getElementById("registeredClasses");
         container.innerHTML = "";
 
+        if (!registeredClasses.length) {
+          container.textContent = "No registered classes found.";
+          return;
+        }
+
         registeredClasses.forEach((cls) => {
           const card = document.createElement("div");
           card.className = "registered-class";
-          card.innerHTML = `
-            <div class="class-icon">
-              <i class="fa-solid fa-users"></i>
-            </div>
-            <h3>
-              ${cls.name}
-              ${cls.stream !== "All Subjects" ? " • " + cls.stream : ""}
-            </h3>
-            <p>${cls.stream}</p>
-            <span class="student-count">
-              <i class="fa-solid fa-user-group"></i>
-              ${cls.students} Students
-            </span>
-            <span class="class-arrow">
-              <i class="fa-solid fa-chevron-right"></i>
-            </span>
-          `;
+          const icon = document.createElement("div");
+          icon.className = "class-icon";
+          icon.innerHTML = '<i class="fa-solid fa-users"></i>';
+          const title = document.createElement("h3");
+          title.textContent = [cls.name, cls.streamLabel].filter(Boolean).join(" · ");
+          const details = document.createElement("p");
+          details.textContent = cls.subjects.join(" · ") || "No subjects assigned";
+          const arrow = document.createElement("span");
+          arrow.className = "class-arrow";
+          arrow.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
+          card.append(icon, title, details, arrow);
 
           card.addEventListener("click", () => selectClass(cls.id, card));
           container.appendChild(card);
@@ -1148,11 +1134,15 @@
         selectedClass.subjects.forEach((subject) => {
           const label = document.createElement("label");
           label.className = "subject-card";
-          label.innerHTML = `
-            <input type="radio" name="subject" />
-            <i class="fa-solid fa-book-open"></i>
-            <span>${subject}</span>
-          `;
+          const input = document.createElement("input");
+          input.type = "radio";
+          input.name = "subject";
+          input.value = subject;
+          const icon = document.createElement("i");
+          icon.className = "fa-solid fa-book-open";
+          const name = document.createElement("span");
+          name.textContent = subject;
+          label.append(input, icon, name);
 
           label.addEventListener("click", () => {
             selectedSubject = subject;
@@ -1210,10 +1200,7 @@
         }
 
         document.getElementById("selectedClassText").textContent =
-          selectedClass.name +
-          (selectedClass.stream !== "All Subjects"
-            ? " • " + selectedClass.stream
-            : "");
+          [selectedClass.name, selectedClass.streamLabel].filter(Boolean).join(" · ");
         document.getElementById("selectedSubjectText").textContent =
           selectedSubject;
         showSection(2);
@@ -1282,10 +1269,7 @@
         const date = document.getElementById("classDate").value;
 
         document.getElementById("reviewClass").textContent =
-          selectedClass.name +
-          (selectedClass.stream !== "All Subjects"
-            ? " • " + selectedClass.stream
-            : "");
+          [selectedClass.name, selectedClass.streamLabel].filter(Boolean).join(" · ");
 
         document.getElementById("reviewSubject").textContent = selectedSubject;
         document.getElementById("reviewTitle").textContent =
@@ -1307,8 +1291,7 @@
           document.getElementById("platform").value;
         document.getElementById("reviewLink").textContent =
           document.getElementById("meetingLink").value;
-        document.getElementById("reviewStudents").textContent =
-          selectedClass.students;
+        document.getElementById("reviewStudents").textContent = "—";
         document.getElementById("reviewNotify").textContent =
           document.getElementById("notifyStudents").checked ? "Enabled" : "Off";
         document.getElementById("reviewReminder").textContent =
@@ -1335,11 +1318,10 @@
 
         const liveClass = {
           id: "live_" + Date.now(),
-          teacher_id: "teacher-local",
+          teacher_id: authenticatedTeacherId,
           classId: selectedClass.id,
           grade: String(selectedClass.name).replace(/[^0-9]/g, "") || "",
-          stream:
-            selectedClass.stream === "All Subjects" ? "" : selectedClass.stream,
+          stream: selectedClass.stream,
           subject: selectedSubject,
           title: document.getElementById("classTitle").value.trim(),
           topic: document.getElementById("classDescription").value.trim(),
@@ -1355,9 +1337,8 @@
           meeting_platform: document.getElementById("platform").value,
           meetingLink: document.getElementById("meetingLink").value.trim(),
           meeting_url: document.getElementById("meetingLink").value.trim(),
-          class_grade: String(selectedClass.name).replace(/[^0-9]/g, "") || "",
+          class_grade: String(selectedClass.grade),
           status: "Scheduled",
-          students: selectedClass.students,
           createdAt: new Date().toISOString(),
         };
 
@@ -1381,10 +1362,7 @@
         document.getElementById("successSection").classList.add("active");
 
         document.getElementById("successClass").textContent =
-          selectedClass.name +
-          (selectedClass.stream !== "All Subjects"
-            ? " • " + selectedClass.stream
-            : "");
+          [selectedClass.name, selectedClass.streamLabel].filter(Boolean).join(" · ");
         document.getElementById("successSubject").textContent = selectedSubject;
         document.getElementById("successDate").textContent =
           new Date(date + "T00:00:00").toLocaleDateString("en-IN", {
@@ -1396,8 +1374,7 @@
           startTime +
           " – " +
           endTime;
-        document.getElementById("successStudents").textContent =
-          selectedClass.students;
+        document.getElementById("successStudents").textContent = "—";
       }
 
       const today = new Date();
@@ -1421,8 +1398,16 @@
         }
       });
 
-      renderClasses();
-      updateSummary();
+      loadRegisteredClasses()
+        .then(() => {
+          renderClasses();
+          updateSummary();
+        })
+        .catch((error) => {
+          console.error("Unable to load registered live-class subjects.", error);
+          document.getElementById("registeredClasses").textContent =
+            `Could not load registered grades and subjects. ${error.message || "Please try again."}`;
+        });
     </script>
   </body>
 </html>

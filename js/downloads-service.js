@@ -6,6 +6,7 @@
   const OFFLINE_STORE = "files";
   const DOWNLOAD_META_KEY = "smartLearningStudentDownloads";
   const DEFAULT_STORAGE_LIMIT_BYTES = 5 * 1024 * 1024 * 1024;
+  let registeredTeacherAssignments = null;
 
   function readJson(key, fallback) {
     try {
@@ -61,6 +62,7 @@
   }
 
   function getTeacherAssignments() {
+    if (registeredTeacherAssignments) return registeredTeacherAssignments;
     const record = getTeacherRecord();
     const professional = record?.professional || {};
     const map = new Map();
@@ -100,6 +102,23 @@
         finalMap[grade] = Array.from(subjects).sort();
       });
     return finalMap;
+  }
+
+  function setRegisteredTeachingScope(groups) {
+    const assignments = new Map();
+    (groups || []).forEach((group) => {
+      const grade = normalizeGrade(group.grade);
+      if (!grade) return;
+      if (!assignments.has(grade)) assignments.set(grade, new Set());
+      (group.subjects || []).forEach((subject) => {
+        if (subject?.name) assignments.get(grade).add(String(subject.name).trim());
+      });
+    });
+    registeredTeacherAssignments = Object.fromEntries(
+      [...assignments.entries()]
+        .sort(([left], [right]) => Number(left) - Number(right))
+        .map(([grade, subjects]) => [grade, [...subjects].sort()]),
+    );
   }
 
   function getRegisteredClasses() {
@@ -950,6 +969,7 @@
   const api = {
     teacherId,
     getTeacherAssignments,
+    setRegisteredTeachingScope,
     getRegisteredClasses,
     getRegisteredSubjects,
     fetchFiles,

@@ -3,19 +3,6 @@
   const $ = (id) => document.getElementById(id);
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
   const subjectName = (quiz) => state.subjects.get(String(quiz.subject_id)) || quiz.subject_name || "Unknown subject";
-  const standardSubjectsFor = (group) => window.TeacherQuizSubjectRules.subjectsFor(
-    group.grade,
-    window.TeacherQuizSubjectRules.normalizeStream(group.stream),
-  );
-  const registeredStandardSubjectsFor = (group) => {
-    const standardSubjects = new Set(standardSubjectsFor(group).map((subject) => subject.trim().toLocaleLowerCase()));
-    return group.subjects.filter((subject) => standardSubjects.has(subject.trim().toLocaleLowerCase()));
-  };
-  const isRegisteredStandardQuizSubject = (quiz) => state.groups.some((group) =>
-    Number(group.grade) === Number(quiz.grade) &&
-    window.TeacherQuizSubjectRules.normalizeStream(group.stream) === window.TeacherQuizSubjectRules.normalizeStream(quiz.stream) &&
-    registeredStandardSubjectsFor(group).some((subject) => subject.trim().toLocaleLowerCase() === subjectName(quiz).trim().toLocaleLowerCase()),
-  );
   function toast(message, isError = false) {
     const region = $("quizToastRegion");
     if (!region) return;
@@ -51,7 +38,7 @@
     const gradeSelect = $("quizClassFilter");
     const subjectSelect = $("quizSubjectFilter");
     const grades = [...new Set(state.quizzes.map((quiz) => String(quiz.grade || "")).filter(Boolean))].sort((a, b) => Number(a) - Number(b));
-    const subjects = [...new Set(state.quizzes.filter(isRegisteredStandardQuizSubject).map(subjectName))]
+    const subjects = [...new Set(state.groups.flatMap((group) => group.subjects))]
       .sort((a, b) => a.localeCompare(b));
     gradeSelect.replaceChildren(new Option("All Grades", ""), ...grades.map((grade) => new Option(`Grade ${grade}`, grade)));
     subjectSelect.replaceChildren(new Option("All Subjects", ""), ...subjects.map((subject) => new Option(subject, subject)));
@@ -98,41 +85,11 @@
     state.scopeError = "";
     scopeElement.textContent = "Loading registered classes...";
     try {
-      const [groupResult, assignmentResult] = await Promise.all([
-        state.client.from("teacher_grade_groups").select("grade, stream, teach_all_subjects").eq("teacher_id", state.teacher.id).order("grade", { ascending: true }).order("stream", { ascending: true }),
-        state.client.from("teacher_subject_assignments").select("subject_id, grade, stream").eq("teacher_id", state.teacher.id).order("grade", { ascending: true }).order("stream", { ascending: true }),
-      ]);
-      if (groupResult.error) throw groupResult.error;
-      if (assignmentResult.error) throw assignmentResult.error;
-
-      const gradeGroups = (groupResult.data || []).map((row) => ({
-        grade: Number(row.grade),
-        stream: row.stream || "",
-        teach_all_subjects: Boolean(row.teach_all_subjects),
-        subjects: [],
+      const gradeGroups = await window.TeacherData.loadRegisteredTeachingScope(state.client, state.teacher.id);
+      state.groups = gradeGroups.map((group) => ({
+        ...group,
+        subjects: group.subjects.map((subject) => subject.name),
       }));
-      const validKeys = new Set(gradeGroups.map((group) => `${group.grade}|${group.stream}`));
-      const assignments = (assignmentResult.data || []).filter((row) => row.subject_id && validKeys.has(`${Number(row.grade)}|${row.stream || ""}`));
-      const subjectIds = [...new Set(assignments.map((row) => String(row.subject_id)))];
-      const hasTeachAll = gradeGroups.some((group) => group.teach_all_subjects);
-      let subjectRows = [];
-      if (subjectIds.length || hasTeachAll) {
-        let subjectQuery = state.client.from("subjects").select("id, name");
-        if (subjectIds.length && !hasTeachAll) subjectQuery = subjectQuery.in("id", subjectIds);
-        const { data, error: subjectError } = await subjectQuery;
-        if (subjectError) throw subjectError;
-        subjectRows = data || [];
-      }
-      const subjectMap = new Map((subjectRows || []).map((subject) => [String(subject.id), subject.name]));
-
-      gradeGroups.forEach((group) => {
-        const groupAssignments = assignments.filter((row) => Number(row.grade) === group.grade && (row.stream || "") === group.stream);
-        const names = group.teach_all_subjects
-          ? [...subjectMap.values()]
-          : groupAssignments.map((row) => subjectMap.get(String(row.subject_id))).filter(Boolean);
-        group.subjects = [...new Set(names)].sort((left, right) => left.localeCompare(right));
-      });
-      state.groups = gradeGroups;
       state.scopeLoaded = true;
       renderScope();
     } catch (error) {

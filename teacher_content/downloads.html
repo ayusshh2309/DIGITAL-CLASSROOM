@@ -1338,6 +1338,12 @@
         });
 
         try {
+          const currentTeacher = await window.TeacherData.loadCurrentTeacherProfile();
+          const registeredGroups = await window.TeacherData.loadRegisteredTeachingScope(
+            currentTeacher.client,
+            currentTeacher.profile.id,
+          );
+          service.setRegisteredTeachingScope(registeredGroups);
           state.files = await service.fetchFiles();
           renderRegisteredScope();
           if (!service.getRegisteredClasses().length) {
@@ -1352,6 +1358,8 @@
           });
         } catch (error) {
           console.error("Unable to initialize downloads page.", error);
+          $("downloadsScopeValue").textContent = `Could not load registered subjects: ${error.message || "Please try again."}`;
+          alert(`Unable to load your registered grades and subjects. ${error.message || "Please try again."}`);
         }
       });
 
@@ -1366,5 +1374,4 @@
     <script src="../js/layout.js"></script>
   </body>
 </html>
-
 

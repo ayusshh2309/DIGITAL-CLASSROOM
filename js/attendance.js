@@ -315,6 +315,15 @@
     }
   }
   document.addEventListener("DOMContentLoaded", async () => {
+    if (window.SmartLearningSupabase?.isConfigured?.()) {
+      try {
+        await AttendanceService.loadRegisteredTeachingScope();
+      } catch (error) {
+        AttendanceService.setRegisteredTeachingScope([]);
+        console.error("Could not load registered attendance subjects.", error);
+        showToast(`Could not load registered grades and subjects. ${error.message || "Please try again."}`, true);
+      }
+    }
     state.classes = AttendanceService.loadTeacherClasses();
     $("classSelect").innerHTML = state.classes.length
       ? state.classes

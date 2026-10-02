@@ -21,5 +21,36 @@
   async function submitForm(event) { event.preventDefault(); const data = Object.fromEntries(new FormData(event.currentTarget)); if (!data.title.trim() || !data.message.trim() || !data.class_grade) { toast("Title, message, and class are required.", true); return; } if (data.status === "Scheduled" && !data.scheduled_at) { toast("Choose a scheduled time.", true); return; } const item = await AnnouncementService.saveAnnouncement({ ...state.editing, ...data, published_at: data.status === "Published" ? (state.editing?.published_at || new Date().toISOString()) : null, scheduled_at: data.status === "Scheduled" ? new Date(data.scheduled_at).toISOString() : null }); $("announcementModalRoot").replaceChildren(); await load(); toast(item.status === "Published" ? "Announcement published successfully." : "Announcement saved successfully."); }
   async function handleAction(event) { const action = event.target.closest("[data-action]")?.dataset.action; const id = event.target.closest("[data-action]")?.dataset.id; if (!action || !id) return; const item = state.announcements.find((row) => row.id === id); if (action === "edit") openModal(item); if (action === "view") openModal(item); if (action === "delete" && confirm("Delete this announcement?")) { await AnnouncementService.deleteAnnouncement(id); await load(); toast("Announcement deleted."); } }
   function setupRealtime() { state.stopRealtime(); state.stopRealtime = AnnouncementService.subscribe({ onChange: () => load().catch((error) => console.error(error)) }); }
-  document.addEventListener("DOMContentLoaded", async () => { state.classes = AnnouncementService.classes(); populateClasses(); populateTypes(); $("announcementMode").textContent = window.SmartLearningSupabase?.isConfigured?.() ? "Supabase mode" : "Local mode"; try { await load(); setupRealtime(); } catch (error) { console.error(error); toast("Announcements could not be loaded.", true); } $("newAnnouncementButton").addEventListener("click", () => openModal()); $("newAnnouncementBanner").addEventListener("click", () => openModal()); $("classFilter").addEventListener("change", (event) => { state.grade = event.target.value; state.page = 1; renderTable(); }); $("typeFilter").addEventListener("change", (event) => { state.type = event.target.value; state.page = 1; renderTable(); }); $("statusFilter").addEventListener("change", (event) => { state.status = event.target.value; state.page = 1; renderTable(); }); $("sortAnnouncements").addEventListener("change", (event) => { state.sort = event.target.value; renderTable(); }); $("searchInput").addEventListener("input", (event) => { state.query = event.target.value.toLowerCase(); state.page = 1; renderTable(); }); $("pageButtons").addEventListener("click", (event) => { const page = Number(event.target.dataset.page); if (page) { state.page = page; renderTable(); } }); $("announcementsTableBody").addEventListener("click", handleAction); $("draftList").addEventListener("click", (event) => { const id = event.target.closest("[data-draft]")?.dataset.draft; if (id) openModal(state.announcements.find((item) => item.id === id)); }); });
+  document.addEventListener("DOMContentLoaded", async () => {
+    if (window.SmartLearningSupabase?.isConfigured?.()) {
+      try {
+        await window.AttendanceService.loadRegisteredTeachingScope();
+      } catch (error) {
+        window.AttendanceService.setRegisteredTeachingScope([]);
+        console.error("Could not load registered announcement subjects.", error);
+        toast(`Could not load registered grades and subjects. ${error.message || "Please try again."}`, true);
+      }
+    }
+    state.classes = AnnouncementService.classes();
+    populateClasses();
+    populateTypes();
+    $("announcementMode").textContent = window.SmartLearningSupabase?.isConfigured?.() ? "Supabase mode" : "Local mode";
+    try {
+      await load();
+      setupRealtime();
+    } catch (error) {
+      console.error(error);
+      toast("Announcements could not be loaded.", true);
+    }
+    $("newAnnouncementButton").addEventListener("click", () => openModal());
+    $("newAnnouncementBanner").addEventListener("click", () => openModal());
+    $("classFilter").addEventListener("change", (event) => { state.grade = event.target.value; state.page = 1; renderTable(); });
+    $("typeFilter").addEventListener("change", (event) => { state.type = event.target.value; state.page = 1; renderTable(); });
+    $("statusFilter").addEventListener("change", (event) => { state.status = event.target.value; state.page = 1; renderTable(); });
+    $("sortAnnouncements").addEventListener("change", (event) => { state.sort = event.target.value; renderTable(); });
+    $("searchInput").addEventListener("input", (event) => { state.query = event.target.value.toLowerCase(); state.page = 1; renderTable(); });
+    $("pageButtons").addEventListener("click", (event) => { const page = Number(event.target.dataset.page); if (page) { state.page = page; renderTable(); } });
+    $("announcementsTableBody").addEventListener("click", handleAction);
+    $("draftList").addEventListener("click", (event) => { const id = event.target.closest("[data-draft]")?.dataset.draft; if (id) openModal(state.announcements.find((item) => item.id === id)); });
+  });
 })();

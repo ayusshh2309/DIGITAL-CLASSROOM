@@ -4,22 +4,71 @@
     user: null,
     teacher: null,
     groups: [],
+    students: [],
     selectedGrade: "",
     selectedStream: "",
+    selectedSubject: "",
+    searchTerm: "",
     channel: null,
     authSubscription: null,
-    loading: false,
+    loadingScope: false,
+    loadingStudents: false,
     error: "",
   };
 
   const $ = (id) => document.getElementById(id);
-  const rules = window.TeacherQuizSubjectRules;
+  const rules = window.TeacherQuizSubjectRules || {
+    streamLabels: {
+      science_pcm: "Science (PCM)",
+      science_pcb: "Science (PCB)",
+      commerce: "Commerce",
+      arts_humanities: "Arts / Humanities",
+    },
+    normalizeStream: (value) => String(value ?? "").trim().toLowerCase(),
+    subjectsFor: () => [],
+  };
   const streamLabels = { ...rules.streamLabels, "": "No stream" };
-  const normalizedStream = (value) => rules.normalizeStream(value);
+  const normalizedStream = (value) => {
+    const stream = String(value ?? "").trim().toLowerCase();
+    return Object.hasOwn(streamLabels, stream) ? stream : "";
+  };
   const groupKey = (grade, stream) => `${Number(grade)}|${normalizedStream(stream)}`;
   const classLabel = (grade) => `Class ${grade}`;
 
-  function setMessage(message, isError = false) {
+  function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    }[character]));
+  }
+
+  function selectedGroup() {
+    const grade = Number(state.selectedGrade);
+    const stream = normalizedStream(state.selectedStream);
+    return state.groups.find((group) => group.grade === grade && normalizedStream(group.stream) === stream) || null;
+  }
+
+  function groupsForSelectedGrade() {
+    const grade = Number(state.selectedGrade);
+    return state.groups.filter((group) => group.grade === grade);
+  }
+
+  function subjectsFor(group) {
+    if (!group) return [];
+    const collected = [...new Set(group.subjects || [])].filter(Boolean);
+    return collected.sort((left, right) => left.localeCompare(right));
+  }
+
+  function updateSummaryStats(totalCount) {
+    $("statTotal").textContent = String(totalCount);
+    $("studentCountPill").textContent = `${totalCount} Student${totalCount === 1 ? "" : "s"}`;
+    $("statClasses").textContent = String(new Set(state.groups.map((group) => group.grade)).size);
+  }
+
+  function setTableMessage(message, isError = false) {
     const body = $("studentTableBody");
     const row = document.createElement("tr");
     const cell = document.createElement("td");
@@ -30,34 +79,21 @@
     body.replaceChildren(row);
     $("paginationInfo").textContent = message;
     $("paginationControls").replaceChildren();
-    $("statTotal").textContent = "0";
-    $("studentCountPill").textContent = "0 Students";
+    updateSummaryStats(0);
     if (isError) console.error(message);
-  }
-
-  function subjectsFor(group) {
-    return [...new Set(group?.subjects || [])].sort((left, right) => left.localeCompare(right));
-  }
-
-  function selectedGroup() {
-    return state.groups.find((group) =>
-      group.grade === Number(state.selectedGrade) &&
-      normalizedStream(group.stream) === normalizedStream(state.selectedStream),
-    ) || null;
-  }
-
-  function groupsForSelectedGrade() {
-    return state.groups.filter((group) => group.grade === Number(state.selectedGrade));
   }
 
   function renderClassOptions() {
     const select = $("classFilter");
     const grades = [...new Set(state.groups.map((group) => group.grade))].sort((left, right) => left - right);
-    select.replaceChildren(...(grades.length
-      ? grades.map((grade) => new Option(classLabel(grade), String(grade)))
-      : [new Option(state.loading ? "Loading classes..." : "No registered classes", "")]));
-    if (grades.includes(Number(state.selectedGrade))) select.value = state.selectedGrade;
-    else {
+    select.replaceChildren(
+      ...(grades.length
+        ? grades.map((grade) => new Option(classLabel(grade), String(grade)))
+        : [new Option(state.loadingScope ? "Loading classes..." : "No registered classes", "")]),
+    );
+    if (grades.includes(Number(state.selectedGrade))) {
+      select.value = state.selectedGrade;
+    } else {
       state.selectedGrade = grades.length ? String(grades[0]) : "";
       select.value = state.selectedGrade;
     }
@@ -66,61 +102,71 @@
   function renderStreamOptions() {
     const select = $("streamFilter");
     const gradeGroups = groupsForSelectedGrade();
-    const streams = [...new Set(gradeGroups.map((group) => normalizedStream(group.stream)))];
-    const streamGroups = streams.filter(Boolean);
+    const streams = [...new Set(gradeGroups.map((group) => normalizedStream(group.stream)).filter(Boolean))];
+
     if (!gradeGroups.length) {
-      select.replaceChildren(new Option(state.loading ? "Loading streams..." : "No registered streams", ""));
+      select.replaceChildren(new Option(state.loadingScope ? "Loading streams..." : "No registered streams", ""));
       select.disabled = true;
       state.selectedStream = "";
       return;
     }
-    if (!streamGroups.length) {
+
+    if (!streams.length) {
       select.replaceChildren(new Option("Not applicable", ""));
       select.disabled = true;
       state.selectedStream = "";
       return;
     }
 
-    select.replaceChildren(new Option("Select a stream", ""), ...streamGroups.map((stream) =>
-      new Option(streamLabels[stream] || stream, stream),
-    ));
-    if (streamGroups.includes(state.selectedStream)) select.value = state.selectedStream;
-    else {
-      state.selectedStream = "";
-      select.value = "";
-    }
+    select.replaceChildren(
+      new Option("Select a stream", ""),
+      ...streams.map((stream) => new Option(streamLabels[stream] || stream, stream)),
+    );
     select.disabled = false;
+
+    if (streams.includes(normalizedStream(state.selectedStream))) {
+      select.value = state.selectedStream;
+    } else {
+      state.selectedStream = streams[0];
+      select.value = state.selectedStream;
+    }
   }
 
   function renderSubjectOptions() {
     const select = $("subjectFilter");
-    const current = select.value;
+    const current = state.selectedSubject;
     const group = selectedGroup();
+    const subjects = group ? subjectsFor(group) : [];
+
     if (!group) {
       select.replaceChildren(new Option(state.selectedGrade ? "Select a stream first" : "Select a class first", ""));
       select.disabled = true;
+      state.selectedSubject = "";
       return;
     }
-    const subjects = subjectsFor(group);
+
     select.replaceChildren(
       new Option(`All Subjects${subjects.length ? ` (${subjects.length})` : ""}`, ""),
       ...subjects.map((subject) => new Option(subject, subject)),
     );
     select.disabled = !subjects.length;
-    select.value = subjects.includes(current) ? current : "";
+    state.selectedSubject = subjects.includes(current) ? current : "";
+    select.value = state.selectedSubject;
   }
 
   function renderRegisteredClasses() {
     const root = $("registeredClassSummary");
-    const grades = [...new Set(state.groups.map((group) => group.grade))].sort((left, right) => left - right);
     root.replaceChildren();
+    const grades = [...new Set(state.groups.map((group) => group.grade))].sort((left, right) => left - right);
+
     if (!grades.length) {
       const empty = document.createElement("div");
       empty.className = "registered-class-subjects";
-      empty.textContent = state.loading ? "Loading teaching scope..." : "No registered classes found.";
+      empty.textContent = state.loadingScope ? "Loading teaching scope..." : "No registered classes found.";
       root.appendChild(empty);
       return;
     }
+
     grades.forEach((grade) => {
       const groups = state.groups.filter((group) => group.grade === grade);
       const card = document.createElement("button");
@@ -158,96 +204,234 @@
     $("statClasses").textContent = String(new Set(state.groups.map((group) => group.grade)).size);
   }
 
-  function renderStudentsState() {
-    if (state.loading) {
-      setMessage("Loading students...");
+  function filterStudents() {
+    if (!state.selectedGrade) return [];
+    const selectedGrade = Number(state.selectedGrade);
+    const students = state.students.filter((student) => {
+      const studentGrade = Number(student.grade);
+      if (studentGrade !== selectedGrade) return false;
+
+      if (selectedGrade >= 11) {
+        if (!state.selectedStream) return false;
+        return normalizedStream(student.stream) === normalizedStream(state.selectedStream);
+      }
+
+      return normalizedStream(student.stream) === "";
+    });
+
+    if (!state.selectedSubject) return students;
+    const group = state.groups.find((entry) =>
+      entry.grade === selectedGrade && normalizedStream(entry.stream) === normalizedStream(state.selectedStream),
+    );
+    if (!group) return students;
+    const allowedSubjects = subjectsFor(group);
+    if (!allowedSubjects.includes(state.selectedSubject)) return [];
+    return students;
+  }
+
+  function renderStudentRows(students) {
+    const body = $("studentTableBody");
+    body.replaceChildren();
+    if (!students.length) {
+      setTableMessage(state.selectedGrade ? "No students found for the selected grade and stream." : "Select a class to view students.");
+      return;
+    }
+
+    students
+      .slice()
+      .sort((left, right) => left.full_name.localeCompare(right.full_name))
+      .forEach((student) => {
+        const row = document.createElement("tr");
+        const studentName = document.createElement("td");
+        const nameWrap = document.createElement("div");
+        nameWrap.className = "student-info-cell";
+        const avatar = document.createElement("img");
+        avatar.className = "student-avatar";
+        avatar.alt = "Student avatar";
+        avatar.src = student.profile_photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.full_name || "Student")}&background=00818a&color=fff`;
+        const textWrap = document.createElement("div");
+        const name = document.createElement("div");
+        name.className = "student-name";
+        name.textContent = student.full_name || "Unnamed student";
+        const idLine = document.createElement("div");
+        idLine.className = "student-id";
+        idLine.textContent = student.email || "No email";
+        textWrap.append(name, idLine);
+        nameWrap.append(avatar, textWrap);
+        studentName.appendChild(nameWrap);
+
+        const studentIdCell = document.createElement("td");
+        studentIdCell.className = "student-id-cell";
+        studentIdCell.textContent = student.student_id || "—";
+
+        const gradeCell = document.createElement("td");
+        gradeCell.className = "grade-cell";
+        gradeCell.innerHTML = `<span class="badge-grade">${escapeHtml(classLabel(student.grade))}</span>`;
+
+        const streamCell = document.createElement("td");
+        streamCell.className = "grade-cell";
+        const stream = normalizedStream(student.stream);
+        streamCell.textContent = stream ? (streamLabels[stream] || stream) : "N/A";
+
+        const subjectsCell = document.createElement("td");
+        const group = state.groups.find((entry) => entry.grade === Number(student.grade) && normalizedStream(entry.stream) === normalizedStream(student.stream));
+        const subjectNames = group ? subjectsFor(group) : [];
+        const chips = subjectNames.length ? subjectNames.slice(0, 3).map((subject, index) => {
+          const chip = document.createElement("span");
+          chip.className = `subject-chip subject-chip-${(index % 3) + 1}`;
+          chip.textContent = subject;
+          return chip;
+        }) : [(() => {
+          const chip = document.createElement("span");
+          chip.className = "subject-chip subject-chip-more";
+          chip.textContent = "No subjects";
+          return chip;
+        })()];
+        const subjectWrap = document.createElement("div");
+        subjectWrap.className = "subject-chips";
+        chips.forEach((chip) => subjectWrap.appendChild(chip));
+        if (subjectNames.length > 3) {
+          const more = document.createElement("span");
+          more.className = "subject-chip subject-chip-more";
+          more.textContent = `+${subjectNames.length - 3}`;
+          subjectWrap.appendChild(more);
+        }
+        subjectsCell.appendChild(subjectWrap);
+
+        const statusCell = document.createElement("td");
+        const status = document.createElement("span");
+        status.className = "status-chip";
+        status.textContent = "Active";
+        statusCell.appendChild(status);
+
+        const actionCell = document.createElement("td");
+        actionCell.className = "actions-cell";
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "profile-action";
+        button.textContent = "View Profile";
+        actionCell.appendChild(button);
+
+        row.append(studentName, studentIdCell, gradeCell, streamCell, subjectsCell, statusCell, actionCell);
+        body.appendChild(row);
+      });
+
+    $("paginationInfo").textContent = `${students.length} visible student${students.length === 1 ? "" : "s"}`;
+    $("paginationControls").replaceChildren();
+    updateSummaryStats(students.length);
+  }
+
+  function renderStudents() {
+    if (state.loadingScope) {
+      setTableMessage("Loading teaching scope...");
       return;
     }
     if (state.error) {
-      setMessage(`Error loading data. ${state.error}`, true);
+      setTableMessage(`Error loading data. ${state.error}`, true);
       return;
     }
     if (!state.groups.length) {
-      setMessage("No registered classes found.");
+      setTableMessage("No registered classes found.");
       return;
     }
-    if (!selectedGroup()) {
-      setMessage(state.selectedGrade ? "Select a registered stream to view this class." : "Select a class to view students.");
+    if (!state.selectedGrade) {
+      setTableMessage("Select a class to view students.");
       return;
     }
-    setMessage("Student registration is not connected yet. Registered students will appear here when student records are available.");
-  }
+    if (Number(state.selectedGrade) >= 11 && !state.selectedStream) {
+      setTableMessage("Select a registered stream to view this class.");
+      return;
+    }
 
-  function render() {
-    renderFilters();
-    renderStudentsState();
-  }
+    const visibleStudents = filterStudents();
+    const searchValue = state.searchTerm.trim().toLowerCase();
+    const searchedStudents = searchValue
+      ? visibleStudents.filter((student) => [student.full_name, student.student_id, student.email].some((value) => String(value ?? "").toLowerCase().includes(searchValue)))
+      : visibleStudents;
 
-  function subjectRowsByGroup(rows) {
-    const result = new Map();
-    rows.forEach((row) => {
-      const subject = Array.isArray(row.subjects) ? row.subjects[0] : row.subjects;
-      const name = String(subject?.name || "").trim();
-      if (!name) return;
-      const key = groupKey(row.grade, row.stream);
-      const names = result.get(key) || [];
-      if (!names.some((existing) => existing.toLocaleLowerCase() === name.toLocaleLowerCase())) names.push(name);
-      result.set(key, names);
-    });
-    return result;
+    renderStudentRows(searchedStudents);
   }
 
   async function loadScope() {
     if (!state.client || !state.teacher) return;
-    state.loading = true;
+    state.loadingScope = true;
     state.error = "";
-    render();
+    renderFilters();
+    renderStudents();
     try {
-      const [groupsResult, assignmentsResult] = await Promise.all([
-        state.client.from("teacher_grade_groups")
-          .select("grade, stream, teach_all_subjects")
-          .eq("teacher_id", state.teacher.id)
-          .order("grade", { ascending: true })
-          .order("stream", { ascending: true }),
-        state.client.from("teacher_subject_assignments")
-          .select("grade, stream, subject_id, subjects(name)")
-          .eq("teacher_id", state.teacher.id)
-          .order("grade", { ascending: true })
-          .order("stream", { ascending: true }),
-      ]);
-      if (groupsResult.error) throw new Error(`Could not load registered classes. ${groupsResult.error.message}`);
-      if (assignmentsResult.error) throw new Error(`Could not load registered subjects. ${assignmentsResult.error.message}`);
-
-      const groupRows = (groupsResult.data || []).map((row) => ({
-        grade: Number(row.grade),
-        stream: normalizedStream(row.stream),
-        teachAllSubjects: Boolean(row.teach_all_subjects),
-        subjects: [],
+      const groupRows = await window.TeacherData.loadRegisteredTeachingScope(state.client, state.teacher.id);
+      state.groups = groupRows.map((group) => ({
+        id: group.id,
+        grade: group.grade,
+        stream: normalizedStream(group.stream),
+        teachAllSubjects: group.teachAllSubjects,
+        subjects: group.subjects.map((subject) => subject.name),
       })).filter((group) => Number.isInteger(group.grade) && group.grade > 0);
-      const assignedSubjects = subjectRowsByGroup(assignmentsResult.data || []);
-      groupRows.forEach((group) => {
-        const key = groupKey(group.grade, group.stream);
-        const validSubjects = rules.subjectsFor(group.grade, group.stream);
-        group.subjects = group.teachAllSubjects
-          ? validSubjects
-          : assignedSubjects.get(key) || [];
-      });
-      state.groups = groupRows;
+
+      if (!state.groups.length) {
+        state.selectedGrade = "";
+        state.selectedStream = "";
+      } else {
+        const grades = [...new Set(state.groups.map((group) => group.grade))].sort((left, right) => left - right);
+        if (!grades.includes(Number(state.selectedGrade))) {
+          state.selectedGrade = String(grades[0]);
+        }
+        const gradeGroups = state.groups.filter((group) => group.grade === Number(state.selectedGrade));
+        const streams = [...new Set(gradeGroups.map((group) => normalizedStream(group.stream)).filter(Boolean))];
+        if (Number(state.selectedGrade) >= 11 && streams.length) {
+          state.selectedStream = streams.includes(normalizedStream(state.selectedStream)) ? state.selectedStream : streams[0];
+        } else {
+          state.selectedStream = "";
+        }
+      }
     } catch (error) {
       console.error("Students teaching scope error:", error);
       state.groups = [];
       state.error = error.message || "Please try again.";
     } finally {
-      state.loading = false;
-      render();
+      state.loadingScope = false;
+      renderFilters();
+      void loadStudents();
     }
+  }
+
+  async function loadStudents() {
+    if (!state.client || !state.teacher) return;
+    state.loadingStudents = true;
+    const totalQuery = state.client.from("students").select("id, student_id, full_name, email, profile_photo_url, grade, stream");
+    let query = totalQuery;
+
+    if (state.selectedGrade) {
+      query = query.eq("grade", Number(state.selectedGrade));
+      if (Number(state.selectedGrade) >= 11 && state.selectedStream) {
+        query = query.eq("stream", state.selectedStream);
+      } else {
+        query = query.is("stream", null);
+      }
+    }
+
+    query = query.order("full_name", { ascending: true });
+    const { data, error } = await query;
+    state.loadingStudents = false;
+
+    if (error) {
+      state.error = error.message || "Could not load students.";
+      state.students = [];
+      renderStudents();
+      return;
+    }
+
+    state.error = "";
+    state.students = data || [];
+    renderStudents();
   }
 
   async function initialize() {
     const client = window.TeacherData?.getSupabaseClient?.();
     if (!client) {
       state.error = "Supabase is not configured.";
-      render();
+      renderFilters();
+      setTableMessage("Supabase is not configured.");
       return;
     }
     state.client = client;
@@ -255,7 +439,8 @@
     $("classFilter").replaceChildren(new Option("Loading classes...", ""));
     $("streamFilter").replaceChildren(new Option("Loading streams...", ""));
     $("subjectFilter").replaceChildren(new Option("Loading subjects...", ""));
-    setMessage("Loading teaching scope...");
+    setTableMessage("Loading teaching scope...");
+
     try {
       const { data, error } = await client.auth.getUser();
       if (error) throw new Error(`Could not verify your sign-in. ${error.message}`);
@@ -263,11 +448,14 @@
         window.location.assign("../teacher_registration/login.html");
         return;
       }
+
       state.user = data.user;
-      const { data: teacher, error: teacherError } = await client.from("teachers")
+      const { data: teacher, error: teacherError } = await client
+        .from("teachers")
         .select("id, user_id")
         .eq("user_id", state.user.id)
         .single();
+
       if (teacherError) throw new Error(`Could not load teacher profile. ${teacherError.message}`);
       if (!teacher || teacher.user_id !== state.user.id) throw new Error("No teacher profile is linked to this account.");
       state.teacher = teacher;
@@ -283,8 +471,7 @@
     } catch (error) {
       console.error("Students page initialization error:", error);
       state.error = error.message || "Could not initialize the Students page.";
-      state.loading = false;
-      render();
+      setTableMessage(state.error, true);
     }
   }
 
@@ -302,35 +489,52 @@
         table: "teacher_subject_assignments",
         filter: `teacher_id=eq.${state.teacher.id}`,
       }, () => { void loadScope(); })
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "students",
+      }, () => { void loadStudents(); })
       .subscribe((status) => {
         if (["CHANNEL_ERROR", "TIMED_OUT"].includes(status)) {
-          console.error("Students scope realtime subscription is unavailable.", status);
+          console.error("Students realtime subscription is unavailable.", status);
         }
       });
   }
 
   function selectGrade(grade) {
     state.selectedGrade = grade;
-    state.selectedStream = "";
-    render();
+    const gradeGroups = state.groups.filter((group) => group.grade === Number(grade));
+    const streams = [...new Set(gradeGroups.map((group) => normalizedStream(group.stream)).filter(Boolean))];
+    state.selectedStream = Number(grade) >= 11 && streams.length ? streams[0] : "";
+    state.selectedSubject = "";
+    renderFilters();
+    void loadStudents();
   }
 
   function selectStream(stream) {
     state.selectedStream = stream;
-    render();
+    state.selectedSubject = "";
+    renderFilters();
+    void loadStudents();
   }
 
   document.addEventListener("DOMContentLoaded", () => {
     $("classFilter").addEventListener("change", (event) => selectGrade(event.target.value));
     $("streamFilter").addEventListener("change", (event) => selectStream(event.target.value));
-    $("subjectFilter").addEventListener("change", renderStudentsState);
-    $("studentSearchInput").addEventListener("input", renderStudentsState);
+    $("subjectFilter").addEventListener("change", (event) => {
+      state.selectedSubject = event.target.value;
+      renderStudents();
+    });
+    $("studentSearchInput").addEventListener("input", (event) => {
+      state.searchTerm = event.target.value;
+      renderStudents();
+    });
     $("registeredClassSummary").addEventListener("click", (event) => {
       const card = event.target.closest("[data-grade]");
       if (card) selectGrade(card.dataset.grade);
     });
     window.addEventListener("beforeunload", () => {
-      if (state.channel) void state.client.removeChannel(state.channel);
+      if (state.channel && state.client) void state.client.removeChannel(state.channel);
       state.authSubscription?.unsubscribe();
     }, { once: true });
     void initialize();

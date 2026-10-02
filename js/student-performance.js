@@ -22,5 +22,37 @@
   function renderAll() { renderSummary(); renderOverview(); renderSubjects(); renderTable(); renderTopPerformers(); renderDistribution(); renderInsights(); }
   function openDrawer(studentId) { const student = state.performance.students.find((item) => item.id === studentId); if (!student) return; $("performanceDrawer").innerHTML = `<div class="performance-drawer-backdrop"><aside class="performance-drawer"><button class="performance-drawer-close" data-close aria-label="Close student details"><i class="fa-solid fa-xmark"></i></button><span class="page-eyebrow"><i class="fa-solid fa-user-graduate"></i> Student performance</span><h2 style="margin:8px 0 4px">${esc(student.name)}</h2><p class="drawer-meta">Class ${esc(state.grade)} · ${esc(state.subject || "All subjects")} · ${esc(student.id)}</p><div class="drawer-stats"><div class="drawer-stat"><strong>${student.records.length ? percent(student.average) : "—"}</strong><small>Overall average</small></div><div class="drawer-stat"><strong>${student.category}</strong><small>Category</small></div><div class="drawer-stat"><strong>${student.trend.value > 0 ? "+" : ""}${percent(student.trend.value)}</strong><small>Recent trend</small></div><div class="drawer-stat"><strong>${student.records.length}</strong><small>Assessments</small></div></div><h3>Subject performance</h3>${Object.entries(student.subjectScores).map(([subject, value]) => `<div class="assessment-item"><span>${esc(subject)}</span><strong>${value === null ? "—" : `${value}%`}</strong></div>`).join("")}<h3 style="margin-top:22px">Assessment history</h3>${student.records.length ? student.records.sort((a, b) => new Date(b.assessment_date) - new Date(a.assessment_date)).map((record) => `<div class="assessment-item"><span>${esc(record.assessment_name)}<br><small style="color:#718196">${esc(record.assessment_date.slice(0, 10))} · ${esc(record.subject)}</small></span><strong>${percent(record.percentage)}</strong></div>`).join("") : `<p class="drawer-meta" style="margin-top:12px">No assessment results available.</p>`}</aside></div>`; }
   function setupRealtime() { state.stopRealtime(); state.stopLocal(); state.stopRealtime = PerformanceService.subscribeToPerformance({ grade: state.grade, onChange: () => loadData(false) }); state.stopLocal = PerformanceService.subscribeToLocalChanges(() => loadData(false)); }
-  document.addEventListener("DOMContentLoaded", async () => { state.classes = PerformanceService.registeredClasses(); optionList($("classSelector"), state.classes, "No registered classes"); $("performanceMode").textContent = mode() ? "Supabase mode" : "Local mode"; if (state.classes.length) { state.grade = state.classes[0]; $("classSelector").value = state.grade; renderSubjectOptions(); } else { renderSubjectOptions(); } try { await loadData(); } catch (error) { console.error(error); renderError("Performance data could not be loaded."); } $("classSelector").addEventListener("change", selectClass); $("subjectSelector").addEventListener("change", selectSubject); $("studentSearch").addEventListener("input", (event) => { state.query = event.target.value.trim().toLowerCase(); state.page = 1; renderTable(); }); $("categoryFilter").addEventListener("change", (event) => { state.category = event.target.value; state.page = 1; renderTable(); }); $("sortPerformance").addEventListener("change", (event) => { state.sort = event.target.value; renderTable(); }); $("pageButtons").addEventListener("click", (event) => { const page = Number(event.target.dataset.page); if (page) { state.page = page; renderTable(); } }); $("performanceBody").addEventListener("click", (event) => { const student = event.target.closest("[data-student]")?.dataset.student; if (student) openDrawer(student); }); $("performanceDrawer").addEventListener("click", (event) => { if (event.target.closest("[data-close]") || event.target.classList.contains("performance-drawer-backdrop")) $("performanceDrawer").replaceChildren(); }); });
+  document.addEventListener("DOMContentLoaded", async () => {
+    if (mode()) {
+      try {
+        await window.AttendanceService.loadRegisteredTeachingScope();
+      } catch (error) {
+        window.AttendanceService.setRegisteredTeachingScope([]);
+        console.error("Could not load registered performance subjects.", error);
+        renderError(`Could not load registered grades and subjects. ${error.message || "Please try again."}`);
+      }
+    }
+    state.classes = PerformanceService.registeredClasses();
+    optionList($("classSelector"), state.classes, "No registered classes");
+    $("performanceMode").textContent = mode() ? "Supabase mode" : "Local mode";
+    if (state.classes.length) {
+      state.grade = state.classes[0];
+      $("classSelector").value = state.grade;
+    }
+    renderSubjectOptions();
+    try {
+      await loadData();
+    } catch (error) {
+      console.error(error);
+      renderError("Performance data could not be loaded.");
+    }
+    $("classSelector").addEventListener("change", selectClass);
+    $("subjectSelector").addEventListener("change", selectSubject);
+    $("studentSearch").addEventListener("input", (event) => { state.query = event.target.value.trim().toLowerCase(); state.page = 1; renderTable(); });
+    $("categoryFilter").addEventListener("change", (event) => { state.category = event.target.value; state.page = 1; renderTable(); });
+    $("sortPerformance").addEventListener("change", (event) => { state.sort = event.target.value; renderTable(); });
+    $("pageButtons").addEventListener("click", (event) => { const page = Number(event.target.dataset.page); if (page) { state.page = page; renderTable(); } });
+    $("performanceBody").addEventListener("click", (event) => { const student = event.target.closest("[data-student]")?.dataset.student; if (student) openDrawer(student); });
+    $("performanceDrawer").addEventListener("click", (event) => { if (event.target.closest("[data-close]") || event.target.classList.contains("performance-drawer-backdrop")) $("performanceDrawer").replaceChildren(); });
+  });
 })();

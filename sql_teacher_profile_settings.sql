@@ -580,6 +580,18 @@ begin
     ) then
       alter publication supabase_realtime add table public.teacher_settings;
     end if;
+    if not exists (
+      select 1 from pg_publication_tables
+      where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'teacher_grade_groups'
+    ) then
+      alter publication supabase_realtime add table public.teacher_grade_groups;
+    end if;
+    if not exists (
+      select 1 from pg_publication_tables
+      where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'teacher_subject_assignments'
+    ) then
+      alter publication supabase_realtime add table public.teacher_subject_assignments;
+    end if;
   end if;
 end;
 $$;
