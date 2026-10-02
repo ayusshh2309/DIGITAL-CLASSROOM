@@ -54,7 +54,7 @@ create table if not exists public.quiz_questions (
   teacher_id uuid not null references auth.users(id) on delete cascade,
   position integer not null default 1,
   text text not null,
-  type text not null check (type in ('Multiple Choice', 'True/False', 'Multiple Answer', 'Short Answer', 'Fill in the Blank')),
+  type text not null check (type in ('Multiple Choice', 'True/False')),
   marks numeric not null default 1 check (marks > 0),
   options jsonb not null default '[]'::jsonb,
   correct_answer jsonb,

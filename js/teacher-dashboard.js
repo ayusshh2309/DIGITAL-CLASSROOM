@@ -61,9 +61,24 @@
   const gradeOf = (row) => String(row.class_grade ?? row.grade ?? row.class ?? row.class_number ?? "").match(/\d+/)?.[0] || "";
   const subjectOf = (row) => String(row.subject ?? row.subject_name ?? "").trim();
   const dateOf = (row) => row.start_at || row.scheduled_at || row.start_time || row.exam_at || row.due_date || row.published_at || row.created_at || null;
-  const streamOf = (row) => String(row.stream ?? row.class_stream ?? "").trim();
+  const streamOf = (row) => {
+    const quiz = state.quizzes.find((item) => String(item.id) === String(row.quiz_id || row.assessment_id || row.id));
+    return String(row.stream ?? row.class_stream ?? quiz?.stream ?? "").trim();
+  };
   const registeredGroup = (row) => state.gradeGroups.some((group) => String(group.grade) === gradeOf(row) && (!streamOf(row) || String(group.stream || "") === streamOf(row)));
-  const assignedRow = (row) => registeredGroup(row) && (!subjectOf(row) || state.assignmentRows.some((assignment) => String(assignment.grade) === gradeOf(row) && assignment.subject.toLowerCase() === subjectOf(row).toLowerCase() && (!streamOf(row) || String(assignment.stream || "") === streamOf(row))));
+  const assignedRow = (row) => {
+    if (!registeredGroup(row)) return false;
+    const quiz = state.quizzes.find((item) => String(item.id) === String(row.quiz_id || row.assessment_id || row.id));
+    const subjectId = String(row.subject_id || quiz?.subject_id || "");
+    const subjectName = subjectOf(row) || subjectOf(quiz || {});
+    return state.assignmentRows.some((assignment) =>
+      String(assignment.grade) === gradeOf(row)
+      && (!streamOf(row) || String(assignment.stream || "") === streamOf(row))
+      && (subjectId
+        ? String(assignment.subject_id) === subjectId
+        : !subjectName || assignment.subject.toLowerCase() === subjectName.toLowerCase()),
+    );
+  };
   const fmtDate = (date, options = { weekday: "long", day: "numeric", month: "long", year: "numeric" }) => new Intl.DateTimeFormat(undefined, options).format(date);
   const fmtTime = (date) => new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(date);
 
@@ -152,12 +167,20 @@
     const quiz = state.quizzes.find((item) => String(item.id) === String(row.quiz_id || row.assessment_id));
     const score = Number(row.score ?? row.marks_obtained ?? row.obtained_marks ?? 0);
     const total = Number(row.total_marks ?? row.max_score ?? row.points_possible ?? quiz?.total_marks ?? 0);
+    const subjectId = row.subject_id || quiz?.subject_id || null;
+    const assignment = state.assignmentRows.find((item) =>
+      String(item.grade) === String(row.grade || quiz?.grade || "")
+      && String(item.subject_id || "") === String(subjectId || "")
+      && (!streamOf(row) || String(item.stream || "") === streamOf(row)),
+    );
     return {
       ...row,
       class_grade: row.class_grade || row.grade || gradeOf(quiz || {}),
-      subject: row.subject || subjectOf(quiz || {}),
+      stream: row.stream || quiz?.stream || "",
+      subject_id: subjectId,
+      subject: row.subject || subjectOf(quiz || {}) || assignment?.subject || "",
       percentage: Number(row.percentage ?? row.percent ?? (total > 0 ? score / total * 100 : NaN)),
-      assessment_date: row.assessment_date || row.completed_at || row.created_at || null,
+      assessment_date: row.assessment_date || row.submitted_at || row.completed_at || row.created_at || null,
     };
   }
 
@@ -246,20 +269,35 @@
         ["attendance", state.user.id, "*"],
         ["live_classes", state.user.id, "*"],
         ["announcements", state.user.id, "*"],
-        ["student_performance", state.user.id, "*"],
-        ["quiz_attempts", state.user.id, "*"],
       ];
       const optionalData = await Promise.all(optionalQueries.map(([table, ownerId]) => queryTeacherTable(table, ownerId, "*", { optional: true })));
-      const [quizzes, students, attendance, liveClasses, announcements, performanceRecords, quizAttempts] = optionalData;
+      const [quizzes, students, attendance, liveClasses, announcements] = optionalData;
       state.quizzes = quizzes;
       state.students = students.filter((student) => String(student.status || "Active").toLowerCase() !== "inactive");
       state.attendance = attendance;
       state.liveClasses = liveClasses;
       state.announcements = announcements;
-      const assessments = [...performanceRecords, ...quizAttempts].map(normalizeAssessment).filter((row) => Number.isFinite(row.percentage) && assignedRow(row));
+      let quizAttempts = [];
+      let performanceLoadError = false;
+      if (quizzes.length) {
+        const { data, error } = await state.client
+          .from("quiz_attempts")
+          .select("id, quiz_id, student_id, score, total_marks, percentage, submitted_at, status")
+          .in("quiz_id", quizzes.map((quiz) => quiz.id))
+          .eq("status", "submitted")
+          .order("submitted_at", { ascending: true });
+        if (error) {
+          console.error("Unable to load dashboard quiz results.", error);
+          performanceLoadError = true;
+        } else {
+          quizAttempts = data || [];
+        }
+      }
+      const assessments = quizAttempts.map(normalizeAssessment).filter((row) => Number.isFinite(row.percentage) && assignedRow(row));
       state.performance = new Map(state.classes.map((grade) => [grade, assessments.filter((row) => gradeOf(row) === grade)]));
       renderAll();
-      renderDataNotice();
+      if (performanceLoadError) renderDataNotice("Quiz performance is temporarily unavailable.", true);
+      else if (!quizAttempts.length) renderDataNotice();
 
       if (!profileChannel && window.TeacherData?.subscribeToTeacherProfile) {
         profileChannel = state.client.channel(`teacher-dashboard-profile-${state.user.id}`)
@@ -447,7 +485,7 @@
     if (state.client && state.user && state.profile?.id) {
       const channel = state.client.channel(`teacher-dashboard-${state.user.id}`);
       const teacherProfileTables = ["teacher_grade_groups", "teacher_subject_assignments", "materials", "quizzes"];
-      const authOwnedTables = ["students", "attendance", "live_classes", "announcements", "student_performance", "quiz_attempts"];
+      const authOwnedTables = ["students", "attendance", "live_classes", "announcements"];
       teacherProfileTables.forEach((table) => {
         channel.on("postgres_changes", { event: "*", schema: "public", table, filter: `teacher_id=eq.${state.profile.id}` }, scheduleRefresh);
       });
@@ -455,6 +493,7 @@
         const ownerId = state.user.id;
         channel.on("postgres_changes", { event: "*", schema: "public", table, filter: `teacher_id=eq.${ownerId}` }, scheduleRefresh);
       });
+      channel.on("postgres_changes", { event: "*", schema: "public", table: "quiz_attempts" }, scheduleRefresh);
       channel.subscribe();
       window.addEventListener("beforeunload", () => {
         state.client?.removeChannel(channel);

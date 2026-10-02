@@ -1,67 +1,134 @@
 (() => {
-  const LOCAL_KEYS = ["performanceRecords", "studentPerformance", "quizResults", "quizAttempts"];
-  const CATEGORIES = ["Excellent", "Very Good", "Good", "Needs Improvement"];
-
-  const readJson = (key, fallback) => {
-    try {
-      return JSON.parse(localStorage.getItem(key) || "null") || fallback;
-    } catch {
-      return fallback;
-    }
+  const CATEGORY_NAMES = ["Excellent", "Good", "Average", "Needs Help"];
+  const STREAM_LABELS = {
+    science_pcm: "Science (PCM)",
+    science_pcb: "Science (PCB)",
+    commerce: "Commerce",
+    arts_humanities: "Arts / Humanities",
   };
 
-  const teacherId = () => window.AttendanceService?.teacherId?.() || "local-teacher";
-  const registeredClasses = () => window.AttendanceService?.loadTeacherClasses?.() || [];
-  const registeredSubjects = (grade) => window.AttendanceService?.loadTeacherSubjects?.(grade) || [];
-  const registeredStudents = (grade) => window.AttendanceService?.loadRegisteredStudents?.(grade) || [];
-  const number = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
-  const gradeOf = (record) => String(record.class_grade ?? record.grade ?? record.class ?? "").match(/\d+/)?.[0] || String(record.class_grade ?? record.grade ?? record.class ?? "");
-
-  function localRecords() {
-    return LOCAL_KEYS.flatMap((key) => readJson(key, [])).filter(Array.isArray).flatMap((records) => records);
-  }
-
-  function normalizeRecord(record) {
-    const score = number(record.score ?? record.marks_obtained ?? record.obtained_marks ?? record.points, 0);
-    const total = number(record.total_marks ?? record.max_score ?? record.total ?? record.points_possible, 0);
-    const percentage = number(record.percentage ?? record.percent ?? (total > 0 ? (score / total) * 100 : 0), 0);
-    return {
-      id: String(record.id ?? record.assessment_id ?? `${record.student_id}-${record.subject}-${record.assessment_date}`),
-      teacher_id: String(record.teacher_id ?? teacherId()),
-      student_id: String(record.student_id ?? record.learner_id ?? record.user_id ?? ""),
-      student_name: record.student_name ?? record.full_name ?? record.name ?? "",
-      class_grade: gradeOf(record),
-      subject: String(record.subject ?? record.subject_name ?? record.subject_id ?? "Unassigned"),
-      assessment_id: String(record.assessment_id ?? record.quiz_id ?? record.exam_id ?? record.id ?? "assessment"),
-      assessment_name: record.assessment_name ?? record.title ?? record.quiz_title ?? record.exam_title ?? "Assessment",
-      score,
-      total_marks: total,
-      percentage: Math.max(0, Math.min(100, percentage)),
-      assessment_date: record.assessment_date ?? record.date ?? record.created_at ?? new Date().toISOString(),
-    };
-  }
-
-  async function loadPerformanceRecords(grade, subject = "") {
-    const client = window.SmartLearningSupabase?.getClient?.();
-    if (!client) {
-      return localRecords().map(normalizeRecord).filter((record) => record.teacher_id === teacherId() && record.class_grade === String(grade) && (!subject || record.subject === subject));
+  async function initialize() {
+    const client = window.TeacherData?.getSupabaseClient?.();
+    if (!client) throw new Error("Supabase is not configured.");
+    const { data: authData, error: authError } = await client.auth.getUser();
+    if (authError) throw authError;
+    if (!authData?.user) {
+      const error = new Error("Sign in with a teacher account to view performance.");
+      error.code = "AUTH_REQUIRED";
+      throw error;
     }
-    const query = client.from("student_performance").select("*").eq("teacher_id", teacherId()).eq("class_grade", String(grade));
-    const { data, error } = subject ? await query.eq("subject", subject) : await query;
-    if (error) throw error;
-    return (data || []).map(normalizeRecord).filter((record) => !subject || record.subject === subject);
+    const { data: teacher, error: teacherError } = await client
+      .from("teachers")
+      .select("id, user_id")
+      .eq("user_id", authData.user.id)
+      .single();
+    if (teacherError) throw teacherError;
+    const groups = await window.TeacherData.loadRegisteredTeachingScope(client, teacher.id);
+    return { client, user: authData.user, teacher, groups };
+  }
+
+  function registeredClasses(groups) {
+    return [...new Set(groups.map((group) => Number(group.grade)))].sort((a, b) => a - b);
+  }
+
+  function registeredGroups(groups, grade) {
+    return groups.filter((group) => Number(group.grade) === Number(grade));
+  }
+
+  function registeredSubjects(groups, grade, stream) {
+    const group = registeredGroups(groups, grade).find((item) =>
+      (item.stream || "") === (stream || ""),
+    );
+    return group?.subjects || [];
+  }
+
+  async function loadPerformanceData({ client, teacher, grade, stream, subjectId, groups }) {
+    const group = registeredGroups(groups, grade).find((item) =>
+      (item.stream || "") === (stream || ""),
+    );
+    if (!group) throw new Error("The selected grade and stream are not registered to this teacher.");
+    const authorizedSubjects = subjectId
+      ? group.subjects.filter((subject) => String(subject.id) === String(subjectId))
+      : group.subjects;
+    if (subjectId && !authorizedSubjects.length) {
+      throw new Error("The selected subject is not assigned to this grade and stream.");
+    }
+    const subjectIds = authorizedSubjects.map((subject) => subject.id);
+    if (!subjectIds.length) return { students: [], records: [], subjects: authorizedSubjects };
+
+    let quizQuery = client
+      .from("quizzes")
+      .select("id, title, subject_id")
+      .eq("teacher_id", teacher.id)
+      .eq("grade", Number(grade))
+      .eq("status", "published")
+      .in("subject_id", subjectIds);
+    quizQuery = stream ? quizQuery.eq("stream", stream) : quizQuery.is("stream", null);
+
+    let studentQuery = client
+      .from("students")
+      .select("id, student_id, full_name, grade, stream, roll_number")
+      .eq("grade", Number(grade))
+      .order("full_name", { ascending: true });
+    studentQuery = stream ? studentQuery.eq("stream", stream) : studentQuery.is("stream", null);
+
+    const [quizResult, studentResult] = await Promise.all([quizQuery, studentQuery]);
+    if (quizResult.error) throw quizResult.error;
+    if (studentResult.error) throw studentResult.error;
+
+    const quizzes = quizResult.data || [];
+    const students = studentResult.data || [];
+    if (!quizzes.length) return { students, records: [], subjects: authorizedSubjects };
+
+    const { data: attempts, error: attemptError } = await client
+      .from("quiz_attempts")
+      .select("id, quiz_id, student_id, score, total_marks, percentage, correct_answers, wrong_answers, unanswered, submitted_at, status")
+      .in("quiz_id", quizzes.map((quiz) => quiz.id))
+      .eq("status", "submitted")
+      .order("submitted_at", { ascending: true });
+    if (attemptError) throw attemptError;
+
+    const quizById = new Map(quizzes.map((quiz) => [String(quiz.id), quiz]));
+    const studentIds = new Set(students.map((student) => String(student.id)));
+    const subjectById = new Map(authorizedSubjects.map((subject) => [String(subject.id), subject.name]));
+    const records = (attempts || [])
+      .filter((attempt) => studentIds.has(String(attempt.student_id)))
+      .map((attempt) => {
+        const quiz = quizById.get(String(attempt.quiz_id));
+        const score = Number(attempt.score);
+        const total = Number(attempt.total_marks);
+        const percentage = Number(attempt.percentage);
+        return {
+          id: String(attempt.id),
+          quiz_id: String(attempt.quiz_id),
+          student_id: String(attempt.student_id),
+          student_name: "",
+          subject_id: String(quiz.subject_id),
+          subject: subjectById.get(String(quiz.subject_id)) || "Unknown subject",
+          assessment_name: quiz.title,
+          score,
+          total_marks: total,
+          percentage: Number.isFinite(percentage) ? percentage : (total > 0 ? (score / total) * 100 : 0),
+          assessment_date: attempt.submitted_at,
+          correct_answers: attempt.correct_answers,
+          wrong_answers: attempt.wrong_answers,
+          unanswered: attempt.unanswered,
+        };
+      });
+
+    return { students, records, subjects: authorizedSubjects };
   }
 
   function categoryFor(average) {
-    if (average >= 85) return "Excellent";
-    if (average >= 70) return "Very Good";
-    if (average >= 60) return "Good";
-    return "Needs Improvement";
+    if (average >= 90) return "Excellent";
+    if (average >= 75) return "Good";
+    if (average >= 60) return "Average";
+    return "Needs Help";
   }
 
   function trendFor(records) {
     const sorted = [...records].sort((a, b) => new Date(a.assessment_date) - new Date(b.assessment_date));
-    if (sorted.length < 2) return { value: 0, label: "No trend", direction: "neutral" };
+    if (sorted.length < 2) return { value: null, label: "Insufficient data", direction: "neutral" };
     const midpoint = Math.ceil(sorted.length / 2);
     const first = sorted.slice(0, midpoint).reduce((sum, record) => sum + record.percentage, 0) / midpoint;
     const recent = sorted.slice(midpoint).reduce((sum, record) => sum + record.percentage, 0) / (sorted.length - midpoint);
@@ -70,52 +137,107 @@
   }
 
   function calculatePerformance(records, students, subjects) {
-    const normalizedStudents = students.map((student) => ({ id: String(student.student_id), name: student.name, roll_no: student.roll_no }));
-    const byStudent = new Map(normalizedStudents.map((student) => [student.id, []]));
-    records.forEach((record) => { if (byStudent.has(record.student_id)) byStudent.get(record.student_id).push(record); });
-    const studentRows = normalizedStudents.map((student) => {
-      const studentRecords = byStudent.get(student.id) || [];
-      const average = studentRecords.length ? studentRecords.reduce((sum, record) => sum + record.percentage, 0) / studentRecords.length : 0;
-      const subjectScores = Object.fromEntries(subjects.map((item) => { const values = studentRecords.filter((record) => record.subject === item).map((record) => record.percentage); return [item, values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : null]; }));
-      return { ...student, records: studentRecords, average: Math.round(average * 10) / 10, category: categoryFor(average), trend: trendFor(studentRecords), subjectScores };
+    const studentRows = students.map((student) => {
+      const studentRecords = records
+        .filter((record) => record.student_id === String(student.id))
+        .sort((left, right) => new Date(left.assessment_date) - new Date(right.assessment_date));
+      const average = studentRecords.length
+        ? studentRecords.reduce((sum, record) => sum + record.percentage, 0) / studentRecords.length
+        : null;
+      const subjectScores = Object.fromEntries(subjects.map((subject) => {
+        const values = studentRecords.filter((record) => record.subject_id === String(subject.id)).map((record) => record.percentage);
+        return [subject.name, values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : null];
+      }));
+      return {
+        id: String(student.id),
+        studentCode: student.student_id,
+        name: student.full_name,
+        roll_no: student.roll_number || "—",
+        records: studentRecords,
+        average: average === null ? null : Math.round(average * 10) / 10,
+        category: average === null ? "—" : categoryFor(average),
+        trend: trendFor(studentRecords),
+        subjectScores,
+      };
     });
-    const scored = studentRows.filter((student) => student.records.length);
-    const classAverage = scored.length ? scored.reduce((sum, student) => sum + student.average, 0) / scored.length : 0;
-    const allPercentages = records.map((record) => record.percentage);
-    const highest = allPercentages.length ? Math.max(...allPercentages) : 0;
-    const improvements = scored.filter((student) => student.records.length > 1).map((student) => student.trend.value);
-    const subjectAverages = subjects.map((subject) => { const values = records.filter((record) => record.subject === subject).map((record) => record.percentage); return { subject, average: values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : 0, count: values.length }; });
-    const distribution = Object.fromEntries(CATEGORIES.map((category) => [category, studentRows.filter((student) => student.category === category && student.records.length).length]));
-    return { students: studentRows, subjects: subjectAverages, classAverage: Math.round(classAverage * 10) / 10, highestScore: Math.round(highest * 10) / 10, improvement: improvements.length ? Math.round((improvements.reduce((sum, value) => sum + value, 0) / improvements.length) * 10) / 10 : 0, needsHelp: studentRows.filter((student) => student.records.length && student.average < 60).length, totalStudents: studentRows.length, distribution, records };
+
+    const assessed = studentRows.filter((student) => student.records.length);
+    const classAverage = assessed.length
+      ? assessed.reduce((sum, student) => sum + student.average, 0) / assessed.length
+      : null;
+    const highest = records.length ? Math.max(...records.map((record) => record.percentage)) : null;
+    const improvements = assessed
+      .filter((student) => student.trend.value !== null)
+      .map((student) => student.trend.value);
+    const subjectAverages = subjects.map((subject) => {
+      const values = records.filter((record) => record.subject_id === String(subject.id)).map((record) => record.percentage);
+      return {
+        id: String(subject.id),
+        subject: subject.name,
+        average: values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null,
+        count: values.length,
+      };
+    });
+    const distribution = Object.fromEntries(CATEGORY_NAMES.map((category) => [
+      category,
+      assessed.filter((student) => student.category === category).length,
+    ]));
+
+    return {
+      students: studentRows,
+      subjects: subjectAverages,
+      classAverage: classAverage === null ? null : Math.round(classAverage * 10) / 10,
+      highestScore: highest === null ? null : Math.round(highest * 10) / 10,
+      improvement: improvements.length
+        ? Math.round((improvements.reduce((sum, value) => sum + value, 0) / improvements.length) * 10) / 10
+        : null,
+      needsHelp: assessed.filter((student) => student.average < 60).length,
+      totalStudents: studentRows.length,
+      distribution,
+      records,
+    };
   }
 
   function insights(performance) {
-    const weak = performance.subjects.filter((subject) => subject.count && subject.average < 60).sort((a, b) => a.average - b.average)[0];
-    const improving = performance.students.filter((student) => student.trend.direction === "up").length;
-    const declining = performance.students.filter((student) => student.trend.direction === "down").length;
-    const messages = [];
-    if (weak) messages.push(`Focus on ${weak.subject}; its average is ${weak.average}%.`);
-    if (performance.needsHelp) messages.push(`${performance.needsHelp} student${performance.needsHelp === 1 ? " needs" : "s need"} targeted support below 60%.`);
-    if (improving) messages.push(`${improving} student${improving === 1 ? " is" : "s are"} showing an improving trend.`);
-    if (declining) messages.push(`${declining} student${declining === 1 ? " has" : "s have"} a declining recent trend.`);
-    return messages.length ? messages : [performance.records.length ? "Performance is steady. Continue adding assessment results to improve the picture." : "Add quiz, exam, or assignment results to generate performance insights."];
+    if (!performance.records.length) return ["No quiz results available yet."];
+    const messages = [
+      `Class average: ${performance.classAverage}%.`,
+      `Highest quiz score: ${performance.highestScore}%.`,
+      `${performance.students.length} students are registered in this grade and stream.`,
+      `${performance.needsHelp} assessed student${performance.needsHelp === 1 ? "" : "s"} scored below 60%.`,
+    ];
+    performance.subjects
+      .filter((subject) => subject.average !== null)
+      .forEach((subject) => messages.push(`${subject.subject} average: ${Math.round(subject.average)}%.`));
+    return messages;
   }
 
-  function subscribeToPerformance({ grade, onChange }) {
-    const client = window.SmartLearningSupabase?.getClient?.();
-    if (!client) return () => {};
-    const channel = client.channel(`performance-${teacherId()}-${grade}`);
-    ["student_performance", "quiz_attempts"].forEach((table) => channel.on("postgres_changes", { event: "*", schema: "public", table, filter: `teacher_id=eq.${teacherId()}` }, (payload) => { const record = payload.new || payload.old; if (!record || gradeOf(record) === String(grade)) onChange(payload); }));
-    channel.subscribe();
+  function subscribeToPerformance({ client, teacher, onChange }) {
+    const channel = client
+      .channel(`performance-${teacher.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "quizzes", filter: `teacher_id=eq.${teacher.id}` }, onChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "quiz_attempts" }, onChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "quiz_answers" }, onChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "teacher_grade_groups", filter: `teacher_id=eq.${teacher.id}` }, onChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "teacher_subject_assignments", filter: `teacher_id=eq.${teacher.id}` }, onChange)
+      .subscribe((status) => {
+        if (["CHANNEL_ERROR", "TIMED_OUT"].includes(status)) {
+          console.error("Performance realtime subscription is unavailable.", status);
+        }
+      });
     return () => client.removeChannel(channel);
   }
 
-  function subscribeToLocalChanges(onChange) {
-    const listener = (event) => { if (!event.key || LOCAL_KEYS.includes(event.key)) onChange(event); };
-    window.addEventListener("storage", listener);
-    window.addEventListener("smart-learning-performance-updated", onChange);
-    return () => { window.removeEventListener("storage", listener); window.removeEventListener("smart-learning-performance-updated", onChange); };
-  }
-
-  window.PerformanceService = { registeredClasses, registeredSubjects, registeredStudents, loadPerformanceRecords, calculatePerformance, insights, subscribeToPerformance, subscribeToLocalChanges, categoryFor, teacherId };
+  window.PerformanceService = {
+    initialize,
+    registeredClasses,
+    registeredGroups,
+    registeredSubjects,
+    loadPerformanceData,
+    calculatePerformance,
+    insights,
+    subscribeToPerformance,
+    categoryFor,
+    streamLabels: STREAM_LABELS,
+  };
 })();

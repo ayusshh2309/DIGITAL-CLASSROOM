@@ -42,6 +42,14 @@
               ></select>
             </div>
             <div class="performance-filter">
+              <i class="fa-solid fa-layer-group" aria-hidden="true"></i
+              ><select
+                id="streamSelector"
+                aria-label="Select registered stream"
+                hidden
+              ></select>
+            </div>
+            <div class="performance-filter">
               <i class="fa-solid fa-book-open" aria-hidden="true"></i
               ><select
                 id="subjectSelector"
@@ -59,7 +67,7 @@
               ><i class="fa-solid fa-chart-line"></i
             ></span>
             <div>
-              <div class="stat-val" id="statClassAvg">0%</div>
+              <div class="stat-val" id="statClassAvg">—</div>
               <div class="stat-lbl">Class Average</div>
               <div class="stat-sub" id="statClassAvgSub">
                 From assessment results
@@ -71,7 +79,7 @@
               ><i class="fa-solid fa-star"></i
             ></span>
             <div>
-              <div class="stat-val" id="statHighestScore">0%</div>
+              <div class="stat-val" id="statHighestScore">—</div>
               <div class="stat-lbl">Highest Score</div>
               <div class="stat-sub" id="statTopStudentName">No results yet</div>
             </div>
@@ -81,7 +89,7 @@
               ><i class="fa-solid fa-arrow-trend-up"></i
             ></span>
             <div>
-              <div class="stat-val" id="statImprovement">0%</div>
+              <div class="stat-val" id="statImprovement">—</div>
               <div class="stat-lbl">Average Improvement</div>
               <div class="stat-sub">Recent vs earlier results</div>
             </div>
@@ -91,7 +99,7 @@
               ><i class="fa-solid fa-triangle-exclamation"></i
             ></span>
             <div>
-              <div class="stat-val" id="statNeedsHelp">0</div>
+              <div class="stat-val" id="statNeedsHelp">—</div>
               <div class="stat-lbl">Students Needing Help</div>
               <div class="stat-sub">Below 60%</div>
             </div>
@@ -162,9 +170,9 @@
                   >
                     <option value="All">All categories</option>
                     <option>Excellent</option>
-                    <option>Very Good</option>
                     <option>Good</option>
-                    <option>Needs Improvement</option>
+                    <option>Average</option>
+                    <option>Needs Help</option>
                   </select>
                 </div>
                 <div class="performance-filter">

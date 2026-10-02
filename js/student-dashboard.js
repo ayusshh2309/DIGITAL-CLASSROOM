@@ -281,18 +281,18 @@
     if (!state.client || !state.user) return;
     state.loading = true;
     try {
-      const [profileResult, eventsResult, materialsResult, videosResult, sessionsResult, segmentsResult, attemptsResult, downloadsResult] = await Promise.all([
-        state.client.from("students").select("*").eq("user_id", state.user.id).maybeSingle(),
+      const profileResult = await state.client.from("students").select("*").eq("user_id", state.user.id).maybeSingle();
+      if (profileResult.error) throw profileResult.error;
+      if (!profileResult.data) throw new Error("No student profile is linked to this account.");
+      const [eventsResult, materialsResult, videosResult, sessionsResult, segmentsResult, attemptsResult, downloadsResult] = await Promise.all([
         state.client.rpc("get_student_calendar_events", { requested_student_id: state.user.id }),
         state.client.rpc("get_student_materials", { requested_student_id: state.user.id }),
         state.client.rpc("get_student_videos", { requested_student_id: state.user.id }),
         state.client.from("study_sessions").select("*").eq("student_id", state.user.id).order("start_time", { ascending: false }),
         state.client.from("study_session_segments").select("*").eq("student_id", state.user.id).order("start_time", { ascending: false }),
-        state.client.from("quiz_attempts").select("quiz_id,score,total_marks,completed_at").eq("student_id", state.user.id),
+        state.client.from("quiz_attempts").select("quiz_id,score,total_marks,percentage,submitted_at,status").eq("student_id", profileResult.data.id).eq("status", "submitted"),
         state.client.from("material_downloads").select("material_id,downloaded_at").eq("student_id", state.user.id),
       ]);
-      if (profileResult.error) throw profileResult.error;
-      if (!profileResult.data) throw new Error("No student profile is linked to this account.");
       state.profile = {
         ...profileResult.data,
         name: profileResult.data.full_name,
@@ -308,7 +308,8 @@
       state.videos = videosResult.error ? [] : (videosResult.data || []);
       state.sessions = sessionsResult.error ? [] : (sessionsResult.data || []);
       state.segments = segmentsResult.error ? [] : (segmentsResult.data || []);
-      state.attempts = attemptsResult.error ? [] : (attemptsResult.data || []);
+      if (attemptsResult.error) throw attemptsResult.error;
+      state.attempts = attemptsResult.data || [];
       state.downloads = downloadsResult.error ? [] : (downloadsResult.data || []);
       const attempts = new Set(state.attempts.map((attempt) => String(attempt.quiz_id)));
       state.events = state.events.map((event) => ({ ...event, attempted: attempts.has(eventId(event)) }));
@@ -350,8 +351,10 @@
     ["students", "student_profiles", "study_sessions", "study_session_segments", "quiz_attempts", "material_downloads", "student_video_progress", "materials", "live_classes", "quizzes", "assignments"].forEach((table) => {
       const filter = table === "students"
         ? `user_id=eq.${state.user.id}`
-        : ["student_profiles", "study_sessions", "study_session_segments", "quiz_attempts", "material_downloads", "student_video_progress"].includes(table)
-          ? `student_id=eq.${state.user.id}`
+        : table === "quiz_attempts"
+          ? `student_id=eq.${state.profile.id}`
+          : ["student_profiles", "study_sessions", "study_session_segments", "material_downloads", "student_video_progress"].includes(table)
+            ? `student_id=eq.${state.user.id}`
           : undefined;
       state.channel.on("postgres_changes", { event: "*", schema: "public", table, ...(filter ? { filter } : {}) }, loadData);
     });

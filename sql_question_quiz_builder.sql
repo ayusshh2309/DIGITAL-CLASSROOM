@@ -181,8 +181,7 @@ set question_number = coalesce(question_number, position),
     question_type = coalesce(question_type, case type
       when 'Multiple Choice' then 'mcq'
       when 'True/False' then 'true_false'
-      when 'Short Answer' then 'short_answer'
-      else 'short_answer'
+      else 'mcq'
     end),
     question_text = coalesce(question_text, text)
 where question_number is null or question_type is null or question_text is null;
@@ -192,10 +191,9 @@ alter table public.quiz_questions
   alter column question_type set not null,
   alter column question_text set not null;
 
-alter table public.quiz_questions drop constraint if exists quiz_questions_question_type_check;
 alter table public.quiz_questions
-  add constraint quiz_questions_question_type_check
-  check (question_type in ('mcq', 'true_false', 'short_answer'));
+  add constraint if not exists quiz_questions_question_type_check
+  check (question_type in ('mcq', 'true_false'));
 
 create index if not exists quiz_questions_quiz_question_number_idx
   on public.quiz_questions (quiz_id, question_number);
@@ -501,7 +499,7 @@ begin
     question_marks := nullif(question_item->>'marks', '')::numeric;
     question_options := question_item->'options';
 
-    if question_kind is null or question_kind not in ('mcq', 'true_false', 'short_answer') or question_text_value is null or question_answer is null or question_marks is null or question_marks <= 0 then
+    if question_kind is null or question_kind not in ('mcq', 'true_false') or question_text_value is null or question_answer is null or question_marks is null or question_marks <= 0 then
       raise exception 'Question % is missing text, a supported type, a correct answer, or positive marks.', question_index;
     end if;
 
@@ -612,7 +610,7 @@ begin
       question_number, question_type, question_text, explanation, updated_at
     ) values (
       quiz_id, authenticated_user_id, question_index, question_text_value,
-      case question_kind when 'mcq' then 'Multiple Choice' when 'true_false' then 'True/False' else 'Short Answer' end,
+      case question_kind when 'mcq' then 'Multiple Choice' when 'true_false' then 'True/False' else 'Multiple Choice' end,
       question_marks, question_options, to_jsonb(question_answer), question_index,
       question_kind, question_text_value, nullif(btrim(question_item->>'explanation'), ''), now()
     );
@@ -646,6 +644,7 @@ as $$
   join public.subjects subject_record on subject_record.id = quiz.subject_id
   join public.student_profiles student on student.student_id = (select auth.uid())
   where quiz.id = p_quiz_id
+    and question.question_type in ('mcq', 'true_false')
     and quiz.status = 'published'
     and nullif(regexp_replace(student.grade, '[^0-9]', '', 'g'), '')::integer = quiz.grade
     and student.stream is not distinct from quiz.stream

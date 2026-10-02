@@ -1772,10 +1772,6 @@
                                   True / False
                               </option>
 
-                              <option value="short_answer"
-                                  ${question.type === "short_answer" ? "selected" : ""}>
-                                  Short Answer
-                              </option>
 
                           </select>
 
@@ -1835,40 +1831,6 @@
                           </option>
 
                       </select>
-
-                  </div>
-
-              `;
-              }
-
-              if (question.type === "short_answer") {
-                return `
-
-                  <div class="form-group">
-
-                      <label>
-                          Correct Answer
-                      </label>
-
-                      <input
-                          type="text"
-                          value="${escapeHTML(question.options[0])}"
-                          placeholder="Enter the expected answer..."
-                          oninput="updateShortAnswer(${index}, this.value)"
-                      >
-
-                  </div>
-
-                  <div class="form-group">
-
-                      <label>
-                          Explanation
-                      </label>
-
-                      <textarea
-                          placeholder="Optional explanation..."
-                          oninput="updateQuestion(${index}, 'explanation', this.value)"
-                      >${escapeHTML(question.explanation)}</textarea>
 
                   </div>
 
@@ -1974,14 +1936,6 @@
             }
 
             /* ==========================================
-         SHORT ANSWER
-      ========================================== */
-
-            function updateShortAnswer(index, value) {
-              quizData.questions[index].options[0] = value;
-            }
-
-            /* ==========================================
          CHANGE TYPE
       ========================================== */
 
@@ -1990,10 +1944,6 @@
 
               if (type === "true_false") {
                 quizData.questions[index].options = ["True", "False"];
-
-                quizData.questions[index].correctAnswer = 0;
-              } else if (type === "short_answer") {
-                quizData.questions[index].options = [""];
 
                 quizData.questions[index].correctAnswer = 0;
               } else {
@@ -2257,16 +2207,6 @@
 
                       return false;
                     }
-                  }
-                }
-
-                if (question.type === "short_answer") {
-                  if (!question.options[0].trim()) {
-                    showToast(
-                      `Please enter the correct answer for Question ${i + 1}.`,
-                    );
-
-                    return false;
                   }
                 }
 
@@ -2554,7 +2494,6 @@
               const questionTypes = {
                 multiple_choice: "Multiple Choice",
                 true_false: "True/False",
-                short_answer: "Short Answer",
               };
               const questions = quizData.questions.map((question, index) => ({
                 quiz_id: savedQuiz.id,

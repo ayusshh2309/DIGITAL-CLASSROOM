@@ -1164,7 +1164,7 @@
             <div class="performance-content">
               <div class="donut">
                 <div class="donut-center">
-                  <div class="donut-score" id="donutScore">0%</div>
+                  <div class="donut-score" id="donutScore">—</div>
 
                   <div class="donut-label">Average Score</div>
                 </div>
@@ -1174,33 +1174,33 @@
                 <div class="legend-item">
                   <span class="legend-dot dot-green"></span>
 
-                  Excellent (80-100%)
+                  Excellent (90-100%)
 
-                  <span class="legend-count" id="excellentCount"> 0 </span>
+                  <span class="legend-count" id="excellentCount"> — </span>
                 </div>
 
                 <div class="legend-item">
                   <span class="legend-dot dot-blue"></span>
 
-                  Good (60-79%)
+                  Good (75-89%)
 
-                  <span class="legend-count" id="goodCount"> 0 </span>
+                  <span class="legend-count" id="goodCount"> — </span>
                 </div>
 
                 <div class="legend-item">
                   <span class="legend-dot dot-orange"></span>
 
-                  Average (40-59%)
+                  Average (60-74%)
 
-                  <span class="legend-count" id="averageCount"> 0 </span>
+                  <span class="legend-count" id="averageCount"> — </span>
                 </div>
 
                 <div class="legend-item">
                   <span class="legend-dot dot-red"></span>
 
-                  Needs Improvement (&lt;40%)
+                  Needs Help (&lt;60%)
 
-                  <span class="legend-count" id="poorCount"> 0 </span>
+                  <span class="legend-count" id="poorCount"> — </span>
                 </div>
               </div>
             </div>
@@ -1224,7 +1224,7 @@
                 </div>
 
                 <div>
-                  <strong id="bestScore"> 0% </strong>
+                  <strong id="bestScore"> — </strong>
 
                   <span> Best Score </span>
                 </div>
@@ -1235,6 +1235,8 @@
       </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../js/supabase.js"></script>
     <script>
       /* =====================================================
          SUPABASE CONFIGURATION
@@ -1244,13 +1246,7 @@
 
       ===================================================== */
 
-      const SUPABASE_URL = "YOUR_SUPABASE_URL";
-
-      const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
-
-      const supabaseClient =
-        window.supabase?.createClient?.(SUPABASE_URL, SUPABASE_ANON_KEY) ||
-        null;
+      const supabaseClient = window.SmartLearningSupabase?.getClient?.() || null;
 
       /* =====================================================
          GLOBAL DATA
@@ -1259,8 +1255,15 @@
       let allQuizzes = [];
       let allAttempts = [];
       let studentData = null;
-
-      const LOCAL_QUIZ_KEY = "smartLearningDC_published_quizzes";
+      let loadingQuizzes = false;
+      let reloadQuizzesQueued = false;
+      let studentQuizChannel = null;
+      const streamLabels = {
+        science_pcm: "Science (PCM)",
+        science_pcb: "Science (PCB)",
+        commerce: "Commerce",
+        arts_humanities: "Arts / Humanities",
+      };
 
       function normalizeGrade(value) {
         return String(value || "")
@@ -1269,119 +1272,11 @@
           .replace(/^(class|grade)\s*/i, "");
       }
 
-      function normalizeText(value) {
-        return String(value || "")
-          .trim()
-          .toLowerCase()
-          .replace(/\s+/g, " ");
-      }
-
-      function normalizeStream(value) {
-        return normalizeText(value).replace(/\s+/g, "");
-      }
-
-      function registeredGrades(student) {
-        const rawValues = [
-          student?.grade,
-          student?.classGrade,
-          student?.class_grade,
-          student?.class,
-          ...(Array.isArray(student?.grades) ? student.grades : []),
-          ...(Array.isArray(student?.registeredClasses)
-            ? student.registeredClasses
-            : []),
-          ...(Array.isArray(student?.classes) ? student.classes : []),
-        ];
-        const grades = rawValues
-          .map((value) =>
-            typeof value === "object"
-              ? value?.grade ||
-                value?.classGrade ||
-                value?.class_grade ||
-                value?.class
-              : value,
-          )
-          .map(normalizeGrade)
-          .filter(Boolean);
-        return [...new Set(grades)].sort((a, b) => Number(a) - Number(b));
-      }
-
-      function readStoredStudentProfile() {
-        const read = (key) => {
-          try {
-            return JSON.parse(localStorage.getItem(key) || "null") || {};
-          } catch (error) {
-            return {};
-          }
-        };
-        return {
-          ...read("studentRegistrationData"),
-          ...read("studentAcademicInfo"),
-          ...read("studentData"),
-          ...read("studentProfile"),
-          ...read("finalStudentRegistration"),
-        };
-      }
-
-      function readLocalQuizzes() {
-        try {
-          const rows = JSON.parse(localStorage.getItem(LOCAL_QUIZ_KEY) || "[]");
-          return Array.isArray(rows) ? rows : [];
-        } catch (error) {
-          console.warn("Could not read locally published quizzes.", error);
-          return [];
-        }
-      }
-
-      function studentSubjects(student) {
-        const values = [
-          student?.subject,
-          ...(Array.isArray(student?.subjects) ? student.subjects : []),
-          ...(Array.isArray(student?.registeredSubjects)
-            ? student.registeredSubjects
-            : []),
-          ...(Array.isArray(student?.enrolledSubjects)
-            ? student.enrolledSubjects
-            : []),
-        ];
-        return new Set(values.map(normalizeText).filter(Boolean));
-      }
-
-      function quizMatchesStudent(quiz, student) {
-        const quizGrade = normalizeGrade(
-          quiz?.grade || quiz?.class_grade || quiz?.class,
-        );
-        if (!registeredGrades(student).includes(quizGrade)) return false;
-
-        const quizStream = normalizeStream(quiz?.stream || quiz?.class_stream);
-        const studentStream = normalizeStream(
-          student?.stream || student?.classStream,
-        );
-        if (quizStream && quizStream !== studentStream) return false;
-
-        const subject = normalizeText(quiz?.subject);
-        const subjects = studentSubjects(student);
-        return !subject || !subjects.size || subjects.has(subject);
-      }
-
-      function quizIsAvailable(quiz) {
-        const status = normalizeText(quiz?.status || "published");
-        return ["published", "active", "scheduled"].includes(status);
-      }
-
-      function filterEligibleQuizzes(quizzes, student) {
-        return (quizzes || []).filter(
-          (quiz) => quizMatchesStudent(quiz, student) && quizIsAvailable(quiz),
-        );
-      }
-
       function renderRegistrationContext(student) {
-        const grades = registeredGrades(student);
-        const stream = student?.stream || student?.classStream;
-        const label = grades.length
-          ? grades.map((grade) => `Class ${grade}`).join(", ")
-          : "Class not registered";
-        const streamLabel = stream ? ` · ${String(stream).toUpperCase()}` : "";
+        const grade = normalizeGrade(student?.grade);
+        const stream = student?.stream;
+        const label = grade ? `Class ${grade}` : "Class not registered";
+        const streamLabel = stream ? ` · ${streamLabels[stream] || stream}` : "";
         document.getElementById("registrationContextText").textContent =
           `Registered classes: ${label}${streamLabel}`;
       }
@@ -1507,24 +1402,26 @@
       ===================================================== */
 
       function getQuizStatus(quiz, attempt) {
-        if (attempt) {
+        if (attempt?.status === "submitted") {
           return {
             type: "completed",
             label: "Completed",
           };
         }
 
-        if (quiz.due_time && new Date(quiz.due_time) < new Date()) {
+        if (quiz.end_at && new Date(quiz.end_at) < new Date()) {
           return {
             type: "overdue",
             label: "Overdue",
           };
         }
+        if (quiz.start_at && new Date(quiz.start_at) > new Date()) {
+          return { type: "scheduled", label: "Scheduled" };
+        }
 
-        return {
-          type: "pending",
-          label: "Not Attempted",
-        };
+        return attempt?.status === "in_progress"
+          ? { type: "in_progress", label: "In progress" }
+          : { type: "pending", label: "Not Attempted" };
       }
 
       /* =====================================================
@@ -1532,37 +1429,25 @@
       ===================================================== */
 
       async function getCurrentStudent() {
-        const localProfile = {
-          ...readStoredStudentProfile(),
-          ...(window.StudentData?.getStudentProfile?.() || {}),
-        };
-        try {
-          if (!supabaseClient) {
-            studentData = localProfile;
-            return localProfile;
-          }
-          const { data: { user } = {}, error: authError } =
-            await supabaseClient.auth.getUser();
-          if (!authError && user) {
-            const { data, error } = await supabaseClient
-              .from("students")
-              .select("*")
-              .eq("id", user.id)
-              .single();
-            if (!error && data) {
-              studentData = { ...localProfile, ...data };
-              return studentData;
-            }
-          }
-        } catch (error) {
-          console.warn(
-            "Could not load the authenticated student profile.",
-            error,
-          );
+        if (!supabaseClient) throw new Error("Supabase is unavailable.");
+        const { data: authData, error: authError } = await supabaseClient.auth.getUser();
+        if (authError) throw authError;
+        if (!authData?.user) {
+          const error = new Error("Sign in with your student account to view quizzes.");
+          error.code = "AUTH_REQUIRED";
+          throw error;
         }
-        if (!localProfile) throw new Error("Student profile is not available.");
-        studentData = localProfile;
-        return localProfile;
+        const { data, error } = await supabaseClient
+          .from("students")
+          .select("id, user_id, student_id, full_name, grade, stream, roll_number")
+          .eq("user_id", authData.user.id)
+          .single();
+        if (error) throw error;
+        if (!data || data.user_id !== authData.user.id) {
+          throw new Error("No student registration is linked to this account.");
+        }
+        studentData = data;
+        return data;
       }
 
       /* =====================================================
@@ -1570,57 +1455,70 @@
       ===================================================== */
 
       async function loadQuizzes() {
+        if (loadingQuizzes) {
+          reloadQuizzesQueued = true;
+          return;
+        }
+        loadingQuizzes = true;
         try {
           const student = await getCurrentStudent();
           renderRegistrationContext(student);
-          const grades = registeredGrades(student);
-          let remoteQuizzes = [];
-          if (grades.length && supabaseClient) {
-            const remoteResult = await supabaseClient
-              .from("quizzes")
-              .select("*")
-              .in(
-                "class_grade",
-                grades.map((grade) => `Class ${grade}`),
-              )
-              .in("status", ["published", "active", "scheduled"])
-              .order("start_at", { ascending: false });
-            if (!remoteResult.error) remoteQuizzes = remoteResult.data || [];
-          }
-          allQuizzes = filterEligibleQuizzes(remoteQuizzes, student);
-
-          if (!allQuizzes.length) {
-            allQuizzes = filterEligibleQuizzes(readLocalQuizzes(), student);
-          }
-
-          /*
-           * Get student's quiz attempts.
-           */
-
-          if (supabaseClient && student.id) {
-            const { data: attempts, error: attemptError } = await supabaseClient
+          let quizQuery = supabaseClient
+            .from("quizzes")
+            .select("id, title, grade, stream, subject_id, subject, description, instructions, duration_minutes, total_marks, question_count, attempts_allowed, start_at, end_at, status")
+            .eq("grade", Number(student.grade))
+            .eq("status", "published")
+            .order("start_at", { ascending: true });
+          quizQuery = student.stream
+            ? quizQuery.eq("stream", student.stream)
+            : quizQuery.is("stream", null);
+          const [quizResult, attemptResult] = await Promise.all([
+            quizQuery,
+            supabaseClient
               .from("quiz_attempts")
-              .select("*")
-              .eq("student_id", student.id);
-            allAttempts = attemptError ? [] : attempts || [];
-          } else {
-            allAttempts = [];
-          }
+              .select("id, quiz_id, student_id, started_at, submitted_at, score, total_marks, percentage, correct_answers, wrong_answers, unanswered, status")
+              .eq("student_id", student.id)
+              .order("started_at", { ascending: false }),
+          ]);
+          if (quizResult.error) throw quizResult.error;
+          if (attemptResult.error) throw attemptResult.error;
+          allQuizzes = (quizResult.data || [])
+            .filter((quiz) => !quiz.end_at || new Date(quiz.end_at) >= new Date())
+            .map((quiz) => ({ ...quiz, subject: quiz.subject || "Subject" }));
+          allAttempts = attemptResult.data || [];
 
           populateSubjectFilter();
-
           renderQuizzes();
-
           updateStatistics();
-
           renderUpcomingQuiz();
-
           updatePerformance();
           if (!allQuizzes.length) renderNoQuizzes();
+          subscribeToStudentRealtime(student);
         } catch (error) {
           console.error("Quiz loading error:", error);
-          renderNoQuizzes();
+          const quizList = document.getElementById("quizList");
+          quizList.innerHTML = `<div class="empty"><i class="fa-solid fa-circle-exclamation"></i><h3>Quizzes could not be loaded</h3><p>${escapeHTML(error.message || "Please try again.")}</p></div>`;
+          if (error.code === "AUTH_REQUIRED") window.location.assign("../student_registration/login.html");
+        } finally {
+          loadingQuizzes = false;
+          if (reloadQuizzesQueued) {
+            reloadQuizzesQueued = false;
+            window.setTimeout(() => void loadQuizzes(), 0);
+          }
         }
+      }
+
+      function subscribeToStudentRealtime(student) {
+        if (studentQuizChannel) return;
+        studentQuizChannel = supabaseClient
+          .channel(`student-quizzes-${student.id}`)
+          .on("postgres_changes", { event: "*", schema: "public", table: "quizzes" }, () => void loadQuizzes())
+          .on("postgres_changes", { event: "*", schema: "public", table: "quiz_attempts", filter: `student_id=eq.${student.id}` }, () => void loadQuizzes())
+          .subscribe((status) => {
+            if (["CHANNEL_ERROR", "TIMED_OUT"].includes(status)) {
+              console.error("Student quiz realtime subscription is unavailable.", status);
+            }
+          });
       }
 
       /* =====================================================
@@ -1631,6 +1529,12 @@
         return allAttempts.find(
           (attempt) => String(attempt.quiz_id) === String(quizId),
         );
+      }
+
+      function getSubmittedAttemptCount(quizId) {
+        return allAttempts.filter((attempt) =>
+          String(attempt.quiz_id) === String(quizId) && attempt.status === "submitted",
+        ).length;
       }
 
       /* =====================================================
@@ -1681,9 +1585,9 @@
         }
 
         quizzes.sort((a, b) => {
-          const dateA = new Date(a.start_time || 0);
+          const dateA = new Date(a.start_at || 0);
 
-          const dateB = new Date(b.start_time || 0);
+          const dateB = new Date(b.start_at || 0);
 
           return sortValue === "newest" ? dateB - dateA : dateA - dateB;
         });
@@ -1740,61 +1644,45 @@
 
         if (status.type === "completed") {
           const score = attempt.score ?? 0;
-
           const total = attempt.total_marks || quiz.total_marks || 0;
-
           actionHTML = `
-
                   <button
                       class="attempt-btn result-btn"
                       onclick="viewResult('${quiz.id}')">
-
                       View Result
-
                   </button>
-
                   <span class="status status-completed">
-
                       ${score}/${total}
-
                   </span>
-
               `;
+          if (getSubmittedAttemptCount(quiz.id) < Number(quiz.attempts_allowed || 1)) {
+            actionHTML += `<button class="attempt-btn" onclick="attemptQuiz('${quiz.id}')">Attempt Again</button>`;
+          }
+        } else if (status.type === "scheduled") {
+          actionHTML = `<button class="attempt-btn" disabled>Available ${formatDateTime(quiz.start_at)}</button><span class="status status-pending">Scheduled</span>`;
+        } else if (status.type === "in_progress") {
+          actionHTML = `<button class="attempt-btn" onclick="attemptQuiz('${quiz.id}')">Continue Quiz</button><span class="status status-pending">In progress</span>`;
         } else if (status.type === "overdue") {
           actionHTML = `
-
                   <button
                       class="attempt-btn"
                       onclick="attemptQuiz('${quiz.id}')">
-
                       Attempt Quiz
-
                   </button>
-
                   <span class="status status-overdue">
-
                       Overdue
-
                   </span>
-
               `;
         } else {
           actionHTML = `
-
                   <button
                       class="attempt-btn"
                       onclick="attemptQuiz('${quiz.id}')">
-
                       Attempt Quiz
-
                   </button>
-
                   <span class="status status-pending">
-
                       Not Attempted
-
                   </span>
-
               `;
         }
 
@@ -1835,7 +1723,7 @@
 
                               <i class="fa-regular fa-calendar"></i>
 
-                              ${quiz.questions_count || 0}
+                              ${quiz.question_count || 0}
                               Questions
 
                           </span>
@@ -1870,7 +1758,7 @@
 
                       <div>
 
-                          ${formatDateTime(quiz.start_time)}
+                          ${formatDateTime(quiz.start_at)}
 
                       </div>
 
@@ -1882,8 +1770,8 @@
                               <div>
                                   Completed
                                   ${
-                                    attempt.completed_at
-                                      ? " " + formatDate(attempt.completed_at)
+                                    attempt.submitted_at
+                                      ? " " + formatDate(attempt.submitted_at)
                                       : ""
                                   }
                               </div>
@@ -1894,7 +1782,7 @@
 
                               <div>
                                   Due
-                                  ${formatDate(quiz.due_time)}
+                                  ${formatDate(quiz.end_at)}
                               </div>
 
                           `
@@ -1903,8 +1791,8 @@
                               <div class="due">
 
                                   ${
-                                    quiz.due_time
-                                      ? "Due " + getDueText(quiz.due_time)
+                                    quiz.end_at
+                                      ? "Due " + getDueText(quiz.end_at)
                                       : "No due date"
                                   }
 
@@ -1966,15 +1854,13 @@
 
       function updateStatistics() {
         const total = allQuizzes.length;
-
         const completed = allQuizzes.filter((quiz) =>
-          getAttemptForQuiz(quiz.id),
+          getSubmittedAttemptCount(quiz.id) > 0,
         ).length;
-
         const pending = allQuizzes.filter(
           (quiz) =>
-            !getAttemptForQuiz(quiz.id) &&
-            (!quiz.due_time || new Date(quiz.due_time) >= new Date()),
+            getAttemptForQuiz(quiz.id)?.status !== "submitted" &&
+            (!quiz.end_at || new Date(quiz.end_at) >= new Date()),
         ).length;
 
         document.getElementById("totalQuizzes").textContent = total;
@@ -1989,71 +1875,37 @@
       ===================================================== */
 
       function updatePerformance() {
-        if (!allAttempts.length) {
-          document.getElementById("averageScore").textContent = "0%";
-
-          document.getElementById("donutScore").textContent = "0%";
-
-          return;
-        }
-
-        let totalPercentage = 0;
-
-        let excellent = 0;
-
-        let good = 0;
-
-        let average = 0;
-
-        let poor = 0;
-
-        let best = 0;
-
-        allAttempts.forEach((attempt) => {
-          const score = Number(attempt.score || 0);
-
-          const total = Number(attempt.total_marks || 0);
-
-          if (total <= 0) {
-            return;
-          }
-
-          const percentage = (score / total) * 100;
-
-          totalPercentage += percentage;
-
-          best = Math.max(best, percentage);
-
-          if (percentage >= 80) {
-            excellent++;
-          } else if (percentage >= 60) {
-            good++;
-          } else if (percentage >= 40) {
-            average++;
-          } else {
-            poor++;
-          }
+        const submitted = allAttempts.filter((attempt) =>
+          attempt.status === "submitted" && Number(attempt.total_marks) > 0,
+        );
+        const values = submitted.map((attempt) => Number(attempt.percentage));
+        const hasResults = values.length > 0;
+        const averageScore = hasResults
+          ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length)
+          : null;
+        const best = hasResults ? Math.max(...values) : null;
+        const categories = { excellent: 0, good: 0, average: 0, poor: 0 };
+        values.forEach((percentage) => {
+          if (percentage >= 90) categories.excellent += 1;
+          else if (percentage >= 75) categories.good += 1;
+          else if (percentage >= 60) categories.average += 1;
+          else categories.poor += 1;
         });
-
-        const avg = Math.round(totalPercentage / allAttempts.length);
-
-        document.getElementById("averageScore").textContent = `${avg}%`;
-
-        document.getElementById("donutScore").textContent = `${avg}%`;
-
-        document.getElementById("excellentCount").textContent = excellent;
-
-        document.getElementById("goodCount").textContent = good;
-
-        document.getElementById("averageCount").textContent = average;
-
-        document.getElementById("poorCount").textContent = poor;
-
-        document.getElementById("quizzesTaken").textContent =
-          allAttempts.length;
-
-        document.getElementById("bestScore").textContent =
-          `${Math.round(best)}%`;
+        document.getElementById("averageScore").textContent = hasResults ? `${averageScore}%` : "—";
+        document.getElementById("donutScore").textContent = hasResults ? `${averageScore}%` : "—";
+        document.getElementById("quizzesTaken").textContent = String(submitted.length);
+        document.getElementById("bestScore").textContent = hasResults ? `${Math.round(best)}%` : "—";
+        document.getElementById("excellentCount").textContent = hasResults ? String(categories.excellent) : "—";
+        document.getElementById("goodCount").textContent = hasResults ? String(categories.good) : "—";
+        document.getElementById("averageCount").textContent = hasResults ? String(categories.average) : "—";
+        document.getElementById("poorCount").textContent = hasResults ? String(categories.poor) : "—";
+        const total = submitted.length || 1;
+        const first = categories.excellent / total * 360;
+        const second = first + categories.good / total * 360;
+        const third = second + categories.average / total * 360;
+        document.querySelector(".donut").style.background = hasResults
+          ? `conic-gradient(#06a969 0deg ${first}deg, #2577dc ${first}deg ${second}deg, #f39a12 ${second}deg ${third}deg, #ef3b3b ${third}deg 360deg)`
+          : "#e5eaf1";
       }
 
       /* =====================================================
@@ -2067,11 +1919,10 @@
           .filter((quiz) => {
             const attempt = getAttemptForQuiz(quiz.id);
 
-            return (
-              !attempt && quiz.due_time && new Date(quiz.due_time) >= new Date()
-            );
+            return (!attempt || attempt.status !== "submitted")
+              && quiz.start_at && new Date(quiz.start_at) > new Date();
           })
-          .sort((a, b) => new Date(a.due_time) - new Date(b.due_time))[0];
+          .sort((a, b) => new Date(a.start_at) - new Date(b.start_at))[0];
 
         if (!upcoming) {
           container.innerHTML = `
@@ -2123,7 +1974,7 @@
 
                           &nbsp; • &nbsp;
 
-                          ${escapeHTML(upcoming.chapter || "")}
+                          ${escapeHTML(upcoming.description || "")}
 
                       </p>
 
@@ -2139,7 +1990,7 @@
 
                       <i class="fa-regular fa-calendar"></i>
 
-                      ${formatDateTime(upcoming.start_time)}
+                      ${formatDateTime(upcoming.start_at)}
 
                   </div>
 
@@ -2168,7 +2019,7 @@
 
                       <i class="fa-regular fa-file-lines"></i>
 
-                      ${upcoming.questions_count || 0}
+                      ${upcoming.question_count || 0}
                       Questions
 
                   </div>
@@ -2180,8 +2031,7 @@
 
                   <strong>
 
-                      Due
-                      ${getDueText(upcoming.due_time)}
+                      ${upcoming.end_at ? `Due ${formatDateTime(upcoming.end_at)}` : `Starts ${formatDateTime(upcoming.start_at)}`}
 
                   </strong>
 
@@ -2198,20 +2048,96 @@
          ATTEMPT QUIZ
       ===================================================== */
 
-      function attemptQuiz(quizId) {
-        /*
-             Replace this URL with your actual
-             student quiz attempt page.
+      function getQuizDialog() {
+        let dialog = document.getElementById("studentQuizDialog");
+        if (!dialog) {
+          dialog = document.createElement("dialog");
+          dialog.id = "studentQuizDialog";
+          dialog.style.cssText = "width:min(900px,94vw);max-height:92vh;overflow:auto;border:0;border-radius:16px;padding:0;box-shadow:0 24px 70px rgba(8,25,45,.28)";
+          dialog.addEventListener("click", (event) => {
+            if (event.target === dialog) dialog.close();
+          });
+          document.body.appendChild(dialog);
+        }
+        return dialog;
+      }
 
-             Example:
+      function renderAttemptResult(result, quizTitle) {
+        const dialog = getQuizDialog();
+        dialog.innerHTML = `<section style="padding:28px;font-family:Inter,sans-serif;color:#101a3b"><button type="button" data-close style="float:right;border:0;background:none;font-size:24px;cursor:pointer" aria-label="Close">×</button><span style="color:#008b95;font-size:12px;font-weight:800;text-transform:uppercase">Quiz submitted</span><h2 style="margin:10px 0">${escapeHTML(quizTitle)}</h2><p style="font-size:24px;font-weight:800">${Number(result.score)} / ${Number(result.total_marks)} marks</p><p style="font-size:20px;font-weight:700;color:#5935df">${Number(result.percentage)}%</p><div style="display:flex;gap:18px;flex-wrap:wrap;margin:16px 0"><span>Correct: <strong>${Number(result.correct_answers)}</strong></span><span>Wrong: <strong>${Number(result.wrong_answers)}</strong></span><span>Unanswered: <strong>${Number(result.unanswered)}</strong></span></div><button type="button" data-close class="attempt-btn">Close</button></section>`;
+        dialog.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", () => dialog.close()));
+        if (!dialog.open) dialog.showModal();
+      }
 
-             window.location.href =
-                 `attempt-quiz.html?id=${quizId}`;
-          */
-
-        window.location.href = `attempt-quiz.html?id=${encodeURIComponent(
-          quizId,
-        )}`;
+      async function attemptQuiz(quizId) {
+        const quiz = allQuizzes.find((item) => String(item.id) === String(quizId));
+        if (!quiz || !supabaseClient) return;
+        const dialog = getQuizDialog();
+        dialog.innerHTML = `<section style="padding:28px;font-family:Inter,sans-serif;color:#101a3b"><p role="status">Loading quiz questions…</p></section>`;
+        if (!dialog.open) dialog.showModal();
+        try {
+          const { error: startError } = await supabaseClient.rpc("start_quiz_attempt", { p_quiz_id: quiz.id });
+          if (startError) throw startError;
+          const { data: questions, error: questionsError } = await supabaseClient.rpc("get_student_quiz_questions", { p_quiz_id: quiz.id });
+          if (questionsError) throw questionsError;
+          if (!Array.isArray(questions) || !questions.length) throw new Error("No supported questions are available for this quiz.");
+          const questionHtml = questions.map((question, index) => {
+            let options = question.options;
+            if (typeof options === "string") {
+              try { options = JSON.parse(options); } catch { options = []; }
+            }
+            options = Array.isArray(options) ? options : [];
+            const choices = question.question_type === "mcq"
+              ? options.map((option) => `<label style="display:flex;gap:10px;align-items:center;margin:10px 0;padding:12px;border:1px solid #e3e8ef;border-radius:8px"><input type="radio" name="answer-${escapeHTML(question.id)}" value="${escapeHTML(option.id)}"><span>${escapeHTML(option.text)}</span></label>`).join("")
+              : ["true", "false"].map((answer) => `<label style="display:inline-flex;gap:8px;align-items:center;margin:10px 18px 10px 0;padding:12px 16px;border:1px solid #e3e8ef;border-radius:8px"><input type="radio" name="answer-${escapeHTML(question.id)}" value="${answer}"><span>${answer === "true" ? "True" : "False"}</span></label>`).join("");
+            return `<fieldset style="border:0;border-bottom:1px solid #edf1f6;padding:18px 0"><legend style="font-weight:750;margin-bottom:8px">Question ${Number(question.question_number || index + 1)} · ${Number(question.marks)} marks</legend><p style="line-height:1.6">${escapeHTML(question.question_text)}</p>${choices}</fieldset>`;
+          }).join("");
+          dialog.innerHTML = `<section style="padding:28px;font-family:Inter,sans-serif;color:#101a3b"><button type="button" data-close style="float:right;border:0;background:none;font-size:24px;cursor:pointer" aria-label="Close">×</button><span style="color:#008b95;font-size:12px;font-weight:800;text-transform:uppercase">Class ${escapeHTML(quiz.grade)} · ${escapeHTML(quiz.subject)}</span><h2 style="margin:10px 0">${escapeHTML(quiz.title)}</h2><p>${Number(quiz.duration_minutes || 0)} minutes · ${Number(quiz.total_marks || 0)} marks</p><form id="studentQuizForm">${questionHtml}<p id="studentQuizError" role="alert" style="color:#b83d4b"></p><button id="studentQuizSubmit" type="submit" class="attempt-btn">Submit Quiz</button></form></section>`;
+          dialog.querySelector("[data-close]").addEventListener("click", () => dialog.close());
+          dialog.querySelector("#studentQuizForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const submitButton = dialog.querySelector("#studentQuizSubmit");
+            const errorMessage = dialog.querySelector("#studentQuizError");
+            submitButton.disabled = true;
+            submitButton.textContent = "Submitting…";
+            errorMessage.textContent = "";
+            const answers = questions.map((question) => ({
+              question_id: question.id,
+              answer: dialog.querySelector(`input[name="answer-${CSS.escape(String(question.id))}"]:checked`)?.value ?? null,
+            }));
+            try {
+              const { data: result, error } = await supabaseClient.rpc("submit_quiz_attempt", {
+                p_quiz_id: quiz.id,
+                p_answers: answers,
+              });
+              if (error) throw error;
+              if (!result || result.status !== "submitted" || !result.attempt_id) {
+                throw new Error("The server did not confirm quiz submission.");
+              }
+              allAttempts = [{
+                id: result.attempt_id,
+                quiz_id: quiz.id,
+                student_id: studentData.id,
+                status: "submitted",
+                submitted_at: new Date().toISOString(),
+                ...result,
+              }, ...allAttempts.filter((attempt) => String(attempt.id) !== String(result.attempt_id))];
+              renderQuizzes();
+              updateStatistics();
+              updatePerformance();
+              renderAttemptResult(result, quiz.title);
+            } catch (error) {
+              console.error("Quiz submission failed:", error);
+              errorMessage.textContent = error.message || "Your quiz could not be submitted. Your answers are still here; please retry.";
+              submitButton.disabled = false;
+              submitButton.textContent = "Retry Submit";
+            }
+          });
+        } catch (error) {
+          console.error("Quiz could not be started:", error);
+          dialog.innerHTML = `<section style="padding:28px;font-family:Inter,sans-serif;color:#101a3b"><h2>Quiz unavailable</h2><p role="alert" style="color:#b83d4b">${escapeHTML(error.message || "The quiz could not be loaded.")}</p><button type="button" data-close class="attempt-btn">Close</button></section>`;
+          dialog.querySelector("[data-close]").addEventListener("click", () => dialog.close());
+        }
       }
 
       /* =====================================================
@@ -2219,9 +2145,9 @@
       ===================================================== */
 
       function viewResult(quizId) {
-        window.location.href = `quiz-result.html?id=${encodeURIComponent(
-          quizId,
-        )}`;
+        const attempt = getAttemptForQuiz(quizId);
+        const quiz = allQuizzes.find((item) => String(item.id) === String(quizId));
+        if (attempt?.status === "submitted" && quiz) renderAttemptResult(attempt, quiz.title);
       }
 
       /* =====================================================
@@ -2246,14 +2172,7 @@
       ===================================================== */
 
       document.addEventListener("DOMContentLoaded", () => {
-        renderRegistrationContext(readStoredStudentProfile());
-        loadQuizzes();
-        window.addEventListener("storage", (event) => {
-          if (event.key === LOCAL_QUIZ_KEY || event.key === "studentProfile") {
-            loadQuizzes();
-          }
-        });
-        window.addEventListener("smart-learning-quizzes-updated", loadQuizzes);
+        void loadQuizzes();
       });
     </script>
     <script src="../js/student-layout.js"></script>

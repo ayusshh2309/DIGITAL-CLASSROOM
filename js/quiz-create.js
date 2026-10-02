@@ -13,6 +13,7 @@
     editingIndex: -1,
     saving: false,
     hasUnsavedChanges: false,
+    readOnly: false,
     settings: {},
   };
 
@@ -236,11 +237,11 @@
       return `${String.fromCharCode(65 + index)} — ${question.options[index] || ""}`;
     }
     if (question.type === "true_false") return Number(question.correctAnswer) === 0 ? "True" : "False";
-    return question.options[0] || "";
+    return "";
   }
 
   function renderSavedQuestion(question, index) {
-    const typeLabel = { multiple_choice: "MCQ", true_false: "True / False", short_answer: "Short Answer" }[question.type] || "Choose a type";
+    const typeLabel = { multiple_choice: "MCQ", true_false: "True / False" }[question.type] || "Unsupported legacy question";
     const options = question.type === "multiple_choice"
       ? `<div class="saved-options">${question.options.map((option, optionIndex) => `<div><strong>${String.fromCharCode(65 + optionIndex)}.</strong> ${escapeHTML(option)}</div>`).join("")}</div>`
       : "";
@@ -251,14 +252,12 @@
     if (!state.draft) state.draft = makeQuestion();
     const question = state.draft;
     const questionNumber = state.editingIndex >= 0 ? state.editingIndex + 1 : state.questions.length + 1;
-      const typeOptions = `<option value="">Select question type</option><option value="multiple_choice" ${question.type === "multiple_choice" ? "selected" : ""}>MCQ</option><option value="true_false" ${question.type === "true_false" ? "selected" : ""}>True / False</option><option value="short_answer" ${question.type === "short_answer" ? "selected" : ""}>Short Answer</option>`;
+    const typeOptions = `<option value="">Select question type</option><option value="multiple_choice" ${question.type === "multiple_choice" ? "selected" : ""}>MCQ</option><option value="true_false" ${question.type === "true_false" ? "selected" : ""}>True / False</option>`;
     let specificFields = "";
     if (question.type === "multiple_choice") {
       specificFields = `<label>Answer Options <span class="required">*</span></label><div class="option-grid">${question.options.map((option, index) => `<div class="option-item"><span class="option-letter">${String.fromCharCode(65 + index)}</span><input type="text" maxlength="500" value="${escapeHTML(option)}" placeholder="Option ${String.fromCharCode(65 + index)}" oninput="updateOption(${index}, this.value)"></div>`).join("")}</div><small class="quiz-field-error" data-question-error="options"></small><div class="form-group question-correct-answer"><label>Correct Answer <span class="required">*</span></label><select onchange="updateQuestion('correctAnswer', this.value)"><option value="">Select correct option</option>${[0, 1, 2, 3].map((index) => `<option value="${index}" ${String(question.correctAnswer) === String(index) ? "selected" : ""}>${String.fromCharCode(65 + index)} — ${escapeHTML(question.options[index] || `Option ${String.fromCharCode(65 + index)}`)}</option>`).join("")}</select><small class="quiz-field-error" data-question-error="answer"></small></div>`;
     } else if (question.type === "true_false") {
       specificFields = `<div class="form-group"><label>Correct Answer <span class="required">*</span></label><select onchange="updateQuestion('correctAnswer', this.value)"><option value="">Select correct answer</option><option value="0" ${String(question.correctAnswer) === "0" ? "selected" : ""}>True</option><option value="1" ${String(question.correctAnswer) === "1" ? "selected" : ""}>False</option></select><small class="quiz-field-error" data-question-error="answer"></small></div>`;
-    } else if (question.type === "short_answer") {
-      specificFields = `<div class="form-group"><label>Correct Answer / Expected Answer <span class="required">*</span></label><textarea maxlength="2000" placeholder="Enter the expected answer" oninput="updateShortAnswer(this.value)">${escapeHTML(question.options[0] || "")}</textarea><small class="quiz-field-error" data-question-error="answer"></small></div>`;
     }
     return `<article class="question-card editor-question"><div class="question-top"><div class="question-number">${state.editingIndex >= 0 ? "Edit Question" : `Question ${questionNumber}`}</div>${state.editingIndex >= 0 ? `<button type="button" class="btn btn-light" onclick="cancelEditQuestion()">Cancel Edit</button>` : ""}</div><div class="form-group"><label>Question <span class="required">*</span></label><textarea maxlength="3000" placeholder="Enter your question here..." oninput="updateQuestion('text', this.value)">${escapeHTML(question.text)}</textarea><small class="quiz-field-error" data-question-error="text"></small></div><div class="form-grid"><div class="form-group"><label>Question Type <span class="required">*</span></label><select onchange="changeQuestionType(this.value)">${typeOptions}</select><small class="quiz-field-error" data-question-error="type"></small></div><div class="form-group"><label>Marks <span class="required">*</span></label><input type="number" min="0.1" step="0.1" value="${escapeHTML(question.marks)}" oninput="updateQuestion('marks', this.value)"><small class="quiz-field-error" data-question-error="marks"></small></div></div>${specificFields}<div class="form-group"><label>Explanation <span>(optional)</span></label><textarea maxlength="2000" placeholder="Add a teacher explanation" oninput="updateQuestion('explanation', this.value)">${escapeHTML(question.explanation || "")}</textarea></div>${state.editingIndex >= 0 ? `<div class="question-editor-actions"><button type="button" class="btn btn-primary" onclick="commitQuestion()">Save Changes</button></div>` : ""}</article>`;
   }
@@ -289,11 +288,6 @@
     }
   }
 
-  function updateShortAnswer(value) {
-    state.draft.options[0] = value;
-    state.hasUnsavedChanges = true;
-  }
-
   function changeQuestionType(type) {
     if (!state.draft) state.draft = makeQuestion();
     state.draft.type = type;
@@ -313,8 +307,6 @@
       if (![0, 1, 2, 3].includes(Number(question.correctAnswer)) || question.correctAnswer === "") errors.answer = "Choose one correct option.";
     } else if (question.type === "true_false") {
       if (!["0", "1", 0, 1].includes(question.correctAnswer)) errors.answer = "Choose True or False.";
-    } else if (question.type === "short_answer" && !String(question.options[0] || "").trim()) {
-      errors.answer = "Enter the expected answer.";
     }
     if (showErrors) {
       const card = $("questionList").querySelector(".editor-question");
@@ -444,18 +436,18 @@
     $("previewStream").textContent = info.stream || "—";
     const container = $("previewQuestions");
     container.innerHTML = state.questions.map((question, index) => {
-      const type = { multiple_choice: "MCQ", true_false: "True / False", short_answer: "Short Answer" }[question.type];
+      const type = { multiple_choice: "MCQ", true_false: "True / False" }[question.type];
       const options = question.type === "multiple_choice"
         ? question.options.map((option, optionIndex) => `<div class="preview-option"><strong>${String.fromCharCode(65 + optionIndex)}.</strong> ${escapeHTML(option)}</div>`).join("")
-        : question.type === "true_false" ? `<div class="preview-option">True / False</div>` : `<div class="preview-option">Short answer</div>`;
+        : `<div class="preview-option">True / False</div>`;
       return `<article class="preview-question"><div class="preview-question-title">Question ${index + 1} · ${type}: ${escapeHTML(question.text)}</div>${options}<div class="preview-answer"><strong>Correct answer:</strong> ${escapeHTML(questionAnswerLabel(question))}</div><div class="preview-marks">${Number(question.marks)} ${Number(question.marks) === 1 ? "mark" : "marks"}</div><button type="button" class="btn btn-light" onclick="editQuestion(${index}); goToStep(2);">Edit</button></article>`;
     }).join("");
   }
 
   function toRpcQuestion(question) {
-    const questionType = { multiple_choice: "mcq", true_false: "true_false", short_answer: "short_answer" }[question.type];
+    const questionType = { multiple_choice: "mcq", true_false: "true_false" }[question.type];
     const options = question.type === "multiple_choice" ? question.options.map((text, index) => ({ id: String.fromCharCode(65 + index), text: text.trim() })) : null;
-    const answer = question.type === "multiple_choice" ? String.fromCharCode(65 + Number(question.correctAnswer)) : question.type === "true_false" ? (Number(question.correctAnswer) === 0 ? "true" : "false") : question.options[0].trim();
+    const answer = question.type === "multiple_choice" ? String.fromCharCode(65 + Number(question.correctAnswer)) : (Number(question.correctAnswer) === 0 ? "true" : "false");
     return { question_type: questionType, question_text: question.text.trim(), options, correct_answer: answer, marks: Number(question.marks), explanation: question.explanation || null };
   }
 
@@ -503,6 +495,10 @@
   }
 
   async function saveQuiz(status) {
+    if (state.readOnly) {
+      showToast("This quiz includes an unsupported legacy question type and has not been changed.", true);
+      return;
+    }
     if (state.saving) return;
     if (!validateStep1()) return;
     if (status === "published" && !validateQuestions()) return;
@@ -584,14 +580,18 @@
     const { data: rows, error: questionsError } = await state.client.from("quiz_questions").select("question_number, question_type, question_text, options, correct_answer, marks").eq("quiz_id", quiz.id).order("question_number", { ascending: true });
     if (questionsError) throw new Error(`Could not load quiz questions. ${questionsError.message}`);
     state.questions = (rows || []).map((row) => {
-      const type = row.question_type === "mcq" ? "multiple_choice" : row.question_type === "true_false" ? "true_false" : "short_answer";
+      if (!["mcq", "true_false"].includes(row.question_type)) {
+        state.readOnly = true;
+        throw new Error("This quiz includes a legacy question type that is no longer supported. It has not been changed.");
+      }
+      const type = row.question_type === "mcq" ? "multiple_choice" : "true_false";
       let options = row.options;
       if (typeof options === "string") { try { options = JSON.parse(options); } catch { options = []; } }
       if (!Array.isArray(options)) options = [];
       if (options.length && typeof options[0] === "object") options = ["A", "B", "C", "D"].map((letter) => options.find((option) => option.id === letter)?.text || "");
       let answer = row.correct_answer;
       if (typeof answer === "string") { try { answer = JSON.parse(answer); } catch {} }
-      return { id: crypto.randomUUID(), type, text: row.question_text || "", options: type === "true_false" ? ["", "", "", ""] : type === "short_answer" ? [String(answer ?? ""), "", "", ""] : options.concat(["", "", "", ""]).slice(0, 4), correctAnswer: type === "mcq" ? (typeof answer === "number" ? answer : Math.max(0, ["A", "B", "C", "D"].indexOf(String(answer)))) : type === "true_false" ? (String(answer).toLowerCase() === "false" || String(answer) === "1" ? "1" : "0") : "", marks: Number(row.marks || 1), explanation: "" };
+      return { id: crypto.randomUUID(), type, text: row.question_text || "", options: type === "true_false" ? ["", "", "", ""] : options.concat(["", "", "", ""]).slice(0, 4), correctAnswer: type === "mcq" ? (typeof answer === "number" ? answer : Math.max(0, ["A", "B", "C", "D"].indexOf(String(answer)))) : (String(answer).toLowerCase() === "false" || String(answer) === "1" ? "1" : "0"), marks: Number(row.marks || 1), explanation: "" };
     });
     state.draft = makeQuestion();
     state.editingIndex = -1;
@@ -651,7 +651,6 @@
   window.addQuestion = commitQuestion;
   window.updateQuestion = updateQuestion;
   window.updateOption = updateOption;
-  window.updateShortAnswer = updateShortAnswer;
   window.changeQuestionType = changeQuestionType;
   window.editQuestion = editQuestion;
   window.cancelEditQuestion = cancelEditQuestion;

@@ -157,7 +157,7 @@
     if (!quiz) return;
     const { data: questions, error } = await state.client.from("quiz_questions").select("question_number, question_type, question_text, options, correct_answer, marks").eq("quiz_id", quiz.id).order("question_number", { ascending: true });
     if (error) return toast(`Could not load quiz questions: ${error.message}`, true);
-    const typeName = { mcq: "MCQ", true_false: "True/False", short_answer: "Short Answer" };
+    const typeName = { mcq: "MCQ", true_false: "True/False" };
     let dialog = document.getElementById("quizViewDialog");
     if (!dialog) {
       dialog = document.createElement("dialog");
@@ -165,7 +165,7 @@
       dialog.className = "quiz-view-dialog";
       document.body.appendChild(dialog);
     }
-    dialog.innerHTML = `<form method="dialog"><button class="quiz-dialog-close" aria-label="Close">×</button></form><h2>${escapeHtml(quiz.title)}</h2><p>Grade ${escapeHtml(quiz.grade)}${quiz.stream ? ` · ${escapeHtml(quiz.stream)}` : ""} · ${escapeHtml(subjectName(quiz))}</p><p>${Number(quiz.question_count || 0)} questions · ${Number(quiz.total_marks || 0)} marks · ${Number(quiz.duration_minutes || 0)} minutes</p>${(questions || []).map((question, index) => `<article><h3>Question ${index + 1} · ${escapeHtml(typeName[question.question_type] || question.question_type)}</h3><p>${escapeHtml(question.question_text)}</p>${Array.isArray(question.options) ? `<ol type="A">${question.options.map((option) => `<li>${escapeHtml(option.text)}</li>`).join("")}</ol>` : ""}<p class="quiz-review-answer"><strong>Correct answer:</strong> ${escapeHtml(question.correct_answer)}</p><small>${Number(question.marks)} marks</small></article>`).join("")}`;
+    dialog.innerHTML = `<form method="dialog"><button class="quiz-dialog-close" aria-label="Close">×</button></form><h2>${escapeHtml(quiz.title)}</h2><p>Grade ${escapeHtml(quiz.grade)}${quiz.stream ? ` · ${escapeHtml(quiz.stream)}` : ""} · ${escapeHtml(subjectName(quiz))}</p><p>${Number(quiz.question_count || 0)} questions · ${Number(quiz.total_marks || 0)} marks · ${Number(quiz.duration_minutes || 0)} minutes</p>${(questions || []).map((question, index) => `<article><h3>Question ${index + 1} · ${escapeHtml(typeName[question.question_type] || "Unsupported legacy question type")}</h3><p>${escapeHtml(question.question_text)}</p>${Array.isArray(question.options) ? `<ol type="A">${question.options.map((option) => `<li>${escapeHtml(option.text)}</li>`).join("")}</ol>` : ""}<p class="quiz-review-answer"><strong>Correct answer:</strong> ${escapeHtml(question.correct_answer)}</p><small>${Number(question.marks)} marks</small></article>`).join("")}`;
     dialog.showModal();
   }
 

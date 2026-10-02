@@ -2,7 +2,7 @@
   const profileKeys = ["studentProfile", "studentData", "finalStudentRegistration"];
   const $ = (id) => document.getElementById(id);
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
-  const state = { client: null, user: null, definitions: [], unlocked: [], transactions: [], metrics: null };
+  const state = { client: null, user: null, studentId: null, definitions: [], unlocked: [], transactions: [], metrics: null };
 
   function readProfile() {
     return profileKeys.map((key) => {
@@ -41,7 +41,7 @@
     const weeklyMinutes = completedSessions.filter((session) => new Date(session.end_time || session.start_time).getTime() >= currentWeek).reduce((total, session) => total + Number(session.duration_seconds || 0) / 60, 0);
     const today = dateKey(new Date());
     const sessionsToday = completedSessions.filter((session) => dateKey(session.end_time || session.start_time) === today).length;
-    const highScoreQuizzes = (rows.quizzes || []).filter((attempt) => Number(attempt.total_marks) > 0 && Number(attempt.score) / Number(attempt.total_marks) * 100 >= 90).length;
+    const highScoreQuizzes = (rows.quizzes || []).filter((attempt) => Number(attempt.percentage) >= 90).length;
     const streak = calculateStreak(sessions);
     return {
       completedSessions: completedSessions.length,
@@ -67,9 +67,10 @@
       state.client.from("study_sessions").select("id,status,start_time,end_time,duration_seconds").eq("student_id", state.user.id),
       state.client.from("student_video_progress").select("video_id,completed").eq("student_id", state.user.id),
       state.client.from("material_downloads").select("material_id").eq("student_id", state.user.id),
-      state.client.from("quiz_attempts").select("id,score,total_marks,completed_at").eq("student_id", state.user.id),
+      state.client.from("quiz_attempts").select("id,percentage,status,submitted_at").eq("student_id", state.studentId).eq("status", "submitted"),
     ]);
-    return { sessions: queries[0].error ? [] : queries[0].data || [], videos: queries[1].error ? [] : queries[1].data || [], downloads: queries[2].error ? [] : queries[2].data || [], quizzes: queries[3].error ? [] : queries[3].data || [] };
+    if (queries[3].error) throw queries[3].error;
+    return { sessions: queries[0].error ? [] : queries[0].data || [], videos: queries[1].error ? [] : queries[1].data || [], downloads: queries[2].error ? [] : queries[2].data || [], quizzes: queries[3].data || [] };
   }
 
   async function evaluate() {
@@ -189,11 +190,15 @@
     const { data: { user } } = await state.client.auth.getUser();
     state.user = user;
     if (!user) return;
+    const { data: student, error } = await state.client.from("students").select("id").eq("user_id", user.id).single();
+    if (error) throw error;
+    state.studentId = student.id;
     await evaluate();
     state.client.channel(`achievements-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "study_sessions", filter: `student_id=eq.${user.id}` }, evaluate)
       .on("postgres_changes", { event: "*", schema: "public", table: "student_video_progress", filter: `student_id=eq.${user.id}` }, evaluate)
       .on("postgres_changes", { event: "*", schema: "public", table: "material_downloads", filter: `student_id=eq.${user.id}` }, evaluate)
+      .on("postgres_changes", { event: "*", schema: "public", table: "quiz_attempts", filter: `student_id=eq.${state.studentId}` }, evaluate)
       .on("postgres_changes", { event: "*", schema: "public", table: "student_achievements", filter: `student_id=eq.${user.id}` }, evaluate)
       .subscribe();
   }
