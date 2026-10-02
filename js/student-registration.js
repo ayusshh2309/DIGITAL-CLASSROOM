@@ -282,10 +282,15 @@
     const { data: currentAuth, error: currentError } = await client.auth.getUser();
     if (currentError) throw currentError;
     if (currentAuth?.user) {
-      if (currentAuth.user.email?.toLowerCase() !== data.email.toLowerCase()) {
-        throw new Error("A different account is signed in. Sign out before creating this student account.");
+      if (currentAuth.user.email?.toLowerCase() === data.email.toLowerCase()) {
+        return currentAuth.user;
       }
-      return currentAuth.user;
+
+      const { error: signOutError } = await client.auth.signOut();
+      if (signOutError) {
+        console.error("Could not sign out the existing account before student registration.", signOutError);
+        throw new Error("Could not sign out the existing account. Please sign out and try again.");
+      }
     }
 
     const { data: signup, error: signupError } = await client.auth.signUp({
