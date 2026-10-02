@@ -160,37 +160,6 @@
     return events.sort((left, right) => new Date(left.start_at) - new Date(right.start_at));
   }
 
-  async function addCalendarEvent(input) {
-    const { client, profile } = await requireTeacher();
-    const payload = {
-      teacher_id: profile.id,
-      title: String(input.title || "").trim(),
-      description: input.description || "",
-      event_type: input.event_type || "event",
-      grade: input.grade || input.class_grade || "",
-      stream: input.stream || "",
-      subject_id: input.subject_id || null,
-      start_at: input.start_at,
-      end_at: input.end_at || input.start_at,
-      all_day: Boolean(input.all_day),
-      location: input.location || "",
-      meeting_url: input.meeting_url || "",
-    };
-
-    if (!payload.title) {
-      throw new Error("Event title is required.");
-    }
-    if (!payload.start_at) {
-      throw new Error("Event start date is required.");
-    }
-
-    const { data, error } = await client.from("calendar_events").insert(payload).select("*").single();
-    if (error) {
-      throw error;
-    }
-    return tableEvent(data, "calendar_events", data.event_type || "event");
-  }
-
   async function subscribe(onChange) {
     const client = getClient();
     if (!client) return () => {};
@@ -209,62 +178,10 @@
     return () => { client.removeChannel(channel); };
   }
 
-  async function registerClasses() {
-    try {
-      const { client, profile } = await requireTeacher();
-      const { data, error } = await client
-        .from("teacher_grade_groups")
-        .select("grade, stream")
-        .eq("teacher_id", profile.id)
-        .order("grade", { ascending: true })
-        .order("stream", { ascending: true });
-      if (error) throw error;
-      return (data || []).map((row) => ({
-        grade: Number(row.grade),
-        stream: row.stream || "",
-      }));
-    } catch (error) {
-      console.error("Unable to load teacher classes.", error);
-      return [];
-    }
-  }
-
-  async function registerSubjects(grade, stream) {
-    try {
-      const { client, profile } = await requireTeacher();
-      let query = client
-        .from("teacher_subject_assignments")
-        .select("subject_id, grade, stream")
-        .eq("teacher_id", profile.id);
-      if (grade !== undefined && grade !== null && grade !== "") {
-        query = query.eq("grade", Number(grade));
-      }
-      if (stream) {
-        query = query.eq("stream", stream);
-      }
-      const { data, error } = await query;
-      if (error) throw error;
-      const subjectIds = [...new Set((data || []).map((row) => row.subject_id).filter(Boolean))];
-      if (!subjectIds.length) return [];
-      const { data: subjectsData, error: subjectsError } = await client
-        .from("subjects")
-        .select("id, name")
-        .in("id", subjectIds);
-      if (subjectsError) throw subjectsError;
-      return (subjectsData || []).map((subject) => ({ id: subject.id, name: subject.name }));
-    } catch (error) {
-      console.error("Unable to load teacher subjects.", error);
-      return [];
-    }
-  }
-
   window.CalendarService = {
     loadEvents,
-    addCalendarEvent,
     subscribe,
     requireTeacher,
     getTeacherScope,
-    registerClasses,
-    registerSubjects,
   };
 })();

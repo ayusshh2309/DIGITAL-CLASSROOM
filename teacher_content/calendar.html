@@ -16,6 +16,7 @@
     />
     <link rel="stylesheet" href="../css/layout.css" />
     <link rel="stylesheet" href="../css/calendar.css" />
+    <link rel="stylesheet" href="../css/calendar-modal.css" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body>
@@ -34,13 +35,8 @@
             </p>
           </div>
           <div class="header-actions">
-            <select id="calendarTypeFilter" aria-label="Filter calendar events">
-              <option value="">All event types</option></select
-            ><button class="cal-button" id="todayButton">
-              <i class="fa-solid fa-crosshairs"></i> Today</button
-            ><button class="cal-button primary" id="addEventButton">
-              <i class="fa-solid fa-plus"></i> Add Event
-            </button>
+            <button class="cal-button" id="todayButton">
+              <i class="fa-solid fa-crosshairs"></i> Today</button>
           </div>
         </header>
         <section class="summary-grid" aria-label="Calendar summary">

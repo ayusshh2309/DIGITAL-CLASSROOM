@@ -3,7 +3,6 @@
     events: [],
     date: new Date(),
     view: "month",
-    filter: "",
     selected: new Date(),
     stopRealtime: () => {},
   };
@@ -29,14 +28,10 @@
     return `${startText} - ${new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(end)}`;
   };
 
-  function visibleEvents() {
-    return state.filter ? state.events.filter((event) => event.type === state.filter) : state.events;
-  }
-
   function renderSummary() {
     const month = state.date.getMonth();
     const year = state.date.getFullYear();
-    const rows = visibleEvents().filter((event) => {
+    const rows = state.events.filter((event) => {
       const dt = new Date(event.start_at);
       return dt.getMonth() === month && dt.getFullYear() === year;
     });
@@ -72,7 +67,7 @@
     for (let day = 1; day <= days; day += 1) {
       const currentDate = new Date(year, month, day);
       const key = dayKey(currentDate);
-      const events = visibleEvents().filter((event) => dayKey(event.start_at) === key);
+      const events = state.events.filter((event) => dayKey(event.start_at) === key);
       html += `<div class="day-cell" data-date="${key}"><div class="day-number ${key === dayKey(new Date()) ? "today" : ""}">${day}<span>${events.length ? events.length : ""}</span></div>${events.slice(0, 3).map((event) => `<button class="event-pill ${typeClass(event.type)}" data-event-id="${esc(event.id)}"><span>${esc(event.title || "Academic event")}</span><span class="event-time">${esc(eventTime(event))}</span></button>`).join("")}${events.length > 3 ? `<small>+${events.length - 3} more</small>` : ""}</div>`;
     }
 
@@ -84,7 +79,7 @@
   function renderPeriod() {
     const start = new Date(state.date);
     start.setHours(0, 0, 0, 0);
-    const events = visibleEvents();
+    const events = state.events;
 
     if (state.view === "week") {
       const monday = new Date(start);
@@ -131,19 +126,9 @@
 
   function renderUpcoming() {
     const now = new Date();
-    const upcoming = visibleEvents().filter((event) => new Date(event.end_at || event.start_at) >= now).sort((left, right) => new Date(left.start_at) - new Date(right.start_at)).slice(0, 6);
+    const upcoming = state.events.filter((event) => new Date(event.end_at || event.start_at) >= now).sort((left, right) => new Date(left.start_at) - new Date(right.start_at)).slice(0, 6);
     if (!$("upcomingEvents")) return;
     $("upcomingEvents").innerHTML = upcoming.length ? upcoming.map((event) => `<div class="upcoming-item" data-event-id="${esc(event.id)}"><i class="upcoming-dot"></i><span><strong>${esc(event.title || "Academic event")}</strong><small>${esc(eventTime(event))} · ${esc(formatDate(event.start_at, { month: "short", day: "numeric" }))}</small></span></div>`).join("") : '<div class="empty"><i class="fa-regular fa-calendar-xmark"></i>No upcoming events.</div>';
-  }
-
-  function populateFilter() {
-    const select = $("calendarTypeFilter");
-    if (!select) return;
-    const types = [...new Set(state.events.map((event) => event.type).filter(Boolean))].sort();
-    const currentValue = state.filter && types.includes(state.filter) ? state.filter : "";
-    select.innerHTML = '<option value="">All event types</option>' + types.map((type) => `<option value="${esc(type)}">${esc(displayType(type))}</option>`).join("");
-    select.value = currentValue;
-    state.filter = currentValue;
   }
 
   function renderCalendar() {
@@ -156,7 +141,6 @@
     renderMini();
     renderUpcoming();
     renderSummary();
-    populateFilter();
   }
 
   function showDetails(event) {
@@ -194,60 +178,12 @@
       refreshEvents();
     });
 
-    $("calendarTypeFilter")?.addEventListener("change", (event) => {
-      state.filter = event.target.value || "";
-      renderCalendar();
-    });
-
     document.querySelectorAll("[data-view]").forEach((button) => {
       button.addEventListener("click", () => {
         state.view = button.dataset.view;
         document.querySelectorAll("[data-view]").forEach((item) => item.classList.toggle("active", item === button));
         renderCalendar();
       });
-    });
-
-    $("addEventButton")?.addEventListener("click", () => {
-      const root = $("calendarModalRoot");
-      if (!root) return;
-      root.innerHTML = `<div class="modal-backdrop"><form class="modal" id="eventForm"><div class="modal-head"><div><span class="page-eyebrow"><i class="fa-solid fa-calendar-plus"></i> Calendar event</span><h2 style="margin-top:7px">Add event</h2></div><button type="button" class="icon-button" data-close><i class="fa-solid fa-xmark"></i></button></div><div class="modal-grid"><div class="field full"><label>Title *</label><input name="title" required placeholder="Event title"></div><div class="field"><label>Type</label><select name="event_type"><option value="event">Event</option><option value="holiday">Holiday</option><option value="reminder">Reminder</option><option value="exam">Exam</option></select></div><div class="field"><label>Class</label><select name="grade" id="addEventGrade"><option value="">Select class</option></select></div><div class="field"><label>Stream</label><input name="stream" placeholder="Optional stream"></div><div class="field"><label>Subject</label><select name="subject_id" id="addEventSubject"><option value="">Select subject</option></select></div><div class="field"><label>Start date</label><input name="start_date" type="date" required></div><div class="field"><label>Start time</label><input name="start_time" type="time"></div><div class="field"><label>End date</label><input name="end_date" type="date"></div><div class="field"><label>End time</label><input name="end_time" type="time"></div><div class="field"><label>Location</label><input name="location" placeholder="Venue or link"></div></div><div class="modal-actions"><button type="button" class="cal-button" data-close>Cancel</button><button type="submit" class="cal-button primary">Save event</button></div></form></div>`;
-
-      window.CalendarService.registerClasses().then((classes) => {
-        const gradeSelect = $("addEventGrade");
-        if (!gradeSelect) return;
-        gradeSelect.innerHTML = '<option value="">Select class</option>' + classes.map((group) => `<option value="${esc(group.grade)}">Grade ${esc(group.grade)}${group.stream ? ` ${esc(group.stream)}` : ""}</option>`).join("");
-      }).catch(() => {});
-
-      const form = $("eventForm");
-      if (form) {
-        form.addEventListener("submit", async (event) => {
-          event.preventDefault();
-          const formData = new FormData(form);
-          const payload = {
-            title: String(formData.get("title") || "").trim(),
-            event_type: formData.get("event_type") || "event",
-            grade: formData.get("grade") || "",
-            stream: formData.get("stream") || "",
-            subject_id: formData.get("subject_id") || null,
-            start_at: new Date(`${formData.get("start_date")}T${formData.get("start_time") || "00:00"}:00`).toISOString(),
-            end_at: new Date(`${formData.get("end_date") || formData.get("start_date")}T${formData.get("end_time") || formData.get("start_time") || "00:00"}:00`).toISOString(),
-            location: formData.get("location") || "",
-          };
-
-          if (!payload.title) {
-            console.error("Event title is required.");
-            return;
-          }
-
-          try {
-            await window.CalendarService.addCalendarEvent(payload);
-            root.innerHTML = "";
-            await refreshEvents();
-          } catch (error) {
-            console.error("Unable to save calendar event.", error);
-          }
-        });
-      }
     });
 
     document.addEventListener("click", (event) => {
