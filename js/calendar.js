@@ -1,23 +1,285 @@
-(() => {
-  const state = { events: [], date: new Date(), view: "month", filter: "", selected: new Date(), stopRealtime: () => {} };
+﻿(() => {
+  const state = {
+    events: [],
+    date: new Date(),
+    view: "month",
+    filter: "",
+    selected: new Date(),
+    stopRealtime: () => {},
+  };
+
   const $ = (id) => document.getElementById(id);
-  const esc = (value) => String(value ?? "").replace(/[&<>\"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" })[char]);
-  const dayKey = (date) => { const value = new Date(date); return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`; };
-  const formatDate = (date, options = { month: "long", year: "numeric" }) => new Intl.DateTimeFormat("en", options).format(date);
-  const typeClass = (type) => String(type).toLowerCase().replaceAll(" ", "-");
-  const eventTime = (event) => new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit" }).format(new Date(event.start_at));
-  const toast = (message) => { const node = document.createElement("div"); node.textContent = message; node.style.cssText = "position:fixed;right:24px;bottom:24px;z-index:2000;padding:13px 16px;border-radius:10px;background:#172638;color:#fff"; document.body.append(node); setTimeout(() => node.remove(), 2800); };
-  function visibleEvents() { return state.events.filter((event) => !state.filter || event.type === state.filter); }
-  function renderSummary() { const month = state.date.getMonth(); const year = state.date.getFullYear(); const rows = visibleEvents().filter((event) => { const date = new Date(event.start_at); return date.getMonth() === month && date.getFullYear() === year; }); $("totalEvents").textContent = rows.length; $("classesScheduled").textContent = rows.filter((event) => event.type === "Live Class").length; $("assessmentsCount").textContent = rows.filter((event) => event.type === "Assessment").length; $("remindersCount").textContent = rows.filter((event) => ["Announcement", "Reminder"].includes(event.type)).length; $("holidaysCount").textContent = rows.filter((event) => event.type === "Holiday").length; }
-  function eventPill(event) { return `<button class="event-pill ${typeClass(event.type)}" data-event="${esc(event.id)}"><span>${esc(event.title)}</span><span class="event-time">${eventTime(event)}</span></button>`; }
-  function renderMonth() { const year = state.date.getFullYear(); const month = state.date.getMonth(); const first = new Date(year, month, 1); const offset = (first.getDay() + 6) % 7; const days = new Date(year, month + 1, 0).getDate(); let html = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => `<div class="day-heading">${day}</div>`).join(""); for (let i = 0; i < offset; i += 1) html += `<div class="day-cell"></div>`; for (let day = 1; day <= days; day += 1) { const key = dayKey(new Date(year, month, day)); const events = visibleEvents().filter((event) => dayKey(event.start_at) === key); html += `<div class="day-cell" data-date="${key}"><div class="day-number ${key === dayKey(new Date()) ? "today" : ""}">${day}<span>${events.length || ""}</span></div>${events.slice(0, 3).map(eventPill).join("")}${events.length > 3 ? `<small>+${events.length - 3} more</small>` : ""}</div>`; } $("calendarView").innerHTML = `<div class="calendar-grid">${html}</div>`; }
-  function renderPeriod() { const start = new Date(state.date); start.setHours(0, 0, 0, 0); if (state.view === "week") { const monday = new Date(start); monday.setDate(start.getDate() - ((start.getDay() + 6) % 7)); const dates = Array.from({ length: 7 }, (_, index) => { const date = new Date(monday); date.setDate(monday.getDate() + index); return date; }); $("calendarView").innerHTML = `<div class="week-grid">${dates.map((date) => `<div class="time-row"><div class="time-label">${formatDate(date, { weekday: "short", day: "numeric" })}</div><div class="time-events">${visibleEvents().filter((event) => dayKey(event.start_at) === dayKey(date)).map(eventPill).join("") || "<span style=\"color:#a2afbc;font-size:.75rem\">No events</span>"}</div></div>`).join("")}</div>`; } else { const events = visibleEvents().filter((event) => dayKey(event.start_at) === dayKey(start)); $("calendarView").innerHTML = `<div class="day-grid">${events.length ? events.map(eventPill).join("") : `<div class="empty"><i class="fa-regular fa-calendar-xmark"></i>No events scheduled for this day.</div>`}</div>`; } }
-  function renderCalendar() { $("calendarTitle").textContent = state.view === "month" ? formatDate(state.date) : state.view === "week" ? `Week of ${formatDate(state.date, { month: "short", day: "numeric", year: "numeric" })}` : formatDate(state.date, { weekday: "long", month: "long", day: "numeric", year: "numeric" }); if (state.view === "month") renderMonth(); else renderPeriod(); renderMini(); renderUpcoming(); renderSummary(); }
-  function renderMini() { const year = state.date.getFullYear(); const month = state.date.getMonth(); const first = new Date(year, month, 1); const offset = (first.getDay() + 6) % 7; const days = new Date(year, month + 1, 0).getDate(); let html = ["M", "T", "W", "T", "F", "S", "S"].map((day) => `<span class="mini-week">${day}</span>`).join(""); for (let i = 0; i < offset; i += 1) html += "<span></span>"; for (let day = 1; day <= days; day += 1) { const date = new Date(year, month, day); const key = dayKey(date); html += `<button class="${key === dayKey(new Date()) ? "today" : ""} ${key === dayKey(state.selected) ? "selected" : ""}" data-mini-date="${key}">${day}</button>`; } $("miniCalendar").innerHTML = html; }
-  function renderUpcoming() { const now = new Date(); const events = visibleEvents().filter((event) => new Date(event.end_at || event.start_at) >= now).sort((a, b) => new Date(a.start_at) - new Date(b.start_at)).slice(0, 6); $("upcomingEvents").innerHTML = events.length ? events.map((event) => `<div class="upcoming-item" data-event="${esc(event.id)}"><i class="upcoming-dot"></i><span><strong>${esc(event.title)}</strong><small>${eventTime(event)} · ${formatDate(new Date(event.start_at), { month: "short", day: "numeric" })}</small></span></div>`).join("") : `<div class="empty"><i class="fa-regular fa-calendar-xmark"></i>No upcoming events.</div>`; }
-  function showDetails(event) { const status = new Date(event.end_at || event.start_at) < new Date() ? "Completed" : event.status; $("calendarModalRoot").innerHTML = `<div class="modal-backdrop"><div class="modal"><div class="modal-head"><div><span class="page-eyebrow"><i class="fa-solid fa-circle-info"></i> ${esc(event.type)}</span><h2 style="margin-top:7px">${esc(event.title)}</h2></div><button class="icon-button" data-close><i class="fa-solid fa-xmark"></i></button></div><div class="modal-grid"><div class="field"><label>Class</label><div>${esc(event.class_grade ? `Class ${event.class_grade}` : "All classes")}</div></div><div class="field"><label>Subject</label><div>${esc(event.subject || "All subjects")}</div></div><div class="field"><label>Date and time</label><div>${formatDate(new Date(event.start_at), { dateStyle: "medium", timeStyle: "short" })}</div></div><div class="field"><label>Status</label><div>${esc(status)}</div></div><div class="field full"><label>Description</label><div>${esc(event.description || "No additional details.")}</div></div>${event.location ? `<div class="field full"><label>Location / Link</label><div><a href="${esc(event.location)}" target="_blank" rel="noreferrer">${esc(event.location)}</a></div></div>` : ""}</div><div class="modal-actions"><button class="cal-button" data-close>Close</button>${event.source === "calendarEvents" ? `<button class="cal-button" data-delete="${esc(event.source_id)}">Delete Event</button>` : ""}</div></div></div>`; }
-  function openAdd() { const classes = CalendarService.registerClasses(); $("calendarModalRoot").innerHTML = `<div class="modal-backdrop"><form class="modal" id="eventForm"><div class="modal-head"><div><span class="page-eyebrow"><i class="fa-solid fa-calendar-plus"></i> Calendar event</span><h2 style="margin-top:7px">Add event</h2></div><button type="button" class="icon-button" data-close><i class="fa-solid fa-xmark"></i></button></div><div class="modal-grid"><div class="field full"><label>Title *</label><input name="title" required placeholder="Event title"></div><div class="field"><label>Type</label><select name="type"><option>Event</option><option>Holiday</option><option>Reminder</option><option>Meeting</option></select></div><div class="field"><label>Class</label><select name="class_grade"><option value="">All classes</option>${classes.map((grade) => `<option value="${grade}">Class ${grade}</option>`).join("")}</select></div><div class="field"><label>Date and time *</label><input name="start_at" type="datetime-local" required></div><div class="field"><label>End time</label><input name="end_at" type="datetime-local"></div><div class="field full"><label>Description</label><textarea name="description" rows="4"></textarea></div></div><div class="modal-actions"><button type="button" class="cal-button" data-close>Cancel</button><button class="cal-button primary"><i class="fa-solid fa-check"></i> Save event</button></div></form></div>`; $("eventForm").addEventListener("submit", async (event) => { event.preventDefault(); const data = Object.fromEntries(new FormData(event.currentTarget)); if (!data.title || !data.start_at) return; CalendarService.saveLocalEvent(data); $("calendarModalRoot").replaceChildren(); await load(); toast("Event added to your calendar."); }); }
-  async function load() { state.events = await CalendarService.loadEvents(); const types = [...new Set(state.events.map((event) => event.type))].sort(); $("calendarTypeFilter").innerHTML = `<option value="">All event types</option>${types.map((type) => `<option>${esc(type)}</option>`).join("")}`; renderCalendar(); }
-  function shift(amount) { if (state.view === "month") state.date.setMonth(state.date.getMonth() + amount); else if (state.view === "week") state.date.setDate(state.date.getDate() + amount * 7); else state.date.setDate(state.date.getDate() + amount); state.selected = new Date(state.date); renderCalendar(); }
-  document.addEventListener("DOMContentLoaded", async () => { $("calendarTypeFilter").addEventListener("change", (event) => { state.filter = event.target.value; renderCalendar(); }); $("todayButton").addEventListener("click", () => { state.date = new Date(); state.selected = new Date(); renderCalendar(); }); $("prevDate").addEventListener("click", () => shift(-1)); $("nextDate").addEventListener("click", () => shift(1)); $("addEventButton").addEventListener("click", openAdd); document.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => { state.view = button.dataset.view; document.querySelectorAll("[data-view]").forEach((item) => item.classList.toggle("active", item === button)); renderCalendar(); })); $("calendarView").addEventListener("click", (event) => { const id = event.target.closest("[data-event]")?.dataset.event; const date = event.target.closest("[data-date]")?.dataset.date; if (date) { state.selected = new Date(`${date}T00:00:00`); state.date = new Date(state.selected); renderCalendar(); } if (id) showDetails(state.events.find((item) => item.id === id)); }); $("miniCalendar").addEventListener("click", (event) => { const date = event.target.closest("[data-mini-date]")?.dataset.miniDate; if (date) { state.selected = new Date(`${date}T00:00:00`); state.date = new Date(state.selected); renderCalendar(); } }); $("upcomingEvents").addEventListener("click", (event) => { const id = event.target.closest("[data-event]")?.dataset.event; if (id) showDetails(state.events.find((item) => item.id === id)); }); $("calendarModalRoot").addEventListener("click", async (event) => { if (event.target.closest("[data-close]") || event.target.classList.contains("modal-backdrop")) $("calendarModalRoot").replaceChildren(); const id = event.target.closest("[data-delete]")?.dataset.delete; if (id) { CalendarService.deleteLocalEvent(id); $("calendarModalRoot").replaceChildren(); await load(); } }); try { await load(); state.stopRealtime = CalendarService.subscribe(() => load().catch(console.error)); } catch (error) { console.error(error); toast("Calendar events could not be loaded."); } });
+
+  const dayKey = (value) => {
+    const date = new Date(value);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  };
+
+  const formatDate = (value, options = {}) => new Intl.DateTimeFormat("en-US", options).format(new Date(value));
+  const displayType = (type) => String(type || "event").replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+  const esc = (value) => String(value ?? "").replace(/[&<>\"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[char]);
+
+  const typeClass = (type) => String(type || "event").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
+  const eventTime = (event) => {
+    const start = new Date(event.start_at);
+    const end = event.end_at ? new Date(event.end_at) : null;
+    const startText = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(start);
+    if (!end || dayKey(start) !== dayKey(end)) return startText;
+    return `${startText} - ${new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(end)}`;
+  };
+
+  function visibleEvents() {
+    return state.filter ? state.events.filter((event) => event.type === state.filter) : state.events;
+  }
+
+  function renderSummary() {
+    const month = state.date.getMonth();
+    const year = state.date.getFullYear();
+    const rows = visibleEvents().filter((event) => {
+      const dt = new Date(event.start_at);
+      return dt.getMonth() === month && dt.getFullYear() === year;
+    });
+
+    const counts = {
+      total: rows.length,
+      classes: rows.filter((event) => event.type === "live_class").length,
+      assessments: rows.filter((event) => ["quiz", "exam"].includes(event.type)).length,
+      reminders: rows.filter((event) => ["announcement", "reminder", "calendar_event"].includes(event.type)).length,
+      holidays: rows.filter((event) => event.type === "holiday").length,
+    };
+
+    if ($("totalEvents")) $("totalEvents").textContent = counts.total;
+    if ($("classesScheduled")) $("classesScheduled").textContent = counts.classes;
+    if ($("assessmentsCount")) $("assessmentsCount").textContent = counts.assessments;
+    if ($("remindersCount")) $("remindersCount").textContent = counts.reminders;
+    if ($("holidaysCount")) $("holidaysCount").textContent = counts.holidays;
+  }
+
+  function renderMonth() {
+    const year = state.date.getFullYear();
+    const month = state.date.getMonth();
+    const first = new Date(year, month, 1);
+    const offset = (first.getDay() + 6) % 7;
+    const days = new Date(year, month + 1, 0).getDate();
+    const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    let html = labels.map((label) => `<div class="day-heading">${label}</div>`).join("");
+
+    for (let index = 0; index < offset; index += 1) {
+      html += '<div class="day-cell"></div>';
+    }
+
+    for (let day = 1; day <= days; day += 1) {
+      const currentDate = new Date(year, month, day);
+      const key = dayKey(currentDate);
+      const events = visibleEvents().filter((event) => dayKey(event.start_at) === key);
+      html += `<div class="day-cell" data-date="${key}"><div class="day-number ${key === dayKey(new Date()) ? "today" : ""}">${day}<span>${events.length ? events.length : ""}</span></div>${events.slice(0, 3).map((event) => `<button class="event-pill ${typeClass(event.type)}" data-event-id="${esc(event.id)}"><span>${esc(event.title || "Academic event")}</span><span class="event-time">${esc(eventTime(event))}</span></button>`).join("")}${events.length > 3 ? `<small>+${events.length - 3} more</small>` : ""}</div>`;
+    }
+
+    if ($("calendarView")) {
+      $("calendarView").innerHTML = `<div class="calendar-grid">${html}</div>`;
+    }
+  }
+
+  function renderPeriod() {
+    const start = new Date(state.date);
+    start.setHours(0, 0, 0, 0);
+    const events = visibleEvents();
+
+    if (state.view === "week") {
+      const monday = new Date(start);
+      monday.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+      const dates = Array.from({ length: 7 }, (_, index) => {
+        const date = new Date(monday);
+        date.setDate(monday.getDate() + index);
+        return date;
+      });
+      const rows = dates.map((date) => {
+        const dayEvents = events.filter((event) => dayKey(event.start_at) === dayKey(date)).map((event) => `<button class="event-pill ${typeClass(event.type)}" data-event-id="${esc(event.id)}"><span>${esc(event.title || "Academic event")}</span><span class="event-time">${esc(eventTime(event))}</span></button>`).join("") || '<span style="color:#a2afbc;font-size:.75rem">No events</span>';
+        return `<div class="time-row"><div class="time-label">${formatDate(date, { weekday: "short", day: "numeric" })}</div><div class="time-events">${dayEvents}</div></div>`;
+      }).join("");
+      if ($("calendarView")) $("calendarView").innerHTML = `<div class="week-grid">${rows}</div>`;
+      return;
+    }
+
+    const dayEvents = events.filter((event) => dayKey(event.start_at) === dayKey(start));
+    if ($("calendarView")) {
+      $("calendarView").innerHTML = `<div class="day-grid">${dayEvents.length ? dayEvents.map((event) => `<button class="event-pill ${typeClass(event.type)}" data-event-id="${esc(event.id)}"><span>${esc(event.title || "Academic event")}</span><span class="event-time">${esc(eventTime(event))}</span></button>`).join("") : '<div class="empty"><i class="fa-regular fa-calendar-xmark"></i>No events scheduled for this day.</div>'}</div>`;
+    }
+  }
+
+  function renderMini() {
+    const year = state.date.getFullYear();
+    const month = state.date.getMonth();
+    const first = new Date(year, month, 1);
+    const offset = (first.getDay() + 6) % 7;
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    let html = ["M", "T", "W", "T", "F", "S", "S"].map((day) => `<span class="mini-week">${day}</span>`).join("");
+
+    for (let index = 0; index < offset; index += 1) html += "<span></span>";
+
+    for (let day = 1; day <= totalDays; day += 1) {
+      const currentDate = new Date(year, month, day);
+      const key = dayKey(currentDate);
+      const selected = key === dayKey(state.selected) ? "selected" : "";
+      const today = key === dayKey(new Date()) ? "today" : "";
+      html += `<button class="${selected} ${today}" data-mini-date="${key}">${day}</button>`;
+    }
+
+    if ($("miniCalendar")) $("miniCalendar").innerHTML = html;
+  }
+
+  function renderUpcoming() {
+    const now = new Date();
+    const upcoming = visibleEvents().filter((event) => new Date(event.end_at || event.start_at) >= now).sort((left, right) => new Date(left.start_at) - new Date(right.start_at)).slice(0, 6);
+    if (!$("upcomingEvents")) return;
+    $("upcomingEvents").innerHTML = upcoming.length ? upcoming.map((event) => `<div class="upcoming-item" data-event-id="${esc(event.id)}"><i class="upcoming-dot"></i><span><strong>${esc(event.title || "Academic event")}</strong><small>${esc(eventTime(event))} · ${esc(formatDate(event.start_at, { month: "short", day: "numeric" }))}</small></span></div>`).join("") : '<div class="empty"><i class="fa-regular fa-calendar-xmark"></i>No upcoming events.</div>';
+  }
+
+  function populateFilter() {
+    const select = $("calendarTypeFilter");
+    if (!select) return;
+    const types = [...new Set(state.events.map((event) => event.type).filter(Boolean))].sort();
+    const currentValue = state.filter && types.includes(state.filter) ? state.filter : "";
+    select.innerHTML = '<option value="">All event types</option>' + types.map((type) => `<option value="${esc(type)}">${esc(displayType(type))}</option>`).join("");
+    select.value = currentValue;
+    state.filter = currentValue;
+  }
+
+  function renderCalendar() {
+    const title = $("calendarTitle");
+    if (title) {
+      title.textContent = state.view === "month" ? formatDate(state.date) : state.view === "week" ? `Week of ${formatDate(state.date, { month: "short", day: "numeric", year: "numeric" })}` : formatDate(state.date, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+    }
+
+    if (state.view === "month") renderMonth(); else renderPeriod();
+    renderMini();
+    renderUpcoming();
+    renderSummary();
+    populateFilter();
+  }
+
+  function showDetails(event) {
+    const root = $("calendarModalRoot");
+    if (!root) return;
+    const status = new Date(event.end_at || event.start_at) < new Date() ? "Completed" : (event.status || "Scheduled");
+    root.innerHTML = `<div class="modal-backdrop"><div class="modal"><div class="modal-head"><div><span class="page-eyebrow"><i class="fa-solid fa-circle-info"></i> ${esc(displayType(event.type))}</span><h2 style="margin-top:7px">${esc(event.title || "Academic event")}</h2></div><button class="icon-button" data-close><i class="fa-solid fa-xmark"></i></button></div><div class="modal-grid"><div class="field"><label>Class</label><div>${esc(event.class_grade ? `Class ${event.class_grade}` : "All classes")}</div></div><div class="field"><label>Subject</label><div>${esc(event.subject || "All subjects")}</div></div><div class="field"><label>Date and time</label><div>${esc(formatDate(event.start_at, { dateStyle: "medium", timeStyle: "short" }))}</div></div><div class="field"><label>Status</label><div>${esc(status)}</div></div><div class="field full"><label>Description</label><div>${esc(event.description || "No additional details.")}</div></div>${event.location ? `<div class="field full"><label>Location / Link</label><div><a href="${esc(event.location)}" target="_blank" rel="noreferrer">${esc(event.location)}</a></div></div>` : ""}</div><div class="modal-actions"><button class="cal-button" data-close>Close</button></div></div></div>`;
+  }
+
+  async function refreshEvents() {
+    try {
+      state.events = await window.CalendarService.loadEvents(state.date);
+      renderCalendar();
+    } catch (error) {
+      console.error("Failed to load teacher calendar events.", error);
+      if ($("calendarView")) $("calendarView").innerHTML = '<div class="empty"><i class="fa-regular fa-circle-exclamation"></i>Unable to load calendar events.</div>';
+      console.error(error?.message || "Calendar could not be loaded.");
+    }
+  }
+
+  function bindEvents() {
+    $("prevDate")?.addEventListener("click", () => {
+      state.date = new Date(state.date.getFullYear(), state.date.getMonth() - 1, 1);
+      refreshEvents();
+    });
+
+    $("nextDate")?.addEventListener("click", () => {
+      state.date = new Date(state.date.getFullYear(), state.date.getMonth() + 1, 1);
+      refreshEvents();
+    });
+
+    $("todayButton")?.addEventListener("click", () => {
+      state.date = new Date();
+      state.selected = new Date();
+      refreshEvents();
+    });
+
+    $("calendarTypeFilter")?.addEventListener("change", (event) => {
+      state.filter = event.target.value || "";
+      renderCalendar();
+    });
+
+    document.querySelectorAll("[data-view]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.view = button.dataset.view;
+        document.querySelectorAll("[data-view]").forEach((item) => item.classList.toggle("active", item === button));
+        renderCalendar();
+      });
+    });
+
+    $("addEventButton")?.addEventListener("click", () => {
+      const root = $("calendarModalRoot");
+      if (!root) return;
+      root.innerHTML = `<div class="modal-backdrop"><form class="modal" id="eventForm"><div class="modal-head"><div><span class="page-eyebrow"><i class="fa-solid fa-calendar-plus"></i> Calendar event</span><h2 style="margin-top:7px">Add event</h2></div><button type="button" class="icon-button" data-close><i class="fa-solid fa-xmark"></i></button></div><div class="modal-grid"><div class="field full"><label>Title *</label><input name="title" required placeholder="Event title"></div><div class="field"><label>Type</label><select name="event_type"><option value="event">Event</option><option value="holiday">Holiday</option><option value="reminder">Reminder</option><option value="exam">Exam</option></select></div><div class="field"><label>Class</label><select name="grade" id="addEventGrade"><option value="">Select class</option></select></div><div class="field"><label>Stream</label><input name="stream" placeholder="Optional stream"></div><div class="field"><label>Subject</label><select name="subject_id" id="addEventSubject"><option value="">Select subject</option></select></div><div class="field"><label>Start date</label><input name="start_date" type="date" required></div><div class="field"><label>Start time</label><input name="start_time" type="time"></div><div class="field"><label>End date</label><input name="end_date" type="date"></div><div class="field"><label>End time</label><input name="end_time" type="time"></div><div class="field"><label>Location</label><input name="location" placeholder="Venue or link"></div></div><div class="modal-actions"><button type="button" class="cal-button" data-close>Cancel</button><button type="submit" class="cal-button primary">Save event</button></div></form></div>`;
+
+      window.CalendarService.registerClasses().then((classes) => {
+        const gradeSelect = $("addEventGrade");
+        if (!gradeSelect) return;
+        gradeSelect.innerHTML = '<option value="">Select class</option>' + classes.map((group) => `<option value="${esc(group.grade)}">Grade ${esc(group.grade)}${group.stream ? ` ${esc(group.stream)}` : ""}</option>`).join("");
+      }).catch(() => {});
+
+      const form = $("eventForm");
+      if (form) {
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const formData = new FormData(form);
+          const payload = {
+            title: String(formData.get("title") || "").trim(),
+            event_type: formData.get("event_type") || "event",
+            grade: formData.get("grade") || "",
+            stream: formData.get("stream") || "",
+            subject_id: formData.get("subject_id") || null,
+            start_at: new Date(`${formData.get("start_date")}T${formData.get("start_time") || "00:00"}:00`).toISOString(),
+            end_at: new Date(`${formData.get("end_date") || formData.get("start_date")}T${formData.get("end_time") || formData.get("start_time") || "00:00"}:00`).toISOString(),
+            location: formData.get("location") || "",
+          };
+
+          if (!payload.title) {
+            console.error("Event title is required.");
+            return;
+          }
+
+          try {
+            await window.CalendarService.addCalendarEvent(payload);
+            root.innerHTML = "";
+            await refreshEvents();
+          } catch (error) {
+            console.error("Unable to save calendar event.", error);
+          }
+        });
+      }
+    });
+
+    document.addEventListener("click", (event) => {
+      const closeTarget = event.target.closest("[data-close]");
+      if (closeTarget) {
+        const modalRoot = $("calendarModalRoot");
+        if (modalRoot) modalRoot.innerHTML = "";
+      }
+
+      const eventButton = event.target.closest("[data-event-id]");
+      if (eventButton) {
+        const targetEvent = state.events.find((entry) => entry.id === eventButton.getAttribute("data-event-id"));
+        if (targetEvent) showDetails(targetEvent);
+      }
+
+      const miniDate = event.target.closest("[data-mini-date]");
+      if (miniDate) {
+        const [year, month, day] = miniDate.getAttribute("data-mini-date").split("-").map(Number);
+        state.selected = new Date(year, month - 1, day);
+        state.date = new Date(year, month - 1, 1);
+        renderCalendar();
+      }
+    });
+  }
+
+  async function init() {
+    bindEvents();
+    await refreshEvents();
+    if (window.CalendarService && typeof window.CalendarService.subscribe === "function") {
+      state.stopRealtime = await window.CalendarService.subscribe(() => refreshEvents());
+    }
+  }
+
+  init();
 })();

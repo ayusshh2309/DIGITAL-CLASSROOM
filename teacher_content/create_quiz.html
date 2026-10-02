@@ -2361,14 +2361,6 @@
                       </div>
 
                   `;
-                } else {
-                  optionsHTML = `
-
-                      <div class="preview-option">
-                          Short answer
-                      </div>
-
-                  `;
                 }
 
                 wrapper.innerHTML = `
@@ -2502,8 +2494,11 @@
                 text: question.text,
                 type: questionTypes[question.type] || "Multiple Choice",
                 marks: Number(question.marks) || 1,
-                options: Array.isArray(question.options) ? question.options : [],
-                correct_answer: question.correctAnswer,
+                options: question.type === "true_false" ? [] : Array.isArray(question.options) ? question.options : [],
+                correct_answer:
+                  question.type === "true_false"
+                    ? String(question.correctAnswer === 1 ? "false" : "true")
+                    : question.correctAnswer,
                 explanation: question.explanation || null,
               }));
               const { error: questionsError } = await client

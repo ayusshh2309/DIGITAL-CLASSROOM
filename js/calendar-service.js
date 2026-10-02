@@ -1,43 +1,270 @@
 (() => {
-  const SOURCES = [
-    ["liveClasses", "live_classes", "Live Class"],
-    ["smartLearningAnnouncements", "announcements", "Announcement"],
-    ["teacherMaterials", "materials", "Material"],
-    ["smartLearningDC_published_quizzes", "quizzes", "Assessment"],
-    ["calendarEvents", "calendar_events", "Event"],
-  ];
-  const LOCAL_KEYS = ["calendarEvents", "smartLearningLiveClasses", "smartLearningAnnouncements", "teacherMaterials:"];
-  const profile = () => window.StudentData?.getStudentProfile?.() || ["studentProfile", "studentData", "finalStudentRegistration"].map((key) => { try { return JSON.parse(localStorage.getItem(key) || "null"); } catch { return null; } }).find(Boolean) || {};
-  const client = () => window.SmartLearningSupabase?.getClient?.() || null;
-  const read = (key) => { try { const value = JSON.parse(localStorage.getItem(key) || "[]"); return Array.isArray(value) ? value : []; } catch { return []; } };
-  const grade = () => String(profile().grade || profile().class_grade || profile().classGrade || profile().class || "").replace(/^class\s+/i, "").trim();
-  const stream = () => String(profile().stream || profile().classStream || "").trim();
-  const subjects = () => { const values = profile().eligible_subjects || profile().subjects || profile().selectedSubjects || profile().academic?.subjects || []; return (Array.isArray(values) ? values : String(values).split(",")).map((value) => String(value).trim().toLowerCase()).filter(Boolean); };
-  const userId = async () => { const supabase = client(); if (!supabase) return profile().student_id || profile().id || null; const { data } = await supabase.auth.getUser(); return data?.user?.id || null; };
-  const dateValue = (item) => item.start_at || item.start_time || item.scheduled_at || item.exam_at || item.published_at || item.due_date || item.date || item.created_at;
-  const endValue = (item, start) => item.end_at || item.end_time || item.deadline || item.due_date || (start ? new Date(new Date(start).getTime() + Number(item.duration_minutes || item.duration || 60) * 60000).toISOString() : start);
-  const eligible = (item) => { const itemGrade = String(item.class_grade || item.grade || item.class || "").replace(/^class\s+/i, "").trim(); const itemStream = String(item.stream || item.class_stream || "").trim(); const itemSubject = String(item.subject || item.subject_name || "").trim().toLowerCase(); return (!grade() || !itemGrade || itemGrade === grade()) && (!itemStream || !stream() || itemStream.toLowerCase() === stream().toLowerCase()) && (!subjects().length || !itemSubject || subjects().includes(itemSubject)); };
-  const normalize = (item, source, type) => { const start = dateValue(item) || new Date().toISOString(); const normalizedType = String(item.event_type || item.calendar_type || type || item.type || "event").toLowerCase().replace(/\s+/g, "_"); return { ...item, id: `${source}-${item.id || item.material_id || item.assignment_id || item.quiz_id || item.announcement_id || item.title || start}`, source, source_id: String(item.id || item.material_id || item.assignment_id || item.quiz_id || item.announcement_id || ""), type: normalizedType, title: item.title || item.name || item.topic || item.assessment_name || item.class_title || "Academic event", description: item.description || item.instructions || item.message || item.content || item.topic || "", class_grade: String(item.class_grade || item.grade || item.class || ""), stream: item.stream || item.class_stream || "", subject: item.subject || item.subject_name || "", start_at: new Date(start).toISOString(), end_at: new Date(endValue(item, start) || start).toISOString(), status: item.status || "scheduled", teacher_name: item.teacher_name || item.teacher || "", location: item.meeting_url || item.join_url || item.location || item.external_url || item.file_url || "", file_url: item.file_url || item.external_url || "", duration_minutes: Number(item.duration_minutes || item.duration || 0) || null, question_count: item.question_count || item.questions_count || null, original_start_at: item.original_start_at || item.previous_start_at || null }; };
-  const localRows = () => LOCAL_KEYS.flatMap((key) => key.endsWith(":") ? Object.keys(localStorage).filter((storedKey) => storedKey.startsWith(key)).flatMap((storedKey) => read(storedKey)) : read(key)).map((item) => normalize(item, "local", item.event_type || item.type || "event")).filter(eligible);
-  const queryTable = async (supabase, table, type, user) => { try { const { data, error } = await supabase.from(table).select("*").order("created_at", { ascending: false }); if (error) return []; return (data || []).filter(eligible).map((item) => normalize(item, table, type)); } catch { return []; } };
+  const getClient = () => window.SmartLearningSupabase?.getClient?.() || null;
 
-  async function loadEvents() {
-    const supabase = client();
-    const user = await userId();
-    if (!supabase || !user) return dedupe(localRows());
-    try {
-      const rpc = await supabase.rpc("get_student_calendar_events", { requested_student_id: user });
-      if (!rpc.error && Array.isArray(rpc.data)) return dedupe(rpc.data.map((item) => normalize(item, item.source || "student_calendar", item.event_type || item.type)));
-    } catch (error) { console.warn("Student calendar RPC unavailable:", error.message); }
-    console.warn("Student calendar RPC unavailable; using synchronized local calendar data.");
-    return dedupe(localRows());
+  function normalizeTeacherRecord(value) {
+    return {
+      id: value?.id || null,
+      user_id: value?.user_id || value?.teacher_user_id || null,
+      name: value?.full_name || value?.name || value?.teacher_name || "Teacher",
+      grade_groups: Array.isArray(value?.grade_groups) ? value.grade_groups : [],
+      subject_assignments: Array.isArray(value?.subject_assignments) ? value.subject_assignments : [],
+    };
   }
 
-  function dedupe(events) { return Array.from(new Map(events.filter((event) => Number.isFinite(new Date(event.start_at).getTime())).map((event) => [event.id, event])).values()).sort((left, right) => new Date(left.start_at) - new Date(right.start_at)); }
-  function registerClasses() { return grade() ? [grade()] : []; }
-  function registerSubjects() { return subjects(); }
-  function saveLocalEvent(input) { const rows = read("calendarEvents"); const event = { ...input, id: input.id || `local-${Date.now()}`, created_at: input.created_at || new Date().toISOString() }; localStorage.setItem("calendarEvents", JSON.stringify([event, ...rows.filter((row) => row.id !== event.id)])); window.dispatchEvent(new CustomEvent("smart-learning-calendar-updated")); return normalize(event, "local", event.type || "event"); }
-  function deleteLocalEvent(id) { localStorage.setItem("calendarEvents", JSON.stringify(read("calendarEvents").filter((row) => row.id !== id))); window.dispatchEvent(new CustomEvent("smart-learning-calendar-updated")); }
-  function subscribe(onChange) { const handler = () => onChange(); window.addEventListener("smart-learning-calendar-updated", handler); window.addEventListener("storage", handler); const supabase = client(); let channel; userId().then((user) => { if (!supabase || !user) return; channel = supabase.channel(`student-calendar-${user}`).on("postgres_changes", { event: "*", schema: "public" }, handler).subscribe(); }); return () => { window.removeEventListener("smart-learning-calendar-updated", handler); window.removeEventListener("storage", handler); if (channel && supabase) supabase.removeChannel(channel); }; }
-  window.CalendarService = { loadEvents, registerClasses, registerSubjects, saveLocalEvent, deleteLocalEvent, subscribe, studentId: userId, eligible };
+  async function requireTeacher() {
+    const client = getClient();
+    if (!client) {
+      throw new Error("Supabase is not configured.");
+    }
+
+    const { data: userResult, error: userError } = await client.auth.getUser();
+    if (userError || !userResult?.user) {
+      throw Object.assign(new Error("Authentication failed. Please sign in again."), {
+        code: "AUTH_REQUIRED",
+      });
+    }
+
+    const { data: profile, error: profileError } = await client
+      .from("teachers")
+      .select("*")
+      .eq("user_id", userResult.user.id)
+      .maybeSingle();
+
+    if (profileError) {
+      throw profileError;
+    }
+    if (!profile) {
+      throw new Error("Teacher profile could not be found.");
+    }
+
+    return { client, user: userResult.user, profile: normalizeTeacherRecord(profile) };
+  }
+
+  async function getTeacherScope() {
+    const { client, profile } = await requireTeacher();
+    const teacherId = profile.id;
+    const teacherUserId = profile.user_id;
+
+    const [groupsResult, assignmentsResult] = await Promise.all([
+      client.from("teacher_grade_groups").select("*").eq("teacher_id", teacherId),
+      client.from("teacher_subject_assignments").select("*").eq("teacher_id", teacherId),
+    ]);
+
+    if (groupsResult.error) throw groupsResult.error;
+    if (assignmentsResult.error) throw assignmentsResult.error;
+
+    return {
+      teacherId,
+      teacherUserId,
+      groups: groupsResult.data || [],
+      assignments: assignmentsResult.data || [],
+    };
+  }
+
+  function dateFilterClause(range) {
+    const start = range?.start ? new Date(range.start).toISOString() : null;
+    const end = range?.end ? new Date(range.end).toISOString() : null;
+    return { start, end };
+  }
+
+  function buildDateRange(date) {
+    const start = new Date(date.getFullYear(), date.getMonth(), 1);
+    const end = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+    return { start, end };
+  }
+
+  function tableEvent(row, source, typeName, extra = {}) {
+    const startAt = row.start_at || row.created_at || row.published_at || row.due_at || row.date;
+    const endAt = row.end_at || row.deadline || row.due_at || startAt;
+    return {
+      id: `${source}-${row.id}`,
+      source,
+      source_id: row.id,
+      type: typeName,
+      title: row.title || row.name || row.topic || "Academic event",
+      description: row.description || row.instructions || row.message || row.topic || "",
+      class_grade: row.class_grade || row.grade || row.class || "",
+      stream: row.stream || row.class_stream || "",
+      subject: row.subject || row.subject_name || "",
+      start_at: startAt,
+      end_at: endAt,
+      status: row.status || "scheduled",
+      location: row.location || row.meeting_url || row.join_url || row.file_url || row.external_url || "",
+      teacher_name: row.teacher_name || extra.teacher_name || "",
+      duration_minutes: Number(row.duration_minutes || row.duration || 0) || null,
+      question_count: row.question_count || row.questions_count || null,
+      original_start_at: row.original_start_at || row.previous_start_at || null,
+      ...extra,
+    };
+  }
+
+  async function loadEvents(date = new Date()) {
+    const { client, profile } = await requireTeacher();
+    const range = buildDateRange(date);
+    const teacherId = profile.id;
+    const teacherUserId = profile.user_id;
+    const queries = [];
+
+    const collect = async (table, typeName, mapper, selector = null) => {
+      let query = client.from(table).select("*");
+      if (selector) {
+        query = selector(query);
+      }
+      const { data, error } = await query;
+      if (error) {
+        return [];
+      }
+      return (data || []).map(mapper).filter(Boolean);
+    };
+
+    const liveClasses = await collect(
+      "live_classes",
+      "live_class",
+      (row) => tableEvent(row, "live_classes", "live_class", { location: row.meeting_url || row.location || "" }),
+      (query) => query.or(`teacher_id.eq.${teacherUserId},teacher_id.eq.${teacherId}`).gte("start_at", range.start.toISOString()).lte("start_at", range.end.toISOString())
+    );
+
+    const materials = await collect(
+      "materials",
+      "material",
+      (row) => tableEvent(row, "materials", "material", { location: row.file_url || row.external_url || "" }),
+      (query) => query.or(`teacher_id.eq.${teacherUserId},teacher_id.eq.${teacherId}`).gte("created_at", range.start.toISOString()).lte("created_at", range.end.toISOString())
+    );
+
+    const quizzes = await collect(
+      "quizzes",
+      "quiz",
+      (row) => tableEvent(row, "quizzes", row.status === "exam" ? "exam" : "quiz", {
+        location: row.meeting_url || row.location || "",
+      }),
+      (query) => query.or(`teacher_id.eq.${teacherUserId},teacher_id.eq.${teacherId}`).gte("start_at", range.start.toISOString()).lte("start_at", range.end.toISOString())
+    );
+
+    const announcements = await collect(
+      "announcements",
+      "announcement",
+      (row) => tableEvent(row, "announcements", "announcement", {
+        location: row.location || row.link || "",
+      }),
+      (query) => query.or(`teacher_id.eq.${teacherUserId},teacher_id.eq.${teacherId}`).gte("published_at", range.start.toISOString()).lte("published_at", range.end.toISOString())
+    );
+
+    const calendarEvents = await collect(
+      "calendar_events",
+      "calendar_event",
+      (row) => tableEvent(row, "calendar_events", row.event_type || "event"),
+      (query) => query.eq("teacher_id", teacherId).gte("start_at", range.start.toISOString()).lte("start_at", range.end.toISOString())
+    );
+
+    const events = [...liveClasses, ...materials, ...quizzes, ...announcements, ...calendarEvents];
+    return events.sort((left, right) => new Date(left.start_at) - new Date(right.start_at));
+  }
+
+  async function addCalendarEvent(input) {
+    const { client, profile } = await requireTeacher();
+    const payload = {
+      teacher_id: profile.id,
+      title: String(input.title || "").trim(),
+      description: input.description || "",
+      event_type: input.event_type || "event",
+      grade: input.grade || input.class_grade || "",
+      stream: input.stream || "",
+      subject_id: input.subject_id || null,
+      start_at: input.start_at,
+      end_at: input.end_at || input.start_at,
+      all_day: Boolean(input.all_day),
+      location: input.location || "",
+      meeting_url: input.meeting_url || "",
+    };
+
+    if (!payload.title) {
+      throw new Error("Event title is required.");
+    }
+    if (!payload.start_at) {
+      throw new Error("Event start date is required.");
+    }
+
+    const { data, error } = await client.from("calendar_events").insert(payload).select("*").single();
+    if (error) {
+      throw error;
+    }
+    return tableEvent(data, "calendar_events", data.event_type || "event");
+  }
+
+  async function subscribe(onChange) {
+    const client = getClient();
+    if (!client) return () => {};
+    const tableNames = ["live_classes", "materials", "quizzes", "announcements", "calendar_events"];
+    const channel = client.channel("teacher-calendar-realtime");
+    tableNames.forEach((tableName) => {
+      channel.on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: tableName },
+        () => {
+          onChange?.();
+        },
+      );
+    });
+    await channel.subscribe();
+    return () => { client.removeChannel(channel); };
+  }
+
+  async function registerClasses() {
+    try {
+      const { client, profile } = await requireTeacher();
+      const { data, error } = await client
+        .from("teacher_grade_groups")
+        .select("grade, stream")
+        .eq("teacher_id", profile.id)
+        .order("grade", { ascending: true })
+        .order("stream", { ascending: true });
+      if (error) throw error;
+      return (data || []).map((row) => ({
+        grade: Number(row.grade),
+        stream: row.stream || "",
+      }));
+    } catch (error) {
+      console.error("Unable to load teacher classes.", error);
+      return [];
+    }
+  }
+
+  async function registerSubjects(grade, stream) {
+    try {
+      const { client, profile } = await requireTeacher();
+      let query = client
+        .from("teacher_subject_assignments")
+        .select("subject_id, grade, stream")
+        .eq("teacher_id", profile.id);
+      if (grade !== undefined && grade !== null && grade !== "") {
+        query = query.eq("grade", Number(grade));
+      }
+      if (stream) {
+        query = query.eq("stream", stream);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      const subjectIds = [...new Set((data || []).map((row) => row.subject_id).filter(Boolean))];
+      if (!subjectIds.length) return [];
+      const { data: subjectsData, error: subjectsError } = await client
+        .from("subjects")
+        .select("id, name")
+        .in("id", subjectIds);
+      if (subjectsError) throw subjectsError;
+      return (subjectsData || []).map((subject) => ({ id: subject.id, name: subject.name }));
+    } catch (error) {
+      console.error("Unable to load teacher subjects.", error);
+      return [];
+    }
+  }
+
+  window.CalendarService = {
+    loadEvents,
+    addCalendarEvent,
+    subscribe,
+    requireTeacher,
+    getTeacherScope,
+    registerClasses,
+    registerSubjects,
+  };
 })();
