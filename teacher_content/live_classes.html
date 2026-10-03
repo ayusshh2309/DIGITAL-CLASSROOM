@@ -317,41 +317,6 @@
         line-height: 1.5;
       }
 
-      .assignment-scope {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        max-width: 100%;
-        margin-top: 18px;
-        padding: 10px 16px;
-        border: 1px solid #d9e7fb;
-        border-radius: 999px;
-        background: #edf5ff;
-        color: #334b70;
-        font-size: 0.86rem;
-        overflow-x: auto;
-        white-space: nowrap;
-      }
-
-      .scope-label {
-        color: #5b45e8;
-        font-weight: 800;
-        flex-shrink: 0;
-      }
-
-      .scope-icon {
-        color: #5b45e8;
-        flex-shrink: 0;
-      }
-
-      .scope-value {
-        font-weight: 700;
-        min-width: 0;
-        flex: 0 0 auto;
-        overflow: visible;
-        text-overflow: clip;
-      }
-
       .action-buttons {
         display: flex;
         align-items: flex-start;
@@ -804,11 +769,6 @@
         .page-title h1 {
           font-size: clamp(2rem, 9vw, 2.6rem);
         }
-        .assignment-scope {
-          width: 100%;
-          justify-content: flex-start;
-          border-radius: 14px;
-        }
         .stats-grid {
           grid-template-columns: 1fr;
         }
@@ -892,14 +852,6 @@
           margin-top: 6px;
           font-size: 0.88rem;
           line-height: 1.4;
-        }
-
-        .assignment-scope {
-          width: fit-content;
-          max-width: 100%;
-          margin-top: 11px;
-          padding: 7px 12px;
-          font-size: 0.76rem;
         }
 
         .action-buttons {
@@ -1025,10 +977,6 @@
           font-size: 2.1rem;
         }
 
-        .assignment-scope {
-          margin-top: 8px;
-        }
-
         .stat-card {
           min-height: 88px;
           padding-top: 10px;
@@ -1062,12 +1010,6 @@
               Schedule, manage and conduct real-time online sessions for your
               subjects.
             </p>
-            <div class="assignment-scope" id="assignmentScope">
-              <i class="fa-solid fa-users scope-icon" aria-hidden="true"></i>
-              <span class="scope-label">Your teaching scope</span>
-              <span aria-hidden="true">|</span>
-              <span class="scope-value" id="assignmentScopeValue">Loading your registered classes…</span>
-            </div>
           </div>
           <div class="action-buttons">
             <button class="btn-primary" type="button" onclick="scheduleClassPrompt()">
@@ -1219,25 +1161,6 @@
         if (value === null || value === undefined || value === "") return null;
         const count = Number(value);
         return Number.isFinite(count) && count >= 0 ? count : null;
-      }
-
-      function scopeGroupLabel(group) {
-        const grade = Number(group.grade);
-        const stream = String(group.stream || "").trim().toLowerCase();
-        const streamLabel = streamLabels[stream] || (stream ? stream.replaceAll("_", " ") : "");
-        return `Class ${grade}${streamLabel ? ` (${streamLabel})` : ""}`;
-      }
-
-      async function loadTeachingScope(teacher) {
-        const { data: groups, error } = await window.TeacherData.loadRegisteredTeachingScope(
-          teacher.client,
-          teacher.profile.id,
-        ).then((data) => ({ data, error: null }), (caughtError) => ({ data: null, error: caughtError }));
-
-        if (error) throw error;
-        const scopeValue = document.getElementById("assignmentScopeValue");
-        const labels = (groups || []).map(scopeGroupLabel);
-        scopeValue.textContent = labels.length ? labels.join("  •  ") : "No registered classes found";
       }
 
       function isPrevious(item, reference = Date.now()) {
@@ -1486,13 +1409,6 @@
           return;
         }
         if (!teacher) return;
-
-        try {
-          await loadTeachingScope(teacher);
-        } catch (error) {
-          console.error("Could not load teacher teaching scope.", error);
-          document.getElementById("assignmentScopeValue").textContent = "Teaching scope unavailable";
-        }
 
         await loadClasses();
         LiveClassService.subscribe(loadClasses);

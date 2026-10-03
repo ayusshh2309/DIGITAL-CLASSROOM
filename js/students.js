@@ -188,19 +188,11 @@
     });
   }
 
-  function renderScope() {
-    const classes = [...new Set(state.groups.map((group) => group.grade))]
-      .sort((left, right) => left - right)
-      .map(classLabel);
-    $("selectedClassContext").textContent = classes.length ? classes.join(" · ") : "No registered classes";
-  }
-
   function renderFilters() {
     renderClassOptions();
     renderStreamOptions();
     renderSubjectOptions();
     renderRegisteredClasses();
-    renderScope();
     $("statClasses").textContent = String(new Set(state.groups.map((group) => group.grade)).size);
   }
 
@@ -435,11 +427,10 @@
       return;
     }
     state.client = client;
-    $("selectedClassContext").textContent = "Loading teacher...";
     $("classFilter").replaceChildren(new Option("Loading classes...", ""));
     $("streamFilter").replaceChildren(new Option("Loading streams...", ""));
     $("subjectFilter").replaceChildren(new Option("Loading subjects...", ""));
-    setTableMessage("Loading teaching scope...");
+    setTableMessage("Loading students...");
 
     try {
       const { data, error } = await client.auth.getUser();

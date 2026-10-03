@@ -100,96 +100,6 @@
         font-size: 1.08rem;
       }
 
-      .assignment-scope {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        margin-top: 4px;
-        padding: 13px 15px;
-        border-radius: 12px;
-        border: 1px solid var(--surface-border);
-        background: rgba(255, 255, 255, 0.7);
-      }
-
-      .scope-label {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        font-size: 0.76rem;
-        font-weight: 700;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        color: var(--text-muted);
-      }
-
-      .scope-value {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
-        gap: 10px;
-        width: 100%;
-        min-width: 0;
-      }
-
-      .scope-class-card {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        min-width: 0;
-        padding: 12px;
-        border: 1px solid #dbe4f2;
-        border-radius: 10px;
-        background: #fff;
-        color: var(--text-main);
-        box-shadow: 0 3px 10px rgba(15, 23, 42, 0.04);
-      }
-
-      .scope-class-heading {
-        display: flex;
-        align-items: center;
-        gap: 9px;
-        font-size: 0.88rem;
-        font-weight: 700;
-      }
-
-      .scope-class-heading i {
-        display: grid;
-        place-items: center;
-        width: 30px;
-        height: 30px;
-        flex: 0 0 30px;
-        border-radius: 9px;
-        background: #f1efff;
-        color: var(--primary);
-      }
-
-      .scope-class-heading small {
-        display: block;
-        margin-top: 2px;
-        color: var(--text-muted);
-        font-size: 0.72rem;
-        font-weight: 500;
-      }
-
-      .scope-subjects {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-      }
-
-      .scope-subject {
-        padding: 5px 8px;
-        border-radius: 7px;
-        background: #f5f7fb;
-        color: #475569;
-        font-size: 0.72rem;
-        line-height: 1.3;
-      }
-
-      .scope-empty {
-        color: var(--text-muted);
-        font-size: 0.82rem;
-      }
-
       .btn-primary-action {
         border: none;
         border-radius: 12px;
@@ -704,12 +614,6 @@
           <span class="page-eyebrow"><i class="fa-solid fa-download"></i> Teacher workspace</span>
           <h1>Downloads</h1>
           <p>Access and manage all your teacher resources, study files, and class materials in one place.</p>
-          <div class="assignment-scope" aria-live="polite">
-            <span class="scope-label"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i> Your teaching scope</span>
-            <div class="scope-value" id="downloadsScopeValue">
-              <span class="scope-chip"><i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Loading registered classes...</span>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -903,7 +807,6 @@
       const state = {
         files: [],
         filtered: [],
-        registeredGroups: [],
         page: 1,
         pageSize: 8,
         activeSort: "recent",
@@ -946,43 +849,6 @@
         return ["notes", "syllabus", "presentations", "documents", "videos", "question-papers", "assignments", "images", "other"].includes(value)
           ? value
           : "other";
-      }
-
-      function renderRegisteredScope() {
-        const groups = state.registeredGroups || [];
-        const scope = $("downloadsScopeValue");
-
-        if (!groups.length) {
-          scope.innerHTML = '<div class="scope-empty">No registered classes yet.</div>';
-          return;
-        }
-
-        const streamLabels = {
-          science_pcm: "Science (PCM)",
-          science_pcb: "Science (PCB)",
-          commerce: "Commerce",
-          arts_humanities: "Arts / Humanities",
-        };
-        scope.innerHTML = groups.map((group) => {
-          const stream = String(group.stream || "").trim().toLowerCase();
-          const subjects = (group.subjects || []).map((subject) => subject?.name || subject?.subject || "").filter(Boolean);
-          return `
-            <article class="scope-class-card">
-              <div class="scope-class-heading">
-                <i class="fa-solid fa-users-rectangle" aria-hidden="true"></i>
-                <div>
-                  Class ${escapeHtml(group.grade)}${stream ? ` · ${escapeHtml(streamLabels[stream] || stream)}` : ""}
-                  <small>${subjects.length} registered ${subjects.length === 1 ? "subject" : "subjects"}</small>
-                </div>
-              </div>
-              <div class="scope-subjects">
-                ${subjects.length
-                  ? subjects.map((subject) => `<span class="scope-subject">${escapeHtml(subject)}</span>`).join("")
-                  : '<span class="scope-empty">No subject assignments</span>'}
-              </div>
-            </article>
-          `;
-        }).join("");
       }
 
       function buildFilterOptions() {
@@ -1360,28 +1226,6 @@
         }
       }
 
-      function populateUploadClassOptions() {
-        const classOptions = service.getRegisteredClasses();
-        const classSelect = $("uploadClass");
-        if (!classOptions.length) {
-          classSelect.innerHTML = '<option value="">No registered classes found</option>';
-          $("uploadSubject").innerHTML = '<option value="">No subjects available</option>';
-          return;
-        }
-
-        classSelect.innerHTML = classOptions.map((grade) => `<option value="${escapeHtml(grade)}">Class ${escapeHtml(grade)}</option>`).join("");
-        const defaultGrade = classOptions[0];
-        updateUploadSubjects(defaultGrade);
-      }
-
-      function updateUploadSubjects(grade) {
-        const subjectOptions = service.getRegisteredSubjects(grade);
-        const subjectSelect = $("uploadSubject");
-        subjectSelect.innerHTML = subjectOptions.length
-          ? subjectOptions.map((subject) => `<option value="${escapeHtml(subject)}">${escapeHtml(subject)}</option>`).join("")
-          : '<option value="">No registered subjects</option>';
-      }
-
       async function refreshFiles() {
         state.files = await service.fetchFiles();
         buildFilterOptions();
@@ -1449,10 +1293,7 @@
             currentTeacher.client,
             currentTeacher.profile.id,
           );
-          state.registeredGroups = registeredGroups;
           service.setRegisteredTeachingScope(registeredGroups);
-          renderRegisteredScope();
-          populateUploadClassOptions();
           buildFilterOptions();
           renderStats();
           renderTopDownloads();
@@ -1462,7 +1303,6 @@
           }
         } catch (error) {
           console.error("Unable to load registered teaching scope.", error);
-          $("downloadsScopeValue").textContent = `Could not load registered classes: ${error.message || "Please try again."}`;
           showDownloadsStatus("Unable to load registered classes.", true);
           return;
         }
@@ -1471,7 +1311,7 @@
           await refreshFiles();
         } catch (error) {
           console.error("Unable to load teacher materials and download counts.", error);
-          showDownloadsStatus("Unable to load materials and download activity. Your registered classes are still shown above.", true);
+          showDownloadsStatus("Unable to load materials and download activity.", true);
         }
 
         try {

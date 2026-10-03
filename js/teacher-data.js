@@ -203,12 +203,17 @@
     if (groupsResult.error) throw groupsResult.error;
     if (assignmentsResult.error) throw assignmentsResult.error;
 
-    const groupKey = (grade, stream) =>
-      `${Number(grade)}|${String(stream || "").trim().toLowerCase()}`;
+    const groupKey = (grade, stream) => {
+      const normalizedGrade = Number(grade);
+      const normalizedStream = normalizedGrade >= 11
+        ? String(stream || "").trim().toLowerCase()
+        : "";
+      return `${normalizedGrade}|${normalizedStream}`;
+    };
     const groups = (groupsResult.data || []).map((row) => ({
       id: row.id,
       grade: Number(row.grade),
-      stream: String(row.stream || "").trim().toLowerCase(),
+      stream: Number(row.grade) >= 11 ? String(row.stream || "").trim().toLowerCase() : "",
       teachAllSubjects: Boolean(row.teach_all_subjects),
       subjects: [],
     })).filter((group) => Number.isInteger(group.grade) && group.grade >= 1 && group.grade <= 12);
@@ -218,13 +223,17 @@
     );
     const subjectIds = [...new Set(assignments.map((row) => String(row.subject_id)))];
     let subjectsById = new Map();
-    if (subjectIds.length) {
-      const { data, error } = await client
+    let subjectCatalog = [];
+    const loadAllSubjects = groups.some((group) => group.teachAllSubjects);
+    if (subjectIds.length || loadAllSubjects) {
+      let subjectQuery = client
         .from("subjects")
-        .select("id, name")
-        .in("id", subjectIds);
+        .select("id, name");
+      if (!loadAllSubjects) subjectQuery = subjectQuery.in("id", subjectIds);
+      const { data, error } = await subjectQuery;
       if (error) throw error;
-      subjectsById = new Map((data || []).map((subject) => [String(subject.id), subject]));
+      subjectCatalog = data || [];
+      subjectsById = new Map(subjectCatalog.map((subject) => [String(subject.id), subject]));
     }
 
     assignments.forEach((assignment) => {
@@ -237,6 +246,40 @@
         group.subjects.push({ id: subject.id, name: subject.name });
       }
     });
+
+    const standardSubjects = {
+      5: ["English", "Mathematics", "EVS", "Hindi"],
+      6: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
+      7: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
+      8: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
+      9: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
+      10: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
+    };
+    const streamSubjects = {
+      science_pcm: ["Physics", "Chemistry", "Mathematics"],
+      science_pcb: ["Physics", "Chemistry", "Biology"],
+      commerce: ["Accountancy", "Business Studies", "Economics"],
+      arts_humanities: ["History", "Geography", "Political Science", "Psychology"],
+    };
+    const subjectByName = new Map(
+      subjectCatalog.map((subject) => [String(subject.name).trim().toLowerCase(), subject]),
+    );
+    groups.filter((group) => group.teachAllSubjects).forEach((group) => {
+      const names = group.grade < 11
+        ? standardSubjects[group.grade] || []
+        : [...(streamSubjects[group.stream] || []), "English", "Physical Education", "Computer Science"];
+      names.forEach((name) => {
+        const subject = subjectByName.get(name.toLowerCase());
+        if (!subject) {
+          console.warn(`Registered curriculum subject '${name}' is missing from public.subjects.`);
+          return;
+        }
+        if (!group.subjects.some((existing) => String(existing.id) === String(subject.id))) {
+          group.subjects.push({ id: subject.id, name: subject.name });
+        }
+      });
+    });
+
     groups.forEach((group) => {
       group.subjects.sort((left, right) => left.name.localeCompare(right.name));
     });

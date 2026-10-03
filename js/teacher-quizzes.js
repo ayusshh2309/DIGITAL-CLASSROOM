@@ -1,5 +1,5 @@
 (() => {
-  const state = { client: null, user: null, teacher: null, groups: [], quizzes: [], subjects: new Map(), status: "all", query: "", grade: "", subject: "", page: 1, pageSize: 8, channel: null, loading: false, refreshQueued: false, scopeLoaded: false, scopeError: "" };
+  const state = { client: null, user: null, teacher: null, groups: [], quizzes: [], subjects: new Map(), status: "all", query: "", grade: "", subject: "", page: 1, pageSize: 8, channel: null, loading: false, refreshQueued: false, scopeError: "" };
   const $ = (id) => document.getElementById(id);
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
   const subjectName = (quiz) => state.subjects.get(String(quiz.subject_id)) || quiz.subject_name || "Unknown subject";
@@ -20,18 +20,6 @@
     element.hidden = !message;
     element.classList.toggle("is-error", isError);
     element.setAttribute("role", isError ? "alert" : "status");
-  }
-
-  function renderScope() {
-    if (!state.scopeLoaded) return;
-    if (state.scopeError) {
-      $("classScopeValue").textContent = `Could not load registered scope: ${state.scopeError}`;
-      return;
-    }
-    const classes = [...new Set(state.groups.map((group) => Number(group.grade)).filter(Number.isInteger))]
-      .sort((left, right) => left - right)
-      .map((grade) => `Class ${grade}`);
-    $("classScopeValue").textContent = classes.length ? classes.join(" · ") : "No registered classes found";
   }
 
   function renderFilters() {
@@ -74,30 +62,22 @@
   }
 
   function render() {
-    renderScope();
     renderFilters();
     renderTable();
   }
 
   async function loadRegisteredScope() {
-    const scopeElement = $("classScopeValue");
-    state.scopeLoaded = false;
     state.scopeError = "";
-    scopeElement.textContent = "Loading registered classes...";
     try {
       const gradeGroups = await window.TeacherData.loadRegisteredTeachingScope(state.client, state.teacher.id);
       state.groups = gradeGroups.map((group) => ({
         ...group,
         subjects: group.subjects.map((subject) => subject.name),
       }));
-      state.scopeLoaded = true;
-      renderScope();
     } catch (error) {
       console.error("Registered scope loading error:", error);
       state.groups = [];
-      state.scopeLoaded = true;
       state.scopeError = error.message || "Please try again.";
-      renderScope();
     }
   }
 
@@ -207,7 +187,7 @@
       state.teacher = teacher;
       await loadRegisteredScope();
       await loadQuizzes();
-      notify("");
+      notify(state.scopeError ? `Class and subject filters could not be loaded. ${state.scopeError}` : "");
       state.channel = state.client.channel(`teacher-quizzes-${teacher.id}`).on("postgres_changes", { event: "*", schema: "public", table: "quizzes", filter: `teacher_id=eq.${teacher.id}` }, () => { void reload(); }).subscribe((status) => {
         if (["CHANNEL_ERROR", "TIMED_OUT"].includes(status)) console.warn("Quiz realtime subscription is unavailable.", status);
       });
@@ -216,11 +196,6 @@
       }, { once: true });
     } catch (error) {
       console.error("Teacher loading error:", error);
-      if (!state.scopeLoaded) {
-        state.scopeLoaded = true;
-        state.scopeError = error.message || "Could not load teacher profile.";
-        renderScope();
-      }
       notify(error.message || "Could not load quiz management.", true);
       $("quizTableBody").innerHTML = `<tr><td colspan="10" class="quiz-empty-state">${escapeHtml(error.message || "Quiz data could not be loaded.")}</td></tr>`;
     }

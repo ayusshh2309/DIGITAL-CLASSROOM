@@ -86,7 +86,6 @@
   function setLoadError(error) {
     console.error("Unable to load Supabase materials data.", error);
     $("uploadMaterialBtn").disabled = true;
-    $("assignmentScopeValue").textContent = "Unable to load your registered teaching scope.";
     $("materialsBody").innerHTML = `<tr><td class="empty-state" colspan="7">Database error: ${escapeHtml(error?.message || "Materials could not be loaded.")} <button class="btn-secondary" type="button" id="retryMaterials">Retry</button></td></tr>`;
     $("retryMaterials")?.addEventListener("click", () => void initialize());
   }
@@ -115,18 +114,6 @@
     return { classes, assignments, subjectsById: subjectMap };
   }
 
-  function scopeDescription() {
-    return [...state.classes.entries()]
-      .sort(([left], [right]) => Number(left) - Number(right))
-      .map(([grade, streams]) => {
-        const namedStreams = [...streams].filter(Boolean);
-        return namedStreams.length
-          ? `Class ${grade} (${namedStreams.join(", ")})`
-          : `Class ${grade}`;
-      })
-      .join(" · ");
-  }
-
   function renderScope() {
     const select = $("materialClass");
     const selectedGrade = select.value;
@@ -135,7 +122,6 @@
       .sort((left, right) => Number(left) - Number(right))
       .forEach((grade) => select.add(new Option(`Class ${grade}`, grade)));
     if (state.classes.has(selectedGrade)) select.value = selectedGrade;
-    $("assignmentScopeValue").textContent = scopeDescription() || "No registered classes found.";
     const classFilter = $("classFilter");
     const previousFilter = classFilter.value;
     classFilter.replaceChildren(new Option("All classes", ""));
@@ -144,9 +130,6 @@
       .forEach((grade) => classFilter.add(new Option(`Class ${grade}`, grade)));
     if (state.classes.has(previousFilter)) classFilter.value = previousFilter;
     $("uploadMaterialBtn").disabled = state.classes.size === 0;
-    if (!state.classes.size) {
-      $("assignmentScopeValue").textContent = "No registered classes found.";
-    }
   }
 
   function renderStreams(preferredStream = null) {

@@ -189,6 +189,28 @@ using (exists (
   select 1 from public.teachers as teacher
   where teacher.id = materials.teacher_id
     and teacher.user_id = (select auth.uid())
+    and exists (
+      select 1
+      from public.teacher_grade_groups as grade_group
+      where grade_group.teacher_id = teacher.id
+        and grade_group.grade::text = materials.grade
+        and (
+          (grade_group.grade < 11 and grade_group.stream is null and materials.stream is null)
+          or
+          (grade_group.grade >= 11 and grade_group.stream is not distinct from materials.stream)
+        )
+        and (
+          grade_group.teach_all_subjects
+          or exists (
+            select 1
+            from public.teacher_subject_assignments as assignment
+            where assignment.teacher_id = teacher.id
+              and assignment.subject_id = materials.subject_id
+              and assignment.grade::text = materials.grade
+              and assignment.stream is not distinct from materials.stream
+          )
+        )
+    )
 ));
 
 create policy materials_teacher_insert_assigned on public.materials
@@ -201,13 +223,21 @@ with check (exists (
   select 1 from public.teacher_grade_groups as grade_group
   where grade_group.teacher_id = materials.teacher_id
     and grade_group.grade::text = materials.grade
-    and grade_group.stream is not distinct from materials.stream
-) and exists (
-  select 1 from public.teacher_subject_assignments as assignment
-  where assignment.teacher_id = materials.teacher_id
-    and assignment.subject_id = materials.subject_id
-    and assignment.grade::text = materials.grade
-    and assignment.stream is not distinct from materials.stream
+    and (
+      (grade_group.grade < 11 and grade_group.stream is null and materials.stream is null)
+      or
+      (grade_group.grade >= 11 and grade_group.stream is not distinct from materials.stream)
+    )
+    and (
+      grade_group.teach_all_subjects
+      or exists (
+        select 1 from public.teacher_subject_assignments as assignment
+        where assignment.teacher_id = materials.teacher_id
+          and assignment.subject_id = materials.subject_id
+          and assignment.grade::text = materials.grade
+          and assignment.stream is not distinct from materials.stream
+      )
+    )
 ));
 
 create policy materials_teacher_update_assigned on public.materials
@@ -225,13 +255,21 @@ with check (exists (
   select 1 from public.teacher_grade_groups as grade_group
   where grade_group.teacher_id = materials.teacher_id
     and grade_group.grade::text = materials.grade
-    and grade_group.stream is not distinct from materials.stream
-) and exists (
-  select 1 from public.teacher_subject_assignments as assignment
-  where assignment.teacher_id = materials.teacher_id
-    and assignment.subject_id = materials.subject_id
-    and assignment.grade::text = materials.grade
-    and assignment.stream is not distinct from materials.stream
+    and (
+      (grade_group.grade < 11 and grade_group.stream is null and materials.stream is null)
+      or
+      (grade_group.grade >= 11 and grade_group.stream is not distinct from materials.stream)
+    )
+    and (
+      grade_group.teach_all_subjects
+      or exists (
+        select 1 from public.teacher_subject_assignments as assignment
+        where assignment.teacher_id = materials.teacher_id
+          and assignment.subject_id = materials.subject_id
+          and assignment.grade::text = materials.grade
+          and assignment.stream is not distinct from materials.stream
+      )
+    )
 ));
 
 create policy materials_teacher_delete_own on public.materials
@@ -245,13 +283,51 @@ using (exists (
 revoke all on public.materials from anon;
 grant select, insert, update, delete on public.materials to authenticated;
 
+update storage.buckets
+set public = false
+where id = 'documents';
+
 drop policy if exists materials_bucket_owner_access on storage.objects;
-create policy materials_bucket_owner_access on storage.objects
-for all to authenticated
+drop policy if exists materials_teacher_storage_select_own on storage.objects;
+drop policy if exists materials_teacher_storage_insert_own on storage.objects;
+drop policy if exists materials_teacher_storage_update_own on storage.objects;
+drop policy if exists materials_teacher_storage_delete_own on storage.objects;
+
+create policy materials_teacher_storage_select_own
+on storage.objects
+for select to authenticated
 using (
   bucket_id in ('pdfs', 'videos', 'photos', 'documents')
   and exists (
-    select 1 from public.teachers as teacher
+    select 1
+    from public.teachers as teacher
+    where teacher.id::text = (storage.foldername(name))[1]
+      and teacher.user_id = (select auth.uid())
+  )
+);
+
+create policy materials_teacher_storage_insert_own
+on storage.objects
+for insert to authenticated
+with check (
+  bucket_id in ('pdfs', 'videos', 'photos', 'documents')
+  and (select auth.uid()) is not null
+  and exists (
+    select 1
+    from public.teachers as teacher
+    where teacher.id::text = (storage.foldername(name))[1]
+      and teacher.user_id = (select auth.uid())
+  )
+);
+
+create policy materials_teacher_storage_update_own
+on storage.objects
+for update to authenticated
+using (
+  bucket_id in ('pdfs', 'videos', 'photos', 'documents')
+  and exists (
+    select 1
+    from public.teachers as teacher
     where teacher.id::text = (storage.foldername(name))[1]
       and teacher.user_id = (select auth.uid())
   )
@@ -259,7 +335,21 @@ using (
 with check (
   bucket_id in ('pdfs', 'videos', 'photos', 'documents')
   and exists (
-    select 1 from public.teachers as teacher
+    select 1
+    from public.teachers as teacher
+    where teacher.id::text = (storage.foldername(name))[1]
+      and teacher.user_id = (select auth.uid())
+  )
+);
+
+create policy materials_teacher_storage_delete_own
+on storage.objects
+for delete to authenticated
+using (
+  bucket_id in ('pdfs', 'videos', 'photos', 'documents')
+  and exists (
+    select 1
+    from public.teachers as teacher
     where teacher.id::text = (storage.foldername(name))[1]
       and teacher.user_id = (select auth.uid())
   )

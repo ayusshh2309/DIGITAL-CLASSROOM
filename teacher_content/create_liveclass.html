@@ -81,47 +81,6 @@
         font-size: 14px;
       }
 
-      .teaching-scope {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        width: fit-content;
-        max-width: 100%;
-        margin-top: 16px;
-        padding: 10px 14px;
-        border: 1px solid #dce6fb;
-        border-radius: 12px;
-        background: #f0f5ff;
-        color: #334155;
-      }
-
-      .teaching-scope-icon {
-        color: #5735df;
-        flex: 0 0 auto;
-      }
-
-      .teaching-scope-label {
-        color: #5735df;
-        font-size: 12px;
-        font-weight: 800;
-        white-space: nowrap;
-      }
-
-      .teaching-scope-divider {
-        width: 1px;
-        height: 20px;
-        background: #cbd5e1;
-        flex: 0 0 auto;
-      }
-
-      .teaching-scope-value {
-        min-width: 0;
-        color: #243b63;
-        font-size: 12px;
-        font-weight: 650;
-        line-height: 1.5;
-      }
-
       .stepper {
         background: #ffffff;
         border: 1px solid #e4e9f2;
@@ -1306,29 +1265,8 @@
           align-self: flex-start;
         }
 
-        .teaching-scope {
-          width: 100%;
-          align-items: flex-start;
-          border-radius: 10px;
-        }
-
-        .teaching-scope-value {
-          max-height: 54px;
-          overflow: auto;
-        }
-
         .step-description {
           display: none;
-        }
-
-        .teaching-scope {
-          overflow-x: auto;
-        }
-
-        .teaching-scope-value {
-          min-width: max-content;
-          max-height: none;
-          overflow: visible;
         }
       }
 
@@ -1382,12 +1320,6 @@
         <p>
           Create and schedule an online session for your registered students.
         </p>
-        <div class="teaching-scope" aria-label="Your registered teaching scope">
-          <i class="fa-solid fa-users teaching-scope-icon" aria-hidden="true"></i>
-          <span class="teaching-scope-label">Your teaching scope</span>
-          <span class="teaching-scope-divider" aria-hidden="true"></span>
-          <span class="teaching-scope-value" id="teachingScopeValue">Loading registered classes…</span>
-        </div>
       </div>
 
       <div class="stepper">
@@ -1818,12 +1750,6 @@
         return [classItem?.name, classItem?.streamLabel].filter(Boolean).join(" · ");
       }
 
-      function getTeachingScopeLabel(classItem) {
-        return classItem.streamLabel
-          ? `${classItem.name} (${classItem.streamLabel})`
-          : classItem.name;
-      }
-
       function getSelectedSubjectName() {
         if (!selectedSubject) return "—";
         return selectedSubject.name || selectedSubject;
@@ -1861,11 +1787,6 @@
           }))
           .filter((group) => Number.isInteger(group.grade) && group.grade >= 5 && group.grade <= 12);
 
-        const scopeValue = document.getElementById("teachingScopeValue");
-        const scopeLabels = registeredClasses.map(getTeachingScopeLabel);
-        scopeValue.textContent = scopeLabels.length
-          ? scopeLabels.join("  •  ")
-          : "No registered classes found";
       }
 
       function updateSummary() {
@@ -2376,8 +2297,6 @@
           console.error("Unable to load registered live-class subjects.", error);
           document.getElementById("registeredClasses").textContent =
             `Could not load registered grades and subjects. ${error.message || "Please try again."}`;
-          document.getElementById("teachingScopeValue").textContent =
-            "Could not load registered classes";
         });
     </script>
   </body>
