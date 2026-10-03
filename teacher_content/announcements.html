@@ -16,6 +16,80 @@
     />
     <link rel="stylesheet" href="../css/layout.css" />
     <link rel="stylesheet" href="../css/announcements.css" />
+    <style>
+      .announcements-page,
+      .announcements-page .announcement-shell,
+      .announcements-page .summary-grid,
+      .announcements-page .content-grid,
+      .announcements-page .content-grid > *,
+      .announcements-page .panel {
+        box-sizing: border-box;
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      .announcements-page .summary-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .announcements-page .summary-card {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+
+      .announcements-page .content-grid {
+        grid-template-columns: minmax(0, 1fr) minmax(270px, 310px);
+      }
+
+      .announcements-page .panel-head h2 {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        line-height: 1.35;
+      }
+
+      .announcements-page .filter-group {
+        min-width: 0;
+      }
+
+      .announcements-page .table-scroll {
+        max-width: 100%;
+        overscroll-behavior-x: contain;
+      }
+
+      @media (max-width: 1100px) {
+        .announcements-page .summary-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .announcements-page .content-grid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+
+      @media (max-width: 700px) {
+        .announcements-page .summary-grid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .announcements-page .filter-bar,
+        .announcements-page .filter-group {
+          width: 100%;
+        }
+
+        .announcements-page .filter-group > select,
+        .announcements-page .filter-group .search-box,
+        .announcements-page .filter-group > input {
+          min-width: 0;
+          max-width: 100%;
+          flex: 1 1 100%;
+        }
+
+        .announcements-page .announcement-header .ann-button {
+          width: 100%;
+        }
+      }
+    </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body>

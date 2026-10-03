@@ -140,8 +140,6 @@
       description: item.description || "",
       file_size: fileSize,
       size_bytes: fileSize,
-      download_count: Number((teacherMaterial ? item.download_count : item.download_count || item.downloads) || 0) || 0,
-      downloads: Number(item.download_count || 0) || 0,
       created_at: createdAt,
       uploaded_at: createdAt,
       file_path: item.file_path || "",
@@ -271,36 +269,6 @@
     return (data || []).map((item, index) => normalizeRecord(item, index));
   }
 
-  async function fetchStudentDownloads(offset = 0, limit = 100) {
-    const { client, student } = await getAuthenticatedStudent();
-    const safeOffset = Math.max(0, Math.floor(Number(offset) || 0));
-    const safeLimit = Math.max(1, Math.min(100, Math.floor(Number(limit) || 100)));
-    const { data, error, count } = await client
-      .from("material_downloads")
-      .select(
-        "id, material_id, student_id, downloaded_at, created_at, materials(id, teacher_id, title, file_name, description, material_type, grade, stream, file_size, mime_type, subject_id, subjects(name))",
-        { count: "exact" },
-      )
-      .eq("student_id", student.id)
-      .order("downloaded_at", { ascending: false })
-      .range(safeOffset, safeOffset + safeLimit - 1);
-    if (error) throw error;
-    const records = (data || []).map((row, index) => {
-      const material = row.materials ? normalizeRecord(row.materials, index) : null;
-      return {
-        ...(material || {}),
-        id: String(row.id),
-        material_id: String(row.material_id),
-        student_id: String(row.student_id),
-        downloaded_at: row.downloaded_at,
-        created_at: row.created_at,
-        material,
-      };
-    });
-    records.totalCount = Number(count || 0);
-    return records;
-  }
-
   async function getStudentRegistration() {
     return (await getAuthenticatedStudent()).student;
   }
@@ -342,18 +310,7 @@
     anchor.click();
     anchor.remove();
     onProgress(100);
-
-    const { data: download, error: downloadError } = await client
-      .from("material_downloads")
-      .insert({ material_id: record.id, student_id: student.id })
-      .select("id, material_id, student_id, downloaded_at, created_at")
-      .single();
-    if (downloadError) {
-      console.error("The file download started, but its history record could not be saved.", downloadError);
-      throw new Error("The file download started, but download history could not be saved. Please try again.");
-    }
-    window.dispatchEvent(new CustomEvent("smart-learning-downloads-updated"));
-    return download;
+    return true;
   }
 
   async function getStudentMaterialUrl(materialId) {
@@ -397,40 +354,7 @@
     const supportedMaterials = (materials || []).filter((item) =>
       ["pdf", "video", "photo", "document"].includes(String(item.material_type || "").toLowerCase()),
     );
-    const counts = new Map();
-    let downloadsAvailable = true;
-    let downloadsError = null;
-    const materialIds = supportedMaterials.map((item) => String(item.id));
-    if (materialIds.length) {
-      try {
-        for (let index = 0; index < materialIds.length; index += 100) {
-          const batch = materialIds.slice(index, index + 100);
-          for (let offset = 0; ; offset += 1000) {
-            const { data: downloads, error: downloadQueryError } = await client
-              .from("material_downloads")
-              .select("id, material_id")
-              .in("material_id", batch)
-              .order("id", { ascending: true })
-              .range(offset, offset + 999);
-            if (downloadQueryError) throw downloadQueryError;
-            (downloads || []).forEach((download) => {
-              const id = String(download.material_id);
-              counts.set(id, (counts.get(id) || 0) + 1);
-            });
-            if (!downloads || downloads.length < 1000) break;
-          }
-        }
-      } catch (downloadQueryError) {
-        console.error("Download activity query error:", downloadQueryError);
-        counts.clear();
-        downloadsAvailable = false;
-        downloadsError = downloadQueryError;
-      }
-    }
-    const files = supportedMaterials.map((item, index) =>
-      normalizeRecord({ ...item, download_count: counts.get(String(item.id)) || 0 }, index, true),
-    );
-    return { files, downloadsAvailable, downloadsError };
+    return supportedMaterials.map((item, index) => normalizeRecord(item, index, true));
   }
 
   async function deleteFile(materialId) {
@@ -461,7 +385,6 @@
 
   function getStats(files) {
     const records = Array.isArray(files) ? files : [];
-    const totalDownloads = records.reduce((sum, item) => sum + item.download_count, 0);
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
     const breakdown = { pdfs: 0, videos: 0, photos: 0, documents: 0 };
     let storageUsed = 0;
@@ -475,17 +398,11 @@
     });
     return {
       totalFiles: records.length,
-      totalDownloads,
       categories: new Set(records.map((item) => item.material_type).filter(Boolean)).size,
       recentlyAdded: records.filter((item) => item.created_at && new Date(item.created_at).getTime() >= thirtyDaysAgo).length,
       storageUsed,
       breakdown,
     };
-  }
-
-  function getTopDownloaded(files) {
-    return [...(Array.isArray(files) ? files : [])]
-      .sort((left, right) => right.download_count - left.download_count);
   }
 
   function getFilterOptions(files) {
@@ -500,14 +417,9 @@
 
   function subscribe(listener, teacherId, onError = () => {}) {
     const client = getClient();
-    if (!teacherId) throw new Error("An authenticated teacher profile is required for live download updates.");
-    const channel = client.channel(`teacher-downloads-${teacherId}`);
+    if (!teacherId) throw new Error("An authenticated teacher profile is required for live material updates.");
+    const channel = client.channel(`teacher-materials-${teacherId}`);
     channel
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "material_downloads",
-      }, listener)
       .on("postgres_changes", {
         event: "*",
         schema: "public",
@@ -516,24 +428,18 @@
       }, listener)
       .subscribe((status, error) => {
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          console.error("Teacher download realtime subscription failed.", error || status);
+          console.error("Teacher material realtime subscription failed.", error || status);
           onError(error || new Error(status));
         }
       });
     return () => client.removeChannel(channel);
   }
 
-  function subscribeStudent(studentId, listener, onError = () => {}) {
+  function subscribeStudentMaterials(studentId, listener, onError = () => {}) {
     const client = getClient();
-    if (!studentId) throw new Error("An authenticated student profile is required for live download updates.");
-    const channel = client.channel(`student-downloads-${studentId}`);
+    if (!studentId) throw new Error("An authenticated student profile is required for live material updates.");
+    const channel = client.channel(`student-materials-${studentId}`);
     channel
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "material_downloads",
-        filter: `student_id=eq.${studentId}`,
-      }, listener)
       .on("postgres_changes", {
         event: "*",
         schema: "public",
@@ -541,7 +447,7 @@
       }, listener)
       .subscribe((status, error) => {
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          console.error("Student download realtime subscription failed.", error || status);
+          console.error("Student material realtime subscription failed.", error || status);
           onError(error || new Error(status));
         }
       });
@@ -557,17 +463,15 @@
     fetchFiles,
     deleteFile,
     getStats,
-    getTopDownloaded,
     getFilterOptions,
     fetchStudentMaterials,
-    fetchStudentDownloads,
     getStudentRegistration,
     downloadMaterial,
     getStudentMaterialUrl,
     getTeacherMaterialUrl,
     isEligibleMaterial,
     subscribe,
-    subscribeStudent,
+    subscribeStudentMaterials,
     detectFileType,
     detectCategory,
     formatBytes,

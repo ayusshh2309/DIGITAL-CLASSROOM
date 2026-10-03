@@ -1,6 +1,6 @@
 (() => {
   const allowedTypes = new Set(["pdf", "image", "document", "link"]);
-  const state = { notes: [], student: null, downloadCount: 0, channel: null };
+  const state = { notes: [], student: null, channel: null };
   const $ = (id) => document.getElementById(id);
 
   function client() {
@@ -82,7 +82,6 @@
     $("totalNotes").textContent = state.notes.length;
     $("subjectsCovered").textContent = new Set(state.notes.map((note) => note.subject).filter(Boolean)).size;
     $("recentNotes").textContent = state.notes.filter((note) => Date.now() - dateOf(note).getTime() <= 7 * 86400000).length;
-    $("downloadedNotes").textContent = state.downloadCount;
     const current = $("subjectFilter").value;
     const subjects = [...new Set(state.notes.map((note) => note.subject).filter(Boolean))].sort();
     $("subjectFilter").innerHTML = '<option value="all">All Subjects</option>' + subjects.map((subject) => `<option value="${escape(subject)}">${escape(subject)}</option>`).join("");
@@ -114,14 +113,9 @@
       .single();
     if (studentError) throw studentError;
     state.student = student;
-    const [materialsResponse, downloadsResponse] = await Promise.all([
-      supabase.rpc("get_student_materials", { requested_student_id: user.id }),
-      supabase.from("material_downloads").select("id", { count: "exact", head: true }).eq("student_id", student.id),
-    ]);
+    const materialsResponse = await supabase.rpc("get_student_materials", { requested_student_id: user.id });
     if (materialsResponse.error) throw materialsResponse.error;
-    if (downloadsResponse.error) throw downloadsResponse.error;
     const { data } = materialsResponse;
-    state.downloadCount = Number(downloadsResponse.count || 0);
     state.notes = (data || []).filter((note) => allowedTypes.has(typeOf(note)));
     render();
     subscribe(supabase, student.id);
@@ -131,7 +125,6 @@
     state.channel?.unsubscribe();
     state.channel = supabase.channel(`student-notes-${studentId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "materials" }, loadNotes)
-      .on("postgres_changes", { event: "*", schema: "public", table: "material_downloads", filter: `student_id=eq.${studentId}` }, loadNotes)
       .subscribe();
   }
 

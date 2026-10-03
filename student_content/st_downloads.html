@@ -619,13 +619,6 @@
           </div>
         </div>
 
-        <div class="storage-box">
-          <div class="storage-top">
-            <span>Download history</span>
-            <span id="storageValue">Loading…</span>
-          </div>
-          <p class="storage-history-caption">Recorded from your student account</p>
-        </div>
       </div>
 
       <!-- SUMMARY CARDS -->
@@ -639,17 +632,6 @@
           <div>
             <h3 id="statsAvailable">—</h3>
             <p>Available Materials</p>
-          </div>
-        </div>
-
-        <div class="summary-card">
-          <div class="summary-icon blue">
-            <i class="fa-solid fa-download"></i>
-          </div>
-
-          <div>
-            <h3 id="statsDownloaded">—</h3>
-            <p>Files Downloaded</p>
           </div>
         </div>
 
@@ -707,7 +689,7 @@
         </select>
       </div>
 
-      <p class="downloads-status" id="downloadsStatus" role="status" aria-live="polite">Loading your materials and download history…</p>
+      <p class="downloads-status" id="downloadsStatus" role="status" aria-live="polite">Loading your materials…</p>
 
       <!-- AVAILABLE MATERIALS -->
 
@@ -727,17 +709,6 @@
         </div>
       </div>
 
-      <!-- RECENT DOWNLOADS -->
-
-      <div class="section-title">
-        <h2>My Downloads</h2>
-        <span id="historyCount">Your recent download history</span>
-      </div>
-
-      <div class="recent-grid" id="recentDownloads">
-        <div class="empty-state history-empty" id="historyEmptyState">Loading your download history…</div>
-      </div>
-      <button class="load-more-downloads" id="loadMoreDownloads" type="button" hidden>Load more downloads</button>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -749,15 +720,11 @@
         const service = window.SmartLearningDownloads;
         const list = document.getElementById("downloadsList");
         const emptyState = document.getElementById("emptyState");
-        const recentGrid = document.getElementById("recentDownloads");
         const searchInput = document.getElementById("searchInput");
         const subjectFilter = document.getElementById("subjectFilter");
         const typeFilter = document.getElementById("typeFilter");
         const status = document.getElementById("downloadsStatus");
-        const loadMoreButton = document.getElementById("loadMoreDownloads");
         let materials = [];
-        let downloads = [];
-        let totalDownloads = 0;
         let unsubscribe = null;
 
         const iconFor = (type) => ({
@@ -844,22 +811,6 @@
           emptyState.style.display = rows.length ? "none" : "block";
         }
 
-        function renderRecent() {
-          const rows = downloads.filter((item) => item.material);
-          recentGrid.innerHTML = rows.length
-            ? rows.map((item, index) => {
-                const [className, icon] = iconFor(item.file_type);
-                return `<div class="recent-card"><div class="file-icon ${className}"><i class="fa-solid ${icon}" aria-hidden="true"></i></div><div class="recent-info"><h3>${esc(item.file_name)}</h3><p>${esc(item.subject || "Subject unavailable")} · Grade ${esc(item.class_grade)}${item.stream ? ` · ${esc(item.stream)}` : ""}</p><p>Downloaded ${esc(service.formatDateTime(item.downloaded_at))} · ${esc(service.formatBytes(item.file_size))}</p></div><button class="recent-download" type="button" data-download-index="${index}" title="Download again"><i class="fa-solid fa-download" aria-hidden="true"></i></button></div>`;
-              }).join("")
-            : '<div class="empty-state history-empty"><i class="fa-regular fa-folder-open" aria-hidden="true"></i><h3>No downloads yet</h3><p>When you download a study material, it will appear here.</p></div>';
-          recentGrid.querySelectorAll("[data-download-index]").forEach((button) => {
-            button.addEventListener("click", () => handleMaterial(rows[Number(button.dataset.downloadIndex)].material, button));
-          });
-          document.getElementById("historyCount").textContent =
-            `${totalDownloads.toLocaleString()} ${totalDownloads === 1 ? "download record" : "download records"}`;
-          loadMoreButton.hidden = downloads.length >= totalDownloads;
-        }
-
         function showStatus(message, isError = false) {
           status.textContent = message;
           status.classList.toggle("is-error", isError);
@@ -877,7 +828,6 @@
               icon.className = "fa-solid fa-spinner fa-spin";
               button.title = `Downloading ${progress}%`;
             });
-            await refresh();
             showStatus("");
           } catch (error) {
             console.error("Student material download failed.", error);
@@ -891,18 +841,10 @@
         }
 
         async function refresh() {
-          const [nextMaterials, nextDownloads] = await Promise.all([
-            service.fetchStudentMaterials(),
-            service.fetchStudentDownloads(),
-          ]);
-          materials = nextMaterials;
-          downloads = nextDownloads;
-          totalDownloads = nextDownloads.totalCount;
+          materials = await service.fetchStudentMaterials();
           renderFilters();
           renderList();
-          renderRecent();
           document.getElementById("statsAvailable").textContent = materials.length.toLocaleString();
-          document.getElementById("statsDownloaded").textContent = totalDownloads.toLocaleString();
           document.getElementById("statsSubjects").textContent = new Set(
             materials.map((item) => item.subject).filter(Boolean),
           ).size.toLocaleString();
@@ -910,7 +852,6 @@
             (item) =>
               new Date(item.created_at).getTime() >= Date.now() - 30 * 86400000,
           ).length.toLocaleString();
-          document.getElementById("storageValue").textContent = totalDownloads.toLocaleString();
           const student = await service.getStudentRegistration();
           const context = [`Grade ${student.grade}`, student.stream]
             .filter(Boolean)
@@ -920,41 +861,24 @@
           showStatus("");
         }
 
-        async function loadMoreDownloads() {
-          loadMoreButton.disabled = true;
-          try {
-            const next = await service.fetchStudentDownloads(downloads.length);
-            downloads = [...downloads, ...next];
-            totalDownloads = next.totalCount;
-            renderRecent();
-          } catch (error) {
-            console.error("Unable to load additional student download records.", error);
-            showStatus("Unable to load download history.", true);
-          } finally {
-            loadMoreButton.disabled = false;
-          }
-        }
-
         searchInput.addEventListener("input", renderList);
         subjectFilter.addEventListener("change", renderList);
         typeFilter.addEventListener("change", renderList);
-        loadMoreButton.addEventListener("click", loadMoreDownloads);
         refresh().then(async () => {
           const student = await service.getStudentRegistration();
-          unsubscribe = service.subscribeStudent(student.id, () => {
+          unsubscribe = service.subscribeStudentMaterials(student.id, () => {
             refresh().catch((error) => {
-              console.error("Unable to refresh student download history.", error);
-              showStatus("Unable to load download history.", true);
+              console.error("Unable to refresh student materials.", error);
+              showStatus("Unable to refresh materials.", true);
             });
           }, () => {
-            showStatus("Unable to load download history.", true);
+            showStatus("Live material updates are unavailable.", true);
           });
         }).catch((error) => {
-          console.error("Unable to load student materials and download history.", error);
-          showStatus("Unable to load download history.", true);
+          console.error("Unable to load student materials.", error);
+          showStatus("Unable to load materials.", true);
           emptyState.style.display = "block";
           emptyState.innerHTML = '<i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i><h3>Unable to load materials</h3><p>Please try again later.</p>';
-          recentGrid.innerHTML = '<div class="empty-state history-empty"><h3>Unable to load download history.</h3></div>';
         });
 
         window.addEventListener("beforeunload", () => {

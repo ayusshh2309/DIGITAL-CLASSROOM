@@ -46,7 +46,7 @@
     return {
       completedSessions: completedSessions.length,
       sessionsToday,
-      completedResources: new Set((rows.downloads || []).map((row) => row.material_id)).size + (rows.videos || []).filter((row) => row.completed).length,
+      completedResources: (rows.videos || []).filter((row) => row.completed).length,
       weeklyStudyMinutes: weeklyMinutes,
       highScoreQuizzes,
       studyStreak: streak.current,
@@ -66,12 +66,10 @@
     const queries = await Promise.all([
       state.client.from("study_sessions").select("id,status,start_time,end_time,duration_seconds").eq("student_id", state.user.id),
       state.client.from("student_video_progress").select("video_id,completed").eq("student_id", state.user.id),
-      state.client.from("material_downloads").select("material_id").eq("student_id", state.studentId),
       state.client.from("quiz_attempts").select("id,percentage,status,submitted_at").eq("student_id", state.studentId).eq("status", "submitted"),
     ]);
     if (queries[2].error) throw queries[2].error;
-    if (queries[3].error) throw queries[3].error;
-    return { sessions: queries[0].error ? [] : queries[0].data || [], videos: queries[1].error ? [] : queries[1].data || [], downloads: queries[2].error ? [] : queries[2].data || [], quizzes: queries[3].data || [] };
+    return { sessions: queries[0].error ? [] : queries[0].data || [], videos: queries[1].error ? [] : queries[1].data || [], quizzes: queries[2].data || [] };
   }
 
   async function evaluate() {
@@ -198,7 +196,6 @@
     state.client.channel(`achievements-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "study_sessions", filter: `student_id=eq.${user.id}` }, evaluate)
       .on("postgres_changes", { event: "*", schema: "public", table: "student_video_progress", filter: `student_id=eq.${user.id}` }, evaluate)
-      .on("postgres_changes", { event: "*", schema: "public", table: "material_downloads", filter: `student_id=eq.${state.studentId}` }, evaluate)
       .on("postgres_changes", { event: "*", schema: "public", table: "quiz_attempts", filter: `student_id=eq.${state.studentId}` }, evaluate)
       .on("postgres_changes", { event: "*", schema: "public", table: "student_achievements", filter: `student_id=eq.${user.id}` }, evaluate)
       .subscribe();

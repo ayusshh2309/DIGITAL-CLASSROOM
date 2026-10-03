@@ -605,14 +605,6 @@
         </div>
 
         <div class="stat-card">
-          <div class="stat-icon green">✓</div>
-          <div class="stat-info">
-            <h3 id="downloadedNotes">—</h3>
-            <p>Download Events</p>
-          </div>
-        </div>
-
-        <div class="stat-card">
           <div class="stat-icon orange">📖</div>
           <div class="stat-info">
             <h3 id="subjectsCovered">—</h3>
@@ -754,7 +746,6 @@
         file_type
         file_size
         created_at
-        download_count
       */
 
           const { data, error } = await supabaseClient
@@ -867,7 +858,7 @@
 
               <button
                 class="note-btn download-btn"
-                onclick="downloadNote('${note.id}', '${note.file_url || ""}', '${escapeAttribute(note.title || "note")}')"
+                onclick="downloadNote('${note.file_url || ""}', '${escapeAttribute(note.title || "note")}')"
               >
                 ↓ Download
               </button>
@@ -946,12 +937,6 @@
 
         function updateStatistics(notes) {
           document.getElementById("totalNotes").textContent = notes.length;
-
-          const downloaded = notes.filter(
-            (note) => Number(note.download_count || 0) > 0,
-          ).length;
-
-          document.getElementById("downloadedNotes").textContent = downloaded;
 
           const subjects = new Set(
             notes.map((note) => note.subject).filter(Boolean),
@@ -1108,7 +1093,7 @@
        DOWNLOAD NOTE
     ===================================================== */
 
-        async function downloadNote(noteId, url, title) {
+        function downloadNote(url, title) {
           if (!url) {
             alert("This note does not have a downloadable file.");
 
@@ -1126,26 +1111,6 @@
 
           link.remove();
 
-          /*
-        Update download count
-      */
-
-          const note = allNotes.find((item) => item.id === noteId);
-
-          if (note) {
-            const newCount = Number(note.download_count || 0) + 1;
-
-            await supabaseClient
-              .from("notes")
-              .update({
-                download_count: newCount,
-              })
-              .eq("id", noteId);
-
-            note.download_count = newCount;
-
-            updateStatistics(allNotes);
-          }
         }
 
         /* =====================================================

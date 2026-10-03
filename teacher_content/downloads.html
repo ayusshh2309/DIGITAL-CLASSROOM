@@ -628,14 +628,6 @@
         </div>
 
         <div class="stat-card">
-          <div class="stat-icon" style="background: #2563eb;"><i class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></i></div>
-          <div>
-            <div class="stat-val" id="statTotalDownloads">—</div>
-            <div class="stat-lbl">Total Downloads</div>
-            <div class="stat-sub">All time</div>
-          </div>
-        </div>
-
         <div class="stat-card">
           <div class="stat-icon" style="background: #10b981;"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></div>
           <div>
@@ -668,7 +660,7 @@
         <div class="left-section">
           <div class="table-card">
             <div class="table-head-title">All Downloads</div>
-            <div class="downloads-status" id="downloadsStatus" role="status" aria-live="polite">Loading materials and download history…</div>
+            <div class="downloads-status" id="downloadsStatus" role="status" aria-live="polite">Loading materials…</div>
 
             <div class="filters-bar">
               <div class="search-box">
@@ -705,7 +697,6 @@
                   <option value="recent">Recently added</option>
                   <option value="name">File name</option>
                   <option value="size">Largest size</option>
-                  <option value="downloads">Most downloaded</option>
                 </select>
               </div>
             </div>
@@ -717,7 +708,6 @@
                   <th style="width: 12%;">Category</th>
                   <th style="width: 11%;">File Type</th>
                   <th style="width: 9%;">Size</th>
-                  <th style="width: 11%;">Downloads</th>
                   <th style="width: 14%;">Added On</th>
                   <th style="width: 10%;">Class</th>
                   <th style="width: 10%;">Subject</th>
@@ -762,13 +752,6 @@
             </div>
 
             <div class="legend-list" id="storageLegend">Loading storage data…</div>
-          </div>
-
-          <div class="widget-card">
-            <div class="widget-head">
-              <h3>Top Downloaded Files</h3>
-            </div>
-            <div class="top-downloads-list" id="topDownloadsList">Loading download history…</div>
           </div>
 
           <div class="widget-card">
@@ -883,8 +866,6 @@
             return copied.sort((left, right) => String(left.file_name || "").localeCompare(String(right.file_name || "")));
           case "size":
             return copied.sort((left, right) => (Number(right.file_size || 0) - Number(left.file_size || 0)));
-          case "downloads":
-            return copied.sort((left, right) => Number(right.download_count || right.downloads || 0) - Number(left.download_count || left.downloads || 0));
           case "recent":
           default:
             return copied.sort((left, right) => new Date(right.created_at || right.uploaded_at || 0) - new Date(left.created_at || left.uploaded_at || 0));
@@ -916,7 +897,6 @@
       function renderStats() {
         const metrics = service.getStats(state.files);
         $("statTotalFiles").textContent = metrics.totalFiles;
-        $("statTotalDownloads").textContent = metrics.totalDownloads;
         $("statCategories").textContent = metrics.categories;
         $("statRecentlyAdded").textContent = metrics.recentlyAdded;
         $("statStorageUsed").textContent = formatBytes(metrics.storageUsed);
@@ -983,31 +963,6 @@
           : '<div class="empty-state"><i class="fa-solid fa-folder-open" aria-hidden="true"></i><h3>No categories yet</h3><p>Upload a file to begin organizing resources.</p></div>';
       }
 
-      function renderTopDownloads() {
-        const top = service.getTopDownloaded(state.files)
-          .filter((file) => Number(file.download_count || 0) > 0)
-          .slice(0, 5);
-        if (!top.length) {
-          $("topDownloadsList").innerHTML = '<div class="empty-state"><i class="fa-solid fa-chart-simple" aria-hidden="true"></i><h3>No downloads yet</h3><p>Recent download activity will appear here.</p></div>';
-          return;
-        }
-
-        $("topDownloadsList").innerHTML = top.map((file) => {
-          const type = String(file.file_type || file.type || "Other");
-          const typeLabel = type.length > 4 ? type.slice(0, 4).toUpperCase() : type.toUpperCase();
-          const badgeClass = typeLabel === "PPT" ? "ppt" : fileTypeBadgeClass(type);
-          return `
-            <div class="top-item">
-              <div class="file-icon-badge ${badgeClass}">${escapeHtml(typeLabel)}</div>
-              <div class="top-item-info">
-                <h4>${escapeHtml(file.file_name || file.name || "Untitled file")}</h4>
-                <p>${Number(file.download_count || file.downloads || 0)} downloads</p>
-              </div>
-            </div>
-          `;
-        }).join("");
-      }
-
       function renderTable() {
         state.filtered = getFilteredFiles();
         const totalPages = Math.max(1, Math.ceil(state.filtered.length / state.pageSize));
@@ -1019,7 +974,7 @@
         if (!visibleFiles.length) {
           $("downloadsTableBody").innerHTML = `
             <tr>
-              <td colspan="9">
+              <td colspan="8">
                 <div class="empty-state">
                   <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
                   <h3>No files found</h3>
@@ -1049,7 +1004,6 @@
                 <td><span class="table-badge ${categoryKey}">${escapeHtml(file.category || "Other")}</span></td>
                 <td><span class="file-type-pill">${escapeHtml(fileType)}</span></td>
                 <td>${formatBytes(file.file_size)}</td>
-                <td><span class="download-count-pill">${Number(file.download_count || file.downloads || 0)}</span></td>
                 <td>${escapeHtml(addedDate ? formatDate(addedDate) : "—")}</td>
                 <td>${escapeHtml(file.class_grade || "—")}</td>
                 <td>${escapeHtml(file.subject || "—")}</td>
@@ -1148,10 +1102,6 @@
               <label>Description</label>
               <div class="form-control" style="display:flex;align-items:center; min-height: 52px;">${escapeHtml(detail.description || "No description provided.")}</div>
             </div>
-            <div class="form-group full">
-              <label>Download Count</label>
-              <div class="form-control" style="display:flex;align-items:center;">${Number(detail.download_count || detail.downloads || 0)} total downloads</div>
-            </div>
           </div>
           <div class="modal-actions">
             <button type="button" class="btn-secondary" data-copy-detail-link="${escapeHtml(detail.file_url || "")}">Copy Link</button>
@@ -1228,17 +1178,11 @@
       }
 
       async function refreshFiles() {
-        const result = await service.fetchFiles(state.currentTeacher);
-        state.files = result.files;
+        state.files = await service.fetchFiles(state.currentTeacher);
         buildFilterOptions();
         renderStats();
-        renderTopDownloads();
         renderTable();
-        if (result.downloadsAvailable) {
-          showDownloadsStatus("");
-        } else {
-          showDownloadsStatus("Downloads unavailable. Materials are shown with download counts set to 0.");
-        }
+        showDownloadsStatus("");
       }
 
       function showDownloadsStatus(message, isError = false) {
@@ -1309,7 +1253,6 @@
           service.setRegisteredTeachingScope(registeredGroups);
           buildFilterOptions();
           renderStats();
-          renderTopDownloads();
           renderTable();
           if (!registeredGroups.length) {
             alert("No registered classes or subjects were found for this teacher. Add assignments in the teacher registration panel to enable uploads.");
@@ -1332,15 +1275,15 @@
             try {
               await refreshFiles();
             } catch (error) {
-              console.error("Unable to refresh teacher download history.", error);
-              showDownloadsStatus("Unable to load download history.", true);
+              console.error("Unable to refresh teacher materials.", error);
+              showDownloadsStatus("Unable to refresh materials.", true);
             }
           }, currentTeacher.profile.id, () => {
-            showDownloadsStatus("Unable to load download history.", true);
+            showDownloadsStatus("Live material updates are unavailable.", true);
           });
         } catch (error) {
-          console.error("Unable to subscribe to download updates.", error);
-          showDownloadsStatus("Live download updates are unavailable.", true);
+          console.error("Unable to subscribe to material updates.", error);
+          showDownloadsStatus("Live material updates are unavailable.", true);
         }
       });
 

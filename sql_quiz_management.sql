@@ -80,7 +80,7 @@ create policy "Teachers manage their quiz questions" on public.quiz_questions fo
 alter publication supabase_realtime add table public.quizzes;
 alter publication supabase_realtime add table public.quiz_questions;
 
--- Materials remain the only source for files; download events use material_downloads.
+-- Materials remain the only source for uploaded files.
 create table if not exists public.materials (
   id uuid primary key default gen_random_uuid(),
   teacher_id uuid not null references public.teachers(id) on delete cascade,

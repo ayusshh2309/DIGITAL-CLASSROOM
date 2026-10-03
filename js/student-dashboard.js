@@ -13,8 +13,6 @@
     sessions: [],
     segments: [],
     attempts: [],
-    downloads: [],
-    videos: [],
     channel: null,
     loading: true,
     error: null,
@@ -205,12 +203,12 @@
 
   function subjectProgress(subject) {
     const key = normalize(subject);
-    const materialIds = new Set(state.materials.filter((item) => normalize(item.subject) === key).map((item) => String(item.id || item.material_id)));
-    const completedMaterials = state.downloads.filter((item) => materialIds.has(String(item.material_id))).length + state.videos.filter((item) => item.completed && materialIds.has(String(item.video_id))).length;
+    const subjectVideos = state.videos.filter((item) => normalize(item.subject) === key);
+    const completedVideos = subjectVideos.filter((item) => item.completed).length;
     const quizTotal = state.events.filter((event) => event.source === "quizzes" && normalize(event.subject) === key).length;
     const quizCompleted = state.events.filter((event) => event.source === "quizzes" && normalize(event.subject) === key && event.attempted).length;
-    const total = materialIds.size + quizTotal;
-    return total ? Math.min(100, Math.round(((completedMaterials + quizCompleted) / total) * 100)) : 0;
+    const total = subjectVideos.length + quizTotal;
+    return total ? Math.min(100, Math.round(((completedVideos + quizCompleted) / total) * 100)) : 0;
   }
 
   function renderSubjects() {
@@ -248,14 +246,14 @@
   }
 
   function renderProgress() {
-    const completedMaterials = new Set(state.downloads.map((item) => String(item.material_id))).size + state.videos.filter((item) => item.completed).length;
+    const completedVideos = state.videos.filter((item) => item.completed).length;
     const completedQuizzes = state.attempts.length;
-    const availableActivities = state.materials.length + state.events.filter((event) => event.source === "quizzes").length;
-    const progress = availableActivities ? Math.min(100, Math.round(((completedMaterials + completedQuizzes) / availableActivities) * 100)) : 0;
+    const availableActivities = state.videos.length + state.events.filter((event) => event.source === "quizzes").length;
+    const progress = availableActivities ? Math.min(100, Math.round(((completedVideos + completedQuizzes) / availableActivities) * 100)) : 0;
     const fill = root.querySelector(".study-progress-panel .dashboard-progress-fill");
     if (fill) fill.style.width = `${progress}%`;
     setText(".study-progress-value", `${progress}%`);
-    setText(".study-progress-copy p", availableActivities ? "Based on completed materials and quizzes" : "Complete a learning activity to begin");
+    setText(".study-progress-copy p", availableActivities ? "Based on completed videos and quizzes" : "Complete a learning activity to begin");
   }
 
   function renderAll() {
@@ -284,14 +282,13 @@
       const profileResult = await state.client.from("students").select("*").eq("user_id", state.user.id).maybeSingle();
       if (profileResult.error) throw profileResult.error;
       if (!profileResult.data) throw new Error("No student profile is linked to this account.");
-      const [eventsResult, materialsResult, videosResult, sessionsResult, segmentsResult, attemptsResult, downloadsResult] = await Promise.all([
+      const [eventsResult, materialsResult, videosResult, sessionsResult, segmentsResult, attemptsResult] = await Promise.all([
         state.client.rpc("get_student_calendar_events", { requested_student_id: state.user.id }),
         state.client.rpc("get_student_materials", { requested_student_id: state.user.id }),
         state.client.rpc("get_student_videos", { requested_student_id: state.user.id }),
         state.client.from("study_sessions").select("*").eq("student_id", state.user.id).order("start_time", { ascending: false }),
         state.client.from("study_session_segments").select("*").eq("student_id", state.user.id).order("start_time", { ascending: false }),
         state.client.from("quiz_attempts").select("quiz_id,score,total_marks,percentage,submitted_at,status").eq("student_id", profileResult.data.id).eq("status", "submitted"),
-        state.client.from("material_downloads").select("material_id,downloaded_at").eq("student_id", profileResult.data.id),
       ]);
       state.profile = {
         ...profileResult.data,
@@ -309,9 +306,7 @@
       state.sessions = sessionsResult.error ? [] : (sessionsResult.data || []);
       state.segments = segmentsResult.error ? [] : (segmentsResult.data || []);
       if (attemptsResult.error) throw attemptsResult.error;
-      if (downloadsResult.error) throw downloadsResult.error;
       state.attempts = attemptsResult.data || [];
-      state.downloads = downloadsResult.data || [];
       const attempts = new Set(state.attempts.map((attempt) => String(attempt.quiz_id)));
       state.events = state.events.map((event) => ({ ...event, attempted: attempts.has(eventId(event)) }));
       state.error = null;
@@ -349,13 +344,11 @@
     if (!state.client || !state.user) return;
     state.channel?.unsubscribe();
     state.channel = state.client.channel(`student-dashboard-${state.user.id}`);
-    ["students", "student_profiles", "study_sessions", "study_session_segments", "quiz_attempts", "material_downloads", "student_video_progress", "materials", "live_classes", "quizzes", "assignments"].forEach((table) => {
+    ["students", "student_profiles", "study_sessions", "study_session_segments", "quiz_attempts", "student_video_progress", "materials", "live_classes", "quizzes", "assignments"].forEach((table) => {
       const filter = table === "students"
         ? `user_id=eq.${state.user.id}`
         : table === "quiz_attempts"
           ? `student_id=eq.${state.profile.id}`
-          : table === "material_downloads"
-            ? `student_id=eq.${state.profile.id}`
           : ["student_profiles", "study_sessions", "study_session_segments", "student_video_progress"].includes(table)
             ? `student_id=eq.${state.user.id}`
           : undefined;
