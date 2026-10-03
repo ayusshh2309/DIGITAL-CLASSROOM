@@ -328,8 +328,11 @@
       toast(error.message || "Announcements could not be loaded.", true);
     }
 
-    $("newAnnouncementButton").addEventListener("click", () => openModal());
-    $("newAnnouncementBanner").addEventListener("click", () => openModal());
+    const openCreateAnnouncement = () => {
+      window.location.assign("create-announcement.html");
+    };
+    $("newAnnouncementButton").addEventListener("click", openCreateAnnouncement);
+    $("newAnnouncementBanner").addEventListener("click", openCreateAnnouncement);
     $("classFilter").addEventListener("change", (event) => { state.grade = event.target.value; state.page = 1; renderTable(); });
     $("typeFilter").addEventListener("change", (event) => { state.type = event.target.value; state.page = 1; renderTable(); });
     $("statusFilter").addEventListener("change", (event) => { state.status = event.target.value.toLowerCase(); state.page = 1; renderTable(); });
@@ -344,6 +347,17 @@
       const id = event.target.closest("[data-draft]")?.dataset.draft;
       if (id) openModal(state.announcements.find((item) => String(item.id) === String(id)));
     });
+
+    const createdStatus = new URLSearchParams(window.location.search).get("created");
+    if (["draft", "scheduled", "published"].includes(createdStatus)) {
+      const messages = {
+        draft: "Draft saved successfully.",
+        scheduled: "Announcement scheduled successfully.",
+        published: "Announcement published successfully.",
+      };
+      toast(messages[createdStatus]);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
   });
 
   window.addEventListener("beforeunload", () => state.stopRealtime());

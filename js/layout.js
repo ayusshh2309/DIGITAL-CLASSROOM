@@ -72,6 +72,9 @@
   const currentPage = !requestedPage || requestedPage === "index.html"
     ? "teacher_dashboard.html"
     : requestedPage;
+  const activePage = currentPage === "create-announcement.html"
+    ? "announcements.html"
+    : currentPage;
 
   if (!document.querySelector('link[data-layout-icons="font-awesome"]')) {
     const iconStylesheet = document.createElement("link");
@@ -162,7 +165,7 @@
       }
 
       document.querySelectorAll(".sidebar-link[data-page]").forEach((link) => {
-        link.classList.toggle("active", link.dataset.page === currentPage);
+        link.classList.toggle("active", link.dataset.page === activePage);
       });
 
       const menuToggle = document.getElementById("menuToggle");

@@ -227,6 +227,49 @@
     return announcement;
   }
 
+  async function createAnnouncement(input) {
+    const context = await getTeacherContext();
+    const scope = validateScope(input.groups, input);
+    const status = String(input.status || "").toLowerCase();
+    if (!["draft", "scheduled", "published"].includes(status)) {
+      throw new Error("Choose a valid publishing option.");
+    }
+    if (!TYPES.includes(input.type)) throw new Error("Choose a valid announcement type.");
+
+    const title = String(input.title || "").trim();
+    const message = String(input.message || "").trim();
+    if (!title || title.length > 160) throw new Error("Title must be between 1 and 160 characters.");
+    if (!message || message.length > 5000) throw new Error("Message must be between 1 and 5,000 characters.");
+    if (!scope.subjectId) throw new Error("Choose a subject for this announcement.");
+
+    let publishAt = null;
+    if (status === "scheduled") {
+      const scheduledDate = new Date(input.publish_at);
+      if (!input.publish_at || Number.isNaN(scheduledDate.getTime()) || scheduledDate <= new Date()) {
+        throw new Error("Choose a future date and time.");
+      }
+      publishAt = scheduledDate.toISOString();
+    }
+
+    const { data, error } = await context.client.rpc("create_teacher_announcement", {
+      p_title: title,
+      p_message: message,
+      p_type: input.type,
+      p_grade: scope.grade,
+      p_stream: scope.stream,
+      p_subject_id: scope.subjectId,
+      p_status: status,
+      p_publish_at: publishAt,
+    });
+    if (error) {
+      console.error("Announcement creation error:", error);
+      throw error;
+    }
+    const announcement = Array.isArray(data) ? data[0] : data;
+    if (!announcement?.id) throw new Error("The announcement was not returned after saving.");
+    return announcement;
+  }
+
   async function deleteAnnouncement(id) {
     const context = await getTeacherContext();
     const { error } = await context.client.rpc("delete_teacher_announcement", {
@@ -264,6 +307,7 @@
     loadScope,
     loadAnnouncements,
     saveAnnouncement,
+    createAnnouncement,
     deleteAnnouncement,
     subscribe,
   };
