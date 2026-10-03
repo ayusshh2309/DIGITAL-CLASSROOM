@@ -114,7 +114,7 @@
 
       .stats-grid {
         display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 18px;
         margin-bottom: 24px;
       }
@@ -162,6 +162,13 @@
         display: grid;
         grid-template-columns: minmax(0, 2.15fr) minmax(280px, 0.85fr);
         gap: 24px;
+      }
+
+      .content-layout,
+      .left-section,
+      .table-card,
+      .right-sidebar {
+        min-width: 0;
       }
 
       .table-card,
@@ -350,18 +357,6 @@
         color: var(--text-main);
       }
 
-      .download-count-pill {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 56px;
-        padding: 7px 8px;
-        border-radius: 999px;
-        background: #f8fafc;
-        color: var(--text-main);
-        font-weight: 700;
-      }
-
       .action-group {
         display: flex;
         align-items: center;
@@ -509,29 +504,6 @@
       .legend-right { color: var(--text-muted); }
       .cat-count { color: var(--text-muted); }
 
-      .top-downloads-list { display: flex; flex-direction: column; gap: 12px; }
-      .top-item {
-        display: flex; gap: 10px; align-items: center;
-        padding: 8px 0;
-      }
-
-      .file-icon-badge {
-        min-width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; color: white; font-weight: 700; font-size: 0.72rem;
-      }
-      .file-icon-badge.pdf { background: linear-gradient(135deg,#ef4444,#f97316); }
-      .file-icon-badge.video { background: linear-gradient(135deg,#8b5cf6,#ec4899); }
-      .file-icon-badge.ppt { background: linear-gradient(135deg,#f59e0b,#f97316); }
-      .file-icon-badge.doc { background: linear-gradient(135deg,#3b82f6,#6366f1); }
-      .file-icon-badge.image { background: linear-gradient(135deg,#10b981,#14b8a6); }
-      .top-item-info h4 {
-        font-size: 0.88rem; line-height: 1.3;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 210px;
-      }
-      .top-item-info p { color: var(--text-muted); font-size: 0.75rem; margin-top: 2px; }
-
       .tips-card {
         display: flex; align-items: flex-start; gap: 12px; padding: 16px 18px;
       }
@@ -584,14 +556,19 @@
         height:100%; width:0; background: linear-gradient(135deg, var(--primary), var(--success)); transition: width 0.2s ease;
       }
 
+      @media (max-width: 1400px) {
+        .content-layout { grid-template-columns: minmax(0, 1fr); }
+        .right-sidebar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      }
+
       @media (max-width: 1180px) {
-        .stats-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-        .content-layout { grid-template-columns: 1fr; }
+        .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .filters-bar { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .search-box { grid-column: span 2; }
       }
 
       @media (max-width: 980px) and (min-width: 769px) {
-        .filters-bar { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-        .search-box { grid-column: span 2; }
+        .right-sidebar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       }
 
       @media (max-width: 768px) {
@@ -599,6 +576,8 @@
         .main-box-container { margin: 16px; padding: 20px; }
         .stats-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
         .filters-bar { grid-template-columns: 1fr; }
+        .search-box { grid-column: auto; }
+        .right-sidebar { grid-template-columns: 1fr; }
         .page-header, .bottom-banner-card { flex-direction: column; align-items: flex-start; }
         .downloads-table { display:block; overflow-x:auto; }
         .form-grid { grid-template-columns: 1fr; }
@@ -627,7 +606,6 @@
           </div>
         </div>
 
-        <div class="stat-card">
         <div class="stat-card">
           <div class="stat-icon" style="background: #10b981;"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></div>
           <div>
@@ -704,11 +682,11 @@
             <table class="downloads-table">
               <thead>
                 <tr>
-                  <th style="width: 26%;">File Name</th>
+                  <th style="width: 24%;">File Name</th>
                   <th style="width: 12%;">Category</th>
                   <th style="width: 11%;">File Type</th>
-                  <th style="width: 9%;">Size</th>
-                  <th style="width: 14%;">Added On</th>
+                  <th style="width: 8%;">Size</th>
+                  <th style="width: 13%;">Added On</th>
                   <th style="width: 10%;">Class</th>
                   <th style="width: 10%;">Subject</th>
                   <th style="width: 12%;">Actions</th>
@@ -1056,7 +1034,7 @@
         const action = button.dataset.action;
 
         if (action === "preview") openFile(file);
-        if (action === "download") triggerDownload(file);
+        if (action === "download") triggerDownload(file, button);
         if (action === "copy") copyLink(file);
         if (action === "details") openDetailsModal(file);
         if (action === "delete") deleteFile(file);
@@ -1124,19 +1102,25 @@
         }
       }
 
-      async function triggerDownload(file) {
+      async function triggerDownload(file, button) {
+        if (button?.disabled) return;
+        if (button) {
+          button.disabled = true;
+          button.setAttribute("aria-busy", "true");
+          button.title = "Preparing download…";
+        }
         try {
           const url = await service.getTeacherMaterialUrl(file.id, true);
-          const anchor = document.createElement("a");
-          anchor.href = url;
-          anchor.rel = "noopener";
-          anchor.download = file.file_name || file.name || "download";
-          document.body.appendChild(anchor);
-          anchor.click();
-          anchor.remove();
+          window.location.assign(url);
         } catch (error) {
           console.error("Unable to download this material.", error);
           alert(error.message || "Unable to download this material.");
+        } finally {
+          if (button) {
+            button.disabled = false;
+            button.removeAttribute("aria-busy");
+            button.title = "Download";
+          }
         }
       }
 
