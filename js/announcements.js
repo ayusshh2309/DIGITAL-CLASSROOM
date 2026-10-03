@@ -1,55 +1,350 @@
 (() => {
-  const state = { announcements: [], classes: [], grade: "", subjects: [], query: "", type: "", status: "", sort: "newest", page: 1, pageSize: 7, editing: null, stopRealtime: () => {} };
+  const state = {
+    announcements: [],
+    groups: [],
+    context: null,
+    query: "",
+    grade: "",
+    type: "",
+    status: "",
+    sort: "newest",
+    page: 1,
+    pageSize: 7,
+    editing: null,
+    recipientsAvailable: true,
+    stopRealtime: () => {},
+  };
+
   const $ = (id) => document.getElementById(id);
-  const esc = (value) => String(value ?? "").replace(/[&<>\"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" })[char]);
-  const dateLabel = (value) => value ? new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(new Date(value)) : "—";
-  const toast = (message, error = false) => { const node = document.createElement("div"); node.className = "toast"; node.textContent = message; if (error) node.style.background = "#b63b4a"; $("announcementToastRoot").replaceChildren(node); setTimeout(() => node.remove(), 3000); };
-  const formatClass = (grade) => grade ? `Class ${grade}` : "All classes";
-  function populateClasses() { $("classFilter").innerHTML = `<option value="">All registered classes</option>${state.classes.map((grade) => `<option value="${esc(grade)}">${formatClass(grade)}</option>`).join("")}`; }
-  function populateTypes() { $("typeFilter").innerHTML = `<option value="">All types</option>${AnnouncementService.TYPES.map((type) => `<option>${type}</option>`).join("")}`; }
-  async function load() { state.announcements = await AnnouncementService.loadAnnouncements(); renderAll(); }
-  function filtered() { return state.announcements.filter((item) => (!state.query || `${item.title} ${item.message} ${item.subject}`.toLowerCase().includes(state.query)) && (!state.grade || item.class_grade === state.grade) && (!state.type || item.type === state.type) && (!state.status || item.status === state.status)).sort((a, b) => state.sort === "oldest" ? new Date(a.created_at) - new Date(b.created_at) : state.sort === "priority" ? ({ High: 0, Normal: 1, Low: 2 }[a.priority] || 1) - ({ High: 0, Normal: 1, Low: 2 }[b.priority] || 1) : new Date(b.created_at) - new Date(a.created_at)); }
-  function readRows(item) { const recipients = item.announcement_recipients || []; const local = JSON.parse(localStorage.getItem("smartLearningAnnouncementRecipients") || "[]").filter((row) => row.announcement_id === item.id); const rows = recipients.length ? recipients : local; return { total: rows.length, read: rows.filter((row) => row.read_at).length }; }
-  function renderSummary() { const published = state.announcements.filter((item) => item.status === "Published"); const month = new Date(); const sent = published.filter((item) => { const date = new Date(item.published_at || item.created_at); return date.getMonth() === month.getMonth() && date.getFullYear() === month.getFullYear(); }); const reach = published.reduce((sum, item) => sum + readRows(item).total, 0); const recipientStats = published.map(readRows).filter((row) => row.total); const readRate = recipientStats.length ? Math.round(recipientStats.reduce((sum, row) => sum + (row.read / row.total) * 100, 0) / recipientStats.length) : 0; $("statTotalAnnouncements").textContent = state.announcements.length; $("statSentThisMonth").textContent = sent.length; $("statTotalReach").textContent = reach; $("statAvgReadRate").textContent = `${readRate}%`; }
-  function renderTable() { const rows = filtered(); const pages = Math.max(1, Math.ceil(rows.length / state.pageSize)); state.page = Math.min(state.page, pages); const visible = rows.slice((state.page - 1) * state.pageSize, state.page * state.pageSize); $("announcementsTableBody").innerHTML = visible.length ? visible.map((item) => { const read = readRows(item); return `<tr><td><div class="announcement-title">${esc(item.title)}</div><div class="announcement-message">${esc(item.message)}</div></td><td>${formatClass(item.class_grade)}<br><small>${esc(item.subject || item.audience)}</small></td><td><span class="badge ${item.type.toLowerCase()}">${esc(item.type)}</span></td><td><span class="badge ${item.status.toLowerCase()}">${esc(item.status)}</span><br><small>${dateLabel(item.published_at || item.scheduled_at || item.created_at)}</small></td><td>${read.total ? `${Math.round((read.read / read.total) * 100)}%` : "—"}<br><small>${read.read}/${read.total} opened</small></td><td><div class="row-actions"><button class="icon-button" data-action="view" data-id="${esc(item.id)}" title="View"><i class="fa-solid fa-eye"></i></button><button class="icon-button" data-action="edit" data-id="${esc(item.id)}" title="Edit"><i class="fa-solid fa-pen"></i></button><button class="icon-button" data-action="delete" data-id="${esc(item.id)}" title="Delete"><i class="fa-solid fa-trash"></i></button></div></td></tr>`; }).join("") : `<tr><td colspan="6"><div class="empty"><i class="fa-solid fa-bullhorn"></i>${state.announcements.length ? "No announcements match these filters." : "No announcements yet. Create your first announcement."}</div></td></tr>`; $("paginationText").textContent = rows.length ? `Showing ${(state.page - 1) * state.pageSize + 1}-${Math.min(state.page * state.pageSize, rows.length)} of ${rows.length} announcements` : "Showing 0 announcements"; $("pageButtons").innerHTML = Array.from({ length: pages }, (_, index) => `<button class="${index + 1 === state.page ? "active" : ""}" data-page="${index + 1}">${index + 1}</button>`).join(""); }
-  function renderChart() { const counts = Object.fromEntries(AnnouncementService.TYPES.map((type) => [type, state.announcements.filter((item) => item.type === type).length])); const max = Math.max(1, ...Object.values(counts)); $("overviewChart").innerHTML = Object.entries(counts).map(([type, count]) => `<div class="chart-row"><span>${type}</span><div class="track"><div class="fill" style="width:${count / max * 100}%"></div></div><strong>${count}</strong></div>`).join(""); }
-  function renderDrafts() { const drafts = state.announcements.filter((item) => item.status === "Draft").slice(0, 4); $("draftList").innerHTML = drafts.length ? drafts.map((item) => `<div class="draft"><strong>${esc(item.title)}</strong><small>${formatClass(item.class_grade)} · ${dateLabel(item.updated_at)}</small><button class="history-action" data-draft="${esc(item.id)}" style="border:0;background:transparent;color:#087f8a;font-weight:800;cursor:pointer;margin-top:7px">Continue editing</button></div>`).join("") : `<div class="empty"><i class="fa-solid fa-file-circle-plus"></i>No drafts yet.</div>`; }
-  function renderAll() { renderSummary(); renderTable(); renderChart(); renderDrafts(); }
-  function audienceOptions(grade, subject) { const list = AnnouncementService.students(grade); const relevant = subject ? list.filter((student) => String(student.subjects || student.subject || "").split(",").map((value) => value.trim()).includes(subject)) : list; return `<option>All students in class</option><option>Students enrolled in subject</option>${relevant.length ? `<option>Selected students</option>` : ""}`; }
-  function openModal(item = null) { state.editing = item; const grade = item?.class_grade || state.classes[0] || ""; const subjectList = AnnouncementService.subjects(grade); const subject = item?.subject || ""; $("announcementModalRoot").innerHTML = `<div class="modal-backdrop"><form class="modal" id="announcementForm"><div class="modal-head"><div><span class="page-eyebrow"><i class="fa-solid fa-pen-to-square"></i> ${item ? "Edit announcement" : "New announcement"}</span><h2 style="margin-top:7px">${item ? "Update announcement" : "Create announcement"}</h2></div><button type="button" class="icon-button" data-close><i class="fa-solid fa-xmark"></i></button></div><div class="modal-grid"><div class="form-field full"><label>Title *</label><input name="title" required value="${esc(item?.title)}" placeholder="Announcement title"></div><div class="form-field full"><label>Message *</label><textarea name="message" required rows="5" placeholder="Write your announcement...">${esc(item?.message)}</textarea></div><div class="form-field"><label>Type *</label><select name="type">${AnnouncementService.TYPES.map((type) => `<option ${type === (item?.type || "Notice") ? "selected" : ""}>${type}</option>`).join("")}</select></div><div class="form-field"><label>Priority</label><select name="priority"><option ${item?.priority === "Normal" || !item ? "selected" : ""}>Normal</option><option ${item?.priority === "High" ? "selected" : ""}>High</option><option ${item?.priority === "Low" ? "selected" : ""}>Low</option></select></div><div class="form-field"><label>Class / Grade *</label><select name="class_grade" id="formGrade" required>${state.classes.map((value) => `<option value="${value}" ${String(value) === String(grade) ? "selected" : ""}>${formatClass(value)}</option>`).join("")}</select></div><div class="form-field"><label>Subject</label><select name="subject" id="formSubject"><option value="">All registered subjects</option>${subjectList.map((value) => `<option ${value === subject ? "selected" : ""}>${esc(value)}</option>`).join("")}</select></div><div class="form-field"><label>Target audience</label><select name="audience" id="formAudience">${audienceOptions(grade, subject)}</select></div><div class="form-field"><label>Schedule</label><select name="status"><option value="Published" ${item?.status === "Published" ? "selected" : ""}>Publish now</option><option value="Draft" ${item?.status === "Draft" || !item ? "selected" : ""}>Save as draft</option><option value="Scheduled" ${item?.status === "Scheduled" ? "selected" : ""}>Schedule for later</option></select></div><div class="form-field"><label>Scheduled time</label><input name="scheduled_at" type="datetime-local" value="${item?.scheduled_at ? item.scheduled_at.slice(0, 16) : ""}"></div><div class="form-field"><label>Attachment</label><input name="attachment" type="file"></div></div><div class="form-actions"><button type="button" class="ann-button" data-close>Cancel</button><button class="ann-button primary" type="submit"><i class="fa-solid fa-paper-plane"></i> Save announcement</button></div></form></div>`; const form = $("announcementForm"); $("formGrade").addEventListener("change", () => { const selected = $("formGrade").value; $("formSubject").innerHTML = `<option value="">All registered subjects</option>${AnnouncementService.subjects(selected).map((value) => `<option>${esc(value)}</option>`).join("")}`; }); form.addEventListener("submit", submitForm); $("announcementModalRoot").addEventListener("click", (event) => { if (event.target.closest("[data-close]") || event.target.classList.contains("modal-backdrop")) $("announcementModalRoot").replaceChildren(); }); }
-  async function submitForm(event) { event.preventDefault(); const data = Object.fromEntries(new FormData(event.currentTarget)); if (!data.title.trim() || !data.message.trim() || !data.class_grade) { toast("Title, message, and class are required.", true); return; } if (data.status === "Scheduled" && !data.scheduled_at) { toast("Choose a scheduled time.", true); return; } const item = await AnnouncementService.saveAnnouncement({ ...state.editing, ...data, published_at: data.status === "Published" ? (state.editing?.published_at || new Date().toISOString()) : null, scheduled_at: data.status === "Scheduled" ? new Date(data.scheduled_at).toISOString() : null }); $("announcementModalRoot").replaceChildren(); await load(); toast(item.status === "Published" ? "Announcement published successfully." : "Announcement saved successfully."); }
-  async function handleAction(event) { const action = event.target.closest("[data-action]")?.dataset.action; const id = event.target.closest("[data-action]")?.dataset.id; if (!action || !id) return; const item = state.announcements.find((row) => row.id === id); if (action === "edit") openModal(item); if (action === "view") openModal(item); if (action === "delete" && confirm("Delete this announcement?")) { await AnnouncementService.deleteAnnouncement(id); await load(); toast("Announcement deleted."); } }
-  function setupRealtime() { state.stopRealtime(); state.stopRealtime = AnnouncementService.subscribe({ onChange: () => load().catch((error) => console.error(error)) }); }
-  document.addEventListener("DOMContentLoaded", async () => {
-    if (window.SmartLearningSupabase?.isConfigured?.()) {
+  const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  })[char]);
+  const statusLabel = (value) => value.charAt(0).toUpperCase() + value.slice(1);
+  const dateLabel = (value) => value
+    ? new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(new Date(value))
+    : "—";
+  const classKey = (grade, stream) => `${grade}|${stream || ""}`;
+  const formatClass = (grade, stream) => grade
+    ? `Class ${grade}${Number(grade) >= 11 && stream ? ` · ${stream.replaceAll("_", " ")}` : ""}`
+    : "—";
+
+  function toast(message, isError = false) {
+    const node = document.createElement("div");
+    node.className = "toast";
+    node.textContent = message;
+    if (isError) node.style.background = "#b63b4a";
+    $("announcementToastRoot").replaceChildren(node);
+    window.setTimeout(() => node.remove(), 5000);
+  }
+
+  function recipientsFor(item) {
+    return Array.isArray(item.recipients) ? item.recipients : [];
+  }
+
+  function readCounts(item) {
+    const recipients = recipientsFor(item);
+    return {
+      total: recipients.length,
+      read: recipients.filter((recipient) => recipient.read_at).length,
+    };
+  }
+
+  function populateClasses() {
+    const groups = state.groups;
+    $("classFilter").innerHTML = `<option value="">All registered classes</option>${groups.map((group) => {
+      const key = classKey(group.grade, group.stream);
+      return `<option value="${escapeHtml(key)}">${escapeHtml(formatClass(group.grade, group.stream))}</option>`;
+    }).join("")}`;
+  }
+
+  function populateTypes() {
+    $("typeFilter").innerHTML = `<option value="">All types</option>${AnnouncementService.TYPES
+      .map((type) => `<option value="${escapeHtml(type)}">${escapeHtml(type)}</option>`).join("")}`;
+  }
+
+  async function load() {
+    const result = await AnnouncementService.loadAnnouncements(state.context);
+    state.announcements = result.announcements;
+    state.recipientsAvailable = result.recipientsAvailable;
+    renderAll();
+  }
+
+  function filtered() {
+    return state.announcements
+      .filter((item) => {
+        const text = `${item.title} ${item.message} ${item.subject}`.toLowerCase();
+        const group = state.groups.find((entry) => Number(entry.grade) === Number(item.grade)
+          && (Number(entry.grade) < 11 || String(entry.stream || "") === String(item.stream || "")));
+        const itemClass = group ? classKey(group.grade, group.stream) : classKey(item.grade, item.stream);
+        return (!state.query || text.includes(state.query))
+          && (!state.grade || itemClass === state.grade)
+          && (!state.type || item.type === state.type)
+          && (!state.status || item.status === state.status);
+      })
+      .sort((left, right) => state.sort === "oldest"
+        ? new Date(left.created_at) - new Date(right.created_at)
+        : new Date(right.created_at) - new Date(left.created_at));
+  }
+
+  function renderSummary() {
+    const published = state.announcements.filter((item) => item.status === "published");
+    const now = new Date();
+    const sentThisMonth = published.filter((item) => {
+      if (!item.published_at) return false;
+      const date = new Date(item.published_at);
+      return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+    }).length;
+    const reach = published.reduce((sum, item) => sum + readCounts(item).total, 0);
+    const reads = published.reduce((sum, item) => sum + readCounts(item).read, 0);
+    $("statTotalAnnouncements").textContent = String(state.announcements.length);
+    $("statSentThisMonth").textContent = String(sentThisMonth);
+    $("statTotalReach").textContent = state.recipientsAvailable ? String(reach) : "—";
+    $("statAvgReadRate").textContent = !state.recipientsAvailable || reach === 0
+      ? "—"
+      : `${Math.round((reads / reach) * 100)}%`;
+  }
+
+  function renderTable() {
+    const rows = filtered();
+    const pages = Math.max(1, Math.ceil(rows.length / state.pageSize));
+    state.page = Math.min(state.page, pages);
+    const visible = rows.slice((state.page - 1) * state.pageSize, state.page * state.pageSize);
+    $("announcementsTableBody").innerHTML = visible.length
+      ? visible.map((item) => {
+          const counts = readCounts(item);
+          const readRate = counts.total ? `${Math.round((counts.read / counts.total) * 100)}%` : "—";
+          const date = item.status === "scheduled" ? item.publish_at : item.published_at || item.created_at;
+          return `<tr>
+            <td><div class="announcement-title">${escapeHtml(item.title)}</div><div class="announcement-message">${escapeHtml(item.message)}</div></td>
+            <td>${escapeHtml(formatClass(item.grade, item.stream))}<br><small>${escapeHtml(item.subject || "All registered subjects")}</small></td>
+            <td><span class="badge ${escapeHtml(item.type.toLowerCase())}">${escapeHtml(item.type)}</span></td>
+            <td><span class="badge ${escapeHtml(item.status)}">${escapeHtml(statusLabel(item.status))}</span><br><small>${dateLabel(date)}</small></td>
+            <td>${readRate}<br><small>${state.recipientsAvailable ? `${counts.read}/${counts.total} opened` : "Read data unavailable"}</small></td>
+            <td><div class="row-actions">
+              <button class="icon-button" data-action="view" data-id="${escapeHtml(item.id)}" title="View"><i class="fa-solid fa-eye"></i></button>
+              <button class="icon-button" data-action="edit" data-id="${escapeHtml(item.id)}" title="Edit"><i class="fa-solid fa-pen"></i></button>
+              <button class="icon-button" data-action="delete" data-id="${escapeHtml(item.id)}" title="Delete"><i class="fa-solid fa-trash"></i></button>
+            </div></td>
+          </tr>`;
+        }).join("")
+      : `<tr><td colspan="6"><div class="empty"><i class="fa-solid fa-bullhorn"></i>${state.announcements.length
+        ? "No announcements match these filters."
+        : "No announcements yet. Create your first announcement."}</div></td></tr>`;
+    $("paginationText").textContent = rows.length
+      ? `Showing ${(state.page - 1) * state.pageSize + 1}-${Math.min(state.page * state.pageSize, rows.length)} of ${rows.length} announcements`
+      : "Showing 0 announcements";
+    $("pageButtons").innerHTML = Array.from({ length: pages }, (_, index) => index + 1)
+      .map((page) => `<button class="${page === state.page ? "active" : ""}" data-page="${page}">${page}</button>`)
+      .join("");
+  }
+
+  function renderChart() {
+    const counts = Object.fromEntries(AnnouncementService.TYPES.map((type) => [
+      type,
+      state.announcements.filter((item) => item.type === type).length,
+    ]));
+    const max = Math.max(1, ...Object.values(counts));
+    $("overviewChart").innerHTML = Object.entries(counts).map(([type, count]) =>
+      `<div class="chart-row"><span>${escapeHtml(type)}</span><div class="track"><div class="fill" style="width:${(count / max) * 100}%"></div></div><strong>${count}</strong></div>`,
+    ).join("");
+  }
+
+  function renderDrafts() {
+    const drafts = state.announcements.filter((item) => item.status === "draft").slice(0, 4);
+    $("draftList").innerHTML = drafts.length
+      ? drafts.map((item) => `<div class="draft">
+          <strong>${escapeHtml(item.title)}</strong>
+          <small>${escapeHtml(formatClass(item.grade, item.stream))} · ${dateLabel(item.updated_at)}</small>
+          <button class="history-action" data-draft="${escapeHtml(item.id)}" style="border:0;background:transparent;color:#087f8a;font-weight:800;cursor:pointer;margin-top:7px">Continue editing</button>
+        </div>`).join("")
+      : '<div class="empty"><i class="fa-solid fa-file-circle-plus"></i>No drafts yet.</div>';
+  }
+
+  function renderAll() {
+    renderSummary();
+    renderTable();
+    renderChart();
+    renderDrafts();
+  }
+
+  function setFormSubjects(grade, stream, selectedId = "") {
+    const group = state.groups.find((item) => Number(item.grade) === Number(grade)
+      && (Number(item.grade) < 11 || String(item.stream || "") === String(stream || "")));
+    const subjects = group?.subjects || [];
+    $("formSubject").innerHTML = `<option value="">All registered subjects</option>${subjects.map((subject) =>
+      `<option value="${escapeHtml(subject.id)}" ${String(subject.id) === String(selectedId) ? "selected" : ""}>${escapeHtml(subject.name)}</option>`,
+    ).join("")}`;
+  }
+
+  function localDateTime(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  }
+
+  function openModal(item = null) {
+    state.editing = item;
+    const grade = item?.grade ?? state.groups[0]?.grade ?? "";
+    const stream = item?.stream ?? "";
+    const groupKeyValue = classKey(grade, stream);
+    const selectedStatus = item?.status || "draft";
+    $("announcementModalRoot").innerHTML = `<div class="modal-backdrop">
+      <form class="modal" id="announcementForm">
+        <div class="modal-head">
+          <div><span class="page-eyebrow"><i class="fa-solid fa-pen-to-square"></i> ${item ? "Edit announcement" : "New announcement"}</span>
+            <h2 style="margin-top:7px">${item ? "Update announcement" : "Create announcement"}</h2>
+          </div>
+          <button type="button" class="icon-button" data-close aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-grid">
+          <div class="form-field full"><label>Title *</label><input name="title" required value="${escapeHtml(item?.title || "")}" placeholder="Announcement title"></div>
+          <div class="form-field full"><label>Message *</label><textarea name="message" required rows="5" placeholder="Write your announcement...">${escapeHtml(item?.message || "")}</textarea></div>
+          <div class="form-field"><label>Type *</label><select name="type" required>${AnnouncementService.TYPES.map((type) =>
+            `<option value="${escapeHtml(type)}" ${type === (item?.type || "Notice") ? "selected" : ""}>${escapeHtml(type)}</option>`,
+          ).join("")}</select></div>
+          <div class="form-field"><label>Class / Grade *</label><select name="class_key" id="formGrade" required>${state.groups.map((group) => {
+            const key = classKey(group.grade, group.stream);
+            return `<option value="${escapeHtml(key)}" ${key === groupKeyValue ? "selected" : ""}>${escapeHtml(formatClass(group.grade, group.stream))}</option>`;
+          }).join("")}</select></div>
+          <div class="form-field"><label>Subject</label><select name="subject_id" id="formSubject"></select></div>
+          <div class="form-field"><label>Schedule</label><select name="status">
+            <option value="published" ${selectedStatus === "published" ? "selected" : ""}>Publish now</option>
+            <option value="draft" ${selectedStatus === "draft" ? "selected" : ""}>Save as draft</option>
+            <option value="scheduled" ${selectedStatus === "scheduled" ? "selected" : ""}>Schedule for later</option>
+            <option value="archived" ${selectedStatus === "archived" ? "selected" : ""}>Archive</option>
+          </select></div>
+          <div class="form-field"><label>Scheduled time</label><input name="publish_at" type="datetime-local" value="${localDateTime(item?.publish_at)}"></div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="ann-button" data-close>Cancel</button>
+          <button class="ann-button primary" type="submit"><i class="fa-solid fa-paper-plane"></i> Save announcement</button>
+        </div>
+      </form>
+    </div>`;
+
+    const gradeSelect = $("formGrade");
+    const selectedGroup = state.groups.find((group) => classKey(group.grade, group.stream) === gradeSelect.value);
+    setFormSubjects(selectedGroup?.grade, selectedGroup?.stream, item?.subject_id || "");
+    gradeSelect.addEventListener("change", () => {
+      const group = state.groups.find((candidate) => classKey(candidate.grade, candidate.stream) === gradeSelect.value);
+      setFormSubjects(group?.grade, group?.stream);
+    });
+    $("announcementForm").addEventListener("submit", submitForm);
+    $("announcementModalRoot").addEventListener("click", (event) => {
+      if (event.target.closest("[data-close]") || event.target.classList.contains("modal-backdrop")) {
+        $("announcementModalRoot").replaceChildren();
+      }
+    });
+  }
+
+  async function submitForm(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = Object.fromEntries(new FormData(form));
+    const selectedGroup = state.groups.find((group) => classKey(group.grade, group.stream) === data.class_key);
+    if (!selectedGroup) {
+      toast("Choose a class in your registered teaching scope.", true);
+      return;
+    }
+    const submitButton = form.querySelector('[type="submit"]');
+    submitButton.disabled = true;
+    try {
+      const announcement = await AnnouncementService.saveAnnouncement(state.groups, {
+        title: data.title,
+        message: data.message,
+        type: data.type,
+        grade: selectedGroup.grade,
+        stream: selectedGroup.stream,
+        subject_id: data.subject_id || null,
+        status: data.status,
+        publish_at: data.publish_at,
+      }, state.editing);
+      $("announcementModalRoot").replaceChildren();
+      await load();
+      toast(announcement.status === "published" ? "Announcement published successfully." : "Announcement saved successfully.");
+    } catch (error) {
+      console.error("Unable to save announcement.", error);
+      toast(error.message || "Unable to save this announcement.", true);
+      submitButton.disabled = false;
+    }
+  }
+
+  async function handleAction(event) {
+    const button = event.target.closest("[data-action]");
+    if (!button) return;
+    const item = state.announcements.find((row) => String(row.id) === String(button.dataset.id));
+    if (!item) return;
+    if (button.dataset.action === "edit" || button.dataset.action === "view") {
+      openModal(item);
+      return;
+    }
+    if (button.dataset.action === "delete" && window.confirm("Delete this announcement?")) {
+      button.disabled = true;
       try {
-        await window.AttendanceService.loadRegisteredTeachingScope();
+        await AnnouncementService.deleteAnnouncement(item.id);
+        await load();
+        toast("Announcement deleted.");
       } catch (error) {
-        window.AttendanceService.setRegisteredTeachingScope([]);
-        console.error("Could not load registered announcement subjects.", error);
-        toast(`Could not load registered grades and subjects. ${error.message || "Please try again."}`, true);
+        console.error("Unable to delete announcement.", error);
+        toast(error.message || "Unable to delete this announcement.", true);
+        button.disabled = false;
       }
     }
-    state.classes = AnnouncementService.classes();
-    populateClasses();
-    populateTypes();
-    $("announcementMode").textContent = window.SmartLearningSupabase?.isConfigured?.() ? "Supabase mode" : "Local mode";
+  }
+
+  async function refreshFromRealtime() {
     try {
       await load();
-      setupRealtime();
     } catch (error) {
-      console.error(error);
-      toast("Announcements could not be loaded.", true);
+      console.error("Unable to refresh announcements after a realtime update.", error);
+      toast(error.message || "Announcements could not be refreshed.", true);
     }
+  }
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    $("announcementMode").textContent = "Connecting…";
+    try {
+      state.context = await AnnouncementService.getTeacherContext();
+      state.groups = await AnnouncementService.loadScope(state.context);
+      window.AttendanceService?.setRegisteredTeachingScope(state.groups);
+      populateClasses();
+      populateTypes();
+      await load();
+      $("announcementMode").textContent = "Supabase mode";
+      state.stopRealtime = AnnouncementService.subscribe(
+        state.context,
+        () => void refreshFromRealtime(),
+        (error) => toast(error.message || "Live announcement updates are unavailable.", true),
+      );
+    } catch (error) {
+      console.error("Announcements initialization error:", error);
+      $("announcementMode").textContent = "Connection error";
+      toast(error.message || "Announcements could not be loaded.", true);
+    }
+
     $("newAnnouncementButton").addEventListener("click", () => openModal());
     $("newAnnouncementBanner").addEventListener("click", () => openModal());
     $("classFilter").addEventListener("change", (event) => { state.grade = event.target.value; state.page = 1; renderTable(); });
     $("typeFilter").addEventListener("change", (event) => { state.type = event.target.value; state.page = 1; renderTable(); });
-    $("statusFilter").addEventListener("change", (event) => { state.status = event.target.value; state.page = 1; renderTable(); });
+    $("statusFilter").addEventListener("change", (event) => { state.status = event.target.value.toLowerCase(); state.page = 1; renderTable(); });
     $("sortAnnouncements").addEventListener("change", (event) => { state.sort = event.target.value; renderTable(); });
-    $("searchInput").addEventListener("input", (event) => { state.query = event.target.value.toLowerCase(); state.page = 1; renderTable(); });
-    $("pageButtons").addEventListener("click", (event) => { const page = Number(event.target.dataset.page); if (page) { state.page = page; renderTable(); } });
+    $("searchInput").addEventListener("input", (event) => { state.query = event.target.value.trim().toLowerCase(); state.page = 1; renderTable(); });
+    $("pageButtons").addEventListener("click", (event) => {
+      const page = Number(event.target.dataset.page);
+      if (page) { state.page = page; renderTable(); }
+    });
     $("announcementsTableBody").addEventListener("click", handleAction);
-    $("draftList").addEventListener("click", (event) => { const id = event.target.closest("[data-draft]")?.dataset.draft; if (id) openModal(state.announcements.find((item) => item.id === id)); });
+    $("draftList").addEventListener("click", (event) => {
+      const id = event.target.closest("[data-draft]")?.dataset.draft;
+      if (id) openModal(state.announcements.find((item) => String(item.id) === String(id)));
+    });
   });
+
+  window.addEventListener("beforeunload", () => state.stopRealtime());
 })();

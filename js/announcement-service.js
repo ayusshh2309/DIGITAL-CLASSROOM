@@ -1,24 +1,270 @@
 (() => {
-  const KEY = "smartLearningAnnouncements";
-  const RECIPIENT_KEY = "smartLearningAnnouncementRecipients";
   const TYPES = ["Exam", "Material", "Reminder", "Assignment", "Notice"];
-  const read = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key) || "null") || fallback; } catch { return fallback; } };
-  const write = (key, value) => localStorage.setItem(key, JSON.stringify(value));
-  const teacherId = () => window.AttendanceService?.teacherId?.() || "local-teacher";
-  const classes = () => window.AttendanceService?.loadTeacherClasses?.() || [];
-  const subjects = (grade) => window.AttendanceService?.loadTeacherSubjects?.(grade) || [];
-  const students = (grade) => window.AttendanceService?.loadRegisteredStudents?.(grade) || [];
-  const client = () => window.SmartLearningSupabase?.getClient?.() || null;
-  const now = () => new Date().toISOString();
-  const normalize = (item) => ({ ...item, id: String(item.id || item.announcement_id), teacher_id: String(item.teacher_id || teacherId()), title: item.title || "Untitled announcement", message: item.message || item.description || "", type: item.type || "Notice", class_grade: String(item.class_grade || item.grade || ""), subject: item.subject || item.subject_id || "", audience: item.audience || "All students", priority: item.priority || "Normal", status: item.status || "Draft", published_at: item.published_at || null, scheduled_at: item.scheduled_at || null, created_at: item.created_at || now(), updated_at: item.updated_at || now(), attachment_url: item.attachment_url || "" });
-  function localAnnouncements() { return read(KEY, []).map(normalize).filter((item) => item.teacher_id === teacherId()); }
-  function promoteScheduled() { const records = read(KEY, []).map(normalize); let changed = false; records.forEach((item) => { if (item.teacher_id === teacherId() && item.status === "Scheduled" && item.scheduled_at && new Date(item.scheduled_at) <= new Date()) { item.status = "Published"; item.published_at = item.scheduled_at; item.updated_at = now(); changed = true; } }); if (changed) write(KEY, records); return records.filter((item) => item.teacher_id === teacherId()); }
-  function recipientStudents(item) { return students(item.class_grade).filter((student) => { if (item.audience === "Selected students") return (item.recipient_ids || []).includes(String(student.student_id)); if (!item.subject) return true; const enrolled = String(student.subjects || student.subject || "").split(",").map((value) => value.trim()); return enrolled.includes(item.subject) || !enrolled.length; }); }
-  function localRecipients(item) { const current = read(RECIPIENT_KEY, []); const existing = current.filter((row) => row.announcement_id !== item.id); return [...existing, ...recipientStudents(item).map((student) => ({ announcement_id: item.id, student_id: String(student.student_id), delivered_at: item.status === "Published" ? (item.published_at || now()) : null, read_at: current.find((row) => row.announcement_id === item.id && row.student_id === String(student.student_id))?.read_at || null }))]; }
-  async function loadAnnouncements() { const supabase = client(); if (supabase) { const { data, error } = await supabase.from("announcements").select("*, announcement_recipients(*)").eq("teacher_id", teacherId()).order("created_at", { ascending: false }); if (error) throw error; return (data || []).map(normalize); } return promoteScheduled(); }
-  async function saveAnnouncement(input) { const item = normalize({ ...input, id: input.id || `local-${Date.now()}`, teacher_id: teacherId(), updated_at: now(), created_at: input.created_at || now() }); const supabase = client(); if (supabase) { const { data, error } = await supabase.from("announcements").upsert(item, { onConflict: "id" }).select().single(); if (error) throw error; return data; } const records = read(KEY, []).map(normalize).filter((row) => row.id !== item.id || row.teacher_id !== teacherId()); write(KEY, [item, ...records]); write(RECIPIENT_KEY, localRecipients(item)); window.dispatchEvent(new CustomEvent("smart-learning-announcements-updated")); return item; }
-  async function deleteAnnouncement(id) { const supabase = client(); if (supabase) { const { error } = await supabase.from("announcements").delete().eq("id", id).eq("teacher_id", teacherId()); if (error) throw error; return; } write(KEY, read(KEY, []).filter((item) => item.id !== id || item.teacher_id !== teacherId())); write(RECIPIENT_KEY, read(RECIPIENT_KEY, []).filter((row) => row.announcement_id !== id)); window.dispatchEvent(new CustomEvent("smart-learning-announcements-updated")); }
-  async function getRecipients(announcements) { const supabase = client(); if (supabase) return announcements.flatMap((item) => item.announcement_recipients || []); return read(RECIPIENT_KEY, []).filter((row) => announcements.some((item) => item.id === row.announcement_id)); }
-  function subscribe({ onChange }) { const supabase = client(); if (!supabase) { const handler = () => onChange(); window.addEventListener("smart-learning-announcements-updated", handler); window.addEventListener("storage", handler); return () => { window.removeEventListener("smart-learning-announcements-updated", handler); window.removeEventListener("storage", handler); }; } const channel = supabase.channel(`teacher-announcements-${teacherId()}`).on("postgres_changes", { event: "*", schema: "public", table: "announcements", filter: `teacher_id=eq.${teacherId()}` }, onChange).on("postgres_changes", { event: "*", schema: "public", table: "announcement_recipients" }, onChange).subscribe(); return () => supabase.removeChannel(channel); }
-  window.AnnouncementService = { TYPES, classes, subjects, students, loadAnnouncements, saveAnnouncement, deleteAnnouncement, getRecipients, subscribe, teacherId };
+  const STATUSES = ["draft", "scheduled", "published", "archived"];
+  const ANNOUNCEMENT_FIELDS = "id, teacher_id, title, message, type, grade, stream, subject_id, status, publish_at, published_at, created_at, updated_at";
+
+  function getClient() {
+    const client = window.TeacherData?.getSupabaseClient?.()
+      || window.SmartLearningSupabase?.getClient?.();
+    if (!client) throw new Error("Supabase is not configured.");
+    return client;
+  }
+
+  async function getTeacherContext() {
+    const client = getClient();
+    const { data: authData, error: authError } = await client.auth.getUser();
+    if (authError) {
+      console.error("Announcements auth error:", authError);
+      throw authError;
+    }
+    const user = authData?.user;
+    console.log("Announcement auth user:", user?.id);
+    if (!user) throw new Error("Your session has expired. Please sign in again.");
+
+    const { data: teacher, error: teacherError } = await client
+      .from("teachers")
+      .select("id, user_id")
+      .eq("user_id", user.id)
+      .single();
+    if (teacherError) {
+      console.error("Announcements teacher error:", teacherError);
+      throw teacherError;
+    }
+    if (!teacher?.id || String(teacher.user_id) !== String(user.id)) {
+      throw new Error("No teacher profile is linked to this account.");
+    }
+    console.log("Announcement teacher ID:", teacher.id);
+    return { client, user, teacher };
+  }
+
+  async function loadScope(context) {
+    const groups = await window.TeacherData.loadRegisteredTeachingScope(
+      context.client,
+      context.teacher.id,
+    );
+    return groups.map((group) => ({
+      ...group,
+      grade: Number(group.grade),
+      stream: Number(group.grade) >= 11 ? String(group.stream || "").trim().toLowerCase() : null,
+      subjects: Array.isArray(group.subjects) ? group.subjects : [],
+    }));
+  }
+
+  async function loadAnnouncements(context) {
+    const { data, error } = await context.client
+      .from("announcements")
+      .select(ANNOUNCEMENT_FIELDS)
+      .eq("teacher_id", context.teacher.id)
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error("Announcements query error:", error);
+      throw error;
+    }
+
+    const announcements = data || [];
+    const subjectIds = [...new Set(announcements.map((item) => item.subject_id).filter(Boolean).map(String))];
+    let subjectsById = new Map();
+    if (subjectIds.length) {
+      const { data: subjects, error: subjectsError } = await context.client
+        .from("subjects")
+        .select("id, name")
+        .in("id", subjectIds);
+      if (subjectsError) {
+        console.error("Announcements subject query error:", subjectsError);
+      } else {
+        subjectsById = new Map((subjects || []).map((subject) => [String(subject.id), subject.name]));
+      }
+    }
+
+    const publishedIds = announcements
+      .filter((item) => item.status === "published")
+      .map((item) => item.id);
+    let recipientsByAnnouncement = new Map();
+    let recipientsAvailable = true;
+    if (publishedIds.length) {
+      const { data: recipients, error: recipientsError } = await context.client
+        .from("announcement_recipients")
+        .select("id, announcement_id, student_id, read_at, created_at")
+        .in("announcement_id", publishedIds);
+      if (recipientsError) {
+        console.error("Announcements recipient statistics error:", recipientsError);
+        recipientsAvailable = false;
+      } else {
+        (recipients || []).forEach((recipient) => {
+          const key = String(recipient.announcement_id);
+          if (!recipientsByAnnouncement.has(key)) recipientsByAnnouncement.set(key, []);
+          recipientsByAnnouncement.get(key).push(recipient);
+        });
+      }
+    }
+
+    return {
+      announcements: announcements.map((item) => ({
+        ...item,
+        grade: Number(item.grade),
+        stream: Number(item.grade) >= 11 ? String(item.stream || "").trim().toLowerCase() : null,
+        status: String(item.status || "").toLowerCase(),
+        subject: item.subject_id ? subjectsById.get(String(item.subject_id)) || "" : "",
+        recipients: recipientsByAnnouncement.get(String(item.id)) || [],
+      })),
+      recipientsAvailable,
+    };
+  }
+
+  function normalizeClass(grade, stream) {
+    const value = Number(grade);
+    if (!Number.isInteger(value) || value < 1 || value > 12) {
+      throw new Error("Choose a registered class.");
+    }
+    return {
+      grade: value,
+      stream: value >= 11 ? String(stream || "").trim().toLowerCase() : null,
+    };
+  }
+
+  function findGroup(groups, grade, stream) {
+    const target = normalizeClass(grade, stream);
+    return groups.find((group) => Number(group.grade) === target.grade
+      && (target.grade < 11 || String(group.stream || "").toLowerCase() === target.stream));
+  }
+
+  function validateScope(groups, input) {
+    const target = normalizeClass(input.grade, input.stream);
+    const group = findGroup(groups, target.grade, target.stream);
+    if (!group) throw new Error("This class and stream are not in your registered teaching scope.");
+    const subjectId = input.subject_id || null;
+    if (subjectId && !group.subjects.some((subject) => String(subject.id) === String(subjectId))) {
+      throw new Error("This subject is not in your registered teaching scope for the selected class.");
+    }
+    return { ...target, subjectId };
+  }
+
+  async function createRecipients(context, announcement) {
+    let query = context.client
+      .from("students")
+      .select("id")
+      .eq("grade", announcement.grade);
+    query = announcement.grade >= 11
+      ? query.eq("stream", announcement.stream)
+      : query.is("stream", null);
+    const { data: students, error: studentsError } = await query;
+    if (studentsError) throw studentsError;
+    if (!students?.length) return;
+
+    const { data: existing, error: existingError } = await context.client
+      .from("announcement_recipients")
+      .select("student_id")
+      .eq("announcement_id", announcement.id)
+      .in("student_id", students.map((student) => student.id));
+    if (existingError) throw existingError;
+    const existingIds = new Set((existing || []).map((row) => String(row.student_id)));
+    const rows = students
+      .filter((student) => !existingIds.has(String(student.id)))
+      .map((student) => ({ announcement_id: announcement.id, student_id: student.id }));
+    for (let index = 0; index < rows.length; index += 500) {
+      const { error } = await context.client
+        .from("announcement_recipients")
+        .upsert(rows.slice(index, index + 500), {
+          onConflict: "announcement_id,student_id",
+          ignoreDuplicates: true,
+        });
+      if (error) throw error;
+    }
+  }
+
+  async function saveAnnouncement(groups, input, existing = null) {
+    const context = await getTeacherContext();
+    const scope = validateScope(groups, input);
+    const status = String(input.status || "").toLowerCase();
+    if (!STATUSES.includes(status)) throw new Error("Choose a valid announcement status.");
+    if (!TYPES.includes(input.type)) throw new Error("Choose a valid announcement type.");
+
+    const now = new Date().toISOString();
+    let publishAt = null;
+    if (status === "scheduled") {
+      const date = new Date(input.publish_at);
+      if (!input.publish_at || Number.isNaN(date.getTime()) || date <= new Date()) {
+        throw new Error("Choose a future date and time for the scheduled announcement.");
+      }
+      publishAt = date.toISOString();
+    }
+    const payload = {
+      teacher_id: context.teacher.id,
+      title: String(input.title || "").trim(),
+      message: String(input.message || "").trim(),
+      type: input.type,
+      grade: scope.grade,
+      stream: scope.stream,
+      subject_id: scope.subjectId,
+      status,
+      publish_at: publishAt,
+      published_at: status === "published"
+        ? existing?.published_at || now
+        : null,
+      updated_at: now,
+    };
+    if (!payload.title || !payload.message) throw new Error("Title and message are required.");
+
+    let query = existing?.id
+      ? context.client.from("announcements").update(payload)
+        .eq("id", existing.id).eq("teacher_id", context.teacher.id)
+      : context.client.from("announcements").insert(payload);
+    const { data: announcement, error } = await query
+      .select(ANNOUNCEMENT_FIELDS)
+      .single();
+    if (error) {
+      console.error("Announcements save error:", error);
+      throw error;
+    }
+    if (status === "published") {
+      try {
+        await createRecipients(context, announcement);
+      } catch (recipientError) {
+        console.error("Announcement was saved but recipients could not be assigned.", recipientError);
+        throw new Error(`Announcement was saved, but recipients could not be assigned: ${recipientError.message}`);
+      }
+    }
+    return announcement;
+  }
+
+  async function deleteAnnouncement(id) {
+    const context = await getTeacherContext();
+    const { error } = await context.client.rpc("delete_teacher_announcement", {
+      requested_announcement_id: id,
+    });
+    if (error) throw error;
+  }
+
+  function subscribe(context, onChange, onError) {
+    const channel = context.client
+      .channel(`teacher-announcements-${context.teacher.id}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "announcements",
+        filter: `teacher_id=eq.${context.teacher.id}`,
+      }, onChange)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "announcement_recipients",
+      }, onChange)
+      .subscribe((status, error) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          console.error("Announcements realtime subscription error:", error || status);
+          onError?.(error || new Error(status));
+        }
+      });
+    return () => context.client.removeChannel(channel);
+  }
+
+  window.AnnouncementService = {
+    TYPES,
+    getTeacherContext,
+    loadScope,
+    loadAnnouncements,
+    saveAnnouncement,
+    deleteAnnouncement,
+    subscribe,
+  };
 })();

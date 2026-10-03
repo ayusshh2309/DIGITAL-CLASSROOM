@@ -5,6 +5,36 @@
   const componentUrl = new URL("../components/student-layout.html", window.location.href);
   const page = window.location.pathname.split("/").pop() || "st_dashboard.html";
 
+  async function loadStudentAnnouncements() {
+    if (!window.supabase?.createClient) {
+      await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2");
+    }
+    if (!window.SmartLearningSupabase) {
+      await loadScript(new URL("../js/supabase.js", window.location.href).href);
+    }
+    await loadScript(new URL("../js/student-announcements.js", window.location.href).href);
+  }
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const existing = [...document.scripts].find((script) => script.src === src);
+      if (existing) {
+        if (existing.dataset.loaded === "true") return resolve();
+        existing.addEventListener("load", resolve, { once: true });
+        existing.addEventListener("error", reject, { once: true });
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = src;
+      script.addEventListener("load", () => {
+        script.dataset.loaded = "true";
+        resolve();
+      }, { once: true });
+      script.addEventListener("error", reject, { once: true });
+      document.body.appendChild(script);
+    });
+  }
+
   if (!document.querySelector('link[data-student-layout-icons="font-awesome"]')) {
     const iconStylesheet = document.createElement("link");
     iconStylesheet.rel = "stylesheet";
@@ -52,6 +82,9 @@
 
       document.getElementById("studentLogout")?.addEventListener("click", () => {
         ["studentProfile", "learnerProfile", "studentData"].forEach((key) => localStorage.removeItem(key));
+      });
+      loadStudentAnnouncements().catch((error) => {
+        console.error("Unable to initialize student announcements.", error);
       });
     })
     .catch((error) => console.error("Unable to load shared student dashboard layout.", error));
