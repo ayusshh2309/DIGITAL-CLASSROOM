@@ -1,6 +1,14 @@
 (function () {
   const STORAGE_BUCKETS = new Set(["pdfs", "videos", "photos", "documents"]);
-  let registeredTeacherAssignments = {};
+  const STREAM_LABELS = {
+    science_pcm: "Science (PCM)",
+    science_pcb: "Science (PCB)",
+    commerce: "Commerce",
+    arts_humanities: "Arts / Humanities",
+  };
+  let registeredTeacherAssignments = new Map();
+  let registeredTeacherSubjects = new Map();
+  let registeredTeacherClasses = [];
 
   function getClient() {
     const client = window.SmartLearningSupabase?.getClient?.();
@@ -71,6 +79,16 @@
     return types[type] || detectFileType(fileName, mimeType);
   }
 
+  function materialTypeLabel(value) {
+    return ({
+      pdf: "PDF",
+      video: "Video",
+      photo: "Photo",
+      image: "Photo",
+      document: "Document",
+    })[String(value || "").trim().toLowerCase()] || "Document";
+  }
+
   function detectCategory(fileName, type) {
     const name = String(fileName || "").toLowerCase();
     if (name.includes("syllabus")) return "Syllabus";
@@ -83,12 +101,24 @@
     return "Documents";
   }
 
-  function normalizeRecord(item, index = 0) {
+  function normalizeRecord(item, index = 0, teacherMaterial = false) {
     const relation = Array.isArray(item.subjects) ? item.subjects[0] : item.subjects;
-    const fileName = item.file_name || item.title || item.name || `Material ${index + 1}`;
-    const fileType = normalizeFileType(item.material_type || item.file_type || item.type, fileName, item.mime_type);
+    const fileName = item.file_name || item.title || `Material ${index + 1}`;
+    const materialType = String(item.material_type || "").trim().toLowerCase();
+    const fileType = teacherMaterial && ["photo", "image"].includes(materialType)
+      ? "Photo"
+      : normalizeFileType(materialType || item.file_type || item.type, fileName, item.mime_type);
     const createdAt = item.created_at || item.uploaded_at || null;
-    const fileSize = Number(item.file_size ?? item.size_bytes ?? item.size ?? 0) || 0;
+    const parsedFileSize = item.file_size == null || item.file_size === "" ? null : Number(item.file_size);
+    const fileSize = teacherMaterial
+      ? (Number.isFinite(parsedFileSize) ? parsedFileSize : null)
+      : (Number.isFinite(parsedFileSize) ? parsedFileSize : 0);
+    const grade = normalizeGrade(item.grade);
+    const stream = String(item.stream || "").trim().toLowerCase();
+    const classLabel = grade
+      ? `Grade ${grade}${stream ? ` — ${STREAM_LABELS[stream] || stream}` : ""}`
+      : "";
+    const classFilter = `${grade}|${stream}`;
     return {
       ...item,
       id: item.id == null ? "" : String(item.id),
@@ -96,16 +126,22 @@
       file_name: fileName,
       file_type: fileType,
       type: fileType,
-      category: item.category || detectCategory(fileName, fileType),
-      grade: item.grade ?? item.class_grade ?? "",
-      class_grade: normalizeGrade(item.grade ?? item.class_grade ?? ""),
-      stream: item.stream || "",
-      subject: item.subject || item.subject_name || relation?.name || "",
+      category: teacherMaterial
+        ? materialTypeLabel(materialType)
+        : item.category || detectCategory(fileName, fileType),
+      material_type: materialType,
+      grade,
+      class_grade: teacherMaterial ? classLabel : normalizeGrade(item.grade ?? item.class_grade ?? ""),
+      ...(teacherMaterial ? { class_filter: classFilter } : {}),
+      stream,
+      subject: teacherMaterial
+        ? registeredTeacherSubjects.get(String(item.subject_id)) || relation?.name || ""
+        : item.subject || item.subject_name || relation?.name || "",
       description: item.description || "",
       file_size: fileSize,
       size_bytes: fileSize,
-      download_count: Number(item.download_count || item.downloads || 0) || 0,
-      downloads: Number(item.download_count || item.downloads || 0) || 0,
+      download_count: Number((teacherMaterial ? item.download_count : item.download_count || item.downloads) || 0) || 0,
+      downloads: Number(item.download_count || 0) || 0,
       created_at: createdAt,
       uploaded_at: createdAt,
       file_path: item.file_path || "",
@@ -117,33 +153,59 @@
 
   function setRegisteredTeachingScope(groups) {
     const assignments = new Map();
+    const subjectsById = new Map();
+    const classes = [];
     (groups || []).forEach((group) => {
       const grade = normalizeGrade(group.grade);
       if (!grade) return;
-      if (!assignments.has(grade)) assignments.set(grade, new Set());
+      const stream = Number(grade) >= 11 ? String(group.stream || "").trim().toLowerCase() : "";
+      const key = `${grade}|${stream}`;
+      assignments.set(key, new Set());
+      classes.push({
+        key,
+        label: `Grade ${grade}${stream ? ` — ${STREAM_LABELS[stream] || stream}` : ""}`,
+      });
       (group.subjects || []).forEach((subject) => {
         const name = subject?.name || subject?.subject || "";
-        if (name) assignments.get(grade).add(String(name).trim());
+        if (name) {
+          assignments.get(key).add(String(name).trim());
+          if (subject?.id != null) subjectsById.set(String(subject.id), String(name).trim());
+        }
       });
     });
-    registeredTeacherAssignments = Object.fromEntries(
-      [...assignments.entries()]
-        .sort(([left], [right]) => Number(left) - Number(right))
-        .map(([grade, subjects]) => [grade, [...subjects].sort()]),
-    );
+    registeredTeacherAssignments = assignments;
+    registeredTeacherSubjects = subjectsById;
+    registeredTeacherClasses = classes.sort((left, right) => {
+      const [leftGrade, leftStream] = left.key.split("|");
+      const [rightGrade, rightStream] = right.key.split("|");
+      return Number(leftGrade) - Number(rightGrade) || leftStream.localeCompare(rightStream);
+    });
   }
 
   function getTeacherAssignments() {
-    return registeredTeacherAssignments;
+    return Object.fromEntries(
+      [...registeredTeacherAssignments.entries()]
+        .sort(([left], [right]) => Number(left.split("|")[0]) - Number(right.split("|")[0]))
+        .map(([key, subjects]) => [key, [...subjects].sort()]),
+    );
   }
 
   function getRegisteredClasses() {
-    return Object.keys(registeredTeacherAssignments).sort((left, right) => Number(left) - Number(right));
+    return [...new Set(registeredTeacherClasses.map((item) => item.key.split("|")[0]))]
+      .sort((left, right) => Number(left) - Number(right));
+  }
+
+  function getRegisteredClassOptions() {
+    return registeredTeacherClasses.map((item) => ({ ...item }));
   }
 
   function getRegisteredSubjects(classGrade) {
     const grade = normalizeGrade(classGrade);
-    return [...(registeredTeacherAssignments[grade] || [])];
+    return [...registeredTeacherAssignments.entries()]
+      .filter(([key]) => key.split("|")[0] === grade)
+      .flatMap(([, subjects]) => [...subjects])
+      .filter((subject, index, all) => all.indexOf(subject) === index)
+      .sort();
   }
 
   async function getCurrentTeacher() {
@@ -151,13 +213,21 @@
     const { data, error } = await client.auth.getUser();
     if (error) throw error;
     if (!data?.user) throw new Error("Sign in with your teacher account to access downloads.");
+    console.log("Authenticated user:", data.user.id);
     if (!window.TeacherData?.loadCurrentTeacherProfile) {
       throw new Error("Teacher profile validation is unavailable.");
     }
-    const current = await window.TeacherData.loadCurrentTeacherProfile();
+    let current;
+    try {
+      current = await window.TeacherData.loadCurrentTeacherProfile();
+    } catch (teacherError) {
+      console.error("Teacher lookup error:", teacherError);
+      throw teacherError;
+    }
     if (String(current.user.id) !== String(data.user.id)) {
       throw new Error("Authenticated teacher changed while loading downloads.");
     }
+    console.log("Teacher ID:", current.profile.id);
     return { client, user: data.user, profile: current.profile };
   }
 
@@ -312,24 +382,55 @@
     return createMaterialSignedUrl(client, material, download);
   }
 
-  async function fetchFiles() {
-    const { client, profile } = await getCurrentTeacher();
-    const [materialsResponse, countsResponse] = await Promise.all([
-      client
-        .from("materials")
-        .select("*")
-        .eq("teacher_id", profile.id)
-        .order("created_at", { ascending: false }),
-      client.rpc("get_teacher_material_download_counts"),
-    ]);
-    if (materialsResponse.error) throw materialsResponse.error;
-    if (countsResponse.error) throw countsResponse.error;
-    const counts = new Map(
-      (countsResponse.data || []).map((row) => [String(row.material_id), Number(row.download_count) || 0]),
+  async function fetchFiles(currentTeacher = null) {
+    const { client, profile } = currentTeacher || await getCurrentTeacher();
+    const { data: materials, error: materialsError } = await client
+      .from("materials")
+      .select("id, teacher_id, grade, stream, subject_id, title, description, material_type, file_name, file_path, storage_bucket, file_size, mime_type, created_at, updated_at")
+      .eq("teacher_id", profile.id)
+      .order("created_at", { ascending: false });
+    if (materialsError) {
+      console.error("Materials query error:", materialsError);
+      throw materialsError;
+    }
+
+    const supportedMaterials = (materials || []).filter((item) =>
+      ["pdf", "video", "photo", "document"].includes(String(item.material_type || "").toLowerCase()),
     );
-    return (materialsResponse.data || []).map((item, index) =>
-      normalizeRecord({ ...item, download_count: counts.get(String(item.id)) || 0 }, index),
+    const counts = new Map();
+    let downloadsAvailable = true;
+    let downloadsError = null;
+    const materialIds = supportedMaterials.map((item) => String(item.id));
+    if (materialIds.length) {
+      try {
+        for (let index = 0; index < materialIds.length; index += 100) {
+          const batch = materialIds.slice(index, index + 100);
+          for (let offset = 0; ; offset += 1000) {
+            const { data: downloads, error: downloadQueryError } = await client
+              .from("material_downloads")
+              .select("id, material_id")
+              .in("material_id", batch)
+              .order("id", { ascending: true })
+              .range(offset, offset + 999);
+            if (downloadQueryError) throw downloadQueryError;
+            (downloads || []).forEach((download) => {
+              const id = String(download.material_id);
+              counts.set(id, (counts.get(id) || 0) + 1);
+            });
+            if (!downloads || downloads.length < 1000) break;
+          }
+        }
+      } catch (downloadQueryError) {
+        console.error("Download activity query error:", downloadQueryError);
+        counts.clear();
+        downloadsAvailable = false;
+        downloadsError = downloadQueryError;
+      }
+    }
+    const files = supportedMaterials.map((item, index) =>
+      normalizeRecord({ ...item, download_count: counts.get(String(item.id)) || 0 }, index, true),
     );
+    return { files, downloadsAvailable, downloadsError };
   }
 
   async function deleteFile(materialId) {
@@ -359,24 +460,23 @@
   }
 
   function getStats(files) {
-    const records = Array.isArray(files) ? files.map((file) => normalizeRecord(file)) : [];
+    const records = Array.isArray(files) ? files : [];
     const totalDownloads = records.reduce((sum, item) => sum + item.download_count, 0);
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    const breakdown = { documents: 0, videos: 0, images: 0, presentations: 0, other: 0 };
+    const breakdown = { pdfs: 0, videos: 0, photos: 0, documents: 0 };
     let storageUsed = 0;
     records.forEach((item) => {
-      const size = item.file_size;
+      const size = Number(item.file_size) || 0;
       storageUsed += size;
-      if (["PDF", "Document", "Archive"].includes(item.file_type)) breakdown.documents += size;
-      else if (item.file_type === "Video") breakdown.videos += size;
-      else if (item.file_type === "Image") breakdown.images += size;
-      else if (item.file_type === "Presentation") breakdown.presentations += size;
-      else breakdown.other += size;
+      if (item.material_type === "pdf") breakdown.pdfs += size;
+      else if (item.material_type === "video") breakdown.videos += size;
+      else if (item.material_type === "photo" || item.material_type === "image") breakdown.photos += size;
+      else if (item.material_type === "document") breakdown.documents += size;
     });
     return {
       totalFiles: records.length,
       totalDownloads,
-      categories: new Set(records.map((item) => item.category).filter(Boolean)).size,
+      categories: new Set(records.map((item) => item.material_type).filter(Boolean)).size,
       recentlyAdded: records.filter((item) => item.created_at && new Date(item.created_at).getTime() >= thirtyDaysAgo).length,
       storageUsed,
       breakdown,
@@ -385,16 +485,15 @@
 
   function getTopDownloaded(files) {
     return [...(Array.isArray(files) ? files : [])]
-      .map((file) => normalizeRecord(file))
       .sort((left, right) => right.download_count - left.download_count);
   }
 
   function getFilterOptions(files) {
-    const rows = (Array.isArray(files) ? files : []).map((file) => normalizeRecord(file));
+    const rows = Array.isArray(files) ? files : [];
     return {
       categories: [...new Set(rows.map((file) => file.category).filter(Boolean))].sort(),
       types: [...new Set(rows.map((file) => file.file_type).filter(Boolean))].sort(),
-      classes: [...new Set(rows.map((file) => file.class_grade).filter(Boolean))].sort((left, right) => Number(left) - Number(right)),
+      classes: [...new Set(rows.map((file) => file.class_filter).filter(Boolean))],
       subjects: [...new Set(rows.map((file) => file.subject).filter(Boolean))].sort(),
     };
   }
@@ -453,6 +552,7 @@
     getTeacherAssignments,
     setRegisteredTeachingScope,
     getRegisteredClasses,
+    getRegisteredClassOptions,
     getRegisteredSubjects,
     fetchFiles,
     deleteFile,

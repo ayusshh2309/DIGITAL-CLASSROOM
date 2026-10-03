@@ -817,6 +817,7 @@
       const $ = (id) => document.getElementById(id);
 
       function formatBytes(value) {
+        if (value === null || value === undefined || value === "") return "—";
         return service.formatBytes(value);
       }
 
@@ -839,30 +840,31 @@
         if (["doc", "docx", "document"].includes(value)) return "doc";
         if (["ppt", "pptx", "presentation"].includes(value)) return "ppt";
         if (["video", "mp4", "mov", "avi", "mkv", "webm"].includes(value)) return "video";
-        if (["image", "png", "jpg", "jpeg", "gif", "webp", "svg"].includes(value)) return "image";
+        if (["photo", "image", "png", "jpg", "jpeg", "gif", "webp", "svg"].includes(value)) return "image";
         if (["zip", "rar", "7z", "archive"].includes(value)) return "archive";
         return "other";
       }
 
       function categoryBadgeClass(category) {
         const value = String(category || "Other").toLowerCase().replace(/\s+/g, "-");
-        return ["notes", "syllabus", "presentations", "documents", "videos", "question-papers", "assignments", "images", "other"].includes(value)
+        return ["pdf", "photo", "notes", "syllabus", "documents", "videos", "question-papers", "assignments", "images", "other"].includes(value)
           ? value
           : "other";
       }
 
       function buildFilterOptions() {
         const filters = service.getFilterOptions(state.files);
-        const registeredClasses = service.getRegisteredClasses();
-        const registeredSubjects = registeredClasses.flatMap((grade) => service.getRegisteredSubjects(grade));
+        const registeredClasses = service.getRegisteredClassOptions();
         const categoryList = ["All", ...filters.categories];
         const typeList = ["All", ...filters.types];
-        const classList = ["All", ...new Set([...registeredClasses, ...filters.classes])];
-        const subjectList = ["All", ...new Set([...registeredSubjects, ...filters.subjects])];
+        const classList = ["All", ...registeredClasses.map((item) => item.key)];
+        const subjectList = ["All", ...filters.subjects];
 
         populateSelect("categoryFilter", categoryList, state.filters.category, (value) => value === "All" ? "All categories" : value);
         populateSelect("typeFilter", typeList, state.filters.type, (value) => value === "All" ? "All file types" : value);
-        populateSelect("classFilter", classList, state.filters.class, (value) => value === "All" ? "All classes" : `Class ${value}`);
+        populateSelect("classFilter", classList, state.filters.class, (value) => value === "All"
+          ? "All classes"
+          : registeredClasses.find((item) => item.key === value)?.label || value);
         populateSelect("subjectFilter", subjectList, state.filters.subject, (value) => value === "All" ? "All subjects" : value);
       }
 
@@ -880,7 +882,7 @@
           case "name":
             return copied.sort((left, right) => String(left.file_name || "").localeCompare(String(right.file_name || "")));
           case "size":
-            return copied.sort((left, right) => (Number(right.size_bytes || right.file_size || 0) - Number(left.size_bytes || left.file_size || 0)));
+            return copied.sort((left, right) => (Number(right.file_size || 0) - Number(left.file_size || 0)));
           case "downloads":
             return copied.sort((left, right) => Number(right.download_count || right.downloads || 0) - Number(left.download_count || left.downloads || 0));
           case "recent":
@@ -894,16 +896,17 @@
         return sortFiles(
           state.files.filter((file) => {
             const fileName = String(file.file_name || file.name || "").toLowerCase();
-            const desc = String(file.description || file.sub || "").toLowerCase();
-            const className = String(file.class_grade || "").toLowerCase();
+            const desc = String(file.description || "").toLowerCase();
+            const title = String(file.title || "").toLowerCase();
+            const className = `${file.class_grade || ""} ${file.grade || ""} ${file.stream || ""}`.toLowerCase();
             const subject = String(file.subject || "").toLowerCase();
             const category = String(file.category || "").toLowerCase();
             const type = String(file.file_type || file.type || "").toLowerCase();
 
-            const matchesSearch = !query || [fileName, desc, className, subject, category, type].some((segment) => segment.includes(query));
+            const matchesSearch = !query || [fileName, title, desc, className, subject, category, type].some((segment) => segment.includes(query));
             const matchesCategory = state.filters.category === "All" || String(file.category || "") === state.filters.category;
             const matchesType = state.filters.type === "All" || String(file.file_type || file.type || "") === state.filters.type;
-            const matchesClass = state.filters.class === "All" || String(file.class_grade || "") === state.filters.class;
+            const matchesClass = state.filters.class === "All" || String(file.class_filter || "") === state.filters.class;
             const matchesSubject = state.filters.subject === "All" || String(file.subject || "") === state.filters.subject;
             return matchesSearch && matchesCategory && matchesType && matchesClass && matchesSubject;
           }),
@@ -921,11 +924,10 @@
 
         const totalBytes = metrics.storageUsed;
         const storageSlices = [
+          { value: metrics.breakdown.pdfs, color: "#ef4444" },
           { value: metrics.breakdown.documents, color: "#6366f1" },
           { value: metrics.breakdown.videos, color: "#2563eb" },
-          { value: metrics.breakdown.images, color: "#10b981" },
-          { value: metrics.breakdown.presentations, color: "#f97316" },
-          { value: metrics.breakdown.other, color: "#a78bfa" },
+          { value: metrics.breakdown.photos, color: "#10b981" },
         ];
         let storageOffset = 0;
         const storageGradient = totalBytes
@@ -940,11 +942,10 @@
         $("storageDonutSub").textContent = "Across uploaded materials";
 
         const legendItems = [
+          { label: "PDFs", value: metrics.breakdown.pdfs, color: "#ef4444" },
           { label: "Documents", value: metrics.breakdown.documents, color: "#6366f1" },
           { label: "Videos", value: metrics.breakdown.videos, color: "#2563eb" },
-          { label: "Images", value: metrics.breakdown.images, color: "#10b981" },
-          { label: "Presentations", value: metrics.breakdown.presentations, color: "#f97316" },
-          { label: "Other Files", value: metrics.breakdown.other, color: "#a78bfa" },
+          { label: "Photos", value: metrics.breakdown.photos, color: "#10b981" },
         ];
 
         const totalLegend = legendItems.reduce((sum, item) => sum + item.value, 0) || 1;
@@ -1033,7 +1034,7 @@
             const fileType = String(file.file_type || file.type || "Other");
             const badgeKey = fileTypeBadgeClass(fileType);
             const categoryKey = categoryBadgeClass(file.category || "Other");
-            const addedDate = file.created_at || file.uploaded_at || new Date().toISOString();
+            const addedDate = file.created_at || file.uploaded_at;
             return `
               <tr>
                 <td>
@@ -1047,9 +1048,9 @@
                 </td>
                 <td><span class="table-badge ${categoryKey}">${escapeHtml(file.category || "Other")}</span></td>
                 <td><span class="file-type-pill">${escapeHtml(fileType)}</span></td>
-                <td>${formatBytes(file.size_bytes || file.file_size || 0)}</td>
+                <td>${formatBytes(file.file_size)}</td>
                 <td><span class="download-count-pill">${Number(file.download_count || file.downloads || 0)}</span></td>
-                <td>${escapeHtml(formatDate(addedDate))}</td>
+                <td>${escapeHtml(addedDate ? formatDate(addedDate) : "—")}</td>
                 <td>${escapeHtml(file.class_grade || "—")}</td>
                 <td>${escapeHtml(file.subject || "—")}</td>
                 <td>
@@ -1125,7 +1126,7 @@
             </div>
             <div class="form-group">
               <label>Size</label>
-              <div class="form-control" style="display:flex;align-items:center;">${formatBytes(detail.size_bytes || detail.file_size || 0)}</div>
+              <div class="form-control" style="display:flex;align-items:center;">${formatBytes(detail.file_size)}</div>
             </div>
             <div class="form-group">
               <label>Class</label>
@@ -1137,7 +1138,7 @@
             </div>
             <div class="form-group">
               <label>Upload Date</label>
-              <div class="form-control" style="display:flex;align-items:center;">${escapeHtml(service.formatDateTime(detail.created_at || detail.uploaded_at || new Date().toISOString()))}</div>
+              <div class="form-control" style="display:flex;align-items:center;">${escapeHtml(detail.created_at ? service.formatDateTime(detail.created_at) : "—")}</div>
             </div>
             <div class="form-group">
               <label>Visibility</label>
@@ -1227,13 +1228,17 @@
       }
 
       async function refreshFiles() {
-        state.files = await service.fetchFiles();
+        const result = await service.fetchFiles(state.currentTeacher);
+        state.files = result.files;
         buildFilterOptions();
         renderStats();
         renderTopDownloads();
         renderTable();
-        $("downloadsStatus").hidden = true;
-        $("downloadsStatus").classList.remove("is-error");
+        if (result.downloadsAvailable) {
+          showDownloadsStatus("");
+        } else {
+          showDownloadsStatus("Downloads unavailable. Materials are shown with download counts set to 0.");
+        }
       }
 
       function showDownloadsStatus(message, isError = false) {
@@ -1288,7 +1293,15 @@
 
         let currentTeacher;
         try {
-          currentTeacher = await window.TeacherData.loadCurrentTeacherProfile();
+          try {
+            currentTeacher = await window.TeacherData.loadCurrentTeacherProfile();
+          } catch (teacherError) {
+            console.error("Teacher lookup error:", teacherError);
+            throw teacherError;
+          }
+          console.log("Authenticated user:", currentTeacher.user.id);
+          console.log("Teacher ID:", currentTeacher.profile.id);
+          state.currentTeacher = currentTeacher;
           const registeredGroups = await window.TeacherData.loadRegisteredTeachingScope(
             currentTeacher.client,
             currentTeacher.profile.id,
@@ -1310,8 +1323,8 @@
         try {
           await refreshFiles();
         } catch (error) {
-          console.error("Unable to load teacher materials and download counts.", error);
-          showDownloadsStatus("Unable to load materials and download activity.", true);
+          console.error("Materials query error:", error);
+          showDownloadsStatus(`Materials could not be loaded: ${error.message || "Check your connection and try again."}`, true);
         }
 
         try {
