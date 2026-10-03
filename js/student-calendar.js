@@ -7,6 +7,13 @@
   };
 
   const $ = (id) => document.getElementById(id);
+  const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[character]);
   const dayKey = (value) => {
     const date = new Date(value);
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -30,6 +37,7 @@
     if (normalized === "rescheduled_class") return "event-rescheduled";
     if (normalized === "exam") return "event-exam";
     if (normalized === "quiz") return "event-exam";
+    if (normalized === "announcement") return "event-announcement";
     return "event-class";
   }
 
@@ -42,6 +50,7 @@
     if (normalized === "rescheduled_class") return "Rescheduled";
     if (normalized === "exam") return "Exam";
     if (normalized === "quiz") return "Quiz";
+    if (normalized === "announcement") return "Announcement";
     return "Event";
   }
 
@@ -51,8 +60,22 @@
   }
 
   function normalizeRow(row, source, type) {
-    const startAt = row.start_at || row.created_at || row.published_at || row.due_at || new Date().toISOString();
-    const endAt = row.end_at || row.due_at || row.deadline || row.published_at || startAt;
+    const classStartAt = row.class_date
+      ? `${row.class_date}T${row.start_time || "00:00:00"}`
+      : null;
+    const announcementStartAt = row.publish_at || row.published_at || row.created_at;
+    const startAt = row.start_at
+      || classStartAt
+      || (type === "announcement" ? announcementStartAt : null)
+      || row.due_at
+      || row.published_at
+      || row.created_at
+      || new Date().toISOString();
+    const durationMinutes = Number(row.duration_minutes || row.duration || 0) || null;
+    const calculatedEndAt = durationMinutes
+      ? new Date(new Date(startAt).getTime() + durationMinutes * 60_000).toISOString()
+      : startAt;
+    const endAt = row.end_at || row.due_at || row.deadline || calculatedEndAt;
     return {
       id: `${source}-${row.id}`,
       source,
@@ -67,7 +90,7 @@
       status: row.status || "scheduled",
       location: row.meeting_url || row.location || row.file_url || row.external_url || "",
       teacher_name: row.teacher_name || "",
-      duration_minutes: Number(row.duration_minutes || row.duration || 0) || null,
+      duration_minutes: durationMinutes,
       question_count: Number(row.question_count || row.questions_count || 0) || null,
     };
   }
@@ -108,7 +131,8 @@
     const subject = String(row.subject || row.subject_name || "").trim().toLowerCase();
     const allowedSubjects = eligibleSubjects(student);
 
-    if (row.class_grade && String(row.class_grade).trim() !== grade) return false;
+    const rowGrade = row.class_grade || row.grade;
+    if (rowGrade && String(rowGrade).trim() !== grade) return false;
     if (row.stream && String(row.stream).trim() && stream && String(row.stream).trim().toLowerCase() !== stream.toLowerCase()) return false;
     if (allowedSubjects.size && subject && !allowedSubjects.has(subject)) return false;
     return true;
@@ -134,13 +158,7 @@
 
     const tables = [
       ["live_classes", "live_class", (row) => {
-        if (String(row.class_grade || "").trim() !== grade) return false;
-        if (row.stream && String(row.stream).trim() && stream && String(row.stream).trim().toLowerCase() !== stream.toLowerCase()) return false;
-        if (subjectSet.size) {
-          const subject = String(row.subject || "").trim().toLowerCase();
-          return subject && subjectSet.has(subject);
-        }
-        return true;
+        return matchesStudent(profile, row);
       }],
       ["materials", "material", (row) => {
         if (String(row.class_grade || "").trim() !== grade) return false;
@@ -161,6 +179,10 @@
           return subject && subjectSet.has(subject);
         }
         return true;
+      }],
+      ["announcements", "announcement", (row) => {
+        if (String(row.status || "").toLowerCase() !== "published") return false;
+        return matchesStudent(profile, row);
       }],
       ["assignments", "assignment", (row) => {
         if (String(row.class_grade || "").trim() !== grade) return false;
@@ -192,7 +214,7 @@
     const client = getClient();
     if (!client) return () => {};
     const channel = client.channel("student-calendar-realtime");
-    ["live_classes", "materials", "quizzes", "assignments", "academic_calendar"].forEach((table) => {
+    ["live_classes", "materials", "quizzes", "announcements", "assignments", "academic_calendar"].forEach((table) => {
       channel.on("postgres_changes", { event: "*", schema: "public", table }, () => {
         loadEvents().then((events) => {
           state.events = events;
@@ -226,7 +248,7 @@
       const entries = state.events.filter((event) => dayKey(event.start_at) === currentKey);
       const content = entries.slice(0, 3).map((entry) => {
         const cssClass = eventTypeClass(entry.type);
-        return `<div class="event ${cssClass}"><i class="fa-solid fa-circle"></i><span>${entry.title}</span></div>`;
+        return `<div class="event ${cssClass}" data-event-id="${escapeHtml(entry.id)}"><i class="fa-solid fa-circle"></i><span>${escapeHtml(entry.title)}</span></div>`;
       }).join("");
       const todayClass = dayKey(new Date()) === currentKey ? "today" : "";
       dayCells.push(`<div class="day ${todayClass}" data-date="${currentKey}"><div class="date-number">${day}</div>${content}</div>`);
@@ -264,7 +286,7 @@
     if (!container) return;
     container.innerHTML = '<div class="side-card-header"><h3>Upcoming</h3><span>Next 7 days</span></div>' + (upcoming.length ? upcoming.map((event) => {
       const date = new Date(event.start_at);
-      return `<div class="upcoming-event"><div class="event-date"><strong>${String(date.getDate()).padStart(2, "0")}</strong><span>${formatDate(date, { month: "short" }).slice(0, 3)}</span></div><div class="upcoming-info"><h4>${event.title}</h4><p><i class="fa-regular fa-clock"></i>${formatDate(event.start_at, { hour: "numeric", minute: "2-digit" })}${event.subject ? ` · ${event.subject}` : ""}</p></div></div>`;
+      return `<div class="upcoming-event"><div class="event-date"><strong>${String(date.getDate()).padStart(2, "0")}</strong><span>${formatDate(date, { month: "short" }).slice(0, 3)}</span></div><div class="upcoming-info"><h4>${escapeHtml(event.title)}</h4><p><i class="fa-regular fa-clock"></i>${formatDate(event.start_at, { hour: "numeric", minute: "2-digit" })}${event.subject ? ` · ${escapeHtml(event.subject)}` : ""}</p></div></div>`;
     }).join("") : '<div class="upcoming-event"><div class="upcoming-info"><h4>No upcoming events</h4><p>There are no future events for your profile.</p></div></div>');
   }
 
@@ -322,18 +344,20 @@
 
   function bindUi() {
     document.addEventListener("click", (event) => {
+      const eventItem = event.target.closest(".event");
+      if (eventItem && eventItem.textContent) {
+        const matching = state.events.find((entry) => entry.id === eventItem.dataset.eventId);
+        if (matching) {
+          event.stopPropagation();
+          renderModal(matching);
+          return;
+        }
+      }
       const dayElement = event.target.closest(".day");
       if (dayElement && dayElement.dataset.date) {
         const [year, month, day] = dayElement.dataset.date.split("-").map(Number);
         state.date = new Date(year, month - 1, 1);
         renderCalendar();
-      }
-      const eventItem = event.target.closest(".event");
-      if (eventItem && eventItem.textContent) {
-        const date = eventItem.closest(".day")?.dataset.date;
-        if (!date) return;
-        const matching = state.events.filter((entry) => dayKey(entry.start_at) === date);
-        if (matching[0]) renderModal(matching[0]);
       }
     });
 

@@ -74,8 +74,24 @@
   }
 
   function tableEvent(row, source, typeName, extra = {}) {
-    const startAt = row.start_at || row.created_at || row.published_at || row.due_at || row.date;
-    const endAt = row.end_at || row.deadline || row.due_at || startAt;
+    const classStartAt = row.class_date
+      ? `${row.class_date}T${row.start_time || "00:00:00"}`
+      : null;
+    const announcementStartAt = row.status === "scheduled"
+      ? row.publish_at
+      : row.published_at || row.created_at || row.publish_at;
+    const startAt = row.start_at
+      || classStartAt
+      || (source === "announcements" ? announcementStartAt : null)
+      || row.due_at
+      || row.published_at
+      || row.created_at
+      || row.date;
+    const durationMinutes = Number(row.duration_minutes || row.duration || 0) || null;
+    const calculatedEndAt = startAt && durationMinutes
+      ? new Date(new Date(startAt).getTime() + durationMinutes * 60_000).toISOString()
+      : startAt;
+    const endAt = row.end_at || row.deadline || row.due_at || calculatedEndAt;
     return {
       id: `${source}-${row.id}`,
       source,
@@ -91,7 +107,7 @@
       status: row.status || "scheduled",
       location: row.location || row.meeting_url || row.join_url || row.file_url || row.external_url || "",
       teacher_name: row.teacher_name || extra.teacher_name || "",
-      duration_minutes: Number(row.duration_minutes || row.duration || 0) || null,
+      duration_minutes: durationMinutes,
       question_count: row.question_count || row.questions_count || null,
       original_start_at: row.original_start_at || row.previous_start_at || null,
       ...extra,
@@ -103,8 +119,6 @@
     const range = buildDateRange(date);
     const teacherId = profile.id;
     const teacherUserId = profile.user_id;
-    const queries = [];
-
     const collect = async (table, typeName, mapper, selector = null) => {
       let query = client.from(table).select("*");
       if (selector) {
@@ -121,14 +135,14 @@
       "live_classes",
       "live_class",
       (row) => tableEvent(row, "live_classes", "live_class", { location: row.meeting_url || row.location || "" }),
-      (query) => query.or(`teacher_id.eq.${teacherUserId},teacher_id.eq.${teacherId}`).gte("start_at", range.start.toISOString()).lte("start_at", range.end.toISOString())
+      (query) => query.or(`teacher_id.eq.${teacherUserId},teacher_id.eq.${teacherId}`)
     );
 
     const materials = await collect(
       "materials",
       "material",
       (row) => tableEvent(row, "materials", "material", { location: row.file_url || row.external_url || "" }),
-      (query) => query.or(`teacher_id.eq.${teacherUserId},teacher_id.eq.${teacherId}`).gte("created_at", range.start.toISOString()).lte("created_at", range.end.toISOString())
+      (query) => query.or(`teacher_id.eq.${teacherUserId},teacher_id.eq.${teacherId}`)
     );
 
     const quizzes = await collect(
@@ -137,7 +151,7 @@
       (row) => tableEvent(row, "quizzes", row.status === "exam" ? "exam" : "quiz", {
         location: row.meeting_url || row.location || "",
       }),
-      (query) => query.or(`teacher_id.eq.${teacherUserId},teacher_id.eq.${teacherId}`).gte("start_at", range.start.toISOString()).lte("start_at", range.end.toISOString())
+      (query) => query.or(`teacher_id.eq.${teacherUserId},teacher_id.eq.${teacherId}`)
     );
 
     const announcements = await collect(
@@ -146,18 +160,23 @@
       (row) => tableEvent(row, "announcements", "announcement", {
         location: row.location || row.link || "",
       }),
-      (query) => query.or(`teacher_id.eq.${teacherUserId},teacher_id.eq.${teacherId}`).gte("published_at", range.start.toISOString()).lte("published_at", range.end.toISOString())
+      (query) => query.or(`teacher_id.eq.${teacherUserId},teacher_id.eq.${teacherId}`)
     );
 
     const calendarEvents = await collect(
       "calendar_events",
       "calendar_event",
       (row) => tableEvent(row, "calendar_events", row.event_type || "event"),
-      (query) => query.eq("teacher_id", teacherId).gte("start_at", range.start.toISOString()).lte("start_at", range.end.toISOString())
+      (query) => query.eq("teacher_id", teacherId)
     );
 
     const events = [...liveClasses, ...materials, ...quizzes, ...announcements, ...calendarEvents];
-    return events.sort((left, right) => new Date(left.start_at) - new Date(right.start_at));
+    return events
+      .filter((event) => {
+        const eventDate = new Date(event.start_at);
+        return Number.isFinite(eventDate.getTime()) && eventDate >= range.start && eventDate <= range.end;
+      })
+      .sort((left, right) => new Date(left.start_at) - new Date(right.start_at));
   }
 
   async function subscribe(onChange) {
