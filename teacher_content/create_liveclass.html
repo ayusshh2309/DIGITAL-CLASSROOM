@@ -18,8 +18,8 @@
 
     <style>
       :root {
-        --primary: #00818a;
-        --primary-dark: #006b70;
+        --primary: #5735df;
+        --primary-dark: #4526c8;
         --navy: #0f172a;
         --text: #0f172a;
         --muted: #64748b;
@@ -39,7 +39,7 @@
 
       body {
         font-family: "Inter", sans-serif;
-        background: var(--bg);
+        background: #f5f7fb;
         color: var(--text);
         min-width: 320px;
       }
@@ -47,80 +47,145 @@
       .main-content {
         width: auto;
         min-height: 100%;
-        padding: 32px;
+        padding: 24px 28px;
       }
 
       .page-header {
-        margin-bottom: 30px;
+        margin-bottom: 18px;
       }
 
       .back-button {
         border: none;
         background: transparent;
-        color: var(--navy);
-        font-size: 15px;
+        color: #4f46c8;
+        font-size: 13px;
+        font-weight: 700;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        margin-bottom: 12px;
+        margin-bottom: 14px;
+        padding: 0;
       }
 
       .page-header h1 {
-        font-size: 32px;
+        font-size: clamp(28px, 3vw, 36px);
         font-weight: 800;
-        margin-bottom: 8px;
+        letter-spacing: -0.04em;
+        color: #172554;
+        margin-bottom: 7px;
       }
 
       .page-header p {
-        color: var(--muted);
-        font-size: 15px;
+        color: #64748b;
+        font-size: 14px;
+      }
+
+      .teaching-scope {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: fit-content;
+        max-width: 100%;
+        margin-top: 16px;
+        padding: 10px 14px;
+        border: 1px solid #dce6fb;
+        border-radius: 12px;
+        background: #f0f5ff;
+        color: #334155;
+      }
+
+      .teaching-scope-icon {
+        color: #5735df;
+        flex: 0 0 auto;
+      }
+
+      .teaching-scope-label {
+        color: #5735df;
+        font-size: 12px;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .teaching-scope-divider {
+        width: 1px;
+        height: 20px;
+        background: #cbd5e1;
+        flex: 0 0 auto;
+      }
+
+      .teaching-scope-value {
+        min-width: 0;
+        color: #243b63;
+        font-size: 12px;
+        font-weight: 650;
+        line-height: 1.5;
       }
 
       .stepper {
-        background: var(--white);
-        border: 1px solid var(--border);
+        background: #ffffff;
+        border: 1px solid #e4e9f2;
         border-radius: 14px;
-        padding: 26px 35px;
-        margin-bottom: 25px;
+        padding: 18px 24px;
+        margin-bottom: 18px;
         display: flex;
         align-items: center;
         justify-content: space-between;
+        box-shadow: 0 3px 12px rgba(15, 23, 42, 0.025);
       }
 
       .step {
         display: flex;
         align-items: center;
-        flex: 1;
+        gap: 11px;
+        flex: 0 1 auto;
+        min-width: 0;
       }
 
       .step:last-child {
-        flex: 0;
+        flex: 0 1 auto;
       }
 
       .step-number {
-        width: 38px;
-        height: 38px;
-        min-width: 38px;
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
         border-radius: 50%;
-        background: #e5ecf5;
-        color: #65758b;
+        background: #eef2f7;
+        color: #64748b;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 700;
         font-size: 14px;
-        margin-right: 11px;
         position: relative;
         z-index: 2;
+      }
+
+      .step-copy {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+
+      .step-title {
+        color: #26364d;
+        font-size: 13px;
+        font-weight: 750;
+        white-space: nowrap;
+      }
+
+      .step-description {
+        color: #8793a5;
+        font-size: 11px;
+        white-space: nowrap;
       }
 
       .step-info {
         margin-left: 11px;
       }
 
-      .step.active .step-number,
-      .step.completed .step-number {
+      .step.active .step-number {
         background: var(--primary);
         color: white;
       }
@@ -129,68 +194,108 @@
         color: var(--primary);
       }
 
+      .step.active .step-title {
+        color: #5735df;
+      }
+
+      .step.completed .step-number {
+        background: #10b981;
+        color: white;
+      }
+
+      .step.completed .step-title {
+        color: #087f5b;
+      }
+
       .step-line {
-        height: 2px;
+        height: 1px;
         background: #dfe6ef;
         flex: 1;
-        margin: 0 22px;
+        min-width: 24px;
+        margin: 0 18px;
       }
 
       .step-line.completed {
-        background: var(--primary);
+        background: #10b981;
       }
 
       .content-grid {
         display: grid;
-        grid-template-columns: minmax(0, 1.5fr) minmax(280px, 340px);
-        gap: 24px;
+        grid-template-columns: minmax(0, 2.4fr) minmax(320px, 0.95fr);
+        gap: 22px;
         align-items: start;
       }
 
       .card {
-        background: white;
-        border: 1px solid var(--border);
+        background: #ffffff;
+        border: 1px solid #e3e8f1;
         border-radius: 14px;
-        box-shadow: 0 4px 15px rgba(20, 40, 70, 0.035);
+        box-shadow: 0 4px 16px rgba(20, 40, 70, 0.04);
       }
 
       .form-card {
-        padding: 30px;
+        padding: 26px;
       }
 
       .summary-card {
         overflow: hidden;
-        background: #f9fbfd;
-        border: 1px solid #dfeaf3;
-        box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+        display: flex;
+        flex-direction: column;
+        background: #ffffff;
+        border: 1px solid #e3e8f1;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.045);
         position: sticky;
-        top: 20px;
+        top: 16px;
       }
 
       .summary-header {
-        padding: 22px 22px 18px;
-        border-bottom: 1px solid var(--border);
-        font-size: 18px;
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 18px 20px 15px;
+        border-bottom: 1px solid #e9edf4;
+        color: #172554;
+      }
+
+      .summary-header-icon {
+        width: 36px;
+        height: 36px;
+        display: grid;
+        place-items: center;
+        color: #5735df;
+        background: #f0edff;
+        border-radius: 10px;
+      }
+
+      .summary-heading {
+        display: block;
+        font-size: 15px;
         font-weight: 800;
         line-height: 1.2;
-        color: var(--text);
+      }
+
+      .summary-subtitle {
+        display: block;
+        margin-top: 4px;
+        color: #8793a5;
+        font-size: 11px;
+        font-weight: 500;
       }
 
       .summary-body {
-        padding: 16px 18px 18px;
+        padding: 7px 20px 16px;
         display: flex;
         flex-direction: column;
       }
 
       .summary-row {
-        display: flex;
+        display: grid;
+        grid-template-columns: 36px minmax(0, 1fr);
         align-items: center;
-        justify-content: space-between;
-        gap: 14px;
-        min-height: 52px;
-        padding: 8px 0;
+        column-gap: 12px;
+        min-height: 67px;
+        padding: 10px 0;
         border-bottom: 1px solid #edf1f6;
-        font-size: 14px;
       }
 
       .summary-row:last-child {
@@ -198,36 +303,129 @@
       }
 
       .summary-label {
-        color: #475569;
-        font-weight: 600;
-        flex: 1 1 auto;
+        display: block;
+        color: #7b8798;
+        font-size: 10px;
+        font-weight: 750;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 5px;
+      }
+
+      .summary-content {
+        display: block;
+        min-width: 0;
       }
 
       .summary-value {
-        min-width: 120px;
-        max-width: 60%;
-        text-align: right;
-        color: var(--text);
-        font-weight: 800;
-        padding-bottom: 4px;
-        border-bottom: 2px solid rgba(15, 23, 42, 0.9);
-        word-break: break-word;
-        overflow-wrap: anywhere;
+        display: inline-block;
+        min-width: 0;
+        color: #172554;
+        max-width: 100%;
+        font-size: 14px;
+        font-weight: 750;
+        word-break: normal;
+        overflow-wrap: break-word;
         line-height: 1.4;
+        vertical-align: middle;
+      }
+
+      .summary-value.is-empty {
+        color: #8b95a5;
+        font-size: 13px;
+        font-weight: 550;
+      }
+
+      .summary-row-icon {
+        width: 36px;
+        height: 36px;
+        display: grid;
+        place-items: center;
+        border-radius: 10px;
+        color: #5b46db;
+        background: #f3f1ff;
+        font-size: 14px;
+      }
+
+      .summary-state {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 17px;
+        height: 17px;
+        margin-left: 6px;
+        border-radius: 50%;
+        color: #ffffff;
+        background: #10b981;
+        font-size: 9px;
+        vertical-align: middle;
+      }
+
+      .summary-value.is-empty + .summary-state {
+        color: #8490a0;
+        background: #edf0f4;
+      }
+
+      .summary-footer {
+        margin: auto 20px 18px;
+        padding-top: 14px;
+        border-top: 1px solid #edf1f6;
+      }
+
+      .summary-progress-copy {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 9px;
+      }
+
+      .summary-progress-step {
+        color: #172554;
+        font-size: 12px;
+        font-weight: 750;
+      }
+
+      .summary-progress-title {
+        color: #718096;
+        font-size: 11px;
+        font-weight: 600;
+      }
+
+      .summary-progress-track {
+        height: 5px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #ece9fb;
+      }
+
+      .summary-progress-fill {
+        width: 33.333%;
+        height: 100%;
+        border-radius: inherit;
+        background: #5735df;
+        transition: width 0.2s ease;
       }
 
       .info-box {
-        background: linear-gradient(135deg, #edf8ff 0%, #eaf4fb 100%);
-        border: 1px solid #cfe4f7;
-        border-radius: 12px;
-        padding: 18px 16px;
-        margin-top: 18px;
-        color: #34536b;
-        font-size: 13px;
-        line-height: 1.7;
-        font-weight: 600;
-        text-align: center;
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        background: #f0f7ff;
+        border: 1px solid #d8eaff;
+        border-radius: 10px;
+        padding: 12px 13px;
+        margin-top: 16px;
+        color: #48627e;
+        font-size: 12px;
+        line-height: 1.5;
+        font-weight: 550;
+      }
+
+      .info-box i {
+        flex: 0 0 auto;
+        color: #3478d4;
+        margin-top: 2px;
       }
 
       .schedule-section {
@@ -239,67 +437,91 @@
       }
 
       .section-title {
-        margin: 0 0 8px;
-        font-size: 21px;
-        font-weight: 750;
+        margin: 0 0 7px;
+        color: #172554;
+        font-size: 19px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
       }
 
       .section-description {
-        margin: 0 0 20px;
-        color: var(--muted);
-        font-size: 14px;
+        margin: 0 0 18px;
+        color: #738198;
+        font-size: 13px;
+        line-height: 1.5;
       }
 
       .registered-classes {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 15px;
+        gap: 12px;
       }
 
       .registered-class {
         position: relative;
-        border: 1px solid var(--border);
+        border: 1px solid #e2e8f0;
         border-radius: 12px;
-        padding: 18px;
+        padding: 16px;
         cursor: pointer;
-        transition: 0.2s ease;
+        transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
         background: #fff;
+        min-height: 138px;
       }
 
       .registered-class:hover {
-        border-color: rgba(0, 129, 138, 0.5);
-        transform: translateY(-1px);
+        border-color: #a99aef;
+        box-shadow: 0 5px 14px rgba(87, 53, 223, 0.08);
       }
 
       .registered-class.selected {
-        border-color: var(--primary);
-        background: #ecfeff;
-        box-shadow: 0 0 0 3px rgba(0, 129, 138, 0.1);
+        border-color: #735be8;
+        background: #f7f5ff;
+        box-shadow: 0 0 0 2px rgba(87, 53, 223, 0.1), 0 6px 16px rgba(87, 53, 223, 0.08);
       }
 
       .class-icon {
-        width: 44px;
-        height: 44px;
-        border-radius: 11px;
-        background: #dff7f5;
-        color: var(--primary);
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: #eeebff;
+        color: #5735df;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 14px;
-        font-size: 16px;
+        margin-bottom: 12px;
+        font-size: 15px;
       }
 
       .registered-class h3 {
-        margin: 0 0 6px;
-        font-size: 15px;
-        color: var(--text);
+        margin: 0 24px 6px 0;
+        font-size: 14px;
+        color: #172554;
+        font-weight: 750;
       }
 
       .registered-class p {
-        margin: 0 0 14px;
-        color: var(--muted);
-        font-size: 12px;
+        margin: 0;
+      }
+
+      .registered-class-subjects {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 11px;
+      }
+
+      .registered-subject-chip {
+        display: inline-flex;
+        align-items: center;
+        max-width: 100%;
+        padding: 4px 8px;
+        border: 1px solid #e7eaf2;
+        border-radius: 999px;
+        background: #f8fafc;
+        color: #637187;
+        font-size: 10px;
+        font-weight: 600;
+        line-height: 1.25;
       }
 
       .student-count {
@@ -317,49 +539,92 @@
       .class-arrow {
         position: absolute;
         right: 17px;
-        bottom: 18px;
-        color: #8b9bb0;
+        top: 19px;
+        color: #9aa5b5;
+      }
+
+      .class-check {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 22px;
+        height: 22px;
+        display: none;
+        place-items: center;
+        border-radius: 50%;
+        background: #5735df;
+        color: #ffffff;
+        font-size: 10px;
+      }
+
+      .registered-class.selected .class-check {
+        display: grid;
+      }
+
+      .registered-class.selected .class-arrow {
+        display: none;
+      }
+
+      .registered-class:focus-visible,
+      .subject-card:focus-within {
+        outline: 3px solid rgba(87, 53, 223, 0.2);
+        outline-offset: 2px;
       }
 
       .subject-area {
-        margin-top: 26px;
-        padding-top: 22px;
+        margin-top: 22px;
+        padding-top: 20px;
         border-top: 1px solid #edf1f5;
       }
 
       .subjects {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
+        gap: 10px;
       }
 
       .subject-card {
-        border: 1px solid var(--border);
-        border-radius: 11px;
-        padding: 13px 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        min-height: 48px;
+        padding: 11px 13px;
         display: flex;
         align-items: center;
         gap: 10px;
         cursor: pointer;
-        transition: 0.2s;
+        transition: border-color 0.18s ease, background 0.18s ease;
         background: white;
       }
 
       .subject-card:hover {
-        border-color: rgba(0, 129, 138, 0.5);
+        border-color: #a99aef;
       }
 
       .subject-card.selected {
-        border-color: var(--primary);
-        background: #ecfeff;
+        border-color: #735be8;
+        background: #f7f5ff;
+        box-shadow: 0 3px 10px rgba(87, 53, 223, 0.08);
       }
 
       .subject-card input {
-        accent-color: var(--primary);
+        appearance: none;
+        width: 17px;
+        height: 17px;
+        flex: 0 0 17px;
+        margin: 0;
+        border: 1.5px solid #b8c2d0;
+        border-radius: 50%;
+        background: #ffffff;
+        accent-color: #5735df;
+        cursor: pointer;
+      }
+
+      .subject-card input:checked {
+        border: 5px solid #5735df;
       }
 
       .subject-card i {
-        color: var(--primary);
+        color: #5735df;
       }
 
       .subject-card span {
@@ -371,7 +636,7 @@
       .form-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 22px;
+        gap: 18px;
       }
 
       .form-group {
@@ -387,7 +652,8 @@
       label {
         display: block;
         font-size: 13px;
-        font-weight: 650;
+        font-weight: 700;
+        color: #334155;
       }
 
       .required {
@@ -398,22 +664,22 @@
       select,
       textarea {
         width: 100%;
-        border: 1px solid #d4dfeb;
+        border: 1px solid #dbe2ec;
         border-radius: 9px;
-        padding: 13px 14px;
+        padding: 12px 13px;
         font-family: inherit;
-        font-size: 14px;
+        font-size: 13px;
         color: var(--text);
         background: white;
         outline: none;
-        transition: 0.2s;
+        transition: border-color 0.18s ease, box-shadow 0.18s ease;
       }
 
       input:focus,
       select:focus,
       textarea:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(0, 129, 138, 0.12);
+        border-color: #735be8;
+        box-shadow: 0 0 0 3px rgba(87, 53, 223, 0.1);
       }
 
       textarea {
@@ -422,55 +688,79 @@
       }
 
       .class-info {
-        background: #f4f8fa;
-        border: 1px solid #e3ebef;
+        background: #f5f7ff;
+        border: 1px solid #e2e6fb;
         border-radius: 10px;
         padding: 13px 15px;
         margin-bottom: 22px;
-        color: #5b7087;
+        color: #58677f;
         font-size: 12px;
       }
 
       .class-info i {
-        color: var(--primary);
+        color: #5735df;
         margin-right: 6px;
       }
 
       .options-title {
         margin: 24px 0 12px;
-        font-size: 13px;
-        font-weight: 700;
+        color: #172554;
+        font-size: 14px;
+        font-weight: 800;
       }
 
       .options {
-        display: flex;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
-        flex-wrap: wrap;
       }
 
       .option {
-        border: 1px solid var(--border);
-        border-radius: 9px;
-        padding: 10px 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 11px 12px;
         display: flex;
         align-items: center;
-        gap: 7px;
+        gap: 9px;
         font-size: 12px;
-        font-weight: 600;
-        color: #62738a;
+        font-weight: 650;
+        color: #475569;
         background: #fff;
+        cursor: pointer;
+        line-height: 1.4;
       }
 
       .option input {
-        accent-color: var(--primary);
+        width: 15px;
+        height: 15px;
+        margin: 0;
+        flex: 0 0 15px;
+        accent-color: #5735df;
+      }
+
+      .option i {
+        color: #6b58dc;
+        flex: 0 0 auto;
+      }
+
+      .option span {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .option small {
+        color: #8793a5;
+        font-size: 10px;
+        font-weight: 500;
       }
 
       .bottom-actions {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-top: 30px;
-        padding-top: 22px;
+        margin-top: 24px;
+        padding-top: 18px;
         border-top: 1px solid var(--border);
       }
 
@@ -483,7 +773,7 @@
         border-radius: 8px;
         padding: 12px 18px;
         font-size: 13px;
-        font-weight: 650;
+        font-weight: 700;
         cursor: pointer;
         transition: 0.2s;
       }
@@ -493,12 +783,12 @@
       }
 
       .btn-primary {
-        background: var(--primary);
+        background: #5735df;
         color: white;
       }
 
       .btn-primary:hover {
-        background: var(--primary-dark);
+        background: #4526c8;
       }
 
       .btn-secondary {
@@ -519,7 +809,7 @@
       }
 
       .review-card {
-        border: 1px solid var(--border);
+        border: 1px solid #e2e8f0;
         border-radius: 12px;
         padding: 19px;
         background: white;
@@ -528,6 +818,7 @@
       .review-card h3 {
         margin: 0 0 15px;
         font-size: 14px;
+        font-weight: 800;
         color: var(--text);
       }
 
@@ -554,14 +845,14 @@
       }
 
       .students-card {
-        background: #ecfeff;
-        border-color: #b9e5e3;
+        background: #f4f2ff;
+        border-color: #ded8ff;
       }
 
       .students-number {
         font-size: 32px;
         font-weight: 800;
-        color: var(--primary);
+        color: #5735df;
         margin-bottom: 3px;
       }
 
@@ -581,7 +872,7 @@
         height: 68px;
         border-radius: 50%;
         background: #e8f8f2;
-        color: #16b879;
+        color: #10b981;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -593,6 +884,14 @@
         margin: 0 0 8px;
         font-size: 24px;
         color: var(--text);
+      }
+
+      .success-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 24px;
       }
 
       .success-screen > p {
@@ -622,14 +921,27 @@
         color: var(--muted);
       }
 
+      @media (min-width: 1001px) {
+        .content-grid {
+          grid-template-columns: minmax(0, 2.4fr) minmax(320px, 0.95fr);
+        }
+      }
+
       @media (max-width: 1000px) {
         .content-grid {
-          grid-template-columns: 1fr;
+          grid-template-columns: minmax(0, 1.8fr) minmax(300px, 1fr);
         }
 
-        .registered-classes,
+        .registered-classes {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
         .subjects {
-          grid-template-columns: 1fr;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .form-card {
+          padding: 22px;
         }
 
         .review-grid {
@@ -637,9 +949,19 @@
         }
       }
 
+      @media (min-width: 761px) and (max-width: 900px) {
+        .content-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .summary-card {
+          position: static;
+        }
+      }
+
       @media (max-width: 760px) {
         .main-content {
-          padding: 20px;
+          padding: 18px;
         }
 
         .page-header h1 {
@@ -647,29 +969,23 @@
         }
 
         .stepper {
-          align-items: stretch;
-          flex-direction: column;
-          gap: 12px;
-          padding: 18px;
+          gap: 10px;
+          padding: 14px;
         }
 
         .step {
-          flex: none;
-        }
-
-        .step:last-child {
-          flex: none;
+          flex: 1 1 0;
+          align-items: flex-start;
+          gap: 7px;
         }
 
         .step-line {
-          width: 2px;
-          height: 16px;
-          flex: none;
-          margin: 0 0 0 18px;
+          min-width: 8px;
+          margin: 17px 0 0;
         }
 
         .form-card {
-          padding: 22px;
+          padding: 20px;
         }
 
         .form-grid {
@@ -683,6 +999,78 @@
         .success-details {
           min-width: 0;
           width: 100%;
+        }
+
+        .content-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .summary-card {
+          position: static;
+          grid-row: 2;
+        }
+
+        .summary-footer {
+          margin-top: 0;
+        }
+
+        .teaching-scope {
+          width: 100%;
+          align-items: flex-start;
+          border-radius: 10px;
+        }
+
+        .teaching-scope-value {
+          max-height: 54px;
+          overflow: auto;
+        }
+
+        .step-description {
+          display: none;
+        }
+
+        .teaching-scope {
+          overflow-x: auto;
+        }
+
+        .teaching-scope-value {
+          min-width: max-content;
+          max-height: none;
+          overflow: visible;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .registered-classes,
+        .subjects,
+        .options {
+          grid-template-columns: 1fr;
+        }
+
+        .stepper {
+          padding: 12px 10px;
+        }
+
+        .step {
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+        }
+
+        .step-line {
+          margin-top: 18px;
+        }
+
+        .step-title {
+          font-size: 10px;
+        }
+
+        .bottom-actions {
+          gap: 10px;
+        }
+
+        .bottom-actions .btn {
+          padding: 11px 12px;
         }
       }
     </style>
@@ -702,26 +1090,41 @@
         <p>
           Create and schedule an online session for your registered students.
         </p>
+        <div class="teaching-scope" aria-label="Your registered teaching scope">
+          <i class="fa-solid fa-users teaching-scope-icon" aria-hidden="true"></i>
+          <span class="teaching-scope-label">Your teaching scope</span>
+          <span class="teaching-scope-divider" aria-hidden="true"></span>
+          <span class="teaching-scope-value" id="teachingScopeValue">Loading registered classes…</span>
+        </div>
       </div>
 
       <div class="stepper">
         <div class="step active" id="step1">
           <span class="step-number">1</span>
-          <span>Class &amp; Subject</span>
+          <span class="step-copy">
+            <span class="step-title">Class &amp; Subject</span>
+            <span class="step-description">Select your class and subject</span>
+          </span>
         </div>
 
         <span class="step-line" id="line1"></span>
 
         <div class="step" id="step2">
           <span class="step-number">2</span>
-          <span>Class Details</span>
+          <span class="step-copy">
+            <span class="step-title">Class Details</span>
+            <span class="step-description">Add session details</span>
+          </span>
         </div>
 
         <span class="step-line" id="line2"></span>
 
         <div class="step" id="step3">
           <span class="step-number">3</span>
-          <span>Review</span>
+          <span class="step-copy">
+            <span class="step-title">Review</span>
+            <span class="step-description">Confirm and schedule</span>
+          </span>
         </div>
       </div>
 
@@ -732,7 +1135,7 @@
             Only classes registered to your teacher account are shown here.
           </p>
 
-          <div class="registered-classes" id="registeredClasses"></div>
+          <div class="registered-classes" id="registeredClasses" role="radiogroup" aria-label="Registered classes"></div>
 
           <div class="subject-area" id="subjectArea" style="display: none">
             <h2 class="section-title">Select subject</h2>
@@ -740,7 +1143,7 @@
               Choose a subject registered for the selected class.
             </p>
 
-            <div class="subjects" id="subjects"></div>
+            <div class="subjects" id="subjects" role="radiogroup" aria-label="Registered subjects"></div>
           </div>
 
           <div class="bottom-actions">
@@ -758,36 +1161,52 @@
         </section>
 
         <aside class="card summary-card">
-          <div class="summary-header">Session Summary</div>
+          <div class="summary-header">
+            <span class="summary-header-icon"><i class="fa-regular fa-calendar" aria-hidden="true"></i></span>
+            <span>
+              <span class="summary-heading">Session Summary</span>
+              <span class="summary-subtitle">Review your class details</span>
+            </span>
+          </div>
           <div class="summary-body">
             <div class="summary-row">
-              <span class="summary-label">Class</span>
-              <span class="summary-value" id="summaryClass">—</span>
+              <i class="fa-solid fa-users summary-row-icon" aria-hidden="true"></i>
+              <span class="summary-content"><span class="summary-label">Class</span><strong class="summary-value is-empty" id="summaryClass">Not selected</strong><span class="summary-state" id="summaryClassState" aria-label="Not selected"><i class="fa-solid fa-minus" aria-hidden="true"></i></span></span>
             </div>
 
             <div class="summary-row">
-              <span class="summary-label">Subject</span>
-              <span class="summary-value" id="summarySubject">—</span>
+              <i class="fa-solid fa-book-open summary-row-icon" aria-hidden="true"></i>
+              <span class="summary-content"><span class="summary-label">Subject</span><strong class="summary-value is-empty" id="summarySubject">Not selected</strong><span class="summary-state" id="summarySubjectState" aria-label="Not selected"><i class="fa-solid fa-minus" aria-hidden="true"></i></span></span>
             </div>
 
             <div class="summary-row">
-              <span class="summary-label">Date</span>
-              <span class="summary-value" id="summaryDate">—</span>
+              <i class="fa-regular fa-calendar-days summary-row-icon" aria-hidden="true"></i>
+              <span class="summary-content"><span class="summary-label">Date</span><strong class="summary-value is-empty" id="summaryDate">Not selected</strong><span class="summary-state" id="summaryDateState" aria-label="Not selected"><i class="fa-solid fa-minus" aria-hidden="true"></i></span></span>
             </div>
 
             <div class="summary-row">
-              <span class="summary-label">Time</span>
-              <span class="summary-value" id="summaryTime">—</span>
+              <i class="fa-regular fa-clock summary-row-icon" aria-hidden="true"></i>
+              <span class="summary-content"><span class="summary-label">Time</span><strong class="summary-value is-empty" id="summaryTime">Not selected</strong><span class="summary-state" id="summaryTimeState" aria-label="Not selected"><i class="fa-solid fa-minus" aria-hidden="true"></i></span></span>
             </div>
 
             <div class="summary-row">
-              <span class="summary-label">Platform</span>
-              <span class="summary-value" id="summaryPlatform">—</span>
+              <i class="fa-solid fa-video summary-row-icon" aria-hidden="true"></i>
+              <span class="summary-content"><span class="summary-label">Platform</span><strong class="summary-value is-empty" id="summaryPlatform">Not selected</strong><span class="summary-state" id="summaryPlatformState" aria-label="Not selected"><i class="fa-solid fa-minus" aria-hidden="true"></i></span></span>
             </div>
 
             <div class="info-box">
+              <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
               Live sessions are visible to the selected class students only
               after scheduling is confirmed.
+            </div>
+          </div>
+          <div class="summary-footer">
+            <div class="summary-progress-copy">
+              <span class="summary-progress-step" id="summaryProgressStep">Step 1 of 3</span>
+              <span class="summary-progress-title" id="summaryProgressTitle">Class &amp; Subject</span>
+            </div>
+            <div class="summary-progress-track" role="progressbar" aria-label="Scheduling progress" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1">
+              <div class="summary-progress-fill" id="summaryProgressFill"></div>
             </div>
           </div>
         </aside>
@@ -865,22 +1284,26 @@
           <div class="options">
             <label class="option">
               <input type="checkbox" id="notifyStudents" checked />
-              Notify students immediately
+              <i class="fa-regular fa-bell" aria-hidden="true"></i>
+              <span>Notify students immediately<small>Send an update as soon as it is scheduled.</small></span>
             </label>
 
             <label class="option">
-              <input type="checkbox" checked />
-              Allow students to join 10 minutes early
+              <input type="checkbox" id="allowEarlyJoin" checked />
+              <i class="fa-solid fa-door-open" aria-hidden="true"></i>
+              <span>Allow early joining<small>Students can join up to 10 minutes early.</small></span>
             </label>
 
             <label class="option">
               <input type="checkbox" id="recordClass" />
-              Record this session
+              <i class="fa-solid fa-video" aria-hidden="true"></i>
+              <span>Record this session<small>Record the class if supported by your platform.</small></span>
             </label>
 
             <label class="option">
               <input type="checkbox" id="reminder" checked />
-              Send 30-minute reminder
+              <i class="fa-regular fa-clock" aria-hidden="true"></i>
+              <span>Send a reminder<small>Remind students 30 minutes before class.</small></span>
             </label>
           </div>
 
@@ -929,6 +1352,11 @@
               </div>
 
               <div class="review-row">
+                <span>Description</span>
+                <strong id="reviewDescription"></strong>
+              </div>
+
+              <div class="review-row">
                 <span>Date</span>
                 <strong id="reviewDate"></strong>
               </div>
@@ -965,6 +1393,11 @@
                 </div>
 
                 <div class="review-row">
+                  <span> Early joining </span>
+                  <strong id="reviewEarlyJoin"> Enabled </strong>
+                </div>
+
+                <div class="review-row">
                   <span> 30-minute reminder </span>
                   <strong id="reviewReminder"> Enabled </strong>
                 </div>
@@ -985,7 +1418,7 @@
 
             <button class="btn btn-primary" onclick="scheduleLiveClass()">
               <i class="fa-solid fa-calendar-check"></i>
-              Schedule Class
+              Schedule Live Class
             </button>
           </div>
         </section>
@@ -996,8 +1429,8 @@
               <i class="fa-solid fa-check"></i>
             </div>
 
-            <h2>Class Scheduled Successfully</h2>
-            <p>Your live session has been added to Upcoming Classes.</p>
+            <h2>Live Class Scheduled</h2>
+            <p>Your live class has been successfully scheduled.</p>
 
             <div class="success-details">
               <div>
@@ -1016,12 +1449,17 @@
               </div>
 
               <div>
+                <span>Platform</span>
+                <strong id="successPlatform"></strong>
+              </div>
+
+              <div>
                 <span>Students</span>
                 <strong id="successStudents"></strong>
               </div>
             </div>
 
-            <div style="margin-top: 25px">
+            <div class="success-actions">
               <button class="btn btn-secondary" onclick="location.reload()">
                 Schedule Another
               </button>
@@ -1031,6 +1469,12 @@
                 onclick="window.location.href = 'live_classes.html'"
               >
                 View Live Classes
+              </button>
+              <button
+                class="btn btn-secondary"
+                onclick="window.location.href = 'calendar.html'"
+              >
+                View Calendar
               </button>
             </div>
           </div>
@@ -1048,6 +1492,7 @@
       let authenticatedTeacherId = "";
       let selectedClass = null;
       let selectedSubject = null;
+      let currentStep = 1;
 
       const streamLabels = {
         science_pcm: "Science (PCM)",
@@ -1060,9 +1505,25 @@
         return [classItem?.name, classItem?.streamLabel].filter(Boolean).join(" · ");
       }
 
+      function getTeachingScopeLabel(classItem) {
+        return classItem.streamLabel
+          ? `${classItem.name} (${classItem.streamLabel})`
+          : classItem.name;
+      }
+
       function getSelectedSubjectName() {
         if (!selectedSubject) return "—";
         return selectedSubject.name || selectedSubject;
+      }
+
+      function formatTimeValue(value) {
+        if (!value) return "";
+        const [hours, minutes] = value.split(":").map(Number);
+        if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return value;
+        return new Date(1970, 0, 1, hours, minutes).toLocaleTimeString("en-IN", {
+          hour: "numeric",
+          minute: "2-digit",
+        });
       }
 
       async function loadRegisteredClasses() {
@@ -1086,34 +1547,57 @@
             })),
           }))
           .filter((group) => Number.isInteger(group.grade) && group.grade >= 5 && group.grade <= 12);
+
+        const scopeValue = document.getElementById("teachingScopeValue");
+        const scopeLabels = registeredClasses.map(getTeachingScopeLabel);
+        scopeValue.textContent = scopeLabels.length
+          ? scopeLabels.join("  •  ")
+          : "No registered classes found";
       }
 
       function updateSummary() {
-        const summaryClass = document.getElementById("summaryClass");
-        const summarySubject = document.getElementById("summarySubject");
-        const summaryDate = document.getElementById("summaryDate");
-        const summaryTime = document.getElementById("summaryTime");
-        const summaryPlatform = document.getElementById("summaryPlatform");
-
         const dateValue = document.getElementById("classDate").value;
         const startValue = document.getElementById("startTime").value;
         const endValue = document.getElementById("endTime").value;
         const platformValue = document.getElementById("platform").value;
-
-        summaryClass.textContent = selectedClass ? getDisplayClassName(selectedClass) : "—";
-        summarySubject.textContent = getSelectedSubjectName();
-        summaryDate.textContent = dateValue
-          ? new Date(dateValue + "T00:00:00").toLocaleDateString("en-IN", {
+        const formattedDate = dateValue
+          ? new Date(`${dateValue}T00:00:00`).toLocaleDateString("en-IN", {
               day: "2-digit",
               month: "short",
               year: "numeric",
             })
-          : "—";
-        summaryTime.textContent =
-          startValue || endValue
-            ? `${startValue || "--:--"} – ${endValue || "--:--"}`
-            : "—";
-        summaryPlatform.textContent = platformValue || "—";
+          : "";
+        const formattedTime = startValue && endValue
+          ? `${formatTimeValue(startValue)} – ${formatTimeValue(endValue)}`
+          : "";
+
+        setSummaryValue("summaryClass", "summaryClassState", selectedClass ? getDisplayClassName(selectedClass) : "");
+        setSummaryValue("summarySubject", "summarySubjectState", selectedSubject ? getSelectedSubjectName() : "");
+        setSummaryValue("summaryDate", "summaryDateState", formattedDate);
+        setSummaryValue("summaryTime", "summaryTimeState", formattedTime);
+        setSummaryValue("summaryPlatform", "summaryPlatformState", platformValue);
+
+        const progress = [
+          { title: "Class & Subject", width: "33.333%" },
+          { title: "Class Details", width: "66.666%" },
+          { title: "Review", width: "100%" },
+        ][currentStep - 1];
+        document.getElementById("summaryProgressStep").textContent = `Step ${currentStep} of 3`;
+        document.getElementById("summaryProgressTitle").textContent = progress.title;
+        document.getElementById("summaryProgressFill").style.width = progress.width;
+        document.querySelector(".summary-progress-track").setAttribute("aria-valuenow", String(currentStep));
+      }
+
+      function setSummaryValue(valueId, stateId, value) {
+        const valueElement = document.getElementById(valueId);
+        const stateElement = document.getElementById(stateId);
+        const hasValue = Boolean(value);
+        valueElement.textContent = hasValue ? value : "Not selected";
+        valueElement.classList.toggle("is-empty", !hasValue);
+        stateElement.setAttribute("aria-label", hasValue ? "Selected" : "Not selected");
+        stateElement.innerHTML = hasValue
+          ? '<i class="fa-solid fa-check" aria-hidden="true"></i>'
+          : '<i class="fa-solid fa-minus" aria-hidden="true"></i>';
       }
 
       function renderClasses() {
@@ -1128,19 +1612,44 @@
         registeredClasses.forEach((cls) => {
           const card = document.createElement("div");
           card.className = "registered-class";
+          card.tabIndex = 0;
+          card.setAttribute("role", "radio");
+          card.setAttribute("aria-checked", "false");
           const icon = document.createElement("div");
           icon.className = "class-icon";
           icon.innerHTML = '<i class="fa-solid fa-users"></i>';
           const title = document.createElement("h3");
           title.textContent = getDisplayClassName(cls);
-          const details = document.createElement("p");
-          details.textContent = (cls.subjects || []).map((subject) => subject.name).join(" · ") || "No subjects assigned";
+          const details = document.createElement("div");
+          details.className = "registered-class-subjects";
+          if (cls.subjects.length) {
+            cls.subjects.forEach((subject) => {
+              const subjectChip = document.createElement("span");
+              subjectChip.className = "registered-subject-chip";
+              subjectChip.textContent = subject.name;
+              details.appendChild(subjectChip);
+            });
+          } else {
+            const noSubjects = document.createElement("span");
+            noSubjects.className = "registered-subject-chip";
+            noSubjects.textContent = "No subjects assigned";
+            details.appendChild(noSubjects);
+          }
           const arrow = document.createElement("span");
           arrow.className = "class-arrow";
           arrow.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
-          card.append(icon, title, details, arrow);
+          const check = document.createElement("span");
+          check.className = "class-check";
+          check.innerHTML = '<i class="fa-solid fa-check" aria-hidden="true"></i>';
+          card.append(icon, title, details, arrow, check);
 
           card.addEventListener("click", () => selectClass(cls.id, card));
+          card.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              selectClass(cls.id, card);
+            }
+          });
           container.appendChild(card);
         });
       }
@@ -1151,10 +1660,12 @@
 
         document.querySelectorAll(".registered-class").forEach((card) => {
           card.classList.remove("selected");
+          card.setAttribute("aria-checked", "false");
         });
 
         if (cardElement) {
           cardElement.classList.add("selected");
+          cardElement.setAttribute("aria-checked", "true");
         }
 
         const subjectArea = document.getElementById("subjectArea");
@@ -1201,6 +1712,7 @@
       }
 
       function showSection(step) {
+        currentStep = step;
         document.querySelectorAll(".schedule-section").forEach((section) => {
           section.classList.remove("active");
         });
@@ -1218,9 +1730,7 @@
         document.getElementById("line1").classList.toggle("completed", step >= 2);
         document.getElementById("line2").classList.toggle("completed", step >= 3);
 
-        if (step === 2 || step === 3) {
-          updateSummary();
-        }
+        updateSummary();
       }
 
       function goToDetails() {
@@ -1331,6 +1841,8 @@
         document.getElementById("reviewClass").textContent = getDisplayClassName(selectedClass);
         document.getElementById("reviewSubject").textContent = getSelectedSubjectName();
         document.getElementById("reviewTitle").textContent = document.getElementById("classTitle").value;
+        document.getElementById("reviewDescription").textContent =
+          document.getElementById("classDescription").value.trim() || "No description added";
         document.getElementById("reviewDate").textContent = new Date(date + "T00:00:00").toLocaleDateString("en-IN", {
           day: "2-digit",
           month: "short",
@@ -1342,6 +1854,7 @@
         document.getElementById("reviewLink").textContent = document.getElementById("meetingLink").value;
         document.getElementById("reviewStudents").textContent = "—";
         document.getElementById("reviewNotify").textContent = document.getElementById("notifyStudents").checked ? "Enabled" : "Off";
+        document.getElementById("reviewEarlyJoin").textContent = document.getElementById("allowEarlyJoin").checked ? "Enabled" : "Off";
         document.getElementById("reviewReminder").textContent = document.getElementById("reminder").checked ? "Enabled" : "Off";
         document.getElementById("reviewRecording").textContent = document.getElementById("recordClass").checked ? "Enabled" : "Off";
 
@@ -1452,6 +1965,7 @@
           const endTime = document.getElementById("endTime").value;
           document.getElementById("successClass").textContent = getDisplayClassName(selectedClass);
           document.getElementById("successSubject").textContent = getSelectedSubjectName();
+          document.getElementById("successPlatform").textContent = document.getElementById("platform").value;
           document.getElementById("successDate").textContent =
             new Date(date + "T00:00:00").toLocaleDateString("en-IN", {
               day: "2-digit",
@@ -1504,6 +2018,8 @@
           console.error("Unable to load registered live-class subjects.", error);
           document.getElementById("registeredClasses").textContent =
             `Could not load registered grades and subjects. ${error.message || "Please try again."}`;
+          document.getElementById("teachingScopeValue").textContent =
+            "Could not load registered classes";
         });
     </script>
   </body>
