@@ -269,14 +269,10 @@
       .main-box-container {
         margin: 0 40px 32px 40px;
         padding: 32px;
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(10px);
-        border-radius: 24px;
-        border: 1px solid var(--surface-border);
-        box-shadow: var(--shadow-sm);
+        background: transparent;
         display: flex;
         flex-direction: column;
-        gap: 28px;
+        gap: 22px;
       }
 
       .page-header {
@@ -284,36 +280,40 @@
         justify-content: space-between;
         align-items: flex-start;
         gap: 20px;
-        padding: 4px 4px 8px;
-        margin-bottom: 18px;
+        padding: 4px 2px 0;
+      }
+
+      .page-title {
+        flex: 1;
+        min-width: 0;
       }
 
       .page-eyebrow {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
         margin-bottom: 12px;
-        color: #6d4aff;
-        font-size: 0.72rem;
+        color: #4f46e5;
+        font-size: 0.78rem;
         font-weight: 800;
-        letter-spacing: 0.12em;
+        letter-spacing: 0.14em;
         text-transform: uppercase;
       }
 
       .page-title h1 {
         margin: 0;
-        font-size: clamp(2.1rem, 3vw, 3.2rem);
+        font-size: clamp(2.5rem, 3.1vw, 3.5rem);
         font-weight: 800;
-        color: #08183e;
-        letter-spacing: -0.06em;
-        line-height: 1.08;
+        color: #1a2544;
+        letter-spacing: -0.07em;
+        line-height: 1.05;
       }
 
       .page-title p {
-        max-width: 620px;
-        color: #536789;
-        font-size: 1.05rem;
-        margin-top: 10px;
+        max-width: 700px;
+        color: #54657d;
+        font-size: 1rem;
+        margin-top: 12px;
         line-height: 1.5;
       }
 
@@ -321,47 +321,64 @@
         display: inline-flex;
         align-items: center;
         gap: 10px;
+        max-width: 100%;
         margin-top: 18px;
-        padding: 10px 14px;
-        border: 1px solid rgba(41, 174, 184, 0.22);
-        border-radius: 12px;
-        background: rgba(237, 250, 250, 0.72);
-        color: #315360;
-        font-size: 0.9rem;
+        padding: 10px 16px;
+        border: 1px solid #d9e7fb;
+        border-radius: 999px;
+        background: #edf5ff;
+        color: #334b70;
+        font-size: 0.86rem;
+        overflow-x: auto;
+        white-space: nowrap;
       }
 
       .scope-label {
-        color: #087f8a;
+        color: #5b45e8;
         font-weight: 800;
+        flex-shrink: 0;
+      }
+
+      .scope-icon {
+        color: #5b45e8;
+        flex-shrink: 0;
       }
 
       .scope-value {
-        font-weight: 600;
+        font-weight: 700;
+        min-width: 0;
+        flex: 0 0 auto;
+        overflow: visible;
+        text-overflow: clip;
       }
 
       .action-buttons {
         display: flex;
-        gap: 12px;
+        align-items: flex-start;
+        justify-content: flex-end;
+        min-width: 0;
       }
 
       .btn-primary {
-        background: var(--primary);
+        background: #5b43e8;
         color: white;
         border: none;
-        padding: 12px 24px;
+        padding: 13px 20px;
         border-radius: 12px;
-        font-weight: 700;
-        font-size: 1rem;
+        font-weight: 800;
+        font-size: 1.04rem;
         cursor: pointer;
         display: flex;
         align-items: center;
-        gap: 8px;
-        box-shadow: var(--shadow-sm);
-        transition: background 0.2s;
+        gap: 10px;
+        box-shadow: 0 5px 14px rgba(79, 70, 229, 0.18);
+        transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
       }
 
       .btn-primary:hover {
-        background: var(--primary-hover);
+        background: #4d36d7;
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(79, 70, 229, 0.22);
       }
 
       .btn-secondary {
@@ -381,91 +398,170 @@
       /* Stat Cards */
       .stats-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 18px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
       }
 
       .stat-card {
-        background: var(--surface);
-        border-radius: var(--radius);
-        padding: 20px;
-        border: 1px solid var(--surface-border);
+        --stat-accent: #2563eb;
+        position: relative;
+        overflow: hidden;
+        background: #ffffff;
+        border-radius: 14px;
+        padding: 18px 18px 16px 20px;
+        border: 1px solid #e4eaf3;
+        box-shadow: 0 4px 14px rgba(20, 40, 70, 0.045);
         display: flex;
-        align-items: center;
+        align-items: flex-start;
+        justify-content: space-between;
         gap: 16px;
-        box-shadow: var(--shadow-sm);
+        min-height: 126px;
+      }
+
+      .stat-card::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 5px;
+        background: var(--stat-accent);
+      }
+
+      .stat-card > div:first-child {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        flex: 1;
+        min-width: 0;
       }
 
       .stat-icon {
         width: 48px;
         height: 48px;
-        border-radius: 14px;
+        flex: 0 0 48px;
+        border-radius: 12px;
         display: grid;
         place-items: center;
         color: white;
-        font-size: 1.35rem;
+        font-size: 1.2rem;
       }
 
       .stat-val {
-        font-size: 1.6rem;
+        font-size: clamp(1.7rem, 2vw, 2.1rem);
         font-weight: 800;
+        color: #172b4d;
+        line-height: 1;
       }
 
       .stat-lbl {
-        font-size: 0.85rem;
-        color: var(--text-muted);
-        font-weight: 600;
+        font-size: 0.88rem;
+        color: #526581;
+        font-weight: 700;
+        margin-top: 7px;
+      }
+
+      .stat-support {
+        margin-top: 7px;
+        color: #71819a;
+        font-size: 0.75rem;
+        line-height: 1.4;
+      }
+
+      .stat-card .fa-angle-right {
+        width: 30px;
+        height: 30px;
+        flex: 0 0 30px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: #f1f5fb;
+        color: #334b70;
+        font-size: 0.8rem;
       }
 
       /* ── LIVE CLASSES SECTION ── */
       .live-classes-section {
         background: var(--surface);
-        border-radius: var(--radius);
-        border: 1px solid var(--surface-border);
-        padding: 24px;
-        box-shadow: var(--shadow-sm);
+        border-radius: 16px;
+        border: 1px solid #e0e8f4;
+        padding: 20px 22px;
+        box-shadow: 0 5px 18px rgba(20, 40, 70, 0.045);
       }
 
       .table-toolbar {
         display: flex;
-        justify-content: space-between;
+        justify-content: flex-start;
         align-items: center;
-        margin-bottom: 24px;
-        border-bottom: 1px solid var(--surface-border);
-        padding-bottom: 16px;
+        gap: 16px;
+        margin-bottom: 0;
+        border-bottom: 1px solid #e8edf5;
+        padding-bottom: 0;
+      }
+
+      .schedule-heading-icon {
+        width: 38px;
+        height: 38px;
+        display: grid;
+        place-items: center;
+        flex: 0 0 38px;
+        border-radius: 50%;
+        background: #eef2ff;
+        color: #5342df;
       }
 
       .tabs {
         display: flex;
-        gap: 20px;
+        gap: 24px;
+        align-self: stretch;
       }
 
       .tab {
-        font-size: 0.95rem;
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        min-height: 48px;
+        padding: 0 2px;
+        font-size: 0.9rem;
         font-weight: 600;
         color: var(--text-muted);
         cursor: pointer;
-        padding-bottom: 8px;
+        border: 0;
+        background: transparent;
+        font-family: inherit;
       }
 
       .tab.active {
-        color: var(--primary);
-        border-bottom: 3px solid var(--primary);
+        color: #5b43e8;
         font-weight: 700;
+      }
+
+      .tab.active::after {
+        content: "";
+        position: absolute;
+        right: 0;
+        bottom: -1px;
+        left: 0;
+        height: 3px;
+        background: #654df0;
+        border-radius: 3px 3px 0 0;
       }
 
       .view-schedule-link {
-        color: var(--primary);
+        margin-left: auto;
+        color: #5744df;
         text-decoration: none;
         font-weight: 700;
-        font-size: 0.95rem;
+        font-size: 0.84rem;
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
+        padding: 9px 13px;
+        border: 1px solid #dce5ff;
+        border-radius: 999px;
+        background: #f8f9ff;
       }
 
       .view-schedule-link:hover {
-        text-decoration: underline;
+        background: #f0efff;
       }
 
       /* Live Classes List View */
@@ -473,101 +569,215 @@
         display: flex;
         flex-direction: column;
         gap: 16px;
+        padding-top: 18px;
       }
 
       .class-card {
-        background: #ffffff;
-        border: 1px solid var(--surface-border);
-        border-radius: 16px;
-        padding: 18px 24px;
-        display: flex;
+        display: grid;
+        grid-template-columns: minmax(220px, 1.4fr) minmax(130px, 0.8fr) minmax(150px, auto);
         align-items: center;
-        justify-content: space-between;
-        transition:
-          transform 0.2s ease,
-          box-shadow 0.2s ease;
-      }
-
-      .class-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+        gap: 18px;
+        background: #ffffff;
+        border: 1px solid #e5eaf2;
+        border-radius: 13px;
+        padding: 18px;
+        box-shadow: 0 2px 8px rgba(20, 40, 70, 0.025);
       }
 
       .class-card-left {
         display: flex;
         align-items: center;
-        gap: 20px;
+        gap: 14px;
+        min-width: 0;
       }
 
       .class-card-icon {
-        width: 52px;
-        height: 52px;
-        border-radius: 14px;
+        width: 46px;
+        height: 46px;
+        border-radius: 12px;
         display: grid;
         place-items: center;
-        color: white;
-        font-size: 1.5rem;
+        color: #ffffff;
+        background: #5b43e8;
+        font-size: 1rem;
         flex-shrink: 0;
       }
 
       .class-card-info h3 {
-        font-size: 1.1rem;
+        font-size: 1rem;
         font-weight: 700;
         color: var(--text-main);
-        margin-bottom: 4px;
+        margin-bottom: 5px;
+        overflow-wrap: anywhere;
       }
 
       .class-card-info p {
-        font-size: 0.88rem;
+        font-size: 0.82rem;
         color: var(--text-muted);
         font-weight: 500;
+        line-height: 1.45;
+      }
+
+      .class-topic {
+        margin-top: 6px;
+        color: #34445e;
+        font-size: 0.84rem;
+        font-weight: 600;
+      }
+
+      .class-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        color: #526581;
+        font-size: 0.82rem;
+        line-height: 1.4;
       }
 
       .class-card-right {
         display: flex;
-        align-items: center;
-        gap: 32px;
+        align-items: flex-end;
+        justify-content: center;
+        flex-direction: column;
+        gap: 9px;
       }
 
       .class-time {
         display: flex;
         align-items: center;
-        gap: 8px;
-        color: var(--text-muted);
-        font-size: 0.95rem;
+        gap: 7px;
+        color: #526581;
+        font-size: 0.82rem;
         font-weight: 600;
+        white-space: nowrap;
       }
 
       .btn-join {
-        background: var(--primary);
-        color: white;
-        border: none;
-        padding: 10px 24px;
-        border-radius: 10px;
+        background: #5b43e8;
+        color: #ffffff;
+        border: 1px solid #5b43e8;
+        padding: 9px 15px;
+        border-radius: 9px;
         font-weight: 700;
-        font-size: 0.95rem;
+        font-size: 0.82rem;
         cursor: pointer;
-        transition: background 0.2s ease;
+        transition: background 0.18s ease;
         text-decoration: none;
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        white-space: nowrap;
       }
 
       .btn-join:hover {
-        background: var(--primary-hover);
+        background: #4d36d7;
       }
 
       .btn-recording {
-        background: #e2e8f0;
-        color: #334155;
+        background: #eef2f7;
+        border-color: #e0e6ef;
+        color: #475569;
       }
 
       .btn-recording:hover {
-        background: #cbd5e1;
+        background: #e3e9f1;
+      }
+
+      .class-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        width: fit-content;
+        padding: 5px 9px;
+        border-radius: 999px;
+        background: #eff6ff;
+        color: #2457a6;
+        font-size: 0.74rem;
+        font-weight: 700;
+      }
+
+      .class-status.completed {
+        background: #ecfdf5;
+        color: #087443;
+      }
+
+      .class-status.cancelled {
+        background: #fef2f2;
+        color: #b42318;
+      }
+
+      .class-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .empty-state {
+        min-height: 260px;
+        padding: 38px 18px 30px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+
+      .empty-state-icon {
+        width: 88px;
+        height: 88px;
+        display: grid;
+        place-items: center;
+        margin-bottom: 14px;
+        border-radius: 50%;
+        background: #f0edff;
+        color: #654df0;
+        font-size: 2.25rem;
+      }
+
+      .empty-state h2 {
+        color: #172b4d;
+        font-size: 1.2rem;
+        font-weight: 800;
+        margin-bottom: 7px;
+      }
+
+      .empty-state p {
+        max-width: 440px;
+        color: #71819a;
+        font-size: 0.86rem;
+        line-height: 1.55;
+        margin-bottom: 16px;
+      }
+
+      .empty-state .btn-primary {
+        font-size: 0.88rem;
+        padding: 11px 17px;
+      }
+
+      .classes-error {
+        padding: 18px;
+        border: 1px solid #fecaca;
+        border-radius: 10px;
+        background: #fff7f7;
+        color: #991b1b;
+        font-size: 0.9rem;
       }
 
       @media (max-width: 1200px) {
         .stats-grid {
           grid-template-columns: repeat(2, 1fr);
+        }
+
+        .class-card {
+          grid-template-columns: minmax(0, 1fr) minmax(130px, 0.7fr);
+        }
+
+        .class-card-right {
+          grid-column: 1 / -1;
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
         }
       }
 
@@ -583,21 +793,260 @@
           margin: 0 16px 20px 16px;
           padding: 20px;
         }
+        .page-header {
+          flex-direction: column;
+          gap: 18px;
+        }
+        .action-buttons,
+        .action-buttons .btn-primary {
+          width: 100%;
+        }
+        .page-title h1 {
+          font-size: clamp(2rem, 9vw, 2.6rem);
+        }
+        .assignment-scope {
+          width: 100%;
+          justify-content: flex-start;
+          border-radius: 14px;
+        }
         .stats-grid {
           grid-template-columns: 1fr;
         }
+        .live-classes-section {
+          padding: 16px;
+        }
+        .table-toolbar {
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+        .view-schedule-link {
+          margin-left: auto;
+        }
         .class-card {
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 16px;
+          grid-template-columns: 1fr;
+          gap: 14px;
         }
         .class-card-right {
           width: 100%;
+          grid-column: auto;
+          flex-direction: row;
+          align-items: center;
           justify-content: space-between;
+        }
+        .class-meta {
+          flex-direction: row;
+          flex-wrap: wrap;
+          gap: 8px 14px;
+        }
+      }
+
+      @media (max-width: 420px) {
+        .main-box-container {
+          margin-right: 12px;
+          margin-left: 12px;
+          padding: 16px;
+        }
+        .stats-grid {
+          gap: 12px;
+        }
+        .stat-card {
+          padding: 16px 14px 14px 18px;
+        }
+        .schedule-heading-icon {
+          display: none;
+        }
+        .tabs {
+          gap: 16px;
+        }
+        .view-schedule-link {
+          font-size: 0.76rem;
+          padding: 8px 10px;
         }
       }
     </style>
       <link rel="stylesheet" href="../css/layout.css" />
+    <style>
+      @media (min-width: 761px) {
+        .page-content.main-box-container {
+          margin: 0 12px 8px !important;
+          padding: 18px 22px !important;
+          gap: 14px !important;
+        }
+
+        .page-header {
+          gap: 16px;
+          padding-top: 0;
+        }
+
+        .page-eyebrow {
+          margin-bottom: 7px;
+          font-size: 0.7rem;
+        }
+
+        .page-title h1 {
+          font-size: clamp(2.15rem, 3vw, 2.8rem);
+          line-height: 1;
+        }
+
+        .page-title p {
+          margin-top: 6px;
+          font-size: 0.88rem;
+          line-height: 1.4;
+        }
+
+        .assignment-scope {
+          width: fit-content;
+          max-width: 100%;
+          margin-top: 11px;
+          padding: 7px 12px;
+          font-size: 0.76rem;
+        }
+
+        .action-buttons {
+          flex: 0 0 auto;
+        }
+
+        .action-buttons .btn-primary {
+          padding: 11px 16px;
+          font-size: 0.9rem;
+          white-space: nowrap;
+        }
+
+        .stats-grid {
+          gap: 12px;
+        }
+
+        .stat-card {
+          min-height: 98px;
+          padding: 13px 13px 12px 17px;
+          gap: 10px;
+        }
+
+        .stat-card > div:first-child {
+          align-items: center;
+          gap: 11px;
+        }
+
+        .stat-icon {
+          width: 42px;
+          height: 42px;
+          flex-basis: 42px;
+          font-size: 1rem;
+        }
+
+        .stat-val {
+          font-size: clamp(1.55rem, 1.8vw, 1.9rem);
+        }
+
+        .stat-lbl {
+          margin-top: 4px;
+          font-size: 0.78rem;
+        }
+
+        .stat-support {
+          margin-top: 4px;
+          font-size: 0.67rem;
+          line-height: 1.25;
+        }
+
+        .stat-card .stat-arrow {
+          width: 25px;
+          height: 25px;
+          flex-basis: 25px;
+          font-size: 0.7rem;
+        }
+
+        .live-classes-section {
+          padding: 13px 17px;
+        }
+
+        .schedule-heading-icon {
+          width: 32px;
+          height: 32px;
+          flex-basis: 32px;
+        }
+
+        .tab {
+          min-height: 40px;
+          font-size: 0.82rem;
+        }
+
+        .view-schedule-link {
+          padding: 7px 10px;
+          font-size: 0.76rem;
+        }
+
+        .live-classes-list {
+          gap: 10px;
+          padding-top: 10px;
+        }
+
+        .empty-state {
+          min-height: 185px;
+          padding: 18px 14px 14px;
+        }
+
+        .empty-state-icon {
+          width: 58px;
+          height: 58px;
+          margin-bottom: 9px;
+          font-size: 1.55rem;
+        }
+
+        .empty-state h2 {
+          margin-bottom: 5px;
+          font-size: 1.02rem;
+        }
+
+        .empty-state p {
+          margin-bottom: 10px;
+          font-size: 0.76rem;
+          line-height: 1.4;
+        }
+
+        .empty-state .btn-primary {
+          padding: 9px 14px;
+          font-size: 0.8rem;
+        }
+
+        .class-card {
+          padding: 12px 14px;
+          gap: 12px;
+        }
+      }
+
+      @media (min-width: 761px) and (max-height: 740px) {
+        .page-content.main-box-container {
+          padding-top: 12px !important;
+          gap: 10px !important;
+        }
+
+        .page-title h1 {
+          font-size: 2.1rem;
+        }
+
+        .assignment-scope {
+          margin-top: 8px;
+        }
+
+        .stat-card {
+          min-height: 88px;
+          padding-top: 10px;
+          padding-bottom: 10px;
+        }
+
+        .live-classes-section {
+          padding-top: 10px;
+          padding-bottom: 10px;
+        }
+
+        .empty-state {
+          min-height: 160px;
+          padding-top: 12px;
+          padding-bottom: 10px;
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="layout"></div>
@@ -607,15 +1056,17 @@
         <!-- PAGE TITLE & ACTIONS -->
         <div class="page-header">
           <div class="page-title">
-            <span class="page-eyebrow"><i class="fa-solid fa-layer-group"></i> Teacher workspace</span>
+            <span class="page-eyebrow"><i class="fa-solid fa-graduation-cap"></i> Teacher workspace</span>
             <h1>Live Classes</h1>
             <p>
               Schedule, manage and conduct real-time online sessions for your
               subjects.
             </p>
             <div class="assignment-scope" id="assignmentScope">
+              <i class="fa-solid fa-users scope-icon" aria-hidden="true"></i>
               <span class="scope-label">Your teaching scope</span>
-              <span class="scope-value" id="assignmentScopeValue">Class 11 (science_pcb) • Class 12 (science_pcb)</span>
+              <span aria-hidden="true">|</span>
+              <span class="scope-value" id="assignmentScopeValue">Loading your registered classes…</span>
             </div>
           </div>
           <div class="action-buttons">
@@ -628,51 +1079,69 @@
 
         <!-- METRICS GRID -->
         <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #00818a">📅</div>
+          <div class="stat-card" style="--stat-accent: #2563eb;">
             <div>
-              <div class="stat-val" id="statUpcoming">4</div>
-              <div class="stat-lbl">Upcoming Classes</div>
+              <div class="stat-icon" style="background: #3478f6"><i class="fa-regular fa-calendar" aria-hidden="true"></i></div>
+              <div>
+                <div class="stat-val" id="statUpcoming">0</div>
+                <div class="stat-lbl">Upcoming Classes</div>
+                <div class="stat-support" id="statUpcomingSupport">No upcoming sessions</div>
+              </div>
             </div>
+            <i class="fa-solid fa-arrow-right stat-arrow" aria-hidden="true"></i>
           </div>
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #10b981">✅</div>
+          <div class="stat-card" style="--stat-accent: #10a66a;">
             <div>
-              <div class="stat-val" id="statCompleted">24</div>
-              <div class="stat-lbl">Completed Sessions</div>
+              <div class="stat-icon" style="background: #19b879"><i class="fa-solid fa-check" aria-hidden="true"></i></div>
+              <div>
+                <div class="stat-val" id="statCompleted">0</div>
+                <div class="stat-lbl">Completed Sessions</div>
+                <div class="stat-support" id="statCompletedSupport">From your class records</div>
+              </div>
             </div>
+            <i class="fa-solid fa-arrow-right stat-arrow" aria-hidden="true"></i>
           </div>
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #00818a">👥</div>
+          <div class="stat-card" style="--stat-accent: #7c3aed;">
             <div>
-              <div class="stat-val" id="statAttendees">310</div>
-              <div class="stat-lbl">Total Attendees</div>
+              <div class="stat-icon" style="background: #8252e8"><i class="fa-solid fa-users" aria-hidden="true"></i></div>
+              <div>
+                <div class="stat-val" id="statAttendees">—</div>
+                <div class="stat-lbl">Total Attendees</div>
+                <div class="stat-support" id="statAttendeesSupport">Attendance data unavailable</div>
+              </div>
             </div>
+            <i class="fa-solid fa-arrow-right stat-arrow" aria-hidden="true"></i>
           </div>
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #f59e0b">⏱️</div>
+          <div class="stat-card" style="--stat-accent: #f59e0b;">
             <div>
-              <div class="stat-val" id="statHours">48 hrs</div>
-              <div class="stat-lbl">Stream Time</div>
+              <div class="stat-icon" style="background: #f6a23b"><i class="fa-regular fa-clock" aria-hidden="true"></i></div>
+              <div>
+                <div class="stat-val" id="statHours">0 hrs</div>
+                <div class="stat-lbl">Stream Time</div>
+                <div class="stat-support" id="statHoursSupport">Based on completed sessions</div>
+              </div>
             </div>
+            <i class="fa-solid fa-arrow-right stat-arrow" aria-hidden="true"></i>
           </div>
         </div>
 
         <!-- MAIN LIVE CLASSES SECTION -->
         <div class="live-classes-section">
           <div class="table-toolbar">
+            <span class="schedule-heading-icon" aria-hidden="true"><i class="fa-regular fa-calendar"></i></span>
             <div class="tabs">
-              <span class="tab active" onclick="filterTab('Upcoming', this)"
-                >Upcoming</span
-              >
-              <span class="tab" onclick="filterTab('Previous', this)"
-                >Previous</span
-              >
+              <button class="tab active" type="button" onclick="filterTab('Upcoming', this)">Upcoming</button>
+              <button class="tab" type="button" onclick="filterTab('Previous', this)"
+                >Previous</button>
             </div>
-            <a href="#" class="view-schedule-link">View schedule &rarr;</a>
+            <a href="calendar.html" class="view-schedule-link">
+              <i class="fa-regular fa-calendar" aria-hidden="true"></i>
+              View full schedule
+              <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+            </a>
           </div>
 
-          <div class="live-classes-list" id="classesList">
+          <div class="live-classes-list" id="classesList" aria-live="polite">
             <!-- Live class cards dynamically populated via Supabase / JavaScript -->
           </div>
         </div>
@@ -684,122 +1153,353 @@
     <script src="../js/attendance-service.js"></script>
     <script src="../js/live-class-service.js"></script>
     <script>
-
       let currentClasses = [];
       let currentFilterTab = "Upcoming";
 
-      /* Fetch Classes with Supabase Logic & Fallback */
-      async function loadClasses() {
-        currentClasses = await LiveClassService.load();
+      const streamLabels = {
+        science_pcm: "Science – PCM",
+        science_pcb: "Science – PCB",
+        commerce: "Commerce",
+        arts_humanities: "Arts / Humanities",
+      };
+      const completedStatuses = new Set(["attended", "completed", "done", "finished"]);
+      const cancelledStatuses = new Set(["cancelled", "canceled"]);
 
-        renderClasses();
-        updateMetrics();
+      function normalizedStatus(item) {
+        return String(item.status || "").trim().toLowerCase();
       }
 
-      /* Render Live Class Cards */
+      function startDate(item) {
+        const value = item.class_date && item.start_time
+          ? `${item.class_date}T${item.start_time}`
+          : item.start_at || item.scheduled_at || item.datetime;
+        const parsed = value ? new Date(value) : null;
+        return parsed && !Number.isNaN(parsed.getTime()) ? parsed : null;
+      }
+
+      function statusForDisplay(item, reference = Date.now()) {
+        const storedStatus = normalizedStatus(item);
+        if (cancelledStatuses.has(storedStatus)) return "Cancelled";
+        if (completedStatuses.has(storedStatus)) return "Completed";
+
+        const startsAt = startDate(item);
+        if (!startsAt) return "Scheduled";
+        const starts = startsAt.getTime();
+        const ends = starts + (Number(item.duration_minutes) || 60) * 60_000;
+        if (reference < starts) return "Scheduled";
+        if (reference < ends) return "Live";
+        return "Completed";
+      }
+
+      function formatClassDate(date) {
+        return new Intl.DateTimeFormat([], {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        }).format(date);
+      }
+
+      function formatClassTime(date) {
+        return new Intl.DateTimeFormat([], {
+          hour: "numeric",
+          minute: "2-digit",
+        }).format(date);
+      }
+
+      function humanizeUntil(date) {
+        const remainingMinutes = Math.max(0, Math.round((date.getTime() - Date.now()) / 60_000));
+        if (remainingMinutes < 60) return `Next class in ${remainingMinutes} min`;
+        const hours = Math.floor(remainingMinutes / 60);
+        const minutes = remainingMinutes % 60;
+        return `Next class in ${hours} hr${hours === 1 ? "" : "s"}${minutes ? ` ${minutes} min` : ""}`;
+      }
+
+      function attendeeCount(item) {
+        const value = item.attendee_count ?? item.attendees_count ?? item.total_attendees ?? item.students_attended;
+        if (value === null || value === undefined || value === "") return null;
+        const count = Number(value);
+        return Number.isFinite(count) && count >= 0 ? count : null;
+      }
+
+      function scopeGroupLabel(group) {
+        const grade = Number(group.grade);
+        const stream = String(group.stream || "").trim().toLowerCase();
+        const streamLabel = streamLabels[stream] || (stream ? stream.replaceAll("_", " ") : "");
+        return `Class ${grade}${streamLabel ? ` (${streamLabel})` : ""}`;
+      }
+
+      async function loadTeachingScope(teacher) {
+        const { data: groups, error } = await window.TeacherData.loadRegisteredTeachingScope(
+          teacher.client,
+          teacher.profile.id,
+        ).then((data) => ({ data, error: null }), (caughtError) => ({ data: null, error: caughtError }));
+
+        if (error) throw error;
+        const scopeValue = document.getElementById("assignmentScopeValue");
+        const labels = (groups || []).map(scopeGroupLabel);
+        scopeValue.textContent = labels.length ? labels.join("  •  ") : "No registered classes found";
+      }
+
+      function isPrevious(item, reference = Date.now()) {
+        const status = statusForDisplay(item, reference);
+        const startsAt = startDate(item);
+        return status === "Completed" || status === "Cancelled" || Boolean(startsAt && startsAt.getTime() <= reference && status !== "Live");
+      }
+
+      function renderEmptyState(container) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "empty-state";
+        const icon = document.createElement("div");
+        icon.className = "empty-state-icon";
+        icon.setAttribute("aria-hidden", "true");
+        icon.innerHTML = '<i class="fa-solid fa-calendar-days"></i>';
+        const heading = document.createElement("h2");
+        const description = document.createElement("p");
+        const createButton = document.createElement("button");
+        createButton.type = "button";
+        createButton.className = "btn-primary";
+        createButton.innerHTML = '<i class="fa-solid fa-plus" aria-hidden="true"></i> Create Live Class';
+        createButton.addEventListener("click", scheduleClassPrompt);
+
+        if (currentFilterTab === "Upcoming") {
+          heading.textContent = "No upcoming live classes";
+          description.textContent = "You haven't scheduled any live classes yet. Create a new live class to start your online sessions.";
+          wrapper.append(icon, heading, description, createButton);
+        } else {
+          icon.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i>';
+          heading.textContent = "No previous live classes";
+          description.textContent = "Completed or past live classes will appear here.";
+          wrapper.append(icon, heading, description);
+        }
+
+        container.appendChild(wrapper);
+      }
+
+      function createMetadata(iconClass, text) {
+        const item = document.createElement("span");
+        item.className = "class-time";
+        const icon = document.createElement("i");
+        icon.className = iconClass;
+        icon.setAttribute("aria-hidden", "true");
+        const value = document.createElement("span");
+        value.textContent = text;
+        item.append(icon, value);
+        return item;
+      }
+
+      function renderClassCard(item) {
+        const statusValue = statusForDisplay(item);
+        const isDone = statusValue === "Completed";
+        const isCancelled = statusValue === "Cancelled";
+        const startsAt = startDate(item);
+        const grade = item.grade || item.class_grade;
+        const stream = String(item.stream || "").trim().toLowerCase();
+        const streamLabel = streamLabels[stream] || (stream ? stream.replaceAll("_", " ") : "");
+        const title = item.subject || item.title || "Live class";
+        const topic = item.topic || item.chapter || (item.title !== title ? item.title : "");
+        const classDescription = [grade ? `Class ${grade}` : "", streamLabel]
+          .filter(Boolean)
+          .join(" · ");
+
+        const card = document.createElement("article");
+        card.className = "class-card";
+
+        const main = document.createElement("div");
+        main.className = "class-card-left";
+        const icon = document.createElement("div");
+        icon.className = "class-card-icon";
+        icon.innerHTML = '<i class="fa-solid fa-video" aria-hidden="true"></i>';
+        const info = document.createElement("div");
+        info.className = "class-card-info";
+        const heading = document.createElement("h3");
+        heading.textContent = title;
+        const gradeText = document.createElement("p");
+        gradeText.textContent = classDescription || "Teaching session";
+        info.append(heading, gradeText);
+        if (topic) {
+          const topicText = document.createElement("div");
+          topicText.className = "class-topic";
+          topicText.textContent = topic;
+          info.appendChild(topicText);
+        }
+        main.append(icon, info);
+
+        const meta = document.createElement("div");
+        meta.className = "class-meta";
+        if (startsAt) {
+          meta.append(
+            createMetadata("fa-regular fa-calendar", formatClassDate(startsAt)),
+            createMetadata("fa-regular fa-clock", formatClassTime(startsAt)),
+          );
+        }
+        meta.append(createMetadata("fa-solid fa-hourglass-half", `${Number(item.duration_minutes) || 60} min`));
+        const attendance = attendeeCount(item);
+        meta.append(createMetadata(
+          "fa-solid fa-user-group",
+          attendance === null ? "Attendance not recorded" : `${attendance} attended`,
+        ));
+
+        const statusBadge = document.createElement("span");
+        statusBadge.className = `class-status${isDone ? " completed" : ""}${isCancelled ? " cancelled" : ""}`;
+        statusBadge.textContent = statusValue;
+
+        const actions = document.createElement("div");
+        actions.className = "class-card-right";
+        actions.appendChild(statusBadge);
+        const actionButtons = document.createElement("div");
+        actionButtons.className = "class-actions";
+
+        if (!isDone && !isCancelled && item.meeting_url) {
+          const joinLink = document.createElement("a");
+          joinLink.className = "btn-join";
+          joinLink.href = item.meeting_url;
+          joinLink.target = "_blank";
+          joinLink.rel = "noopener noreferrer";
+          joinLink.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i> Join Class';
+          actionButtons.appendChild(joinLink);
+        }
+
+        if (!isDone && !isCancelled) {
+          const attendedButton = document.createElement("button");
+          attendedButton.type = "button";
+          attendedButton.className = "btn-join btn-recording";
+          attendedButton.textContent = "Mark Attended";
+          attendedButton.addEventListener("click", () => handleClassClick(item.id));
+          actionButtons.appendChild(attendedButton);
+        }
+
+        actions.appendChild(actionButtons);
+        card.append(main, meta, actions);
+        return card;
+      }
+
+      async function loadClasses() {
+        const container = document.getElementById("classesList");
+        try {
+          currentClasses = await LiveClassService.load();
+          renderClasses();
+          updateMetrics();
+        } catch (error) {
+          console.error("Could not load teacher live classes.", error);
+          container.replaceChildren();
+          const message = document.createElement("div");
+          message.className = "classes-error";
+          message.textContent = "Live classes could not be loaded. Please try again.";
+          container.appendChild(message);
+        }
+      }
+
       function renderClasses() {
         const container = document.getElementById("classesList");
         const searchInput = document.getElementById("globalSearchInput");
-        const searchQuery = searchInput ? searchInput.value.toLowerCase() : "";
+        const searchQuery = searchInput ? searchInput.value.trim().toLowerCase() : "";
+        const now = Date.now();
 
-        container.innerHTML = "";
+        container.replaceChildren();
 
-        let filtered = currentClasses.filter((c) => {
-          const normalizedStatus = String(c.status || "").trim().toLowerCase();
-          const isCompleted = ["attended", "completed", "done"].includes(normalizedStatus);
-          const isCancelled = ["cancelled", "canceled"].includes(normalizedStatus);
-          const matchesTab = currentFilterTab === "Upcoming"
-            ? !isCompleted && !isCancelled
-            : isCompleted;
-          const matchesQuery =
-            (c.title || "").toLowerCase().includes(searchQuery) ||
-            (c.subject || "").toLowerCase().includes(searchQuery);
-          return matchesTab && matchesQuery;
+        const filtered = currentClasses.filter((item) => {
+          const previous = isPrevious(item, now);
+          const matchesTab = currentFilterTab === "Previous" ? previous : !previous;
+          const searchableText = [item.title, item.subject, item.topic, item.chapter, item.grade, item.class_grade, item.stream]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+          return matchesTab && searchableText.includes(searchQuery);
         });
 
-        if (filtered.length === 0) {
-          container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 40px;">No ${currentFilterTab.toLowerCase()} classes found.</div>`;
+        if (!filtered.length) {
+          renderEmptyState(container);
           return;
         }
 
-        filtered.forEach((item) => {
-          const normalizedStatus = String(item.status || "").trim().toLowerCase();
-          const isCompleted = ["attended", "completed", "done"].includes(normalizedStatus);
-          const buttonText = isCompleted ? "Completed" : "Mark Attended";
-          const buttonClass = isCompleted ? "btn-join btn-recording" : "btn-join";
-
-          const card = document.createElement("div");
-          card.className = "class-card";
-
-          card.innerHTML = `
-          <div class="class-card-left">
-            <div class="class-card-icon" style="background: ${item.color || "#00818a"};">
-              ${item.icon || "📹"}
-            </div>
-            <div class="class-card-info">
-              <h3>${item.title}</h3>
-              <p>Class ${item.class_grade}${item.subject ? ` • ${item.subject}` : ""}</p>
-            </div>
-          </div>
-          <div class="class-card-right">
-            <div class="class-time">
-              📅 <span>${new Intl.DateTimeFormat([], { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.start_at))}</span>
-            </div>
-            <button class="${buttonClass}" ${isCompleted ? "disabled" : `onclick="handleClassClick('${item.id}')"`}>${buttonText}</button>
-          </div>
-        `;
-          container.appendChild(card);
+        filtered.sort((left, right) => {
+          const leftTime = startDate(left)?.getTime() || 0;
+          const rightTime = startDate(right)?.getTime() || 0;
+          return currentFilterTab === "Previous" ? rightTime - leftTime : leftTime - rightTime;
         });
+        filtered.forEach((item) => container.appendChild(renderClassCard(item)));
       }
 
-      /* Tab Switcher */
       function filterTab(tabName, element) {
         currentFilterTab = tabName;
-        document
-          .querySelectorAll(".tabs .tab")
-          .forEach((t) => t.classList.remove("active"));
+        document.querySelectorAll(".tabs .tab").forEach((tab) => tab.classList.remove("active"));
         element.classList.add("active");
         renderClasses();
       }
 
-      /* Search Filter */
       function filterLiveClasses() {
         renderClasses();
       }
 
-      /* Update Metrics */
       function updateMetrics() {
-        const upcoming = currentClasses.filter((c) => {
-          const status = String(c.status || "").trim().toLowerCase();
-          return !["attended", "completed", "done", "cancelled", "canceled"].includes(status);
-        }).length;
-        const completed = currentClasses.filter((c) => {
-          const status = String(c.status || "").trim().toLowerCase();
-          return ["attended", "completed", "done"].includes(status);
-        }).length;
+        const now = Date.now();
+        const upcoming = currentClasses
+          .filter((item) => !isPrevious(item, now) && !cancelledStatuses.has(normalizedStatus(item)))
+          .sort((left, right) => (startDate(left)?.getTime() || 0) - (startDate(right)?.getTime() || 0));
+        const completed = currentClasses.filter((item) => statusForDisplay(item, now) === "Completed");
+        const completedMinutes = completed.reduce((total, item) => total + (Number(item.duration_minutes) || 60), 0);
+        const completedHours = Math.round((completedMinutes / 60) * 10) / 10;
+        const recordedAttendees = currentClasses.map(attendeeCount).filter((count) => count !== null);
+        const nextStart = upcoming.length ? startDate(upcoming[0]) : null;
 
-        document.getElementById("statUpcoming").innerText = upcoming;
-        document.getElementById("statCompleted").innerText = completed;
+        document.getElementById("statUpcoming").textContent = String(upcoming.length);
+        document.getElementById("statUpcomingSupport").textContent = nextStart
+          ? humanizeUntil(nextStart)
+          : "No upcoming sessions";
+        document.getElementById("statCompleted").textContent = String(completed.length);
+        document.getElementById("statCompletedSupport").textContent = "From available class records";
+        document.getElementById("statAttendees").textContent = recordedAttendees.length
+          ? String(recordedAttendees.reduce((total, count) => total + count, 0))
+          : "—";
+        document.getElementById("statAttendeesSupport").textContent = recordedAttendees.length
+          ? "Recorded across your live classes"
+          : "Attendance data unavailable";
+        document.getElementById("statHours").textContent = `${completedHours} hrs`;
+        document.getElementById("statHoursSupport").textContent = "Calculated from completed sessions";
       }
 
-      /* Open the dedicated multi-step scheduling page. */
       function scheduleClassPrompt() {
         window.location.href = "create_liveclass.html";
       }
 
       async function handleClassClick(id) {
-        await LiveClassService.markAttended(id);
-        await loadClasses();
+        try {
+          await LiveClassService.markAttended(id);
+          await loadClasses();
+        } catch (error) {
+          console.error("Could not mark live class as attended.", error);
+          window.alert("Could not update this class. Please try again.");
+        }
       }
 
-      // Initialize Page
-      document.addEventListener("DOMContentLoaded", () => {
-        loadClasses();
+      async function initializeLiveClassesPage() {
+        let teacher;
+        try {
+          teacher = await window.TeacherData.requireTeacher();
+        } catch (error) {
+          console.error("Could not verify the current teacher account.", error);
+          const container = document.getElementById("classesList");
+          const message = document.createElement("div");
+          message.className = "classes-error";
+          message.textContent = "Your teacher account could not be verified. Please sign in again.";
+          container.replaceChildren(message);
+          return;
+        }
+        if (!teacher) return;
+
+        try {
+          await loadTeachingScope(teacher);
+        } catch (error) {
+          console.error("Could not load teacher teaching scope.", error);
+          document.getElementById("assignmentScopeValue").textContent = "Teaching scope unavailable";
+        }
+
+        await loadClasses();
         LiveClassService.subscribe(loadClasses);
-      });
+      }
+
+      document.addEventListener("DOMContentLoaded", initializeLiveClassesPage);
     </script>
     <script src="../js/layout.js"></script>
   </body>
 </html>
-
-
