@@ -121,6 +121,11 @@
         min-width: 220px;
       }
 
+      .storage-history-caption {
+        color: #8992a3;
+        font-size: 11px;
+      }
+
       .storage-top {
         display: flex;
         justify-content: space-between;
@@ -422,6 +427,47 @@
         gap: 18px;
       }
 
+      .downloads-status {
+        margin: 0 0 18px;
+        padding: 12px 15px;
+        border: 1px solid #dbe5f2;
+        border-radius: 11px;
+        background: #ffffff;
+        color: #596b84;
+        font-size: 13px;
+      }
+
+      .downloads-status[hidden],
+      .load-more-downloads[hidden] {
+        display: none;
+      }
+
+      .downloads-status.is-error {
+        border-color: #fecaca;
+        background: #fff7f7;
+        color: #b42318;
+      }
+
+      .history-empty {
+        display: block;
+        grid-column: 1 / -1;
+        margin-bottom: 0;
+      }
+
+      .load-more-downloads {
+        display: block;
+        margin: 16px auto 26px;
+        padding: 10px 16px;
+        border: 1px solid #d8d2fb;
+        border-radius: 9px;
+        background: #ffffff;
+        color: #5735df;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
       .recent-card {
         background: #ffffff;
         border: 1px solid #e7ebf2;
@@ -575,13 +621,10 @@
 
         <div class="storage-box">
           <div class="storage-top">
-            <span>Downloaded Storage</span>
-            <span id="storageValue">0 B / 2 GB</span>
+            <span>Download history</span>
+            <span id="storageValue">Loading…</span>
           </div>
-
-          <div class="storage-bar">
-            <div class="storage-fill"></div>
-          </div>
+          <p class="storage-history-caption">Recorded from your student account</p>
         </div>
       </div>
 
@@ -594,7 +637,7 @@
           </div>
 
           <div>
-            <h3>0</h3>
+            <h3 id="statsAvailable">—</h3>
             <p>Available Materials</p>
           </div>
         </div>
@@ -605,7 +648,7 @@
           </div>
 
           <div>
-            <h3>0</h3>
+            <h3 id="statsDownloaded">—</h3>
             <p>Files Downloaded</p>
           </div>
         </div>
@@ -616,7 +659,7 @@
           </div>
 
           <div>
-            <h3>0</h3>
+            <h3 id="statsSubjects">—</h3>
             <p>Subjects</p>
           </div>
         </div>
@@ -627,7 +670,7 @@
           </div>
 
           <div>
-            <h3>0</h3>
+            <h3 id="statsNew">—</h3>
             <p>New Materials</p>
           </div>
         </div>
@@ -664,6 +707,8 @@
         </select>
       </div>
 
+      <p class="downloads-status" id="downloadsStatus" role="status" aria-live="polite">Loading your materials and download history…</p>
+
       <!-- AVAILABLE MATERIALS -->
 
       <div class="section-title">
@@ -685,12 +730,14 @@
       <!-- RECENT DOWNLOADS -->
 
       <div class="section-title">
-        <h2>Recently Downloaded</h2>
-
-        <span>Last 7 days</span>
+        <h2>My Downloads</h2>
+        <span id="historyCount">Your recent download history</span>
       </div>
 
-      <div class="recent-grid"></div>
+      <div class="recent-grid" id="recentDownloads">
+        <div class="empty-state history-empty" id="historyEmptyState">Loading your download history…</div>
+      </div>
+      <button class="load-more-downloads" id="loadMoreDownloads" type="button" hidden>Load more downloads</button>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -702,23 +749,26 @@
         const service = window.SmartLearningDownloads;
         const list = document.getElementById("downloadsList");
         const emptyState = document.getElementById("emptyState");
-        const recentGrid = document.querySelector(".recent-grid");
+        const recentGrid = document.getElementById("recentDownloads");
         const searchInput = document.getElementById("searchInput");
         const subjectFilter = document.getElementById("subjectFilter");
         const typeFilter = document.getElementById("typeFilter");
+        const status = document.getElementById("downloadsStatus");
+        const loadMoreButton = document.getElementById("loadMoreDownloads");
         let materials = [];
         let downloads = [];
+        let totalDownloads = 0;
+        let unsubscribe = null;
 
-        const iconFor = (type) =>
-          ({
-            PDF: ["pdf", "fa-file-pdf"],
-            Video: ["doc", "fa-file-video"],
-            Image: ["doc", "fa-file-image"],
-            Presentation: ["ppt", "fa-file-powerpoint"],
-            Document: ["doc", "fa-file-word"],
-          })[type] || ["doc", "fa-file-lines"];
+        const iconFor = (type) => ({
+          pdf: ["pdf", "fa-file-pdf"],
+          video: ["doc", "fa-file-video"],
+          image: ["doc", "fa-file-image"],
+          presentation: ["ppt", "fa-file-powerpoint"],
+          document: ["doc", "fa-file-word"],
+        })[String(type || "").toLowerCase()] || ["doc", "fa-file-lines"];
         const esc = (value) =>
-          String(value || "").replace(
+          String(value ?? "").replace(
             /[&<>'"]/g,
             (char) =>
               ({
@@ -729,14 +779,10 @@
                 '"': "&quot;",
               })[char],
           );
-        const stateFor = (material) =>
-          downloads.some(
-            (item) => String(item.material_id) === String(material.id),
-          )
-            ? "offline"
-            : "online";
 
         function renderFilters() {
+          const previousSubject = subjectFilter.value;
+          const previousType = typeFilter.value;
           const subjects = [
             ...new Set(materials.map((item) => item.subject).filter(Boolean)),
           ].sort();
@@ -751,6 +797,9 @@
                   `<option value="${esc(value)}">${esc(value)}</option>`,
               )
               .join("");
+          if ([...subjectFilter.options].some((option) => option.value === previousSubject)) {
+            subjectFilter.value = previousSubject;
+          }
           typeFilter.innerHTML =
             '<option value="all">All File Types</option>' +
             types
@@ -759,6 +808,9 @@
                   `<option value="${esc(value)}">${esc(value)}</option>`,
               )
               .join("");
+          if ([...typeFilter.options].some((option) => option.value === previousType)) {
+            typeFilter.value = previousType;
+          }
         }
 
         function renderList() {
@@ -768,24 +820,23 @@
           const rows = materials.filter(
             (item) =>
               (!query ||
-                `${item.file_name} ${item.subject} ${item.description}`
+                `${item.file_name} ${item.title} ${item.subject} ${item.description}`
                   .toLowerCase()
                   .includes(query)) &&
               (subject === "all" || item.subject === subject) &&
-              (type === "all" || item.file_type === type),
+              (type === "all" || String(item.file_type).toLowerCase() === type.toLowerCase()),
           );
           list
             .querySelectorAll(".download-item")
             .forEach((node) => node.remove());
           rows.forEach((item) => {
             const [className, icon] = iconFor(item.file_type);
-            const offline = stateFor(item) === "offline";
             const row = document.createElement("div");
             row.className = "download-item";
-            row.innerHTML = `<div class="file-icon ${className}"><i class="fa-solid ${icon}"></i></div><div class="file-info"><h3>${esc(item.file_name)}</h3><div class="file-meta"><span class="subject-tag">${esc(item.subject)}</span><span><i class="fa-regular fa-file"></i>${esc(item.file_type)}</span><span><i class="fa-solid fa-hard-drive"></i>${service.formatBytes(item.size_bytes)}</span><span><i class="fa-regular fa-calendar"></i>${service.formatDate(item.created_at)}</span><span><i class="fa-solid fa-cloud"></i>${offline ? "Available Offline" : "Available Online"}</span></div></div><button class="download-btn" title="${offline ? "Open offline" : "Download"}"><i class="fa-solid ${offline ? "fa-folder-open" : "fa-download"}"></i></button>`;
+            row.innerHTML = `<div class="file-icon ${className}"><i class="fa-solid ${icon}" aria-hidden="true"></i></div><div class="file-info"><h3>${esc(item.file_name)}</h3><div class="file-meta"><span class="subject-tag">${esc(item.subject || "Subject unavailable")}</span><span><i class="fa-regular fa-file" aria-hidden="true"></i>${esc(item.file_type)}</span><span><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>Grade ${esc(item.class_grade)}${item.stream ? ` · ${esc(item.stream)}` : ""}</span><span><i class="fa-solid fa-hard-drive" aria-hidden="true"></i>${service.formatBytes(item.file_size)}</span><span><i class="fa-regular fa-calendar" aria-hidden="true"></i>${service.formatDate(item.created_at)}</span></div></div><button class="download-btn" type="button" title="Download"><i class="fa-solid fa-download" aria-hidden="true"></i></button>`;
             row
               .querySelector("button")
-              .addEventListener("click", () => handleMaterial(item, row));
+              .addEventListener("click", (event) => handleMaterial(item, event.currentTarget));
             list.insertBefore(row, emptyState);
           });
           document.getElementById("materialCount").textContent =
@@ -794,39 +845,31 @@
         }
 
         function renderRecent() {
-          const lookup = new Map(
-            materials.map((item) => [String(item.id), item]),
-          );
-          const rows = downloads
-            .map((item) => ({
-              ...lookup.get(String(item.material_id)),
-              ...item,
-            }))
-            .slice(0, 6);
-          recentGrid.innerHTML =
-            rows
-              .map((item) => {
+          const rows = downloads.filter((item) => item.material);
+          recentGrid.innerHTML = rows.length
+            ? rows.map((item, index) => {
                 const [className, icon] = iconFor(item.file_type);
-                return `<div class="recent-card"><div class="file-icon ${className}"><i class="fa-solid ${icon}"></i></div><div class="recent-info"><h3>${esc(item.file_name)}</h3><p>${service.formatDateTime(item.downloaded_at)} · ${service.formatBytes(item.file_size)}</p></div><button class="recent-download" title="Open offline"><i class="fa-solid fa-folder-open"></i></button></div>`;
-              })
-              .join("") || "";
-          recentGrid
-            .querySelectorAll("button")
-            .forEach((button, index) =>
-              button.addEventListener("click", () => openOffline(rows[index])),
-            );
+                return `<div class="recent-card"><div class="file-icon ${className}"><i class="fa-solid ${icon}" aria-hidden="true"></i></div><div class="recent-info"><h3>${esc(item.file_name)}</h3><p>${esc(item.subject || "Subject unavailable")} · Grade ${esc(item.class_grade)}${item.stream ? ` · ${esc(item.stream)}` : ""}</p><p>Downloaded ${esc(service.formatDateTime(item.downloaded_at))} · ${esc(service.formatBytes(item.file_size))}</p></div><button class="recent-download" type="button" data-download-index="${index}" title="Download again"><i class="fa-solid fa-download" aria-hidden="true"></i></button></div>`;
+              }).join("")
+            : '<div class="empty-state history-empty"><i class="fa-regular fa-folder-open" aria-hidden="true"></i><h3>No downloads yet</h3><p>When you download a study material, it will appear here.</p></div>';
+          recentGrid.querySelectorAll("[data-download-index]").forEach((button) => {
+            button.addEventListener("click", () => handleMaterial(rows[Number(button.dataset.downloadIndex)].material, button));
+          });
+          document.getElementById("historyCount").textContent =
+            `${totalDownloads.toLocaleString()} ${totalDownloads === 1 ? "download record" : "download records"}`;
+          loadMoreButton.hidden = downloads.length >= totalDownloads;
         }
 
-        async function openOffline(item) {
-          const url = await service.openDownloadedMaterial(
-            item.material_id || item.id,
-          );
-          window.open(url, "_blank", "noopener");
+        function showStatus(message, isError = false) {
+          status.textContent = message;
+          status.classList.toggle("is-error", isError);
+          status.hidden = !message;
         }
-        async function handleMaterial(item, row) {
-          const button = row.querySelector("button");
+
+        async function handleMaterial(item, button) {
+          if (!button) return;
           const icon = button.querySelector("i");
-          if (stateFor(item) === "offline") return openOffline(item);
+          const previousTitle = button.title;
           button.disabled = true;
           icon.className = "fa-solid fa-spinner fa-spin";
           try {
@@ -835,13 +878,15 @@
               button.title = `Downloading ${progress}%`;
             });
             await refresh();
+            showStatus("");
           } catch (error) {
-            button.title = error.message;
+            console.error("Student material download failed.", error);
+            showStatus(error.message || "Unable to download this material.", true);
+            button.title = previousTitle;
             icon.className = "fa-solid fa-triangle-exclamation";
-            setTimeout(() => {
-              icon.className = "fa-solid fa-download";
-              button.disabled = false;
-            }, 2200);
+          } finally {
+            button.disabled = false;
+            if (icon.classList.contains("fa-spinner")) icon.className = "fa-solid fa-download";
           }
         }
 
@@ -852,45 +897,68 @@
           ]);
           materials = nextMaterials;
           downloads = nextDownloads;
+          totalDownloads = nextDownloads.totalCount;
           renderFilters();
           renderList();
           renderRecent();
-          const stats = document.querySelectorAll(".summary-card h3");
-          stats[0].textContent = materials.length;
-          stats[1].textContent = downloads.length;
-          stats[2].textContent = new Set(
+          document.getElementById("statsAvailable").textContent = materials.length.toLocaleString();
+          document.getElementById("statsDownloaded").textContent = totalDownloads.toLocaleString();
+          document.getElementById("statsSubjects").textContent = new Set(
             materials.map((item) => item.subject).filter(Boolean),
-          ).size;
-          stats[3].textContent = materials.filter(
+          ).size.toLocaleString();
+          document.getElementById("statsNew").textContent = materials.filter(
             (item) =>
               new Date(item.created_at).getTime() >= Date.now() - 30 * 86400000,
-          ).length;
-          const used = downloads.reduce(
-            (sum, item) => sum + Number(item.file_size || 0),
-            0,
-          );
-          document.querySelector(".storage-top span:last-child").textContent =
-            `${service.formatBytes(used)} / 2 GB`;
-          document.querySelector(".storage-fill").style.width =
-            `${Math.min(100, (used / (2 * 1024 * 1024 * 1024)) * 100)}%`;
-          const profile = window.StudentData?.getStudentProfile?.() || {};
-          const context = [profile.grade || profile.class_grade, profile.stream]
+          ).length.toLocaleString();
+          document.getElementById("storageValue").textContent = totalDownloads.toLocaleString();
+          const student = await service.getStudentRegistration();
+          const context = [`Grade ${student.grade}`, student.stream]
             .filter(Boolean)
             .join(" · ");
-          if (context) {
-            document.getElementById("registrationContext").hidden = false;
-            document.getElementById("registrationContextText").textContent =
-              context;
+          document.getElementById("registrationContext").hidden = !context;
+          document.getElementById("registrationContextText").textContent = context;
+          showStatus("");
+        }
+
+        async function loadMoreDownloads() {
+          loadMoreButton.disabled = true;
+          try {
+            const next = await service.fetchStudentDownloads(downloads.length);
+            downloads = [...downloads, ...next];
+            totalDownloads = next.totalCount;
+            renderRecent();
+          } catch (error) {
+            console.error("Unable to load additional student download records.", error);
+            showStatus("Unable to load download history.", true);
+          } finally {
+            loadMoreButton.disabled = false;
           }
         }
+
         searchInput.addEventListener("input", renderList);
         subjectFilter.addEventListener("change", renderList);
         typeFilter.addEventListener("change", renderList);
-        window.addEventListener("online", refresh);
-        window.addEventListener("smart-learning-downloads-updated", refresh);
-        refresh().catch((error) => {
-          console.error(error);
+        loadMoreButton.addEventListener("click", loadMoreDownloads);
+        refresh().then(async () => {
+          const student = await service.getStudentRegistration();
+          unsubscribe = service.subscribeStudent(student.id, () => {
+            refresh().catch((error) => {
+              console.error("Unable to refresh student download history.", error);
+              showStatus("Unable to load download history.", true);
+            });
+          }, () => {
+            showStatus("Unable to load download history.", true);
+          });
+        }).catch((error) => {
+          console.error("Unable to load student materials and download history.", error);
+          showStatus("Unable to load download history.", true);
           emptyState.style.display = "block";
+          emptyState.innerHTML = '<i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i><h3>Unable to load materials</h3><p>Please try again later.</p>';
+          recentGrid.innerHTML = '<div class="empty-state history-empty"><h3>Unable to load download history.</h3></div>';
+        });
+
+        window.addEventListener("beforeunload", () => {
+          if (unsubscribe) unsubscribe();
         });
       })();
     </script>

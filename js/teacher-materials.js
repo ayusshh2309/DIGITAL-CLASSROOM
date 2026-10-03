@@ -190,9 +190,10 @@
 
   async function signedMaterial(item) {
     const path = item.file_path;
-    const bucket = item.storage_bucket || (path ? "teacher_resources" : null);
+    const bucket = item.storage_bucket;
+    const approvedBuckets = new Set(["pdfs", "videos", "photos", "documents"]);
     let fileUrl = "";
-    if (path && bucket && !/^https?:\/\//i.test(path)) {
+    if (path && approvedBuckets.has(bucket) && !/^https?:\/\//i.test(path)) {
       try {
         const { data, error } = await state.client.storage
           .from(bucket)
@@ -202,6 +203,8 @@
       } catch (error) {
         console.warn("Could not create material URL.", error);
       }
+    } else if (path && bucket) {
+      console.warn(`Material uses an unsupported storage bucket: ${bucket}`);
     }
     return { ...item, subject: state.subjectsById.get(String(item.subject_id))?.name || "", file_url: fileUrl };
   }

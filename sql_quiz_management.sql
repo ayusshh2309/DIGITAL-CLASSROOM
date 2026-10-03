@@ -80,27 +80,7 @@ create policy "Teachers manage their quiz questions" on public.quiz_questions fo
 alter publication supabase_realtime add table public.quizzes;
 alter publication supabase_realtime add table public.quiz_questions;
 
--- Downloads and teacher resource management
-create table if not exists public.downloads_files (
-  id uuid primary key default gen_random_uuid(),
-  teacher_id uuid not null references auth.users(id) on delete cascade,
-  file_name text not null,
-  file_type text not null,
-  category text not null default 'Documents',
-  class_grade text not null,
-  subject text not null,
-  description text,
-  visibility text not null default 'Class' check (visibility in ('Class', 'Department', 'Teacher Only')),
-  file_url text,
-  storage_path text,
-  size_bytes bigint not null default 0,
-  download_count integer not null default 0,
-  mime_type text,
-  is_material_synced boolean not null default false,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
+-- Materials remain the only source for files; download events use material_downloads.
 create table if not exists public.materials (
   id uuid primary key default gen_random_uuid(),
   teacher_id uuid not null references public.teachers(id) on delete cascade,
@@ -117,13 +97,9 @@ create table if not exists public.materials (
   file_size bigint not null default 0,
   size bigint not null default 0,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  source_download_id uuid references public.downloads_files(id) on delete set null,
-  sync_to_materials boolean not null default false
+  updated_at timestamptz not null default now()
 );
 
-create index if not exists downloads_files_teacher_created_idx on public.downloads_files(teacher_id, created_at desc);
-create index if not exists downloads_files_teacher_class_subject_idx on public.downloads_files(teacher_id, class_grade, subject);
 create index if not exists materials_teacher_created_idx on public.materials(teacher_id, created_at desc);
 
 -- Teacher live-class scheduling and attendance state
@@ -151,13 +127,7 @@ for all using (auth.uid() = teacher_id) with check (auth.uid() = teacher_id);
 
 alter publication supabase_realtime add table public.live_classes;
 
-alter table public.downloads_files enable row level security;
 alter table public.materials enable row level security;
-
-create policy "Teachers manage their own downloads" on public.downloads_files
-for all
-using (auth.uid() = teacher_id)
-with check (auth.uid() = teacher_id);
 
 drop policy if exists "Teachers manage their own materials" on public.materials;
 drop policy if exists "Students can view shared class materials" on public.materials;
@@ -186,14 +156,6 @@ begin
   end if;
 end;
 $$;
-
-create policy "Students can view shared downloads" on public.downloads_files
-for select
-using (
-  auth.uid() is not null and
-  teacher_id is not null and
-  visibility in ('Class', 'Department')
-);
 
 drop policy if exists "Teachers can upload to teacher_resources" on storage.objects;
 create policy "Teachers can upload to teacher_resources" on storage.objects
@@ -233,7 +195,6 @@ for select to authenticated using (
   and (storage.foldername(name))[2] = (select auth.uid())::text
 );
 
-alter publication supabase_realtime add table public.downloads_files;
 alter publication supabase_realtime add table public.materials;
 
 -- Student material authorization. Keep this table populated from the authenticated registration flow.
@@ -260,13 +221,6 @@ alter table public.materials add column if not exists status text not null defau
 update public.materials set material_id = id where material_id is null;
 update public.materials set grade = class_grade where grade is null;
 
-create table if not exists public.material_downloads (
-  id uuid primary key default gen_random_uuid(),
-  material_id uuid not null references public.materials(id) on delete cascade,
-  student_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
-  downloaded_at timestamptz not null default now()
-);
-
 create table if not exists public.student_video_progress (
   student_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
   video_id uuid not null references public.materials(id) on delete cascade,
@@ -278,14 +232,9 @@ create table if not exists public.student_video_progress (
 );
 
 alter table public.student_profiles enable row level security;
-alter table public.material_downloads enable row level security;
 alter table public.student_video_progress enable row level security;
 drop policy if exists "Students view own profile" on public.student_profiles;
 create policy "Students view own profile" on public.student_profiles for select using (auth.uid() = student_id);
-drop policy if exists "Students record own material downloads" on public.material_downloads;
-create policy "Students record own material downloads" on public.material_downloads for insert with check (auth.uid() = student_id);
-drop policy if exists "Students view own material downloads" on public.material_downloads;
-create policy "Students view own material downloads" on public.material_downloads for select using (auth.uid() = student_id);
 drop policy if exists "Students manage own video progress" on public.student_video_progress;
 create policy "Students manage own video progress" on public.student_video_progress for all using (auth.uid() = student_id) with check (auth.uid() = student_id);
 
@@ -298,13 +247,16 @@ set search_path = public
 as $$
   select material.*
   from public.materials material
-  join public.student_profiles student on student.student_id = auth.uid()
+  join public.students student on student.user_id = auth.uid()
   where requested_student_id = auth.uid()
     and material.status = 'published'
     and lower(coalesce(material.material_type, material.type)) in ('pdf', 'image', 'document', 'link')
-    and material.class_grade = student.grade
-    and (material.stream is null or material.stream = '' or lower(material.stream) = lower(coalesce(student.stream, '')))
-    and lower(material.subject) = any(select lower(subject) from unnest(student.eligible_subjects) subject);
+    and material.grade = student.grade::text
+    and (
+      (student.grade between 5 and 10 and material.stream is null)
+      or
+      (student.grade in (11, 12) and material.stream is not distinct from student.stream)
+    );
 $$;
 
 revoke all on function public.get_student_materials(uuid) from public;
@@ -566,7 +518,6 @@ $$;
 
 revoke all on function public.get_student_calendar_events(uuid) from public;
 grant execute on function public.get_student_calendar_events(uuid) to authenticated;
-alter publication supabase_realtime add table public.material_downloads;
 alter publication supabase_realtime add table public.student_video_progress;
 
 -- Real-time student study tracking.

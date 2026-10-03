@@ -102,8 +102,8 @@
 
       .assignment-scope {
         display: flex;
-        align-items: flex-start;
-        gap: 14px;
+        flex-direction: column;
+        gap: 10px;
         margin-top: 4px;
         padding: 13px 15px;
         border-radius: 12px;
@@ -112,6 +112,9 @@
       }
 
       .scope-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
         font-size: 0.76rem;
         font-weight: 700;
         letter-spacing: 0.04em;
@@ -120,28 +123,71 @@
       }
 
       .scope-value {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+        gap: 10px;
+        width: 100%;
         min-width: 0;
       }
 
-      .scope-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 7px 10px;
+      .scope-class-card {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+        padding: 12px;
         border: 1px solid #dbe4f2;
-        border-radius: 9px;
+        border-radius: 10px;
         background: #fff;
         color: var(--text-main);
-        font-size: 0.82rem;
-        font-weight: 700;
         box-shadow: 0 3px 10px rgba(15, 23, 42, 0.04);
       }
 
-      .scope-chip i { color: var(--primary); font-size: 0.78rem; }
-      .scope-chip small { color: var(--text-muted); font-size: 0.72rem; font-weight: 500; }
+      .scope-class-heading {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 0.88rem;
+        font-weight: 700;
+      }
+
+      .scope-class-heading i {
+        display: grid;
+        place-items: center;
+        width: 30px;
+        height: 30px;
+        flex: 0 0 30px;
+        border-radius: 9px;
+        background: #f1efff;
+        color: var(--primary);
+      }
+
+      .scope-class-heading small {
+        display: block;
+        margin-top: 2px;
+        color: var(--text-muted);
+        font-size: 0.72rem;
+        font-weight: 500;
+      }
+
+      .scope-subjects {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .scope-subject {
+        padding: 5px 8px;
+        border-radius: 7px;
+        background: #f5f7fb;
+        color: #475569;
+        font-size: 0.72rem;
+        line-height: 1.3;
+      }
+
+      .scope-empty {
+        color: var(--text-muted);
+        font-size: 0.82rem;
       }
 
       .btn-primary-action {
@@ -219,6 +265,21 @@
       }
 
       .table-card { padding: 20px; }
+      .downloads-status {
+        margin: 0 0 14px;
+        padding: 11px 13px;
+        border: 1px solid #dbe5f2;
+        border-radius: 10px;
+        background: #f8fbff;
+        color: var(--text-muted);
+        font-size: 0.84rem;
+      }
+      .downloads-status[hidden] { display: none; }
+      .downloads-status.is-error {
+        border-color: #fecaca;
+        background: #fff7f7;
+        color: #b42318;
+      }
       .table-head-title {
         font-size: 1.2rem;
         font-weight: 800;
@@ -656,7 +717,7 @@
         <div class="stat-card">
           <div class="stat-icon" style="background: #6366f1;"><i class="fa-solid fa-file-lines" aria-hidden="true"></i></div>
           <div>
-            <div class="stat-val" id="statTotalFiles">0</div>
+            <div class="stat-val" id="statTotalFiles">—</div>
             <div class="stat-lbl">Total Files</div>
             <div class="stat-sub">All time</div>
           </div>
@@ -665,7 +726,7 @@
         <div class="stat-card">
           <div class="stat-icon" style="background: #2563eb;"><i class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></i></div>
           <div>
-            <div class="stat-val" id="statTotalDownloads">0</div>
+            <div class="stat-val" id="statTotalDownloads">—</div>
             <div class="stat-lbl">Total Downloads</div>
             <div class="stat-sub">All time</div>
           </div>
@@ -674,7 +735,7 @@
         <div class="stat-card">
           <div class="stat-icon" style="background: #10b981;"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></div>
           <div>
-            <div class="stat-val" id="statCategories">0</div>
+            <div class="stat-val" id="statCategories">—</div>
             <div class="stat-lbl">Categories</div>
             <div class="stat-sub">Active groups</div>
           </div>
@@ -683,7 +744,7 @@
         <div class="stat-card">
           <div class="stat-icon" style="background: #f97316;"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i></div>
           <div>
-            <div class="stat-val" id="statRecentlyAdded">0</div>
+            <div class="stat-val" id="statRecentlyAdded">—</div>
             <div class="stat-lbl">Recently Added</div>
             <div class="stat-sub">Last 30 days</div>
           </div>
@@ -692,9 +753,9 @@
         <div class="stat-card">
           <div class="stat-icon" style="background: #0f766e;"><i class="fa-solid fa-hard-drive" aria-hidden="true"></i></div>
           <div>
-            <div class="stat-val" id="statStorageUsed">0 KB</div>
+            <div class="stat-val" id="statStorageUsed">—</div>
             <div class="stat-lbl">Storage Used</div>
-            <div class="stat-sub" id="statStorageLimit">of 5 GB</div>
+            <div class="stat-sub" id="statStorageLimit">Across uploaded materials</div>
           </div>
         </div>
       </div>
@@ -703,6 +764,7 @@
         <div class="left-section">
           <div class="table-card">
             <div class="table-head-title">All Downloads</div>
+            <div class="downloads-status" id="downloadsStatus" role="status" aria-live="polite">Loading materials and download history…</div>
 
             <div class="filters-bar">
               <div class="search-box">
@@ -788,21 +850,21 @@
               <div class="donut-graphic" id="storageGraphic">
                 <div class="donut-hole">
                   <div>
-                    <div class="donut-value" id="storageDonutValue">0 KB</div>
-                    <div class="donut-sub" id="storageDonutSub">of 5 GB</div>
+                    <div class="donut-value" id="storageDonutValue">—</div>
+                    <div class="donut-sub" id="storageDonutSub">Across uploaded materials</div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div class="legend-list" id="storageLegend"></div>
+            <div class="legend-list" id="storageLegend">Loading storage data…</div>
           </div>
 
           <div class="widget-card">
             <div class="widget-head">
               <h3>Top Downloaded Files</h3>
             </div>
-            <div class="top-downloads-list" id="topDownloadsList"></div>
+            <div class="top-downloads-list" id="topDownloadsList">Loading download history…</div>
           </div>
 
           <div class="widget-card">
@@ -841,6 +903,7 @@
       const state = {
         files: [],
         filtered: [],
+        registeredGroups: [],
         page: 1,
         pageSize: 8,
         activeSort: "recent",
@@ -886,22 +949,40 @@
       }
 
       function renderRegisteredScope() {
-        const assignments = service.getTeacherAssignments();
-        const classes = Object.entries(assignments);
+        const groups = state.registeredGroups || [];
         const scope = $("downloadsScopeValue");
 
-        if (!classes.length) {
-          scope.innerHTML = '<span class="scope-chip"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> No registered classes yet</span>';
+        if (!groups.length) {
+          scope.innerHTML = '<div class="scope-empty">No registered classes yet.</div>';
           return;
         }
 
-        scope.innerHTML = classes.map(([grade, subjects]) => `
-          <span class="scope-chip">
-            <i class="fa-solid fa-users-rectangle" aria-hidden="true"></i>
-            <span>Class ${escapeHtml(grade)}</span>
-            <small>${escapeHtml(subjects.join(", "))}</small>
-          </span>
-        `).join("");
+        const streamLabels = {
+          science_pcm: "Science (PCM)",
+          science_pcb: "Science (PCB)",
+          commerce: "Commerce",
+          arts_humanities: "Arts / Humanities",
+        };
+        scope.innerHTML = groups.map((group) => {
+          const stream = String(group.stream || "").trim().toLowerCase();
+          const subjects = (group.subjects || []).map((subject) => subject?.name || subject?.subject || "").filter(Boolean);
+          return `
+            <article class="scope-class-card">
+              <div class="scope-class-heading">
+                <i class="fa-solid fa-users-rectangle" aria-hidden="true"></i>
+                <div>
+                  Class ${escapeHtml(group.grade)}${stream ? ` · ${escapeHtml(streamLabels[stream] || stream)}` : ""}
+                  <small>${subjects.length} registered ${subjects.length === 1 ? "subject" : "subjects"}</small>
+                </div>
+              </div>
+              <div class="scope-subjects">
+                ${subjects.length
+                  ? subjects.map((subject) => `<span class="scope-subject">${escapeHtml(subject)}</span>`).join("")
+                  : '<span class="scope-empty">No subject assignments</span>'}
+              </div>
+            </article>
+          `;
+        }).join("");
       }
 
       function buildFilterOptions() {
@@ -970,12 +1051,27 @@
         $("statCategories").textContent = metrics.categories;
         $("statRecentlyAdded").textContent = metrics.recentlyAdded;
         $("statStorageUsed").textContent = formatBytes(metrics.storageUsed);
-        $("statStorageLimit").textContent = `of ${formatBytes(metrics.storageLimit)}`;
+        $("statStorageLimit").textContent = "Across uploaded materials";
 
-        const storagePercent = Math.min(100, Math.round((metrics.storageUsed / metrics.storageLimit) * 100));
-        $("storageGraphic").style.background = `conic-gradient(var(--primary) 0 ${storagePercent}%, #dfe4f4 ${storagePercent}% 100%)`;
+        const totalBytes = metrics.storageUsed;
+        const storageSlices = [
+          { value: metrics.breakdown.documents, color: "#6366f1" },
+          { value: metrics.breakdown.videos, color: "#2563eb" },
+          { value: metrics.breakdown.images, color: "#10b981" },
+          { value: metrics.breakdown.presentations, color: "#f97316" },
+          { value: metrics.breakdown.other, color: "#a78bfa" },
+        ];
+        let storageOffset = 0;
+        const storageGradient = totalBytes
+          ? storageSlices.map((slice) => {
+              const start = storageOffset;
+              storageOffset += (slice.value / totalBytes) * 100;
+              return `${slice.color} ${start}% ${storageOffset}%`;
+            }).join(", ")
+          : "#dfe4f4 0% 100%";
+        $("storageGraphic").style.background = `conic-gradient(${storageGradient})`;
         $("storageDonutValue").textContent = formatBytes(metrics.storageUsed);
-        $("storageDonutSub").textContent = `of ${formatBytes(metrics.storageLimit)}`;
+        $("storageDonutSub").textContent = "Across uploaded materials";
 
         const legendItems = [
           { label: "Documents", value: metrics.breakdown.documents, color: "#6366f1" },
@@ -1021,7 +1117,9 @@
       }
 
       function renderTopDownloads() {
-        const top = service.getTopDownloaded(state.files).slice(0, 5);
+        const top = service.getTopDownloaded(state.files)
+          .filter((file) => Number(file.download_count || 0) > 0)
+          .slice(0, 5);
         if (!top.length) {
           $("topDownloadsList").innerHTML = '<div class="empty-state"><i class="fa-solid fa-chart-simple" aria-hidden="true"></i><h3>No downloads yet</h3><p>Recent download activity will appear here.</p></div>';
           return;
@@ -1199,55 +1297,53 @@
         $("detailsContent").querySelector("[data-detail-open]")?.addEventListener("click", () => openFile(detail));
       }
 
-      function openFile(file) {
-        const url = file.file_url || file.url || "";
-        if (url) {
+      async function openFile(file) {
+        try {
+          const url = await service.getTeacherMaterialUrl(file.id);
           window.open(url, "_blank", "noopener");
-          return;
+        } catch (error) {
+          console.error("Unable to create a preview URL for this material.", error);
+          alert(error.message || "Unable to open this material.");
         }
-        alert("This file does not have a downloadable URL available yet.");
       }
 
       async function triggerDownload(file) {
-        const url = file.file_url || file.url || "";
-        if (url) {
+        try {
+          const url = await service.getTeacherMaterialUrl(file.id, true);
           const anchor = document.createElement("a");
           anchor.href = url;
-          anchor.target = "_blank";
           anchor.rel = "noopener";
           anchor.download = file.file_name || file.name || "download";
           document.body.appendChild(anchor);
           anchor.click();
           anchor.remove();
-        }
-
-        try {
-          await service.trackDownload(file);
         } catch (error) {
-          console.warn("Download tracking failed:", error);
+          console.error("Unable to download this material.", error);
+          alert(error.message || "Unable to download this material.");
         }
-
-        await refreshFiles();
       }
 
       async function copyLink(file) {
-        const url = file.file_url || file.url || "";
-        if (!url) {
-          alert("This file does not have a valid link yet.");
-          return;
-        }
-
         try {
-          await navigator.clipboard.writeText(url);
-          alert("File link copied to clipboard.");
+          const url = await service.getTeacherMaterialUrl(file.id);
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(url);
+          } else {
+            const textarea = document.createElement("textarea");
+            textarea.value = url;
+            textarea.setAttribute("readonly", "");
+            textarea.style.position = "fixed";
+            textarea.style.opacity = "0";
+            document.body.appendChild(textarea);
+            textarea.select();
+            const copied = document.execCommand("copy");
+            textarea.remove();
+            if (!copied) throw new Error("Clipboard access is not available.");
+          }
+          alert("Temporary secure link copied. It expires after a short time.");
         } catch (error) {
-          const textarea = document.createElement("textarea");
-          textarea.value = url;
-          document.body.appendChild(textarea);
-          textarea.select();
-          document.execCommand("copy");
-          textarea.remove();
-          alert("File link copied to clipboard.");
+          console.error("Unable to copy a secure material link.", error);
+          alert(error.message || "Unable to copy this material link.");
         }
       }
 
@@ -1292,6 +1388,15 @@
         renderStats();
         renderTopDownloads();
         renderTable();
+        $("downloadsStatus").hidden = true;
+        $("downloadsStatus").classList.remove("is-error");
+      }
+
+      function showDownloadsStatus(message, isError = false) {
+        const status = $("downloadsStatus");
+        status.textContent = message;
+        status.classList.toggle("is-error", isError);
+        status.hidden = !message;
       }
 
       document.addEventListener("DOMContentLoaded", async () => {
@@ -1337,29 +1442,52 @@
           if (event.target === $("detailsModal")) $("detailsModal").classList.remove("open");
         });
 
+        let currentTeacher;
         try {
-          const currentTeacher = await window.TeacherData.loadCurrentTeacherProfile();
+          currentTeacher = await window.TeacherData.loadCurrentTeacherProfile();
           const registeredGroups = await window.TeacherData.loadRegisteredTeachingScope(
             currentTeacher.client,
             currentTeacher.profile.id,
           );
+          state.registeredGroups = registeredGroups;
           service.setRegisteredTeachingScope(registeredGroups);
-          state.files = await service.fetchFiles();
           renderRegisteredScope();
-          if (!service.getRegisteredClasses().length) {
-            alert("No registered classes or subjects were found for this teacher. Add assignments in the teacher registration panel to enable uploads.");
-          }
+          populateUploadClassOptions();
           buildFilterOptions();
           renderStats();
           renderTopDownloads();
           renderTable();
+          if (!registeredGroups.length) {
+            alert("No registered classes or subjects were found for this teacher. Add assignments in the teacher registration panel to enable uploads.");
+          }
+        } catch (error) {
+          console.error("Unable to load registered teaching scope.", error);
+          $("downloadsScopeValue").textContent = `Could not load registered classes: ${error.message || "Please try again."}`;
+          showDownloadsStatus("Unable to load registered classes.", true);
+          return;
+        }
+
+        try {
+          await refreshFiles();
+        } catch (error) {
+          console.error("Unable to load teacher materials and download counts.", error);
+          showDownloadsStatus("Unable to load materials and download activity. Your registered classes are still shown above.", true);
+        }
+
+        try {
           state.unsubscribe = service.subscribe(async () => {
-            await refreshFiles();
+            try {
+              await refreshFiles();
+            } catch (error) {
+              console.error("Unable to refresh teacher download history.", error);
+              showDownloadsStatus("Unable to load download history.", true);
+            }
+          }, currentTeacher.profile.id, () => {
+            showDownloadsStatus("Unable to load download history.", true);
           });
         } catch (error) {
-          console.error("Unable to initialize downloads page.", error);
-          $("downloadsScopeValue").textContent = `Could not load registered subjects: ${error.message || "Please try again."}`;
-          alert(`Unable to load your registered grades and subjects. ${error.message || "Please try again."}`);
+          console.error("Unable to subscribe to download updates.", error);
+          showDownloadsStatus("Live download updates are unavailable.", true);
         }
       });
 
@@ -1374,4 +1502,3 @@
     <script src="../js/layout.js"></script>
   </body>
 </html>
-

@@ -176,6 +176,7 @@ begin
     from pg_policies
     where schemaname = 'public'
       and tablename = 'materials'
+      and policyname <> 'materials_students_select_eligible'
   loop
     execute format('drop policy %I on public.materials', policy_record.policyname);
   end loop;

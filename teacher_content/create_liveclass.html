@@ -226,6 +226,23 @@
         align-items: start;
       }
 
+      .content-grid.review-mode {
+        grid-template-columns: minmax(320px, 0.95fr) minmax(380px, 1.25fr);
+      }
+
+      .content-grid.review-mode .summary-card {
+        grid-column: 1;
+        grid-row: 1;
+        position: static;
+      }
+
+      .content-grid.review-mode #section3 {
+        grid-column: 2;
+        grid-row: 1;
+        min-width: 0;
+        overflow: visible;
+      }
+
       .card {
         background: #ffffff;
         border: 1px solid #e3e8f1;
@@ -804,29 +821,34 @@
 
       .review-grid {
         display: grid;
-        grid-template-columns: 1.3fr 0.7fr;
-        gap: 18px;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 14px;
       }
 
       .review-card {
+        min-width: 0;
         border: 1px solid #e2e8f0;
         border-radius: 12px;
-        padding: 19px;
-        background: white;
+        padding: 17px;
+        background: #ffffff;
       }
 
       .review-card h3 {
-        margin: 0 0 15px;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        margin: 0 0 12px;
         font-size: 14px;
         font-weight: 800;
-        color: var(--text);
+        color: #172554;
       }
 
       .review-row {
-        display: flex;
-        justify-content: space-between;
-        gap: 20px;
-        padding: 10px 0;
+        display: grid;
+        grid-template-columns: minmax(100px, 0.38fr) minmax(0, 1fr);
+        align-items: start;
+        gap: 12px;
+        padding: 9px 0;
         border-bottom: 1px solid #edf0f3;
         font-size: 12px;
       }
@@ -836,12 +858,234 @@
       }
 
       .review-row span {
-        color: var(--muted);
+        color: #738198;
+        line-height: 1.45;
       }
 
       .review-row strong {
-        color: var(--text);
-        text-align: right;
+        min-width: 0;
+        color: #172554;
+        text-align: left;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .review-session-fields {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 22px;
+      }
+
+      .review-session-fields .review-row {
+        grid-template-columns: minmax(82px, 0.42fr) minmax(0, 1fr);
+      }
+
+      .review-session-fields .review-row.full {
+        grid-column: 1 / -1;
+      }
+
+      .review-link-value {
+        color: #4e3bd0;
+        text-decoration: underline;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .review-section-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+        gap: 14px;
+        align-items: stretch;
+      }
+
+      .review-section-grid > * {
+        min-width: 0;
+      }
+
+      .eligible-students-card {
+        background: #f2f6ff;
+        border-color: #dce6ff;
+      }
+
+      .eligible-class {
+        margin: -3px 0 10px;
+        color: #5e6e86;
+        font-size: 11px;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+      }
+
+      .students-count-label {
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 650;
+      }
+
+      .students-card p {
+        margin-top: 10px;
+        font-size: 11px;
+        line-height: 1.5;
+      }
+
+      .review-options {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+
+      .review-option {
+        display: grid;
+        grid-template-columns: 20px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 9px;
+        min-height: 41px;
+        padding: 7px 0;
+        border-bottom: 1px solid #edf0f3;
+        color: #475569;
+        font-size: 11px;
+        line-height: 1.4;
+      }
+
+      .review-option:last-child {
+        border-bottom: 0;
+      }
+
+      .review-option-icon {
+        color: #718096;
+        text-align: center;
+      }
+
+      .review-option-state {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        color: #718096;
+        font-size: 10px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .review-option-state.enabled {
+        color: #07804f;
+      }
+
+      .review-option-state i {
+        width: 16px;
+        height: 16px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: #e9eef4;
+        font-size: 8px;
+      }
+
+      .review-option-state.enabled i {
+        background: #dcfce9;
+      }
+
+      .meeting-access-card {
+        background: #fbfcff;
+      }
+
+      .meeting-link-box {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        min-width: 0;
+        padding: 11px;
+        border: 1px solid #e2e8f0;
+        border-radius: 9px;
+        background: #f8fafc;
+      }
+
+      .meeting-link-box a {
+        flex: 1 1 auto;
+        min-width: 0;
+        color: #4e3bd0;
+        font-size: 11px;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .copy-link-button {
+        flex: 0 0 auto;
+        padding: 6px 9px;
+        border: 1px solid #d8d2fb;
+        border-radius: 7px;
+        background: #ffffff;
+        color: #5735df;
+        font-family: inherit;
+        font-size: 10px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .student-visibility-notice {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        padding: 11px 12px;
+        border: 1px solid #d8eaff;
+        border-radius: 10px;
+        background: #f0f7ff;
+        color: #48627e;
+        font-size: 11px;
+        line-height: 1.5;
+      }
+
+      .student-visibility-notice i {
+        flex: 0 0 auto;
+        margin-top: 2px;
+        color: #3478d4;
+      }
+
+      .student-visibility-notice strong {
+        display: block;
+        margin-bottom: 2px;
+        color: #284b73;
+      }
+
+      .review-actions {
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 14px -4px -4px;
+        padding: 13px 4px 4px;
+        border-top: 1px solid #e9edf4;
+        background: #ffffff;
+      }
+
+      .review-page-header {
+        margin-bottom: 16px;
+      }
+
+      .review-page-header .section-title {
+        margin-bottom: 5px;
+      }
+
+      .review-page-header .section-description {
+        margin-bottom: 0;
+      }
+
+      .content-grid.review-mode .summary-row {
+        min-height: 58px;
+      }
+
+      .content-grid.review-mode .summary-item {
+        min-width: 0;
+      }
+
+      .content-grid.review-mode .summary-item strong {
+        overflow-wrap: anywhere;
+      }
+
+      .review-actions .btn {
+        min-width: 155px;
       }
 
       .students-card {
@@ -932,6 +1176,10 @@
           grid-template-columns: minmax(0, 1.8fr) minmax(300px, 1fr);
         }
 
+        .content-grid.review-mode {
+          grid-template-columns: minmax(280px, 0.9fr) minmax(360px, 1.25fr);
+        }
+
         .registered-classes {
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
@@ -952,6 +1200,16 @@
       @media (min-width: 761px) and (max-width: 900px) {
         .content-grid {
           grid-template-columns: 1fr;
+        }
+
+        .content-grid.review-mode {
+          grid-template-columns: 1fr;
+        }
+
+        .content-grid.review-mode .summary-card,
+        .content-grid.review-mode #section3 {
+          grid-column: 1;
+          grid-row: auto;
         }
 
         .summary-card {
@@ -1005,6 +1263,16 @@
           grid-template-columns: 1fr;
         }
 
+        .content-grid.review-mode {
+          grid-template-columns: 1fr;
+        }
+
+        .content-grid.review-mode .summary-card,
+        .content-grid.review-mode #section3 {
+          grid-column: 1;
+          grid-row: auto;
+        }
+
         .summary-card {
           position: static;
           grid-row: 2;
@@ -1012,6 +1280,30 @@
 
         .summary-footer {
           margin-top: 0;
+        }
+
+        .review-session-fields,
+        .review-section-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .review-actions {
+          position: static;
+          flex-direction: column-reverse;
+          margin-right: 0;
+          margin-left: 0;
+        }
+
+        .review-actions .btn {
+          width: 100%;
+        }
+
+        .meeting-link-box {
+          flex-direction: column;
+        }
+
+        .copy-link-button {
+          align-self: flex-start;
         }
 
         .teaching-scope {
@@ -1321,96 +1613,117 @@
         </section>
 
         <section class="card form-card schedule-section" id="section3">
-          <h2 class="section-title">Review your live class</h2>
-          <p class="section-description">
-            Check the information before scheduling the session.
-          </p>
-
+          <header class="review-page-header">
+            <h2 class="section-title">Review your live class</h2>
+            <p class="section-description">
+              Check the information before scheduling the session.
+            </p>
+          </header>
           <div class="review-grid">
             <div class="review-card">
               <h3>
-                <i
-                  class="fa-solid fa-video"
-                  style="color: var(--primary); margin-right: 7px"
-                ></i>
+                <i class="fa-solid fa-video" aria-hidden="true" style="color: var(--primary)"></i>
                 Session information
               </h3>
 
-              <div class="review-row">
-                <span>Class</span>
-                <strong id="reviewClass"></strong>
-              </div>
+              <div class="review-session-fields">
+                <div class="review-row">
+                  <span>Class</span>
+                  <strong id="reviewClass"></strong>
+                </div>
 
-              <div class="review-row">
-                <span>Subject</span>
-                <strong id="reviewSubject"></strong>
-              </div>
+                <div class="review-row">
+                  <span>Subject</span>
+                  <strong id="reviewSubject"></strong>
+                </div>
 
-              <div class="review-row">
-                <span>Title</span>
-                <strong id="reviewTitle"></strong>
-              </div>
+                <div class="review-row">
+                  <span>Title</span>
+                  <strong id="reviewTitle"></strong>
+                </div>
 
-              <div class="review-row">
-                <span>Description</span>
-                <strong id="reviewDescription"></strong>
-              </div>
+                <div class="review-row">
+                  <span>Description</span>
+                  <strong id="reviewDescription"></strong>
+                </div>
 
-              <div class="review-row">
-                <span>Date</span>
-                <strong id="reviewDate"></strong>
-              </div>
+                <div class="review-row">
+                  <span>Date</span>
+                  <strong id="reviewDate"></strong>
+                </div>
 
-              <div class="review-row">
-                <span>Time</span>
-                <strong id="reviewTime"></strong>
-              </div>
+                <div class="review-row">
+                  <span>Time</span>
+                  <strong id="reviewTime"></strong>
+                </div>
 
-              <div class="review-row">
-                <span>Platform</span>
-                <strong id="reviewPlatform"></strong>
-              </div>
+                <div class="review-row">
+                  <span>Platform</span>
+                  <strong id="reviewPlatform"></strong>
+                </div>
 
-              <div class="review-row">
-                <span>Meeting Link</span>
-                <strong id="reviewLink"></strong>
+                <div class="review-row full">
+                  <span>Meeting Link</span>
+                  <a class="review-link-value" id="reviewLink" target="_blank" rel="noopener noreferrer"></a>
+                </div>
               </div>
             </div>
 
-            <div>
-              <div class="review-card students-card">
-                <h3>Eligible students</h3>
-                <div class="students-number" id="reviewStudents">0</div>
-                <p>enrolled students will have access to this class.</p>
+            <div class="review-section-grid">
+              <div class="review-card students-card eligible-students-card">
+                <h3><i class="fa-solid fa-users" aria-hidden="true"></i> Eligible Students</h3>
+                <p class="eligible-class" id="reviewEligibleClass"></p>
+                <div class="students-number" id="reviewStudents">—</div>
+                <div class="students-count-label" id="reviewStudentsLabel">Enrollment count unavailable</div>
+                <p>Only students enrolled in the selected class and stream can access this session.</p>
               </div>
 
-              <div class="review-card" style="margin-top: 18px">
-                <h3>Notifications</h3>
-
-                <div class="review-row">
-                  <span> Instant notification </span>
-                  <strong id="reviewNotify"> Enabled </strong>
-                </div>
-
-                <div class="review-row">
-                  <span> Early joining </span>
-                  <strong id="reviewEarlyJoin"> Enabled </strong>
-                </div>
-
-                <div class="review-row">
-                  <span> 30-minute reminder </span>
-                  <strong id="reviewReminder"> Enabled </strong>
-                </div>
-
-                <div class="review-row">
-                  <span> Recording </span>
-                  <strong id="reviewRecording"> Off </strong>
+              <div class="review-card">
+                <h3><i class="fa-solid fa-sliders" aria-hidden="true" style="color: var(--primary)"></i> Class Options</h3>
+                <div class="review-options">
+                  <div class="review-option">
+                    <i class="fa-regular fa-bell review-option-icon" aria-hidden="true"></i>
+                    <span>Notify students immediately</span>
+                    <strong class="review-option-state" id="reviewNotify"><i class="fa-solid fa-minus" aria-hidden="true"></i> Off</strong>
+                  </div>
+                  <div class="review-option">
+                    <i class="fa-solid fa-door-open review-option-icon" aria-hidden="true"></i>
+                    <span>Allow early joining</span>
+                    <strong class="review-option-state" id="reviewEarlyJoin"><i class="fa-solid fa-minus" aria-hidden="true"></i> Off</strong>
+                  </div>
+                  <div class="review-option">
+                    <i class="fa-regular fa-clock review-option-icon" aria-hidden="true"></i>
+                    <span>30-minute reminder</span>
+                    <strong class="review-option-state" id="reviewReminder"><i class="fa-solid fa-minus" aria-hidden="true"></i> Off</strong>
+                  </div>
+                  <div class="review-option">
+                    <i class="fa-solid fa-video review-option-icon" aria-hidden="true"></i>
+                    <span>Record this session</span>
+                    <strong class="review-option-state" id="reviewRecording"><i class="fa-solid fa-minus" aria-hidden="true"></i> Off</strong>
+                  </div>
                 </div>
               </div>
+            </div>
+
+            <div class="review-card meeting-access-card">
+              <h3><i class="fa-solid fa-link" aria-hidden="true" style="color: var(--primary)"></i> Meeting Access</h3>
+              <div class="review-row">
+                <span>Platform</span>
+                <strong id="reviewAccessPlatform"></strong>
+              </div>
+              <div class="meeting-link-box">
+                <a id="reviewAccessLink" target="_blank" rel="noopener noreferrer"></a>
+                <button class="copy-link-button" type="button" id="copyMeetingLink" onclick="copyMeetingLink()">Copy Link</button>
+              </div>
+            </div>
+
+            <div class="student-visibility-notice">
+              <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+              <span><strong>Student visibility</strong>Students will see this live class only after it has been successfully scheduled.</span>
             </div>
           </div>
 
-          <div class="bottom-actions">
+          <div class="review-actions">
             <button class="btn btn-secondary" onclick="showSection(2)">
               <i class="fa-solid fa-arrow-left"></i>
               Edit Details
@@ -1713,6 +2026,7 @@
 
       function showSection(step) {
         currentStep = step;
+        document.querySelector(".content-grid").classList.toggle("review-mode", step === 3);
         document.querySelectorAll(".schedule-section").forEach((section) => {
           section.classList.remove("active");
         });
@@ -1849,16 +2163,60 @@
           year: "numeric",
         });
         document.getElementById("reviewTime").textContent =
-          document.getElementById("startTime").value + " – " + document.getElementById("endTime").value;
+          formatTimeValue(document.getElementById("startTime").value) +
+          " – " +
+          formatTimeValue(document.getElementById("endTime").value);
         document.getElementById("reviewPlatform").textContent = document.getElementById("platform").value;
         document.getElementById("reviewLink").textContent = document.getElementById("meetingLink").value;
-        document.getElementById("reviewStudents").textContent = "—";
-        document.getElementById("reviewNotify").textContent = document.getElementById("notifyStudents").checked ? "Enabled" : "Off";
-        document.getElementById("reviewEarlyJoin").textContent = document.getElementById("allowEarlyJoin").checked ? "Enabled" : "Off";
-        document.getElementById("reviewReminder").textContent = document.getElementById("reminder").checked ? "Enabled" : "Off";
-        document.getElementById("reviewRecording").textContent = document.getElementById("recordClass").checked ? "Enabled" : "Off";
+        document.getElementById("reviewLink").href = document.getElementById("meetingLink").value.trim();
+        document.getElementById("reviewAccessLink").textContent = document.getElementById("meetingLink").value.trim();
+        document.getElementById("reviewAccessLink").href = document.getElementById("meetingLink").value.trim();
+        document.getElementById("reviewAccessPlatform").textContent = document.getElementById("platform").value;
+        document.getElementById("reviewEligibleClass").textContent = getDisplayClassName(selectedClass);
+        setReviewOption("reviewNotify", document.getElementById("notifyStudents").checked);
+        setReviewOption("reviewEarlyJoin", document.getElementById("allowEarlyJoin").checked);
+        setReviewOption("reviewReminder", document.getElementById("reminder").checked);
+        setReviewOption("reviewRecording", document.getElementById("recordClass").checked);
 
         showSection(3);
+      }
+
+      function setReviewOption(id, enabled) {
+        const element = document.getElementById(id);
+        element.classList.toggle("enabled", enabled);
+        element.innerHTML = enabled
+          ? '<i class="fa-solid fa-check" aria-hidden="true"></i> On'
+          : '<i class="fa-solid fa-minus" aria-hidden="true"></i> Off';
+      }
+
+      async function copyMeetingLink() {
+        const link = document.getElementById("meetingLink").value.trim();
+        if (!link) return;
+
+        const button = document.getElementById("copyMeetingLink");
+        try {
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(link);
+          } else {
+            const temporaryInput = document.createElement("textarea");
+            temporaryInput.value = link;
+            temporaryInput.setAttribute("readonly", "");
+            temporaryInput.style.position = "fixed";
+            temporaryInput.style.opacity = "0";
+            document.body.appendChild(temporaryInput);
+            temporaryInput.select();
+            const copied = document.execCommand("copy");
+            temporaryInput.remove();
+            if (!copied) throw new Error("Clipboard access is not available.");
+          }
+          button.textContent = "Copied";
+          window.setTimeout(() => {
+            button.textContent = "Copy Link";
+          }, 1600);
+        } catch (error) {
+          console.error("Could not copy the meeting link.", error);
+          window.alert("Could not copy the meeting link. Please copy it manually.");
+        }
       }
 
       function buildLiveClassPayload() {
