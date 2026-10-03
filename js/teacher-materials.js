@@ -78,11 +78,9 @@
     document: "document",
     link: "document",
   })[String(type ?? "").trim().toLowerCase()] || null;
-  const displayMaterialType = (item) => item.external_url && !item.file_path
-    ? "link"
-    : String(item.material_type || "").toLowerCase() === "photo"
-      ? "image"
-      : String(item.material_type || "").toLowerCase();
+  const displayMaterialType = (item) => String(item.material_type || "").toLowerCase() === "photo"
+    ? "image"
+    : String(item.material_type || "").toLowerCase();
   const gradeValue = (grade) => String(grade ?? "").replace(/^class\s+/i, "").trim();
 
   function setLoadError(error) {
@@ -241,7 +239,7 @@
         const type = displayMaterialType(item);
         const subject = state.subjectsById.get(String(item.subject_id))?.name || "-";
         const grade = gradeValue(item.grade) || "-";
-        const fileUrl = item.file_url || item.external_url || "";
+        const fileUrl = item.file_url || "";
         const displayName = item.file_name || item.title || "Untitled material";
         const preview = (type === "image" || type === "video" && item.thumbnail_url) && (type === "video" ? item.thumbnail_url : fileUrl)
           ? `<img src="${escapeHtml(type === "video" ? item.thumbnail_url : fileUrl)}" alt="${escapeHtml(item.title)}" loading="lazy">`
@@ -370,7 +368,7 @@
   function setUploadMode(material = null) {
     state.editing = material;
     const editing = Boolean(material);
-    const isLink = Boolean(material?.external_url && !material?.file_path);
+    const isLink = material?.material_type === "link";
     $("materialModalTitle").textContent = editing ? "Edit material details" : "Upload material";
     $("submitMaterial").textContent = editing ? "Save changes" : "Save material";
     $("materialType").disabled = editing;
@@ -378,7 +376,7 @@
     $("materialTitle").value = material?.title || "";
     $("materialDescription").value = material?.description || "";
     $("materialType").value = isLink ? "link" : material?.material_type === "photo" ? "image" : material?.material_type || material?.type || "";
-    $("materialLink").value = material?.external_url || "";
+    $("materialLink").value = "";
     syncUploadFields(editing);
     $("materialClass").value = material ? gradeValue(material.grade) : "";
     renderStreams(material ? material.stream || "" : null);
@@ -421,18 +419,14 @@
       const description = $("materialDescription").value.trim();
 
       if (state.editing) {
-        const linkUrl = state.editing.external_url && !state.editing.file_path ? $("materialLink").value.trim() : null;
-        if (linkUrl) {
-          let parsedUrl;
-          try { parsedUrl = new URL(linkUrl); } catch { throw new Error("Enter a valid link URL."); }
-          if (!["http:", "https:"].includes(parsedUrl.protocol)) throw new Error("Enter a valid HTTP or HTTPS link URL.");
+        if (state.editing.material_type === "link") {
+          throw new Error("This material cannot be edited because the materials table does not store external links.");
         }
         const { data, error } = await state.client
           .from("materials")
           .update({
             title,
             description,
-            ...(linkUrl ? { external_url: linkUrl } : {}),
             grade,
             stream: selected.stream,
             subject_id: selected.subject.id,
@@ -454,28 +448,20 @@
       const type = $("materialType").value;
       const normalizedMaterialType = normalizeMaterialType(type);
       if (!normalizedMaterialType) throw new Error("Choose a supported material type.");
-      const isLink = type === "link";
-      const linkUrl = isLink ? $("materialLink").value.trim() : "";
-      if (isLink) {
-        let parsedUrl;
-        try { parsedUrl = new URL(linkUrl); } catch { throw new Error("Enter a valid link URL."); }
-        if (!["http:", "https:"].includes(parsedUrl.protocol)) throw new Error("Enter a valid HTTP or HTTPS link URL.");
+      if (type === "link") {
+        throw new Error("External links cannot be saved because the materials table has no URL column.");
       }
-      const file = isLink ? null : $("materialFile").files[0];
-      let bucket = null;
-      let path = null;
-      if (!isLink) {
-        validateFile(type, file);
-        bucket = bucketForType(type);
-        const uniqueId = window.crypto.randomUUID();
-        path = `${state.teacher.id}/${grade}/${selected.subject.id}/${uniqueId}-${safeFileName(file.name)}`;
-        const { error: uploadError } = await state.client.storage
-          .from(bucket)
-          .upload(path, file, { upsert: false, contentType: file.type });
-        if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`);
-        uploadedPath = path;
-        uploadedBucket = bucket;
-      }
+      const file = $("materialFile").files[0];
+      validateFile(type, file);
+      const bucket = bucketForType(type);
+      const uniqueId = window.crypto.randomUUID();
+      const path = `${state.teacher.id}/${grade}/${selected.subject.id}/${uniqueId}-${safeFileName(file.name)}`;
+      const { error: uploadError } = await state.client.storage
+        .from(bucket)
+        .upload(path, file, { upsert: false, contentType: file.type });
+      if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`);
+      uploadedPath = path;
+      uploadedBucket = bucket;
 
       const timestamp = new Date().toISOString();
       const payload = {
@@ -491,7 +477,6 @@
         storage_bucket: bucket,
         file_size: file?.size || 0,
         mime_type: file?.type || null,
-        external_url: isLink ? linkUrl : null,
         updated_at: timestamp,
       };
       const { data, error } = await state.client
@@ -539,7 +524,7 @@
     const material = state.materials.find((item) => String(item.id) === String(id));
     if (!material) return;
     try {
-      const isLink = Boolean(material.external_url && !material.file_path);
+      const isLink = material.material_type === "link" && !material.file_path;
       if (!isLink && (!material.storage_bucket || !material.file_path)) {
         throw new Error("Storage bucket or file path is missing; the material was not deleted.");
       }

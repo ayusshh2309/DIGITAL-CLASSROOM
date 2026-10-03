@@ -1,130 +1,252 @@
 (() => {
-  const STORAGE_KEY = "smartLearningLiveClasses";
   const WINDOW_MS = 24 * 60 * 60 * 1000;
 
-  const readLocal = () => {
-    try {
-      const value = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-      return Array.isArray(value) ? value : [];
-    } catch {
-      return [];
-    }
+  const normalizeStatus = (status) => {
+    const normalized = String(status || "").trim().toLowerCase();
+    if (["attended", "completed", "done", "finished"].includes(normalized)) return "Attended";
+    if (["live", "in_progress", "in progress", "ongoing"].includes(normalized)) return "Live";
+    if (["cancelled", "canceled"].includes(normalized)) return "Cancelled";
+    return "Scheduled";
   };
 
-  const writeLocal = (records) => localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
   const now = () => new Date().toISOString();
-  const teacherId = () => window.AttendanceService?.teacherId?.() || "local-teacher";
 
-  const normalize = (item) => {
-    const start = item.start_at || item.start_time || item.scheduled_at || item.datetime || (item.date && item.startTime ? `${item.date}T${item.startTime}` : null);
-    const startDate = start ? new Date(start) : null;
-    const attended = Boolean(item.attended_at) || ["attended", "completed", "previous", "live now"].includes(String(item.status || "").toLowerCase());
-    const durationMinutes = Number(item.duration_minutes || item.duration || item.durationMinutes || 60) || 60;
-    const gradeValue = item.grade || item.class_grade || item.class || item.classId || "";
-    const statusValue = String(item.status || (attended ? "Attended" : "Scheduled")).trim() || "Scheduled";
+  const normalize = (item = {}) => {
+    const startValue =
+      item.start_at ||
+      item.start_time ||
+      item.class_date && item.start_time ? `${item.class_date}T${item.start_time}` : null;
+    const startDate = startValue ? new Date(startValue) : null;
+    const gradeValue = item.grade ?? item.class_grade ?? item.classId ?? "";
+    const durationMinutes = Number(item.duration_minutes ?? item.duration ?? item.durationMinutes ?? 60) || 60;
+    const title = item.title || item.class_title || item.topic || "Live class";
+    const subject = item.subject || item.subject_name || item.subjectName || "";
+    const meetingUrl = item.meeting_url || item.meetingLink || item.link || "";
+    const teacherId = String(item.teacher_id || "");
+
     return {
       ...item,
-      id: String(item.id || `local-${Date.now()}-${Math.random().toString(36).slice(2)}`),
-      teacher_id: String(item.teacher_id || teacherId()),
-      title: item.title || item.class_title || item.topic || "Live class",
-      grade: String(gradeValue || ""),
-      class_grade: String(item.class_grade || gradeValue || ""),
-      stream: item.stream || item.class_stream || "",
-      subject: item.subject || "",
+      id: String(item.id || `live-${Date.now()}-${Math.random().toString(36).slice(2)}`),
+      teacher_id: teacherId,
+      title,
+      grade: gradeValue === "" ? "" : String(gradeValue),
+      class_grade: String(item.class_grade ?? gradeValue ?? ""),
+      stream: String(item.stream || item.class_stream || ""),
+      subject,
       topic: item.topic || item.description || item.chapter || "",
-      meeting_platform: item.meeting_platform || item.platform || "",
-      meeting_url: item.meeting_url || item.meetingLink || item.link || "",
+      meeting_url: meetingUrl,
       start_at: startDate && !Number.isNaN(startDate.getTime()) ? startDate.toISOString() : null,
       duration_minutes: durationMinutes,
-      status: statusValue,
-      attended_at: item.attended_at || null,
+      status: normalizeStatus(item.status),
       created_at: item.created_at || now(),
     };
   };
 
   const isVisible = (item, reference = Date.now()) => {
+    if (!item || !item.start_at) return false;
     const start = new Date(item.start_at).getTime();
     return Number.isFinite(start) && reference < start + WINDOW_MS;
   };
 
-  async function clientAndUser() {
-    const client = window.TeacherData?.getSupabaseClient?.() || window.SmartLearningSupabase?.getClient?.();
-    if (!client) return { client: null, user: null };
-    const { data } = await client.auth.getUser();
-    return { client, user: data?.user || null };
+  async function getTeacherContext() {
+    const client = window.SmartLearningSupabase?.getClient?.() || window.TeacherData?.getSupabaseClient?.();
+    if (!client) return { client: null, user: null, teacher: null };
+
+    const { data: authData, error: authError } = await client.auth.getUser();
+    if (authError || !authData?.user) {
+      return { client, user: null, teacher: null };
+    }
+
+    try {
+      const teacherProfile = await window.TeacherData?.loadCurrentTeacherProfile?.();
+      if (teacherProfile?.profile) {
+        return { client, user: authData.user, teacher: teacherProfile.profile };
+      }
+    } catch (error) {
+      console.warn("Unable to resolve current teacher profile for live classes.", error);
+    }
+
+    const { data: teacherData, error: teacherError } = await client
+      .from("teachers")
+      .select("id, user_id")
+      .eq("user_id", authData.user.id)
+      .maybeSingle();
+
+    if (teacherError) {
+      console.warn("Could not resolve teacher row for live classes.", teacherError.message);
+      return { client, user: authData.user, teacher: null };
+    }
+
+    return { client, user: authData.user, teacher: teacherData };
   }
 
   async function load() {
-    const { client, user } = await clientAndUser();
-    if (client && user) {
-      const { data, error } = await client.from("live_classes").select("*").eq("teacher_id", user.id).order("start_at", { ascending: true });
-      if (!error) return (data || []).map(normalize).filter(isVisible);
-      console.warn("Could not load live classes from Supabase:", error.message);
+    const { client, user, teacher } = await getTeacherContext();
+    if (!client || !teacher) return [];
+
+    const identityCandidates = [teacher.id, user?.id].filter(Boolean);
+    for (const teacherId of identityCandidates) {
+      const { data, error } = await client
+        .from("live_classes")
+        .select("*")
+        .eq("teacher_id", teacherId)
+        .order("class_date", { ascending: true })
+        .order("start_time", { ascending: true });
+
+      if (!error) {
+        return (data || []).map((item) => normalize(item)).filter((item) => identityCandidates.includes(item.teacher_id) && isVisible(item));
+      }
+
+      const message = String(error.message || "");
+      if (!/column .* does not exist|Unknown column|does not exist|invalid input syntax|not null|violates/i.test(message)) {
+        console.warn("Could not load live classes from Supabase:", error.message);
+        return [];
+      }
     }
-    return readLocal().map(normalize).filter((item) => item.teacher_id === teacherId() && isVisible(item));
+
+    return [];
+  }
+
+  function buildInsertAttempts(record) {
+    const createdAt = now();
+    const modern = {
+      teacher_id: record.teacher_id,
+      grade: Number(record.grade ?? 0) || null,
+      stream: record.stream || null,
+      subject_id: record.subject_id || null,
+      subject: record.subject || record.title || "",
+      title: record.title,
+      chapter: record.chapter || null,
+      topic: record.topic || record.title,
+      description: record.description || null,
+      class_date: record.class_date || (record.start_at ? new Date(record.start_at).toISOString().slice(0, 10) : null),
+      start_time: record.start_time || (record.start_at ? new Date(record.start_at).toISOString().slice(11, 16) : null),
+      duration_minutes: Number(record.duration_minutes || 60),
+      meeting_url: record.meeting_url || "",
+      status: "scheduled",
+      created_at: createdAt,
+      updated_at: createdAt,
+    };
+
+    const legacy = {
+      teacher_id: record.teacher_id,
+      title: record.title,
+      class_grade: String(record.grade || record.class_grade || ""),
+      subject: record.subject || record.title || "",
+      topic: record.topic || record.description || record.title || "",
+      description: record.description || null,
+      start_at: record.start_at || record.class_date || new Date().toISOString(),
+      duration_minutes: Number(record.duration_minutes || 60),
+      meeting_url: record.meeting_url || "",
+      status: "Scheduled",
+      created_at: createdAt,
+      updated_at: createdAt,
+    };
+
+    return [modern, legacy];
   }
 
   async function schedule(input) {
-    const record = normalize({ ...input, teacher_id: teacherId(), status: "Scheduled", created_at: now() });
-    const { client, user } = await clientAndUser();
-    if (client && user) {
-      const payload = {
-        teacher_id: user.id,
-        title: record.title,
-        class_title: record.title,
-        grade: record.grade || record.class_grade || "",
-        class_grade: record.class_grade || record.grade || "",
-        stream: record.stream || "",
-        subject: record.subject || "",
-        topic: record.topic || "",
-        start_at: record.start_at,
-        duration_minutes: record.duration_minutes || 60,
-        status: record.status,
-        meeting_platform: record.meeting_platform || record.platform || "",
-        meeting_url: record.meeting_url || "",
-        attended_at: record.attended_at,
-        created_at: record.created_at,
-        updated_at: now(),
-      };
-      const { data, error } = await client.from("live_classes").insert(payload).select().single();
-      if (!error) return normalize(data);
-      console.warn("Could not save live class to Supabase; using local storage:", error.message);
+    const { client, user, teacher } = await getTeacherContext();
+    if (!client || !teacher) {
+      throw new Error("No authenticated teacher was found for this live class.");
     }
-    const records = readLocal().filter((item) => item.id !== record.id);
-    writeLocal([record, ...records]);
-    window.dispatchEvent(new CustomEvent("smart-learning-live-classes-updated"));
-    return record;
+
+    const identityCandidates = [teacher.id, user?.id].filter(Boolean);
+    for (const teacherId of identityCandidates) {
+      const record = normalize({ ...input, teacher_id: teacherId, status: "Scheduled", created_at: now() });
+      const attempts = buildInsertAttempts(record);
+
+      for (const payload of attempts) {
+        try {
+          const { data, error } = await client.from("live_classes").insert(payload).select().single();
+          if (!error) return normalize(data || payload);
+          const message = String(error.message || "");
+          if (!/column .* does not exist|Unknown column|does not exist|invalid input syntax|not null|violates|foreign key/i.test(message)) {
+            throw error;
+          }
+        } catch (error) {
+          const message = String(error?.message || "");
+          if (!/column .* does not exist|Unknown column|does not exist|invalid input syntax|not null|violates|foreign key/i.test(message)) {
+            throw error;
+          }
+        }
+      }
+    }
+
+    throw new Error("Could not save the live class. Please verify the live_classes schema and teacher permissions.");
   }
 
   async function markAttended(id) {
-    const attendedAt = now();
-    const { client, user } = await clientAndUser();
-    if (client && user) {
-      const { data, error } = await client.from("live_classes").update({ status: "Attended", attended_at: attendedAt }).eq("id", id).eq("teacher_id", user.id).select().single();
-      if (!error) return normalize(data);
-      console.warn("Could not mark live class attended in Supabase:", error.message);
+    const { client, user, teacher } = await getTeacherContext();
+    if (!client || !teacher) return null;
+
+    const identityCandidates = [teacher.id, user?.id].filter(Boolean);
+    const attemptedStatuses = ["completed", "Attended"];
+
+    for (const teacherId of identityCandidates) {
+      for (const status of attemptedStatuses) {
+        try {
+          const { data, error } = await client
+            .from("live_classes")
+            .update({ status, attended_at: now() })
+            .eq("id", id)
+            .eq("teacher_id", teacherId)
+            .select()
+            .single();
+
+          if (!error) return normalize(data || {});
+          const message = String(error.message || "");
+          if (!/column .* does not exist|Unknown column|does not exist|invalid input syntax|not null|violates|status/i.test(message)) {
+            throw error;
+          }
+        } catch (error) {
+          const message = String(error?.message || "");
+          if (!/column .* does not exist|Unknown column|does not exist|invalid input syntax|not null|violates|status/i.test(message)) {
+            throw error;
+          }
+        }
+      }
     }
-    const records = readLocal().map((item) => item.id === id ? { ...item, status: "Attended", attended_at: attendedAt } : item);
-    writeLocal(records);
-    window.dispatchEvent(new CustomEvent("smart-learning-live-classes-updated"));
-    return normalize(records.find((item) => item.id === id) || {});
+
+    return null;
   }
 
   function subscribe(onChange) {
     const handler = () => onChange();
     window.addEventListener("smart-learning-live-classes-updated", handler);
     window.addEventListener("storage", handler);
+
     let channel = null;
-    clientAndUser().then(({ client, user }) => {
-      if (!client || !user) return;
-      channel = client.channel(`live-classes-${user.id}`).on("postgres_changes", { event: "*", schema: "public", table: "live_classes", filter: `teacher_id=eq.${user.id}` }, handler).subscribe();
+    getTeacherContext().then(({ client, teacher }) => {
+      if (!client || !teacher) return;
+      channel = client
+        .channel(`live-classes-${teacher.id}`)
+        .on("postgres_changes", {
+          event: "*",
+          schema: "public",
+          table: "live_classes",
+          filter: `teacher_id=eq.${teacher.id}`,
+        }, handler)
+        .subscribe();
     });
+
     return () => {
       window.removeEventListener("smart-learning-live-classes-updated", handler);
       window.removeEventListener("storage", handler);
-      if (channel) window.TeacherData?.getSupabaseClient?.()?.removeChannel(channel);
+      if (channel) {
+        window.TeacherData?.getSupabaseClient?.()?.removeChannel(channel);
+      }
     };
   }
 
-  window.LiveClassService = { load, schedule, markAttended, subscribe, isVisible, WINDOW_MS };
+  window.LiveClassService = {
+    load,
+    schedule,
+    markAttended,
+    subscribe,
+    isVisible,
+    WINDOW_MS,
+    normalize,
+  };
 })();

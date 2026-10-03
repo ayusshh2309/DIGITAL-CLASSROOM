@@ -1009,7 +1009,7 @@
 
               <button
                 class="btn btn-primary"
-                onclick="window.location.href = 'live-classes.html'"
+                onclick="window.location.href = 'live_classes.html'"
               >
                 View Live Classes
               </button>
@@ -1027,6 +1027,8 @@
     <script>
       let registeredClasses = [];
       let authenticatedTeacherId = "";
+      let selectedClass = null;
+      let selectedSubject = null;
 
       const streamLabels = {
         science_pcm: "Science (PCM)",
@@ -1035,6 +1037,15 @@
         arts_humanities: "Arts / Humanities",
       };
 
+      function getDisplayClassName(classItem) {
+        return [classItem?.name, classItem?.streamLabel].filter(Boolean).join(" · ");
+      }
+
+      function getSelectedSubjectName() {
+        if (!selectedSubject) return "—";
+        return selectedSubject.name || selectedSubject;
+      }
+
       async function loadRegisteredClasses() {
         const currentTeacher = await window.TeacherData.loadCurrentTeacherProfile();
         authenticatedTeacherId = currentTeacher.profile.id;
@@ -1042,18 +1053,21 @@
           currentTeacher.client,
           currentTeacher.profile.id,
         );
-        registeredClasses = groups.map((group) => ({
-          id: `${group.grade}|${group.stream || ""}`,
-          grade: group.grade,
-          name: `Class ${group.grade}`,
-          stream: group.stream || "",
-          streamLabel: streamLabels[group.stream] || "",
-          subjects: group.subjects.map((subject) => subject.name),
-        }));
-      }
 
-      let selectedClass = null;
-      let selectedSubject = null;
+        registeredClasses = groups
+          .map((group) => ({
+            id: group.id || `${group.grade}|${group.stream || ""}`,
+            grade: Number(group.grade),
+            name: `Class ${group.grade}`,
+            stream: group.stream ? String(group.stream).trim() : "",
+            streamLabel: streamLabels[String(group.stream || "").trim().toLowerCase()] || (group.stream ? String(group.stream).trim() : ""),
+            subjects: (group.subjects || []).map((subject) => ({
+              id: subject.id ?? subject.subject_id ?? subject.name,
+              name: subject.name || subject.subject || String(subject),
+            })),
+          }))
+          .filter((group) => Number.isInteger(group.grade) && group.grade >= 5 && group.grade <= 12);
+      }
 
       function updateSummary() {
         const summaryClass = document.getElementById("summaryClass");
@@ -1067,11 +1081,8 @@
         const endValue = document.getElementById("endTime").value;
         const platformValue = document.getElementById("platform").value;
 
-        summaryClass.textContent = selectedClass
-          ? [selectedClass.name, selectedClass.streamLabel].filter(Boolean).join(" · ")
-          : "—";
-
-        summarySubject.textContent = selectedSubject || "—";
+        summaryClass.textContent = selectedClass ? getDisplayClassName(selectedClass) : "—";
+        summarySubject.textContent = getSelectedSubjectName();
         summaryDate.textContent = dateValue
           ? new Date(dateValue + "T00:00:00").toLocaleDateString("en-IN", {
               day: "2-digit",
@@ -1091,7 +1102,7 @@
         container.innerHTML = "";
 
         if (!registeredClasses.length) {
-          container.textContent = "No registered classes found.";
+          container.innerHTML = "<p style='color: var(--muted);'>No registered classes found for your teaching scope.</p>";
           return;
         }
 
@@ -1102,9 +1113,9 @@
           icon.className = "class-icon";
           icon.innerHTML = '<i class="fa-solid fa-users"></i>';
           const title = document.createElement("h3");
-          title.textContent = [cls.name, cls.streamLabel].filter(Boolean).join(" · ");
+          title.textContent = getDisplayClassName(cls);
           const details = document.createElement("p");
-          details.textContent = cls.subjects.join(" · ") || "No subjects assigned";
+          details.textContent = (cls.subjects || []).map((subject) => subject.name).join(" · ") || "No subjects assigned";
           const arrow = document.createElement("span");
           arrow.className = "class-arrow";
           arrow.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
@@ -1131,17 +1142,25 @@
         const subjects = document.getElementById("subjects");
         subjects.innerHTML = "";
 
+        if (!selectedClass || !selectedClass.subjects.length) {
+          subjectArea.style.display = "block";
+          subjects.innerHTML = "<p style='color: var(--muted);'>No subjects are assigned to this class.</p>";
+          document.getElementById("continueBtn").disabled = true;
+          updateSummary();
+          return;
+        }
+
         selectedClass.subjects.forEach((subject) => {
           const label = document.createElement("label");
           label.className = "subject-card";
           const input = document.createElement("input");
           input.type = "radio";
           input.name = "subject";
-          input.value = subject;
+          input.value = String(subject.id ?? subject.name);
           const icon = document.createElement("i");
           icon.className = "fa-solid fa-book-open";
           const name = document.createElement("span");
-          name.textContent = subject;
+          name.textContent = subject.name;
           label.append(input, icon, name);
 
           label.addEventListener("click", () => {
@@ -1172,21 +1191,13 @@
         document.getElementById(targetSection).classList.add("active");
 
         document.getElementById("step1").classList.toggle("active", step >= 1);
-        document
-          .getElementById("step1")
-          .classList.toggle("completed", step > 1);
+        document.getElementById("step1").classList.toggle("completed", step > 1);
         document.getElementById("step2").classList.toggle("active", step >= 2);
-        document
-          .getElementById("step2")
-          .classList.toggle("completed", step > 2);
+        document.getElementById("step2").classList.toggle("completed", step > 2);
         document.getElementById("step3").classList.toggle("active", step >= 3);
 
-        document
-          .getElementById("line1")
-          .classList.toggle("completed", step >= 2);
-        document
-          .getElementById("line2")
-          .classList.toggle("completed", step >= 3);
+        document.getElementById("line1").classList.toggle("completed", step >= 2);
+        document.getElementById("line2").classList.toggle("completed", step >= 3);
 
         if (step === 2 || step === 3) {
           updateSummary();
@@ -1199,14 +1210,45 @@
           return;
         }
 
-        document.getElementById("selectedClassText").textContent =
-          [selectedClass.name, selectedClass.streamLabel].filter(Boolean).join(" · ");
-        document.getElementById("selectedSubjectText").textContent =
-          selectedSubject;
+        document.getElementById("selectedClassText").textContent = getDisplayClassName(selectedClass);
+        document.getElementById("selectedSubjectText").textContent = getSelectedSubjectName();
         showSection(2);
       }
 
       function validateForm() {
+        if (!authenticatedTeacherId) {
+          alert("No authenticated teacher account was found. Please sign in again.");
+          return false;
+        }
+
+        if (!selectedClass || !selectedSubject) {
+          alert("Please select a registered class and subject.");
+          return false;
+        }
+
+        const grade = Number(selectedClass.grade);
+        if (!Number.isInteger(grade) || grade < 5 || grade > 12) {
+          alert("Selected grade must be between 5 and 12.");
+          return false;
+        }
+
+        if (grade <= 10 && (selectedClass.stream || "").trim()) {
+          alert("Grades 5-10 must not include a stream.");
+          return false;
+        }
+
+        if (grade >= 11 && !(selectedClass.stream || "").trim()) {
+          alert("Grades 11-12 require a valid registered stream.");
+          return false;
+        }
+
+        const subjectNames = (selectedClass.subjects || []).map((subject) => String(subject.name || "").trim().toLowerCase());
+        const selectedSubjectName = String(getSelectedSubjectName()).trim().toLowerCase();
+        if (!subjectNames.includes(selectedSubjectName)) {
+          alert("The selected subject is not registered for this class.");
+          return false;
+        }
+
         const title = document.getElementById("classTitle").value.trim();
         const date = document.getElementById("classDate").value;
         const start = document.getElementById("startTime").value;
@@ -1267,114 +1309,150 @@
         if (!validateForm()) return;
 
         const date = document.getElementById("classDate").value;
-
-        document.getElementById("reviewClass").textContent =
-          [selectedClass.name, selectedClass.streamLabel].filter(Boolean).join(" · ");
-
-        document.getElementById("reviewSubject").textContent = selectedSubject;
-        document.getElementById("reviewTitle").textContent =
-          document.getElementById("classTitle").value;
-        document.getElementById("reviewDate").textContent = new Date(
-          date + "T00:00:00",
-        ).toLocaleDateString("en-IN", {
+        document.getElementById("reviewClass").textContent = getDisplayClassName(selectedClass);
+        document.getElementById("reviewSubject").textContent = getSelectedSubjectName();
+        document.getElementById("reviewTitle").textContent = document.getElementById("classTitle").value;
+        document.getElementById("reviewDate").textContent = new Date(date + "T00:00:00").toLocaleDateString("en-IN", {
           day: "2-digit",
           month: "short",
           year: "numeric",
         });
-
         document.getElementById("reviewTime").textContent =
-          document.getElementById("startTime").value +
-          " – " +
-          document.getElementById("endTime").value;
-
-        document.getElementById("reviewPlatform").textContent =
-          document.getElementById("platform").value;
-        document.getElementById("reviewLink").textContent =
-          document.getElementById("meetingLink").value;
+          document.getElementById("startTime").value + " – " + document.getElementById("endTime").value;
+        document.getElementById("reviewPlatform").textContent = document.getElementById("platform").value;
+        document.getElementById("reviewLink").textContent = document.getElementById("meetingLink").value;
         document.getElementById("reviewStudents").textContent = "—";
-        document.getElementById("reviewNotify").textContent =
-          document.getElementById("notifyStudents").checked ? "Enabled" : "Off";
-        document.getElementById("reviewReminder").textContent =
-          document.getElementById("reminder").checked ? "Enabled" : "Off";
-        document.getElementById("reviewRecording").textContent =
-          document.getElementById("recordClass").checked ? "Enabled" : "Off";
+        document.getElementById("reviewNotify").textContent = document.getElementById("notifyStudents").checked ? "Enabled" : "Off";
+        document.getElementById("reviewReminder").textContent = document.getElementById("reminder").checked ? "Enabled" : "Off";
+        document.getElementById("reviewRecording").textContent = document.getElementById("recordClass").checked ? "Enabled" : "Off";
 
         showSection(3);
       }
 
-      function scheduleLiveClass() {
-        if (!validateForm()) return;
-
+      function buildLiveClassPayload() {
         const date = document.getElementById("classDate").value;
         const startTime = document.getElementById("startTime").value;
         const endTime = document.getElementById("endTime").value;
-        const startDateTime = new Date(`${date}T${startTime}:00`);
+        const meetingUrl = document.getElementById("meetingLink").value.trim();
+        const title = document.getElementById("classTitle").value.trim();
+        const description = document.getElementById("classDescription").value.trim();
+        const grade = Number(selectedClass.grade);
+        const stream = grade >= 11 ? String(selectedClass.stream || "").trim() || null : null;
         const durationMinutes = Math.max(
           1,
-          Math.round(
-            (new Date(`${date}T${endTime}:00`) - startDateTime) / 60000,
-          ),
+          Math.round((new Date(`${date}T${endTime}:00`) - new Date(`${date}T${startTime}:00`)) / 60000),
         );
+        const createdAt = new Date().toISOString();
 
-        const liveClass = {
-          id: "live_" + Date.now(),
-          teacher_id: authenticatedTeacherId,
-          classId: selectedClass.id,
-          grade: String(selectedClass.name).replace(/[^0-9]/g, "") || "",
-          stream: selectedClass.stream,
-          subject: selectedSubject,
-          title: document.getElementById("classTitle").value.trim(),
-          topic: document.getElementById("classDescription").value.trim(),
-          class_title: document.getElementById("classTitle").value.trim(),
-          description: document.getElementById("classDescription").value.trim(),
-          date,
-          startTime,
-          endTime,
-          start_at: startDateTime.toISOString(),
-          duration_minutes: durationMinutes,
-          duration: durationMinutes,
-          platform: document.getElementById("platform").value,
-          meeting_platform: document.getElementById("platform").value,
-          meetingLink: document.getElementById("meetingLink").value.trim(),
-          meeting_url: document.getElementById("meetingLink").value.trim(),
-          class_grade: String(selectedClass.grade),
-          status: "Scheduled",
-          createdAt: new Date().toISOString(),
+        return {
+          modern: {
+            teacher_id: authenticatedTeacherId,
+            grade,
+            stream,
+            subject_id: selectedSubject?.id ?? null,
+            subject: selectedSubject?.name || getSelectedSubjectName(),
+            title,
+            chapter: "",
+            topic: description || title,
+            description: description || null,
+            class_date: date,
+            start_time: startTime,
+            duration_minutes: durationMinutes,
+            meeting_url: meetingUrl,
+            status: "scheduled",
+            created_at: createdAt,
+            updated_at: createdAt,
+          },
+          legacy: {
+            teacher_id: authenticatedTeacherId,
+            title,
+            class_grade: String(grade),
+            subject: selectedSubject?.name || getSelectedSubjectName(),
+            topic: description || title,
+            description: description || null,
+            start_at: new Date(`${date}T${startTime}:00`).toISOString(),
+            duration_minutes: durationMinutes,
+            meeting_url: meetingUrl,
+            status: "Scheduled",
+            created_at: createdAt,
+            updated_at: createdAt,
+          },
         };
+      }
 
-        const existingClasses = JSON.parse(
-          localStorage.getItem("scheduledLiveClasses") || "[]",
-        );
+      async function insertLiveClassRecord() {
+        const client = window.SmartLearningSupabase?.getClient?.() || window.TeacherData?.getSupabaseClient?.();
+        if (!client) {
+          throw new Error("Supabase is not configured. Please check your project settings.");
+        }
 
-        existingClasses.push(liveClass);
-        localStorage.setItem(
-          "scheduledLiveClasses",
-          JSON.stringify(existingClasses),
-        );
-        window.dispatchEvent(
-          new CustomEvent("smart-learning-live-classes-updated"),
-        );
+        const payloadSet = buildLiveClassPayload();
+        const candidatePayloads = [payloadSet.modern, payloadSet.legacy];
 
-        document.querySelectorAll(".schedule-section").forEach((section) => {
-          section.classList.remove("active");
-        });
+        for (const payload of candidatePayloads) {
+          try {
+            const { data, error } = await client
+              .from("live_classes")
+              .insert(payload)
+              .select()
+              .single();
 
-        document.getElementById("successSection").classList.add("active");
+            if (!error) return data || payload;
+            const message = String(error.message || "");
+            if (!/column .* does not exist|does not exist|Unknown column|invalid input syntax|not null|violates/i.test(message)) {
+              throw error;
+            }
+          } catch (error) {
+            const message = String(error?.message || "");
+            if (!/column .* does not exist|does not exist|Unknown column|invalid input syntax|not null|violates/i.test(message)) {
+              throw error;
+            }
+          }
+        }
 
-        document.getElementById("successClass").textContent =
-          [selectedClass.name, selectedClass.streamLabel].filter(Boolean).join(" · ");
-        document.getElementById("successSubject").textContent = selectedSubject;
-        document.getElementById("successDate").textContent =
-          new Date(date + "T00:00:00").toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          }) +
-          " · " +
-          startTime +
-          " – " +
-          endTime;
-        document.getElementById("successStudents").textContent = "—";
+        throw new Error("Could not save the live class. The live_classes schema may not match the project requirements.");
+      }
+
+      async function scheduleLiveClass() {
+        if (!validateForm()) return;
+
+        const scheduleButton = document.querySelector("#section3 .btn-primary");
+        if (scheduleButton) {
+          scheduleButton.disabled = true;
+        }
+
+        try {
+          await insertLiveClassRecord();
+          document.querySelectorAll(".schedule-section").forEach((section) => {
+            section.classList.remove("active");
+          });
+
+          document.getElementById("successSection").classList.add("active");
+          const date = document.getElementById("classDate").value;
+          const startTime = document.getElementById("startTime").value;
+          const endTime = document.getElementById("endTime").value;
+          document.getElementById("successClass").textContent = getDisplayClassName(selectedClass);
+          document.getElementById("successSubject").textContent = getSelectedSubjectName();
+          document.getElementById("successDate").textContent =
+            new Date(date + "T00:00:00").toLocaleDateString("en-IN", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            }) +
+            " · " +
+            startTime +
+            " – " +
+            endTime;
+          document.getElementById("successStudents").textContent = "—";
+          window.dispatchEvent(new CustomEvent("smart-learning-live-classes-updated"));
+        } catch (error) {
+          console.error("Unable to save live class.", error);
+          alert(error?.message || "Unable to save the live class. Please try again.");
+        } finally {
+          if (scheduleButton) {
+            scheduleButton.disabled = false;
+          }
+        }
       }
 
       const today = new Date();

@@ -10,6 +10,10 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
 
     <!-- Supabase JS CDN Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -279,18 +283,60 @@
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
+        gap: 20px;
+        padding: 4px 4px 8px;
+        margin-bottom: 18px;
+      }
+
+      .page-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+        color: #6d4aff;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
       }
 
       .page-title h1 {
-        font-size: 2rem;
+        margin: 0;
+        font-size: clamp(2.1rem, 3vw, 3.2rem);
         font-weight: 800;
-        color: var(--text-main);
+        color: #08183e;
+        letter-spacing: -0.06em;
+        line-height: 1.08;
       }
 
       .page-title p {
-        color: var(--text-muted);
+        max-width: 620px;
+        color: #536789;
         font-size: 1.05rem;
-        margin-top: 4px;
+        margin-top: 10px;
+        line-height: 1.5;
+      }
+
+      .assignment-scope {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 18px;
+        padding: 10px 14px;
+        border: 1px solid rgba(41, 174, 184, 0.22);
+        border-radius: 12px;
+        background: rgba(237, 250, 250, 0.72);
+        color: #315360;
+        font-size: 0.9rem;
+      }
+
+      .scope-label {
+        color: #087f8a;
+        font-weight: 800;
+      }
+
+      .scope-value {
+        font-weight: 600;
       }
 
       .action-buttons {
@@ -561,17 +607,22 @@
         <!-- PAGE TITLE & ACTIONS -->
         <div class="page-header">
           <div class="page-title">
+            <span class="page-eyebrow"><i class="fa-solid fa-layer-group"></i> Teacher workspace</span>
             <h1>Live Classes</h1>
             <p>
               Schedule, manage and conduct real-time online sessions for your
               subjects.
             </p>
+            <div class="assignment-scope" id="assignmentScope">
+              <span class="scope-label">Your teaching scope</span>
+              <span class="scope-value" id="assignmentScopeValue">Class 11 (science_pcb) • Class 12 (science_pcb)</span>
+            </div>
           </div>
           <div class="action-buttons">
-            <button class="btn-primary" onclick="scheduleClassPrompt()">
-              ➕ Schedule Class
+            <button class="btn-primary" type="button" onclick="scheduleClassPrompt()">
+              <i class="fa-solid fa-plus"></i>
+              Create Live Class
             </button>
-            <button class="btn-secondary">📹 Class Recordings</button>
           </div>
         </div>
 
@@ -634,55 +685,6 @@
     <script src="../js/live-class-service.js"></script>
     <script>
 
-      // Initial dataset matching image content
-      const fallbackClasses = [
-        {
-          id: 1,
-          title: "Physics - Electromagnetism",
-          instructor: "Mr. Sharma",
-          datetime: "17 May, 10:00 AM",
-          status: "Upcoming",
-          icon: "⚛️",
-          color: "#3b82f6",
-        },
-        {
-          id: 2,
-          title: "Mathematics - Calculus",
-          instructor: "Mr. Verma",
-          datetime: "18 May, 12:30 PM",
-          status: "Upcoming",
-          icon: "🧪",
-          color: "#10b981",
-        },
-        {
-          id: 3,
-          title: "Chemistry - Organic Chemistry",
-          instructor: "Mr. Mehta",
-          datetime: "19 May, 02:00 PM",
-          status: "Upcoming",
-          icon: "📐",
-          color: "#0ea5e9",
-        },
-        {
-          id: 4,
-          title: "Computer Science - Python",
-          instructor: "Mr. Gupta",
-          datetime: "20 May, 04:00 PM",
-          status: "Upcoming",
-          icon: "</>",
-          color: "#8b5cf6",
-        },
-        {
-          id: 5,
-          title: "Physics - Mechanics",
-          instructor: "Mr. Sharma",
-          datetime: "10 May, 10:00 AM",
-          status: "Previous",
-          icon: "⚛️",
-          color: "#00818a",
-        },
-      ];
-
       let currentClasses = [];
       let currentFilterTab = "Upcoming";
 
@@ -703,9 +705,12 @@
         container.innerHTML = "";
 
         let filtered = currentClasses.filter((c) => {
+          const normalizedStatus = String(c.status || "").trim().toLowerCase();
+          const isCompleted = ["attended", "completed", "done"].includes(normalizedStatus);
+          const isCancelled = ["cancelled", "canceled"].includes(normalizedStatus);
           const matchesTab = currentFilterTab === "Upcoming"
-            ? c.status !== "Attended"
-            : c.status === "Attended";
+            ? !isCompleted && !isCancelled
+            : isCompleted;
           const matchesQuery =
             (c.title || "").toLowerCase().includes(searchQuery) ||
             (c.subject || "").toLowerCase().includes(searchQuery);
@@ -718,12 +723,13 @@
         }
 
         filtered.forEach((item) => {
+          const normalizedStatus = String(item.status || "").trim().toLowerCase();
+          const isCompleted = ["attended", "completed", "done"].includes(normalizedStatus);
+          const buttonText = isCompleted ? "Completed" : "Mark Attended";
+          const buttonClass = isCompleted ? "btn-join btn-recording" : "btn-join";
+
           const card = document.createElement("div");
           card.className = "class-card";
-
-          const buttonText = item.status === "Attended" ? "Attended" : "Mark Attended";
-          const buttonClass =
-            item.status === "Attended" ? "btn-join btn-recording" : "btn-join";
 
           card.innerHTML = `
           <div class="class-card-left">
@@ -739,7 +745,7 @@
             <div class="class-time">
               📅 <span>${new Intl.DateTimeFormat([], { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.start_at))}</span>
             </div>
-            <button class="${buttonClass}" ${item.status === "Attended" ? "disabled" : `onclick="handleClassClick('${item.id}')"`}>${buttonText}</button>
+            <button class="${buttonClass}" ${isCompleted ? "disabled" : `onclick="handleClassClick('${item.id}')"`}>${buttonText}</button>
           </div>
         `;
           container.appendChild(card);
@@ -763,8 +769,14 @@
 
       /* Update Metrics */
       function updateMetrics() {
-        const upcoming = currentClasses.filter((c) => c.status !== "Attended").length;
-        const completed = currentClasses.filter((c) => c.status === "Attended").length;
+        const upcoming = currentClasses.filter((c) => {
+          const status = String(c.status || "").trim().toLowerCase();
+          return !["attended", "completed", "done", "cancelled", "canceled"].includes(status);
+        }).length;
+        const completed = currentClasses.filter((c) => {
+          const status = String(c.status || "").trim().toLowerCase();
+          return ["attended", "completed", "done"].includes(status);
+        }).length;
 
         document.getElementById("statUpcoming").innerText = upcoming;
         document.getElementById("statCompleted").innerText = completed;

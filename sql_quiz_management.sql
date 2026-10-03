@@ -251,7 +251,6 @@ alter table public.materials add column if not exists teacher_name text;
 alter table public.materials add column if not exists grade text;
 alter table public.materials add column if not exists stream text;
 alter table public.materials add column if not exists chapter text;
-alter table public.materials add column if not exists external_url text;
 alter table public.materials add column if not exists video_url text;
 alter table public.materials add column if not exists thumbnail_url text;
 alter table public.materials add column if not exists duration text;
@@ -326,7 +325,7 @@ as $$
   select material.id, material.material_id, material.teacher_id, material.teacher_name,
     material.grade, material.class_grade, material.stream, material.subject,
     material.material_type, material.type, material.title, material.description,
-    material.chapter, coalesce(material.video_url, material.file_url, material.external_url),
+    material.chapter, coalesce(material.video_url, material.file_url),
     material.thumbnail_url, material.duration, material.duration_seconds,
     material.uploaded_at, material.updated_at, material.status,
     coalesce(progress.watch_position, 0), coalesce(progress.completed, false)
@@ -474,8 +473,8 @@ as $$
     material.uploaded_at,
     material.status,
     material.teacher_name,
-    coalesce(material.external_url, material.file_url),
-    coalesce(material.external_url, material.file_url),
+    material.file_url,
+    material.file_url,
     null::integer,
     null::integer,
     null::timestamptz

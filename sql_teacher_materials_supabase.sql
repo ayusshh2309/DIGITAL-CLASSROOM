@@ -103,8 +103,7 @@ alter table public.materials
   add column if not exists subject_id bigint,
   add column if not exists file_path text,
   add column if not exists storage_bucket text,
-  add column if not exists mime_type text,
-  add column if not exists external_url text;
+  add column if not exists mime_type text;
 
 do $$
 declare
