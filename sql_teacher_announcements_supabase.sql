@@ -310,9 +310,6 @@ begin
   if p_message is null or length(btrim(p_message)) = 0 or length(btrim(p_message)) > 5000 then
     raise exception 'Message must be between 1 and 5000 characters';
   end if;
-  if p_subject_id is null then
-    raise exception 'Choose a subject for this announcement';
-  end if;
   if p_grade between 5 and 10 then
     if p_stream is not null then
       raise exception 'Grades 5 through 10 do not have a stream';
@@ -330,7 +327,7 @@ begin
   ) then
     raise exception 'This class and stream are not in your registered teaching scope';
   end if;
-  if not exists (
+  if p_subject_id is not null and not exists (
     select 1
     from public.teacher_subject_assignments assignment
     where assignment.teacher_id = teacher_id_value

@@ -240,8 +240,6 @@
     const message = String(input.message || "").trim();
     if (!title || title.length > 160) throw new Error("Title must be between 1 and 160 characters.");
     if (!message || message.length > 5000) throw new Error("Message must be between 1 and 5,000 characters.");
-    if (!scope.subjectId) throw new Error("Choose a subject for this announcement.");
-
     let publishAt = null;
     if (status === "scheduled") {
       const scheduledDate = new Date(input.publish_at);

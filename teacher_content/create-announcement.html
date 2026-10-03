@@ -14,16 +14,244 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
     />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="../css/layout.css" />
     <link rel="stylesheet" href="../css/announcements.css" />
     <style>
       .create-announcement-page .create-announcement-shell {
-        width: min(100%, 980px);
+        width: min(100%, 1280px);
         margin: 0 auto;
       }
 
+      .create-announcement-page .announcement-hero {
+        position: relative;
+        display: flex;
+        min-height: 90px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        margin: -8px -8px 16px;
+        padding: 10px 18px 15px;
+        overflow: hidden;
+        border-radius: 16px;
+        background:
+          radial-gradient(ellipse at 83% 115%, rgba(107, 128, 255, 0.13) 0 13%, transparent 13.5%),
+          radial-gradient(ellipse at 72% 120%, rgba(62, 206, 222, 0.14) 0 18%, transparent 18.5%),
+          linear-gradient(105deg, #f4f8ff, #f5fbff 57%, #f4f4ff);
+      }
+
       .create-announcement-page .announcement-header {
-        margin-bottom: 20px;
+        margin: 0;
+      }
+
+      .create-announcement-page .back-link {
+        margin-bottom: 7px;
+        color: #3158ca;
+        font-size: 0.74rem;
+      }
+
+      .create-announcement-page .hero-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .create-announcement-page .hero-icon {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        flex: 0 0 42px;
+        place-items: center;
+        border-radius: 12px;
+        background: #e8eaff;
+        color: #554de5;
+        font-size: 1.05rem;
+      }
+
+      .create-announcement-page .announcement-header h1 {
+        margin: 0;
+        font-size: clamp(1.35rem, 2vw, 1.75rem);
+        letter-spacing: -0.03em;
+      }
+
+      .create-announcement-page .announcement-header p {
+        margin-top: 2px;
+        font-size: 0.78rem;
+      }
+
+      .create-announcement-page .hero-art {
+        position: relative;
+        display: grid;
+        width: 250px;
+        min-height: 72px;
+        flex: 0 0 250px;
+        place-items: center;
+        color: #304be0;
+      }
+
+      .create-announcement-page .hero-art::before,
+      .create-announcement-page .hero-art::after {
+        position: absolute;
+        content: "";
+        border-radius: 50%;
+        background: rgba(81, 205, 224, 0.16);
+      }
+
+      .create-announcement-page .hero-art::before {
+        width: 130px;
+        height: 70px;
+        right: 20px;
+        bottom: -34px;
+      }
+
+      .create-announcement-page .hero-art::after {
+        width: 78px;
+        height: 48px;
+        right: -20px;
+        top: -16px;
+        background: rgba(122, 111, 241, 0.09);
+      }
+
+      .create-announcement-page .hero-megaphone {
+        z-index: 1;
+        font-size: 2.2rem;
+        transform: rotate(-13deg);
+        filter: drop-shadow(0 5px 4px rgba(56, 70, 185, 0.18));
+      }
+
+      .create-announcement-page .hero-tagline {
+        z-index: 1;
+        position: absolute;
+        right: 2px;
+        top: 19px;
+        color: #25345d;
+        font-size: 0.68rem;
+        font-weight: 800;
+        line-height: 1.35;
+      }
+
+      .create-announcement-page .creation-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 250px;
+        align-items: start;
+        gap: 14px;
+      }
+
+      .create-announcement-page .creation-layout > .page-error {
+        grid-column: 1 / -1;
+        margin: 0;
+      }
+
+      .create-announcement-page .creation-form-column {
+        display: grid;
+        min-width: 0;
+        gap: 9px;
+      }
+
+      .create-announcement-page .creation-sidebar {
+        position: sticky;
+        top: 12px;
+        padding: 14px;
+      }
+
+      .create-announcement-page .tips-card {
+        padding: 16px 14px;
+        border: 1px solid #e4f3f5;
+        border-radius: 13px;
+        background:
+          radial-gradient(ellipse at 100% 100%, rgba(47, 196, 206, 0.09), transparent 42%),
+          linear-gradient(160deg, #f2fcfd, #f5fbff);
+      }
+
+      .create-announcement-page .tips-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 13px;
+        color: #172638;
+        font-size: 0.85rem;
+        font-weight: 800;
+      }
+
+      .create-announcement-page .tips-title i {
+        color: #0d9aad;
+      }
+
+      .create-announcement-page .tips-list {
+        display: grid;
+        gap: 10px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .create-announcement-page .tips-list li {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        color: #52667f;
+        font-size: 0.72rem;
+        line-height: 1.45;
+      }
+
+      .create-announcement-page .tips-list i {
+        margin-top: 2px;
+        color: #1297ae;
+      }
+
+      .create-announcement-page .supported-types {
+        display: grid;
+        gap: 9px;
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid #dceef1;
+      }
+
+      .create-announcement-page .supported-types h3 {
+        margin-bottom: 1px;
+        color: #25345d;
+        font-size: 0.76rem;
+      }
+
+      .create-announcement-page .type-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #40566f;
+        font-size: 0.72rem;
+        font-weight: 700;
+      }
+
+      .create-announcement-page .type-icon {
+        display: grid;
+        width: 20px;
+        height: 20px;
+        place-items: center;
+        border-radius: 6px;
+        background: #e9eaff;
+        color: #6548d8;
+        font-size: 0.63rem;
+      }
+
+      .create-announcement-page .type-item:nth-of-type(3) .type-icon { background: #e4f1ff; color: #2589d8; }
+      .create-announcement-page .type-item:nth-of-type(4) .type-icon { background: #e8f8ec; color: #26a45d; }
+      .create-announcement-page .type-item:nth-of-type(5) .type-icon { background: #fff4df; color: #df941d; }
+      .create-announcement-page .type-item:nth-of-type(6) .type-icon { background: #ffebed; color: #db5662; }
+
+      .create-announcement-page .tips-footer {
+        margin-top: 22px;
+        padding-top: 12px;
+        color: #287294;
+        text-align: center;
+        font-size: 0.73rem;
+        line-height: 1.5;
+      }
+
+      .create-announcement-page .tips-footer i {
+        display: block;
+        margin-bottom: 8px;
+        color: #15a7c0;
+        font-size: 1.3rem;
       }
 
       .create-announcement-page .back-link {
@@ -41,8 +269,9 @@
       }
 
       .create-announcement-page .form-panel {
-        margin-bottom: 18px;
-        padding: 22px;
+        margin: 0;
+        padding: 13px 15px;
+        border-radius: 13px;
       }
 
       .create-announcement-page [hidden] {
@@ -53,30 +282,48 @@
         display: flex;
         align-items: flex-start;
         gap: 11px;
-        margin-bottom: 17px;
+        margin-bottom: 9px;
       }
 
       .create-announcement-page .section-heading > i {
         display: grid;
-        width: 36px;
-        height: 36px;
-        flex: 0 0 36px;
+        width: 25px;
+        height: 25px;
+        flex: 0 0 25px;
         place-items: center;
-        border-radius: 10px;
-        background: #eaf8f8;
-        color: #087f8a;
+        border-radius: 50%;
+        background: #e5f5ff;
+        color: #168fd0;
+        font-size: 0.68rem;
+      }
+
+      .create-announcement-page .section-number {
+        display: grid;
+        width: 25px;
+        height: 25px;
+        flex: 0 0 25px;
+        place-items: center;
+        border-radius: 50%;
+        background: #e5f5ff;
+        color: #168fd0;
+        font-size: 0.75rem;
+        font-weight: 800;
+      }
+
+      .create-announcement-page .section-heading h2 {
+        font-size: 0.82rem;
       }
 
       .create-announcement-page .section-heading p {
         margin-top: 4px;
         color: #718196;
-        font-size: 0.77rem;
+        font-size: 0.66rem;
       }
 
       .create-announcement-page .form-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 15px;
+        gap: 8px 12px;
       }
 
       .create-announcement-page .form-field {
@@ -89,7 +336,7 @@
 
       .create-announcement-page .form-field label {
         color: #52667f;
-        font-size: 0.76rem;
+        font-size: 0.68rem;
         font-weight: 800;
       }
 
@@ -97,20 +344,44 @@
       .create-announcement-page .form-field select,
       .create-announcement-page .form-field textarea {
         width: 100%;
-        margin-top: 6px;
+        min-height: 34px;
+        margin-top: 4px;
+        padding-top: 0;
+        padding-bottom: 0;
+        font-size: 0.73rem;
       }
 
       .create-announcement-page .form-field textarea {
-        min-height: 145px;
-        line-height: 1.55;
+        min-height: 58px;
+        padding-top: 8px;
+        padding-bottom: 8px;
+        line-height: 1.45;
+      }
+
+      .create-announcement-page #announcementType {
+        max-width: 330px;
       }
 
       .create-announcement-page .field-error {
         display: block;
-        min-height: 16px;
-        margin-top: 4px;
+        min-height: 11px;
+        margin-top: 2px;
         color: #b63b4a;
-        font-size: 0.7rem;
+        font-size: 0.63rem;
+      }
+
+      .create-announcement-page .field-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .create-announcement-page .character-count {
+        align-self: flex-start;
+        min-height: 11px;
+        margin-top: 2px;
+        color: #8797aa;
+        font-size: 0.59rem;
       }
 
       .create-announcement-page [aria-invalid="true"] {
@@ -118,10 +389,10 @@
       }
 
       .create-announcement-page .audience-preview {
-        margin-top: 16px;
-        padding: 14px 16px;
+        margin-top: 8px;
+        padding: 8px 10px;
         border: 1px solid rgba(41, 174, 184, 0.22);
-        border-radius: 11px;
+        border-radius: 9px;
         background: #f2fbfb;
         color: #315360;
       }
@@ -130,19 +401,19 @@
         display: block;
         margin-bottom: 6px;
         color: #087f8a;
-        font-size: 0.74rem;
+        font-size: 0.65rem;
       }
 
       .create-announcement-page .audience-preview p {
-        font-size: 0.82rem;
+        font-size: 0.68rem;
         font-weight: 700;
       }
 
       .create-announcement-page .publishing-options {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 10px;
-        margin-bottom: 15px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin: 0 0 10px;
         border: 0;
       }
 
@@ -150,13 +421,13 @@
         display: flex;
         align-items: center;
         gap: 10px;
-        min-height: 50px;
-        padding: 11px 13px;
+        min-height: 39px;
+        padding: 7px 9px;
         border: 1px solid #e3eaf0;
         border-radius: 10px;
         background: #fff;
         color: #52667f;
-        font-size: 0.8rem;
+        font-size: 0.67rem;
         font-weight: 700;
         cursor: pointer;
       }
@@ -171,6 +442,17 @@
         accent-color: #087f8a;
       }
 
+      .create-announcement-page .publishing-choice-copy {
+        display: grid;
+        gap: 2px;
+      }
+
+      .create-announcement-page .publishing-choice-copy small {
+        color: #8090a5;
+        font-size: 0.59rem;
+        font-weight: 500;
+      }
+
       .create-announcement-page .schedule-fields[hidden] {
         display: none;
       }
@@ -179,7 +461,14 @@
         display: flex;
         justify-content: flex-end;
         gap: 9px;
-        padding-top: 4px;
+        padding-top: 0;
+      }
+
+      .create-announcement-page .form-actions .ann-button {
+        min-height: 32px;
+        border-radius: 8px;
+        padding: 0 11px;
+        font-size: 0.67rem;
       }
 
       .create-announcement-page .ann-button:disabled {
@@ -202,9 +491,21 @@
       }
 
       @media (max-width: 700px) {
+        .create-announcement-page .creation-layout {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .create-announcement-page .creation-sidebar {
+          position: static;
+        }
+
         .create-announcement-page .form-grid,
         .create-announcement-page .publishing-options {
           grid-template-columns: minmax(0, 1fr);
+        }
+
+        .create-announcement-page .hero-art {
+          display: none;
         }
 
         .create-announcement-page .form-actions {
@@ -221,134 +522,172 @@
     <div id="layout"></div>
     <main class="page-content main-box-container announcements-page create-announcement-page">
       <div class="create-announcement-shell">
-        <header class="announcement-header">
+        <header class="announcement-hero">
           <div>
             <button class="back-link" id="backToAnnouncements" type="button">
               <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
               Announcements
             </button>
-            <span class="page-eyebrow"><i class="fa-solid fa-paper-plane"></i> Teacher Workspace</span>
-            <h1>Create Announcement</h1>
-            <p>Send an announcement to your registered classes and students.</p>
+            <div class="hero-title">
+              <span class="hero-icon"><i class="fa-solid fa-bullhorn" aria-hidden="true"></i></span>
+              <div class="announcement-header">
+                <h1>Create Announcement</h1>
+                <p>Send an announcement to your registered classes and students.</p>
+              </div>
+            </div>
+          </div>
+          <div class="hero-art" aria-hidden="true">
+            <i class="fa-solid fa-bullhorn hero-megaphone"></i>
+            <span class="hero-tagline">Keep<br />everyone<br />informed</span>
           </div>
         </header>
 
-        <form id="createAnnouncementForm" novalidate>
+        <form id="createAnnouncementForm" class="creation-layout" novalidate>
           <div class="page-error" id="createAnnouncementError" role="alert" hidden></div>
 
-          <section class="panel form-panel" aria-labelledby="detailsHeading">
-            <div class="section-heading">
-              <i class="fa-solid fa-message" aria-hidden="true"></i>
-              <div>
-                <h2 id="detailsHeading">Announcement Details</h2>
-                <p>Write a clear title and message for your students.</p>
+          <div class="creation-form-column">
+            <section class="panel form-panel" aria-labelledby="detailsHeading">
+              <div class="section-heading">
+                <span class="section-number">1</span>
+                <div>
+                  <h2 id="detailsHeading">Announcement Details</h2>
+                  <p>Write a clear title and message for your students.</p>
+                </div>
               </div>
-            </div>
-            <div class="form-grid">
-              <div class="form-field full">
-                <label for="announcementTitle">Title <span aria-hidden="true">*</span></label>
-                <input id="announcementTitle" name="title" maxlength="160" required autocomplete="off" />
-                <small class="field-error" id="titleError"></small>
+              <div class="form-grid">
+                <div class="form-field full">
+                  <label for="announcementTitle">Title <span aria-hidden="true">*</span></label>
+                  <input id="announcementTitle" name="title" maxlength="160" required autocomplete="off" placeholder="E.g. Class Test Scheduled Tomorrow" />
+                  <div class="field-meta"><small class="field-error" id="titleError"></small><small class="character-count" id="titleCount">0/160</small></div>
+                </div>
+                <div class="form-field full">
+                  <label for="announcementMessage">Message <span aria-hidden="true">*</span></label>
+                  <textarea id="announcementMessage" name="message" maxlength="5000" required placeholder="Type your announcement message here..."></textarea>
+                  <div class="field-meta"><small class="field-error" id="messageError"></small><small class="character-count" id="messageCount">0/5000</small></div>
+                </div>
+                <div class="form-field">
+                  <label for="announcementType">Announcement Type <span aria-hidden="true">*</span></label>
+                  <select id="announcementType" name="type" required>
+                    <option value="">Choose announcement type</option>
+                    <option value="Exam">Exam</option>
+                    <option value="Material">Material</option>
+                    <option value="Reminder">Reminder</option>
+                    <option value="Assignment">Assignment</option>
+                    <option value="Notice">Notice</option>
+                  </select>
+                  <small class="field-error" id="typeError"></small>
+                </div>
               </div>
-              <div class="form-field full">
-                <label for="announcementMessage">Message <span aria-hidden="true">*</span></label>
-                <textarea id="announcementMessage" name="message" maxlength="5000" required></textarea>
-                <small class="field-error" id="messageError"></small>
-              </div>
-              <div class="form-field">
-                <label for="announcementType">Announcement Type <span aria-hidden="true">*</span></label>
-                <select id="announcementType" name="type" required>
-                  <option value="">Choose a type</option>
-                  <option value="Exam">Exam</option>
-                  <option value="Material">Material</option>
-                  <option value="Reminder">Reminder</option>
-                  <option value="Assignment">Assignment</option>
-                  <option value="Notice">Notice</option>
-                </select>
-                <small class="field-error" id="typeError"></small>
-              </div>
-            </div>
-          </section>
+            </section>
 
-          <section class="panel form-panel" aria-labelledby="audienceHeading">
-            <div class="section-heading">
-              <i class="fa-solid fa-users" aria-hidden="true"></i>
-              <div>
-                <h2 id="audienceHeading">Audience</h2>
-                <p>Choose only from your registered classes, streams, and subjects.</p>
+            <section class="panel form-panel" aria-labelledby="audienceHeading">
+              <div class="section-heading">
+                <span class="section-number">2</span>
+                <div>
+                  <h2 id="audienceHeading">Audience</h2>
+                  <p>Choose a registered class and target one subject or the whole class.</p>
+                </div>
               </div>
-            </div>
-            <div class="form-grid">
-              <div class="form-field">
-                <label for="announcementGrade">Class <span aria-hidden="true">*</span></label>
-                <select id="announcementGrade" name="grade" required disabled>
-                  <option value="">Loading registered classes…</option>
-                </select>
-                <small class="field-error" id="gradeError"></small>
+              <div class="form-grid">
+                <div class="form-field">
+                  <label for="announcementGrade">Class <span aria-hidden="true">*</span></label>
+                  <select id="announcementGrade" name="grade" required disabled>
+                    <option value="">Loading registered classes…</option>
+                  </select>
+                  <small class="field-error" id="gradeError"></small>
+                </div>
+                <div class="form-field" id="streamField" hidden>
+                  <label for="announcementStream">Stream <span aria-hidden="true">*</span></label>
+                  <select id="announcementStream" name="stream" disabled>
+                    <option value="">Choose a registered stream</option>
+                  </select>
+                  <small class="field-error" id="streamError"></small>
+                </div>
+                <div class="form-field">
+                  <label for="announcementSubject">Subject</label>
+                  <select id="announcementSubject" name="subject_id" required disabled>
+                    <option value="">Choose a class first</option>
+                  </select>
+                  <small class="field-error" id="subjectError"></small>
+                </div>
               </div>
-              <div class="form-field" id="streamField" hidden>
-                <label for="announcementStream">Stream <span aria-hidden="true">*</span></label>
-                <select id="announcementStream" name="stream" disabled>
-                  <option value="">Choose a registered stream</option>
-                </select>
-                <small class="field-error" id="streamError"></small>
+              <div class="audience-preview" id="audiencePreview" aria-live="polite">
+                <strong><i class="fa-solid fa-users" aria-hidden="true"></i> Announcement will be sent to:</strong>
+                <p id="audiencePreviewText">Select a class, stream, and subject.</p>
               </div>
-              <div class="form-field">
-                <label for="announcementSubject">Subject <span aria-hidden="true">*</span></label>
-                <select id="announcementSubject" name="subject_id" required disabled>
-                  <option value="">Choose a class first</option>
-                </select>
-                <small class="field-error" id="subjectError"></small>
-              </div>
-            </div>
-            <div class="audience-preview" id="audiencePreview" aria-live="polite">
-              <strong>Announcement will be sent to:</strong>
-              <p id="audiencePreviewText">Select a class, stream, and subject.</p>
-            </div>
-          </section>
+            </section>
 
-          <section class="panel form-panel" aria-labelledby="publishingHeading">
-            <div class="section-heading">
-              <i class="fa-regular fa-calendar-check" aria-hidden="true"></i>
-              <div>
-                <h2 id="publishingHeading">Publishing</h2>
-                <p>Publish immediately, schedule for later, or save this as a draft.</p>
+            <section class="panel form-panel" aria-labelledby="publishingHeading">
+              <div class="section-heading">
+                <span class="section-number">3</span>
+                <div>
+                  <h2 id="publishingHeading">Publishing</h2>
+                  <p>Publish immediately, schedule for later, or save this as a draft.</p>
+                </div>
+              </div>
+              <fieldset class="publishing-options" aria-label="Publishing option">
+                <label class="publishing-choice">
+                  <input type="radio" name="publishingMode" value="published" checked />
+                  <span class="publishing-choice-copy"><span>Publish Now</span><small>Send to all selected recipients immediately</small></span>
+                </label>
+                <label class="publishing-choice">
+                  <input type="radio" name="publishingMode" value="scheduled" />
+                  <span class="publishing-choice-copy"><span>Schedule</span><small>Choose a date and time</small></span>
+                </label>
+                <label class="publishing-choice">
+                  <input type="radio" name="publishingMode" value="draft" />
+                  <span class="publishing-choice-copy"><span>Save as Draft</span><small>Keep for later</small></span>
+                </label>
+              </fieldset>
+              <div class="form-grid schedule-fields" id="scheduleFields" hidden>
+                <div class="form-field">
+                  <label for="scheduleDate">Schedule Date <span aria-hidden="true">*</span></label>
+                  <input id="scheduleDate" type="date" />
+                  <small class="field-error" id="scheduleDateError"></small>
+                </div>
+                <div class="form-field">
+                  <label for="scheduleTime">Schedule Time <span aria-hidden="true">*</span></label>
+                  <input id="scheduleTime" type="time" />
+                  <small class="field-error" id="scheduleTimeError"></small>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="ann-button" id="cancelCreateAnnouncement" type="button">Cancel</button>
+                <button class="ann-button" id="saveAnnouncementDraft" type="button">
+                  <i class="fa-regular fa-floppy-disk" aria-hidden="true"></i>
+                  Save Draft
+                </button>
+                <button class="ann-button primary" id="submitAnnouncement" type="submit">
+                  <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
+                  <span>Publish Now</span>
+                </button>
+              </div>
+            </section>
+          </div>
+
+          <aside class="panel creation-sidebar" aria-label="Announcement tips">
+            <div class="tips-card">
+              <h2 class="tips-title"><i class="fa-solid fa-lightbulb" aria-hidden="true"></i> Quick Tips</h2>
+              <ul class="tips-list">
+                <li><i class="fa-solid fa-circle-check" aria-hidden="true"></i><span>Use a clear and concise title</span></li>
+                <li><i class="fa-solid fa-circle-check" aria-hidden="true"></i><span>Keep your message short and focused</span></li>
+                <li><i class="fa-solid fa-circle-check" aria-hidden="true"></i><span>Select the right class and subject</span></li>
+                <li><i class="fa-solid fa-circle-check" aria-hidden="true"></i><span>You can schedule announcements for a later time</span></li>
+              </ul>
+              <div class="supported-types">
+                <h3>Supported Types</h3>
+                <div class="type-item"><span class="type-icon"><i class="fa-regular fa-file-lines" aria-hidden="true"></i></span>Exam</div>
+                <div class="type-item"><span class="type-icon"><i class="fa-solid fa-book-open" aria-hidden="true"></i></span>Material</div>
+                <div class="type-item"><span class="type-icon"><i class="fa-solid fa-bell" aria-hidden="true"></i></span>Reminder</div>
+                <div class="type-item"><span class="type-icon"><i class="fa-solid fa-list-check" aria-hidden="true"></i></span>Assignment</div>
+                <div class="type-item"><span class="type-icon"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i></span>Notice</div>
+              </div>
+              <div class="tips-footer">
+                <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
+                Good communication<br />builds a better learning environment.
               </div>
             </div>
-            <fieldset class="publishing-options" aria-label="Publishing option">
-              <label class="publishing-choice">
-                <input type="radio" name="publishingMode" value="published" checked />
-                <span>Publish Now</span>
-              </label>
-              <label class="publishing-choice">
-                <input type="radio" name="publishingMode" value="scheduled" />
-                <span>Schedule</span>
-              </label>
-            </fieldset>
-            <div class="form-grid schedule-fields" id="scheduleFields" hidden>
-              <div class="form-field">
-                <label for="scheduleDate">Schedule Date <span aria-hidden="true">*</span></label>
-                <input id="scheduleDate" type="date" />
-                <small class="field-error" id="scheduleDateError"></small>
-              </div>
-              <div class="form-field">
-                <label for="scheduleTime">Schedule Time <span aria-hidden="true">*</span></label>
-                <input id="scheduleTime" type="time" />
-                <small class="field-error" id="scheduleTimeError"></small>
-              </div>
-            </div>
-            <div class="form-actions">
-              <button class="ann-button" id="cancelCreateAnnouncement" type="button">Cancel</button>
-              <button class="ann-button" id="saveAnnouncementDraft" type="button">
-                <i class="fa-regular fa-floppy-disk" aria-hidden="true"></i>
-                Save Draft
-              </button>
-              <button class="ann-button primary" id="submitAnnouncement" type="submit">
-                <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
-                <span>Publish Now</span>
-              </button>
-            </div>
-          </section>
+          </aside>
         </form>
       </div>
     </main>

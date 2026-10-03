@@ -53,10 +53,10 @@
     const group = selectedGroup();
     const subject = $("announcementSubject");
     const options = group?.subjects || [];
-    subject.innerHTML = `<option value="">${options.length ? "Choose a subject" : "No registered subjects for this class"}</option>${
+    subject.innerHTML = `<option value="__all_subjects__">All subjects</option>${
       options.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join("")
     }`;
-    subject.disabled = options.length === 0;
+    subject.disabled = !group;
     setFieldError("announcementSubject", "subjectError", "");
     renderAudiencePreview();
   }
@@ -94,7 +94,8 @@
     if (group) {
       parts.push(`Grade ${group.grade}`);
       if (group.grade >= 11) parts.push(STREAM_LABELS[group.stream] || group.stream);
-      if (selectedSubject.value && subjectName) parts.push(subjectName);
+      if (selectedSubject.value === "__all_subjects__") parts.push("All subjects");
+      else if (selectedSubject.value && subjectName) parts.push(subjectName);
     }
     $("audiencePreviewText").textContent = parts.length
       ? parts.join(" · ")
@@ -219,9 +220,10 @@
       setFieldError("announcementStream", "streamError", "Choose a registered stream.");
       valid = false;
     }
-    if (!group || !$("announcementSubject").value
-      || !group.subjects.some((subject) => String(subject.id) === $("announcementSubject").value)) {
-      setFieldError("announcementSubject", "subjectError", "Choose a subject assigned to you for this class.");
+    const selectedSubject = $("announcementSubject").value;
+    if (!group || (selectedSubject !== "__all_subjects__"
+      && !group.subjects.some((subject) => String(subject.id) === selectedSubject))) {
+      setFieldError("announcementSubject", "subjectError", "Choose a registered subject or All subjects.");
       valid = false;
     }
     if (status === "scheduled") {
@@ -259,12 +261,16 @@
   function updatePublishButton() {
     const mode = document.querySelector('input[name="publishingMode"]:checked')?.value;
     const scheduled = mode === "scheduled";
+    const draft = mode === "draft";
     $("scheduleFields").hidden = !scheduled;
     $("scheduleDate").required = scheduled;
     $("scheduleTime").required = scheduled;
     $("submitAnnouncement").querySelector("span").textContent = scheduled
       ? "Schedule Announcement"
-      : "Publish Now";
+      : draft ? "Save as Draft" : "Publish Now";
+    $("submitAnnouncement").querySelector("i").className = scheduled
+      ? "fa-regular fa-calendar-check"
+      : draft ? "fa-regular fa-floppy-disk" : "fa-solid fa-paper-plane";
   }
 
   function returnToAnnouncements(status) {
@@ -288,7 +294,9 @@
         type: $("announcementType").value,
         grade: group.grade,
         stream: group.stream,
-        subject_id: $("announcementSubject").value,
+        subject_id: $("announcementSubject").value === "__all_subjects__"
+          ? null
+          : $("announcementSubject").value,
         status,
         publish_at: publishAt,
       });
@@ -300,7 +308,8 @@
         : status === "scheduled"
           ? "Unable to schedule the announcement. Check your class, subject, and schedule time."
           : "Unable to publish the announcement. Check your class and subject, then try again.";
-      showPageError(message);
+      const details = error?.message ? ` Details: ${error.message}` : "";
+      showPageError(`${message}${details}`);
       setBusy(false, status);
     }
   }
@@ -317,6 +326,12 @@
     $("announcementSubject").addEventListener("change", renderAudiencePreview);
     document.querySelectorAll('input[name="publishingMode"]').forEach((input) => {
       input.addEventListener("change", updatePublishButton);
+    });
+    $("announcementTitle").addEventListener("input", (event) => {
+      $("titleCount").textContent = `${event.currentTarget.value.length}/160`;
+    });
+    $("announcementMessage").addEventListener("input", (event) => {
+      $("messageCount").textContent = `${event.currentTarget.value.length}/5000`;
     });
     $("createAnnouncementForm").addEventListener("submit", (event) => {
       event.preventDefault();

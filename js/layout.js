@@ -2,6 +2,36 @@
   const layoutHost = document.getElementById("layout");
   if (!layoutHost) return;
 
+  function ensureSupabaseSdk() {
+    if (window.supabase?.createClient) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      let script = document.querySelector('script[data-supabase-sdk="true"]');
+      if (script && ["failed", "ready"].includes(script.dataset.loadState)) {
+        script.remove();
+        script = null;
+      }
+      const isNew = !script;
+      if (isNew) script = document.createElement("script");
+      const onLoad = () => {
+        script.dataset.loadState = "ready";
+        if (window.supabase?.createClient) resolve();
+        else reject(new Error("Supabase SDK loaded without its client factory."));
+      };
+      const onError = () => {
+        script.dataset.loadState = "failed";
+        reject(new Error("Supabase SDK could not be loaded."));
+      };
+      script.addEventListener("load", onLoad, { once: true });
+      script.addEventListener("error", onError, { once: true });
+      if (isNew) {
+        script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+        script.dataset.supabaseSdk = "true";
+        script.dataset.loadState = "loading";
+        document.head.appendChild(script);
+      }
+    });
+  }
+
   if (!window.__teacherPageAuthGateInstalled) {
     window.__teacherPageAuthGateInstalled = true;
     const originalVisibility = document.documentElement.style.visibility;
@@ -42,6 +72,7 @@
 
         const validateAndContinue = async () => {
           try {
+            await ensureSupabaseSdk();
             const teacher = await window.TeacherData.requireTeacher();
             if (!teacher) return;
             document.getElementById("teacherValidationError")?.remove();
