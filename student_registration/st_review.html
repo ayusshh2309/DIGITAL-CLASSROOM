@@ -82,11 +82,11 @@
         margin-bottom: 28px;
       }
 
-      .brand-logo svg {
-        width: 40px;
-        height: 40px;
-        border-radius: 12px;
-        flex-shrink: 0;
+      .brand-full-logo {
+        display: block;
+        width: 180px;
+        max-width: 100%;
+        height: auto;
       }
 
       .brand-text h3 {
@@ -593,28 +593,11 @@
     <aside class="left-sidebar">
       <div>
         <div class="brand-logo">
-          <svg width="40" height="40" viewBox="0 0 44 44" fill="none">
-            <rect width="44" height="44" rx="12" fill="#5538EE" />
-
-            <path d="M22 13L11 19.5L22 26L33 19.5L22 13Z" fill="white" />
-
-            <path
-              d="M14.5 23.2L11 25.25L22 31.75L33 25.25L29.5 23.2L22 27.6L14.5 23.2Z"
-              fill="white"
-              fill-opacity="0.9"
-            />
-
-            <path
-              d="M14.5 27.2L11 29.25L22 35.75L33 29.25L29.5 27.2L22 31.6L14.5 27.2Z"
-              fill="white"
-              fill-opacity="0.75"
-            />
-          </svg>
-
-          <div class="brand-text">
-            <h3>Smart Learning DC</h3>
-            <p>Learn. Grow. Succeed.</p>
-          </div>
+          <img
+            class="brand-full-logo"
+            src="../assets/smart_learning_dc_winged_book_atom_logo_transparent.png"
+            alt="Smart Learning DC - Learn. Grow. Succeed."
+          />
         </div>
 
         <div class="sidebar-hero">

@@ -39,8 +39,8 @@ body {
 }
 
 .student-sidebar-inner { min-height: 100%; }
-.student-brand { display: flex; align-items: center; min-height: 76px; padding: 4px 2px 30px; }
-.student-brand-logo { display: block; width: 100%; max-width: 254px; height: auto; }
+.student-brand { display: flex; align-items: center; justify-content: center; padding: 0 2px 12px; }
+.student-brand-logo { display: block; width: 150px; max-width: 100%; height: auto; }
 .student-sidebar-nav { display: flex; flex-direction: column; gap: 3px; }
 .student-nav-link {
   display: flex; align-items: center; gap: 10px; min-height: 47px; padding: 11px 12px;
