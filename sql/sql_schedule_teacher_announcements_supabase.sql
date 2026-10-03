@@ -15,7 +15,7 @@ begin
     raise exception 'Announcement and student tables must already exist; no scheduled job was created';
   end if;
   if to_regclass('public.announcement_recipients_announcement_student_key') is null then
-    raise exception 'Apply sql_teacher_announcements_supabase.sql first to install duplicate protection; no scheduled job was created';
+    raise exception 'Apply sql/sql_teacher_announcements_supabase.sql first to install duplicate protection; no scheduled job was created';
   end if;
   if exists (
     select required.table_name, required.column_name

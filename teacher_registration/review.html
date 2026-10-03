@@ -2053,7 +2053,7 @@
             throw createRegistrationOperationError(
               "teachers upsert",
               error,
-              "Supabase is missing teacher profile columns. Run sql_teacher_profile_settings.sql in the Supabase SQL Editor, then retry this registration.",
+              "Supabase is missing teacher profile columns. Run sql/sql_teacher_profile_settings.sql in the Supabase SQL Editor, then retry this registration.",
             );
           }
 
@@ -2601,7 +2601,7 @@
           sessionStorage.removeItem("teacherRegistrationNeedsLogin");
           alert(
             profilePhotoUploadFailed
-              ? "Your teacher account and profile details were saved, but the photo could not be uploaded. Apply sql_teacher_profile_settings.sql in Supabase to configure the profile image bucket and policies, then upload the photo from your profile."
+              ? "Your teacher account and profile details were saved, but the photo could not be uploaded. Apply sql/sql_teacher_profile_settings.sql in Supabase to configure the profile image bucket and policies, then upload the photo from your profile."
               : "Teacher account created successfully.",
           );
           window.location.href = "../teacher_content/teacher_dashboard.html";
