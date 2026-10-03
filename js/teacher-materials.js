@@ -50,10 +50,9 @@
   const materialTypeName = (type) => ({
     pdf: "PDF",
     video: "Video",
-    image: "Image",
-    photo: "Image",
+    image: "Photo",
+    photo: "Photo",
     document: "Document",
-    link: "Link",
   }[String(type || "").toLowerCase()] || "File");
   const materialIcon = (type) => ({
     pdf: "fa-file-pdf",
@@ -61,7 +60,6 @@
     image: "fa-image",
     photo: "fa-image",
     document: "fa-file-lines",
-    link: "fa-link",
   }[String(type || "").toLowerCase()] || "fa-file-lines");
   const bucketForType = (type) => ({
     pdf: "pdfs",
@@ -76,8 +74,11 @@
     photo: "photo",
     image: "photo",
     document: "document",
-    link: "document",
   })[String(type ?? "").trim().toLowerCase()] || null;
+  const isSupportedMaterial = (item) =>
+    ["pdf", "video", "photo", "image", "document"].includes(
+      String(item.material_type || item.type || "").trim().toLowerCase(),
+    );
   const displayMaterialType = (item) => String(item.material_type || "").toLowerCase() === "photo"
     ? "image"
     : String(item.material_type || "").toLowerCase();
@@ -242,8 +243,8 @@
       `<button class="page-btn ${index + 1 === state.page ? "active" : ""}" data-page="${index + 1}">${index + 1}</button>`,
     ).join("");
 
-    const types = [null, "video", "pdf", "image", "document", "link"];
-    ["statTotal", "statVideos", "statPdfs", "statImages", "statDocuments", "statLinks"].forEach((id, index) => {
+    const types = [null, "video", "pdf", "image", "document"];
+    ["statTotal", "statVideos", "statPdfs", "statImages", "statDocuments"].forEach((id, index) => {
       $(id).textContent = types[index]
         ? state.materials.filter((item) => {
           return displayMaterialType(item) === types[index];
@@ -269,7 +270,7 @@
       .eq("teacher_id", state.teacher.id)
       .order("created_at", { ascending: false });
     if (error) throw error;
-    state.materials = await Promise.all((data || []).map(signedMaterial));
+    state.materials = await Promise.all((data || []).filter(isSupportedMaterial).map(signedMaterial));
     const subjects = new Map();
     state.assignments.forEach((rows) => rows.forEach((subject) => subjects.set(String(subject.id), subject.name)));
     const filter = $("subjectFilter");
@@ -344,25 +345,20 @@
   }
 
   function syncUploadFields(editing = Boolean(state.editing)) {
-    const isLink = $("materialType").value === "link";
-    $("fileField").hidden = isLink || editing;
-    $("linkField").hidden = !isLink;
-    $("materialLink").required = isLink;
-    $("materialFile").required = !editing && !isLink;
+    $("fileField").hidden = editing;
+    $("materialFile").required = !editing;
   }
 
   function setUploadMode(material = null) {
     state.editing = material;
     const editing = Boolean(material);
-    const isLink = material?.material_type === "link";
     $("materialModalTitle").textContent = editing ? "Edit material details" : "Upload material";
     $("submitMaterial").textContent = editing ? "Save changes" : "Save material";
     $("materialType").disabled = editing;
     $("materialFile").disabled = editing;
     $("materialTitle").value = material?.title || "";
     $("materialDescription").value = material?.description || "";
-    $("materialType").value = isLink ? "link" : material?.material_type === "photo" ? "image" : material?.material_type || material?.type || "";
-    $("materialLink").value = "";
+    $("materialType").value = material?.material_type === "photo" ? "image" : material?.material_type || material?.type || "";
     syncUploadFields(editing);
     $("materialClass").value = material ? gradeValue(material.grade) : "";
     renderStreams(material ? material.stream || "" : null);
@@ -376,9 +372,7 @@
     $("materialForm").reset();
     $("materialType").disabled = false;
     $("materialFile").disabled = false;
-    $("materialLink").required = false;
     $("materialFile").required = false;
-    $("linkField").hidden = true;
     $("fileField").hidden = false;
     $("materialStreamField").hidden = true;
     $("materialStream").required = false;
@@ -405,9 +399,6 @@
       const description = $("materialDescription").value.trim();
 
       if (state.editing) {
-        if (state.editing.material_type === "link") {
-          throw new Error("This material cannot be edited because the materials table does not store external links.");
-        }
         const { data, error } = await state.client
           .from("materials")
           .update({
@@ -416,7 +407,6 @@
             grade,
             stream: selected.stream,
             subject_id: selected.subject.id,
-            updated_at: new Date().toISOString(),
           })
           .eq("id", state.editing.id)
           .eq("teacher_id", state.teacher.id)
@@ -434,9 +424,6 @@
       const type = $("materialType").value;
       const normalizedMaterialType = normalizeMaterialType(type);
       if (!normalizedMaterialType) throw new Error("Choose a supported material type.");
-      if (type === "link") {
-        throw new Error("External links cannot be saved because the materials table has no URL column.");
-      }
       const file = $("materialFile").files[0];
       validateFile(type, file);
       const bucket = bucketForType(type);
@@ -449,7 +436,6 @@
       uploadedPath = path;
       uploadedBucket = bucket;
 
-      const timestamp = new Date().toISOString();
       const payload = {
         teacher_id: state.teacher.id,
         grade,
@@ -463,7 +449,6 @@
         storage_bucket: bucket,
         file_size: file?.size || 0,
         mime_type: file?.type || null,
-        updated_at: timestamp,
       };
       const { data, error } = await state.client
         .from("materials")
@@ -510,16 +495,13 @@
     const material = state.materials.find((item) => String(item.id) === String(id));
     if (!material) return;
     try {
-      const isLink = material.material_type === "link" && !material.file_path;
-      if (!isLink && (!material.storage_bucket || !material.file_path)) {
+      if (!material.storage_bucket || !material.file_path) {
         throw new Error("Storage bucket or file path is missing; the material was not deleted.");
       }
-      if (!isLink) {
-        const { error: storageError } = await state.client.storage
-          .from(material.storage_bucket)
-          .remove([material.file_path]);
-        if (storageError) throw new Error(`Storage deletion failed: ${storageError.message}`);
-      }
+      const { error: storageError } = await state.client.storage
+        .from(material.storage_bucket)
+        .remove([material.file_path]);
+      if (storageError) throw new Error(`Storage deletion failed: ${storageError.message}`);
 
       const { error: dbError } = await state.client
         .from("materials")

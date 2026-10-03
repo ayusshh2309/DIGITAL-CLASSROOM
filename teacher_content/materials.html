@@ -327,7 +327,7 @@
       /* Stat Cards */
       .stats-grid {
         display: grid;
-        grid-template-columns: repeat(6, minmax(0, 1fr));
+        grid-template-columns: repeat(5, minmax(0, 1fr));
         gap: 18px;
       }
 
@@ -479,10 +479,6 @@
       .type-image {
         background: #d1fae5;
         color: #065f46;
-      }
-      .type-link {
-        background: #f3e8ff;
-        color: #6b21a8;
       }
       .type-folder {
         background: #fef3c7;
@@ -659,7 +655,7 @@
             <div class="stat-icon" style="background: #f59e0b">🖼️</div>
             <div>
               <div class="stat-val" id="statImages">0</div>
-              <div class="stat-lbl">Images</div>
+              <div class="stat-lbl">Photos</div>
               <div class="stat-trend">Uploaded resources</div>
             </div>
           </div>
@@ -669,14 +665,6 @@
               <div class="stat-val" id="statDocuments">0</div>
               <div class="stat-lbl">Documents</div>
               <div class="stat-trend">Uploaded resources</div>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #3d77b9"><i class="fa-solid fa-link" aria-hidden="true"></i></div>
-            <div>
-              <div class="stat-val" id="statLinks">0</div>
-              <div class="stat-lbl">Links</div>
-              <div class="stat-trend">Shared resources</div>
             </div>
           </div>
         </div>
@@ -689,8 +677,7 @@
               <button class="tab" type="button" data-type="pdf"><i class="fa-solid fa-file-pdf"></i> PDFs</button>
               <button class="tab" type="button" data-type="document"><i class="fa-solid fa-file-lines"></i> Documents</button>
               <button class="tab" type="button" data-type="video"><i class="fa-regular fa-circle-play"></i> Videos</button>
-              <button class="tab" type="button" data-type="image"><i class="fa-regular fa-image"></i> Images</button>
-              <button class="tab" type="button" data-type="link"><i class="fa-solid fa-link"></i> Links</button>
+              <button class="tab" type="button" data-type="image"><i class="fa-regular fa-image"></i> Photos</button>
             </div>
             <div class="filter-controls">
               <input
@@ -782,21 +769,6 @@
                 <td>📥 &nbsp; 💬</td>
               </tr>
               <tr>
-                <td>
-                  <div class="item-name">🔗 Periodic Table (Interactive)</div>
-                </td>
-                <td><span class="badge-type type-link">Link</span></td>
-                <td>Class 10</td>
-                <td>Science</td>
-                <td>
-                  12 May 2025 <br /><small style="color: var(--text-muted)"
-                    >04:30 PM</small
-                  >
-                </td>
-                <td>—</td>
-                <td>🔗 &nbsp; 💬</td>
-              </tr>
-              <tr>
                 <td><div class="item-name">📹 Chemical Bonding Basics</div></td>
                 <td><span class="badge-type type-video">Video</span></td>
                 <td>Class 12</td>
@@ -847,7 +819,7 @@
           <div class="storage-breakdown" aria-label="Storage by material type">
             <div class="breakdown-item"><span class="breakdown-label"><i class="fa-solid fa-play"></i> Videos</span><span class="breakdown-value" id="storageVideos">0 B</span></div>
             <div class="breakdown-item"><span class="breakdown-label"><i class="fa-solid fa-file-pdf"></i> PDFs</span><span class="breakdown-value" id="storagePdfs">0 B</span></div>
-            <div class="breakdown-item"><span class="breakdown-label"><i class="fa-solid fa-image"></i> Images</span><span class="breakdown-value" id="storageImages">0 B</span></div>
+            <div class="breakdown-item"><span class="breakdown-label"><i class="fa-solid fa-image"></i> Photos</span><span class="breakdown-value" id="storageImages">0 B</span></div>
             <div class="breakdown-item"><span class="breakdown-label"><i class="fa-solid fa-folder"></i> Others</span><span class="breakdown-value" id="storageOthers">0 B</span></div>
           </div>
         </section>
@@ -871,12 +843,11 @@
             <label id="materialStreamField" hidden><span class="field-label"><i class="fa-solid fa-flask"></i> Stream</span><select id="materialStream"><option value="">Select a stream</option></select></label>
           </div>
           <div class="form-row">
-            <label><span class="field-label"><i class="fa-solid fa-file-lines"></i> Material type</span><select id="materialType" required><option value="">Select a type</option><option value="pdf">PDF</option><option value="video">Video</option><option value="image">Image / photo</option><option value="document">Document</option><option value="link">Link</option></select></label>
+            <label><span class="field-label"><i class="fa-solid fa-file-lines"></i> Material type</span><select id="materialType" required><option value="">Select a type</option><option value="pdf">PDF</option><option value="video">Video</option><option value="image">Photo</option><option value="document">Document</option></select></label>
             <label><span class="field-label"><i class="fa-solid fa-file-signature"></i> Title</span><input id="materialTitle" required maxlength="160" placeholder="e.g. Chapter 3 revision"></label>
           </div>
           <label><span class="field-label"><i class="fa-solid fa-align-left"></i> Description <small>Optional</small></span><textarea id="materialDescription" maxlength="1000"></textarea></label>
           <label id="fileField" class="material-dropzone"><span class="dropzone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></span><span class="dropzone-copy"><strong>File</strong><small>Maximum 25 MB</small><span class="file-picker"><i class="fa-regular fa-folder-open"></i> Choose file</span></span><input id="materialFile" type="file" accept=".pdf,video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/webp,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.rtf,.odt,.ods"><span class="file-name" id="fileName">No file chosen</span></label>
-          <label id="linkField" hidden><span class="field-label"><i class="fa-solid fa-link"></i> Link URL</span><input id="materialLink" type="url" placeholder="https://example.com/resource"></label>
           <p class="material-help assignment-message" id="assignmentMessage"><i class="fa-solid fa-circle-info"></i> Select a class to load your assigned subjects.</p>
           <div class="material-modal-actions"><button class="btn-secondary" id="cancelMaterialModal" type="button">Cancel</button><button class="btn-primary" id="submitMaterial" type="submit"><i class="fa-solid fa-cloud-arrow-up"></i> Save material</button></div>
         </form>
@@ -890,4 +861,3 @@
     <script src="../js/layout.js"></script>
   </body>
 </html>
-
