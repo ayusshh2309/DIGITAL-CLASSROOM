@@ -15,6 +15,7 @@
     hasUnsavedChanges: false,
     readOnly: false,
     settings: {},
+    aiGeneratedQuestions: [],
   };
 
   const $ = (id) => document.getElementById(id);
@@ -230,6 +231,318 @@
     element.hidden = !message;
     element.classList.toggle("error", isError);
   }
+
+  function syncAIQuestionCountUI() {
+    const customSelected = document.querySelector('input[name="aiQuestionCount"]:checked')?.value === "custom";
+    const customWrap = $("aiCustomQuestionCountWrap");
+    if (customWrap) customWrap.classList.toggle("hidden", !customSelected);
+    if (!customSelected) {
+      const customInput = $("aiCustomQuestionCount");
+      if (customInput) customInput.value = "";
+    }
+  }
+
+  function resetAIGeneratorForm() {
+    const info = readForm();
+    const chapter = info.title || info.subject || "General";
+    const defaultCount = document.querySelector('input[name="aiQuestionCount"][value="10"]');
+    if (defaultCount) defaultCount.checked = true;
+    const defaultType = document.querySelector('input[name="aiQuestionType"][value="both"]');
+    if (defaultType) defaultType.checked = true;
+    const defaultDifficulty = document.querySelector('input[name="aiDifficulty"][value="medium"]');
+    if (defaultDifficulty) defaultDifficulty.checked = true;
+    $("aiQuizChapter").value = chapter;
+    $("aiQuizContent").value = "";
+    $("aiQuizFocus").value = "";
+    $("aiMarksPerQuestion").value = "1";
+    $("aiQuizLanguage").value = "English";
+    $("aiQuizContentCount").textContent = "0";
+    $("aiQuizContent").addEventListener("input", () => {
+      $("aiQuizContentCount").textContent = String($("aiQuizContent").value.length);
+    }, { once: true });
+    syncAIQuestionCountUI();
+  }
+
+  function openAIGenerator() {
+    if (!validateStep1()) return;
+    resetAIGeneratorForm();
+    $("aiQuizGeneratorFormSection").classList.remove("hidden");
+    $("aiQuizReviewSection").classList.add("hidden");
+    $("aiQuizGeneratorModal").classList.add("show");
+  }
+
+  function closeAIGenerator() {
+    $("aiQuizGeneratorModal").classList.remove("show");
+    $("aiQuizGeneratorFormSection").classList.remove("hidden");
+    $("aiQuizReviewSection").classList.add("hidden");
+    state.aiGeneratedQuestions = [];
+  }
+
+  function readAIGenerationForm() {
+    const countChoice = document.querySelector('input[name="aiQuestionCount"]:checked')?.value || "10";
+    const numberOfQuestions = countChoice === "custom"
+      ? Number($("aiCustomQuestionCount").value)
+      : Number(countChoice);
+    const questionType = document.querySelector('input[name="aiQuestionType"]:checked')?.value || "both";
+    const difficulty = document.querySelector('input[name="aiDifficulty"]:checked')?.value || "medium";
+    const info = readForm();
+    return {
+      chapter: $("aiQuizChapter").value.trim() || info.title || info.subject || "General",
+      content: $("aiQuizContent").value.trim(),
+      numberOfQuestions,
+      questionType,
+      difficulty,
+      focus: $("aiQuizFocus").value.trim(),
+      marksPerQuestion: Number($("aiMarksPerQuestion").value || 1),
+      language: $("aiQuizLanguage").value || "English",
+      grade: info.grade,
+      stream: info.stream,
+      subjectId: info.subjectId,
+      subject: info.subject,
+    };
+  }
+
+  function validateAIGenerationForm(form) {
+    if (!form.content) {
+      showToast("Paste quiz content before generating AI questions.", true);
+      $("aiQuizContent").focus();
+      return false;
+    }
+    if (form.content.length > 12000) {
+      showToast("Quiz content is too long. Reduce it to 12,000 characters or fewer.", true);
+      $("aiQuizContent").focus();
+      return false;
+    }
+    if (!Number.isFinite(form.numberOfQuestions) || form.numberOfQuestions < 1 || form.numberOfQuestions > 50) {
+      showToast("Choose between 1 and 50 questions for AI generation.", true);
+      $("aiCustomQuestionCount").focus();
+      return false;
+    }
+    if (!Number.isFinite(form.marksPerQuestion) || form.marksPerQuestion < 1) {
+      showToast("Marks per question must be a positive number.", true);
+      $("aiMarksPerQuestion").focus();
+      return false;
+    }
+    return true;
+  }
+
+  function normalizeCorrectMCQAnswer(value) {
+    if (Number.isFinite(Number(value))) {
+      const numericValue = Number(value);
+      if (numericValue >= 0 && numericValue <= 3) return numericValue;
+      return 0;
+    }
+    const normalized = String(value).trim().toUpperCase();
+    const map = { A: 0, B: 1, C: 2, D: 3, 0: 0, 1: 1, 2: 2, 3: 3 };
+    return map[normalized] ?? 0;
+  }
+
+  function normalizeAIQuestion(rawQuestion) {
+    const rawType = String(rawQuestion?.question_type ?? rawQuestion?.type ?? rawQuestion?.questionType ?? rawQuestion?.kind ?? "").trim().toLowerCase();
+    const normalizedType = rawType === "mcq" || rawType === "multiple_choice" || rawType === "multiple-choice" ? "multiple_choice"
+      : rawType === "true_false" || rawType === "true/false" || rawType === "boolean" || rawType === "truefalse" ? "true_false"
+      : null;
+    if (!normalizedType) return null;
+
+    const text = String(rawQuestion?.question_text ?? rawQuestion?.question ?? rawQuestion?.text ?? "").trim();
+    if (!text) return null;
+
+    const marks = Number(rawQuestion?.marks ?? rawQuestion?.points ?? 1);
+    if (!Number.isFinite(marks) || marks <= 0) return null;
+
+    if (normalizedType === "multiple_choice") {
+      const optionValues = Array.isArray(rawQuestion?.options) ? rawQuestion.options : Array.isArray(rawQuestion?.choices) ? rawQuestion.choices : [];
+      const options = optionValues
+        .map((option) => typeof option === "string" ? option : option?.text ?? option?.option ?? "")
+        .map((option) => String(option).trim())
+        .filter(Boolean)
+        .slice(0, 4);
+      if (options.length < 4) return null;
+
+      const correctValue = rawQuestion?.correct_answer ?? rawQuestion?.correctAnswer ?? rawQuestion?.answer ?? 0;
+      return {
+        type: "multiple_choice",
+        text,
+        options: options.slice(0, 4),
+        correctAnswer: normalizeCorrectMCQAnswer(correctValue),
+        marks,
+        explanation: String(rawQuestion?.explanation ?? "").trim(),
+      };
+    }
+
+    const answerValue = rawQuestion?.correct_answer ?? rawQuestion?.correctAnswer ?? rawQuestion?.answer ?? rawQuestion?.is_true ?? false;
+    const normalizedAnswer = typeof answerValue === "boolean" ? (answerValue ? 1 : 0) : String(answerValue).trim().toLowerCase();
+    const correctAnswer = normalizedAnswer === "false" || normalizedAnswer === "0" || normalizedAnswer === "no" ? 1 : 0;
+    return {
+      type: "true_false",
+      text,
+      options: ["", ""],
+      correctAnswer,
+      marks,
+      explanation: String(rawQuestion?.explanation ?? "").trim(),
+    };
+  }
+
+  function extractAIGeneratedQuestions(response) {
+    const source = Array.isArray(response)
+      ? response
+      : Array.isArray(response?.questions)
+        ? response.questions
+        : Array.isArray(response?.generated_questions)
+          ? response.generated_questions
+          : Array.isArray(response?.data)
+            ? response.data
+            : Array.isArray(response?.items)
+              ? response.items
+              : [];
+    return source
+      .map((question) => normalizeAIQuestion(question))
+      .filter(Boolean);
+  }
+
+  async function callAIGenerationEdgeFunction(payload) {
+    const functionNames = ["generate-quiz", "generate_ai_quiz", "ai-quiz-generator", "generateQuiz"];
+    let lastError = null;
+    for (const functionName of functionNames) {
+      try {
+        const result = await state.client.functions.invoke(functionName, { body: payload });
+        if (result.error && String(result.error.message || "").toLowerCase().includes("not found")) {
+          lastError = result.error;
+          continue;
+        }
+        if (result.error) throw result.error;
+        return result.data;
+      } catch (error) {
+        lastError = error;
+        if (String(error.message || "").toLowerCase().includes("not found")) continue;
+        throw error;
+      }
+    }
+    throw new Error(lastError?.message || "The secure AI quiz backend is not configured.");
+  }
+
+  async function generateQuizWithAI() {
+    if (!state.client) {
+      showToast("Supabase is not configured. Please check your teacher setup.", true);
+      return;
+    }
+    const form = readAIGenerationForm();
+    if (!validateAIGenerationForm(form)) return;
+
+    const button = $("aiGenerateQuizButton");
+    button.disabled = true;
+    button.textContent = "Generating quiz...";
+
+    try {
+      const payload = {
+        grade: form.grade,
+        stream: form.stream || null,
+        subject_id: form.subjectId,
+        subject: form.subject,
+        chapter: form.chapter,
+        content: form.content,
+        number_of_questions: form.numberOfQuestions,
+        question_type: form.questionType,
+        difficulty: form.difficulty,
+        focus: form.focus,
+        marks_per_question: form.marksPerQuestion,
+        language: form.language,
+      };
+
+      const generated = await callAIGenerationEdgeFunction(payload);
+      const normalized = extractAIGeneratedQuestions(generated);
+      if (!normalized.length) {
+        throw new Error("The AI service returned no usable quiz questions for this content.");
+      }
+
+      state.aiGeneratedQuestions = normalized.map((question) => ({ ...question, approved: true }));
+      renderAIReview();
+      $("aiQuizGeneratorFormSection").classList.add("hidden");
+      $("aiQuizReviewSection").classList.remove("hidden");
+      showToast("AI quiz draft generated. Review and approve before adding to the quiz.");
+    } catch (error) {
+      showToast(error.message || "AI generation failed. Please try again later.", true);
+    } finally {
+      button.disabled = false;
+      button.textContent = "Generate Quiz with AI";
+    }
+  }
+
+  function renderAIReview() {
+    const container = $("aiGeneratedReviewList");
+    const summary = $("aiReviewSummary");
+    if (!state.aiGeneratedQuestions.length) {
+      summary.textContent = "0 ready to review";
+      container.innerHTML = '<div class="ai-empty-state">No generated questions yet.</div>';
+      return;
+    }
+
+    summary.textContent = `${state.aiGeneratedQuestions.length} question${state.aiGeneratedQuestions.length === 1 ? "" : "s"} ready to review`;
+    container.innerHTML = state.aiGeneratedQuestions.map((question, index) => {
+      const label = question.type === "multiple_choice" ? "MCQ" : "True / False";
+      const options = question.type === "multiple_choice"
+        ? question.options.map((option, optionIndex) => `<div><strong>${String.fromCharCode(65 + optionIndex)}.</strong> ${escapeHTML(option)}</div>`).join("")
+        : '<div>True / False</div>';
+      const note = question.explanation ? ` · ${escapeHTML(question.explanation.slice(0, 80))}` : "";
+      return `
+        <article class="ai-review-question">
+          <div class="ai-review-question-header">
+            <strong>Question ${index + 1}</strong>
+            <label class="ai-review-toggle">
+              <input type="checkbox" data-ai-review-toggle="${index}" ${question.approved !== false ? "checked" : ""} />
+              Include
+            </label>
+          </div>
+          <div class="ai-review-question-text">${escapeHTML(question.text)}</div>
+          <div class="ai-review-options">${options}</div>
+          <div class="ai-review-meta">Type: ${label} · Marks: ${Number(question.marks)}${note}</div>
+        </article>
+      `;
+    }).join("");
+  }
+
+  function addApprovedAIQuestions() {
+    const approved = state.aiGeneratedQuestions.filter((question, index) => {
+      const checkbox = document.querySelector(`[data-ai-review-toggle="${index}"]`);
+      return checkbox ? checkbox.checked : question.approved !== false;
+    });
+
+    if (!approved.length) {
+      showToast("Select at least one AI-generated question to add to your quiz.", true);
+      return;
+    }
+
+    approved.forEach((question) => {
+      state.questions.push({
+        id: crypto.randomUUID(),
+        type: question.type,
+        text: question.text,
+        options: Array.isArray(question.options) ? [...question.options] : ["", "", "", ""],
+        correctAnswer: question.correctAnswer,
+        marks: Number(question.marks) || 1,
+        explanation: question.explanation || "",
+      });
+    });
+
+    state.hasUnsavedChanges = true;
+    state.aiGeneratedQuestions = [];
+    closeAIGenerator();
+    renderQuestions();
+    showToast(`${approved.length} AI-generated question${approved.length === 1 ? "" : "s"} added to your quiz.`);
+  }
+
+  document.addEventListener("change", (event) => {
+    const target = event.target;
+    if (target.matches('input[name="aiQuestionCount"]')) {
+      syncAIQuestionCountUI();
+    }
+    if (target.matches('[data-ai-review-toggle]')) {
+      const index = Number(target.dataset.aiReviewToggle);
+      if (Number.isInteger(index)) {
+        state.aiGeneratedQuestions[index].approved = target.checked;
+      }
+    }
+  });
 
   function questionAnswerLabel(question) {
     if (question.type === "multiple_choice") {
@@ -657,6 +970,10 @@
   window.deleteQuestion = deleteQuestion;
   window.duplicateQuestion = duplicateQuestion;
   window.saveDraft = saveDraft;
+  window.openAIGenerator = openAIGenerator;
+  window.closeAIGenerator = closeAIGenerator;
+  window.generateQuizWithAI = generateQuizWithAI;
+  window.addApprovedAIQuestions = addApprovedAIQuestions;
   window.openPublishModal = openPublishModal;
   window.closePublishModal = closePublishModal;
   window.publishQuiz = publishQuiz;

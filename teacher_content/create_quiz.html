@@ -993,6 +993,16 @@
             + Add Question
           </button>
 
+          <div class="ai-generator-row">
+            <button
+              class="btn btn-secondary ai-generator-button"
+              type="button"
+              onclick="openAIGenerator()"
+            >
+              AI Quiz Generator
+            </button>
+          </div>
+
           <div class="action-bar">
             <button class="btn btn-secondary" onclick="goToStep(1)">
               ← Back
@@ -1314,6 +1324,149 @@
           <button class="btn btn-success" onclick="publishQuiz()">
             Publish Quiz
           </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay ai-modal-overlay" id="aiQuizGeneratorModal">
+      <div class="modal ai-generator-modal">
+        <button
+          class="btn btn-secondary close-ai-generator"
+          type="button"
+          onclick="closeAIGenerator()"
+        >
+          Close
+        </button>
+
+        <h3>AI Quiz Generator</h3>
+
+        <div id="aiQuizGeneratorFormSection">
+          <div class="form-group">
+            <label>Chapter / Topic Name</label>
+            <input
+              type="text"
+              id="aiQuizChapter"
+              maxlength="150"
+              placeholder="e.g. Newton's Laws of Motion"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Quiz Content <span class="required">*</span></label>
+            <textarea
+              id="aiQuizContent"
+              maxlength="12000"
+              placeholder="Paste textbook, notes, or lesson content here..."
+            ></textarea>
+            <div class="small-text">
+              <span id="aiQuizContentCount">0</span>/12000
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Number of Questions</label>
+            <div class="ai-choice-grid">
+              <label class="ai-option"><input type="radio" name="aiQuestionCount" value="5" /> 5</label>
+              <label class="ai-option"><input type="radio" name="aiQuestionCount" value="10" checked /> 10</label>
+              <label class="ai-option"><input type="radio" name="aiQuestionCount" value="15" /> 15</label>
+              <label class="ai-option"><input type="radio" name="aiQuestionCount" value="20" /> 20</label>
+              <label class="ai-option"><input type="radio" name="aiQuestionCount" value="custom" /> Custom</label>
+            </div>
+            <div id="aiCustomQuestionCountWrap" class="hidden" style="margin-top: 12px;">
+              <input
+                type="number"
+                id="aiCustomQuestionCount"
+                min="1"
+                max="50"
+                step="1"
+                placeholder="Enter 1 to 50"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Question Types</label>
+            <div class="ai-choice-grid ai-choice-grid-compact">
+              <label class="ai-option"><input type="radio" name="aiQuestionType" value="mcq" /> MCQ</label>
+              <label class="ai-option"><input type="radio" name="aiQuestionType" value="true_false" /> True / False</label>
+              <label class="ai-option"><input type="radio" name="aiQuestionType" value="both" checked /> Both</label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Difficulty</label>
+            <div class="ai-choice-grid ai-choice-grid-compact">
+              <label class="ai-option"><input type="radio" name="aiDifficulty" value="easy" /> Easy</label>
+              <label class="ai-option"><input type="radio" name="aiDifficulty" value="medium" checked /> Medium</label>
+              <label class="ai-option"><input type="radio" name="aiDifficulty" value="hard" /> Hard</label>
+              <label class="ai-option"><input type="radio" name="aiDifficulty" value="mixed" /> Mixed</label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Focus / Topic</label>
+            <input
+              type="text"
+              id="aiQuizFocus"
+              maxlength="300"
+              placeholder="Focus mainly on Newton's Second Law and real-world applications."
+            />
+          </div>
+
+          <div class="form-grid ai-inline-grid">
+            <div class="form-group">
+              <label>Marks per Question</label>
+              <input type="number" id="aiMarksPerQuestion" min="1" value="1" step="1" />
+            </div>
+
+            <div class="form-group">
+              <label>Language</label>
+              <select id="aiQuizLanguage">
+                <option value="English">English</option>
+                <option value="Hindi">Hindi</option>
+                <option value="Hinglish">Hinglish</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="modal-actions ai-modal-actions">
+            <button class="btn btn-secondary" type="button" onclick="closeAIGenerator()">
+              Cancel
+            </button>
+
+            <button
+              class="btn btn-primary"
+              id="aiGenerateQuizButton"
+              type="button"
+              onclick="generateQuizWithAI()"
+            >
+              Generate Quiz with AI
+            </button>
+          </div>
+        </div>
+
+        <div id="aiQuizReviewSection" class="hidden">
+          <div class="ai-review-header-row">
+            <h4>Review AI-generated Questions</h4>
+            <span id="aiReviewSummary"></span>
+          </div>
+
+          <div id="aiGeneratedReviewList" class="ai-review-list"></div>
+
+          <div class="modal-actions ai-modal-actions">
+            <button class="btn btn-secondary" type="button" onclick="closeAIGenerator()">
+              Close
+            </button>
+
+            <button
+              class="btn btn-success"
+              id="aiAddGeneratedQuestionsButton"
+              type="button"
+              onclick="addApprovedAIQuestions()"
+            >
+              Add Approved Questions
+            </button>
+          </div>
         </div>
       </div>
     </div>

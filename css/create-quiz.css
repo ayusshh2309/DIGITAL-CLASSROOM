@@ -789,3 +789,162 @@ textarea {
     width: 100%;
   }
 }
+
+.ai-generator-row {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.ai-generator-button {
+  min-width: 180px;
+  justify-content: center;
+}
+
+.ai-modal-overlay.modal-overlay {
+  padding: 20px;
+}
+
+.ai-generator-modal {
+  width: min(760px, calc(100vw - 28px));
+  max-height: min(88vh, 820px);
+  overflow-y: auto;
+  padding: 24px 28px 22px;
+}
+
+.ai-generator-modal h3 {
+  color: var(--create-ink);
+  margin-bottom: 18px;
+  font-size: 1.35rem;
+}
+
+.ai-generator-modal .close-ai-generator {
+  float: right;
+  margin: -4px -4px 0 0;
+}
+
+.ai-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+}
+
+.ai-choice-grid-compact {
+  grid-template-columns: repeat(auto-fit, minmax(98px, 1fr));
+}
+
+.ai-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid var(--create-line);
+  border-radius: 10px;
+  background: #f8faff;
+  color: var(--create-ink);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.ai-option input {
+  width: auto;
+  margin: 0;
+}
+
+.ai-inline-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ai-modal-actions {
+  margin-top: 20px;
+  justify-content: flex-end;
+}
+
+.ai-review-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0 16px;
+}
+
+.ai-review-header-row h4 {
+  color: var(--create-ink);
+  font-size: 1.08rem;
+}
+
+.ai-review-header-row span {
+  color: var(--create-muted);
+  font-size: 0.76rem;
+}
+
+.ai-review-list {
+  display: grid;
+  gap: 14px;
+  max-height: 52vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.ai-review-question {
+  padding: 16px;
+  border: 1px solid var(--create-line);
+  border-radius: 12px;
+  background: #f9fbff;
+}
+
+.ai-review-question-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.ai-review-question-header strong {
+  color: var(--create-ink);
+  font-size: 0.86rem;
+}
+
+.ai-review-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--create-ink);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.ai-review-toggle input {
+  width: auto;
+  margin: 0;
+}
+
+.ai-review-question-text {
+  color: var(--create-ink);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  margin-bottom: 10px;
+}
+
+.ai-review-options {
+  display: grid;
+  gap: 8px;
+  color: var(--create-muted);
+  font-size: 0.77rem;
+  margin-bottom: 10px;
+}
+
+.ai-review-meta {
+  color: var(--create-muted);
+  font-size: 0.76rem;
+}
+
+.ai-empty-state {
+  padding: 24px 18px;
+  border: 1px dashed var(--create-line);
+  border-radius: 12px;
+  color: var(--create-muted);
+  text-align: center;
+  background: #fafcff;
+}
