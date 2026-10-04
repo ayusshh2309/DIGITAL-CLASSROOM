@@ -755,7 +755,7 @@
           if (role === "teacher") {
             throw new Error("No teacher profile is linked to this account.");
           } else if (role === "student" || role === "learner") {
-            window.location.href = "student_dashboard.html";
+            window.location.href = "../student_content/st_dashboard.html";
           } else {
             throw new Error(
               "No profile is linked to this account. Contact support.",
