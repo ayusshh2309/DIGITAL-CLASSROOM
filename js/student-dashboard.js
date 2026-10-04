@@ -31,31 +31,6 @@
   const eventId = (event) => String(event.source_id || event.id || "").replace(/^[^-]+-/, "");
   const now = () => new Date();
 
-  function getSubjects(profile) {
-    const values = profile.eligible_subjects || profile.registeredSubjects || profile.registered_subjects || profile.subjects || profile.academic?.subjects || [];
-    const direct = (Array.isArray(values) ? values : String(values).split(",")).map((value) => String(value).trim()).filter(Boolean);
-    if (direct.length) return [...new Set(direct)];
-    const grade = String(profile.grade || profile.classGrade || profile.class_grade || "").replace(/\D/g, "");
-    const stream = normalize(profile.stream || profile.classStream);
-    const streams = {
-      science_pcm: ["Physics", "Chemistry", "Mathematics"],
-      science_pcb: ["Physics", "Chemistry", "Biology"],
-      commerce: ["Accountancy", "Business Studies", "Economics"],
-      arts: ["History", "Political Science", "Geography", "Sociology"],
-      arts_humanities: ["History", "Political Science", "Geography", "Psychology"],
-    };
-    const standard = {
-      "5": ["English", "Mathematics", "EVS", "Hindi"],
-      "6": ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-      "7": ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-      "8": ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-      "9": ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-      "10": ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-    };
-    if ((grade === "11" || grade === "12") && streams[stream]) return [...streams[stream], "English", "Computer Science", "Physical Education"];
-    return standard[grade] || [];
-  }
-
   function subjectIcon(subject) {
     const value = normalize(subject);
     if (value.includes("math")) return { markup: "&pi;", className: "subject-icon-math" };
@@ -297,7 +272,8 @@
         classGrade: String(profileResult.data.grade),
         class_grade: String(profileResult.data.grade),
       };
-      state.subjects = getSubjects(state.profile);
+      const curriculum = await window.StudentCurriculum.loadForStudent(state.client, profileResult.data);
+      state.subjects = curriculum.subjects.map((subject) => subject.name);
       if (eventsResult.error) throw eventsResult.error;
       if (materialsResult.error) throw materialsResult.error;
       state.events = eventsResult.data || [];
@@ -344,7 +320,7 @@
     if (!state.client || !state.user) return;
     state.channel?.unsubscribe();
     state.channel = state.client.channel(`student-dashboard-${state.user.id}`);
-    ["students", "student_profiles", "study_sessions", "study_session_segments", "quiz_attempts", "student_video_progress", "materials", "live_classes", "quizzes", "assignments"].forEach((table) => {
+    ["students", "student_profiles", "study_sessions", "study_session_segments", "quiz_attempts", "student_video_progress", "materials", "live_classes", "quizzes", "assignments", "subjects"].forEach((table) => {
       const filter = table === "students"
         ? `user_id=eq.${state.user.id}`
         : table === "quiz_attempts"

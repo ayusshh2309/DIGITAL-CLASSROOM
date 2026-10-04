@@ -1099,6 +1099,9 @@
       </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase.js"></script>
+    <script src="../js/student-curriculum.js"></script>
     <script>
       /* =====================================================
        SUBJECT DATA
@@ -1164,166 +1167,162 @@
         Economics: ["fa-chart-line", "teal", "progress-teal", "teal-card"],
       };
 
-      const gradeSubjects = {
-        5: [
-          "English",
-          "Mathematics",
-          "Environmental Studies",
-          "Hindi",
-          "Computer Science",
-          "General Knowledge",
-          "Art",
-          "Physical Education",
-        ],
-        6: [
-          "English",
-          "Mathematics",
-          "Science",
-          "Social Science",
-          "Hindi",
-          "Computer Science",
-          "Sanskrit",
-          "Physical Education",
-        ],
-        7: [
-          "English",
-          "Mathematics",
-          "Science",
-          "Social Science",
-          "Hindi",
-          "Computer Science",
-          "Sanskrit",
-          "Physical Education",
-        ],
-        8: [
-          "English",
-          "Mathematics",
-          "Science",
-          "Social Science",
-          "Hindi",
-          "Computer Science",
-          "Sanskrit",
-          "Physical Education",
-        ],
-        9: [
-          "English",
-          "Mathematics",
-          "Science",
-          "Social Science",
-          "Hindi",
-          "Computer Science",
-          "Physical Education",
-        ],
-        10: [
-          "English",
-          "Mathematics",
-          "Science",
-          "Social Science",
-          "Hindi",
-          "Computer Science",
-          "Physical Education",
-        ],
-      };
-
-      const streamSubjects = {
-        science_pcm: ["Physics", "Chemistry", "Mathematics"],
-        science_pcb: ["Physics", "Chemistry", "Biology"],
-        commerce: ["Accountancy", "Business Studies", "Economics"],
-        arts: ["History", "Political Science", "Geography", "Sociology"],
-      };
-
-      function readProfile(key) {
-        try {
-          return JSON.parse(localStorage.getItem(key) || "null") || null;
-        } catch (error) {
-          return null;
-        }
-      }
-
-      function getRegisteredStudent() {
-        return (
-          ["studentProfile", "studentData", "finalStudentRegistration"]
-            .map(readProfile)
-            .find(
-              (profile) =>
-                profile && (profile.classGrade || profile.class_grade),
-            ) || {}
-        );
-      }
-
-      function getRegisteredSubjectNames(grade, stream) {
-        if (grade === "11" || grade === "12") {
-          return [
-            ...(streamSubjects[stream] || []),
-            "English",
-            "Computer Science",
-            "Physical Education",
-          ];
-        }
-
-        return gradeSubjects[grade] || [];
-      }
-
-      const profile = getRegisteredStudent();
-      const registeredGrade = String(
-        profile.classGrade || profile.class_grade || "",
-      );
-      const registeredStream = profile.stream || "";
-      const registeredNames = getRegisteredSubjectNames(
-        registeredGrade,
-        registeredStream,
-      );
-
       const streamLabels = {
         science_pcm: "Science (PCM)",
         science_pcb: "Science (PCB)",
         commerce: "Commerce",
-        arts: "Arts / Humanities",
+        arts_humanities: "Arts / Humanities",
       };
 
-      const registrationContext = document.getElementById(
-        "registrationContext",
-      );
-      const registrationContextText = document.getElementById(
-        "registrationContextText",
-      );
-      const subjectsDescription = document.getElementById(
-        "subjectsDescription",
-      );
+      const registrationContext = document.getElementById("registrationContext");
+      const registrationContextText = document.getElementById("registrationContextText");
+      const subjectsDescription = document.getElementById("subjectsDescription");
+      const emptyState = document.getElementById("emptyState");
+      const subjectsGrid = document.getElementById("subjectsGrid");
+      let subjects = [];
+      let registeredStudent = null;
+      let realtimeChannel = null;
+      let isLoading = false;
+      let reloadQueued = false;
 
-      if (registeredGrade) {
-        const streamText =
-          registeredGrade === "11" || registeredGrade === "12"
-            ? ` - ${streamLabels[registeredStream] || "Selected stream"}`
-            : "";
-        registrationContextText.textContent = `Registered curriculum: Grade ${registeredGrade}${streamText}`;
+      function showState(title, message, icon = "fa-book-open") {
+        emptyState.querySelector("i").className = `fa-solid ${icon}`;
+        emptyState.querySelector("h3").textContent = title;
+        emptyState.querySelector("p").textContent = message;
+        emptyState.style.display = "block";
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#039;",
+        })[character]);
+      }
+
+      function setRegistrationContext(student) {
+        const grade = Number(student.grade);
+        const stream = String(student.stream || "").trim().toLowerCase();
+        const streamText = grade >= 11
+          ? ` - ${streamLabels[stream] || stream.replaceAll("_", " ")}`
+          : "";
+        registrationContextText.textContent = `Registered curriculum: Grade ${grade}${streamText}`;
         registrationContext.hidden = false;
         subjectsDescription.textContent =
           "Only the subjects assigned to your registered curriculum are shown.";
-      } else {
-        subjectsDescription.textContent =
-          "Complete student registration to see your assigned subjects.";
       }
 
-      let subjects = registeredNames.map((name) => {
-        const style = subjectStyles[name] || [
-          "fa-book",
-          "blue",
-          "progress-blue",
-          "blue-card",
-        ];
-        return {
-          name,
-          progress: 0,
-          videos: 0,
-          notes: 0,
-          quizzes: 0,
-          icon: style[0],
-          color: style[1],
-          progressColor: style[2],
-          cardColor: style[3],
-        };
-      });
+      function subscribeToChanges(client, userId) {
+        const channelKey = userId;
+        if (realtimeChannel?.key === channelKey) return;
+        if (realtimeChannel) void client.removeChannel(realtimeChannel.channel);
+
+        let channel = client
+          .channel(`student-subjects-${userId}`)
+          .on("postgres_changes", {
+            event: "*",
+            schema: "public",
+            table: "students",
+            filter: `user_id=eq.${userId}`,
+          }, () => void loadSubjects())
+          .on("postgres_changes", {
+            event: "*",
+            schema: "public",
+            table: "subjects",
+          }, () => void loadSubjects());
+        const subscribedChannel = channel.subscribe((status) => {
+          if (["CHANNEL_ERROR", "TIMED_OUT"].includes(status)) {
+            console.error("Student subjects realtime subscription is unavailable.", status);
+          }
+        });
+        realtimeChannel = { key: channelKey, channel: subscribedChannel };
+      }
+
+      async function loadSubjects() {
+        if (isLoading) {
+          reloadQueued = true;
+          return;
+        }
+        isLoading = true;
+        subjects = [];
+        subjectsGrid.querySelectorAll(".subject-card").forEach((card) => card.remove());
+        document.getElementById("totalSubjects").textContent = "0";
+        showState("Loading subjects", "Checking your registered class...", "fa-spinner fa-spin");
+
+        try {
+          const client = window.SmartLearningSupabase?.getClient?.();
+          if (!client) throw new Error("Supabase is not configured.");
+
+          const curriculum = await window.StudentCurriculum.loadCurrentStudent(client);
+          if (!curriculum?.user?.id) {
+            window.location.href = "../login.html";
+            return;
+          }
+          const { user, student, grade, stream, subjects: records } = curriculum;
+          registeredStudent = student;
+          setRegistrationContext(student);
+
+          console.info("[My Subjects] Authenticated student curriculum", {
+            userId: user.id,
+            grade,
+            stream,
+          });
+          console.info("[My Subjects] Subjects returned by curriculum query", {
+            query: { table: "subjects", gradesContains: [grade], ...(grade >= 11 ? { streamsContains: [stream] } : {}) },
+            records,
+            count: records.length,
+          });
+          subjects = records.map((record) => {
+              const name = record.name;
+              const style = subjectStyles[name] || [
+                "fa-book",
+                "blue",
+                "progress-blue",
+                "blue-card",
+              ];
+              return {
+                id: record.id,
+                name,
+                progress: 0,
+                videos: 0,
+                notes: 0,
+                quizzes: 0,
+                icon: style[0],
+                color: style[1],
+                progressColor: style[2],
+                cardColor: style[3],
+              };
+            });
+          console.info("[My Subjects] Final subject count", subjects.length);
+          renderSubjects();
+          subscribeToChanges(client, user.id);
+        } catch (error) {
+          console.error("Student subjects could not be loaded.", error);
+          if (error.code === "AUTH_REQUIRED") {
+            window.location.href = "../login.html";
+            return;
+          }
+          subjects = [];
+          subjectsGrid.querySelectorAll(".subject-card").forEach((card) => card.remove());
+          updateSummary();
+          const accessError = error.code === "42501";
+          showState(
+            "Subjects could not be loaded",
+            accessError
+              ? "Your account cannot access class subject assignments. Please contact support."
+              : error.message || "Please try again later.",
+            "fa-circle-exclamation",
+          );
+        } finally {
+          isLoading = false;
+          if (reloadQueued) {
+            reloadQueued = false;
+            window.setTimeout(() => void loadSubjects(), 0);
+          }
+        }
+      }
 
       /* =====================================================
        RENDER SUBJECTS
@@ -1343,8 +1342,12 @@
         /* Empty state */
 
         if (subjects.length === 0) {
-          emptyState.style.display = "block";
-
+          showState(
+            "No subjects found",
+            registeredStudent
+              ? `No subjects have been assigned to your registered Grade ${registeredStudent.grade}${Number(registeredStudent.grade) >= 11 ? ` - ${streamLabels[String(registeredStudent.stream || "").trim().toLowerCase()] || registeredStudent.stream}` : ""} curriculum.`
+              : "There are currently no subjects available for your registered class.",
+          );
           updateSummary();
 
           return;
@@ -1383,7 +1386,7 @@
 
                             <div class="subject-name">
 
-                                ${subject.name}
+                                ${escapeHtml(subject.name)}
 
                             </div>
 
@@ -1689,7 +1692,7 @@
                         margin-bottom:5px;
                     "
                 >
-                    ${subject.name}
+                    ${escapeHtml(subject.name)}
                 </h3>
 
 
@@ -1832,7 +1835,7 @@
        INITIAL LOAD
     ===================================================== */
 
-      renderSubjects();
+      loadSubjects();
     </script>
 
     <script src="../js/student-layout.js"></script>

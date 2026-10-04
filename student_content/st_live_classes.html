@@ -1252,8 +1252,14 @@
       </div>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase.js"></script>
+    <script src="../js/student-curriculum.js"></script>
     <script>
       const LIVE_CLASS_STORAGE_KEY = "scheduledLiveClasses";
+      let currentStudentProfile = {};
+      let curriculumSubjectNames = [];
+      let curriculumRealtimeChannel = null;
 
       function normalizeGrade(value) {
         const str = String(value ?? "").trim();
@@ -1294,121 +1300,8 @@
         }
       }
 
-      function readStudentProfile() {
-        const candidates = [
-          localStorage.getItem("studentProfile"),
-          localStorage.getItem("studentData"),
-          localStorage.getItem("finalStudentRegistration"),
-          sessionStorage.getItem("finalStudentRegistration"),
-        ];
-
-        for (const value of candidates) {
-          if (!value) continue;
-          try {
-            const parsed = JSON.parse(value);
-            if (
-              parsed &&
-              (parsed.classGrade ||
-                parsed.class_grade ||
-                parsed.grade ||
-                parsed.stream ||
-                parsed.subjects)
-            ) {
-              return parsed;
-            }
-          } catch {
-            // ignore malformed storage entries
-          }
-        }
-
-        return {};
-      }
-
-      function studentEligibleSubjects(studentProfile) {
-        const grade = normalizeGrade(
-          studentProfile.classGrade ||
-            studentProfile.class_grade ||
-            studentProfile.grade ||
-            "",
-        );
-        const stream = normalizeStream(
-          studentProfile.stream || studentProfile.classStream || "",
-        );
-        const baseMap = {
-          5: ["Mathematics", "Science", "English", "Hindi", "Social Science"],
-          6: ["Mathematics", "Science", "English", "Hindi", "Social Science"],
-          7: ["Mathematics", "Science", "English", "Hindi", "Social Science"],
-          8: ["Mathematics", "Science", "English", "Hindi", "Social Science"],
-          9: [
-            "Mathematics",
-            "Physics",
-            "Chemistry",
-            "Biology",
-            "English",
-            "Hindi",
-            "Social Science",
-          ],
-          10: [
-            "Mathematics",
-            "Physics",
-            "Chemistry",
-            "Biology",
-            "English",
-            "Hindi",
-            "Social Science",
-          ],
-          11: [
-            "Mathematics",
-            "Physics",
-            "Chemistry",
-            "Biology",
-            "English",
-            "Accountancy",
-            "Business Studies",
-            "Economics",
-            "History",
-            "Geography",
-            "Political Science",
-          ],
-          12: [
-            "Mathematics",
-            "Physics",
-            "Chemistry",
-            "Biology",
-            "English",
-            "Accountancy",
-            "Business Studies",
-            "Economics",
-            "History",
-            "Geography",
-            "Political Science",
-          ],
-        };
-
-        const streamMap = {
-          science_pcm: ["Physics", "Chemistry", "Mathematics"],
-          science_pcb: ["Physics", "Chemistry", "Biology"],
-          commerce: ["Accountancy", "Business Studies", "Economics"],
-          arts_humanities: [
-            "History",
-            "Geography",
-            "Political Science",
-            "Psychology",
-          ],
-        };
-
-        const direct = Array.isArray(studentProfile.subjects)
-          ? studentProfile.subjects
-          : [];
-        const subjectList = direct.length
-          ? direct
-          : grade && (baseMap[grade] || []);
-
-        if ((grade === "11" || grade === "12") && streamMap[stream]) {
-          return [...new Set([...subjectList, ...streamMap[stream]])];
-        }
-
-        return [...new Set(subjectList)];
+      function studentEligibleSubjects() {
+        return curriculumSubjectNames;
       }
 
       function getClassStartDate(item) {
@@ -1514,7 +1407,7 @@
       }
 
       function renderLiveClasses() {
-        const studentProfile = readStudentProfile();
+        const studentProfile = currentStudentProfile;
         renderRegistrationContext(studentProfile);
         const scheduled = readScheduledClasses()
           .map((item) => ({
@@ -1744,8 +1637,40 @@
         }
       });
 
-      renderLiveClasses();
+      async function loadStudentCurriculum() {
+        const client = window.SmartLearningSupabase?.getClient?.();
+        if (!client) throw new Error("Supabase is not configured.");
+        const curriculum = await window.StudentCurriculum.loadCurrentStudent(client);
+        currentStudentProfile = curriculum.student;
+        curriculumSubjectNames = curriculum.subjects.map((subject) => subject.name);
+        renderLiveClasses();
+        if (!curriculumRealtimeChannel) {
+          curriculumRealtimeChannel = client
+            .channel(`student-live-classes-curriculum-${curriculum.user.id}`)
+            .on("postgres_changes", {
+              event: "*",
+              schema: "public",
+              table: "students",
+              filter: `user_id=eq.${curriculum.user.id}`,
+            }, () => void loadStudentCurriculum())
+            .on("postgres_changes", {
+              event: "*",
+              schema: "public",
+              table: "subjects",
+            }, () => void loadStudentCurriculum())
+            .subscribe((status) => {
+              if (["CHANNEL_ERROR", "TIMED_OUT"].includes(status)) {
+                console.error("Live class curriculum realtime subscription is unavailable.", status);
+              }
+            });
+        }
+      }
+
       showUpcoming();
+      loadStudentCurriculum().catch((error) => {
+        console.error("Live class curriculum could not be loaded.", error);
+        if (error.code === "AUTH_REQUIRED") window.location.href = "../login.html";
+      });
     </script>
     <script src="../js/student-layout.js"></script>
   </body>

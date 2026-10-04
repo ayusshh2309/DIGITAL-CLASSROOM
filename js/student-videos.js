@@ -1,38 +1,16 @@
 (() => {
-  const state = { videos: [], student: {}, channel: null, activeVideo: null };
+  const state = { videos: [], student: {}, subjects: [], channel: null, activeVideo: null };
   const $ = (id) => document.getElementById(id);
   const escape = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
-  const profileKeys = ["studentProfile", "studentData", "finalStudentRegistration"];
-
-  function readProfile() {
-    const profiles = profileKeys.map((key) => {
-      try {
-        return JSON.parse(localStorage.getItem(key) || "null");
-      } catch (error) {
-        console.warn(`Could not read ${key}.`, error);
-        return null;
-      }
-    });
-    return profiles.find((profile) => profile && (profile.classGrade || profile.class_grade)) || profiles.find(Boolean) || {};
-  }
-
   function client() {
     return window.TeacherData?.getSupabaseClient?.() || window.SmartLearningSupabase?.getClient?.();
   }
 
-  function subjectNames(profile) {
-    const grade = String(profile.classGrade || profile.class_grade || profile.grade || "");
-    const stream = String(profile.stream || profile.classStream || "").toLowerCase();
-    const standard = { "5": ["English", "Mathematics", "EVS", "Hindi"], "6": ["English", "Mathematics", "Science", "Social Science", "Hindi"], "7": ["English", "Mathematics", "Science", "Social Science", "Hindi"], "8": ["English", "Mathematics", "Science", "Social Science", "Hindi"], "9": ["English", "Mathematics", "Science", "Social Science", "Hindi"], "10": ["English", "Mathematics", "Science", "Social Science", "Hindi"] };
-    const streams = { science_pcm: ["Physics", "Chemistry", "Mathematics"], science_pcb: ["Physics", "Chemistry", "Biology"], commerce: ["Accountancy", "Business Studies", "Economics"], arts: ["History", "Political Science", "Geography", "Sociology"] };
-    return grade === "11" || grade === "12" ? [...(streams[stream] || []), "English", "Computer Science", "Physical Education"] : (standard[grade] || []);
-  }
-
   function renderRegistrationContext() {
-    const grade = String(state.student.classGrade || state.student.class_grade || "");
+    const grade = String(state.student.grade || "");
     if (!grade) return;
-    const stream = String(state.student.stream || state.student.classStream || "").toLowerCase();
-    const streamLabels = { science_pcm: "Science (PCM)", science_pcb: "Science (PCB)", commerce: "Commerce", arts: "Arts / Humanities" };
+    const stream = window.StudentCurriculum.normalizeStream(state.student.stream);
+    const streamLabels = { science_pcm: "Science (PCM)", science_pcb: "Science (PCB)", commerce: "Commerce", arts_humanities: "Arts / Humanities" };
     const streamText = grade === "11" || grade === "12" ? ` - ${streamLabels[stream] || "Selected stream"}` : "";
     $("registrationContextText").textContent = `Registered curriculum: Grade ${grade}${streamText}`;
     $("registrationContext").hidden = false;
@@ -46,7 +24,7 @@
   function thumbnail(video) { return video.thumbnail_url || video.thumbnail || ""; }
   function subjectIcon(subject) { const value = String(subject || "").toLowerCase(); if (value.includes("physics")) return "fa-atom"; if (value.includes("chem")) return "fa-flask"; if (value.includes("math")) return "fa-calculator"; if (value.includes("computer")) return "fa-code"; return "fa-book"; }
 
-  function availableSubjects() { return [...new Set(subjectNames(state.student))].sort(); }
+  function availableSubjects() { return [...new Set(state.subjects.map((subject) => subject.name))].sort(); }
 
   function renderSubjectControls() {
     const subjects = availableSubjects();
@@ -54,10 +32,16 @@
     const current = filter.value || "All";
     filter.innerHTML = '<option value="All">All Subjects</option>' + subjects.map((subject) => `<option value="${escape(subject)}">${escape(subject)}</option>`).join("");
     filter.value = subjects.includes(current) ? current : "All";
-    document.querySelectorAll(".subject-tab[data-subject]").forEach((tab) => {
-      const subject = tab.dataset.subject;
-      if (subject !== "All") tab.hidden = !subjects.some((item) => item.toLowerCase() === subject.toLowerCase());
+    const tabs = $("subjectTabs");
+    tabs.querySelectorAll('.subject-tab:not([data-subject="All"])').forEach((tab) => tab.remove());
+    subjects.forEach((subject) => {
+      const tab = document.createElement("button");
+      tab.className = `subject-tab${filter.value === subject ? " active" : ""}`;
+      tab.dataset.subject = subject;
+      tab.innerHTML = `<span class="tab-dot ${colorFor(subject)}"></span>${escape(subject)}`;
+      tabs.appendChild(tab);
     });
+    tabs.querySelector('[data-subject="All"]')?.classList.toggle("active", filter.value === "All");
   }
 
   function filteredVideos() {
@@ -132,20 +116,23 @@
   function closeAllDropdowns() { document.querySelectorAll(".card-dropdown").forEach((dropdown) => dropdown.classList.remove("show")); }
 
   async function loadVideos() {
-    state.student = readProfile();
-    renderRegistrationContext();
-    renderVideos();
     const supabase = client();
     if (!supabase) return;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    state.student.student_id = user.id;
-    const { data, error } = await supabase.rpc("get_student_videos", { requested_student_id: user.id });
+    const curriculum = await window.StudentCurriculum.loadCurrentStudent(supabase);
+    state.student = curriculum.student;
+    state.subjects = curriculum.subjects;
+    renderRegistrationContext();
+    renderVideos();
+    const { data, error } = await supabase.rpc("get_student_videos", { requested_student_id: curriculum.user.id });
     if (error) { console.warn("Could not load authorized videos.", error); return; }
     state.videos = (data || []).filter((video) => typeOf(video) === "video");
     renderVideos();
     state.channel?.unsubscribe();
-    state.channel = supabase.channel(`student-videos-${user.id}`).on("postgres_changes", { event: "*", schema: "public", table: "materials" }, loadVideos).subscribe();
+    state.channel = supabase.channel(`student-videos-${curriculum.user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "materials" }, loadVideos)
+      .on("postgres_changes", { event: "*", schema: "public", table: "students", filter: `user_id=eq.${curriculum.user.id}` }, loadVideos)
+      .on("postgres_changes", { event: "*", schema: "public", table: "subjects" }, loadVideos)
+      .subscribe();
   }
 
   window.closeVideoModal = closeVideoModal;
@@ -164,7 +151,12 @@
       if (target.dataset.share && video) navigator.clipboard?.writeText(video.title);
       closeAllDropdowns();
     });
-    document.querySelectorAll(".subject-tab").forEach((tab) => tab.addEventListener("click", () => { document.querySelectorAll(".subject-tab").forEach((item) => item.classList.remove("active")); tab.classList.add("active"); $("subjectFilter").value = tab.dataset.subject; renderVideos(); }));
+    $("subjectTabs").addEventListener("click", (event) => {
+      const tab = event.target.closest(".subject-tab[data-subject]");
+      if (!tab) return;
+      $("subjectFilter").value = tab.dataset.subject;
+      renderVideos();
+    });
     $("videoModal").addEventListener("click", (event) => { if (event.target === $("videoModal")) closeVideoModal(); });
     document.addEventListener("keydown", (event) => { if (event.key === "Escape") { closeVideoModal(); closeAllDropdowns(); } });
     loadVideos().catch((error) => { console.warn("Videos are unavailable.", error); state.videos = []; renderVideos(); });

@@ -14,7 +14,6 @@
   };
 
   const $ = (id) => document.getElementById(id);
-  const profileKeys = ["studentProfile", "studentData", "finalStudentRegistration"];
   const subjectColors = ["purple", "green", "orange", "blue", "pink"];
   const subjectIcons = {
     physics: "fa-atom",
@@ -27,45 +26,14 @@
     history: "fa-landmark",
   };
 
-  function readProfile() {
-    return profileKeys.map((key) => {
-      try { return JSON.parse(localStorage.getItem(key) || "null"); }
-      catch (error) { console.warn(`Could not read ${key}.`, error); return null; }
-    }).find((profile) => profile && (profile.classGrade || profile.class_grade)) || {};
-  }
-
   function renderRegistrationContext() {
-    const grade = String(state.profile.classGrade || state.profile.class_grade || state.profile.grade || "");
+    const grade = String(state.profile.grade || "");
     if (!grade) return;
-    const stream = String(state.profile.stream || state.profile.classStream || "").toLowerCase();
-    const streamLabels = { science_pcm: "Science (PCM)", science_pcb: "Science (PCB)", commerce: "Commerce", arts: "Arts / Humanities" };
+    const stream = window.StudentCurriculum.normalizeStream(state.profile.stream);
+    const streamLabels = { science_pcm: "Science (PCM)", science_pcb: "Science (PCB)", commerce: "Commerce", arts_humanities: "Arts / Humanities" };
     const streamText = grade === "11" || grade === "12" ? ` - ${streamLabels[stream] || "Selected stream"}` : "";
     $("registrationContextText").textContent = `Registered curriculum: Grade ${grade}${streamText}`;
     $("registrationContext").hidden = false;
-  }
-
-  function registeredSubjects(profile) {
-    const grade = String(profile.classGrade || profile.class_grade || profile.grade || "");
-    const stream = String(profile.stream || profile.classStream || "").toLowerCase();
-    const standard = {
-      "5": ["English", "Mathematics", "EVS", "Hindi"],
-      "6": ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-      "7": ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-      "8": ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-      "9": ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-      "10": ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-    };
-    const streams = {
-      science_pcm: ["Physics", "Chemistry", "Mathematics"],
-      science_pcb: ["Physics", "Chemistry", "Biology"],
-      commerce: ["Accountancy", "Business Studies", "Economics"],
-      arts: ["History", "Political Science", "Geography", "Sociology"],
-    };
-    if (grade === "11" || grade === "12") {
-      return [...(streams[stream] || []), "English", "Computer Science", "Physical Education"];
-    }
-    const direct = profile.registeredSubjects || profile.registered_subjects || profile.eligible_subjects;
-    return standard[grade] || (Array.isArray(direct) ? direct.map(String) : []);
   }
 
   function formatTime(seconds) {
@@ -361,21 +329,40 @@
 
   async function init() {
     bindEvents();
-    state.profile = readProfile();
-    renderRegistrationContext();
-    state.subjects = registeredSubjects(state.profile);
-    $("studySubject").innerHTML = '<option value="">Select subject</option>' + state.subjects.map((subject) => `<option value="${escapeHtml(subject)}">${escapeHtml(subject)}</option>`).join("");
-    renderAll();
     state.client = window.SmartLearningSupabase?.getClient?.();
     if (!state.client) { $("timerStatus").textContent = "Study tracking is unavailable until Supabase is configured."; return; }
-    const { data: { user } } = await state.client.auth.getUser();
-    state.user = user;
-    if (!user) { $("timerStatus").textContent = "Sign in to track study time."; return; }
+    const curriculum = await window.StudentCurriculum.loadCurrentStudent(state.client);
+    state.user = curriculum.user;
+    state.profile = curriculum.student;
+    state.subjects = curriculum.subjects.map((subject) => subject.name);
+    renderRegistrationContext();
+    $("studySubject").innerHTML = '<option value="">Select subject</option>' + state.subjects.map((subject) => `<option value="${escapeHtml(subject)}">${escapeHtml(subject)}</option>`).join("");
+    renderAll();
+    if (!state.user) { $("timerStatus").textContent = "Sign in to track study time."; return; }
     await loadData();
-    state.channel = state.client.channel(`study-time-${user.id}`).on("postgres_changes", { event: "*", schema: "public", table: "study_sessions", filter: `student_id=eq.${user.id}` }, loadData).on("postgres_changes", { event: "*", schema: "public", table: "study_session_segments", filter: `student_id=eq.${user.id}` }, loadData).subscribe();
+    state.channel = state.client.channel(`study-time-${state.user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "study_sessions", filter: `student_id=eq.${state.user.id}` }, loadData)
+      .on("postgres_changes", { event: "*", schema: "public", table: "study_session_segments", filter: `student_id=eq.${state.user.id}` }, loadData)
+      .on("postgres_changes", { event: "*", schema: "public", table: "students", filter: `user_id=eq.${state.user.id}` }, refreshCurriculum)
+      .on("postgres_changes", { event: "*", schema: "public", table: "subjects" }, refreshCurriculum)
+      .subscribe();
     state.channel.on("broadcast", { event: "study-session-updated" }, loadData);
     state.timer = setInterval(() => { if (state.activeSession) { renderTimer(); renderStats(); renderChart(); renderSubjects(); } }, 1000);
     window.addEventListener("beforeunload", () => state.channel?.unsubscribe());
+  }
+
+  async function refreshCurriculum() {
+    const curriculum = await window.StudentCurriculum.loadCurrentStudent(state.client);
+    state.profile = {
+      ...curriculum.student,
+      daily_study_goal_minutes: state.profile.daily_study_goal_minutes,
+    };
+    state.subjects = curriculum.subjects.map((subject) => subject.name);
+    const selected = $("studySubject").value;
+    $("studySubject").innerHTML = '<option value="">Select subject</option>' + state.subjects.map((subject) => `<option value="${escapeHtml(subject)}">${escapeHtml(subject)}</option>`).join("");
+    if (state.subjects.includes(selected)) $("studySubject").value = selected;
+    renderRegistrationContext();
+    renderAll();
   }
 
   document.addEventListener("DOMContentLoaded", () => init().catch((error) => {

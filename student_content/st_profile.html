@@ -1436,6 +1436,9 @@
         });
     </script>
     <script src="../js/student-layout.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase.js"></script>
+    <script src="../js/student-curriculum.js"></script>
     <script>
       (function () {
         const profileKeys = [
@@ -1472,43 +1475,9 @@
             .replace(/[_-]+/g, " ")
             .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
-        const classSubjects = {
-          5: ["English", "Mathematics", "EVS", "Hindi"],
-          6: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-          7: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-          8: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-          9: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-          10: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-        };
-
-        const streamSubjects = {
-          science_pcm: ["Physics", "Chemistry", "Mathematics"],
-          science_pcb: ["Physics", "Chemistry", "Biology"],
-          commerce: ["Accountancy", "Business Studies", "Economics"],
-          arts: ["History", "Geography", "Political Science", "Psychology"],
-          arts_humanities: [
-            "History",
-            "Geography",
-            "Political Science",
-            "Psychology",
-          ],
-        };
-
-        function subjectsForRegistration(grade, stream) {
-          const gradeNumber = Number(String(grade).match(/\d+/)?.[0]);
-          if (gradeNumber >= 11) {
-            const streamKey = String(stream || "")
-              .toLowerCase()
-              .replace(/[()\s/-]+/g, "_");
-            return [
-              ...(streamSubjects[streamKey] || []),
-              "English",
-              "Physical Education",
-              "Computer Science",
-            ];
-          }
-          return classSubjects[gradeNumber] || [];
-        }
+        let curriculumSubjects = [];
+        let registeredStudent = null;
+        let curriculumChannel = null;
 
         function getProfile() {
           return (
@@ -1557,43 +1526,22 @@
             "studentCode",
             "student_code",
           );
-          const grade = profileValue(
-            profile,
-            "classGrade",
-            "class_grade",
-            "grade",
-            "academic.grade",
-            "academic.class",
-          );
-          const stream = profileValue(
-            profile,
-            "stream",
-            "classStream",
-            "class_stream",
-            "academic.stream",
-          );
-          const subjects = profileValue(
-            profile,
-            "eligible_subjects",
-            "subjects",
-            "registeredSubjects",
-            "enrolledSubjects",
-            "academic.subjects",
-          );
-          const storedSubjectList = (
-            Array.isArray(subjects)
-              ? subjects
-              : String(subjects || "").split(",")
-          )
-            .map((subject) => String(subject).trim())
-            .filter(Boolean);
-          const subjectList = [
-            ...new Set(
-              storedSubjectList.length
-                ? storedSubjectList
-                : subjectsForRegistration(grade, stream),
-            ),
-          ];
+          const grade = registeredStudent?.grade ?? profileValue(
+              profile,
+              "classGrade",
+              "class_grade",
+              "grade",
+              "academic.grade",
+              "academic.class",
+            );
+          const stream = registeredStudent?.stream ?? profileValue(
+              profile,
+              "stream",
+              "classStream",
+              "class_stream",
+              "academic.stream",
+            );
+          const subjectList = curriculumSubjects;
           const email = profileValue(profile, "email", "personal.email");
           const phone = profileValue(
             profile,
@@ -1789,7 +1737,39 @@
             );
         }
 
+        async function loadCurriculum() {
+          const client = window.SmartLearningSupabase?.getClient?.();
+          if (!client) throw new Error("Supabase is not configured.");
+          const curriculum = await window.StudentCurriculum.loadCurrentStudent(client);
+          registeredStudent = curriculum.student;
+          curriculumSubjects = curriculum.subjects.map((subject) => subject.name);
+          renderProfile();
+          if (!curriculumChannel) {
+            curriculumChannel = client
+              .channel(`student-profile-curriculum-${curriculum.user.id}`)
+              .on("postgres_changes", {
+                event: "*",
+                schema: "public",
+                table: "students",
+                filter: `user_id=eq.${curriculum.user.id}`,
+              }, () => void loadCurriculum())
+              .on("postgres_changes", {
+                event: "*",
+                schema: "public",
+                table: "subjects",
+              }, () => void loadCurriculum())
+              .subscribe((status) => {
+                if (["CHANNEL_ERROR", "TIMED_OUT"].includes(status)) {
+                  console.error("Student profile curriculum realtime subscription is unavailable.", status);
+                }
+              });
+          }
+        }
+
         renderProfile();
+        loadCurriculum().catch((error) => {
+          console.error("Student profile curriculum could not be loaded.", error);
+        });
         window.addEventListener("storage", renderProfile);
         window.addEventListener(
           "smart-learning-profile-updated",
