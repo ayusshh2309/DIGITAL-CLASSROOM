@@ -1174,9 +1174,15 @@
         arts_humanities: "Arts / Humanities",
       };
 
-      const registrationContext = document.getElementById("registrationContext");
-      const registrationContextText = document.getElementById("registrationContextText");
-      const subjectsDescription = document.getElementById("subjectsDescription");
+      const registrationContext = document.getElementById(
+        "registrationContext",
+      );
+      const registrationContextText = document.getElementById(
+        "registrationContextText",
+      );
+      const subjectsDescription = document.getElementById(
+        "subjectsDescription",
+      );
       const emptyState = document.getElementById("emptyState");
       const subjectsGrid = document.getElementById("subjectsGrid");
       let subjects = [];
@@ -1184,6 +1190,7 @@
       let realtimeChannel = null;
       let isLoading = false;
       let reloadQueued = false;
+      let reloadTimer = null;
 
       function showState(title, message, icon = "fa-book-open") {
         emptyState.querySelector("i").className = `fa-solid ${icon}`;
@@ -1193,51 +1200,362 @@
       }
 
       function escapeHtml(value) {
-        return String(value ?? "").replace(/[&<>"']/g, (character) => ({
-          "&": "&amp;",
-          "<": "&lt;",
-          ">": "&gt;",
-          '"': "&quot;",
-          "'": "&#039;",
-        })[character]);
+        return String(value ?? "").replace(
+          /[&<>"']/g,
+          (character) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#039;",
+            })[character],
+        );
       }
 
       function setRegistrationContext(student) {
         const grade = Number(student.grade);
-        const stream = String(student.stream || "").trim().toLowerCase();
-        const streamText = grade >= 11
-          ? ` - ${streamLabels[stream] || stream.replaceAll("_", " ")}`
-          : "";
+        const stream = String(student.stream || "")
+          .trim()
+          .toLowerCase();
+        const streamText =
+          grade >= 11
+            ? ` - ${streamLabels[stream] || stream.replaceAll("_", " ")}`
+            : "";
         registrationContextText.textContent = `Registered curriculum: Grade ${grade}${streamText}`;
         registrationContext.hidden = false;
         subjectsDescription.textContent =
           "Only the subjects assigned to your registered curriculum are shown.";
       }
 
-      function subscribeToChanges(client, userId) {
-        const channelKey = userId;
+      function normalizeStream(value) {
+        return window.StudentCurriculum.normalizeStream(value);
+      }
+
+      async function fetchAllRows(queryFactory) {
+        const pageSize = 1000;
+        const rows = [];
+        let offset = 0;
+        while (true) {
+          const { data, error } = await queryFactory().range(
+            offset,
+            offset + pageSize - 1,
+          );
+          if (error) throw error;
+          const page = data || [];
+          rows.push(...page);
+          if (page.length < pageSize) return rows;
+          offset += pageSize;
+        }
+      }
+
+      function queueSubjectReload() {
+        window.clearTimeout(reloadTimer);
+        reloadTimer = window.setTimeout(() => void loadSubjects(), 150);
+      }
+
+      function subscribeToChanges(client, userId, studentId) {
+        const channelKey = `${userId}|${studentId}`;
         if (realtimeChannel?.key === channelKey) return;
         if (realtimeChannel) void client.removeChannel(realtimeChannel.channel);
 
         let channel = client
           .channel(`student-subjects-${userId}`)
-          .on("postgres_changes", {
-            event: "*",
-            schema: "public",
-            table: "students",
-            filter: `user_id=eq.${userId}`,
-          }, () => void loadSubjects())
-          .on("postgres_changes", {
-            event: "*",
-            schema: "public",
-            table: "subjects",
-          }, () => void loadSubjects());
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "students",
+              filter: `user_id=eq.${userId}`,
+            },
+            queueSubjectReload,
+          )
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "subjects",
+            },
+            queueSubjectReload,
+          )
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "materials",
+            },
+            queueSubjectReload,
+          )
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "quizzes",
+            },
+            queueSubjectReload,
+          )
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "student_video_progress",
+              filter: `student_id=eq.${userId}`,
+            },
+            queueSubjectReload,
+          )
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "quiz_attempts",
+              filter: `student_id=eq.${studentId}`,
+            },
+            queueSubjectReload,
+          );
         const subscribedChannel = channel.subscribe((status) => {
           if (["CHANNEL_ERROR", "TIMED_OUT"].includes(status)) {
-            console.error("Student subjects realtime subscription is unavailable.", status);
+            console.error(
+              "Student subjects realtime subscription is unavailable.",
+              status,
+            );
           }
         });
         realtimeChannel = { key: channelKey, channel: subscribedChannel };
+      }
+
+      async function loadSubjectStatistics(client, curriculum) {
+        const { user, student, grade, stream } = curriculum;
+        const subjectIds = curriculum.subjects.map((subject) => subject.id);
+        const statisticsBySubject = new Map(
+          subjectIds.map((id) => [
+            String(id),
+            { videos: 0, notes: 0, quizzes: 0, progressValues: [] },
+          ]),
+        );
+        if (!subjectIds.length) return statisticsBySubject;
+
+        const materialQuery = () => {
+          let query = client
+            .from("materials")
+            .select("id, subject_id, grade, stream, material_type")
+            .eq("grade", String(grade))
+            .in("subject_id", subjectIds);
+          return grade >= 11
+            ? query.eq("stream", student.stream)
+            : query.is("stream", null);
+        };
+        const quizQuery = () => {
+          let query = client
+            .from("quizzes")
+            .select("id, subject_id, grade, stream, status, start_at, end_at")
+            .eq("grade", grade)
+            .eq("status", "published")
+            .in("subject_id", subjectIds);
+          return grade >= 11
+            ? query.eq("stream", student.stream)
+            : query.is("stream", null);
+        };
+
+        let materialRows;
+        let quizRows;
+        try {
+          [materialRows, quizRows] = await Promise.all([
+            fetchAllRows(materialQuery),
+            fetchAllRows(quizQuery),
+          ]);
+        } catch (error) {
+          console.error(
+            "[My Subjects] Published material/quiz lookup failed.",
+            error,
+          );
+          throw error;
+        }
+
+        const scopedMaterials = materialRows.filter(
+          (material) =>
+            String(material.grade) === String(grade) &&
+            (grade < 11
+              ? material.stream == null
+              : normalizeStream(material.stream) === stream),
+        );
+        const videos = scopedMaterials.filter(
+          (material) =>
+            String(material.material_type || "")
+              .trim()
+              .toLowerCase() === "video",
+        );
+        const notes = scopedMaterials.filter(
+          (material) =>
+            String(material.material_type || "")
+              .trim()
+              .toLowerCase() !== "video",
+        );
+        const publishedQuizzes = quizRows.filter((quiz) => {
+          if (Number(quiz.grade) !== grade) return false;
+          if (grade >= 11 && normalizeStream(quiz.stream) !== stream)
+            return false;
+          return true;
+        });
+        const now = Date.now();
+        const availableQuizzes = publishedQuizzes.filter((quiz) => {
+          return (
+            (!quiz.start_at || new Date(quiz.start_at).getTime() <= now) &&
+            (!quiz.end_at || new Date(quiz.end_at).getTime() >= now)
+          );
+        });
+
+        const uniqueRows = (rows) => [
+          ...new Map(
+            rows
+              .filter((row) => row.id != null && row.subject_id != null)
+              .map((row) => [String(row.id), row]),
+          ).values(),
+        ];
+        for (const video of uniqueRows(videos)) {
+          const stats = statisticsBySubject.get(String(video.subject_id));
+          if (stats) stats.videos += 1;
+        }
+        for (const note of uniqueRows(notes)) {
+          const stats = statisticsBySubject.get(String(note.subject_id));
+          if (stats) stats.notes += 1;
+        }
+        const uniqueQuizzes = uniqueRows(availableQuizzes);
+        for (const quiz of uniqueQuizzes) {
+          const stats = statisticsBySubject.get(String(quiz.subject_id));
+          if (stats) stats.quizzes += 1;
+        }
+
+        const videoIds = uniqueRows(videos).map((video) => String(video.id));
+        const scopedPublishedQuizzes = uniqueRows(publishedQuizzes);
+        const quizIds = scopedPublishedQuizzes.map((quiz) => String(quiz.id));
+        const progressQueries = [];
+        if (videoIds.length) {
+          progressQueries.push(
+            fetchAllRows(() =>
+              client
+                .from("student_video_progress")
+                .select(
+                  "video_id, watch_position, duration, completed, last_watched_at",
+                )
+                .eq("student_id", user.id)
+                .in("video_id", videoIds),
+            ),
+          );
+        } else {
+          progressQueries.push(Promise.resolve({ data: [], error: null }));
+        }
+        if (quizIds.length) {
+          progressQueries.push(
+            fetchAllRows(() =>
+              client
+                .from("quiz_attempts")
+                .select("quiz_id, percentage, submitted_at")
+                .eq("student_id", student.id)
+                .eq("status", "submitted")
+                .in("quiz_id", quizIds)
+                .order("submitted_at", { ascending: false }),
+            ),
+          );
+        } else {
+          progressQueries.push(Promise.resolve({ data: [], error: null }));
+        }
+        const [videoProgressResult, quizProgressResult] =
+          await Promise.all(progressQueries);
+        if (videoProgressResult.error) {
+          console.error(
+            "[My Subjects] Student video progress query failed.",
+            videoProgressResult.error,
+          );
+          throw videoProgressResult.error;
+        }
+        if (quizProgressResult.error) {
+          console.error(
+            "[My Subjects] Student quiz progress query failed.",
+            quizProgressResult.error,
+          );
+          throw quizProgressResult.error;
+        }
+
+        const videoSubjectById = new Map(
+          uniqueRows(videos).map((video) => [
+            String(video.id),
+            String(video.subject_id),
+          ]),
+        );
+        const latestVideoProgress = new Map();
+        for (const progress of videoProgressResult || []) {
+          if (!latestVideoProgress.has(String(progress.video_id))) {
+            latestVideoProgress.set(String(progress.video_id), progress);
+          }
+        }
+        for (const [videoId, progress] of latestVideoProgress) {
+          const subjectId = videoSubjectById.get(videoId);
+          const stats = statisticsBySubject.get(subjectId);
+          if (!stats) continue;
+          const duration = Number(progress.duration);
+          const progressValue = progress.completed
+            ? 100
+            : duration > 0
+              ? Math.min(
+                  100,
+                  Math.max(
+                    0,
+                    (Number(progress.watch_position || 0) / duration) * 100,
+                  ),
+                )
+              : 0;
+          stats.progressValues.push(progressValue);
+        }
+
+        const quizSubjectById = new Map(
+          scopedPublishedQuizzes.map((quiz) => [
+            String(quiz.id),
+            String(quiz.subject_id),
+          ]),
+        );
+        const latestQuizProgress = new Map();
+        for (const attempt of quizProgressResult || []) {
+          if (!latestQuizProgress.has(String(attempt.quiz_id))) {
+            latestQuizProgress.set(String(attempt.quiz_id), attempt);
+          }
+        }
+        for (const [quizId, attempt] of latestQuizProgress) {
+          const stats = statisticsBySubject.get(quizSubjectById.get(quizId));
+          const percentage = Number(attempt.percentage);
+          if (stats && Number.isFinite(percentage)) {
+            stats.progressValues.push(Math.min(100, Math.max(0, percentage)));
+          }
+        }
+
+        for (const stats of statisticsBySubject.values()) {
+          stats.progress = stats.progressValues.length
+            ? Math.round(
+                stats.progressValues.reduce((sum, value) => sum + value, 0) /
+                  stats.progressValues.length,
+              )
+            : 0;
+        }
+        console.info(
+          "[My Subjects] Per-subject content statistics",
+          Object.fromEntries(
+            [...statisticsBySubject].map(([subjectId, stats]) => [
+              subjectId,
+              {
+                videos: stats.videos,
+                notes: stats.notes,
+                quizzes: stats.quizzes,
+                progress: stats.progress,
+              },
+            ]),
+          ),
+        );
+        return statisticsBySubject;
       }
 
       async function loadSubjects() {
@@ -1247,20 +1565,33 @@
         }
         isLoading = true;
         subjects = [];
-        subjectsGrid.querySelectorAll(".subject-card").forEach((card) => card.remove());
+        subjectsGrid
+          .querySelectorAll(".subject-card")
+          .forEach((card) => card.remove());
         document.getElementById("totalSubjects").textContent = "0";
-        showState("Loading subjects", "Checking your registered class...", "fa-spinner fa-spin");
+        showState(
+          "Loading subjects",
+          "Checking your registered class...",
+          "fa-spinner fa-spin",
+        );
 
         try {
           const client = window.SmartLearningSupabase?.getClient?.();
           if (!client) throw new Error("Supabase is not configured.");
 
-          const curriculum = await window.StudentCurriculum.loadCurrentStudent(client);
+          const curriculum =
+            await window.StudentCurriculum.loadCurrentStudent(client);
           if (!curriculum?.user?.id) {
             window.location.href = "../login.html";
             return;
           }
-          const { user, student, grade, stream, subjects: records } = curriculum;
+          const {
+            user,
+            student,
+            grade,
+            stream,
+            subjects: records,
+          } = curriculum;
           registeredStudent = student;
           setRegistrationContext(student);
 
@@ -1270,34 +1601,95 @@
             stream,
           });
           console.info("[My Subjects] Subjects returned by curriculum query", {
-            query: { table: "subjects", gradesContains: [grade], ...(grade >= 11 ? { streamsContains: [stream] } : {}) },
+            query: {
+              table: "subjects",
+              gradesContains: [grade],
+              ...(grade >= 11 ? { streamsContains: [stream] } : {}),
+            },
             records,
             count: records.length,
           });
           subjects = records.map((record) => {
-              const name = record.name;
-              const style = subjectStyles[name] || [
-                "fa-book",
-                "blue",
-                "progress-blue",
-                "blue-card",
-              ];
-              return {
-                id: record.id,
-                name,
-                progress: 0,
-                videos: 0,
-                notes: 0,
-                quizzes: 0,
-                icon: style[0],
-                color: style[1],
-                progressColor: style[2],
-                cardColor: style[3],
-              };
-            });
-          console.info("[My Subjects] Final subject count", subjects.length);
+            const name = record.name;
+            const style = subjectStyles[name] || [
+              "fa-book",
+              "blue",
+              "progress-blue",
+              "blue-card",
+            ];
+            return {
+              id: record.id,
+              name,
+              progress: 0,
+              videos: 0,
+              notes: 0,
+              quizzes: 0,
+              icon: style[0],
+              color: style[1],
+              progressColor: style[2],
+              cardColor: style[3],
+            };
+          });
           renderSubjects();
-          subscribeToChanges(client, user.id);
+          subscribeToChanges(client, user.id, student.id);
+
+          let statistics;
+          try {
+            statistics = await loadSubjectStatistics(client, curriculum);
+          } catch (error) {
+            console.error(
+              "[My Subjects] Subject cards loaded, but statistics could not be loaded.",
+              error,
+            );
+            renderSubjects();
+            return;
+          }
+          subjects = subjects.map((subject) => {
+            const stats = statistics.get(String(subject.id));
+            return {
+              ...subject,
+              progress: stats?.progress ?? 0,
+              videos: stats?.videos ?? 0,
+              notes: stats?.notes ?? 0,
+              quizzes: stats?.quizzes ?? 0,
+            };
+          });
+          console.info(
+            "[My Subjects] Per-subject counts",
+            subjects.map(({ id, name, videos, notes, quizzes, progress }) => ({
+              subjectId: id,
+              name,
+              videos,
+              notes,
+              quizzes,
+              progress,
+            })),
+          );
+          console.info("[My Subjects] Final subject count", subjects.length);
+          console.info("[My Subjects] Final statistics", {
+            totalSubjects: subjects.length,
+            totalVideos: subjects.reduce(
+              (total, subject) => total + subject.videos,
+              0,
+            ),
+            totalNotes: subjects.reduce(
+              (total, subject) => total + subject.notes,
+              0,
+            ),
+            totalQuizzes: subjects.reduce(
+              (total, subject) => total + subject.quizzes,
+              0,
+            ),
+            averageProgress: subjects.length
+              ? Math.round(
+                  subjects.reduce(
+                    (total, subject) => total + subject.progress,
+                    0,
+                  ) / subjects.length,
+                )
+              : 0,
+          });
+          renderSubjects();
         } catch (error) {
           console.error("Student subjects could not be loaded.", error);
           if (error.code === "AUTH_REQUIRED") {
@@ -1305,13 +1697,15 @@
             return;
           }
           subjects = [];
-          subjectsGrid.querySelectorAll(".subject-card").forEach((card) => card.remove());
+          subjectsGrid
+            .querySelectorAll(".subject-card")
+            .forEach((card) => card.remove());
           updateSummary();
           const accessError = error.code === "42501";
           showState(
             "Subjects could not be loaded",
             accessError
-              ? "Your account cannot access class subject assignments. Please contact support."
+              ? "Your account cannot read one or more curriculum or content records. Please contact support."
               : error.message || "Please try again later.",
             "fa-circle-exclamation",
           );
@@ -1345,7 +1739,17 @@
           showState(
             "No subjects found",
             registeredStudent
-              ? `No subjects have been assigned to your registered Grade ${registeredStudent.grade}${Number(registeredStudent.grade) >= 11 ? ` - ${streamLabels[String(registeredStudent.stream || "").trim().toLowerCase()] || registeredStudent.stream}` : ""} curriculum.`
+              ? `No subjects are configured for your registered Grade ${registeredStudent.grade}${
+                  Number(registeredStudent.grade) >= 11
+                    ? ` - ${
+                        streamLabels[
+                          String(registeredStudent.stream || "")
+                            .trim()
+                            .toLowerCase()
+                        ] || registeredStudent.stream
+                      }`
+                    : ""
+                } curriculum.`
               : "There are currently no subjects available for your registered class.",
           );
           updateSummary();

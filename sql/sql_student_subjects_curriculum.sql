@@ -136,15 +136,42 @@ grant select on public.subjects to authenticated;
 
 do $$
 begin
-  if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
-    and not exists (
-      select 1
-      from pg_publication_tables
-      where pubname = 'supabase_realtime'
-        and schemaname = 'public'
-        and tablename = 'subjects'
-    ) then
-    execute 'alter publication supabase_realtime add table public.subjects';
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    if to_regclass('public.subjects') is not null and not exists (
+        select 1 from pg_publication_tables
+        where pubname = 'supabase_realtime'
+          and schemaname = 'public' and tablename = 'subjects'
+      ) then
+      execute 'alter publication supabase_realtime add table public.subjects';
+    end if;
+    if to_regclass('public.materials') is not null and not exists (
+        select 1 from pg_publication_tables
+        where pubname = 'supabase_realtime'
+          and schemaname = 'public' and tablename = 'materials'
+      ) then
+      execute 'alter publication supabase_realtime add table public.materials';
+    end if;
+    if to_regclass('public.quizzes') is not null and not exists (
+        select 1 from pg_publication_tables
+        where pubname = 'supabase_realtime'
+          and schemaname = 'public' and tablename = 'quizzes'
+      ) then
+      execute 'alter publication supabase_realtime add table public.quizzes';
+    end if;
+    if to_regclass('public.quiz_attempts') is not null and not exists (
+        select 1 from pg_publication_tables
+        where pubname = 'supabase_realtime'
+          and schemaname = 'public' and tablename = 'quiz_attempts'
+      ) then
+      execute 'alter publication supabase_realtime add table public.quiz_attempts';
+    end if;
+    if to_regclass('public.student_video_progress') is not null and not exists (
+        select 1 from pg_publication_tables
+        where pubname = 'supabase_realtime'
+          and schemaname = 'public' and tablename = 'student_video_progress'
+      ) then
+      execute 'alter publication supabase_realtime add table public.student_video_progress';
+    end if;
   end if;
 end;
 $$;
