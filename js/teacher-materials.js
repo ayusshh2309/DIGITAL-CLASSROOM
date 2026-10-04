@@ -13,7 +13,6 @@
     pageSize: 8,
     editing: null,
     channel: null,
-    refreshTimer: null,
     refreshing: false,
     refreshPending: false,
   };
@@ -67,7 +66,7 @@
     photo: "photos",
     image: "photos",
     document: "documents",
-  })[type];
+  })[String(type || "").trim().toLowerCase()];
   const normalizeMaterialType = (type) => ({
     pdf: "pdf",
     video: "video",
@@ -455,18 +454,8 @@
         .insert(payload)
         .select("*")
         .single();
-      if (error) {
-        if (path && bucket) {
-          try {
-            const { error: cleanupError } = await state.client.storage.from(bucket).remove([path]);
-            if (cleanupError) console.error("Uploaded file rollback failed.", cleanupError);
-          } catch (cleanupError) {
-            console.error("Uploaded file rollback failed.", cleanupError);
-          }
-          uploadedPath = null;
-        }
-        throw new Error(`Material record could not be created: ${error.message}`);
-      }
+      if (error) throw new Error(`Material record could not be created: ${error.message}`);
+      uploadedPath = null;
 
       state.materials.unshift(await signedMaterial(data));
       closeModal();
@@ -475,15 +464,29 @@
       toast("Material uploaded successfully.", "success");
     } catch (error) {
       console.error("Material operation failed.", error);
+      let cleanupError = null;
       if (uploadedPath && uploadedBucket) {
         try {
-          const { error: cleanupError } = await state.client.storage.from(uploadedBucket).remove([uploadedPath]);
-          if (cleanupError) console.error("Uploaded file rollback failed.", cleanupError);
-        } catch (cleanupError) {
-          console.error("Uploaded file rollback failed.", cleanupError);
+          const result = await state.client.storage.from(uploadedBucket).remove([uploadedPath]);
+          cleanupError = result.error;
+        } catch (storageError) {
+          cleanupError = storageError;
+        }
+        if (cleanupError) {
+          console.error("Uploaded file cleanup failed; Storage object may be orphaned.", {
+            teacher_id: state.teacher?.id,
+            storage_bucket: uploadedBucket,
+            file_path: uploadedPath,
+            error: cleanupError,
+          });
+        } else {
+          uploadedPath = null;
         }
       }
-      toast(error?.message || "Material could not be saved.", "error");
+      const message = cleanupError
+        ? `${error?.message || "Material could not be saved."} Storage cleanup also failed: ${cleanupError.message || cleanupError}`
+        : error?.message || "Material could not be saved.";
+      toast(message, "error");
     } finally {
       button.disabled = false;
       button.textContent = oldButtonText;
@@ -492,26 +495,67 @@
 
   async function removeMaterial(id) {
     if (!window.confirm("Delete this material and its stored file?")) return;
-    const material = state.materials.find((item) => String(item.id) === String(id));
-    if (!material) return;
     try {
-      if (!material.storage_bucket || !material.file_path) {
-        throw new Error("Storage bucket or file path is missing; the material was not deleted.");
+      const { data: authData, error: authError } = await state.client.auth.getUser();
+      if (authError) throw new Error(`Authentication failed: ${authError.message}`);
+      const user = authData?.user;
+      if (!user || String(user.id) !== String(state.user?.id)) {
+        throw new Error("Your session has expired. Please log in again.");
       }
+
+      const { data: teacher, error: teacherError } = await state.client
+        .from("teachers")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (teacherError) throw new Error(`Teacher profile lookup failed: ${teacherError.message}`);
+      if (!teacher?.id) throw new Error("Teacher profile could not be found.");
+
+      const { data: material, error: materialError } = await state.client
+        .from("materials")
+        .select("id, teacher_id, storage_bucket, file_path, file_name")
+        .eq("id", id)
+        .eq("teacher_id", teacher.id)
+        .maybeSingle();
+      if (materialError) throw new Error(`Material lookup failed: ${materialError.message}`);
+      if (!material) {
+        throw new Error("Material not found or you do not have permission to delete it.");
+      }
+      if (!["pdfs", "videos", "photos", "documents"].includes(material.storage_bucket)
+        || !material.file_path
+        || material.file_path.startsWith("/")
+        || /^https?:\/\//i.test(material.file_path)) {
+        throw new Error("Material has an invalid Storage bucket or file path.");
+      }
+
       const { error: storageError } = await state.client.storage
         .from(material.storage_bucket)
         .remove([material.file_path]);
-      if (storageError) throw new Error(`Storage deletion failed: ${storageError.message}`);
+      if (storageError) {
+        console.error("Storage deletion failed:", storageError);
+        throw new Error(`Storage deletion failed: ${storageError.message}`);
+      }
 
-      const { error: dbError } = await state.client
+      const { data: deletedMaterial, error: deleteError } = await state.client
         .from("materials")
         .delete()
         .eq("id", material.id)
-        .eq("teacher_id", state.teacher.id);
-      if (dbError) throw new Error(`Material record deletion failed: ${dbError.message}`);
+        .eq("teacher_id", teacher.id)
+        .select("id")
+        .maybeSingle();
+      if (deleteError) {
+        console.error("Material database deletion failed:", deleteError);
+        throw new Error(`Material database deletion failed: ${deleteError.message}`);
+      }
+      if (!deletedMaterial) {
+        const deleteError = new Error("No matching material row was deleted.");
+        console.error("Material database deletion failed:", deleteError);
+        throw new Error(`Material database deletion failed: ${deleteError.message}`);
+      }
+
       state.materials = state.materials.filter((item) => String(item.id) !== String(id));
       render();
-      toast("Material deleted.", "success");
+      toast("Material deleted successfully.", "success");
     } catch (error) {
       console.error("Material deletion failed.", error);
       toast(error?.message || "Could not delete material.", "error");
@@ -555,7 +599,20 @@
 
   function subscribeRealtime() {
     const channel = state.client.channel(`teacher-materials-${state.teacher.id}`);
-    ["materials", "teacher_grade_groups", "teacher_subject_assignments"].forEach((table) => {
+    ["INSERT", "UPDATE"].forEach((event) => {
+      channel.on("postgres_changes", {
+        event,
+        schema: "public",
+        table: "materials",
+        filter: `teacher_id=eq.${state.teacher.id}`,
+      }, () => void refreshMaterials());
+    });
+    channel.on("postgres_changes", {
+      event: "DELETE",
+      schema: "public",
+      table: "materials",
+    }, () => void refreshMaterials());
+    ["teacher_grade_groups", "teacher_subject_assignments"].forEach((table) => {
       channel.on("postgres_changes", {
         event: "*",
         schema: "public",
@@ -641,9 +698,6 @@
       renderScope();
       await loadMaterials();
       if (!state.channel) subscribeRealtime();
-      if (!state.refreshTimer) {
-        state.refreshTimer = window.setInterval(() => void refreshMaterials(), 30000);
-      }
     } catch (error) {
       console.error("Materials page initialization failed.", error);
       setLoadError(error);
@@ -656,6 +710,5 @@
   });
   window.addEventListener("beforeunload", () => {
     if (state.channel) state.client?.removeChannel(state.channel);
-    window.clearTimeout(state.refreshTimer);
   }, { once: true });
 })();

@@ -55,7 +55,75 @@
   }
 
   async function loadMaterials() { if (state.provider === "local") await localProvider().load(); else { const client = window.TeacherData.getSupabaseClient(); const result = await client.from("materials").select("*").eq("teacher_id", state.user.id).order("created_at", { ascending: false }); if (result.error) throw result.error; state.materials = result.data || []; } const subjects = [...new Set([...state.assignments.values()].flatMap((items) => [...items]))].sort(); $("subjectFilter").innerHTML = '<option value="">All subjects</option>'; subjects.forEach((subject) => $("subjectFilter").add(new Option(subject, subject))); render(); }
-  async function removeMaterial(id) { if (!confirm("Delete this material permanently?")) return; try { if (state.provider === "local") await localProvider().remove(id); else { const item = state.materials.find((material) => String(material.id) === String(id)); if (!item) return; if (!item.storage_bucket || !item.file_path) throw new Error("Storage bucket or file path is missing; the material was not deleted."); const client = window.TeacherData.getSupabaseClient(); const { error: storageError } = await client.storage.from(item.storage_bucket).remove([item.file_path]); if (storageError) throw new Error(`Storage deletion failed: ${storageError.message}`); const { error: dbError } = await client.from("materials").delete().eq("id", item.id).eq("teacher_id", state.user.id); if (dbError) throw new Error(`Material record deletion failed: ${dbError.message}`); } state.materials = state.materials.filter((item) => String(item.id) !== String(id)); render(); toast("Material deleted.", "success"); } catch (error) { toast(error.message || "Could not delete material.", "error"); } }
+  async function removeMaterial(id) {
+    if (!confirm("Delete this material permanently?")) return;
+    try {
+      if (state.provider === "local") {
+        await localProvider().remove(id);
+      } else {
+        const client = window.TeacherData.getSupabaseClient();
+        const { data: authData, error: authError } = await client.auth.getUser();
+        if (authError) throw new Error(`Authentication failed: ${authError.message}`);
+        const user = authData?.user;
+        if (!user || String(user.id) !== String(state.user.id)) {
+          throw new Error("Your session has expired. Please log in again.");
+        }
+        const { data: teacher, error: teacherError } = await client
+          .from("teachers")
+          .select("id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (teacherError) throw new Error(`Teacher profile lookup failed: ${teacherError.message}`);
+        if (!teacher?.id) throw new Error("Teacher profile could not be found.");
+
+        const { data: material, error: materialError } = await client
+          .from("materials")
+          .select("id, teacher_id, storage_bucket, file_path, file_name")
+          .eq("id", id)
+          .eq("teacher_id", teacher.id)
+          .maybeSingle();
+        if (materialError) throw new Error(`Material lookup failed: ${materialError.message}`);
+        if (!material) throw new Error("Material not found or you do not have permission to delete it.");
+        if (!["pdfs", "videos", "photos", "documents"].includes(material.storage_bucket)
+          || !material.file_path
+          || material.file_path.startsWith("/")
+          || /^https?:\/\//i.test(material.file_path)) {
+          throw new Error("Material has an invalid Storage bucket or file path.");
+        }
+
+        const { error: storageError } = await client.storage
+          .from(material.storage_bucket)
+          .remove([material.file_path]);
+        if (storageError) {
+          console.error("Storage deletion failed:", storageError);
+          throw new Error(`Storage deletion failed: ${storageError.message}`);
+        }
+
+        const { data: deletedMaterial, error: deleteError } = await client
+          .from("materials")
+          .delete()
+          .eq("id", material.id)
+          .eq("teacher_id", teacher.id)
+          .select("id")
+          .maybeSingle();
+        if (deleteError) {
+          console.error("Material database deletion failed:", deleteError);
+          throw new Error(`Material database deletion failed: ${deleteError.message}`);
+        }
+        if (!deletedMaterial) {
+          const databaseError = new Error("No matching material row was deleted.");
+          console.error("Material database deletion failed:", databaseError);
+          throw new Error(`Material database deletion failed: ${databaseError.message}`);
+        }
+      }
+      state.materials = state.materials.filter((item) => String(item.id) !== String(id));
+      render();
+      toast("Material deleted successfully.", "success");
+    } catch (error) {
+      console.error("Material deletion failed.", error);
+      toast(error.message || "Could not delete material.", "error");
+    }
+  }
   function openMaterial(id) { const item = state.materials.find((material) => String(material.id) === String(id)); const url = item && materialUrl(item); if (url) window.open(url, "_blank", "noopener"); }
   function readFile(file) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); }); }
   function readVideoThumbnail(file) { return new Promise((resolve) => { if (!file || !String(file.type).startsWith("video/")) return resolve(""); const video = document.createElement("video"); const canvas = document.createElement("canvas"); const url = URL.createObjectURL(file); video.preload = "metadata"; video.muted = true; video.src = url; video.addEventListener("loadeddata", () => { video.currentTime = Math.min(1, video.duration || 1); }); video.addEventListener("seeked", () => { canvas.width = video.videoWidth || 640; canvas.height = video.videoHeight || 360; canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height); URL.revokeObjectURL(url); resolve(canvas.toDataURL("image/jpeg", 0.82)); }, { once: true }); video.addEventListener("error", () => { URL.revokeObjectURL(url); resolve(""); }, { once: true }); }); }

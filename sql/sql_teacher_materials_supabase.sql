@@ -349,9 +349,12 @@ using (
   bucket_id in ('pdfs', 'videos', 'photos', 'documents')
   and exists (
     select 1
-    from public.teachers as teacher
-    where teacher.id::text = (storage.foldername(name))[1]
-      and teacher.user_id = (select auth.uid())
+    from public.materials as material
+    join public.teachers as teacher
+      on teacher.id = material.teacher_id
+    where teacher.user_id = (select auth.uid())
+      and material.storage_bucket = storage.objects.bucket_id
+      and material.file_path = storage.objects.name
   )
 );
 

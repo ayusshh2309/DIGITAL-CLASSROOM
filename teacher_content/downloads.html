@@ -1154,9 +1154,9 @@
 
         try {
           await service.deleteFile(file.id);
-          await refreshFiles();
-          alert("File deleted successfully.");
+          alert("Material deleted successfully.");
         } catch (error) {
+          console.error("Material deletion failed.", error);
           alert(error.message || "Unable to delete file.");
         }
       }

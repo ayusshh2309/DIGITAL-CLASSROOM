@@ -358,28 +358,64 @@
   }
 
   async function deleteFile(materialId) {
-    const { client, profile } = await getCurrentTeacher();
+    const { client } = await getCurrentTeacher();
+    const { data: authData, error: authError } = await client.auth.getUser();
+    if (authError) throw new Error(`Authentication failed: ${authError.message}`);
+    const user = authData?.user;
+    if (!user) {
+      throw new Error("Your session has expired. Please log in again.");
+    }
+
+    const { data: teacher, error: teacherError } = await client
+      .from("teachers")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (teacherError) throw new Error(`Teacher profile lookup failed: ${teacherError.message}`);
+    if (!teacher?.id) throw new Error("Teacher profile could not be found.");
+
     const { data: material, error: materialError } = await client
       .from("materials")
-      .select("id, teacher_id, file_path, storage_bucket")
+      .select("id, teacher_id, storage_bucket, file_path, file_name")
       .eq("id", materialId)
-      .eq("teacher_id", profile.id)
-      .single();
-    if (materialError) throw materialError;
-
-    if (material.file_path && material.storage_bucket) {
-      const { error: storageError } = await client.storage
-        .from(material.storage_bucket)
-        .remove([material.file_path]);
-      if (storageError) throw new Error(`Storage deletion failed: ${storageError.message}`);
+      .eq("teacher_id", teacher.id)
+      .maybeSingle();
+    if (materialError) throw new Error(`Material lookup failed: ${materialError.message}`);
+    if (!material) {
+      throw new Error("Material not found or you do not have permission to delete it.");
     }
-    const { error } = await client
+    if (!STORAGE_BUCKETS.has(material.storage_bucket)
+      || !material.file_path
+      || material.file_path.startsWith("/")
+      || /^https?:\/\//i.test(material.file_path)) {
+      throw new Error("Material has an invalid Storage bucket or file path.");
+    }
+
+    const { error: storageError } = await client.storage
+      .from(material.storage_bucket)
+      .remove([material.file_path]);
+    if (storageError) {
+      console.error("Storage deletion failed:", storageError);
+      throw new Error(`Storage deletion failed: ${storageError.message}`);
+    }
+
+    const { data: deletedMaterial, error: deleteError } = await client
       .from("materials")
       .delete()
       .eq("id", material.id)
-      .eq("teacher_id", profile.id);
-    if (error) throw error;
-    window.dispatchEvent(new CustomEvent("smart-learning-downloads-updated"));
+      .eq("teacher_id", teacher.id)
+      .select("id")
+      .maybeSingle();
+    if (deleteError) {
+      console.error("Material database deletion failed:", deleteError);
+      throw new Error(`Material database deletion failed: ${deleteError.message}`);
+    }
+    if (!deletedMaterial) {
+      const databaseError = new Error("No matching material row was deleted.");
+      console.error("Material database deletion failed:", databaseError);
+      throw new Error(`Material database deletion failed: ${databaseError.message}`);
+    }
+
     return true;
   }
 
@@ -419,12 +455,19 @@
     const client = getClient();
     if (!teacherId) throw new Error("An authenticated teacher profile is required for live material updates.");
     const channel = client.channel(`teacher-materials-${teacherId}`);
-    channel
-      .on("postgres_changes", {
-        event: "*",
+    ["INSERT", "UPDATE"].forEach((event) => {
+      channel.on("postgres_changes", {
+        event,
         schema: "public",
         table: "materials",
         filter: `teacher_id=eq.${teacherId}`,
+      }, listener);
+    });
+    channel
+      .on("postgres_changes", {
+        event: "DELETE",
+        schema: "public",
+        table: "materials",
       }, listener)
       .subscribe((status, error) => {
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
