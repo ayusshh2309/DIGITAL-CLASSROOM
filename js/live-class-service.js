@@ -166,6 +166,33 @@
     const attemptedStatuses = ["completed", "Attended"];
 
     for (const teacherId of identityCandidates) {
+      const { data: liveClass, error: lookupError } = await client
+        .from("live_classes")
+        .select("class_date, start_time, duration_minutes")
+        .eq("id", id)
+        .eq("teacher_id", teacherId)
+        .maybeSingle();
+
+      if (lookupError) throw lookupError;
+      if (!liveClass) continue;
+
+      const startsAt = liveClass.class_date && liveClass.start_time
+        ? new Date(`${liveClass.class_date}T${liveClass.start_time}`)
+        : null;
+      if (!startsAt || Number.isNaN(startsAt.getTime())) {
+        throw new Error("The scheduled start time for this class could not be determined.");
+      }
+
+      const durationMinutes = Number(liveClass.duration_minutes) || 60;
+      const endsAt = startsAt.getTime() + durationMinutes * 60_000;
+      if (Date.now() < endsAt) {
+        const classNotFinishedError = new Error(
+          "Please take the class first. You can mark attendance after the scheduled class duration has ended.",
+        );
+        classNotFinishedError.code = "CLASS_NOT_FINISHED";
+        throw classNotFinishedError;
+      }
+
       for (const status of attemptedStatuses) {
         try {
           const { data, error } = await client
@@ -193,7 +220,63 @@
     return null;
   }
 
-  function subscribe(onChange) {
+  async function deleteLiveClass(liveClassId) {
+    if (liveClassId === null || liveClassId === undefined || String(liveClassId).trim() === "") {
+      throw new Error("A live class ID is required for deletion.");
+    }
+    const client = window.SmartLearningSupabase?.getClient?.() || window.TeacherData?.getSupabaseClient?.();
+    if (!client) throw new Error("Supabase is not configured.");
+
+    const { data: authData, error: authError } = await client.auth.getUser();
+    if (authError) throw authError;
+    if (!authData?.user?.id) {
+      const authenticationError = new Error("Authentication is required.");
+      authenticationError.code = "AUTH_REQUIRED";
+      throw authenticationError;
+    }
+
+    const { data: teacher, error: teacherError } = await client
+      .from("teachers")
+      .select("id")
+      .eq("user_id", authData.user.id)
+      .maybeSingle();
+    if (teacherError) throw teacherError;
+    if (!teacher?.id) {
+      const profileError = new Error("Teacher profile could not be found.");
+      profileError.code = "TEACHER_UNAVAILABLE";
+      throw profileError;
+    }
+
+    const { data: liveClass, error: lookupError } = await client
+      .from("live_classes")
+      .select("id")
+      .eq("id", liveClassId)
+      .eq("teacher_id", teacher.id)
+      .maybeSingle();
+    if (lookupError) throw lookupError;
+    if (!liveClass) {
+      const notFoundError = new Error("Live class not found or you do not have permission to delete it.");
+      notFoundError.code = "LIVE_CLASS_NOT_FOUND";
+      throw notFoundError;
+    }
+
+    const { data: deletedClass, error: deleteError } = await client
+      .from("live_classes")
+      .delete()
+      .eq("id", liveClass.id)
+      .eq("teacher_id", teacher.id)
+      .select("id")
+      .maybeSingle();
+    if (deleteError) throw deleteError;
+    if (!deletedClass) {
+      const notDeletedError = new Error("Live class was not deleted. It may have already been removed.");
+      notDeletedError.code = "LIVE_CLASS_NOT_DELETED";
+      throw notDeletedError;
+    }
+    return deletedClass;
+  }
+
+  function subscribe(onChange, onError = () => {}) {
     const handler = () => onChange();
     window.addEventListener("smart-learning-live-classes-updated", handler);
     window.addEventListener("storage", handler);
@@ -207,9 +290,17 @@
           event: "*",
           schema: "public",
           table: "live_classes",
-          filter: `teacher_id=eq.${teacher.id}`,
         }, handler)
-        .subscribe();
+        .subscribe((status, error) => {
+          if (["CHANNEL_ERROR", "TIMED_OUT"].includes(status)) {
+            const realtimeError = error || new Error(`Live class realtime subscription failed: ${status}`);
+            console.error("Live class realtime subscription failed.", realtimeError);
+            onError(realtimeError);
+          }
+        });
+    }).catch((error) => {
+      console.error("Could not initialize live class realtime subscription.", error);
+      onError(error);
     });
 
     return () => {
@@ -225,6 +316,7 @@
     load,
     schedule,
     markAttended,
+    deleteLiveClass,
     subscribe,
     isVisible,
     WINDOW_MS,

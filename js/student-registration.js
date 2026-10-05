@@ -255,11 +255,11 @@
   }
 
   function friendlyAuthError(error) {
-    if (isDuplicateEmailError(error)) return "An account already exists for this email. Use its password to continue registration, or sign in.";
+    if (isDuplicateEmailError(error)) return "An account with this email already exists. Please log in instead.";
     if (/weak_password|password.*(short|weak)/i.test(error?.message || "")) return "Password must contain at least 8 characters.";
     if (/password/i.test(error?.message || "")) return "Password was rejected. Check the password and try again.";
     if (/email/i.test(error?.message || "")) return "Check the email address and try again.";
-    return "Could not create or verify the account. Please check your connection and try again.";
+    return "Unable to create your account.";
   }
 
   async function uploadPhoto(client, userId, photoData) {
@@ -279,61 +279,68 @@
   }
 
   async function getOrCreateAuthUser(client, data) {
-    const { data: currentAuth, error: currentError } = await client.auth.getUser();
-    if (currentError) throw currentError;
-    if (currentAuth?.user) {
-      if (currentAuth.user.email?.toLowerCase() === data.email.toLowerCase()) {
+    const registrationDraft = draft();
+    if (registrationDraft.pendingAuthUserId) {
+      const { data: currentAuth, error: currentError } = await client.auth.getUser();
+      if (currentError) {
+        console.info("No active session is available to resume student registration.", currentError);
+      }
+      if (currentAuth?.user) {
+        if (currentAuth.user.id !== registrationDraft.pendingAuthUserId
+          || currentAuth.user.email?.toLowerCase() !== data.email.toLowerCase()) {
+          throw new Error("Sign in to the student account created for this registration, then try again.");
+        }
         return currentAuth.user;
       }
 
-      const { error: signOutError } = await client.auth.signOut();
-      if (signOutError) {
-        console.error("Could not sign out the existing account before student registration.", signOutError);
-        throw new Error("Could not sign out the existing account. Please sign out and try again.");
+      const { data: signedIn, error: signInError } = await client.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
+      if (!signInError && signedIn?.user?.id === registrationDraft.pendingAuthUserId) {
+        return signedIn.user;
       }
+      if (/not confirmed|email not confirmed/i.test(signInError?.message || "")) {
+        const confirmationError = new Error("Your account was created. Confirm your email, then return here and click Create Account again to finish registration.");
+        confirmationError.code = "EMAIL_CONFIRMATION_REQUIRED";
+        throw confirmationError;
+      }
+      console.error("Student signup error:", signInError || new Error("Could not resume the pending student account."));
+      throw new Error(friendlyAuthError(signInError));
     }
 
     const { data: signup, error: signupError } = await client.auth.signUp({
-      email: data.email,
+      email: data.email.trim().toLowerCase(),
       password: data.password,
       options: {
         data: { role: "student", full_name: data.fullName },
         emailRedirectTo: new URL("st_review.html", window.location.href).href,
       },
     });
-    if (signupError && !isDuplicateEmailError(signupError)) {
-      console.error("Student Supabase Auth signup failed.", signupError);
+    if (signupError) {
+      console.error("Student signup error:", signupError);
       throw new Error(friendlyAuthError(signupError));
     }
-    if (signupError || !signup?.session) {
-      const { data: signedIn, error: signInError } = await client.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
-      });
-      if (!signInError && signedIn?.user) return signedIn.user;
-      if (signup?.user && !signupError && !signup.session) {
-        throw new Error("Account created. Verify your email, then return to this page and click Create Account again to finish registration.");
-      }
-      if (/not confirmed|email not confirmed/i.test(signInError?.message || "")) {
-        throw new Error("This account needs email verification. Confirm the link we sent, then return here and click Create Account again.");
-      }
-      if (isDuplicateEmailError(signupError)) {
-        throw new Error("An account already exists for this email. Check the password, or sign in to that account before continuing.");
-      }
-      console.error("Student Supabase Auth sign-in after signup failed.", signInError);
-      throw new Error(friendlyAuthError(signInError));
+    if (!signup?.user?.id) {
+      const missingUserError = new Error("Student Auth account was not created.");
+      console.error("Student signup error:", missingUserError);
+      throw missingUserError;
     }
-    if (!signup.user) throw new Error("Supabase did not return the newly created account.");
-
-    const { data: verified, error: verifyError } = await client.auth.getUser();
-    if (verifyError) {
-      console.error("Could not verify the new student Auth user.", verifyError);
-      throw new Error("The new account could not be verified. Please try again.");
+    if (Array.isArray(signup.user.identities) && signup.user.identities.length === 0) {
+      const duplicateError = new Error("An account with this email already exists.");
+      duplicateError.code = "user_already_exists";
+      console.error("Student signup error:", duplicateError);
+      throw new Error(friendlyAuthError(duplicateError));
     }
-    if (!verified?.user?.id || verified.user.id !== signup.user.id) {
-      throw new Error("Could not verify the new account. Please try again.");
+    saveDraft({
+      pendingAuthUserId: signup.user.id,
+    });
+    if (!signup.session) {
+      const confirmationError = new Error("Your account was created. Confirm your email, then return here and click Create Account again to finish registration.");
+      confirmationError.code = "EMAIL_CONFIRMATION_REQUIRED";
+      throw confirmationError;
     }
-    return verified.user;
+    return signup.user;
   }
 
   async function createStudentProfile(client, user, data) {
@@ -343,7 +350,7 @@
       .maybeSingle();
     if (lookupError) {
       console.error("Could not check for an existing student profile.", lookupError);
-      throw new Error("Could not check your student profile. Your temporary draft is preserved; please try again.");
+      throw new Error("Account was created, but student profile setup failed. Your registration draft is preserved; please try again.");
     }
     if (existing) return existing;
 
@@ -376,44 +383,55 @@
       .select("id, student_id, profile_photo_url")
       .single();
     if (insertError) {
-      console.error("Could not insert the student profile.", insertError);
-      throw new Error("Could not save your student profile. Your account is safe and your temporary draft is preserved; please try again.");
+      console.error("Student profile insert error:", insertError);
+      throw new Error("Account was created, but student profile setup failed. Your registration draft is preserved; please try again.");
     }
     return inserted;
   }
 
   async function completeRegistration(data) {
+    const validationError = validateCompleteDraft(data);
+    if (validationError) throw new Error(validationError);
     const client = window.SmartLearningSupabase?.getClient?.();
     if (!client) throw new Error("Supabase is not configured. Please try again later.");
     showMessage("Creating account...", "status");
-    const user = await getOrCreateAuthUser(client, data);
+    let user;
+    try {
+      user = await getOrCreateAuthUser(client, data);
+    } catch (error) {
+      if (error.code === "EMAIL_CONFIRMATION_REQUIRED") {
+        showMessage(error.message, "status");
+        return false;
+      }
+      throw error;
+    }
 
     showMessage("Creating student profile...", "status");
     const profile = await createStudentProfile(client, user, data);
-    let photoWarning = "";
     if (data.profilePhoto && !profile.profile_photo_url) {
       showMessage("Uploading profile photo...", "status");
       try {
         const photoPath = await uploadPhoto(client, user.id, data.profilePhoto);
-        const { error } = await client.from("students")
+        const { error: photoUpdateError } = await client.from("students")
           .update({ profile_photo_url: photoPath })
           .eq("id", profile.id)
           .eq("user_id", user.id);
-        if (error) {
+        if (photoUpdateError) {
           const { error: removeError } = await client.storage.from("student-profile-images").remove([photoPath]);
           if (removeError) console.error("Could not remove an unreferenced student photo.", removeError);
-          throw error;
+          throw photoUpdateError;
         }
       } catch (error) {
-        console.error("Optional student profile photo upload failed.", error);
-        photoWarning = " Your account was created, but the optional profile photo could not be uploaded.";
+        console.error("Student profile photo upload error:", error);
+        throw new Error("Account was created, but profile photo upload failed. Your registration draft is preserved; please try again.");
       }
     }
 
     showMessage("Finalizing registration...", "status");
     window.StudentData.clearStudentRegistration();
-    showMessage(`Account created successfully. Your Student ID is ${profile.student_id}.${photoWarning}`, photoWarning ? "warning" : "success");
+    showMessage(`Account created successfully. Your Student ID is ${profile.student_id}.`, "success");
     window.setTimeout(() => window.location.assign("../student_content/st_dashboard.html"), 1800);
+    return true;
   }
 
   function initializeReview() {
@@ -431,7 +449,11 @@
       const originalLabel = button.textContent;
       button.textContent = "Creating account...";
       try {
-        await completeRegistration(draft());
+        const completed = await completeRegistration(draft());
+        if (completed === false) {
+          button.disabled = false;
+          button.textContent = originalLabel;
+        }
       } catch (error) {
         console.error("Student registration failed.", error);
         showMessage(error.message || "Registration failed. Your temporary draft is preserved; please try again.");

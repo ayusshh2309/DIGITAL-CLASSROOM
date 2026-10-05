@@ -1256,9 +1256,9 @@
     <script src="../js/supabase.js"></script>
     <script src="../js/student-curriculum.js"></script>
     <script>
-      const LIVE_CLASS_STORAGE_KEY = "scheduledLiveClasses";
       let currentStudentProfile = {};
       let curriculumSubjectNames = [];
+      let currentLiveClasses = [];
       let curriculumRealtimeChannel = null;
 
       function normalizeGrade(value) {
@@ -1289,15 +1289,20 @@
           .trim();
       }
 
-      function readScheduledClasses() {
-        try {
-          const stored = JSON.parse(
-            localStorage.getItem(LIVE_CLASS_STORAGE_KEY) || "[]",
-          );
-          return Array.isArray(stored) ? stored : [];
-        } catch {
-          return [];
+      async function loadLiveClasses(client) {
+        const { data, error } = await client
+          .from("live_classes")
+          .select("*, subjects(id, name)")
+          .order("class_date", { ascending: true })
+          .order("start_time", { ascending: true });
+        if (error) {
+          console.error("Student live classes query failed.", error);
+          throw error;
         }
+        currentLiveClasses = (data || []).map((item) => {
+          const relation = Array.isArray(item.subjects) ? item.subjects[0] : item.subjects;
+          return { ...item, subject_name: relation?.name || "" };
+        });
       }
 
       function studentEligibleSubjects() {
@@ -1354,8 +1359,7 @@
 
       function subjectMatches(classItem, studentProfile) {
         const targetSubject = normalizeSubject(
-          classItem.subject ||
-            classItem.class_subject ||
+          classItem.subject_name ||
             classItem.subjectName ||
             "",
         );
@@ -1409,7 +1413,7 @@
       function renderLiveClasses() {
         const studentProfile = currentStudentProfile;
         renderRegistrationContext(studentProfile);
-        const scheduled = readScheduledClasses()
+        const scheduled = currentLiveClasses
           .map((item) => ({
             ...item,
             grade: normalizeGrade(
@@ -1517,7 +1521,8 @@
               : status.toLowerCase() === "live now"
                 ? "Live Now"
                 : getCountdownLabel(startDate);
-        const subjectMeta = getSubjectIcon(item.subject || "");
+        const subject = item.subject_name || "";
+        const subjectMeta = getSubjectIcon(subject);
         const buttonDisabled =
           isPrevious ||
           !isValidUrl ||
@@ -1555,12 +1560,12 @@
               <i class="${subjectMeta.icon}"></i>
             </div>
             <div class="class-info">
-              <h2>${(item.title || item.class_title || item.subject || "Live Class").replace(/&/g, "&amp;")}</h2>
+              <h2>${escapeHtml(item.title || item.class_title || subject || "Live Class")}</h2>
               <div class="teacher">
                 <i class="fa-solid fa-user"></i>By ${item.teacher_name || "Teacher"}
               </div>
               <span class="chapter ${subjectMeta.className === "math" ? "chapter-green" : subjectMeta.className === "chemistry" ? "chapter-blue" : subjectMeta.className === "computer" ? "chapter-pink" : "chapter-purple"}">
-                ${item.topic || item.subject || "Class session"}
+                ${escapeHtml(item.topic || subject || "Class session")}
               </span>
             </div>
             <div class="class-time">
@@ -1631,18 +1636,14 @@
         "smart-learning-live-classes-updated",
         renderLiveClasses,
       );
-      window.addEventListener("storage", (event) => {
-        if (event.key === LIVE_CLASS_STORAGE_KEY) {
-          renderLiveClasses();
-        }
-      });
-
       async function loadStudentCurriculum() {
         const client = window.SmartLearningSupabase?.getClient?.();
         if (!client) throw new Error("Supabase is not configured.");
         const curriculum = await window.StudentCurriculum.loadCurrentStudent(client);
         currentStudentProfile = curriculum.student;
         curriculumSubjectNames = curriculum.subjects.map((subject) => subject.name);
+        renderLiveClasses();
+        await loadLiveClasses(client);
         renderLiveClasses();
         if (!curriculumRealtimeChannel) {
           curriculumRealtimeChannel = client
@@ -1658,6 +1659,15 @@
               schema: "public",
               table: "subjects",
             }, () => void loadStudentCurriculum())
+            .on("postgres_changes", {
+              event: "*",
+              schema: "public",
+              table: "live_classes",
+            }, () => {
+              void loadLiveClasses(client)
+                .then(renderLiveClasses)
+                .catch((error) => console.error("Unable to refresh student live classes.", error));
+            })
             .subscribe((status) => {
               if (["CHANNEL_ERROR", "TIMED_OUT"].includes(status)) {
                 console.error("Live class curriculum realtime subscription is unavailable.", status);

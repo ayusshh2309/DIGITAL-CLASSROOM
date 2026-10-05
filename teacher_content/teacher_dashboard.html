@@ -1397,8 +1397,15 @@
             : '<p class="empty-state">No live classes scheduled in the next 24 hours.</p>';
           scheduleTimeline.querySelectorAll(".schedule-attend-btn").forEach((button) => {
             button.addEventListener("click", async () => {
-              await LiveClassService.markAttended(button.dataset.classId);
-              loadSchedule();
+              try {
+                await LiveClassService.markAttended(button.dataset.classId);
+                await loadSchedule();
+              } catch (error) {
+                console.error("Could not mark live class as attended.", error);
+                window.alert(error?.code === "CLASS_NOT_FINISHED"
+                  ? error.message
+                  : "Could not update this class. Please try again.");
+              }
             });
           });
         };
