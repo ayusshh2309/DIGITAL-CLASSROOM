@@ -46,8 +46,9 @@
 
       .main-content {
         width: auto;
-        min-height: 100%;
+        min-height: 0;
         padding: 24px 28px;
+        overflow-y: auto;
       }
 
       .page-header {
@@ -1781,9 +1782,9 @@
             stream: group.stream ? String(group.stream).trim() : "",
             streamLabel: streamLabels[String(group.stream || "").trim().toLowerCase()] || (group.stream ? String(group.stream).trim() : ""),
             subjects: (group.subjects || []).map((subject) => ({
-              id: subject.id ?? subject.subject_id ?? subject.name,
+              id: subject.id ?? subject.subject_id ?? null,
               name: subject.name || subject.subject || String(subject),
-            })),
+            })).filter((subject) => subject.id !== null && subject.id !== undefined && String(subject.id).trim() !== ""),
           }))
           .filter((group) => Number.isInteger(group.grade) && group.grade >= 5 && group.grade <= 12);
 
@@ -1920,7 +1921,7 @@
           const input = document.createElement("input");
           input.type = "radio";
           input.name = "subject";
-          input.value = String(subject.id ?? subject.name);
+          input.value = String(subject.id);
           const icon = document.createElement("i");
           icon.className = "fa-solid fa-book-open";
           const name = document.createElement("span");
@@ -2006,9 +2007,10 @@
           return false;
         }
 
-        const subjectNames = (selectedClass.subjects || []).map((subject) => String(subject.name || "").trim().toLowerCase());
-        const selectedSubjectName = String(getSelectedSubjectName()).trim().toLowerCase();
-        if (!subjectNames.includes(selectedSubjectName)) {
+        const subjectIsRegistered = (selectedClass.subjects || []).some(
+          (subject) => String(subject.id) === String(selectedSubject?.id),
+        );
+        if (selectedSubject?.id === null || selectedSubject?.id === undefined || !subjectIsRegistered) {
           alert("The selected subject is not registered for this class.");
           return false;
         }
@@ -2155,39 +2157,26 @@
         );
         const createdAt = new Date().toISOString();
 
+        if (selectedSubject?.id === null || selectedSubject?.id === undefined || String(selectedSubject.id).trim() === "") {
+          throw new Error("Select a registered subject before scheduling this class.");
+        }
+
         return {
-          modern: {
-            teacher_id: authenticatedTeacherId,
-            grade,
-            stream,
-            subject_id: selectedSubject?.id ?? null,
-            subject: selectedSubject?.name || getSelectedSubjectName(),
-            title,
-            chapter: "",
-            topic: description || title,
-            description: description || null,
-            class_date: date,
-            start_time: startTime,
-            duration_minutes: durationMinutes,
-            meeting_url: meetingUrl,
-            status: "scheduled",
-            created_at: createdAt,
-            updated_at: createdAt,
-          },
-          legacy: {
-            teacher_id: authenticatedTeacherId,
-            title,
-            class_grade: String(grade),
-            subject: selectedSubject?.name || getSelectedSubjectName(),
-            topic: description || title,
-            description: description || null,
-            start_at: new Date(`${date}T${startTime}:00`).toISOString(),
-            duration_minutes: durationMinutes,
-            meeting_url: meetingUrl,
-            status: "Scheduled",
-            created_at: createdAt,
-            updated_at: createdAt,
-          },
+          teacher_id: authenticatedTeacherId,
+          grade,
+          stream,
+          subject_id: selectedSubject.id,
+          title,
+          chapter: "",
+          topic: description || title,
+          description: description || null,
+          class_date: date,
+          start_time: startTime,
+          duration_minutes: durationMinutes,
+          meeting_url: meetingUrl,
+          status: "scheduled",
+          created_at: createdAt,
+          updated_at: createdAt,
         };
       }
 
@@ -2197,31 +2186,17 @@
           throw new Error("Supabase is not configured. Please check your project settings.");
         }
 
-        const payloadSet = buildLiveClassPayload();
-        const candidatePayloads = [payloadSet.modern, payloadSet.legacy];
-
-        for (const payload of candidatePayloads) {
-          try {
-            const { data, error } = await client
-              .from("live_classes")
-              .insert(payload)
-              .select()
-              .single();
-
-            if (!error) return data || payload;
-            const message = String(error.message || "");
-            if (!/column .* does not exist|does not exist|Unknown column|invalid input syntax|not null|violates/i.test(message)) {
-              throw error;
-            }
-          } catch (error) {
-            const message = String(error?.message || "");
-            if (!/column .* does not exist|does not exist|Unknown column|invalid input syntax|not null|violates/i.test(message)) {
-              throw error;
-            }
-          }
+        const payload = buildLiveClassPayload();
+        const { data, error } = await client
+          .from("live_classes")
+          .insert(payload)
+          .select("*, subjects(id, name)")
+          .single();
+        if (error) {
+          console.error("Could not save the live class.", error);
+          throw new Error(`Could not save the live class. ${error.message}`);
         }
-
-        throw new Error("Could not save the live class. The live_classes schema may not match the project requirements.");
+        return data || payload;
       }
 
       async function scheduleLiveClass() {

@@ -1383,12 +1383,13 @@
             ? classes.map((item, index) => {
                 const color = palette[index % palette.length];
                 const attended = item.status === "Attended";
+                const subject = item.subjects?.name || item.subject_name || "";
                 return `<div class="timeline-item">
                   <div class="timeline-dot dot-${color}"></div>
                   <span class="time-slot time-${color}">${formatTime(item.start_at)}</span>
                   <div class="timeline-content">
-                    <div class="timeline-title">${escapeHtml(item.title || `Class ${item.class_grade} ${item.subject}`)}</div>
-                    <div class="timeline-sub">Class ${escapeHtml(item.class_grade)}${item.subject ? ` • ${escapeHtml(item.subject)}` : ""} · ${formatDate(item.start_at)}${item.topic ? ` · ${escapeHtml(item.topic)}` : ""}</div>
+                    <div class="timeline-title">${escapeHtml(item.title || `Class ${item.class_grade} ${subject}`)}</div>
+                    <div class="timeline-sub">Class ${escapeHtml(item.class_grade)}${subject ? ` • ${escapeHtml(subject)}` : ""} · ${formatDate(item.start_at)}${item.topic ? ` · ${escapeHtml(item.topic)}` : ""}</div>
                   </div>
                   ${attended ? '<span class="live-chip-badge badge-green">Attended</span>' : `<button class="live-chip-badge badge-blue schedule-attend-btn" data-class-id="${escapeHtml(item.id)}">Attend</button>`}
                 </div>`;
@@ -1482,7 +1483,7 @@
               await Promise.all([
                 supabase.from("materials").select("created_at").eq("teacher_id", user.id),
                 supabase.from("quizzes").select("created_at, status").eq("teacher_id", user.id).eq("status", "published"),
-                supabase.from("live_classes").select("*").eq("teacher_id", user.id),
+                supabase.from("live_classes").select("*, subjects(id, name)").eq("teacher_id", user.id),
                 supabase.from("students").select("*"),
               ]);
 

@@ -368,79 +368,61 @@
       }
 
       .stat-card {
-        --stat-accent: #2563eb;
-        position: relative;
-        overflow: hidden;
         background: #ffffff;
-        border-radius: 14px;
-        padding: 18px 18px 16px 20px;
+        border-radius: 18px;
+        padding: 20px;
         border: 1px solid #e4eaf3;
-        box-shadow: 0 4px 14px rgba(20, 40, 70, 0.045);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
+        align-items: center;
         gap: 16px;
         min-height: 126px;
       }
 
-      .stat-card::before {
-        content: "";
-        position: absolute;
-        inset: 0 auto 0 0;
-        width: 5px;
-        background: var(--stat-accent);
-      }
-
       .stat-card > div:first-child {
         display: flex;
-        align-items: flex-start;
-        gap: 14px;
+        align-items: center;
+        gap: 16px;
         flex: 1;
         min-width: 0;
       }
 
       .stat-icon {
-        width: 48px;
-        height: 48px;
-        flex: 0 0 48px;
-        border-radius: 12px;
+        width: 54px;
+        height: 54px;
+        flex: 0 0 54px;
+        border-radius: 16px;
         display: grid;
         place-items: center;
         color: white;
         font-size: 1.2rem;
+        box-shadow: 0 6px 12px rgba(15, 23, 42, 0.12);
       }
 
       .stat-val {
-        font-size: clamp(1.7rem, 2vw, 2.1rem);
+        font-size: 1.75rem;
         font-weight: 800;
-        color: #172b4d;
+        color: #111827;
         line-height: 1;
       }
 
       .stat-lbl {
-        font-size: 0.88rem;
-        color: #526581;
+        font-size: 0.9rem;
+        color: #64748b;
         font-weight: 700;
-        margin-top: 7px;
+        margin-top: 5px;
       }
 
       .stat-support {
-        margin-top: 7px;
-        color: #71819a;
-        font-size: 0.75rem;
+        margin-top: 4px;
+        color: #172033;
+        font-size: 0.8rem;
+        font-weight: 600;
         line-height: 1.4;
       }
 
-      .stat-card .fa-angle-right {
-        width: 30px;
-        height: 30px;
-        flex: 0 0 30px;
-        display: grid;
-        place-items: center;
-        border-radius: 50%;
-        background: #f1f5fb;
-        color: #334b70;
-        font-size: 0.8rem;
+      .stat-card .stat-arrow {
+        display: none;
       }
 
       /* ── LIVE CLASSES SECTION ── */
@@ -869,43 +851,36 @@
         }
 
         .stat-card {
-          min-height: 98px;
-          padding: 13px 13px 12px 17px;
-          gap: 10px;
+          min-height: 126px;
+          padding: 20px;
+          gap: 16px;
         }
 
         .stat-card > div:first-child {
           align-items: center;
-          gap: 11px;
+          gap: 16px;
         }
 
         .stat-icon {
-          width: 42px;
-          height: 42px;
-          flex-basis: 42px;
-          font-size: 1rem;
+          width: 54px;
+          height: 54px;
+          flex-basis: 54px;
+          font-size: 1.2rem;
         }
 
         .stat-val {
-          font-size: clamp(1.55rem, 1.8vw, 1.9rem);
+          font-size: 1.75rem;
         }
 
         .stat-lbl {
-          margin-top: 4px;
-          font-size: 0.78rem;
+          margin-top: 5px;
+          font-size: 0.9rem;
         }
 
         .stat-support {
           margin-top: 4px;
-          font-size: 0.67rem;
-          line-height: 1.25;
-        }
-
-        .stat-card .stat-arrow {
-          width: 25px;
-          height: 25px;
-          flex-basis: 25px;
-          font-size: 0.7rem;
+          font-size: 0.8rem;
+          line-height: 1.4;
         }
 
         .live-classes-section {
@@ -1021,7 +996,7 @@
 
         <!-- METRICS GRID -->
         <div class="stats-grid">
-          <div class="stat-card" style="--stat-accent: #2563eb;">
+          <div class="stat-card">
             <div>
               <div class="stat-icon" style="background: #3478f6"><i class="fa-regular fa-calendar" aria-hidden="true"></i></div>
               <div>
@@ -1032,7 +1007,7 @@
             </div>
             <i class="fa-solid fa-arrow-right stat-arrow" aria-hidden="true"></i>
           </div>
-          <div class="stat-card" style="--stat-accent: #10a66a;">
+          <div class="stat-card">
             <div>
               <div class="stat-icon" style="background: #19b879"><i class="fa-solid fa-check" aria-hidden="true"></i></div>
               <div>
@@ -1043,7 +1018,7 @@
             </div>
             <i class="fa-solid fa-arrow-right stat-arrow" aria-hidden="true"></i>
           </div>
-          <div class="stat-card" style="--stat-accent: #7c3aed;">
+          <div class="stat-card">
             <div>
               <div class="stat-icon" style="background: #8252e8"><i class="fa-solid fa-users" aria-hidden="true"></i></div>
               <div>
@@ -1054,7 +1029,7 @@
             </div>
             <i class="fa-solid fa-arrow-right stat-arrow" aria-hidden="true"></i>
           </div>
-          <div class="stat-card" style="--stat-accent: #f59e0b;">
+          <div class="stat-card">
             <div>
               <div class="stat-icon" style="background: #f6a23b"><i class="fa-regular fa-clock" aria-hidden="true"></i></div>
               <div>
@@ -1210,6 +1185,11 @@
         return item;
       }
 
+      function subjectName(item) {
+        const relation = Array.isArray(item.subjects) ? item.subjects[0] : item.subjects;
+        return relation?.name || item.subject_name || "";
+      }
+
       function renderClassCard(item) {
         const statusValue = statusForDisplay(item);
         const isDone = statusValue === "Completed";
@@ -1218,7 +1198,8 @@
         const grade = item.grade || item.class_grade;
         const stream = String(item.stream || "").trim().toLowerCase();
         const streamLabel = streamLabels[stream] || (stream ? stream.replaceAll("_", " ") : "");
-        const title = item.subject || item.title || "Live class";
+        const subject = subjectName(item);
+        const title = subject || item.title || "Live class";
         const topic = item.topic || item.chapter || (item.title !== title ? item.title : "");
         const classDescription = [grade ? `Class ${grade}` : "", streamLabel]
           .filter(Boolean)
@@ -1323,7 +1304,7 @@
         const filtered = currentClasses.filter((item) => {
           const previous = isPrevious(item, now);
           const matchesTab = currentFilterTab === "Previous" ? previous : !previous;
-          const searchableText = [item.title, item.subject, item.topic, item.chapter, item.grade, item.class_grade, item.stream]
+          const searchableText = [item.title, subjectName(item), item.topic, item.chapter, item.grade, item.class_grade, item.stream]
             .filter(Boolean)
             .join(" ")
             .toLowerCase();

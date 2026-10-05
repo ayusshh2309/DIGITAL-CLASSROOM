@@ -60,6 +60,7 @@
   }
 
   function normalizeRow(row, source, type) {
+    const subjectRelation = Array.isArray(row.subjects) ? row.subjects[0] : row.subjects;
     const classStartAt = row.class_date
       ? `${row.class_date}T${row.start_time || "00:00:00"}`
       : null;
@@ -82,7 +83,7 @@
       type,
       title: row.title || row.name || row.topic || "Academic event",
       description: row.description || row.instructions || row.message || row.details || "",
-      subject: row.subject || row.subject_name || "",
+      subject: subjectRelation?.name || row.subject_name || row.subject || "",
       class_grade: row.class_grade || row.grade || row.class || "",
       stream: row.stream || row.class_stream || "",
       start_at: startAt,
@@ -128,7 +129,8 @@
   function matchesStudent(student, row) {
     const grade = String(student.grade || student.class_grade || "").trim();
     const stream = String(student.stream || student.class_stream || "").trim();
-    const subject = String(row.subject || row.subject_name || "").trim().toLowerCase();
+    const subjectRelation = Array.isArray(row.subjects) ? row.subjects[0] : row.subjects;
+    const subject = String(subjectRelation?.name || row.subject_name || row.subject || "").trim().toLowerCase();
     const allowedSubjects = eligibleSubjects(student);
 
     const rowGrade = row.class_grade || row.grade;
@@ -142,7 +144,8 @@
     const client = getClient();
     if (!client) return [];
     try {
-      const { data, error } = await client.from(table).select("*");
+      const fields = table === "live_classes" ? "*, subjects(id, name)" : "*";
+      const { data, error } = await client.from(table).select(fields);
       if (error) return [];
       return (data || []).filter((row) => matchFn(row)).map((row) => normalizeRow(row, table, typeName));
     } catch (error) {

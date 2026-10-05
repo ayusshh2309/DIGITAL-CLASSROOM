@@ -74,6 +74,7 @@
   }
 
   function tableEvent(row, source, typeName, extra = {}) {
+    const subjectRelation = Array.isArray(row.subjects) ? row.subjects[0] : row.subjects;
     const classStartAt = row.class_date
       ? `${row.class_date}T${row.start_time || "00:00:00"}`
       : null;
@@ -101,7 +102,7 @@
       description: row.description || row.instructions || row.message || row.topic || "",
       class_grade: row.class_grade || row.grade || row.class || "",
       stream: row.stream || row.class_stream || "",
-      subject: row.subject || row.subject_name || "",
+      subject: subjectRelation?.name || row.subject_name || row.subject || "",
       start_at: startAt,
       end_at: endAt,
       status: row.status || "scheduled",
@@ -120,7 +121,8 @@
     const teacherId = profile.id;
     const teacherUserId = profile.user_id;
     const collect = async (table, typeName, mapper, selector = null) => {
-      let query = client.from(table).select("*");
+      const fields = table === "live_classes" ? "*, subjects(id, name)" : "*";
+      let query = client.from(table).select(fields);
       if (selector) {
         query = selector(query);
       }

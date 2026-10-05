@@ -12,6 +12,7 @@
   const now = () => new Date().toISOString();
 
   const normalize = (item = {}) => {
+    const subjectRelation = Array.isArray(item.subjects) ? item.subjects[0] : item.subjects;
     const startValue =
       item.start_at ||
       item.start_time ||
@@ -20,7 +21,7 @@
     const gradeValue = item.grade ?? item.class_grade ?? item.classId ?? "";
     const durationMinutes = Number(item.duration_minutes ?? item.duration ?? item.durationMinutes ?? 60) || 60;
     const title = item.title || item.class_title || item.topic || "Live class";
-    const subject = item.subject || item.subject_name || item.subjectName || "";
+    const subject = subjectRelation?.name || item.subject_name || item.subjectName || "";
     const meetingUrl = item.meeting_url || item.meetingLink || item.link || "";
     const teacherId = String(item.teacher_id || "");
 
@@ -32,7 +33,7 @@
       grade: gradeValue === "" ? "" : String(gradeValue),
       class_grade: String(item.class_grade ?? gradeValue ?? ""),
       stream: String(item.stream || item.class_stream || ""),
-      subject,
+      subject_name: subject,
       topic: item.topic || item.description || item.chapter || "",
       meeting_url: meetingUrl,
       start_at: startDate && !Number.isNaN(startDate.getTime()) ? startDate.toISOString() : null,
@@ -88,7 +89,7 @@
     for (const teacherId of identityCandidates) {
       const { data, error } = await client
         .from("live_classes")
-        .select("*")
+        .select("*, subjects(id, name)")
         .eq("teacher_id", teacherId)
         .order("class_date", { ascending: true })
         .order("start_time", { ascending: true });
@@ -107,14 +108,18 @@
     return [];
   }
 
-  function buildInsertAttempts(record) {
+  function buildInsertPayload(record) {
     const createdAt = now();
-    const modern = {
+    const subjectId = record.subject_id;
+    if (subjectId === null || subjectId === undefined || String(subjectId).trim() === "") {
+      throw new Error("A registered subject ID is required to schedule a live class.");
+    }
+
+    return {
       teacher_id: record.teacher_id,
       grade: Number(record.grade ?? 0) || null,
       stream: record.stream || null,
-      subject_id: record.subject_id || null,
-      subject: record.subject || record.title || "",
+      subject_id: subjectId,
       title: record.title,
       chapter: record.chapter || null,
       topic: record.topic || record.title,
@@ -127,23 +132,6 @@
       created_at: createdAt,
       updated_at: createdAt,
     };
-
-    const legacy = {
-      teacher_id: record.teacher_id,
-      title: record.title,
-      class_grade: String(record.grade || record.class_grade || ""),
-      subject: record.subject || record.title || "",
-      topic: record.topic || record.description || record.title || "",
-      description: record.description || null,
-      start_at: record.start_at || record.class_date || new Date().toISOString(),
-      duration_minutes: Number(record.duration_minutes || 60),
-      meeting_url: record.meeting_url || "",
-      status: "Scheduled",
-      created_at: createdAt,
-      updated_at: createdAt,
-    };
-
-    return [modern, legacy];
   }
 
   async function schedule(input) {
@@ -155,22 +143,15 @@
     const identityCandidates = [teacher.id, user?.id].filter(Boolean);
     for (const teacherId of identityCandidates) {
       const record = normalize({ ...input, teacher_id: teacherId, status: "Scheduled", created_at: now() });
-      const attempts = buildInsertAttempts(record);
-
-      for (const payload of attempts) {
-        try {
-          const { data, error } = await client.from("live_classes").insert(payload).select().single();
-          if (!error) return normalize(data || payload);
-          const message = String(error.message || "");
-          if (!/column .* does not exist|Unknown column|does not exist|invalid input syntax|not null|violates|foreign key/i.test(message)) {
-            throw error;
-          }
-        } catch (error) {
-          const message = String(error?.message || "");
-          if (!/column .* does not exist|Unknown column|does not exist|invalid input syntax|not null|violates|foreign key/i.test(message)) {
-            throw error;
-          }
-        }
+      const payload = buildInsertPayload(record);
+      const { data, error } = await client
+        .from("live_classes")
+        .insert(payload)
+        .select("*, subjects(id, name)")
+        .single();
+      if (!error) return normalize(data || payload);
+      if (!/column .* does not exist|Unknown column|does not exist|invalid input syntax|not null|violates|foreign key/i.test(error.message || "")) {
+        throw error;
       }
     }
 
@@ -192,7 +173,7 @@
             .update({ status, attended_at: now() })
             .eq("id", id)
             .eq("teacher_id", teacherId)
-            .select()
+            .select("*, subjects(id, name)")
             .single();
 
           if (!error) return normalize(data || {});

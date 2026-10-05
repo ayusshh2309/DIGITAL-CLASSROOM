@@ -59,7 +59,10 @@
   let profileChannel = null;
   let stopAuthWatch = null;
   const gradeOf = (row) => String(row.class_grade ?? row.grade ?? row.class ?? row.class_number ?? "").match(/\d+/)?.[0] || "";
-  const subjectOf = (row) => String(row.subject ?? row.subject_name ?? "").trim();
+  const subjectOf = (row) => {
+    const relation = Array.isArray(row.subjects) ? row.subjects[0] : row.subjects;
+    return String(relation?.name ?? row.subject_name ?? row.subject ?? "").trim();
+  };
   const dateOf = (row) => row.start_at || row.scheduled_at || row.start_time || row.exam_at || row.due_date || row.published_at || row.created_at || null;
   const streamOf = (row) => {
     const quiz = state.quizzes.find((item) => String(item.id) === String(row.quiz_id || row.assessment_id || row.id));
@@ -267,10 +270,10 @@
         ["quizzes", state.profile.id, "*"],
         ["students", state.user.id, "*"],
         ["attendance", state.user.id, "*"],
-        ["live_classes", state.user.id, "*"],
+        ["live_classes", state.user.id, "*, subjects(id, name)"],
         ["announcements", state.user.id, "*"],
       ];
-      const optionalData = await Promise.all(optionalQueries.map(([table, ownerId]) => queryTeacherTable(table, ownerId, "*", { optional: true })));
+      const optionalData = await Promise.all(optionalQueries.map(([table, ownerId, fields]) => queryTeacherTable(table, ownerId, fields, { optional: true })));
       const [quizzes, students, attendance, liveClasses, announcements] = optionalData;
       state.quizzes = quizzes;
       state.students = students.filter((student) => String(student.status || "Active").toLowerCase() !== "inactive");
@@ -404,12 +407,12 @@
       const joinUrl = item.meeting_url || item.join_url || item.meetingLink;
       const action = status !== "Completed" ? `<a class="class-open" href="${escapeHtml(joinUrl || "live_classes.html")}" ${joinUrl ? 'target="_blank" rel="noopener"' : ""}>${status === "Live" ? "Join" : "Open"}</a>` : "";
       const stream = item.stream || item.class_stream;
-      return `<article class="today-class"><div class="class-time">${fmtTime(start)}<br>${fmtTime(end)}</div><div class="class-detail"><strong>${escapeHtml(item.subject || item.title || "Class")}</strong><span>Class ${escapeHtml(gradeOf(item))}${stream ? ` · ${escapeHtml(stream)}` : ""}${item.topic ? ` · ${escapeHtml(item.topic)}` : ""}</span></div><div class="class-actions"><span class="status-pill ${status.toLowerCase()}">${status}</span>${action}</div></article>`;
+      return `<article class="today-class"><div class="class-time">${fmtTime(start)}<br>${fmtTime(end)}</div><div class="class-detail"><strong>${escapeHtml(subjectOf(item) || item.title || "Class")}</strong><span>Class ${escapeHtml(gradeOf(item))}${stream ? ` · ${escapeHtml(stream)}` : ""}${item.topic ? ` · ${escapeHtml(item.topic)}` : ""}</span></div><div class="class-actions"><span class="status-pill ${status.toLowerCase()}">${status}</span>${action}</div></article>`;
     }).join("") : emptyStateMarkup("schedule", "fa-calendar-days", "No classes scheduled today", "Your planned classes will appear here once you schedule them.", "create_liveclass.html", "Schedule a class");
   }
 
   function eventRows() {
-    const liveEvents = state.liveClasses.map((row) => ({ ...row, eventType: "class", title: row.title || row.subject || "Live class", eventDate: dateOf(row), description: row.topic || "Scheduled class" }));
+    const liveEvents = state.liveClasses.map((row) => ({ ...row, subject_name: subjectOf(row), eventType: "class", title: row.title || subjectOf(row) || "Live class", eventDate: dateOf(row), description: row.topic || "Scheduled class" }));
     const quizEvents = state.quizzes.filter((row) => row.start_at || row.due_date || row.end_at).map((row) => ({ ...row, eventType: "quiz", title: row.title || "Assessment", eventDate: row.start_at || row.due_date || row.end_at, description: row.description || row.subject || "Quiz or assessment" }));
     const announcementEvents = state.announcements.filter((row) => row.scheduled_at || row.published_at).map((row) => ({ ...row, eventType: "announcement", title: row.title || "Announcement", eventDate: row.scheduled_at || row.published_at, description: row.message || row.description || "Teacher announcement" }));
     return [...liveEvents, ...quizEvents, ...announcementEvents].filter((row) => row.eventDate && assignedRow(row) && Number.isFinite(new Date(row.eventDate).getTime())).sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate));
