@@ -85,6 +85,13 @@
     return collected.sort((left, right) => left.localeCompare(right));
   }
 
+  function studentsForGroup(group) {
+    return state.students.filter((student) =>
+      Number(student.grade) === group.grade &&
+      normalizedStream(student.stream) === normalizedStream(group.stream),
+    );
+  }
+
   function updateSummaryStats(totalCount) {
     $("statTotal").textContent = String(totalCount);
     $("studentCountPill").textContent = `${totalCount} Student${totalCount === 1 ? "" : "s"}`;
@@ -199,8 +206,10 @@
         title.textContent = classLabel(group.grade, group.stream);
         const detail = document.createElement("span");
         detail.className = "registered-class-subjects";
-        const subjects = subjectsFor(group);
-        detail.textContent = subjects.length ? subjects.join(" · ") : "No subjects assigned";
+        const studentCount = studentsForGroup(group).length;
+        detail.textContent = state.loadingStudents
+          ? "Loading students..."
+          : `${studentCount} student${studentCount === 1 ? "" : "s"}`;
         card.append(title, detail);
         root.appendChild(card);
       });
@@ -365,24 +374,10 @@
       if (groupError) throw groupError;
       console.log("Registered grade groups:", gradeGroups);
 
-      const { data: assignments, error: assignmentError } = await state.client
-        .from("teacher_subject_assignments")
-        .select("grade, stream, subject")
-        .eq("teacher_id", state.teacher.id);
-      if (assignmentError) {
-        console.error("Could not load registered class subjects.", assignmentError);
-      }
-      const subjectsByGroup = new Map();
-      (assignments || []).forEach((assignment) => {
-        const key = groupKey(assignment.grade, assignment.stream);
-        const subjects = subjectsByGroup.get(key) || [];
-        subjects.push(assignment.subject);
-        subjectsByGroup.set(key, subjects);
-      });
       state.groups = (gradeGroups || []).map((group) => ({
         grade: Number(group.grade),
         stream: normalizedStream(group.stream),
-        subjects: subjectsByGroup.get(groupKey(group.grade, group.stream)) || [],
+        subjects: [],
       })).filter((group) => Number.isInteger(group.grade) && group.grade >= 5 && group.grade <= 12);
 
       if (!selectedGroup()) {
@@ -404,9 +399,11 @@
   async function loadStudents() {
     if (!state.client || !state.teacher) return;
     const loadId = ++state.studentLoadId;
-    const groups = selectedGroups();
+    const groups = registeredGroups();
     if (!groups.length) {
       state.students = [];
+      state.loadingStudents = false;
+      renderRegisteredClasses();
       renderStudents();
       return;
     }
@@ -419,7 +416,9 @@
           .select("id, student_id, full_name, email, profile_photo_url, grade, stream")
           .eq("grade", group.grade)
           .order("full_name", { ascending: true });
-        query = group.stream ? query.eq("stream", group.stream) : query.is("stream", null);
+        query = group.stream
+          ? query.eq("stream", group.stream)
+          : query.is("stream", null);
         return query;
       }));
       const failedResult = results.find((result) => result.error);
@@ -427,13 +426,53 @@
       if (loadId !== state.studentLoadId) return;
 
       state.error = "";
+      const allowedGroups = new Set(groups.map((group) => groupKey(group.grade, group.stream)));
       const uniqueStudents = new Map();
       results.flatMap((result) => result.data || []).forEach((student) => {
-        uniqueStudents.set(student.id, student);
+        if (allowedGroups.has(groupKey(student.grade, student.stream))) {
+          uniqueStudents.set(student.id, student);
+        }
       });
       const authorizedStudents = [...uniqueStudents.values()]
         .sort((left, right) => String(left.full_name || "").localeCompare(String(right.full_name || "")));
-      console.log("Students query result:", authorizedStudents.map(({ id, grade, stream }) => ({ id, grade, stream })));
+      const returnedCount = results.reduce((total, result) => total + (result.data || []).length, 0);
+      console.log("Students returned from Supabase:", {
+        returnedCount,
+        matchingRegisteredScopes: authorizedStudents.map(({ id, grade, stream }) => ({ id, grade, stream })),
+      });
+      if (returnedCount === 0) {
+        console.warn(
+          "No students were returned for the teacher's registered grade/stream queries. Check the authenticated user's RLS policies and teacher scope.",
+          { authUserId: state.user?.id, teacherId: state.teacher.id, groups },
+        );
+        if (typeof state.client.rpc === "function") {
+          const scopeChecks = await Promise.all(groups.map(async (group) => {
+            const { data: allowed, error: scopeError } = await state.client.rpc(
+              "teacher_can_access_student_scope",
+              {
+                requested_grade: group.grade,
+                requested_stream: group.stream || null,
+              },
+            );
+            return {
+              grade: group.grade,
+              stream: group.stream || null,
+              allowed,
+              error: scopeError || null,
+            };
+          }));
+          console.error("Student RLS scope diagnostics:", scopeChecks);
+          const missingDiagnostic = scopeChecks.find((check) => check.error);
+          if (missingDiagnostic) {
+            state.error =
+              "Student access could not be verified because the Supabase teacher-scope RLS function is missing or unavailable. Apply sql_teacher_students_supabase.sql in Supabase, then reload.";
+            console.error(
+              "Apply sql_teacher_students_supabase.sql in the Supabase SQL Editor. The scope-check function error is:",
+              missingDiagnostic.error,
+            );
+          }
+        }
+      }
       const students = await Promise.all(authorizedStudents.map(async (student) => {
         try {
           return {
@@ -453,6 +492,7 @@
       if (loadId !== state.studentLoadId) return;
       state.students = students;
       state.loadingStudents = false;
+      renderRegisteredClasses();
       renderStudents();
     } catch (error) {
       if (loadId !== state.studentLoadId) return;
@@ -461,6 +501,7 @@
       console.error("Could not load teacher-authorized students.", error);
       console.error("Students query error:", error);
       state.students = [];
+      renderRegisteredClasses();
       renderStudents();
     }
   }

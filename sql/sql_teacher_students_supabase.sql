@@ -1,5 +1,29 @@
 alter table public.students enable row level security;
 
+create or replace function public.teacher_can_access_student_scope(
+  requested_grade integer,
+  requested_stream text
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, auth
+as $$
+  select exists (
+    select 1
+    from public.teachers as teacher
+    join public.teacher_grade_groups as grade_group
+      on grade_group.teacher_id = teacher.id
+    where teacher.user_id = (select auth.uid())
+      and grade_group.grade = requested_grade
+      and grade_group.stream is not distinct from requested_stream
+  );
+$$;
+
+revoke all on function public.teacher_can_access_student_scope(integer, text) from public, anon;
+grant execute on function public.teacher_can_access_student_scope(integer, text) to authenticated;
+
 do $$
 declare
   policy_record record;
@@ -26,17 +50,7 @@ create policy "Teachers read students in registered classes"
   on public.students
   for select
   to authenticated
-  using (
-    exists (
-      select 1
-      from public.teachers as teacher
-      join public.teacher_grade_groups as grade_group
-        on grade_group.teacher_id = teacher.id
-      where teacher.user_id = (select auth.uid())
-        and grade_group.grade = students.grade
-        and grade_group.stream is not distinct from students.stream
-    )
-  );
+  using (public.teacher_can_access_student_scope(grade, stream));
 
 drop policy if exists "Students create their own registration" on public.students;
 create policy "Students create their own registration"
