@@ -146,7 +146,14 @@
   function showDetails(event) {
     const root = $("calendarModalRoot");
     if (!root) return;
-    const status = new Date(event.end_at || event.start_at) < new Date() ? "Completed" : (event.status || "Scheduled");
+    const storedStatus = String(event.status || "scheduled").trim().toLowerCase();
+    const isLiveClass = event.source === "live_classes" || event.type === "live_class";
+    const eventEnd = new Date(event.end_at || event.start_at);
+    const status = isLiveClass
+      ? storedStatus === "scheduled" && eventEnd < new Date()
+        ? "Missed"
+        : (event.status || "Scheduled")
+      : eventEnd < new Date() ? "Completed" : (event.status || "Scheduled");
     root.innerHTML = `<div class="modal-backdrop"><div class="modal"><div class="modal-head"><div><span class="page-eyebrow"><i class="fa-solid fa-circle-info"></i> ${esc(displayType(event.type))}</span><h2 style="margin-top:7px">${esc(event.title || "Academic event")}</h2></div><button class="icon-button" data-close><i class="fa-solid fa-xmark"></i></button></div><div class="modal-grid"><div class="field"><label>Class</label><div>${esc(event.class_grade ? `Class ${event.class_grade}` : "All classes")}</div></div><div class="field"><label>Subject</label><div>${esc(event.subject || "All subjects")}</div></div><div class="field"><label>Date and time</label><div>${esc(formatDate(event.start_at, { dateStyle: "medium", timeStyle: "short" }))}</div></div><div class="field"><label>Status</label><div>${esc(status)}</div></div><div class="field full"><label>Description</label><div>${esc(event.description || "No additional details.")}</div></div>${event.location ? `<div class="field full"><label>Location / Link</label><div><a href="${esc(event.location)}" target="_blank" rel="noreferrer">${esc(event.location)}</a></div></div>` : ""}</div><div class="modal-actions"><button class="cal-button" data-close>Close</button></div></div></div>`;
   }
 

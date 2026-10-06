@@ -126,12 +126,14 @@
   function classStatus(event) {
     const raw = normalize(event.status);
     if (raw.includes("cancel")) return { label: "Cancelled", className: "upcoming" };
+    if (["completed", "attended", "done", "finished"].includes(raw)) return { label: "Completed", className: "upcoming" };
+    if (raw === "missed") return { label: "Missed", className: "upcoming" };
+    if (["live", "live now", "in_progress", "in progress", "ongoing"].includes(raw)) return { label: "Live", className: "" };
     const start = eventStart(event);
     const end = eventEnd(event);
     if (!start || !end) return { label: "Upcoming", className: "upcoming" };
-    if (now() < start) return { label: "Upcoming", className: "upcoming" };
-    if (now() <= end) return { label: "Live", className: "" };
-    return { label: "Completed", className: "upcoming" };
+    if (now() >= end) return { label: "Missed", className: "upcoming" };
+    return { label: "Upcoming", className: "upcoming" };
   }
 
   function setStatus(message = "") {

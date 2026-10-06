@@ -665,6 +665,10 @@
         color: #64748b;
         font-size: 0.9rem;
         line-height: 1.5;
+      }
+
+      #liveClassDetailsBody {
+        white-space: pre-line;
         overflow-wrap: anywhere;
       }
 
@@ -710,6 +714,16 @@
       .class-status.cancelled {
         background: #fef2f2;
         color: #b42318;
+      }
+
+      .class-status.live {
+        background: #e8faf3;
+        color: #078b68;
+      }
+
+      .class-status.missed {
+        background: #fff7e5;
+        color: #9d6b0c;
       }
 
       .class-actions {
@@ -1129,7 +1143,16 @@
         <p id="deleteLiveClassMessage">Are you sure you want to delete this live class?</p>
         <div class="delete-confirm-actions">
           <button class="btn-join btn-recording" type="submit" value="cancel">Cancel</button>
-          <button class="btn-join btn-delete" type="submit" value="delete">Delete</button>
+          <button class="btn-join btn-delete" id="confirmLiveClassAction" type="submit" value="confirm">Delete</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog class="delete-confirm-dialog" id="liveClassDetailsDialog" aria-labelledby="liveClassDetailsTitle">
+      <form method="dialog">
+        <h2 id="liveClassDetailsTitle">Live class details</h2>
+        <p id="liveClassDetailsBody"></p>
+        <div class="delete-confirm-actions">
+          <button class="btn-join btn-recording" type="submit">Close</button>
         </div>
       </form>
     </dialog>
@@ -1142,6 +1165,7 @@
       let currentClasses = [];
       let currentFilterTab = "Upcoming";
       let stopLiveClassRealtime = null;
+      let statusExpiryTimer = null;
 
       const streamLabels = {
         science_pcm: "Science – PCM",
@@ -1151,13 +1175,11 @@
       };
       const completedStatuses = new Set(["attended", "completed", "done", "finished"]);
       const cancelledStatuses = new Set(["cancelled", "canceled"]);
+      const missedStatuses = new Set(["missed"]);
+      const liveStatuses = new Set(["live", "live now", "in_progress", "in progress", "ongoing"]);
 
       function normalizedStatus(item) {
         return String(item.status || "").trim().toLowerCase();
-      }
-
-      function hasAttendanceRecorded(item) {
-        return completedStatuses.has(normalizedStatus(item));
       }
 
       function startDate(item) {
@@ -1172,14 +1194,13 @@
         const storedStatus = normalizedStatus(item);
         if (cancelledStatuses.has(storedStatus)) return "Cancelled";
         if (completedStatuses.has(storedStatus)) return "Completed";
+        if (missedStatuses.has(storedStatus)) return "Missed";
+        if (liveStatuses.has(storedStatus)) return "Live";
 
         const startsAt = startDate(item);
         if (!startsAt) return "Scheduled";
-        const starts = startsAt.getTime();
-        const ends = starts + (Number(item.duration_minutes) || 60) * 60_000;
-        if (reference < starts) return "Scheduled";
-        if (reference < ends) return "Live";
-        return "Completed";
+        const ends = startsAt.getTime() + (Number(item.duration_minutes) || 60) * 60_000;
+        return reference >= ends ? "Missed" : "Scheduled";
       }
 
       function formatClassDate(date) {
@@ -1213,9 +1234,7 @@
       }
 
       function isPrevious(item, reference = Date.now()) {
-        const status = statusForDisplay(item, reference);
-        const startsAt = startDate(item);
-        return status === "Completed" || status === "Cancelled" || Boolean(startsAt && startsAt.getTime() <= reference && status !== "Live");
+        return ["Completed", "Cancelled", "Missed"].includes(statusForDisplay(item, reference));
       }
 
       function renderEmptyState(container) {
@@ -1240,7 +1259,7 @@
         } else {
           icon.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i>';
           heading.textContent = "No previous live classes";
-          description.textContent = "Completed or past live classes will appear here.";
+          description.textContent = "Completed, missed, or cancelled live classes will appear here.";
           wrapper.append(icon, heading, description);
         }
 
@@ -1268,6 +1287,9 @@
         const statusValue = statusForDisplay(item);
         const isDone = statusValue === "Completed";
         const isCancelled = statusValue === "Cancelled";
+        const isMissed = statusValue === "Missed";
+        const isLive = statusValue === "Live";
+        const isScheduled = statusValue === "Scheduled";
         const startsAt = startDate(item);
         const grade = item.grade || item.class_grade;
         const stream = String(item.stream || "").trim().toLowerCase();
@@ -1318,7 +1340,7 @@
         ));
 
         const statusBadge = document.createElement("span");
-        statusBadge.className = `class-status${isDone ? " completed" : ""}${isCancelled ? " cancelled" : ""}`;
+        statusBadge.className = `class-status${isDone ? " completed" : ""}${isCancelled ? " cancelled" : ""}${isLive ? " live" : ""}${isMissed ? " missed" : ""}`;
         statusBadge.textContent = statusValue;
 
         const actions = document.createElement("div");
@@ -1327,7 +1349,7 @@
         const actionButtons = document.createElement("div");
         actionButtons.className = "class-actions";
 
-        if (!isDone && !isCancelled && item.meeting_url) {
+        if (isLive && item.meeting_url) {
           const joinLink = document.createElement("a");
           joinLink.className = "btn-join";
           joinLink.href = item.meeting_url;
@@ -1337,22 +1359,40 @@
           actionButtons.appendChild(joinLink);
         }
 
-        if (!hasAttendanceRecorded(item) && !isCancelled) {
-          const attendedButton = document.createElement("button");
-          attendedButton.type = "button";
-          attendedButton.className = "btn-join btn-recording";
-          attendedButton.textContent = "Mark Attended";
-          attendedButton.addEventListener("click", () => handleClassClick(item.id));
-          actionButtons.appendChild(attendedButton);
+        if (isScheduled || isLive) {
+          const statusButton = document.createElement("button");
+          statusButton.type = "button";
+          statusButton.className = `btn-join${isScheduled ? " btn-recording" : ""}`;
+          statusButton.textContent = isScheduled ? "Start Class" : "End Class";
+          statusButton.addEventListener("click", () => handleClassStatusChange(item, isScheduled ? "start" : "end"));
+          actionButtons.appendChild(statusButton);
+        } else {
+          const detailsButton = document.createElement("button");
+          detailsButton.type = "button";
+          detailsButton.className = "btn-join btn-recording";
+          detailsButton.textContent = "View Details";
+          detailsButton.addEventListener("click", () => showLiveClassDetails(item, statusValue));
+          actionButtons.appendChild(detailsButton);
         }
 
-        const deleteButton = document.createElement("button");
-        deleteButton.type = "button";
-        deleteButton.className = "btn-join btn-delete";
-        deleteButton.textContent = "Delete";
-        deleteButton.setAttribute("aria-label", `Delete live class ${title}`);
-        deleteButton.addEventListener("click", () => handleDeleteLiveClass(item));
-        actionButtons.appendChild(deleteButton);
+        if (isScheduled || isLive) {
+          const cancelButton = document.createElement("button");
+          cancelButton.type = "button";
+          cancelButton.className = "btn-join btn-recording";
+          cancelButton.textContent = "Cancel";
+          cancelButton.addEventListener("click", () => handleCancelLiveClass(item));
+          actionButtons.appendChild(cancelButton);
+        }
+
+        if (!isLive) {
+          const deleteButton = document.createElement("button");
+          deleteButton.type = "button";
+          deleteButton.className = "btn-join btn-delete";
+          deleteButton.textContent = "Delete";
+          deleteButton.setAttribute("aria-label", `Delete live class ${title}`);
+          deleteButton.addEventListener("click", () => handleDeleteLiveClass(item));
+          actionButtons.appendChild(deleteButton);
+        }
 
         actions.appendChild(actionButtons);
         card.append(main, meta, actions);
@@ -1365,6 +1405,7 @@
           currentClasses = await LiveClassService.load();
           renderClasses();
           updateMetrics();
+          scheduleStatusExpiryRefresh();
         } catch (error) {
           console.error("Could not load teacher live classes.", error);
           container.replaceChildren();
@@ -1444,25 +1485,45 @@
         document.getElementById("statHoursSupport").textContent = "Calculated from completed sessions";
       }
 
+      function scheduleStatusExpiryRefresh() {
+        window.clearTimeout(statusExpiryTimer);
+        const now = Date.now();
+        const nextExpiry = currentClasses
+          .filter((item) => normalizedStatus(item) === "scheduled")
+          .map((item) => {
+            const startsAt = startDate(item);
+            return startsAt ? startsAt.getTime() + (Number(item.duration_minutes) || 60) * 60_000 : null;
+          })
+          .filter((timestamp) => timestamp !== null && timestamp > now)
+          .sort((left, right) => left - right)[0];
+        if (nextExpiry === undefined) return;
+
+        statusExpiryTimer = window.setTimeout(() => {
+          renderClasses();
+          updateMetrics();
+          scheduleStatusExpiryRefresh();
+        }, Math.min(nextExpiry - now + 50, 2_147_000_000));
+      }
+
       function scheduleClassPrompt() {
         window.location.href = "create_liveclass.html";
       }
 
-      function confirmLiveClassDeletion(title) {
+      function confirmLiveClassAction(title, action, message) {
         const dialog = document.getElementById("deleteLiveClassDialog");
-        document.getElementById("deleteLiveClassTitle").textContent = title
-          ? `Delete ${title}?`
-          : "Delete live class?";
-        document.getElementById("deleteLiveClassMessage").textContent =
-          "Are you sure you want to delete this live class?";
+        const confirmButton = document.getElementById("confirmLiveClassAction");
+        document.getElementById("deleteLiveClassTitle").textContent = title ? `${action} ${title}?` : `${action} live class?`;
+        document.getElementById("deleteLiveClassMessage").textContent = message;
+        confirmButton.textContent = action;
+        confirmButton.className = `btn-join${action === "Delete" ? " btn-delete" : " btn-recording"}`;
         dialog.showModal();
         return new Promise((resolve) => {
-          dialog.addEventListener("close", () => resolve(dialog.returnValue === "delete"), { once: true });
+          dialog.addEventListener("close", () => resolve(dialog.returnValue === "confirm"), { once: true });
         });
       }
 
       async function handleDeleteLiveClass(item) {
-        if (!await confirmLiveClassDeletion(item.title || subjectName(item) || "")) return;
+        if (!await confirmLiveClassAction(item.title || subjectName(item) || "", "Delete", "Are you sure you want to delete this live class?")) return;
         try {
           await LiveClassService.deleteLiveClass(item.id);
           currentClasses = currentClasses.filter((liveClass) => String(liveClass.id) !== String(item.id));
@@ -1487,18 +1548,57 @@
         }
       }
 
-      async function handleClassClick(id) {
+      function replaceClass(updatedClass) {
+        currentClasses = currentClasses.map((item) => String(item.id) === String(updatedClass.id) ? updatedClass : item);
+        renderClasses();
+        updateMetrics();
+      }
+
+      async function handleClassStatusChange(item, action) {
         try {
-          await LiveClassService.markAttended(id);
-          await loadClasses();
+          const updatedClass = action === "start"
+            ? await LiveClassService.startClass(item.id)
+            : await LiveClassService.endClass(item.id);
+          replaceClass(updatedClass);
         } catch (error) {
-          console.error("Could not mark live class as attended.", error);
-          if (error?.code === "CLASS_NOT_FINISHED") {
-            window.alert(error.message);
+          console.error(`Could not ${action} live class.`, error);
+          if (error?.code === "AUTH_REQUIRED") {
+            window.location.assign("../teacher_registration/login.html");
             return;
           }
-          window.alert("Could not update this class. Please try again.");
+          window.alert(error.message || "Could not update this class. Please try again.");
         }
+      }
+
+      async function handleCancelLiveClass(item) {
+        if (!await confirmLiveClassAction(item.title || subjectName(item) || "", "Cancel", "This class will be marked as cancelled.")) return;
+        try {
+          const updatedClass = await LiveClassService.cancelClass(item.id);
+          replaceClass(updatedClass);
+        } catch (error) {
+          console.error("Could not cancel live class.", error);
+          if (error?.code === "AUTH_REQUIRED") {
+            window.location.assign("../teacher_registration/login.html");
+            return;
+          }
+          window.alert(error.message || "Could not cancel this class. Please try again.");
+        }
+      }
+
+      function showLiveClassDetails(item, status) {
+        const startsAt = startDate(item);
+        const details = [
+          `Status: ${status}`,
+          `Class: ${item.grade || item.class_grade || "—"}${item.stream ? ` · ${streamLabels[String(item.stream).toLowerCase()] || item.stream}` : ""}`,
+          `Subject: ${subjectName(item) || item.title || "—"}`,
+          `Date: ${startsAt ? formatClassDate(startsAt) : "—"}`,
+          `Time: ${startsAt ? formatClassTime(startsAt) : "—"} (${Number(item.duration_minutes) || 60} min)`,
+          item.topic ? `Topic: ${item.topic}` : "",
+          item.meeting_url ? `Meeting link: ${item.meeting_url}` : "",
+        ].filter(Boolean);
+        document.getElementById("liveClassDetailsTitle").textContent = item.title || subjectName(item) || "Live class details";
+        document.getElementById("liveClassDetailsBody").textContent = details.join("\n");
+        document.getElementById("liveClassDetailsDialog").showModal();
       }
 
       async function initializeLiveClassesPage() {
@@ -1524,7 +1624,10 @@
       }
 
       document.addEventListener("DOMContentLoaded", initializeLiveClassesPage);
-      window.addEventListener("beforeunload", () => stopLiveClassRealtime?.());
+      window.addEventListener("beforeunload", () => {
+        stopLiveClassRealtime?.();
+        window.clearTimeout(statusExpiryTimer);
+      });
     </script>
     <script src="../js/layout.js"></script>
   </body>

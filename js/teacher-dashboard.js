@@ -55,7 +55,7 @@
   const avatar = () => document.getElementById("avatarImg");
   if (profileName()) profileName().textContent = "Loading profile...";
   if (avatar()) avatar().hidden = true;
-  const state = { user: null, profile: null, client: null, classes: [], gradeGroups: [], assignmentRows: [], assignments: new Map(), materials: [], quizzes: [], students: [], attendance: [], performance: new Map(), liveClasses: [], announcements: [], calendarDate: new Date(), events: [], refreshTimer: null, refreshing: false };
+  const state = { user: null, profile: null, client: null, classes: [], gradeGroups: [], assignmentRows: [], assignments: new Map(), materials: [], quizzes: [], students: [], attendance: [], performance: new Map(), liveClasses: [], announcements: [], calendarDate: new Date(), events: [], refreshing: false };
   let profileChannel = null;
   let stopAuthWatch = null;
   const gradeOf = (row) => String(row.class_grade ?? row.grade ?? row.class ?? row.class_number ?? "").match(/\d+/)?.[0] || "";
@@ -63,7 +63,12 @@
     const relation = Array.isArray(row.subjects) ? row.subjects[0] : row.subjects;
     return String(relation?.name ?? row.subject_name ?? row.subject ?? "").trim();
   };
-  const dateOf = (row) => row.start_at || row.scheduled_at || row.start_time || row.exam_at || row.due_date || row.published_at || row.created_at || null;
+  const liveClassDate = (row) => row.class_date && row.start_time
+    ? `${row.class_date}T${row.start_time}`
+    : row.start_at || row.scheduled_at || row.start_time || null;
+  const dateOf = (row) => row.class_date && row.start_time
+    ? `${row.class_date}T${row.start_time}`
+    : row.start_at || row.scheduled_at || row.start_time || row.exam_at || row.due_date || row.published_at || row.created_at || null;
   const streamOf = (row) => {
     const quiz = state.quizzes.find((item) => String(item.id) === String(row.quiz_id || row.assessment_id || row.id));
     return String(row.stream ?? row.class_stream ?? quiz?.stream ?? "").trim();
@@ -384,28 +389,33 @@
   }
 
   function liveStatus(row, now = new Date()) {
-    const start = new Date(row.start_at || row.scheduled_at || row.start_time);
+    const storedStatus = String(row.status || "scheduled").trim().toLowerCase();
+    if (["completed", "attended", "done", "finished"].includes(storedStatus)) return "Completed";
+    if (["cancelled", "canceled"].includes(storedStatus)) return "Cancelled";
+    if (storedStatus === "missed") return "Missed";
+    if (["live", "live now", "in_progress", "in progress", "ongoing"].includes(storedStatus)) return "Live";
+    const start = new Date(liveClassDate(row));
     const end = new Date(row.end_at || (Number.isFinite(Number(row.duration_minutes)) ? start.getTime() + Number(row.duration_minutes) * 60000 : start.getTime() + 60 * 60000));
     if (!Number.isFinite(start.getTime())) return "Upcoming";
-    if (now < start) return "Upcoming";
-    if (now < end) return "Live";
-    return "Completed";
+    return now >= end ? "Missed" : "Upcoming";
   }
 
   function renderToday() {
     const today = new Date();
     const todayKey = today.toDateString();
     const classes = state.liveClasses.filter((item) => {
-      const start = new Date(item.start_at || item.scheduled_at || item.start_time);
+      const start = new Date(liveClassDate(item));
       return Number.isFinite(start.getTime()) && start.toDateString() === todayKey && assignedRow(item);
-    }).sort((a, b) => new Date(a.start_at || a.start_time) - new Date(b.start_at || b.start_time));
+    }).sort((a, b) => new Date(liveClassDate(a)) - new Date(liveClassDate(b)));
     $("todaySummary").textContent = fmtDate(today, { weekday: "long", month: "long", day: "numeric" });
     $("todayClasses").innerHTML = classes.length ? classes.map((item) => {
-      const start = new Date(item.start_at || item.start_time || item.scheduled_at);
+      const start = new Date(liveClassDate(item));
       const end = item.end_at ? new Date(item.end_at) : new Date(start.getTime() + Number(item.duration_minutes || 60) * 60000);
       const status = liveStatus(item, today);
       const joinUrl = item.meeting_url || item.join_url || item.meetingLink;
-      const action = status !== "Completed" ? `<a class="class-open" href="${escapeHtml(joinUrl || "live_classes.html")}" ${joinUrl ? 'target="_blank" rel="noopener"' : ""}>${status === "Live" ? "Join" : "Open"}</a>` : "";
+      const action = status === "Live"
+        ? `<a class="class-open" href="${escapeHtml(joinUrl || "live_classes.html")}" ${joinUrl ? 'target="_blank" rel="noopener"' : ""}>Join</a>`
+        : ["Completed", "Missed", "Cancelled"].includes(status) ? "" : '<a class="class-open" href="live_classes.html">Open</a>';
       const stream = item.stream || item.class_stream;
       return `<article class="today-class"><div class="class-time">${fmtTime(start)}<br>${fmtTime(end)}</div><div class="class-detail"><strong>${escapeHtml(subjectOf(item) || item.title || "Class")}</strong><span>Class ${escapeHtml(gradeOf(item))}${stream ? ` · ${escapeHtml(stream)}` : ""}${item.topic ? ` · ${escapeHtml(item.topic)}` : ""}</span></div><div class="class-actions"><span class="status-pill ${status.toLowerCase()}">${status}</span>${action}</div></article>`;
     }).join("") : emptyStateMarkup("schedule", "fa-calendar-days", "No classes scheduled today", "Your planned classes will appear here once you schedule them.", "create_liveclass.html", "Schedule a class");
@@ -488,7 +498,7 @@
     if (state.client && state.user && state.profile?.id) {
       const channel = state.client.channel(`teacher-dashboard-${state.user.id}`);
       const teacherProfileTables = ["teacher_grade_groups", "teacher_subject_assignments", "materials", "quizzes"];
-      const authOwnedTables = ["students", "attendance", "live_classes", "announcements"];
+      const authOwnedTables = ["students", "attendance", "announcements"];
       teacherProfileTables.forEach((table) => {
         channel.on("postgres_changes", { event: "*", schema: "public", table, filter: `teacher_id=eq.${state.profile.id}` }, scheduleRefresh);
       });
@@ -496,6 +506,7 @@
         const ownerId = state.user.id;
         channel.on("postgres_changes", { event: "*", schema: "public", table, filter: `teacher_id=eq.${ownerId}` }, scheduleRefresh);
       });
+      channel.on("postgres_changes", { event: "*", schema: "public", table: "live_classes" }, scheduleRefresh);
       channel.on("postgres_changes", { event: "*", schema: "public", table: "quiz_attempts" }, scheduleRefresh);
       channel.subscribe();
       window.addEventListener("beforeunload", () => {
@@ -505,9 +516,7 @@
       }, { once: true });
     }
     ["smart-learning-live-classes-updated", "smart-learning-announcements-updated", "smart-learning-performance-updated", "smart-learning-calendar-updated"].forEach((eventName) => window.addEventListener(eventName, scheduleRefresh));
-    state.refreshTimer = window.setInterval(scheduleRefresh, 30000);
     window.addEventListener("beforeunload", () => {
-      window.clearInterval(state.refreshTimer);
       window.clearTimeout(refreshTimeout);
     }, { once: true });
   }

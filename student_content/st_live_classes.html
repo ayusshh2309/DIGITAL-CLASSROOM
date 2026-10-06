@@ -415,6 +415,29 @@
         margin-right: 7px;
       }
 
+      .starting-badge.status-missed {
+        color: #9d6b0c;
+        background: #fff7e5;
+      }
+
+      .starting-badge.status-missed::before {
+        background: #e9a323;
+      }
+
+      .starting-badge.status-cancelled {
+        color: #b42318;
+        background: #fef2f2;
+      }
+
+      .starting-badge.status-cancelled::before {
+        background: #dc5960;
+      }
+
+      .starting-badge.status-completed {
+        color: #087443;
+        background: #ecfdf5;
+      }
+
       /* =========================================
    RIGHT SIDEBAR
 ========================================= */
@@ -1260,6 +1283,7 @@
       let curriculumSubjectNames = [];
       let currentLiveClasses = [];
       let curriculumRealtimeChannel = null;
+      let missedStatusTimer = null;
 
       function normalizeGrade(value) {
         const str = String(value ?? "").trim();
@@ -1320,12 +1344,46 @@
           if (!Number.isNaN(parsed.getTime())) return parsed;
         }
 
+        if (item.class_date && item.start_time) {
+          const parsed = new Date(`${item.class_date}T${item.start_time}`);
+          if (!Number.isNaN(parsed.getTime())) return parsed;
+        }
+
         if (item.date) {
           const parsed = new Date(`${item.date}T09:00:00`);
           if (!Number.isNaN(parsed.getTime())) return parsed;
         }
 
         return null;
+      }
+
+      function getClassStatus(item, reference = Date.now()) {
+        const status = String(item.status || "scheduled").trim().toLowerCase();
+        if (["completed", "attended", "done", "finished"].includes(status)) return "Completed";
+        if (["cancelled", "canceled"].includes(status)) return "Cancelled";
+        if (status === "missed") return "Missed";
+        if (["live", "live now", "in_progress", "in progress", "ongoing"].includes(status)) return "Live";
+        const start = getClassStartDate(item);
+        if (!start) return "Scheduled";
+        const end = start.getTime() + (Number(item.duration_minutes || item.duration) || 60) * 60_000;
+        return reference >= end ? "Missed" : "Scheduled";
+      }
+
+      function scheduleMissedStatusRefresh() {
+        window.clearTimeout(missedStatusTimer);
+        const now = Date.now();
+        const nextExpiry = currentLiveClasses
+          .filter((item) => String(item.status || "scheduled").trim().toLowerCase() === "scheduled")
+          .map((item) => {
+            const start = getClassStartDate(item);
+            return start ? start.getTime() + (Number(item.duration_minutes || item.duration) || 60) * 60_000 : null;
+          })
+          .filter((timestamp) => timestamp !== null && timestamp > now)
+          .sort((left, right) => left - right)[0];
+        if (nextExpiry === undefined) return;
+        missedStatusTimer = window.setTimeout(() => {
+          renderLiveClasses();
+        }, Math.min(nextExpiry - now + 50, 2_147_000_000));
       }
 
       function getMeetingUrl(item) {
@@ -1428,14 +1486,7 @@
           );
 
         const upcoming = scheduled
-          .filter(
-            (item) =>
-              String(item.status || "Scheduled").toLowerCase() !==
-                "completed" &&
-              String(item.status || "Scheduled").toLowerCase() !==
-                "cancelled" &&
-              String(item.status || "Scheduled").toLowerCase() !== "attended",
-          )
+          .filter((item) => ["Scheduled", "Live"].includes(getClassStatus(item)))
           .sort(
             (a, b) =>
               (getClassStartDate(a) || new Date()).getTime() -
@@ -1443,16 +1494,7 @@
           );
 
         const previous = scheduled
-          .filter(
-            (item) =>
-              String(item.status || "Scheduled").toLowerCase() ===
-                "completed" ||
-              String(item.status || "Scheduled").toLowerCase() === "attended" ||
-              String(item.status || "Scheduled").toLowerCase() ===
-                "cancelled" ||
-              (getClassStartDate(item) &&
-                getClassStartDate(item).getTime() < Date.now()),
-          )
+          .filter((item) => ["Completed", "Cancelled", "Missed"].includes(getClassStatus(item)))
           .sort(
             (a, b) =>
               (getClassStartDate(b) || new Date()).getTime() -
@@ -1481,6 +1523,7 @@
         if (todayClassesEl) {
           todayClassesEl.textContent = String(todayCount || 0);
         }
+        scheduleMissedStatusRefresh();
       }
 
       function renderRegistrationContext(studentProfile) {
@@ -1511,33 +1554,19 @@
         const startDate = getClassStartDate(item);
         const meetingUrl = getMeetingUrl(item);
         const isValidUrl = hasValidHttpsUrl(meetingUrl);
-        const status = String(item.status || "Scheduled").trim();
-        const statusText =
-          status.toLowerCase() === "cancelled"
-            ? "Class Cancelled"
-            : status.toLowerCase() === "completed" ||
-                status.toLowerCase() === "attended"
-              ? "Completed"
-              : status.toLowerCase() === "live now"
-                ? "Live Now"
-                : getCountdownLabel(startDate);
+        const status = getClassStatus(item);
+        const statusText = status === "Cancelled" ? "Class Cancelled" :
+          status === "Live" ? "Live Now" :
+            status === "Scheduled" ? (startDate && startDate.getTime() > Date.now() ? getCountdownLabel(startDate) : "Scheduled") :
+              status;
         const subject = item.subject_name || "";
         const subjectMeta = getSubjectIcon(subject);
-        const buttonDisabled =
-          isPrevious ||
-          !isValidUrl ||
-          status.toLowerCase() === "cancelled" ||
-          status.toLowerCase() === "completed" ||
-          status.toLowerCase() === "attended";
-        const buttonText =
-          status.toLowerCase() === "cancelled"
-            ? "Class Cancelled"
-            : status.toLowerCase() === "completed" ||
-                status.toLowerCase() === "attended"
-              ? "Completed"
-              : !isValidUrl
-                ? "Meeting link unavailable"
-                : "Join Class";
+        const buttonDisabled = !isValidUrl || status !== "Live";
+        const buttonText = status === "Cancelled" ? "Class Cancelled" :
+          status === "Completed" ? "Completed" :
+            status === "Missed" ? "Missed" :
+              status !== "Live" ? "Scheduled" :
+                !isValidUrl ? "Meeting link unavailable" : "Join Class";
         const dateText = startDate
           ? startDate.toLocaleDateString("en-IN", {
               day: "2-digit",
@@ -1583,7 +1612,7 @@
                 <i class="fa-solid fa-video"></i> ${buttonText}
                 ${!buttonDisabled && !isPrevious ? '<i class="fa-solid fa-arrow-right"></i>' : ""}
               </button>
-              ${!isPrevious ? `<span class="starting-badge">${statusText}</span>` : ""}
+              <span class="starting-badge status-${status.toLowerCase()}">${statusText}</span>
             </div>
           </div>
         `;
@@ -1636,6 +1665,7 @@
         "smart-learning-live-classes-updated",
         renderLiveClasses,
       );
+      window.addEventListener("beforeunload", () => window.clearTimeout(missedStatusTimer));
       async function loadStudentCurriculum() {
         const client = window.SmartLearningSupabase?.getClient?.();
         if (!client) throw new Error("Supabase is not configured.");

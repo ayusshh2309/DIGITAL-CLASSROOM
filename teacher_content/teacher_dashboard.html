@@ -772,6 +772,14 @@
         background: #dbeafe;
         color: #1e40af;
       }
+      .badge-amber {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .badge-red {
+        background: #fee2e2;
+        color: #b42318;
+      }
 
       /* Quick Actions */
       .quick-actions-grid {
@@ -1302,6 +1310,7 @@
     <script src="../js/announcement-service.js"></script>
     <script src="../js/teacher-dashboard.js"></script>
     <script>
+      let stopLiveClassScheduleRealtime = null;
       document.addEventListener("DOMContentLoaded", async () => {
         if (window.teacherDashboardRedesigned) return;
         const dashboardDate = document.getElementById("dashboardDate");
@@ -1377,12 +1386,32 @@
         const palette = ["green", "purple", "blue"];
         const formatTime = (value) => new Intl.DateTimeFormat([], { hour: "2-digit", minute: "2-digit" }).format(new Date(value));
         const formatDate = (value) => new Intl.DateTimeFormat([], { weekday: "short", month: "short", day: "numeric" }).format(new Date(value));
+        let classStatusTimeout = null;
+        const statusForSchedule = (item, reference = Date.now()) => {
+          const status = String(item.status || "scheduled").trim().toLowerCase();
+          if (["completed", "attended", "done", "finished"].includes(status)) return "Completed";
+          if (["cancelled", "canceled"].includes(status)) return "Cancelled";
+          if (status === "missed") return "Missed";
+          if (["live", "live now", "in_progress", "in progress", "ongoing"].includes(status)) return "Live";
+          const startsAt = new Date(item.start_at);
+          if (Number.isNaN(startsAt.getTime())) return "Scheduled";
+          return reference >= startsAt.getTime() + (Number(item.duration_minutes) || 60) * 60_000
+            ? "Missed"
+            : "Scheduled";
+        };
         const renderSchedule = (records) => {
-          const classes = records.sort((first, second) => new Date(first.start_at) - new Date(second.start_at));
+          const now = Date.now();
+          const classes = records
+            .filter((item) => {
+              const startsAt = new Date(item.start_at).getTime();
+              return Number.isFinite(startsAt) &&
+                (statusForSchedule(item, now) === "Live" || startsAt + 24 * 60 * 60_000 > now);
+            })
+            .sort((first, second) => new Date(first.start_at) - new Date(second.start_at));
           scheduleTimeline.innerHTML = classes.length
             ? classes.map((item, index) => {
                 const color = palette[index % palette.length];
-                const attended = item.status === "Attended";
+                const status = statusForSchedule(item, now);
                 const subject = item.subjects?.name || item.subject_name || "";
                 return `<div class="timeline-item">
                   <div class="timeline-dot dot-${color}"></div>
@@ -1391,23 +1420,40 @@
                     <div class="timeline-title">${escapeHtml(item.title || `Class ${item.class_grade} ${subject}`)}</div>
                     <div class="timeline-sub">Class ${escapeHtml(item.class_grade)}${subject ? ` • ${escapeHtml(subject)}` : ""} · ${formatDate(item.start_at)}${item.topic ? ` · ${escapeHtml(item.topic)}` : ""}</div>
                   </div>
-                  ${attended ? '<span class="live-chip-badge badge-green">Attended</span>' : `<button class="live-chip-badge badge-blue schedule-attend-btn" data-class-id="${escapeHtml(item.id)}">Attend</button>`}
+                  <div class="class-actions">
+                      <span class="live-chip-badge ${status === "Live" || status === "Completed" ? "badge-green" : status === "Missed" ? "badge-amber" : status === "Cancelled" ? "badge-red" : "badge-blue"}">${status}</span>
+                      ${status === "Live" && item.meeting_url ? `<a class="live-chip-badge badge-blue" href="${escapeHtml(item.meeting_url)}" target="_blank" rel="noopener noreferrer">Join Class</a>` : ""}
+                    ${status === "Scheduled" || status === "Live" ? `<button class="live-chip-badge badge-blue schedule-status-btn" data-class-id="${escapeHtml(item.id)}" data-action="${status === "Scheduled" ? "start" : "end"}">${status === "Scheduled" ? "Start Class" : "End Class"}</button>` : `<span class="live-chip-badge ${status === "Completed" ? "badge-green" : "badge-blue"}">${status}</span>`}
+                  </div>
                 </div>`;
               }).join("")
             : '<p class="empty-state">No live classes scheduled in the next 24 hours.</p>';
-          scheduleTimeline.querySelectorAll(".schedule-attend-btn").forEach((button) => {
+          scheduleTimeline.querySelectorAll(".schedule-status-btn").forEach((button) => {
             button.addEventListener("click", async () => {
               try {
-                await LiveClassService.markAttended(button.dataset.classId);
-                await loadSchedule();
+                const updatedClass = button.dataset.action === "start"
+                  ? await LiveClassService.startClass(button.dataset.classId)
+                  : await LiveClassService.endClass(button.dataset.classId);
+                renderSchedule(records.map((item) => String(item.id) === String(updatedClass.id) ? updatedClass : item));
               } catch (error) {
-                console.error("Could not mark live class as attended.", error);
-                window.alert(error?.code === "CLASS_NOT_FINISHED"
-                  ? error.message
-                  : "Could not update this class. Please try again.");
+                console.error(`Could not ${button.dataset.action} live class.`, error);
+                if (error?.code === "AUTH_REQUIRED") {
+                  window.location.assign("../teacher_registration/login.html");
+                  return;
+                }
+                window.alert(error.message || "Could not update this class. Please try again.");
               }
             });
           });
+          window.clearTimeout(classStatusTimeout);
+          const nextExpiry = classes
+            .filter((item) => String(item.status || "").toLowerCase() === "scheduled")
+            .map((item) => new Date(item.start_at).getTime() + (Number(item.duration_minutes) || 60) * 60_000)
+            .filter((timestamp) => timestamp > now)
+            .sort((left, right) => left - right)[0];
+          if (nextExpiry !== undefined) {
+            classStatusTimeout = window.setTimeout(() => renderSchedule(records), Math.min(nextExpiry - now + 50, 2_147_000_000));
+          }
         };
         const loadSchedule = async () => renderSchedule(await LiveClassService.load());
 
@@ -1570,8 +1616,15 @@
         loadUserProfile();
         loadDashboardStats();
         loadSchedule();
+        stopLiveClassScheduleRealtime = LiveClassService.subscribe(
+          loadSchedule,
+          (error) => console.error("Live class schedule realtime is unavailable.", error),
+        );
         subscribeToDashboardStats();
-        setInterval(() => { loadSchedule(); }, 60 * 1000);
+        window.addEventListener("beforeunload", () => {
+          stopLiveClassScheduleRealtime?.();
+          window.clearTimeout(classStatusTimeout);
+        }, { once: true });
       });
     </script>
     <script>

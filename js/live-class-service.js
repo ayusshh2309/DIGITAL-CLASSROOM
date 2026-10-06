@@ -1,10 +1,9 @@
 (() => {
-  const WINDOW_MS = 24 * 60 * 60 * 1000;
-
   const normalizeStatus = (status) => {
     const normalized = String(status || "").trim().toLowerCase();
-    if (["attended", "completed", "done", "finished"].includes(normalized)) return "Attended";
-    if (["live", "in_progress", "in progress", "ongoing"].includes(normalized)) return "Live";
+    if (["attended", "completed", "done", "finished"].includes(normalized)) return "Completed";
+    if (["live", "live now", "in_progress", "in progress", "ongoing"].includes(normalized)) return "Live";
+    if (normalized === "missed") return "Missed";
     if (["cancelled", "canceled"].includes(normalized)) return "Cancelled";
     return "Scheduled";
   };
@@ -13,10 +12,8 @@
 
   const normalize = (item = {}) => {
     const subjectRelation = Array.isArray(item.subjects) ? item.subjects[0] : item.subjects;
-    const startValue =
-      item.start_at ||
-      item.start_time ||
-      item.class_date && item.start_time ? `${item.class_date}T${item.start_time}` : null;
+    const startValue = item.start_at ||
+      (item.class_date && item.start_time ? `${item.class_date}T${item.start_time}` : null);
     const startDate = startValue ? new Date(startValue) : null;
     const gradeValue = item.grade ?? item.class_grade ?? item.classId ?? "";
     const durationMinutes = Number(item.duration_minutes ?? item.duration ?? item.durationMinutes ?? 60) || 60;
@@ -41,12 +38,6 @@
       status: normalizeStatus(item.status),
       created_at: item.created_at || now(),
     };
-  };
-
-  const isVisible = (item, reference = Date.now()) => {
-    if (!item || !item.start_at) return false;
-    const start = new Date(item.start_at).getTime();
-    return Number.isFinite(start) && reference < start + WINDOW_MS;
   };
 
   async function getTeacherContext() {
@@ -95,7 +86,7 @@
         .order("start_time", { ascending: true });
 
       if (!error) {
-        return (data || []).map((item) => normalize(item)).filter((item) => identityCandidates.includes(item.teacher_id) && isVisible(item));
+        return (data || []).map((item) => normalize(item)).filter((item) => identityCandidates.includes(item.teacher_id));
       }
 
       const message = String(error.message || "");
@@ -158,17 +149,23 @@
     throw new Error("Could not save the live class. Please verify the live_classes schema and teacher permissions.");
   }
 
-  async function markAttended(id) {
+  async function updateStatus(id, nextStatus, allowedStatuses) {
     const { client, user, teacher } = await getTeacherContext();
-    if (!client || !teacher) return null;
+    if (!client || !user) {
+      throw Object.assign(new Error("Authentication is required."), { code: "AUTH_REQUIRED" });
+    }
+    if (!teacher) {
+      throw Object.assign(new Error("Teacher profile could not be found."), { code: "TEACHER_UNAVAILABLE" });
+    }
+    if (id === null || id === undefined || String(id).trim() === "") {
+      throw new Error("A live class ID is required.");
+    }
 
     const identityCandidates = [teacher.id, user?.id].filter(Boolean);
-    const attemptedStatuses = ["completed", "Attended"];
-
     for (const teacherId of identityCandidates) {
       const { data: liveClass, error: lookupError } = await client
         .from("live_classes")
-        .select("class_date, start_time, duration_minutes")
+        .select("status")
         .eq("id", id)
         .eq("teacher_id", teacherId)
         .maybeSingle();
@@ -176,48 +173,46 @@
       if (lookupError) throw lookupError;
       if (!liveClass) continue;
 
-      const startsAt = liveClass.class_date && liveClass.start_time
-        ? new Date(`${liveClass.class_date}T${liveClass.start_time}`)
-        : null;
-      if (!startsAt || Number.isNaN(startsAt.getTime())) {
-        throw new Error("The scheduled start time for this class could not be determined.");
+      const currentStatus = String(liveClass.status || "").trim().toLowerCase();
+      if (!allowedStatuses.includes(currentStatus)) {
+        const invalidTransition = new Error(`This class cannot be changed from ${normalizeStatus(currentStatus)} to ${nextStatus}.`);
+        invalidTransition.code = "INVALID_CLASS_TRANSITION";
+        throw invalidTransition;
       }
 
-      const durationMinutes = Number(liveClass.duration_minutes) || 60;
-      const endsAt = startsAt.getTime() + durationMinutes * 60_000;
-      if (Date.now() < endsAt) {
-        const classNotFinishedError = new Error(
-          "Please take the class first. You can mark attendance after the scheduled class duration has ended.",
-        );
-        classNotFinishedError.code = "CLASS_NOT_FINISHED";
-        throw classNotFinishedError;
-      }
+      const { data, error } = await client
+        .from("live_classes")
+        .update({ status: nextStatus, updated_at: now() })
+        .eq("id", id)
+        .eq("teacher_id", teacherId)
+        .eq("status", liveClass.status)
+        .select("*, subjects(id, name)")
+        .maybeSingle();
 
-      for (const status of attemptedStatuses) {
-        try {
-          const { data, error } = await client
-            .from("live_classes")
-            .update({ status, attended_at: now() })
-            .eq("id", id)
-            .eq("teacher_id", teacherId)
-            .select("*, subjects(id, name)")
-            .single();
-
-          if (!error) return normalize(data || {});
-          const message = String(error.message || "");
-          if (!/column .* does not exist|Unknown column|does not exist|invalid input syntax|not null|violates|status/i.test(message)) {
-            throw error;
-          }
-        } catch (error) {
-          const message = String(error?.message || "");
-          if (!/column .* does not exist|Unknown column|does not exist|invalid input syntax|not null|violates|status/i.test(message)) {
-            throw error;
-          }
-        }
+      if (error) throw error;
+      if (!data) {
+        const changedError = new Error("This live class changed before the update could be saved. Refresh and try again.");
+        changedError.code = "LIVE_CLASS_CHANGED";
+        throw changedError;
       }
+      return normalize(data);
     }
 
-    return null;
+    const notFoundError = new Error("Live class not found or you do not have permission to update it.");
+    notFoundError.code = "LIVE_CLASS_NOT_FOUND";
+    throw notFoundError;
+  }
+
+  async function startClass(id) {
+    return updateStatus(id, "live", ["scheduled"]);
+  }
+
+  async function endClass(id) {
+    return updateStatus(id, "completed", ["live"]);
+  }
+
+  async function cancelClass(id) {
+    return updateStatus(id, "cancelled", ["scheduled", "live"]);
   }
 
   async function deleteLiveClass(liveClassId) {
@@ -315,11 +310,11 @@
   window.LiveClassService = {
     load,
     schedule,
-    markAttended,
+    startClass,
+    endClass,
+    cancelClass,
     deleteLiveClass,
     subscribe,
-    isVisible,
-    WINDOW_MS,
     normalize,
   };
 })();

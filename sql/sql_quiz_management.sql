@@ -111,7 +111,7 @@ create table if not exists public.live_classes (
   subject text not null,
   topic text,
   start_at timestamptz not null,
-  status text not null default 'Scheduled' check (status in ('Scheduled', 'Attended')),
+  status text not null default 'scheduled' check (lower(status) in ('scheduled', 'live', 'completed', 'cancelled', 'missed', 'attended')),
   attended_at timestamptz,
   meeting_url text,
   created_at timestamptz not null default now(),
