@@ -102,7 +102,7 @@
     const body = $("studentTableBody");
     const row = document.createElement("tr");
     const cell = document.createElement("td");
-    cell.colSpan = 7;
+    cell.colSpan = 5;
     cell.className = "empty-table-state";
     cell.textContent = message;
     row.appendChild(cell);
@@ -283,46 +283,13 @@
         const stream = normalizedStream(student.stream);
         streamCell.textContent = stream ? (streamLabels[stream] || stream) : "N/A";
 
-        const subjectsCell = document.createElement("td");
-        const group = registeredGroups().find((entry) => entry.grade === Number(student.grade) && normalizedStream(entry.stream) === normalizedStream(student.stream));
-        const subjectNames = group ? subjectsFor(group) : [];
-        const chips = subjectNames.length ? subjectNames.slice(0, 3).map((subject, index) => {
-          const chip = document.createElement("span");
-          chip.className = `subject-chip subject-chip-${(index % 3) + 1}`;
-          chip.textContent = subject;
-          return chip;
-        }) : [(() => {
-          const chip = document.createElement("span");
-          chip.className = "subject-chip subject-chip-more";
-          chip.textContent = "No subjects";
-          return chip;
-        })()];
-        const subjectWrap = document.createElement("div");
-        subjectWrap.className = "subject-chips";
-        chips.forEach((chip) => subjectWrap.appendChild(chip));
-        if (subjectNames.length > 3) {
-          const more = document.createElement("span");
-          more.className = "subject-chip subject-chip-more";
-          more.textContent = `+${subjectNames.length - 3}`;
-          subjectWrap.appendChild(more);
-        }
-        subjectsCell.appendChild(subjectWrap);
-
         const statusCell = document.createElement("td");
         const status = document.createElement("span");
         status.className = "status-chip";
         status.textContent = "Active";
         statusCell.appendChild(status);
 
-        const actionCell = document.createElement("td");
-        actionCell.className = "actions-cell";
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "profile-action";
-        button.textContent = "View Profile";
-        actionCell.appendChild(button);
-
-        row.append(studentName, studentIdCell, gradeCell, streamCell, subjectsCell, statusCell, actionCell);
+        row.append(studentName, studentIdCell, gradeCell, streamCell, statusCell);
         body.appendChild(row);
       });
 

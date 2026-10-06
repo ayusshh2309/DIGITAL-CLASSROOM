@@ -108,9 +108,7 @@
 .student-name { color: #30486d; font-size: 0.86rem; }
 .student-avatar { width: 36px; height: 36px; }
 .student-id-cell, .grade-cell { color: #66809f; font-size: 0.8rem; }
-.subject-chip { padding: 5px 8px; font-size: 0.7rem; }
 .status-chip { padding: 5px 9px; font-size: 0.7rem; }
-.profile-action { min-height: 34px; padding: 0 10px; border-radius: 7px; color: #5269d9; font-size: 0.74rem; }
 .action-btn-more { width: 34px; height: 34px; border-radius: 7px; }
 .empty-table-state { height: 180px !important; color: #334a6e !important; font-weight: 700; text-align: center; }
 .empty-table-state strong, .empty-table-state small { display: block; }

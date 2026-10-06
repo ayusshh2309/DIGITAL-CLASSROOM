@@ -676,27 +676,6 @@
         font-weight: 700;
       }
 
-      .subject-chips {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        flex-wrap: nowrap;
-        white-space: nowrap;
-      }
-
-      .subject-chip {
-        padding: 5px 9px;
-        border-radius: 999px;
-        background: #e7f4ff;
-        color: #3d9ad2;
-        font-size: 0.68rem;
-        font-weight: 700;
-      }
-
-      .subject-chip-1 { background: #e5f8ed; color: #4eae7d; }
-      .subject-chip-2 { background: #f0e9ff; color: #8b6add; }
-      .subject-chip-more { background: #f1f4f8; color: #8290a4; }
-
       .status-chip {
         display: inline-flex;
         align-items: center;
@@ -723,23 +702,6 @@
         color: #e34d5f;
       }
 
-      .profile-action {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        min-height: 32px;
-        padding: 0 10px;
-        border: 1px solid #dce5f1;
-        border-radius: 8px;
-        background: #fff;
-        color: #5269d9;
-        font: inherit;
-        font-size: 0.7rem;
-        font-weight: 800;
-        cursor: pointer;
-      }
-
-      .profile-action:hover,
       .action-btn-more:hover,
       .action-btn-view:hover {
         border-color: #8290ee;
@@ -1076,9 +1038,7 @@
                   <th>Student ID <i class="fa-solid fa-sort table-sort-icon"></i></th>
                   <th>Grade <i class="fa-solid fa-sort table-sort-icon"></i></th>
                   <th>Stream <i class="fa-solid fa-sort table-sort-icon"></i></th>
-                  <th>Enrolled Subjects</th>
                   <th>Status <i class="fa-solid fa-sort table-sort-icon"></i></th>
-                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="studentTableBody">
@@ -1100,7 +1060,7 @@
     <script src="../js/supabase.js"></script>
     <script src="../js/teacher-data.js"></script>
     <script src="../js/quiz-subject-rules.js"></script>
-    <script src="../js/students.js"></script>
+    <script src="../js/students.js?v=20261006-0247"></script>
     <script src="../js/layout.js"></script>
   </body>
 </html>
