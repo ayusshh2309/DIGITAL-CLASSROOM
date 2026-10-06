@@ -15,6 +15,7 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
     />
     <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/attendance.css" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   </head>
@@ -96,8 +97,8 @@
             </div>
           </div>
         </section>
-        <section class="workspace">
-          <div class="panel">
+        <section class="attendance-workspace">
+          <div class="panel filters-panel">
             <div class="controls">
               <div class="field">
                 <label for="classSelect"
@@ -132,7 +133,7 @@
                     class="fa-solid fa-magnifying-glass"
                     aria-hidden="true"
                   ></i>
-                  Find student</label
+                  Search student</label
                 ><input
                   class="att-input"
                   id="studentSearch"
@@ -152,34 +153,29 @@
                 </select>
               </div>
             </div>
+          </div>
+          <div class="panel register-panel">
             <div class="panel-head">
               <div>
                 <h2 id="tableTitle">
-                  <i class="fa-solid fa-clipboard-check" aria-hidden="true"></i>
+                  <i class="fa-solid fa-people-group" aria-hidden="true"></i>
                   Attendance register
                 </h2>
                 <p id="tableSubtitle">
                   Select a registered class to load students.
                 </p>
               </div>
-              <button class="att-button primary" id="saveButton">
-                <i class="fa-solid fa-cloud-arrow-up"></i> Save attendance
-              </button>
+              <div class="register-actions">
+                <span class="register-status" id="registerStatus">0 students</span>
+                <button class="icon-button" id="refreshAttendanceButton" aria-label="Refresh attendance">
+                  <i class="fa-solid fa-rotate-right"></i>
+                </button>
+                <button class="att-button primary" id="saveButton">
+                  <i class="fa-solid fa-cloud-arrow-up"></i> Save attendance
+                </button>
+              </div>
             </div>
-            <div
-              id="recordedBanner"
-              hidden
-              style="
-                background: #eef8f4;
-                border: 1px solid #c7eadc;
-                border-radius: 10px;
-                padding: 12px 14px;
-                margin-bottom: 16px;
-                color: #176c52;
-                font-size: 0.8rem;
-                font-weight: 700;
-              "
-            ></div>
+            <div id="recordedBanner" class="recorded-banner" hidden></div>
             <div class="table-scroll">
               <table class="attendance-table">
                 <thead>
@@ -230,46 +226,36 @@
               </table>
             </div>
           </div>
-          <aside class="panel calendar-panel">
-            <div class="calendar-head">
-              <h2 id="calendarLabel">
-                <i class="fa-regular fa-calendar-days" aria-hidden="true"></i>
-                Calendar
-              </h2>
-              <div class="calendar-nav">
-                <button
-                  class="icon-button"
-                  id="prevMonth"
-                  aria-label="Previous month"
-                >
-                  <i class="fa-solid fa-chevron-left"></i></button
-                ><button
-                  class="icon-button"
-                  id="nextMonth"
-                  aria-label="Next month"
-                >
-                  <i class="fa-solid fa-chevron-right"></i>
-                </button>
-              </div>
-            </div>
-            <div class="calendar-grid" id="calendarGrid"></div>
-            <div class="legend">
-              <span class="done">Completed</span><span>Not marked</span
-              ><span>Today highlighted</span>
-            </div>
-            <div class="panel-head" style="margin-top: 24px">
-              <div>
-                <h2>
-                  <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
-                  Analytics
+          <div class="attendance-bottom">
+            <aside class="panel calendar-panel">
+              <div class="calendar-head">
+                <h2 id="calendarLabel">
+                  <i class="fa-regular fa-calendar-days" aria-hidden="true"></i>
+                  Calendar
                 </h2>
+                <div class="calendar-nav">
+                  <button class="icon-button" id="prevMonth" aria-label="Previous month">
+                    <i class="fa-solid fa-chevron-left"></i>
+                  </button>
+                  <button class="icon-button" id="nextMonth" aria-label="Next month">
+                    <i class="fa-solid fa-chevron-right"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="calendar-grid" id="calendarGrid"></div>
+              <div class="legend">
+                <span class="done">Completed</span><span>Not marked</span>
+                <span>Today highlighted</span>
+              </div>
+            </aside>
+            <aside class="panel overview-panel">
+              <div class="overview-heading">
+                <h2><i class="fa-solid fa-chart-line" aria-hidden="true"></i> Quick overview</h2>
                 <p>Selected register breakdown</p>
               </div>
-            </div>
-            <div id="analytics" class="empty-state" style="padding: 20px 0">
-              No attendance data yet.
-            </div>
-          </aside>
+              <div id="analytics" class="empty-state">No attendance data yet.</div>
+            </aside>
+          </div>
         </section>
         <section class="history-panel">
           <div class="panel-head">

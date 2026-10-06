@@ -96,6 +96,7 @@
     $("absentStat").textContent = String(absent);
     $("lateStat").textContent = String(late);
     $("rateStat").textContent = `${rate}%`;
+    $("registerStatus").textContent = `${present} of ${state.students.length} present`;
     $("analytics").innerHTML = state.students.length
       ? `<div style="font-size:1.8rem;font-weight:800;color:#6548d8">${rate}%</div><p style="margin:6px 0;color:#718196;font-size:.75rem">${state.students.length} students · ${present} present · ${absent} absent · ${late} late</p>`
       : "No attendance data yet.";
@@ -510,6 +511,7 @@
     );
     $("saveButton").addEventListener("click", () => void save());
     $("exportButton").addEventListener("click", () => void exportReport());
+    $("refreshAttendanceButton").addEventListener("click", () => void loadRegister({ preserveDrafts: true }));
     $("classSelect").addEventListener("change", () => {
       state.grade = $("classSelect").value;
       state.stream = "";
