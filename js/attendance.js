@@ -10,6 +10,7 @@
     subjectId: "",
     subject: "",
     date: "",
+    activeSessionId: "",
     students: [],
     sessions: [],
     records: [],
@@ -47,6 +48,10 @@
     late: "Late",
     not_marked: "Not marked",
   }[status] || "Not marked");
+  const normalizedStatus = (status) => {
+    const value = String(status || "not_marked").trim().toLowerCase();
+    return ["present", "absent", "late"].includes(value) ? value : "not_marked";
+  };
 
   function showToast(message, isError = false) {
     const node = document.createElement("div");
@@ -74,23 +79,25 @@
   }
 
   function selectedRecords() {
-    const session = state.sessions.find((item) => item.attendance_date === state.date);
+    const session = state.sessions.find((item) => String(item.id) === String(state.activeSessionId))
+      || state.sessions.find((item) => item.attendance_date === state.date);
     if (!session) return [];
     return state.records.filter((record) => String(record.session_id) === String(session.id));
   }
 
   function recordFor(student) {
-    return state.drafts.get(String(student.id)) ||
+    const record = state.drafts.get(String(student.id)) ||
       selectedRecords().find((record) => String(record.student_id) === String(student.id)) ||
       { student_id: student.id, status: "not_marked", check_in: null, check_out: null, duration_minutes: null, remarks: "" };
+    return { ...record, status: normalizedStatus(record.status) };
   }
 
   function currentStats() {
     const records = state.students.map(recordFor);
-    const present = records.filter((record) => record.status === "present").length;
-    const absent = records.filter((record) => record.status === "absent").length;
-    const late = records.filter((record) => record.status === "late").length;
-    const rate = state.students.length ? Math.round(((present + late) / state.students.length) * 100) : 0;
+    const present = records.filter((record) => normalizedStatus(record.status) === "present").length;
+    const absent = records.filter((record) => normalizedStatus(record.status) === "absent").length;
+    const late = records.filter((record) => normalizedStatus(record.status) === "late").length;
+    const rate = state.students.length ? Math.round((present / state.students.length) * 100) : 0;
     $("totalStat").textContent = String(state.students.length);
     $("presentStat").textContent = String(present);
     $("absentStat").textContent = String(absent);
@@ -112,15 +119,29 @@
   function displayedDuration(record) {
     const checkIn = AttendanceService.formatAttendanceTime(record.check_in);
     const checkOut = AttendanceService.formatAttendanceTime(record.check_out);
-    if (checkIn && checkOut) {
-      const toMinutes = (value) => {
-        const [hours, minutes] = value.split(":").map(Number);
-        return hours * 60 + minutes;
-      };
-      const difference = toMinutes(checkOut) - toMinutes(checkIn);
-      if (difference >= 0) return formatDuration(difference);
-    }
-    return formatDuration(record.duration_minutes);
+    if (!checkIn || !checkOut) return "—";
+    const toMinutes = (value) => {
+      const [hours, minutes] = value.split(":").map(Number);
+      return hours * 60 + minutes;
+    };
+    const difference = toMinutes(checkOut) - toMinutes(checkIn);
+    return difference >= 0 ? formatDuration(difference) : "—";
+  }
+
+  function visibleStudents() {
+    const search = $("studentSearch").value.trim().toLocaleLowerCase();
+    const filter = $("statusFilter").value;
+    return state.students.filter((student) => {
+      const record = recordFor(student);
+      const matchesSearch = [student.full_name, student.student_id, student.roll_number]
+        .some((value) => String(value || "").toLocaleLowerCase().includes(search));
+      return matchesSearch && (filter === "All" || normalizedStatus(record.status) === filter);
+    });
+  }
+
+  function currentClockTime() {
+    const date = new Date();
+    return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
   }
 
   function renderRows() {
@@ -129,14 +150,17 @@
       return;
     }
     if (state.error) {
+      currentStats();
       setTableMessage(state.error);
       return;
     }
     if (!state.classes.length) {
+      currentStats();
       setTableMessage("No registered classes found.");
       return;
     }
     if (!state.grade || !groupForSelection() || !state.subjectId || !state.date) {
+      currentStats();
       setTableMessage("Select a registered class, stream, subject, and date.");
       return;
     }
@@ -146,24 +170,14 @@
       return;
     }
 
-    const search = $("studentSearch").value.trim().toLocaleLowerCase();
-    const filter = $("statusFilter").value;
-    const rows = state.students.filter((student) => {
-      const record = recordFor(student);
-      const matchesSearch = [
-        student.full_name,
-        student.student_id,
-        student.roll_number,
-      ].some((value) => String(value || "").toLocaleLowerCase().includes(search));
-      return matchesSearch && (filter === "All" || record.status === filter);
-    });
+    const rows = visibleStudents();
 
     $("attendanceBody").innerHTML = rows.length
       ? rows.map((student) => {
         const record = recordFor(student);
         const checkIn = AttendanceService.formatAttendanceTime(record.check_in);
         const checkOut = AttendanceService.formatAttendanceTime(record.check_out);
-        return `<tr data-student="${escapeHtml(student.id)}"><td><button class="student-link" data-action="student">${escapeHtml(student.full_name)}</button></td><td>${escapeHtml(student.student_id)}<br><small style="color:#718196">Roll ${escapeHtml(student.roll_number || "—")}</small></td><td><div class="status-group">${["present", "absent", "late"].map((status) => `<button class="status-button ${status} ${record.status === status ? "active" : ""}" data-status="${status}">${displayStatus(status)}</button>`).join("")}${record.status === "not_marked" ? '<span class="attendance-unmarked">Not marked</span>' : ""}</div></td><td><input class="row-input" data-field="check_in" type="time" value="${escapeHtml(checkIn)}" aria-label="Check in time for ${escapeHtml(student.full_name)}"></td><td><input class="row-input" data-field="check_out" type="time" value="${escapeHtml(checkOut)}" aria-label="Check out time for ${escapeHtml(student.full_name)}"></td><td>${displayedDuration(record)}</td><td><input class="row-input" data-field="remarks" value="${escapeHtml(record.remarks || "")}" placeholder="Optional" aria-label="Remarks for ${escapeHtml(student.full_name)}"></td></tr>`;
+        return `<tr data-student="${escapeHtml(student.id)}"><td><button class="student-link" data-action="student">${escapeHtml(student.full_name)}</button></td><td>${escapeHtml(student.student_id)}<br><small style="color:#718196">Roll ${escapeHtml(student.roll_number || "—")}</small></td><td><div class="status-group">${["present", "absent", "late"].map((status) => `<button class="status-button ${status} ${record.status === status ? "active" : ""}" data-status="${status}">${displayStatus(status)}</button>`).join("")}<button class="status-button not-marked ${record.status === "not_marked" ? "active" : ""}" data-status="not_marked">Not marked</button></div></td><td><input class="row-input" data-field="check_in" type="time" value="${escapeHtml(checkIn)}" aria-label="Check in time for ${escapeHtml(student.full_name)}"></td><td><input class="row-input" data-field="check_out" type="time" value="${escapeHtml(checkOut)}" aria-label="Check out time for ${escapeHtml(student.full_name)}"></td><td>${displayedDuration(record)}</td><td><input class="row-input" data-field="remarks" value="${escapeHtml(record.remarks || "")}" placeholder="Optional" aria-label="Remarks for ${escapeHtml(student.full_name)}"></td></tr>`;
       }).join("")
       : `<tr><td colspan="7" class="empty-state">No students match your search or status filter.</td></tr>`;
     currentStats();
@@ -231,12 +245,14 @@
     $("historyBody").innerHTML = state.sessions.length
       ? state.sessions.map((session) => {
         const rows = recordsBySession.get(String(session.id)) || [];
-        const present = rows.filter((record) => record.status === "present").length;
-        const absent = rows.filter((record) => record.status === "absent").length;
-        const late = rows.filter((record) => record.status === "late").length;
-        const total = rows.length;
-        const rate = total ? Math.round(((present + late) / total) * 100) : 0;
-        return `<tr><td>${escapeHtml(AttendanceService.formatDate(session.attendance_date))}</td><td>${present}</td><td>${absent}</td><td>${late}</td><td>${rate}%</td><td><span style="color:${session.status === "completed" ? "#139a70" : "#718196"};font-weight:800">${session.status === "completed" ? "Completed" : "Draft"}</span></td><td><button class="history-action" data-date="${escapeHtml(session.attendance_date)}">View</button></td></tr>`;
+        const present = rows.filter((record) => normalizedStatus(record.status) === "present").length;
+        const absent = rows.filter((record) => normalizedStatus(record.status) === "absent").length;
+        const late = rows.filter((record) => normalizedStatus(record.status) === "late").length;
+        const total = state.students.length;
+        const rate = total ? Math.round((present / total) * 100) : 0;
+        const status = String(session.status || "draft").toLowerCase();
+        const label = status === "completed" ? "Completed" : "Draft";
+        return `<tr><td>${escapeHtml(AttendanceService.formatDate(session.attendance_date))}</td><td>${present}</td><td>${absent}</td><td>${late}</td><td>${rate}%</td><td><span style="color:${status === "completed" ? "#139a70" : "#718196"};font-weight:800">${label}</span></td><td><button class="history-action" data-date="${escapeHtml(session.attendance_date)}">View</button></td></tr>`;
       }).join("")
       : `<tr><td colspan="7" class="empty-state">No attendance data yet.</td></tr>`;
   }
@@ -248,12 +264,13 @@
     const first = new Date(year, month, 1);
     const offset = (first.getDay() + 6) % 7;
     const days = new Date(year, month + 1, 0).getDate();
-    const completed = new Set(state.sessions.filter((session) => session.status === "completed").map((session) => session.attendance_date));
+    const sessionsByDate = new Map(state.sessions.map((session) => [session.attendance_date, String(session.status || "draft").toLowerCase()]));
     let html = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => `<span>${day}</span>`).join("");
     for (let index = 0; index < offset; index += 1) html += '<button class="calendar-day muted" disabled></button>';
     for (let day = 1; day <= days; day += 1) {
       const value = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-      html += `<button class="calendar-day ${value === today() ? "today" : ""} ${value === state.date ? "selected" : ""} ${completed.has(value) ? "completed" : ""}" data-date="${value}">${day}</button>`;
+      const sessionStatus = sessionsByDate.get(value);
+      html += `<button class="calendar-day ${value === today() ? "today" : ""} ${value === state.date ? "selected" : ""} ${sessionStatus === "completed" ? "completed" : ""} ${sessionStatus === "draft" ? "draft" : ""}" data-date="${value}">${day}</button>`;
     }
     $("calendarGrid").innerHTML = html;
   }
@@ -263,7 +280,7 @@
     const present = rows.filter((record) => record.status === "present").length;
     const absent = rows.filter((record) => record.status === "absent").length;
     const late = rows.filter((record) => record.status === "late").length;
-    const rate = rows.length ? Math.round(((present + late) / rows.length) * 100) : 0;
+    const rate = rows.length ? Math.round((present / rows.length) * 100) : 0;
     $("drawerRoot").innerHTML = `<div class="drawer-backdrop"><aside class="drawer"><button class="drawer-close" data-close><i class="fa-solid fa-xmark"></i></button><span class="eyebrow">Student attendance</span><h2 style="margin-top:8px">${escapeHtml(student.full_name)}</h2><p style="color:#718196">Class ${state.grade}${state.stream ? ` · ${escapeHtml(streamLabels[state.stream] || state.stream)}` : ""} · ${escapeHtml(student.student_id)}</p><div class="student-summary"><div><b>${rows.length}</b><small>Total classes</small></div><div><b>${present}</b><small>Present</small></div><div><b>${absent}</b><small>Absent</small></div><div><b>${late}</b><small>Late</small></div><div><b>${rate}%</b><small>Overall attendance</small></div></div><h3 style="font-size:1rem">History</h3>${rows.length ? rows.slice().sort((left, right) => right.attendance_date.localeCompare(left.attendance_date)).map((record) => `<p style="display:flex;justify-content:space-between;border-bottom:1px solid #e5eaf1;padding:11px 0;font-size:.8rem"><span>${escapeHtml(AttendanceService.formatDate(record.attendance_date))}</span><strong>${displayStatus(record.status)}</strong></p>`).join("") : `<p style="color:#718196;margin-top:12px">No attendance data yet.</p>`}</aside></div>`;
   }
 
@@ -271,7 +288,7 @@
     const group = groupForSelection();
     if (!state.teacher || !state.user) throw new Error("Sign in with a teacher account to manage attendance.");
     if (!group) throw new Error("Select a grade and stream in your registered teaching scope.");
-    if ((Number(state.grade) >= 11) && !state.stream) throw new Error("Select a registered stream.");
+    if (Number(state.grade) >= 11 && !state.stream) throw new Error("Select a registered stream.");
     if (!state.subjectId || !group.subjects.some((subject) => String(subject.id) === state.subjectId)) {
       throw new Error("Select a subject registered for this grade and stream.");
     }
@@ -279,39 +296,96 @@
     return group;
   }
 
-  async function loadRegister({ preserveDrafts = false } = {}) {
-    if (!state.client || !state.teacher || !state.grade || !state.subjectId) {
+  async function loadRegister({ preserveDrafts = false, refresh = false } = {}) {
+    const requestId = ++state.requestId;
+    if (refresh) state.drafts.clear();
+    if (!state.client || !state.teacher || !state.grade || !state.subjectId || !state.date) {
+      state.loading = false;
+      state.error = "";
+      state.students = [];
+      state.sessions = [];
+      state.records = [];
+      state.history = [];
+      state.activeSessionId = "";
+      state.drafts.clear();
+      $("recordedBanner").hidden = true;
+      if (refresh) $("refreshAttendanceButton").disabled = false;
       renderRows();
+      renderHistory();
+      renderCalendar();
       return;
     }
-    const requestId = ++state.requestId;
     state.loading = true;
     state.error = "";
+    if (refresh) $("refreshAttendanceButton").disabled = true;
     $("tableSubtitle").textContent = "Loading students and attendance...";
     renderRows();
     try {
       const group = validateSelection();
-      const [students, attendance] = await Promise.all([
-        AttendanceService.loadAuthorizedAttendanceStudents(state.client, state.grade, group.stream),
-        AttendanceService.loadAttendanceSelection(state.client, state.teacher.id, state.grade, group.stream, state.subjectId),
-      ]);
+      const students = await AttendanceService.loadAuthorizedAttendanceStudents(
+        state.client,
+        state.grade,
+        group.stream,
+      );
       if (requestId !== state.requestId) return;
-      const drafts = preserveDrafts ? state.drafts : new Map();
+      const drafts = preserveDrafts && !refresh ? state.drafts : new Map();
       state.students = students;
-      state.sessions = attendance.sessions;
-      state.records = attendance.records;
-      state.history = attendance.records;
+      state.sessions = [];
+      state.records = [];
+      state.history = [];
+      state.activeSessionId = "";
       state.drafts = new Map([...drafts].filter(([studentId]) => students.some((student) => String(student.id) === studentId)));
-      const session = state.sessions.find((item) => item.attendance_date === state.date);
-      const recorded = Boolean(session && session.status === "completed");
-      $("recordedBanner").hidden = !recorded;
-      $("recordedBanner").textContent = recorded ? "Attendance completed for this class, subject, and date. You can edit and save it again." : "";
+      $("recordedBanner").hidden = true;
       $("tableTitle").textContent = `Class ${state.grade}${state.stream ? ` · ${streamLabels[state.stream] || state.stream}` : ""} · ${state.subject}`;
       $("tableSubtitle").textContent = state.date ? AttendanceService.formatDate(state.date) : "Select a date";
       state.loading = false;
       renderRows();
       renderHistory();
       renderCalendar();
+      let attendance;
+      try {
+        attendance = await AttendanceService.loadAttendanceSelection(
+          state.client,
+          state.teacher.id,
+          state.grade,
+          group.stream,
+          state.subjectId,
+        );
+      } catch (attendanceError) {
+        if (requestId !== state.requestId) return;
+        const message = attendanceError?.message || "Saved attendance history could not be loaded.";
+        $("tableSubtitle").textContent = `${AttendanceService.formatDate(state.date)} · ${message}`;
+        console.error("Attendance history loading error:", attendanceError);
+        showToast(message, true);
+        return;
+      }
+      if (requestId !== state.requestId) return;
+      state.sessions = attendance.sessions;
+      state.records = attendance.records;
+      state.history = attendance.records;
+      const existingSession = state.sessions.find((item) => item.attendance_date === state.date);
+      state.activeSessionId = existingSession?.id ? String(existingSession.id) : "";
+      const recorded = Boolean(existingSession && existingSession.status === "completed");
+      $("recordedBanner").hidden = !recorded;
+      $("recordedBanner").textContent = recorded ? "Attendance completed for this class, subject, and date. You can edit and save it again." : "";
+      renderRows();
+      renderHistory();
+      renderCalendar();
+      try {
+        const sessionId = await AttendanceService.ensureAttendanceSession(state.client, {
+          grade: state.grade,
+          stream: group.stream,
+          subjectId: state.subjectId,
+          date: state.date,
+        });
+        if (requestId === state.requestId) state.activeSessionId = sessionId;
+      } catch (sessionError) {
+        if (requestId !== state.requestId) return;
+        const message = sessionError?.message || "The attendance session could not be opened.";
+        $("tableSubtitle").textContent = `${AttendanceService.formatDate(state.date)} · ${message}`;
+        console.error("Attendance session initialization error:", sessionError);
+        showToast(message, true);
+      }
     } catch (error) {
       if (requestId !== state.requestId) return;
       state.loading = false;
@@ -319,13 +393,16 @@
       state.records = [];
       state.sessions = [];
       state.history = [];
-      state.error = "Unable to load attendance. Please try again.";
+      state.activeSessionId = "";
+      state.error = error?.message || "Unable to load attendance.";
       $("tableSubtitle").textContent = state.error;
       console.error("Attendance loading error:", error);
       renderRows();
       renderHistory();
       renderCalendar();
       showToast(state.error, true);
+    } finally {
+      if (requestId === state.requestId) $("refreshAttendanceButton").disabled = false;
     }
   }
 
@@ -341,7 +418,7 @@
       state.client = initialized.client;
       state.user = initialized.user;
       state.teacher = initialized.teacher;
-      state.groups = initialized.groups;
+      state.groups = initialized.groups.filter((group) => group.grade >= 5 && group.grade <= 12);
       state.classes = [...new Set(state.groups.map((group) => group.grade))].sort((left, right) => left - right);
       if (!state.user) throw new Error("Sign in with a teacher account to manage attendance.");
       renderClassOptions();
@@ -369,6 +446,10 @@
             void loadRegister({ preserveDrafts: true });
           }
         },
+        (error) => {
+          $("modeLabel").textContent = "Realtime unavailable";
+          showToast(error.message || "Attendance realtime updates are unavailable.", true);
+        },
       );
     } catch (error) {
       state.loading = false;
@@ -376,7 +457,7 @@
         window.location.assign("../teacher_registration/login.html");
         return;
       }
-      state.error = "Unable to load attendance. Please try again.";
+      state.error = error?.message || "Unable to initialize attendance.";
       $("modeLabel").textContent = "Supabase unavailable";
       $("tableSubtitle").textContent = state.error;
       console.error("Attendance initialization error:", error);
@@ -389,7 +470,8 @@
 
   async function refreshScopeAfterChange() {
     try {
-      state.groups = await window.TeacherData.loadRegisteredTeachingScope(state.client, state.teacher.id);
+      state.groups = (await window.TeacherData.loadRegisteredTeachingScope(state.client, state.teacher.id))
+        .filter((group) => group.grade >= 5 && group.grade <= 12);
       state.classes = [...new Set(state.groups.map((group) => group.grade))].sort((left, right) => left - right);
       state.drafts.clear();
       renderClassOptions();
@@ -411,7 +493,11 @@
 
   function editRecord(student, changes) {
     const original = recordFor(student);
-    state.drafts.set(String(student.id), { ...original, student_id: student.id, ...changes });
+    const updated = { ...original, student_id: student.id, ...changes };
+    if (["present", "late"].includes(changes.status) && !updated.check_in) {
+      updated.check_in = currentClockTime();
+    }
+    state.drafts.set(String(student.id), updated);
     renderRows();
   }
 
@@ -430,7 +516,7 @@
         const record = recordFor(student);
         return {
           student_id: student.id,
-          status: record.status || "not_marked",
+          status: normalizedStatus(record.status),
           check_in: record.check_in || "",
           check_out: record.check_out || "",
           remarks: record.remarks || "",
@@ -445,7 +531,7 @@
       });
       state.drafts.clear();
       await loadRegister();
-      showToast("Attendance saved successfully.");
+      if (!state.error) showToast("Attendance saved successfully.");
     } catch (error) {
       console.error("Attendance save error:", error);
       showToast(error.message || "Attendance could not be saved. Please try again.", true);
@@ -463,8 +549,7 @@
       $("exportButton").disabled = true;
       $("exportButton").textContent = "Exporting report...";
       const data = state.students.map((student) => {
-        const record = selectedRecords().find((item) => String(item.student_id) === String(student.id)) ||
-          { status: "not_marked", check_in: null, check_out: null, duration_minutes: null, remarks: "" };
+        const record = recordFor(student);
         return {
           "Student Name": student.full_name,
           "Student ID": student.student_id,
@@ -511,7 +596,7 @@
     );
     $("saveButton").addEventListener("click", () => void save());
     $("exportButton").addEventListener("click", () => void exportReport());
-    $("refreshAttendanceButton").addEventListener("click", () => void loadRegister({ preserveDrafts: true }));
+    $("refreshAttendanceButton").addEventListener("click", () => void loadRegister({ refresh: true }));
     $("classSelect").addEventListener("change", () => {
       state.grade = $("classSelect").value;
       state.stream = "";
@@ -538,12 +623,27 @@
     });
     $("studentSearch").addEventListener("input", renderRows);
     $("statusFilter").addEventListener("change", renderRows);
-    $("markAllButton").addEventListener("click", () => {
+    $("markAllButton").addEventListener("click", async () => {
+      if (state.loading || state.saving || !state.students.length) return;
+      $("markAllButton").disabled = true;
+      $("markAllButton").textContent = "Marking all present...";
+      const checkIn = currentClockTime();
       state.students.forEach((student) => {
         const record = recordFor(student);
-        state.drafts.set(String(student.id), { ...record, student_id: student.id, status: "present" });
+        state.drafts.set(String(student.id), {
+          ...record,
+          student_id: student.id,
+          status: "present",
+          check_in: record.check_in || checkIn,
+        });
       });
       renderRows();
+      try {
+        await save();
+      } finally {
+        $("markAllButton").disabled = false;
+        $("markAllButton").innerHTML = '<i class="fa-solid fa-check-double"></i> Mark all present';
+      }
     });
     $("prevMonth").addEventListener("click", () => {
       state.month.setMonth(state.month.getMonth() - 1);

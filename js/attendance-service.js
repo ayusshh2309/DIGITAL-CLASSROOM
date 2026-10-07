@@ -1,195 +1,116 @@
 (() => {
-  const STORAGE_KEY = "smartLearningAttendance";
-  const STUDENTS_KEY = "teacherStudents";
-  const gradeGroups = {
-    grades_5_6: ["5", "6"],
-    grades_7_8: ["7", "8"],
-    grades_9_10: ["9", "10"],
-    grades_11_12: ["11", "12"],
-  };
-  const standardSubjects = {
-    5: ["English", "Mathematics", "EVS", "Hindi"],
-    6: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-    7: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-    8: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-    9: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-    10: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-  };
-  const streamSubjects = {
-    science_pcm: ["Physics", "Chemistry", "Mathematics"],
-    science_pcb: ["Physics", "Chemistry", "Biology"],
-    commerce: ["Accountancy", "Business Studies", "Economics"],
-    arts_humanities: [
-      "History",
-      "Geography",
-      "Political Science",
-      "Psychology",
-    ],
-  };
-  const fallbackNames = [
-    "Aarav Sharma",
-    "Aanya Verma",
-    "Arjun Patel",
-    "Meera Singh",
-    "Sahil Khan",
-    "Ishita Gupta",
-    "Karan Mehta",
-    "Diya Nair",
-  ];
-  let registeredTeachingScope = null;
+  let registeredTeachingScope = [];
 
-  const readJson = (key, fallback) => {
-    try {
-      return JSON.parse(localStorage.getItem(key) || "null") || fallback;
-    } catch {
-      return fallback;
-    }
-  };
-  const teacher = () =>
-    readJson("teacherRegistration", null) ||
-    readJson("teacherProfile", null) ||
-    readJson("teacherData", null) ||
-    readJson("finalTeacherRegistration", null) ||
-    {};
-  const teacherId = () =>
-    teacher().authUserId ||
-    teacher().id ||
-    teacher().personal?.email ||
-    "local-teacher";
-  const normalizeGrade = (value) =>
-    String(value ?? "").match(/\d+/)?.[0] || String(value ?? "");
-  const assignments = () => {
-    const professional = teacher().professional || {};
-    const result = new Map();
-    const add = (grade, subject) => {
-      const normalized = normalizeGrade(grade);
-      if (!normalized || !subject) return;
-      if (!result.has(normalized)) result.set(normalized, new Set());
-      result.get(normalized).add(String(subject));
-    };
-    const raw =
-      professional.specialistAssignments ||
-      professional.specialist_assignments ||
-      professional.subjectAssignments ||
-      {};
-    const list = Array.isArray(raw)
-      ? raw
-      : Object.entries(raw).map(([subject, grades]) => ({ subject, grades }));
-    list.forEach((item) =>
-      (item.grades || []).forEach((grade) => add(grade, item.subject)),
-    );
-    const groups =
-      professional.selected_grade_groups ||
-      professional.gradeGroups ||
-      professional.grade_groups ||
-      [];
-    const grades = [
-      ...groups.flatMap((group) => gradeGroups[group] || []),
-      ...(professional.grades || professional.selected_grades || []).map(
-        normalizeGrade,
-      ),
-    ];
-    const streams = professional.streams || professional.selected_streams || [];
-    const senior = [
-      ...new Set(
-        streams
-          .flatMap((stream) => streamSubjects[stream] || [])
-          .concat(["English", "Physical Education", "Computer Science"]),
-      ),
-    ];
-    if (!list.length)
-      grades.forEach((grade) =>
-        (Number(grade) >= 11
-          ? senior
-          : standardSubjects[grade] || professional.subjects || []
-        ).forEach((subject) => add(grade, subject)),
-      );
-    if (!result.size && Array.isArray(professional.subjects))
-      grades.forEach((grade) =>
-        professional.subjects.forEach((subject) => add(grade, subject)),
-      );
-    return result;
-  };
+  function normalizeStream(grade, stream) {
+    return Number(grade) >= 11 ? String(stream || "").trim().toLowerCase() : "";
+  }
 
-  function loadTeacherClasses() {
-    if (registeredTeachingScope) {
-      return [...new Set(registeredTeachingScope.map((group) => String(group.grade)))]
-        .sort((left, right) => Number(left) - Number(right));
-    }
-    return [...assignments().keys()].sort((a, b) => Number(a) - Number(b));
+  async function loadTeacherClasses() {
+    await initializeAttendance();
+    return [...new Set(registeredTeachingScope.map((group) => String(group.grade)))]
+      .sort((left, right) => Number(left) - Number(right));
   }
-  function loadTeacherSubjects(grade) {
-    if (registeredTeachingScope) {
-      const names = registeredTeachingScope
-        .filter((group) => String(group.grade) === normalizeGrade(grade))
-        .flatMap((group) => group.subjects.map((subject) => subject.name));
-      return [...new Set(names)].sort((left, right) => left.localeCompare(right));
-    }
-    return [...(assignments().get(normalizeGrade(grade)) || [])];
+
+  function loadTeacherSubjects(grade, stream = "") {
+    const normalizedGrade = Number(grade);
+    const normalizedStream = normalizeStream(normalizedGrade, stream);
+    return registeredTeachingScope
+      .filter((group) => group.grade === normalizedGrade && group.stream === normalizedStream)
+      .flatMap((group) => group.subjects.map((subject) => subject.name));
   }
-  async function loadRegisteredTeachingScope() {
-    const currentTeacher = await window.TeacherData.loadCurrentTeacherProfile();
-    return setRegisteredTeachingScope(await window.TeacherData.loadRegisteredTeachingScope(
-      currentTeacher.client,
-      currentTeacher.profile.id,
-    ));
-  }
-  function setRegisteredTeachingScope(groups) {
-    registeredTeachingScope = Array.isArray(groups) ? groups : [];
-    return registeredTeachingScope;
-  }
+
   async function initializeAttendance() {
     const client = window.TeacherData?.getSupabaseClient?.();
     if (!client) throw new Error("Supabase is not configured.");
+
     const { data: authData, error: authError } = await client.auth.getUser();
-    if (authError) throw authError;
-    if (!authData?.user) {
-      const error = new Error("Sign in with a teacher account to manage attendance.");
-      error.code = "AUTH_REQUIRED";
-      throw error;
+    if (authError) {
+      if (authError.name === "AuthSessionMissingError" || authError.code === "session_not_found") {
+        throw Object.assign(new Error("Your session has expired. Please sign in again."), {
+          code: "AUTH_REQUIRED",
+          cause: authError,
+        });
+      }
+      throw authError;
     }
-    const { data: teacherProfile, error: teacherError } = await client
+    if (!authData?.user) {
+      throw Object.assign(new Error("Sign in with a teacher account to manage attendance."), {
+        code: "AUTH_REQUIRED",
+      });
+    }
+
+    const { data: teacher, error: teacherError } = await client
       .from("teachers")
       .select("id, user_id, full_name")
       .eq("user_id", authData.user.id)
-      .single();
+      .maybeSingle();
     if (teacherError) throw teacherError;
-    if (!teacherProfile || teacherProfile.user_id !== authData.user.id) {
-      throw new Error("No teacher profile is linked to this account.");
+    if (!teacher || teacher.user_id !== authData.user.id) {
+      throw Object.assign(new Error("No teacher profile is linked to this account."), {
+        code: "TEACHER_UNAVAILABLE",
+      });
     }
-    const groups = await window.TeacherData.loadRegisteredTeachingScope(client, teacherProfile.id);
-    registeredTeachingScope = groups;
-    return { client, user: authData.user, teacher: teacherProfile, groups };
+
+    registeredTeachingScope = await window.TeacherData.loadRegisteredTeachingScope(client, teacher.id);
+    return { client, user: authData.user, teacher, groups: registeredTeachingScope };
   }
+
+  async function loadRegisteredTeachingScope(client, teacherId) {
+    registeredTeachingScope = await window.TeacherData.loadRegisteredTeachingScope(client, teacherId);
+    return registeredTeachingScope;
+  }
+
   async function loadAuthorizedAttendanceStudents(client, grade, stream) {
+    const normalizedGrade = Number(grade);
+    const normalizedStream = normalizeStream(normalizedGrade, stream);
+    if (!Number.isInteger(normalizedGrade) || normalizedGrade < 5 || normalizedGrade > 12) {
+      throw new Error("Select a valid registered grade.");
+    }
+    if (normalizedGrade >= 11 && !["science_pcm", "science_pcb", "commerce", "arts_humanities"].includes(normalizedStream)) {
+      throw new Error("Select a valid registered stream.");
+    }
+
     let query = client
       .from("students")
       .select("id, student_id, full_name, grade, stream, roll_number")
-      .eq("grade", Number(grade))
+      .eq("grade", normalizedGrade)
       .order("full_name", { ascending: true });
-    query = stream ? query.eq("stream", stream) : query.is("stream", null);
-    const { data, error } = await query;
-    if (error) throw error;
-    return data || [];
+    query = normalizedStream ? query.eq("stream", normalizedStream) : query.is("stream", null);
+    return readAllRows(query);
   }
-  async function loadAttendanceSelection(client, teacherIdValue, grade, stream, subjectId) {
+
+  async function ensureAttendanceSession(client, { grade, stream, subjectId, date }) {
+    const { data, error } = await client.rpc("ensure_teacher_attendance_session", {
+      requested_grade: Number(grade),
+      requested_stream: normalizeStream(grade, stream) || null,
+      requested_subject_id: subjectId,
+      requested_attendance_date: date,
+    });
+    if (error) throw error;
+    if (!data) throw new Error("The attendance session could not be created or loaded.");
+    return String(data);
+  }
+
+  async function loadAttendanceSelection(client, teacherId, grade, stream, subjectId) {
+    const normalizedGrade = Number(grade);
+    const normalizedStream = normalizeStream(normalizedGrade, stream);
     let query = client
       .from("attendance_sessions")
       .select("id, teacher_id, grade, stream, subject_id, attendance_date, status, created_at, updated_at")
-      .eq("teacher_id", teacherIdValue)
-      .eq("grade", Number(grade))
+      .eq("teacher_id", teacherId)
+      .eq("grade", normalizedGrade)
       .eq("subject_id", subjectId)
       .order("attendance_date", { ascending: false });
-    query = stream ? query.eq("stream", stream) : query.is("stream", null);
-    const { data: sessions, error: sessionError } = await query;
-    if (sessionError) throw sessionError;
-    const sessionRows = sessions || [];
+    query = normalizedStream ? query.eq("stream", normalizedStream) : query.is("stream", null);
+    const sessions = await readAllRows(query);
+
+    const sessionRows = sessions;
     if (!sessionRows.length) return { sessions: [], records: [] };
-    const { data: records, error: recordsError } = await client
+    const records = await readAllRows(client
       .from("attendance_records")
       .select("id, session_id, student_id, status, check_in, check_out, duration_minutes, remarks, created_at, updated_at")
-      .in("session_id", sessionRows.map((session) => session.id));
-    if (recordsError) throw recordsError;
+      .in("session_id", sessionRows.map((session) => session.id)));
+
     const sessionById = new Map(sessionRows.map((session) => [String(session.id), session]));
     return {
       sessions: sessionRows,
@@ -205,45 +126,78 @@
       }),
     };
   }
+
+  async function readAllRows(query) {
+    const rows = [];
+    const pageSize = 1000;
+    for (let offset = 0; ; offset += pageSize) {
+      const { data, error } = await query.range(offset, offset + pageSize - 1);
+      if (error) throw error;
+      rows.push(...(data || []));
+      if (!data || data.length < pageSize) return rows;
+    }
+  }
+
+  function attendanceTimestamp(value, date, label) {
+    if (!value) return null;
+    const clock = String(value).trim();
+    if (/^\d{2}:\d{2}$/.test(clock)) {
+      const [hours, minutes] = clock.split(":").map(Number);
+      if (hours > 23 || minutes > 59) throw new Error(`Enter a valid ${label} time.`);
+      const timestamp = new Date(`${date}T${clock}:00`);
+      if (Number.isNaN(timestamp.getTime())) throw new Error(`Enter a valid ${label} time.`);
+      return timestamp;
+    }
+
+    const timestamp = new Date(value);
+    if (Number.isNaN(timestamp.getTime())) throw new Error(`Enter a valid ${label} time.`);
+    return timestamp;
+  }
+
   async function saveAttendanceSession(client, { grade, stream, subjectId, date, records }) {
+    if (!Array.isArray(records)) throw new Error("Attendance records must be a list.");
     const preparedRecords = records.map((record) => {
-      const checkIn = record.check_in ? new Date(`${date}T${record.check_in}:00`) : null;
-      const checkOut = record.check_out ? new Date(`${date}T${record.check_out}:00`) : null;
-      if ((checkIn && Number.isNaN(checkIn.getTime())) || (checkOut && Number.isNaN(checkOut.getTime()))) {
-        throw new Error("Enter a valid check-in and check-out time.");
-      }
+      const checkIn = attendanceTimestamp(record.check_in, date, "check-in");
+      const checkOut = attendanceTimestamp(record.check_out, date, "check-out");
       if (checkIn && checkOut && checkOut < checkIn) {
         throw new Error("Check-out must be later than check-in.");
       }
+      const status = String(record.status || "not_marked").trim().toLowerCase();
+      if (!["present", "absent", "late", "not_marked"].includes(status)) {
+        throw new Error("Select a valid attendance status.");
+      }
       return {
         student_id: record.student_id,
-        status: record.status || "not_marked",
-        check_in: checkIn ? checkIn.toISOString() : null,
-        check_out: checkOut ? checkOut.toISOString() : null,
+        status,
+        check_in: checkIn?.toISOString() || null,
+        check_out: checkOut?.toISOString() || null,
         duration_minutes: checkIn && checkOut
-          ? Math.round((checkOut.getTime() - checkIn.getTime()) / 60000)
+          ? Math.round((checkOut.getTime() - checkIn.getTime()) / 60_000)
           : null,
-        remarks: record.remarks || null,
+        remarks: String(record.remarks || "").trim() || null,
       };
     });
+
     const { data, error } = await client.rpc("save_teacher_attendance", {
       requested_grade: Number(grade),
-      requested_stream: stream || null,
+      requested_stream: normalizeStream(grade, stream) || null,
       requested_subject_id: subjectId,
       requested_attendance_date: date,
       requested_records: preparedRecords,
     });
     if (error) throw error;
-    return data;
+    if (!data) throw new Error("Attendance could not be saved.");
+    return String(data);
   }
-  function subscribeToAttendanceRealtime(client, teacherIdValue, onChange) {
+
+  function subscribeToAttendanceRealtime(client, teacherId, onChange, onError = () => {}) {
     const channel = client
-      .channel(`teacher-attendance-${teacherIdValue}`)
+      .channel(`teacher-attendance-${teacherId}`)
       .on("postgres_changes", {
         event: "*",
         schema: "public",
         table: "attendance_sessions",
-        filter: `teacher_id=eq.${teacherIdValue}`,
+        filter: `teacher_id=eq.${teacherId}`,
       }, onChange)
       .on("postgres_changes", {
         event: "*",
@@ -259,268 +213,55 @@
         event: "*",
         schema: "public",
         table: "teacher_grade_groups",
-        filter: `teacher_id=eq.${teacherIdValue}`,
+        filter: `teacher_id=eq.${teacherId}`,
       }, onChange)
       .on("postgres_changes", {
         event: "*",
         schema: "public",
         table: "teacher_subject_assignments",
-        filter: `teacher_id=eq.${teacherIdValue}`,
+        filter: `teacher_id=eq.${teacherId}`,
       }, onChange)
-      .subscribe((status) => {
+      .subscribe((status, error) => {
         if (["CHANNEL_ERROR", "TIMED_OUT"].includes(status)) {
-          console.error("Attendance realtime subscription is unavailable.", status);
+          const realtimeError = error || new Error(`Attendance realtime subscription failed: ${status}`);
+          console.error("Attendance realtime subscription is unavailable.", realtimeError);
+          onError(realtimeError);
         }
       });
     return () => client.removeChannel(channel);
   }
+
   function formatAttendanceTime(value) {
     if (!value) return "";
+    const text = String(value);
+    if (/^\d{2}:\d{2}$/.test(text)) return text;
     const date = new Date(value);
     return Number.isNaN(date.getTime())
       ? ""
       : `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
   }
+
   function formatDate(value) {
+    const date = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return String(value || "");
     return new Intl.DateTimeFormat("en", {
       day: "2-digit",
       month: "short",
       year: "numeric",
-    }).format(new Date(`${value}T00:00:00`));
+    }).format(date);
   }
-  function loadRegisteredStudents(grade) {
-    const stored = readJson(STUDENTS_KEY, []);
-    const filtered = stored.filter(
-      (student) =>
-        normalizeGrade(
-          student.class_grade || student.grade || student.class,
-        ) === normalizeGrade(grade) && student.status !== "Inactive",
-    );
-    if (filtered.length) return filtered.map(normalizeStudent);
-    return [];
-  }
-  function normalizeStudent(student, index) {
-    return {
-      ...student,
-      id: String(student.id || student.student_id || `student-${index}`),
-      student_id: String(
-        student.student_id || student.id || `SLDC-${index + 1}`,
-      ),
-      name: student.name || student.full_name || "Unnamed student",
-      roll_no: String(
-        student.roll_no || student.rollNumber || index + 1,
-      ).padStart(2, "0"),
-    };
-  }
-  function key({ grade, class_grade, subject, date, attendance_date }) {
-    return `${teacherId()}|${normalizeGrade(class_grade ?? grade)}|${subject}|${attendance_date ?? date}`;
-  }
-  function readLocal() {
-    return readJson(STORAGE_KEY, []);
-  }
-  function writeLocal(records) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-  }
-  function getAttendanceForDate(grade, subject, date) {
-    return readLocal().filter(
-      (record) =>
-        record.teacher_id === teacherId() &&
-        normalizeGrade(record.class_grade) === normalizeGrade(grade) &&
-        record.subject === subject &&
-        record.attendance_date === date,
-    );
-  }
-  async function loadAttendance(grade, subject, date) {
-    const client = window.SmartLearningSupabase?.getClient();
-    if (client) {
-      const { data, error } = await client
-        .from("attendance")
-        .select("*")
-        .eq("teacher_id", teacherId())
-        .eq("class_grade", normalizeGrade(grade))
-        .eq("subject", subject)
-        .eq("attendance_date", date);
-      if (error) throw error;
-      return data || [];
-    }
-    return getAttendanceForDate(grade, subject, date);
-  }
-  async function saveAttendance(records) {
-    return updateAttendance(records);
-  }
-  async function updateAttendance(records) {
-    const client = window.SmartLearningSupabase?.getClient();
-    const payload = records.map((record) => ({
-      ...record,
-      teacher_id: teacherId(),
-      class_grade: normalizeGrade(record.class_grade),
-      updated_at: new Date().toISOString(),
-    }));
-    if (client) {
-      const { data, error } = await client
-        .from("attendance")
-        .upsert(payload, {
-          onConflict:
-            "teacher_id,student_id,class_grade,subject,attendance_date",
-        })
-        .select();
-      if (error) throw error;
-      return data || payload;
-    }
-    const existing = readLocal().filter(
-      (item) => !payload.some((record) => key(record) === key(item)),
-    );
-    writeLocal([...existing, ...payload]);
-    return payload;
-  }
-  async function getAttendanceHistory(grade, subject) {
-    const client = window.SmartLearningSupabase?.getClient();
-    if (client) {
-      const { data, error } = await client
-        .from("attendance")
-        .select("*")
-        .eq("teacher_id", teacherId())
-        .eq("class_grade", normalizeGrade(grade))
-        .eq("subject", subject)
-        .order("attendance_date", { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-    return readLocal().filter(
-      (record) =>
-        record.teacher_id === teacherId() &&
-        normalizeGrade(record.class_grade) === normalizeGrade(grade) &&
-        record.subject === subject,
-    );
-  }
-  async function exportAttendanceToExcel(options = {}) {
-    const history = await getAttendanceHistory(options.grade, options.subject);
-    const rows = history.map((record) => ({
-      Date: record.attendance_date,
-      "Student ID": record.student_id,
-      "Student Name": record.student_name,
-      Class: `Class ${record.class_grade}`,
-      Subject: record.subject,
-      Status: record.status,
-      Remarks: record.remarks || "",
-    }));
-    if (!window.XLSX) {
-      const csv = [
-        Object.keys(rows[0] || { Date: "No records" }).join(","),
-        ...rows.map((row) =>
-          Object.values(row)
-            .map((value) => `"${String(value).replaceAll('"', '""')}"`)
-            .join(","),
-        ),
-      ].join("\n");
-      const blob = new Blob([csv], { type: "text/csv" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "attendance-report.csv";
-      link.click();
-      return;
-    }
-    const book = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(
-      book,
-      XLSX.utils.json_to_sheet([
-        {
-          Teacher:
-            teacher().personal?.fullName || teacher().fullName || "Teacher",
-          Class: `Class ${options.grade}`,
-          Subject: options.subject,
-          "Academic Year": new Date().getFullYear(),
-          "Total Students": options.total || 0,
-          "Average Attendance": `${options.rate || 0}%`,
-        },
-      ]),
-      "Summary",
-    );
-    XLSX.utils.book_append_sheet(
-      book,
-      XLSX.utils.json_to_sheet(rows),
-      "Daily Attendance",
-    );
-    const overview = [
-      ...new Set(history.map((record) => record.student_id)),
-    ].map((studentId) => {
-      const studentRows = history.filter(
-        (record) => record.student_id === studentId,
-      );
-      const present = studentRows.filter(
-        (record) => record.status === "Present",
-      ).length;
-      const absent = studentRows.filter(
-        (record) => record.status === "Absent",
-      ).length;
-      const late = studentRows.filter(
-        (record) => record.status === "Late",
-      ).length;
-      return {
-        "Student Name": studentRows[0]?.student_name || studentId,
-        "Total Classes": studentRows.length,
-        Present: present,
-        Absent: absent,
-        Late: late,
-        "Attendance %": studentRows.length
-          ? `${Math.round(((present + late) / studentRows.length) * 100)}%`
-          : "0%",
-      };
-    });
-    XLSX.utils.book_append_sheet(
-      book,
-      XLSX.utils.json_to_sheet(overview),
-      "Student Overview",
-    );
-    XLSX.writeFile(book, "attendance-report.xlsx");
-  }
-  function subscribeToAttendance({ grade, subject, date, onChange }) {
-    const client = window.SmartLearningSupabase?.getClient();
-    if (!client) return () => {};
-    const channel = client
-      .channel(`attendance-${teacherId()}-${normalizeGrade(grade)}-${subject}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "attendance",
-          filter: `teacher_id=eq.${teacherId()}`,
-        },
-        (payload) => {
-          const record = payload.new || payload.old;
-          if (
-            record &&
-            normalizeGrade(record.class_grade) === normalizeGrade(grade) &&
-            record.subject === subject &&
-            record.attendance_date === date
-          )
-            onChange(payload);
-        },
-      )
-      .subscribe();
-    return () => client.removeChannel(channel);
-  }
+
   window.AttendanceService = {
     loadTeacherClasses,
     loadTeacherSubjects,
     loadRegisteredTeachingScope,
-    setRegisteredTeachingScope,
     initializeAttendance,
     loadAuthorizedAttendanceStudents,
+    ensureAttendanceSession,
     loadAttendanceSelection,
     saveAttendanceSession,
     subscribeToAttendanceRealtime,
     formatAttendanceTime,
     formatDate,
-    loadRegisteredStudents,
-    loadAttendance,
-    saveAttendance,
-    updateAttendance,
-    getAttendanceForDate,
-    getAttendanceHistory,
-    exportAttendanceToExcel,
-    subscribeToAttendance,
-    teacherId,
   };
 })();

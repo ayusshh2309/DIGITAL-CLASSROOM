@@ -382,8 +382,38 @@
   box-shadow: 0 3px 8px rgba(88, 69, 245, 0.2);
 }
 
-.attendance-page .calendar-day.completed:not(.selected)::after {
+.attendance-page .calendar-day.completed:not(.selected) {
+  color: #078b68;
+  background: #e8faf3;
+}
+
+.attendance-page .calendar-day.draft:not(.selected) {
+  color: #ae7610;
+  background: #fff7e5;
+}
+
+.attendance-page .status-button.active.not-marked {
+  border-color: #dce4f1;
+  color: #7183a1;
+  background: #edf1f7;
+}
+
+.attendance-page .legend .done::before,
+.attendance-page .legend .draft-legend::before {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 5px;
+  border-radius: 50%;
+  content: "";
+}
+
+.attendance-page .legend .done::before {
   background: var(--attendance-green);
+}
+
+.attendance-page .legend .draft-legend::before {
+  background: var(--attendance-amber);
 }
 
 .attendance-page .legend {

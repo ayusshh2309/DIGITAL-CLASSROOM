@@ -1356,9 +1356,16 @@
         if (greeting) greeting.textContent = `Good morning, ${name}!`;
         if (avatar && personal.profilePhoto) avatar.src = personal.profilePhoto;
 
-        const selectedClasses = window.AttendanceService
-          ? AttendanceService.loadTeacherClasses()
-          : [];
+        let selectedClasses = [];
+        let classLoadFailed = false;
+        if (window.AttendanceService) {
+          try {
+            selectedClasses = await AttendanceService.loadTeacherClasses();
+          } catch (error) {
+            classLoadFailed = true;
+            console.error("Registered teacher classes could not be loaded.", error);
+          }
+        }
         const classesGrid = document.getElementById("classesGrid");
         if (classesGrid) {
           const addClass = classesGrid.querySelector(".add-class-btn");
@@ -1375,7 +1382,7 @@
                     </div>`,
                 )
                 .join("")
-            : '<p class="empty-state">No classes or subjects registered yet.</p>';
+            : `<p class="empty-state">${classLoadFailed ? "Registered classes could not be loaded." : "No classes or subjects registered yet."}</p>`;
           if (addClass) classesGrid.appendChild(addClass);
         }
 
