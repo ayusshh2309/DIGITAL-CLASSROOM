@@ -5,6 +5,33 @@
     return Number(grade) >= 11 ? String(stream || "").trim().toLowerCase() : "";
   }
 
+  function setRegisteredTeachingScope(scope) {
+    registeredTeachingScope = (Array.isArray(scope) ? scope : []).flatMap((group) => {
+      const grade = Number(group?.grade);
+      if (!Number.isInteger(grade) || grade < 1 || grade > 12) return [];
+
+      const teachAllSubjects = Boolean(group.teach_all_subjects ?? group.teachAllSubjects);
+      const subjects = (Array.isArray(group.subjects) ? group.subjects : []).map((subject) => {
+        const subjectId = subject?.subject_id ?? subject?.id;
+        return {
+          ...subject,
+          id: subjectId,
+          subject_id: subjectId,
+          name: subject?.name ?? subject?.subject ?? "",
+        };
+      });
+
+      return [{
+        ...group,
+        grade,
+        stream: grade >= 11 ? group.stream : null,
+        teach_all_subjects: teachAllSubjects,
+        teachAllSubjects,
+        subjects,
+      }];
+    });
+  }
+
   async function loadTeacherClasses() {
     await initializeAttendance();
     return [...new Set(registeredTeachingScope.map((group) => String(group.grade)))]
@@ -15,7 +42,7 @@
     const normalizedGrade = Number(grade);
     const normalizedStream = normalizeStream(normalizedGrade, stream);
     return registeredTeachingScope
-      .filter((group) => group.grade === normalizedGrade && group.stream === normalizedStream)
+      .filter((group) => group.grade === normalizedGrade && normalizeStream(group.grade, group.stream) === normalizedStream)
       .flatMap((group) => group.subjects.map((subject) => subject.name));
   }
 
@@ -51,12 +78,12 @@
       });
     }
 
-    registeredTeachingScope = await window.TeacherData.loadRegisteredTeachingScope(client, teacher.id);
+    setRegisteredTeachingScope(await window.TeacherData.loadRegisteredTeachingScope(client, teacher.id));
     return { client, user: authData.user, teacher, groups: registeredTeachingScope };
   }
 
   async function loadRegisteredTeachingScope(client, teacherId) {
-    registeredTeachingScope = await window.TeacherData.loadRegisteredTeachingScope(client, teacherId);
+    setRegisteredTeachingScope(await window.TeacherData.loadRegisteredTeachingScope(client, teacherId));
     return registeredTeachingScope;
   }
 
@@ -255,6 +282,7 @@
     loadTeacherClasses,
     loadTeacherSubjects,
     loadRegisteredTeachingScope,
+    setRegisteredTeachingScope,
     initializeAttendance,
     loadAuthorizedAttendanceStudents,
     ensureAttendanceSession,

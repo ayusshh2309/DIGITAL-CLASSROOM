@@ -2055,6 +2055,16 @@
 
         loadStatus.textContent = "Loading your profile...";
         initializeSupabase().catch((error) => {
+          if (profile && authUser) {
+            console.error(
+              "Unable to load additional teacher profile details.",
+              error,
+            );
+            loadStatus.textContent =
+              "Your profile loaded, but some additional details could not be loaded.";
+            return;
+          }
+
           console.error("Unable to load teacher profile.", error);
           setText("profileHeaderName", "Unable to load profile");
           loadStatus.textContent =
