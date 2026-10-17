@@ -18,7 +18,6 @@
       throw authError;
     }
     const user = authData?.user;
-    console.log("Announcement auth user:", user?.id);
     if (!user) throw new Error("Your session has expired. Please sign in again.");
 
     const { data: teacher, error: teacherError } = await client
@@ -33,7 +32,6 @@
     if (!teacher?.id || String(teacher.user_id) !== String(user.id)) {
       throw new Error("No teacher profile is linked to this account.");
     }
-    console.log("Announcement teacher ID:", teacher.id);
     return { client, user, teacher };
   }
 
@@ -133,6 +131,9 @@
     const group = findGroup(groups, target.grade, target.stream);
     if (!group) throw new Error("This class and stream are not in your registered teaching scope.");
     const subjectId = input.subject_id || null;
+    if (!subjectId && !group.teachAllSubjects) {
+      throw new Error("All-subject announcements are not enabled for this class and stream.");
+    }
     if (subjectId && !group.subjects.some((subject) => String(subject.id) === String(subjectId))) {
       throw new Error("This subject is not in your registered teaching scope for the selected class.");
     }

@@ -53,7 +53,7 @@
     const group = selectedGroup();
     const subject = $("announcementSubject");
     const options = group?.subjects || [];
-    subject.innerHTML = `<option value="__all_subjects__">All subjects</option>${
+    subject.innerHTML = `${group?.teachAllSubjects ? '<option value="__all_subjects__">All subjects</option>' : ""}${
       options.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join("")
     }`;
     subject.disabled = !group;
@@ -117,7 +117,7 @@
     const [groupsResult, assignmentsResult] = await Promise.all([
       context.client
         .from("teacher_grade_groups")
-        .select("grade, stream")
+        .select("grade, stream, teach_all_subjects")
         .eq("teacher_id", context.teacher.id)
         .order("grade", { ascending: true })
         .order("stream", { ascending: true }),
@@ -135,6 +135,7 @@
       .map((item) => ({
         grade: Number(item.grade),
         stream: Number(item.grade) >= 11 ? String(item.stream || "").trim().toLowerCase() : null,
+        teachAllSubjects: Boolean(item.teach_all_subjects),
         subjects: [],
       }))
       .filter((item) => item.grade >= 5 && item.grade <= 12)
@@ -221,8 +222,9 @@
       valid = false;
     }
     const selectedSubject = $("announcementSubject").value;
-    if (!group || (selectedSubject !== "__all_subjects__"
-      && !group.subjects.some((subject) => String(subject.id) === selectedSubject))) {
+    if (!group || (selectedSubject === "__all_subjects__" && !group.teachAllSubjects)
+      || (selectedSubject !== "__all_subjects__"
+        && !group.subjects.some((subject) => String(subject.id) === selectedSubject))) {
       setFieldError("announcementSubject", "subjectError", "Choose a registered subject or All subjects.");
       valid = false;
     }

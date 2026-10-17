@@ -119,26 +119,48 @@ with check (
     where grade_group.teacher_id = announcements.teacher_id
       and grade_group.grade::text = announcements.grade::text
       and (
-        (announcements.grade::integer between 1 and 10 and announcements.stream is null)
+        (announcements.grade::integer between 1 and 10
+          and grade_group.stream is null
+          and announcements.stream is null)
         or
-        (announcements.grade::integer in (11, 12) and grade_group.stream is not distinct from announcements.stream)
+        (announcements.grade::integer in (11, 12)
+          and lower(btrim(coalesce(grade_group.stream, ''))) = lower(btrim(coalesce(announcements.stream, ''))))
       )
   )
   and (
-    announcements.subject_id is null
-    or exists (
+    (
+      announcements.subject_id is null
+      and exists (
+        select 1 from public.teacher_grade_groups grade_group
+        where grade_group.teacher_id = announcements.teacher_id
+          and grade_group.grade::text = announcements.grade::text
+          and (
+            (announcements.grade::integer between 1 and 10
+              and grade_group.stream is null
+              and announcements.stream is null)
+            or
+            (announcements.grade::integer in (11, 12)
+              and lower(btrim(coalesce(grade_group.stream, ''))) = lower(btrim(coalesce(announcements.stream, ''))))
+          )
+          and grade_group.teach_all_subjects
+      )
+    )
+    or (
+      announcements.subject_id is not null
+      and exists (
       select 1 from public.teacher_subject_assignments assignment
       where assignment.teacher_id = announcements.teacher_id
         and assignment.grade::text = announcements.grade::text
-        and assignment.stream is not distinct from announcements.stream
+        and (
+          (announcements.grade::integer between 1 and 10
+            and assignment.stream is null
+            and announcements.stream is null)
+          or
+          (announcements.grade::integer in (11, 12)
+            and lower(btrim(coalesce(assignment.stream, ''))) = lower(btrim(coalesce(announcements.stream, ''))))
+        )
         and assignment.subject_id = announcements.subject_id
-    )
-    or exists (
-      select 1 from public.teacher_grade_groups grade_group
-      where grade_group.teacher_id = announcements.teacher_id
-        and grade_group.grade::text = announcements.grade::text
-        and grade_group.stream is not distinct from announcements.stream
-        and grade_group.teach_all_subjects
+      )
     )
   )
 );
@@ -163,26 +185,48 @@ with check (
     where grade_group.teacher_id = announcements.teacher_id
       and grade_group.grade::text = announcements.grade::text
       and (
-        (announcements.grade::integer between 1 and 10 and announcements.stream is null)
+        (announcements.grade::integer between 1 and 10
+          and grade_group.stream is null
+          and announcements.stream is null)
         or
-        (announcements.grade::integer in (11, 12) and grade_group.stream is not distinct from announcements.stream)
+        (announcements.grade::integer in (11, 12)
+          and lower(btrim(coalesce(grade_group.stream, ''))) = lower(btrim(coalesce(announcements.stream, ''))))
       )
   )
   and (
-    announcements.subject_id is null
-    or exists (
+    (
+      announcements.subject_id is null
+      and exists (
+        select 1 from public.teacher_grade_groups grade_group
+        where grade_group.teacher_id = announcements.teacher_id
+          and grade_group.grade::text = announcements.grade::text
+          and (
+            (announcements.grade::integer between 1 and 10
+              and grade_group.stream is null
+              and announcements.stream is null)
+            or
+            (announcements.grade::integer in (11, 12)
+              and lower(btrim(coalesce(grade_group.stream, ''))) = lower(btrim(coalesce(announcements.stream, ''))))
+          )
+          and grade_group.teach_all_subjects
+      )
+    )
+    or (
+      announcements.subject_id is not null
+      and exists (
       select 1 from public.teacher_subject_assignments assignment
       where assignment.teacher_id = announcements.teacher_id
         and assignment.grade::text = announcements.grade::text
-        and assignment.stream is not distinct from announcements.stream
+        and (
+          (announcements.grade::integer between 1 and 10
+            and assignment.stream is null
+            and announcements.stream is null)
+          or
+          (announcements.grade::integer in (11, 12)
+            and lower(btrim(coalesce(assignment.stream, ''))) = lower(btrim(coalesce(announcements.stream, ''))))
+        )
         and assignment.subject_id = announcements.subject_id
-    )
-    or exists (
-      select 1 from public.teacher_grade_groups grade_group
-      where grade_group.teacher_id = announcements.teacher_id
-        and grade_group.grade::text = announcements.grade::text
-        and grade_group.stream is not distinct from announcements.stream
-        and grade_group.teach_all_subjects
+      )
     )
   )
 );
@@ -233,9 +277,12 @@ with check (exists (
     and teacher.user_id = (select auth.uid())
     and student.grade::text = announcement.grade::text
     and (
-      (announcement.grade::integer between 1 and 10 and student.stream is null)
+      (announcement.grade::integer between 1 and 10
+        and student.stream is null
+        and announcement.stream is null)
       or
-      (announcement.grade::integer in (11, 12) and student.stream is not distinct from announcement.stream)
+      (announcement.grade::integer in (11, 12)
+        and lower(btrim(coalesce(student.stream, ''))) = lower(btrim(coalesce(announcement.stream, ''))))
     )
 ));
 
@@ -267,14 +314,14 @@ for delete to authenticated
 using (public.current_user_owns_announcement(announcement_recipients.announcement_id));
 
 create or replace function public.create_teacher_announcement(
+  p_grade integer,
   p_title text,
+  p_publish_at timestamptz,
   p_message text,
   p_type text,
-  p_grade smallint,
-  p_stream text,
-  p_subject_id uuid,
+  p_subject_id bigint,
   p_status text,
-  p_publish_at timestamptz
+  p_stream text
 )
 returns public.announcements
 language plpgsql
@@ -286,6 +333,7 @@ declare
   announcement_row public.announcements;
   published_at_value timestamptz;
   publish_at_value timestamptz;
+  stream_value text;
 begin
   select teacher.id
   into teacher_id_value
@@ -295,7 +343,7 @@ begin
   if teacher_id_value is null then
     raise exception 'A teacher profile is not linked to the authenticated account';
   end if;
-  if p_grade < 5 or p_grade > 12 then
+  if p_grade is null or p_grade < 5 or p_grade > 12 then
     raise exception 'Choose a registered class between grades 5 and 12';
   end if;
   if p_type is null or p_type not in ('Exam', 'Material', 'Reminder', 'Assignment', 'Notice') then
@@ -314,28 +362,54 @@ begin
     if p_stream is not null then
       raise exception 'Grades 5 through 10 do not have a stream';
     end if;
-  elsif p_stream is null or p_stream not in ('science_pcm', 'science_pcb', 'commerce', 'arts_humanities') then
-    raise exception 'Choose a valid registered stream';
+    stream_value := null;
+  else
+    stream_value := lower(btrim(p_stream));
+    if stream_value is null or stream_value not in ('science_pcm', 'science_pcb', 'commerce', 'arts_humanities') then
+      raise exception 'Choose a valid registered stream';
+    end if;
   end if;
 
   if not exists (
     select 1
     from public.teacher_grade_groups grade_group
     where grade_group.teacher_id = teacher_id_value
-      and grade_group.grade = p_grade
-      and grade_group.stream is not distinct from p_stream
+      and grade_group.grade::integer = p_grade
+      and (
+        (p_grade between 5 and 10 and grade_group.stream is null)
+        or
+        (p_grade between 11 and 12 and lower(btrim(coalesce(grade_group.stream, ''))) = stream_value)
+      )
   ) then
-    raise exception 'This class and stream are not in your registered teaching scope';
+    raise exception 'Teacher is not registered for this class';
   end if;
   if p_subject_id is not null and not exists (
     select 1
     from public.teacher_subject_assignments assignment
     where assignment.teacher_id = teacher_id_value
-      and assignment.grade = p_grade
-      and assignment.stream is not distinct from p_stream
+      and assignment.grade::integer = p_grade
+      and (
+        (p_grade between 5 and 10 and assignment.stream is null)
+        or
+        (p_grade between 11 and 12 and lower(btrim(coalesce(assignment.stream, ''))) = stream_value)
+      )
       and assignment.subject_id = p_subject_id
   ) then
     raise exception 'This subject is not assigned to you for the selected class and stream';
+  end if;
+  if p_subject_id is null and not exists (
+    select 1
+    from public.teacher_grade_groups grade_group
+    where grade_group.teacher_id = teacher_id_value
+      and grade_group.grade::integer = p_grade
+      and grade_group.teach_all_subjects
+      and (
+        (p_grade between 5 and 10 and grade_group.stream is null)
+        or
+        (p_grade between 11 and 12 and lower(btrim(coalesce(grade_group.stream, ''))) = stream_value)
+      )
+  ) then
+    raise exception 'All-subject announcements are not enabled for this class and stream';
   end if;
 
   if p_status = 'scheduled' then
@@ -371,7 +445,7 @@ begin
     btrim(p_message),
     p_type,
     p_grade,
-    p_stream,
+    stream_value,
     p_subject_id,
     p_status,
     publish_at_value,
@@ -385,7 +459,12 @@ begin
     select announcement_row.id, student.id
     from public.students student
     where student.grade::text = announcement_row.grade::text
-      and student.stream is not distinct from announcement_row.stream
+    and (
+      (announcement_row.grade::integer between 5 and 10 and student.stream is null)
+      or
+      (announcement_row.grade::integer between 11 and 12
+        and lower(btrim(coalesce(student.stream, ''))) = announcement_row.stream)
+    )
     on conflict (announcement_id, student_id) do nothing;
   end if;
 
@@ -393,9 +472,9 @@ begin
 end;
 $$;
 
-alter function public.create_teacher_announcement(text, text, text, smallint, text, uuid, text, timestamptz) owner to postgres;
-revoke all on function public.create_teacher_announcement(text, text, text, smallint, text, uuid, text, timestamptz) from public, anon, authenticated;
-grant execute on function public.create_teacher_announcement(text, text, text, smallint, text, uuid, text, timestamptz) to authenticated;
+alter function public.create_teacher_announcement(integer, text, timestamptz, text, text, bigint, text, text) owner to postgres;
+revoke all on function public.create_teacher_announcement(integer, text, timestamptz, text, text, bigint, text, text) from public, anon, authenticated;
+grant execute on function public.create_teacher_announcement(integer, text, timestamptz, text, text, bigint, text, text) to authenticated;
 
 create or replace function public.delete_teacher_announcement(requested_announcement_id uuid)
 returns void
