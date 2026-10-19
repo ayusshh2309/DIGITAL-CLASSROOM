@@ -2,8 +2,8 @@
   const state = {
     date: new Date(),
     events: [],
-    profile: null,
     stopRealtime: () => {},
+    refreshSequence: 0,
   };
 
   const $ = (id) => document.getElementById(id);
@@ -19,10 +19,15 @@
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
   };
   const formatDate = (value, options = {}) => new Intl.DateTimeFormat("en-US", options).format(new Date(value));
+  const monthRange = (date) => ({
+    start: new Date(date.getFullYear(), date.getMonth(), 1),
+    end: new Date(date.getFullYear(), date.getMonth() + 1, 1),
+  });
   const block = (message) => {
     const root = $("calendarGrid");
-    if (root) root.innerHTML = `<div class="empty-state">${message}</div>`;
+    if (root) root.innerHTML = `<div class="empty-state">${escapeHtml(message)}</div>`;
   };
+  let activeChannel = null;
 
   function getClient() {
     return window.SmartLearningSupabase?.getClient?.() || null;
@@ -54,45 +59,25 @@
     return "Event";
   }
 
-  function toZulu(value) {
-    const date = new Date(value);
-    return Number.isFinite(date.getTime()) ? date.toISOString() : null;
-  }
-
   function normalizeRow(row, source, type) {
+    const start = new Date(row.start_at);
+    if (!Number.isFinite(start.getTime())) return null;
+    const end = row.end_at ? new Date(row.end_at) : null;
     const subjectRelation = Array.isArray(row.subjects) ? row.subjects[0] : row.subjects;
-    const classStartAt = row.class_date
-      ? `${row.class_date}T${row.start_time || "00:00:00"}`
-      : null;
-    const announcementStartAt = row.publish_at || row.published_at || row.created_at;
-    const startAt = row.start_at
-      || classStartAt
-      || (type === "announcement" ? announcementStartAt : null)
-      || row.due_at
-      || row.published_at
-      || row.created_at
-      || new Date().toISOString();
-    const durationMinutes = Number(row.duration_minutes || row.duration || 0) || null;
-    const calculatedEndAt = durationMinutes
-      ? new Date(new Date(startAt).getTime() + durationMinutes * 60_000).toISOString()
-      : startAt;
-    const endAt = row.end_at || row.due_at || row.deadline || calculatedEndAt;
     return {
       id: `${source}-${row.id}`,
       source,
-      type,
+      type: type || row.event_type || "event",
       title: row.title || row.name || row.topic || "Academic event",
-      description: row.description || row.instructions || row.message || row.details || "",
-      subject: subjectRelation?.name || row.subject_name || row.subject || "",
-      class_grade: row.class_grade || row.grade || row.class || "",
-      stream: row.stream || row.class_stream || "",
-      start_at: startAt,
-      end_at: endAt,
+      description: row.description || "",
+      subject: subjectRelation?.name || row.subject_name || row.subject || (row.subject_id ? `Subject ${row.subject_id}` : ""),
+      class_grade: row.grade ?? row.class_grade ?? "",
+      stream: row.stream || "",
+      start_at: start.toISOString(),
+      end_at: end && Number.isFinite(end.getTime()) ? end.toISOString() : null,
       status: row.status || "scheduled",
-      location: row.meeting_url || row.location || row.file_url || row.external_url || "",
-      teacher_name: row.teacher_name || "",
-      duration_minutes: durationMinutes,
-      question_count: Number(row.question_count || row.questions_count || 0) || null,
+      location: row.location || row.meeting_url || "",
+      all_day: Boolean(row.all_day),
     };
   }
 
@@ -103,7 +88,8 @@
     }
 
     const { data: userData, error: userError } = await client.auth.getUser();
-    if (userError || !userData?.user) {
+    if (userError) throw userError;
+    if (!userData?.user) {
       throw Object.assign(new Error("Authentication failed. Please sign in again."), {
         code: "AUTH_REQUIRED",
       });
@@ -111,7 +97,7 @@
 
     const { data: student, error: studentError } = await client
       .from("students")
-      .select("*")
+      .select("id, user_id, grade, stream")
       .eq("user_id", userData.user.id)
       .maybeSingle();
 
@@ -121,112 +107,46 @@
     return { client, user: userData.user, profile: student };
   }
 
-  function eligibleSubjects(profile) {
-    const values = profile.eligible_subjects || profile.subjects || profile.selected_subjects || [];
-    return new Set((Array.isArray(values) ? values : [values]).map((value) => String(value || "").trim().toLowerCase()).filter(Boolean));
-  }
+  async function loadEvents(date = state.date) {
+    const { client, user } = await getStudentProfile();
+    const range = monthRange(date);
+    const { data, error } = await client.rpc("get_student_calendar_events", {
+      requested_student_id: user.id,
+    });
+    if (error) throw error;
 
-  function matchesStudent(student, row) {
-    const grade = String(student.grade || student.class_grade || "").trim();
-    const stream = String(student.stream || student.class_stream || "").trim();
-    const subjectRelation = Array.isArray(row.subjects) ? row.subjects[0] : row.subjects;
-    const subject = String(subjectRelation?.name || row.subject_name || row.subject || "").trim().toLowerCase();
-    const allowedSubjects = eligibleSubjects(student);
-
-    const rowGrade = row.class_grade || row.grade;
-    if (rowGrade && String(rowGrade).trim() !== grade) return false;
-    if (row.stream && String(row.stream).trim() && stream && String(row.stream).trim().toLowerCase() !== stream.toLowerCase()) return false;
-    if (allowedSubjects.size && subject && !allowedSubjects.has(subject)) return false;
-    return true;
-  }
-
-  async function queryTable(table, typeName, matchFn) {
-    const client = getClient();
-    if (!client) return [];
-    try {
-      const fields = table === "live_classes" ? "*, subjects(id, name)" : "*";
-      const { data, error } = await client.from(table).select(fields);
-      if (error) return [];
-      return (data || []).filter((row) => matchFn(row)).map((row) => normalizeRow(row, table, typeName));
-    } catch (error) {
-      return [];
-    }
-  }
-
-  async function loadEvents() {
-    const { profile } = await getStudentProfile();
-    const subjectSet = eligibleSubjects(profile);
-    const grade = String(profile.grade || profile.class_grade || "").trim();
-    const stream = String(profile.stream || profile.class_stream || "").trim();
-
-    const tables = [
-      ["live_classes", "live_class", (row) => {
-        return matchesStudent(profile, row);
-      }],
-      ["materials", "material", (row) => {
-        if (String(row.class_grade || "").trim() !== grade) return false;
-        if (row.stream && String(row.stream).trim() && stream && String(row.stream).trim().toLowerCase() !== stream.toLowerCase()) return false;
-        if (row.status && row.status !== "published") return false;
-        if (subjectSet.size) {
-          const subject = String(row.subject || "").trim().toLowerCase();
-          return subject && subjectSet.has(subject);
-        }
-        return true;
-      }],
-      ["quizzes", "quiz", (row) => {
-        if (String(row.class_grade || "").trim() !== grade) return false;
-        if (row.stream && String(row.stream).trim() && stream && String(row.stream).trim().toLowerCase() !== stream.toLowerCase()) return false;
-        if (!row.status || !["published", "scheduled"].includes(row.status)) return false;
-        if (subjectSet.size) {
-          const subject = String(row.subject || "").trim().toLowerCase();
-          return subject && subjectSet.has(subject);
-        }
-        return true;
-      }],
-      ["announcements", "announcement", (row) => {
-        if (String(row.status || "").toLowerCase() !== "published") return false;
-        return matchesStudent(profile, row);
-      }],
-      ["assignments", "assignment", (row) => {
-        if (String(row.class_grade || "").trim() !== grade) return false;
-        if (row.stream && String(row.stream).trim() && stream && String(row.stream).trim().toLowerCase() !== stream.toLowerCase()) return false;
-        if (row.status && row.status !== "published") return false;
-        if (subjectSet.size) {
-          const subject = String(row.subject || "").trim().toLowerCase();
-          return subject && subjectSet.has(subject);
-        }
-        return true;
-      }],
-      ["academic_calendar", "holiday", (row) => {
-        if (row.status && row.status !== "published") return false;
-        if (row.class_grade && String(row.class_grade).trim() !== grade) return false;
-        if (row.stream && String(row.stream).trim() && stream && String(row.stream).trim().toLowerCase() !== stream.toLowerCase()) return false;
-        return true;
-      }],
-    ];
-
-    const eventCollections = await Promise.all(
-      tables.map(async ([table, typeName, predicate]) => queryTable(table, typeName, predicate)),
-    );
-
-    const events = eventCollections.flat();
-    return events.sort((left, right) => new Date(left.start_at) - new Date(right.start_at));
+    return (data || [])
+      .map((row) => normalizeRow(row, row.source || "calendar_events", row.event_type))
+      .filter(Boolean)
+      .filter((event) => {
+        const eventTime = new Date(event.start_at).getTime();
+        return eventTime >= range.start.getTime() && eventTime < range.end.getTime();
+      })
+      .sort((left, right) => new Date(left.start_at) - new Date(right.start_at));
   }
 
   async function subscribe() {
     const client = getClient();
-    if (!client) return () => {};
-    const channel = client.channel("student-calendar-realtime");
-    ["live_classes", "materials", "quizzes", "announcements", "assignments", "academic_calendar"].forEach((table) => {
-      channel.on("postgres_changes", { event: "*", schema: "public", table }, () => {
-        loadEvents().then((events) => {
-          state.events = events;
-          renderCalendar();
-        }).catch(() => {});
+    if (!client) throw new Error("Supabase is not configured.");
+    if (activeChannel) await client.removeChannel(activeChannel);
+    const channel = client.channel("student-calendar-events")
+      .on("postgres_changes", { event: "*", schema: "public", table: "calendar_events" }, () => {
+        void refresh();
       });
+    activeChannel = channel;
+    channel.subscribe((status, error) => {
+      if (error || status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        console.error("Student calendar Realtime subscription failed.", error || status);
+      }
     });
-    await channel.subscribe();
-    return () => client.removeChannel(channel);
+
+    let stopped = false;
+    return async () => {
+      if (stopped) return;
+      stopped = true;
+      if (activeChannel === channel) activeChannel = null;
+      await client.removeChannel(channel);
+    };
   }
 
   function renderMonthGrid() {
@@ -284,7 +204,12 @@
   }
 
   function renderUpcoming() {
-    const upcoming = state.events.filter((event) => new Date(event.start_at) >= new Date()).sort((left, right) => new Date(left.start_at) - new Date(right.start_at)).slice(0, 4);
+    const now = new Date();
+    const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const upcoming = state.events.filter((event) => {
+      const start = new Date(event.start_at);
+      return start >= now && start <= nextWeek;
+    }).sort((left, right) => new Date(left.start_at) - new Date(right.start_at)).slice(0, 4);
     const container = $("upcomingCard");
     if (!container) return;
     container.innerHTML = '<div class="side-card-header"><h3>Upcoming</h3><span>Next 7 days</span></div>' + (upcoming.length ? upcoming.map((event) => {
@@ -297,7 +222,7 @@
     const holidays = state.events.filter((event) => event.type === "holiday").sort((left, right) => new Date(left.start_at) - new Date(right.start_at)).slice(0, 3);
     const container = $("holidaysCard");
     if (!container) return;
-    container.innerHTML = '<div class="side-card-header"><h3>Upcoming Holidays</h3><span id="holidayMonthLabel"></span></div>' + (holidays.length ? holidays.map((event) => `<div class="holiday-item"><div class="holiday-icon"><i class="fa-solid fa-umbrella-beach"></i></div><div class="holiday-info"><h4>${event.title}</h4><p>${formatDate(event.start_at, { month: "short", day: "numeric", year: "numeric" })}</p></div></div>`).join("") : '<div class="holiday-item"><div class="holiday-info"><h4>No upcoming holidays</h4><p>None for the current calendar.</p></div></div>');
+    container.innerHTML = '<div class="side-card-header"><h3>Upcoming Holidays</h3><span id="holidayMonthLabel"></span></div>' + (holidays.length ? holidays.map((event) => `<div class="holiday-item"><div class="holiday-icon"><i class="fa-solid fa-umbrella-beach"></i></div><div class="holiday-info"><h4>${escapeHtml(event.title)}</h4><p>${formatDate(event.start_at, { month: "short", day: "numeric", year: "numeric" })}</p></div></div>`).join("") : '<div class="holiday-item"><div class="holiday-info"><h4>No upcoming holidays</h4><p>None for the current calendar.</p></div></div>');
   }
 
   function renderClassUpdate() {
@@ -309,7 +234,7 @@
       container.innerHTML = '<div class="side-card-header"><h3>Class Update</h3><span>Important</span></div><div class="reschedule-box"><p>No class schedule changes right now.</p></div>';
       return;
     }
-    container.innerHTML = `<div class="side-card-header"><h3>Class Update</h3><span>Important</span></div><div class="reschedule-box"><div class="reschedule-top"><div class="reschedule-icon"><i class="fa-solid fa-calendar-xmark"></i></div><h4>${eventTypeBadge(update.type)}</h4></div><p>${update.description || update.title}</p><div class="schedule-change"><span class="old-time">${formatDate(update.start_at, { month: "short", day: "numeric" })}</span><i class="fa-solid fa-arrow-right"></i><span class="new-time">${formatDate(update.end_at || update.start_at, { month: "short", day: "numeric" })}</span></div></div>`;
+    container.innerHTML = `<div class="side-card-header"><h3>Class Update</h3><span>Important</span></div><div class="reschedule-box"><div class="reschedule-top"><div class="reschedule-icon"><i class="fa-solid fa-calendar-xmark"></i></div><h4>${eventTypeBadge(update.type)}</h4></div><p>${escapeHtml(update.description || update.title)}</p><div class="schedule-change"><span class="old-time">${formatDate(update.start_at, { month: "short", day: "numeric" })}</span><i class="fa-solid fa-arrow-right"></i><span class="new-time">${formatDate(update.end_at || update.start_at, { month: "short", day: "numeric" })}</span></div></div>`;
   }
 
   function renderCalendar() {
@@ -329,19 +254,32 @@
     if (!modal) return;
     $("modalTitle").textContent = event.title;
     $("modalDate").textContent = formatDate(event.start_at, { month: "long", day: "numeric", year: "numeric" });
-    $("modalTime").textContent = `${formatDate(event.start_at, { hour: "numeric", minute: "2-digit" })} - ${formatDate(event.end_at || event.start_at, { hour: "numeric", minute: "2-digit" })}`;
+    $("modalTime").textContent = event.all_day
+      ? "All day"
+      : `${formatDate(event.start_at, { hour: "numeric", minute: "2-digit" })} - ${formatDate(event.end_at || event.start_at, { hour: "numeric", minute: "2-digit" })}`;
     $("modalSubject").textContent = event.subject || "General";
     $("modalDetails").textContent = `${event.description || "No additional details provided."} ${event.location ? `Location: ${event.location}` : ""}`;
     modal.classList.add("show");
   }
 
   async function refresh() {
+    const sequence = ++state.refreshSequence;
+    const requestedDate = new Date(state.date);
     try {
-      state.events = await loadEvents();
+      const events = await loadEvents(requestedDate);
+      if (sequence !== state.refreshSequence) return;
+      state.events = events;
       renderCalendar();
     } catch (error) {
+      if (sequence !== state.refreshSequence) return;
       console.error("Unable to render student calendar.", error);
+      state.events = [];
+      renderStats();
       block(error.message || "Unable to load student calendar data.");
+      const message = escapeHtml(error.message || "Unable to load calendar data.");
+      if ($("upcomingCard")) $("upcomingCard").innerHTML = `<div class="side-card-header"><h3>Upcoming</h3></div><div class="upcoming-event"><div class="upcoming-info"><h4>${message}</h4></div></div>`;
+      if ($("holidaysCard")) $("holidaysCard").innerHTML = `<div class="side-card-header"><h3>Upcoming Holidays</h3></div><div class="holiday-item"><div class="holiday-info"><h4>${message}</h4></div></div>`;
+      if ($("classUpdateCard")) $("classUpdateCard").innerHTML = `<div class="side-card-header"><h3>Class Update</h3></div><div class="reschedule-box"><p>${message}</p></div>`;
     }
   }
 
@@ -366,17 +304,17 @@
 
     window.goToday = () => {
       state.date = new Date();
-      renderCalendar();
+      void refresh();
     };
 
     window.previousMonth = () => {
       state.date = new Date(state.date.getFullYear(), state.date.getMonth() - 1, 1);
-      renderCalendar();
+      void refresh();
     };
 
     window.nextMonth = () => {
       state.date = new Date(state.date.getFullYear(), state.date.getMonth() + 1, 1);
-      renderCalendar();
+      void refresh();
     };
 
     window.closeModal = () => {
@@ -387,9 +325,14 @@
 
   async function init() {
     bindUi();
+    try {
+      state.stopRealtime = await subscribe();
+    } catch (error) {
+      console.error("Could not subscribe to student calendar Realtime updates.", error);
+    }
     await refresh();
-    state.stopRealtime = await subscribe();
   }
 
+  window.addEventListener("pagehide", () => state.stopRealtime());
   init();
 })();

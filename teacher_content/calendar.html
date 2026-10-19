@@ -31,6 +31,18 @@
         background: #e7f5f8;
         color: #087f8a;
       }
+      #calendarModalRoot .field input[type="checkbox"] {
+        width: auto;
+        min-height: 0;
+        margin-right: 7px;
+      }
+      #calendarModalRoot .calendar-form-error {
+        color: #b63b4a;
+        font-size: 0.82rem;
+      }
+      #calendarModalRoot [data-modal-error] {
+        color: #b63b4a;
+      }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
@@ -50,6 +62,9 @@
             </p>
           </div>
           <div class="header-actions">
+            <button class="cal-button primary" id="addCalendarEventButton">
+              <i class="fa-solid fa-plus"></i> Add event
+            </button>
             <button class="cal-button" id="todayButton">
               <i class="fa-solid fa-crosshairs"></i> Today</button>
           </div>
@@ -140,7 +155,9 @@
                 ><button data-view="day">Day</button>
               </div>
             </div>
-            <div id="calendarView"></div>
+            <div id="calendarView" aria-live="polite">
+              <div class="empty">Loading calendar events...</div>
+            </div>
             <div class="legend">
               <span>Live Class</span><span class="assessment">Assessment</span
               ><span class="assignment">Assignment</span

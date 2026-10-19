@@ -5,6 +5,8 @@
     view: "month",
     selected: new Date(),
     stopRealtime: () => {},
+    teacherScope: null,
+    refreshSequence: 0,
   };
 
   const $ = (id) => document.getElementById(id);
@@ -21,6 +23,7 @@
   const typeClass = (type) => String(type || "event").toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
   const eventTime = (event) => {
+    if (event.all_day) return "All day";
     const start = new Date(event.start_at);
     const end = event.end_at ? new Date(event.end_at) : null;
     const startText = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(start);
@@ -134,7 +137,13 @@
   function renderCalendar() {
     const title = $("calendarTitle");
     if (title) {
-      title.textContent = state.view === "month" ? formatDate(state.date) : state.view === "week" ? `Week of ${formatDate(state.date, { month: "short", day: "numeric", year: "numeric" })}` : formatDate(state.date, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+      const period = state.view === "month"
+        ? formatDate(state.date, { month: "long", year: "numeric" })
+        : state.view === "week"
+          ? `Week of ${formatDate(state.date, { month: "short", day: "numeric", year: "numeric" })}`
+          : formatDate(state.date, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+      const today = formatDate(new Date(), { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+      title.textContent = `${period} · Today: ${today}`;
     }
 
     if (state.view === "month") renderMonth(); else renderPeriod();
@@ -154,17 +163,106 @@
         ? "Missed"
         : (event.status || "Scheduled")
       : eventEnd < new Date() ? "Completed" : (event.status || "Scheduled");
-    root.innerHTML = `<div class="modal-backdrop"><div class="modal"><div class="modal-head"><div><span class="page-eyebrow"><i class="fa-solid fa-circle-info"></i> ${esc(displayType(event.type))}</span><h2 style="margin-top:7px">${esc(event.title || "Academic event")}</h2></div><button class="icon-button" data-close><i class="fa-solid fa-xmark"></i></button></div><div class="modal-grid"><div class="field"><label>Class</label><div>${esc(event.class_grade ? `Class ${event.class_grade}` : "All classes")}</div></div><div class="field"><label>Subject</label><div>${esc(event.subject || "All subjects")}</div></div><div class="field"><label>Date and time</label><div>${esc(formatDate(event.start_at, { dateStyle: "medium", timeStyle: "short" }))}</div></div><div class="field"><label>Status</label><div>${esc(status)}</div></div><div class="field full"><label>Description</label><div>${esc(event.description || "No additional details.")}</div></div>${event.location ? `<div class="field full"><label>Location / Link</label><div><a href="${esc(event.location)}" target="_blank" rel="noreferrer">${esc(event.location)}</a></div></div>` : ""}</div><div class="modal-actions"><button class="cal-button" data-close>Close</button></div></div></div>`;
+    const editable = event.source === "calendar_events" && !event.source_table;
+    root.innerHTML = `<div class="modal-backdrop"><div class="modal"><div class="modal-head"><div><span class="page-eyebrow"><i class="fa-solid fa-circle-info"></i> ${esc(displayType(event.type))}</span><h2 style="margin-top:7px">${esc(event.title || "Academic event")}</h2></div><button class="icon-button" data-close><i class="fa-solid fa-xmark"></i></button></div><div class="modal-grid"><div class="field"><label>Class</label><div>${esc(event.class_grade ? `Class ${event.class_grade}` : "All classes")}</div></div><div class="field"><label>Subject</label><div>${esc(event.subject || "All subjects")}</div></div><div class="field"><label>Date and time</label><div>${esc(event.all_day ? formatDate(event.start_at, { dateStyle: "medium" }) : formatDate(event.start_at, { dateStyle: "medium", timeStyle: "short" }))}</div></div><div class="field"><label>Status</label><div>${esc(status)}</div></div><div class="field full"><label>Description</label><div>${esc(event.description || "No additional details.")}</div></div>${event.location ? `<div class="field full"><label>Location / Link</label><div><a href="${esc(event.location)}" target="_blank" rel="noreferrer">${esc(event.location)}</a></div></div>` : ""}</div><p data-modal-error role="alert"></p><div class="modal-actions">${editable ? '<button class="cal-button" data-delete-event>Delete</button><button class="cal-button primary" data-edit-event>Edit</button>' : ""}<button class="cal-button" data-close>Close</button></div></div></div>`;
+    root.querySelector("[data-edit-event]")?.addEventListener("click", () => openEventForm(event));
+    root.querySelector("[data-delete-event]")?.addEventListener("click", async () => {
+      if (!window.confirm("Delete this calendar event? Its source activity, if any, will not be deleted.")) return;
+      const button = root.querySelector("[data-delete-event]");
+      button.disabled = true;
+      try {
+        await window.CalendarService.deleteEvent(event.calendar_id);
+        root.innerHTML = "";
+        await refreshEvents();
+      } catch (error) {
+        button.disabled = false;
+        const message = root.querySelector("[data-modal-error]");
+        if (message) message.textContent = error.message || "Could not delete this event.";
+      }
+    });
+  }
+
+  const dateTimeInput = (value) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (!Number.isFinite(date.getTime())) return "";
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+  };
+
+  function openEventForm(event = null) {
+    const root = $("calendarModalRoot");
+    if (!root) return;
+    const groups = state.teacherScope?.groups || [];
+    const grades = [...new Set(groups.map((group) => Number(group.grade)).filter(Number.isInteger))].sort((a, b) => a - b);
+    const gradeOptions = grades.map((grade) => `<option value="${grade}" ${String(event?.grade ?? event?.class_grade ?? "") === String(grade) ? "selected" : ""}>Class ${grade}</option>`).join("");
+    const types = ["event", "holiday", "material", "quiz", "live_class", "announcement"];
+    const typeOptions = types.map((type) => `<option value="${type}" ${event?.type === type ? "selected" : ""}>${esc(displayType(type))}</option>`).join("");
+    const currentStream = String(event?.stream || "");
+    const selectedGroup = groups.find((group) =>
+      Number(group.grade) === Number(event?.grade ?? event?.class_grade)
+      && String(group.stream || "") === currentStream);
+    const streamOptions = groups
+      .filter((group) => Number(group.grade) === Number(event?.grade ?? event?.class_grade) && group.stream)
+      .map((group) => `<option value="${esc(group.stream)}" ${String(group.stream) === currentStream ? "selected" : ""}>${esc(group.stream)}</option>`)
+      .join("");
+    const initialId = event ? "" : crypto.randomUUID();
+    root.innerHTML = `<div class="modal-backdrop"><div class="modal"><div class="modal-head"><div><span class="page-eyebrow"><i class="fa-regular fa-calendar"></i> Calendar event</span><h2 style="margin-top:7px">${event ? "Edit event" : "Add event"}</h2></div><button class="icon-button" data-close aria-label="Close"><i class="fa-solid fa-xmark"></i></button></div><form id="calendarEventForm"><input type="hidden" name="id" value="${esc(initialId)}"><div class="modal-grid"><div class="field full"><label for="calendarEventTitle">Title</label><input id="calendarEventTitle" name="title" maxlength="160" required value="${esc(event?.title || "")}"></div><div class="field"><label for="calendarEventType">Event type</label><select id="calendarEventType" name="event_type" required>${typeOptions}</select></div><div class="field"><label for="calendarEventGrade">Class (optional)</label><select id="calendarEventGrade" name="grade"><option value="">All classes</option>${gradeOptions}</select></div><div class="field"><label for="calendarEventStream">Stream</label><select id="calendarEventStream" name="stream"><option value="">Select stream</option>${streamOptions}</select></div><div class="field"><label for="calendarEventSubject">Subject ID (optional)</label><input id="calendarEventSubject" name="subject_id" inputmode="numeric" value="${esc(event?.subject_id || "")}"></div><div class="field"><label for="calendarEventStart">Start</label><input id="calendarEventStart" name="start_at" type="datetime-local" required value="${esc(dateTimeInput(event?.start_at))}"></div><div class="field"><label for="calendarEventEnd">End (optional)</label><input id="calendarEventEnd" name="end_at" type="datetime-local" value="${esc(dateTimeInput(event?.end_at))}"></div><div class="field"><label for="calendarEventLocation">Location</label><input id="calendarEventLocation" name="location" value="${esc(event?.location || "")}"></div><div class="field"><label for="calendarEventMeetingUrl">Meeting URL</label><input id="calendarEventMeetingUrl" name="meeting_url" type="url" value="${esc(event?.meeting_url || "")}"></div><div class="field full"><label for="calendarEventDescription">Description (optional)</label><textarea id="calendarEventDescription" name="description" rows="3">${esc(event?.description || "")}</textarea></div><div class="field"><label><input name="all_day" type="checkbox" ${event?.all_day ? "checked" : ""}> All-day event</label></div><div class="field"><label><input name="is_visible_to_students" type="checkbox" ${event?.is_visible_to_students !== false ? "checked" : ""}> Visible to students in this class</label></div></div><p class="calendar-form-error" data-form-error role="alert"></p><div class="modal-actions"><button class="cal-button" type="button" data-close>Cancel</button><button class="cal-button primary" type="submit">${event ? "Save changes" : "Create event"}</button></div></form></div></div>`;
+
+    const form = root.querySelector("#calendarEventForm");
+    const gradeSelect = form.elements.grade;
+    const streamSelect = form.elements.stream;
+    gradeSelect.addEventListener("change", () => {
+      const options = groups.filter((group) => Number(group.grade) === Number(gradeSelect.value) && group.stream);
+      streamSelect.innerHTML = '<option value="">Select stream</option>' + options.map((group) => `<option value="${esc(group.stream)}">${esc(group.stream)}</option>`).join("");
+      if (Number(gradeSelect.value) < 11) streamSelect.value = "";
+    });
+    form.addEventListener("submit", async (submitEvent) => {
+      submitEvent.preventDefault();
+      const submitButton = form.querySelector('[type="submit"]');
+      const errorElement = form.querySelector("[data-form-error]");
+      submitButton.disabled = true;
+      errorElement.textContent = "";
+      const data = new FormData(form);
+      const payload = Object.fromEntries(data.entries());
+      payload.all_day = form.elements.all_day.checked;
+      payload.is_visible_to_students = form.elements.is_visible_to_students.checked;
+      try {
+        if (event) {
+          await window.CalendarService.updateEvent(event.calendar_id, payload);
+        } else {
+          await window.CalendarService.createEvent(payload);
+        }
+        root.innerHTML = "";
+        const refreshed = await refreshEvents();
+        if (!refreshed) {
+          if ($("calendarView")) $("calendarView").innerHTML = '<div class="empty">The event was saved, but the calendar could not be refreshed. Refresh the page to verify it.</div>';
+        }
+      } catch (error) {
+        submitButton.disabled = false;
+        errorElement.textContent = error.message || "Could not save this event.";
+      }
+    });
+    form.elements.grade.dispatchEvent(new Event("change"));
+    if (selectedGroup?.stream) streamSelect.value = selectedGroup.stream;
   }
 
   async function refreshEvents() {
+    const sequence = ++state.refreshSequence;
+    const requestedDate = new Date(state.date);
     try {
-      state.events = await window.CalendarService.loadEvents(state.date);
+      const events = await window.CalendarService.loadEvents(requestedDate);
+      if (sequence !== state.refreshSequence) return true;
+      state.events = events;
       renderCalendar();
+      return true;
     } catch (error) {
+      if (sequence !== state.refreshSequence) return true;
       console.error("Failed to load teacher calendar events.", error);
-      if ($("calendarView")) $("calendarView").innerHTML = '<div class="empty"><i class="fa-regular fa-circle-exclamation"></i>Unable to load calendar events.</div>';
-      console.error(error?.message || "Calendar could not be loaded.");
+      state.events = [];
+      renderSummary();
+      renderUpcoming();
+      if ($("calendarView")) $("calendarView").innerHTML = `<div class="empty"><i class="fa-regular fa-circle-exclamation"></i>${esc(error?.message || "Unable to load calendar events.")}</div>`;
+      return false;
     }
   }
 
@@ -184,6 +282,7 @@
       state.selected = new Date();
       refreshEvents();
     });
+    $("addCalendarEventButton")?.addEventListener("click", () => openEventForm());
 
     document.querySelectorAll("[data-view]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -218,11 +317,23 @@
 
   async function init() {
     bindEvents();
-    await refreshEvents();
-    if (window.CalendarService && typeof window.CalendarService.subscribe === "function") {
-      state.stopRealtime = await window.CalendarService.subscribe(() => refreshEvents());
+    renderCalendar();
+    try {
+      const { client, profile } = await window.CalendarService.requireTeacher();
+      state.teacherScope = await window.CalendarService.getTeacherScope(client, profile.id);
+    } catch (error) {
+      console.error("Failed to load teacher calendar scope.", error);
     }
+    if (window.CalendarService && typeof window.CalendarService.subscribe === "function") {
+      try {
+        state.stopRealtime = await window.CalendarService.subscribe(() => refreshEvents());
+      } catch (error) {
+        console.error("Could not subscribe to calendar Realtime updates.", error);
+      }
+    }
+    await refreshEvents();
   }
 
+  window.addEventListener("pagehide", () => state.stopRealtime());
   init();
 })();

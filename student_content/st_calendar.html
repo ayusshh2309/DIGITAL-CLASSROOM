@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -848,7 +848,7 @@
 
           <div class="calendar-top">
             <div class="month-title">
-              <h2 id="monthTitle">September 2026</h2>
+              <h2 id="monthTitle"></h2>
 
               <div class="nav-buttons">
                 <button class="nav-btn" onclick="previousMonth()">
@@ -909,7 +909,9 @@
               <div class="weekday">Sat</div>
             </div>
 
-            <div class="calendar-grid" id="calendarGrid"></div>
+            <div class="calendar-grid" id="calendarGrid" aria-live="polite">
+              <div class="empty-state">Loading calendar events...</div>
+            </div>
           </div>
         </section>
 
@@ -927,68 +929,8 @@
               <span>Next 7 days</span>
             </div>
 
-            <div class="upcoming-event" data-demo="true">
-              <div class="event-date">
-                <strong>08</strong>
-                <span>Sep</span>
-              </div>
-
-              <div class="upcoming-info">
-                <h4>Mathematics Class</h4>
-
-                <p>
-                  <i class="fa-regular fa-clock"></i>
-                  10:00 AM – 11:00 AM
-                </p>
-              </div>
-            </div>
-
-            <div class="upcoming-event" data-demo="true">
-              <div class="event-date">
-                <strong>09</strong>
-                <span>Sep</span>
-              </div>
-
-              <div class="upcoming-info">
-                <h4>Science Notes Uploaded</h4>
-
-                <p>
-                  <i class="fa-solid fa-book"></i>
-                  Human Reproduction
-                </p>
-              </div>
-            </div>
-
-            <div class="upcoming-event" data-demo="true">
-              <div class="event-date">
-                <strong>10</strong>
-                <span>Sep</span>
-              </div>
-
-              <div class="upcoming-info">
-                <h4>English Assignment Due</h4>
-
-                <p>
-                  <i class="fa-regular fa-clock"></i>
-                  Due by 11:59 PM
-                </p>
-              </div>
-            </div>
-
-            <div class="upcoming-event" data-demo="true">
-              <div class="event-date">
-                <strong>12</strong>
-                <span>Sep</span>
-              </div>
-
-              <div class="upcoming-info">
-                <h4>Computer Science Quiz</h4>
-
-                <p>
-                  <i class="fa-solid fa-clipboard-question"></i>
-                  25 Questions
-                </p>
-              </div>
+            <div class="upcoming-event">
+              <div class="upcoming-info"><h4>Loading calendar events...</h4></div>
             </div>
           </div>
 
@@ -1001,28 +943,7 @@
               <span>Important</span>
             </div>
 
-            <div class="reschedule-box">
-              <div class="reschedule-top">
-                <div class="reschedule-icon">
-                  <i class="fa-solid fa-calendar-xmark"></i>
-                </div>
-
-                <h4>Class Rescheduled</h4>
-              </div>
-
-              <p>
-                Your Physics class scheduled for September 11 has been moved to
-                September 13.
-              </p>
-
-              <div class="schedule-change">
-                <span class="old-time"> Sep 11 · 11:00 AM </span>
-
-                <i class="fa-solid fa-arrow-right"></i>
-
-                <span class="new-time"> Sep 13 · 11:00 AM </span>
-              </div>
-            </div>
+            <div class="reschedule-box"><p>Loading class updates...</p></div>
           </div>
 
           <!-- HOLIDAYS -->
@@ -1034,41 +955,7 @@
               <span id="holidayMonthLabel"></span>
             </div>
 
-            <div class="holiday-item" data-demo="true">
-              <div class="holiday-icon">
-                <i class="fa-solid fa-umbrella-beach"></i>
-              </div>
-
-              <div class="holiday-info">
-                <h4>School Holiday</h4>
-
-                <p>September 14, 2026</p>
-              </div>
-            </div>
-
-            <div class="holiday-item" data-demo="true">
-              <div class="holiday-icon">
-                <i class="fa-solid fa-star"></i>
-              </div>
-
-              <div class="holiday-info">
-                <h4>Festival Holiday</h4>
-
-                <p>September 21, 2026</p>
-              </div>
-            </div>
-
-            <div class="holiday-item" data-demo="true">
-              <div class="holiday-icon">
-                <i class="fa-solid fa-calendar-days"></i>
-              </div>
-
-              <div class="holiday-info">
-                <h4>Term Break</h4>
-
-                <p>September 28 – 30, 2026</p>
-              </div>
-            </div>
+            <div class="holiday-item"><div class="holiday-info"><h4>Loading holidays...</h4></div></div>
           </div>
 
           <!-- QUICK STATS -->
@@ -1129,7 +1016,7 @@
             <div>
               <strong>Date</strong>
 
-              <span id="modalDate"> September 8, 2026 </span>
+              <span id="modalDate"></span>
             </div>
           </div>
 
@@ -1139,7 +1026,7 @@
             <div>
               <strong>Time</strong>
 
-              <span id="modalTime"> 10:00 AM – 11:00 AM </span>
+              <span id="modalTime"></span>
             </div>
           </div>
 
@@ -1149,7 +1036,7 @@
             <div>
               <strong>Subject</strong>
 
-              <span id="modalSubject"> Mathematics </span>
+              <span id="modalSubject"></span>
             </div>
           </div>
 
@@ -1159,405 +1046,13 @@
             <div>
               <strong>Details</strong>
 
-              <span id="modalDetails"> Regular mathematics class. </span>
+              <span id="modalDetails"></span>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Legacy demo calendar script retained as inert markup for layout compatibility.
-    <script>
-      /* =========================================
-       CALENDAR STATE
-    ========================================= */
-
-      let currentDate = new Date(2026, 8, 7);
-
-      /* =========================================
-       SAMPLE EVENTS
-    ========================================= */
-
-      const events = {
-        "2026-09-08": [
-          {
-            type: "class",
-            title: "Mathematics",
-            time: "10:00 AM",
-            subject: "Mathematics",
-            details: "Regular mathematics lecture.",
-          },
-          {
-            type: "material",
-            title: "Physics Notes",
-            time: "",
-            subject: "Physics",
-            details: "New chapter notes uploaded.",
-          },
-        ],
-
-        "2026-09-09": [
-          {
-            type: "material",
-            title: "Science Notes",
-            time: "",
-            subject: "Science",
-            details: "Human Reproduction study material uploaded.",
-          },
-          {
-            type: "class",
-            title: "English",
-            time: "11:00 AM",
-            subject: "English",
-            details: "English grammar class.",
-          },
-        ],
-
-        "2026-09-10": [
-          {
-            type: "assignment",
-            title: "English Assignment",
-            time: "11:59 PM",
-            subject: "English",
-            details: "Tenses assignment submission deadline.",
-          },
-        ],
-
-        "2026-09-11": [
-          {
-            type: "rescheduled",
-            title: "Physics Rescheduled",
-            time: "11:00 AM",
-            subject: "Physics",
-            details: "Physics class has been rescheduled to September 13.",
-          },
-        ],
-
-        "2026-09-12": [
-          {
-            type: "exam",
-            title: "CS Quiz",
-            time: "2:00 PM",
-            subject: "Computer Science",
-            details: "Computer Science quiz – 25 questions.",
-          },
-        ],
-
-        "2026-09-13": [
-          {
-            type: "class",
-            title: "Physics",
-            time: "11:00 AM",
-            subject: "Physics",
-            details: "Rescheduled Physics lecture.",
-          },
-        ],
-
-        "2026-09-14": [
-          {
-            type: "holiday",
-            title: "School Holiday",
-            time: "",
-            subject: "",
-            details: "School will remain closed.",
-          },
-        ],
-
-        "2026-09-15": [
-          {
-            type: "material",
-            title: "Math Worksheet",
-            time: "",
-            subject: "Mathematics",
-            details: "Algebra practice worksheet uploaded.",
-          },
-        ],
-
-        "2026-09-17": [
-          {
-            type: "class",
-            title: "Computer Science",
-            time: "10:00 AM",
-            subject: "Computer Science",
-            details: "C++ programming class.",
-          },
-        ],
-
-        "2026-09-18": [
-          {
-            type: "assignment",
-            title: "Science Assignment",
-            time: "11:59 PM",
-            subject: "Science",
-            details: "Science assignment submission deadline.",
-          },
-        ],
-
-        "2026-09-21": [
-          {
-            type: "holiday",
-            title: "Festival Holiday",
-            time: "",
-            subject: "",
-            details: "Festival holiday.",
-          },
-        ],
-
-        "2026-09-23": [
-          {
-            type: "exam",
-            title: "Mathematics Test",
-            time: "9:00 AM",
-            subject: "Mathematics",
-            details: "Chapter test covering algebra and equations.",
-          },
-        ],
-
-        "2026-09-28": [
-          {
-            type: "holiday",
-            title: "Term Break",
-            time: "",
-            subject: "",
-            details: "Term break begins.",
-          },
-        ],
-
-        "2026-09-29": [
-          {
-            type: "holiday",
-            title: "Term Break",
-            time: "",
-            subject: "",
-            details: "Term break.",
-          },
-        ],
-
-        "2026-09-30": [
-          {
-            type: "holiday",
-            title: "Term Break",
-            time: "",
-            subject: "",
-            details: "Term break.",
-          },
-        ],
-      };
-
-      /* =========================================
-       EVENT ICONS
-    ========================================= */
-
-      const eventIcons = {
-        class: "fa-solid fa-chalkboard-user",
-
-        material: "fa-solid fa-file-lines",
-
-        assignment: "fa-solid fa-pen",
-
-        holiday: "fa-solid fa-umbrella-beach",
-
-        rescheduled: "fa-solid fa-calendar-xmark",
-
-        exam: "fa-solid fa-clipboard-check",
-      };
-
-      /* =========================================
-       RENDER CALENDAR
-    ========================================= */
-
-      function renderCalendar() {
-        const grid = document.getElementById("calendarGrid");
-
-        const monthTitle = document.getElementById("monthTitle");
-
-        grid.innerHTML = "";
-
-        const year = currentDate.getFullYear();
-
-        const month = currentDate.getMonth();
-
-        const monthName = currentDate.toLocaleString("default", {
-          month: "long",
-        });
-
-        monthTitle.textContent = `${monthName} ${year}`;
-
-        const firstDay = new Date(year, month, 1).getDay();
-
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-        const daysPreviousMonth = new Date(year, month, 0).getDate();
-
-        /* Previous month days */
-
-        for (let i = firstDay - 1; i >= 0; i--) {
-          const dayNumber = daysPreviousMonth - i;
-
-          createDay(dayNumber, true, grid);
-        }
-
-        /* Current month */
-
-        for (let day = 1; day <= daysInMonth; day++) {
-          createDay(day, false, grid);
-        }
-
-        /* Next month */
-
-        const totalCells = firstDay + daysInMonth;
-
-        const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
-
-        for (let day = 1; day <= remaining; day++) {
-          createDay(day, true, grid);
-        }
-      }
-
-      /* =========================================
-       CREATE DAY
-    ========================================= */
-
-      function createDay(dayNumber, otherMonth, container) {
-        const day = document.createElement("div");
-
-        day.className = "day";
-
-        if (otherMonth) {
-          day.classList.add("other-month");
-        }
-
-        const dateNumber = document.createElement("div");
-
-        dateNumber.className = "date-number";
-
-        dateNumber.textContent = dayNumber;
-
-        day.appendChild(dateNumber);
-
-        if (!otherMonth) {
-          const year = currentDate.getFullYear();
-
-          const month = currentDate.getMonth();
-
-          const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(dayNumber).padStart(2, "0")}`;
-
-          /* Today */
-
-          if (year === 2026 && month === 8 && dayNumber === 7) {
-            day.classList.add("today");
-          }
-
-          /* Events */
-
-          if (events[dateKey]) {
-            events[dateKey].forEach((event) => {
-              const eventElement = document.createElement("div");
-
-              eventElement.className = `event event-${event.type}`;
-
-              eventElement.innerHTML = `
-                <i class="${eventIcons[event.type]}"></i>
-                <span>${event.title}</span>
-              `;
-
-              eventElement.addEventListener("click", function (e) {
-                e.stopPropagation();
-
-                openModal(event, dateKey);
-              });
-
-              day.appendChild(eventElement);
-            });
-          }
-        }
-
-        container.appendChild(day);
-      }
-
-      /* =========================================
-       OPEN MODAL
-    ========================================= */
-
-      function openModal(event, date) {
-        document.getElementById("modalTitle").textContent = event.title;
-
-        const dateObject = new Date(date + "T00:00:00");
-
-        document.getElementById("modalDate").textContent =
-          dateObject.toLocaleDateString("en-US", {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-          });
-
-        document.getElementById("modalTime").textContent =
-          event.time || "All Day";
-
-        document.getElementById("modalSubject").textContent =
-          event.subject || "General";
-
-        document.getElementById("modalDetails").textContent = event.details;
-
-        document.getElementById("eventModal").classList.add("show");
-      }
-
-      /* =========================================
-       CLOSE MODAL
-    ========================================= */
-
-      function closeModal() {
-        document.getElementById("eventModal").classList.remove("show");
-      }
-
-      /* Close by clicking outside */
-
-      document
-        .getElementById("eventModal")
-        .addEventListener("click", function (e) {
-          if (e.target === this) {
-            closeModal();
-          }
-        });
-
-      /* =========================================
-       PREVIOUS MONTH
-    ========================================= */
-
-      function previousMonth() {
-        currentDate.setMonth(currentDate.getMonth() - 1);
-
-        renderCalendar();
-      }
-
-      /* =========================================
-       NEXT MONTH
-    ========================================= */
-
-      function nextMonth() {
-        currentDate.setMonth(currentDate.getMonth() + 1);
-
-        renderCalendar();
-      }
-
-      /* =========================================
-       GO TO TODAY
-    ========================================= */
-
-      function goToday() {
-        currentDate = new Date(2026, 8, 7);
-
-        renderCalendar();
-      }
-
-      /* =========================================
-       INITIALIZE
-    ========================================= */
-
-      renderCalendar();
-    </script>
-    -->
     <script src="../js/supabase.js"></script>
     <script src="../js/student-data.js"></script>
     <script src="../js/calendar-service.js"></script>
