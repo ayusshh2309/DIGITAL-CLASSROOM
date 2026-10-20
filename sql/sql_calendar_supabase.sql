@@ -1,20 +1,25 @@
 begin;
 
 do $$
+declare
+  invalid_source_status boolean;
 begin
   if to_regclass('public.teachers') is null
     or to_regclass('public.students') is null
+    or to_regclass('public.student_profiles') is null
+    or to_regclass('public.materials') is null
     or to_regclass('public.subjects') is null
     or to_regclass('public.teacher_grade_groups') is null
     or to_regclass('public.teacher_subject_assignments') is null
-    or to_regclass('public.announcements') is null then
+    or to_regclass('public.quizzes') is null then
     raise exception
-      'Calendar requires public.teachers, students, subjects, teacher_grade_groups, teacher_subject_assignments, and announcements.';
+      'Calendar requires teachers, students, student_profiles, materials, subjects, teaching-scope tables, and quizzes.';
   end if;
 
-  if to_regprocedure('public.current_user_is_announcement_recipient(uuid)') is null then
+  if to_regclass('public.announcements') is not null
+    and to_regprocedure('public.current_user_is_announcement_recipient(uuid)') is null then
     raise exception
-      'Calendar requires public.current_user_is_announcement_recipient(uuid) to preserve announcement recipient access.';
+      'Announcements exist but recipient-access protection is unavailable.';
   end if;
 
   if exists (
@@ -25,6 +30,16 @@ begin
       ('students', 'user_id', 'uuid'),
       ('students', 'grade', 'integer'),
       ('students', 'stream', 'text'),
+      ('student_profiles', 'student_id', 'uuid'),
+      ('student_profiles', 'eligible_subjects', 'ARRAY'),
+      ('materials', 'id', 'uuid'),
+      ('materials', 'teacher_id', 'uuid'),
+      ('materials', 'title', 'text'),
+      ('materials', 'description', 'text'),
+      ('materials', 'stream', 'text'),
+      ('materials', 'subject_id', 'bigint'),
+      ('materials', 'uploaded_at', 'timestamp with time zone'),
+      ('materials', 'status', 'text'),
       ('subjects', 'id', 'bigint'),
       ('subjects', 'grades', 'ARRAY'),
       ('subjects', 'streams', 'ARRAY'),
@@ -35,9 +50,47 @@ begin
       ('teacher_subject_assignments', 'teacher_id', 'uuid'),
       ('teacher_subject_assignments', 'subject_id', 'bigint'),
       ('teacher_subject_assignments', 'grade', 'integer'),
-      ('teacher_subject_assignments', 'stream', 'text')
+      ('teacher_subject_assignments', 'stream', 'text'),
+      ('quizzes', 'id', 'uuid'),
+      ('quizzes', 'teacher_id', 'uuid'),
+      ('quizzes', 'title', 'text'),
+      ('quizzes', 'description', 'text'),
+      ('quizzes', 'grade', 'integer'),
+      ('quizzes', 'stream', 'text'),
+      ('quizzes', 'subject_id', 'bigint'),
+      ('quizzes', 'start_at', 'timestamp with time zone'),
+      ('quizzes', 'end_at', 'timestamp with time zone'),
+      ('quizzes', 'duration_minutes', 'integer'),
+      ('quizzes', 'status', 'text'),
+      ('quizzes', 'student_access', 'text'),
+      ('live_classes', 'id', 'uuid'),
+      ('live_classes', 'teacher_id', 'uuid'),
+      ('live_classes', 'stream', 'text'),
+      ('live_classes', 'subject_id', 'bigint'),
+      ('live_classes', 'title', 'text'),
+      ('live_classes', 'description', 'text'),
+      ('live_classes', 'topic', 'text'),
+      ('live_classes', 'chapter', 'text'),
+      ('live_classes', 'class_date', 'date'),
+      ('live_classes', 'start_time', 'time without time zone'),
+      ('live_classes', 'duration_minutes', 'integer'),
+      ('live_classes', 'meeting_url', 'text'),
+      ('live_classes', 'status', 'text'),
+      ('announcements', 'id', 'uuid'),
+      ('announcements', 'teacher_id', 'uuid'),
+      ('announcements', 'title', 'text'),
+      ('announcements', 'message', 'text'),
+      ('announcements', 'stream', 'text'),
+      ('announcements', 'subject_id', 'bigint'),
+      ('announcements', 'status', 'text'),
+      ('announcements', 'publish_at', 'timestamp with time zone'),
+      ('announcements', 'published_at', 'timestamp with time zone')
     ) as required(table_name, column_name, data_type)
-    where not exists (
+    where (
+      required.table_name not in ('live_classes', 'announcements')
+      or to_regclass(format('public.%I', required.table_name)) is not null
+    )
+    and not exists (
       select 1
       from information_schema.columns actual
       where actual.table_schema = 'public'
@@ -47,8 +100,101 @@ begin
     )
   ) then
     raise exception
-      'Calendar dependency columns do not match the verified Supabase schema.';
+      'Calendar dependency columns do not match the expected Supabase schema.';
   end if;
+
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'materials'
+      and column_name = 'grade'
+      and data_type in ('integer', 'text')
+  ) then
+    raise exception
+      'public.materials.grade must be integer or text; inspect the live schema before synchronization.';
+  end if;
+
+  if exists (
+    select 1 from public.materials
+    where status is null
+      or lower(btrim(status)) not in ('draft', 'published', 'archived')
+  ) then
+    raise exception
+      'public.materials contains a status outside draft/published/archived; inspect those rows before synchronization.';
+  end if;
+
+  if to_regclass('public.live_classes') is not null and not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'live_classes'
+      and column_name = 'grade'
+      and data_type in ('integer', 'text')
+  ) then
+    raise exception
+      'public.live_classes.grade must be integer or text; inspect the live schema before synchronization.';
+  end if;
+
+  if to_regclass('public.announcements') is not null and not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'announcements'
+      and column_name = 'grade'
+      and data_type in ('integer', 'text')
+  ) then
+    raise exception
+      'public.announcements.grade must be integer or text; inspect the live schema before synchronization.';
+  end if;
+
+  if exists (
+    select 1 from public.quizzes
+    where status is null
+      or lower(btrim(status)) not in ('draft', 'published', 'scheduled', 'archived')
+  ) then
+    raise exception
+      'public.quizzes contains a status outside draft/published/scheduled/archived; inspect those rows before synchronization.';
+  end if;
+
+  if exists (
+    select 1 from public.quizzes
+    where student_access is null
+      or lower(btrim(student_access)) not in ('class', 'assigned')
+  ) then
+    raise exception
+      'public.quizzes contains an unrecognized student_access value; inspect those rows before synchronization.';
+  end if;
+
+  if to_regclass('public.live_classes') is not null then
+    execute
+      'select exists (
+         select 1 from public.live_classes
+         where status is null
+           or lower(btrim(status)) not in (
+             ''scheduled'', ''live'', ''completed'', ''cancelled'', ''missed'', ''attended''
+           )
+       )'
+      into invalid_source_status;
+    if invalid_source_status then
+      raise exception
+        'public.live_classes contains an unrecognized status; inspect those rows before synchronization.';
+    end if;
+  end if;
+
+  if to_regclass('public.announcements') is not null then
+    execute
+      'select exists (
+         select 1 from public.announcements
+         where status is null
+           or lower(btrim(status)) not in (
+             ''draft'', ''scheduled'', ''published'', ''archived''
+           )
+       )'
+      into invalid_source_status;
+    if invalid_source_status then
+      raise exception
+        'public.announcements contains an unrecognized status; inspect those rows before synchronization.';
+    end if;
+  end if;
+
 end;
 $$;
 
@@ -380,25 +526,30 @@ as $$
       requested_subject_id is null
       or exists (
         select 1
-        from public.teacher_subject_assignments assignment
-        where assignment.teacher_id = requested_teacher_id
-          and assignment.grade = requested_grade
-          and assignment.stream is not distinct from requested_stream
-          and assignment.subject_id = requested_subject_id
-      )
-      or exists (
-        select 1
-        from public.teacher_grade_groups grade_group
-        join public.subjects subject
-          on subject.id = requested_subject_id
-        where grade_group.teacher_id = requested_teacher_id
-          and grade_group.grade = requested_grade
-          and grade_group.stream is not distinct from requested_stream
-          and grade_group.teach_all_subjects
+        from public.subjects subject
+        where subject.id = requested_subject_id
           and coalesce(subject.grades, '{}'::integer[]) @> array[requested_grade]
           and (
             requested_grade between 5 and 10
             or coalesce(subject.streams, '{}'::text[]) @> array[requested_stream]
+          )
+          and (
+            exists (
+              select 1
+              from public.teacher_subject_assignments assignment
+              where assignment.teacher_id = requested_teacher_id
+                and assignment.grade = requested_grade
+                and assignment.stream is not distinct from requested_stream
+                and assignment.subject_id = requested_subject_id
+            )
+            or exists (
+              select 1
+              from public.teacher_grade_groups grade_group
+              where grade_group.teacher_id = requested_teacher_id
+                and grade_group.grade = requested_grade
+                and grade_group.stream is not distinct from requested_stream
+                and grade_group.teach_all_subjects
+            )
           )
       )
     );
@@ -412,12 +563,58 @@ create or replace function public.calendar_student_can_view_event(
   requested_source_id uuid
 )
 returns boolean
-language sql
+language plpgsql
 stable
 security definer
 set search_path = ''
 as $$
-  select exists (
+declare
+  announcement_allowed boolean;
+  source_allowed boolean;
+begin
+  if requested_source_table = 'announcements' then
+    if requested_source_id is null
+      or to_regclass('public.announcements') is null
+      or to_regprocedure('public.current_user_is_announcement_recipient(uuid)') is null then
+      return false;
+    end if;
+
+    execute
+      'select exists (
+         select 1
+         from public.announcements announcement
+         where announcement.id = $1
+           and lower(btrim(announcement.status)) = ''published''
+       )
+       and public.current_user_is_announcement_recipient($1)'
+      into announcement_allowed
+      using requested_source_id;
+    if not coalesce(announcement_allowed, false) then
+      return false;
+    end if;
+  elsif requested_source_table = 'materials' then
+    if requested_source_id is null then
+      return false;
+    end if;
+
+    execute
+      'select exists (
+         select 1
+         from public.materials material
+         where material.id = $1
+           and lower(btrim(material.status)) = ''published''
+           and public.calendar_normalize_grade(material.grade::text) = $2
+           and nullif(btrim(material.stream), '''') is not distinct from $3
+           and material.subject_id = $4
+       )'
+      into source_allowed
+      using requested_source_id, requested_grade, requested_stream, requested_subject_id;
+    if not coalesce(source_allowed, false) then
+      return false;
+    end if;
+  end if;
+
+  return exists (
     select 1
     from public.students student
     where student.user_id = (select auth.uid())
@@ -428,28 +625,47 @@ as $$
         or exists (
           select 1
           from public.subjects subject
+          join public.student_profiles student_profile
+            on student_profile.student_id = student.user_id
           where subject.id = requested_subject_id
             and coalesce(subject.grades, '{}'::integer[]) @> array[student.grade]
             and (
               student.grade between 5 and 10
               or coalesce(subject.streams, '{}'::text[]) @> array[student.stream]
             )
-        )
-      )
-      and (
-        requested_source_table is distinct from 'announcements'
-        or (
-          requested_source_id is not null
-          and exists (
-            select 1
-            from public.announcements announcement
-            where announcement.id = requested_source_id
-              and announcement.status = 'published'
-              and public.current_user_is_announcement_recipient(announcement.id)
-          )
+            and subject.name = any(student_profile.eligible_subjects)
         )
       )
   );
+end;
+$$;
+
+create or replace function public.calendar_teacher_profile_id(requested_teacher_id uuid)
+returns uuid
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select teacher.id
+  from public.teachers teacher
+  where teacher.id = requested_teacher_id
+     or teacher.user_id = requested_teacher_id
+  order by (teacher.id = requested_teacher_id) desc
+  limit 1;
+$$;
+
+create or replace function public.calendar_normalize_grade(requested_grade text)
+returns integer
+language sql
+immutable
+set search_path = ''
+as $$
+  select (regexp_match(
+    btrim(requested_grade),
+    '^(?:(?:class|grade)\s*)?(5|6|7|8|9|10|11|12)$',
+    'i'
+  ))[1]::integer;
 $$;
 
 create or replace function public.get_student_calendar_events(requested_student_id uuid)
@@ -514,14 +730,79 @@ as $$
   order by event.start_at;
 $$;
 
+create or replace function public.get_student_calendar_events_v2(requested_student_id uuid)
+returns table (
+  id text,
+  source text,
+  event_type text,
+  title text,
+  description text,
+  class_grade text,
+  stream text,
+  subject text,
+  start_at timestamptz,
+  end_at timestamptz,
+  status text,
+  teacher_name text,
+  location text,
+  meeting_url text,
+  duration_minutes integer,
+  question_count integer,
+  original_start_at timestamptz
+)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select
+    event.id::text,
+    coalesce(event.source_table, 'calendar_events'),
+    event.event_type,
+    event.title,
+    event.description,
+    event.grade::text,
+    event.stream,
+    subject.name,
+    event.start_at,
+    event.end_at,
+    event.status,
+    teacher.full_name,
+    event.location,
+    event.meeting_url,
+    case
+      when event.end_at is null then null::integer
+      else floor(extract(epoch from (event.end_at - event.start_at)) / 60)::integer
+    end,
+    null::integer,
+    null::timestamptz
+  from public.calendar_events event
+  left join public.teachers teacher on teacher.id = event.teacher_id
+  left join public.subjects subject on subject.id = event.subject_id
+  where requested_student_id = (select auth.uid())
+    and event.status = 'published'
+    and event.is_visible_to_students
+    and public.calendar_student_can_view_event(
+      event.grade,
+      event.stream,
+      event.subject_id,
+      event.source_table,
+      event.source_id
+    )
+  order by event.start_at;
+$$;
+
 create or replace function public.sync_announcement_calendar_event()
 returns trigger
 language plpgsql
+security definer
 set search_path = ''
 as $$
 declare
   calendar_status text;
   calendar_start timestamptz;
+  calendar_teacher_id uuid;
+  calendar_grade integer;
 begin
   if tg_op = 'DELETE' then
     delete from public.calendar_events
@@ -530,17 +811,38 @@ begin
     return old;
   end if;
 
-  calendar_status := case lower(new.status)
+  calendar_status := case lower(btrim(new.status))
     when 'published' then 'published'
     when 'scheduled' then 'scheduled'
     when 'archived' then 'cancelled'
     else 'draft'
   end;
 
-  calendar_start := case lower(new.status)
-    when 'published' then coalesce(new.published_at, new.publish_at, new.created_at)
-    else coalesce(new.publish_at, new.published_at, new.created_at)
+  calendar_start := case lower(btrim(new.status))
+    when 'published' then coalesce(new.published_at, new.publish_at)
+    when 'scheduled' then new.publish_at
+    else null
   end;
+  calendar_teacher_id := public.calendar_teacher_profile_id(new.teacher_id);
+  calendar_grade := public.calendar_normalize_grade(new.grade::text);
+
+  if calendar_status not in ('published', 'scheduled')
+    or calendar_start is null
+    or calendar_teacher_id is null
+    or calendar_grade is null then
+    update public.calendar_events
+    set title = new.title,
+        description = new.message,
+        event_type = 'announcement',
+        grade = calendar_grade,
+        stream = nullif(btrim(new.stream), ''),
+        subject_id = new.subject_id,
+        status = case when calendar_status = 'cancelled' then 'cancelled' else 'draft' end,
+        is_visible_to_students = false
+    where source_table = 'announcements'
+      and source_id = new.id;
+    return new;
+  end if;
 
   insert into public.calendar_events (
     teacher_id,
@@ -559,18 +861,18 @@ begin
     source_id
   )
   values (
-    new.teacher_id,
+    calendar_teacher_id,
     new.title,
     new.message,
     'announcement',
-    new.grade,
-    new.stream,
+    calendar_grade,
+    nullif(btrim(new.stream), ''),
     new.subject_id,
     calendar_start,
     null,
     false,
     calendar_status,
-    lower(new.status) = 'published',
+    lower(btrim(new.status)) = 'published',
     'announcements',
     new.id
   )
@@ -594,68 +896,729 @@ begin
 end;
 $$;
 
+create or replace function public.sync_quiz_calendar_event()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  calendar_status text;
+  calendar_teacher_id uuid;
+begin
+  if tg_op = 'DELETE' then
+    delete from public.calendar_events
+    where source_table = 'quizzes'
+      and source_id = old.id;
+    return old;
+  end if;
+
+  calendar_status := case lower(btrim(new.status))
+    when 'published' then 'published'
+    when 'scheduled' then 'scheduled'
+    when 'archived' then 'cancelled'
+    else 'draft'
+  end;
+  calendar_teacher_id := public.calendar_teacher_profile_id(new.teacher_id);
+
+  if new.start_at is null
+    or new.subject_id is null
+    or calendar_teacher_id is null then
+    update public.calendar_events
+    set title = new.title,
+        description = new.description,
+        event_type = 'quiz',
+        grade = new.grade,
+        stream = new.stream,
+        subject_id = new.subject_id,
+        status = case when calendar_status = 'cancelled' then 'cancelled' else 'draft' end,
+        is_visible_to_students = false
+    where source_table = 'quizzes'
+      and source_id = new.id;
+    return new;
+  end if;
+
+  insert into public.calendar_events (
+    teacher_id,
+    title,
+    description,
+    event_type,
+    grade,
+    stream,
+    subject_id,
+    start_at,
+    end_at,
+    all_day,
+    status,
+    is_visible_to_students,
+    source_table,
+    source_id
+  )
+  values (
+    calendar_teacher_id,
+    new.title,
+    new.description,
+    'quiz',
+    new.grade,
+    new.stream,
+    new.subject_id,
+    new.start_at,
+    coalesce(
+      new.end_at,
+      case when new.duration_minutes > 0
+        then new.start_at + make_interval(mins => new.duration_minutes)
+        else null
+      end
+    ),
+    false,
+    calendar_status,
+    lower(btrim(new.status)) = 'published'
+      and lower(btrim(new.student_access)) = 'class',
+    'quizzes',
+    new.id
+  )
+  on conflict (source_table, source_id)
+    where source_table is not null and source_id is not null
+  do update set
+    teacher_id = excluded.teacher_id,
+    title = excluded.title,
+    description = excluded.description,
+    event_type = excluded.event_type,
+    grade = excluded.grade,
+    stream = excluded.stream,
+    subject_id = excluded.subject_id,
+    start_at = excluded.start_at,
+    end_at = excluded.end_at,
+    all_day = excluded.all_day,
+    status = excluded.status,
+    is_visible_to_students = excluded.is_visible_to_students;
+
+  return new;
+end;
+$$;
+
+create or replace function public.sync_material_calendar_event()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  calendar_teacher_id uuid;
+  calendar_grade integer;
+  calendar_status text;
+begin
+  if tg_op = 'DELETE' then
+    delete from public.calendar_events
+    where source_table = 'materials'
+      and source_id = old.id;
+    return old;
+  end if;
+
+  calendar_teacher_id := public.calendar_teacher_profile_id(new.teacher_id);
+  calendar_grade := public.calendar_normalize_grade(new.grade::text);
+  calendar_status := case lower(btrim(new.status))
+    when 'published' then 'published'
+    when 'archived' then 'cancelled'
+    else 'draft'
+  end;
+
+  if new.uploaded_at is null
+    or new.subject_id is null
+    or calendar_teacher_id is null
+    or calendar_grade is null then
+    update public.calendar_events
+    set title = new.title,
+        description = new.description,
+        event_type = 'material',
+        grade = calendar_grade,
+        stream = nullif(btrim(new.stream), ''),
+        subject_id = new.subject_id,
+        status = case when calendar_status = 'cancelled' then 'cancelled' else 'draft' end,
+        is_visible_to_students = false
+    where source_table = 'materials'
+      and source_id = new.id;
+    return new;
+  end if;
+
+  insert into public.calendar_events (
+    teacher_id,
+    title,
+    description,
+    event_type,
+    grade,
+    stream,
+    subject_id,
+    start_at,
+    all_day,
+    status,
+    is_visible_to_students,
+    source_table,
+    source_id
+  )
+  values (
+    calendar_teacher_id,
+    new.title,
+    new.description,
+    'material',
+    calendar_grade,
+    nullif(btrim(new.stream), ''),
+    new.subject_id,
+    new.uploaded_at,
+    true,
+    calendar_status,
+    lower(btrim(new.status)) = 'published',
+    'materials',
+    new.id
+  )
+  on conflict (source_table, source_id)
+    where source_table is not null and source_id is not null
+  do update set
+    teacher_id = excluded.teacher_id,
+    title = excluded.title,
+    description = excluded.description,
+    event_type = excluded.event_type,
+    grade = excluded.grade,
+    stream = excluded.stream,
+    subject_id = excluded.subject_id,
+    start_at = excluded.start_at,
+    all_day = excluded.all_day,
+    status = excluded.status,
+    is_visible_to_students = excluded.is_visible_to_students;
+
+  return new;
+end;
+$$;
+
+create or replace function public.calendar_live_class_start_at(
+  requested_teacher_id uuid,
+  requested_date date,
+  requested_time time without time zone
+)
+returns timestamptz
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  teacher_timezone text;
+begin
+  if requested_date is null or requested_time is null then
+    return null;
+  end if;
+
+  if to_regclass('public.teacher_settings') is not null
+    and exists (
+      select 1
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'teacher_settings'
+        and column_name = 'timezone'
+    ) then
+    execute
+      'select nullif(btrim(settings.timezone), '''')
+       from public.teacher_settings settings
+       where settings.teacher_id = $1'
+      into teacher_timezone
+      using requested_teacher_id;
+  end if;
+
+  teacher_timezone := coalesce(teacher_timezone, 'Asia/Kolkata');
+
+  if not exists (
+    select 1
+    from pg_timezone_names
+    where name = teacher_timezone
+  ) then
+    raise exception 'Invalid teacher timezone configured for calendar sync: %', teacher_timezone;
+  end if;
+
+  return (requested_date + requested_time) at time zone teacher_timezone;
+end;
+$$;
+
+create or replace function public.sync_live_class_calendar_event()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  calendar_start timestamptz;
+  calendar_teacher_id uuid;
+  calendar_grade integer;
+  normalized_status text;
+  calendar_status text;
+  student_visible boolean;
+begin
+  if tg_op = 'DELETE' then
+    delete from public.calendar_events
+    where source_table = 'live_classes'
+      and source_id = old.id;
+    return old;
+  end if;
+
+  normalized_status := lower(btrim(new.status));
+  calendar_teacher_id := public.calendar_teacher_profile_id(new.teacher_id);
+  calendar_grade := public.calendar_normalize_grade(new.grade::text);
+  calendar_start := public.calendar_live_class_start_at(
+    new.teacher_id,
+    new.class_date,
+    new.start_time
+  );
+
+  if calendar_start is null
+    or calendar_teacher_id is null
+    or calendar_grade is null then
+    update public.calendar_events
+    set status = 'draft',
+        is_visible_to_students = false
+    where source_table = 'live_classes'
+      and source_id = new.id;
+    return new;
+  end if;
+
+  calendar_status := case normalized_status
+    when 'scheduled' then 'published'
+    when 'live' then 'published'
+    when 'completed' then 'completed'
+    when 'missed' then 'completed'
+    when 'attended' then 'completed'
+    when 'cancelled' then 'cancelled'
+    else null
+  end;
+
+  if calendar_status is null then
+    raise exception 'Unsupported live_classes.status value: %', new.status;
+  end if;
+
+  student_visible := normalized_status in ('scheduled', 'live');
+
+  insert into public.calendar_events (
+    teacher_id,
+    title,
+    description,
+    event_type,
+    grade,
+    stream,
+    subject_id,
+    start_at,
+    end_at,
+    all_day,
+    meeting_url,
+    status,
+    is_visible_to_students,
+    source_table,
+    source_id
+  )
+  values (
+    calendar_teacher_id,
+    new.title,
+    coalesce(new.description, new.topic, new.chapter),
+    'live_class',
+    calendar_grade,
+    new.stream,
+    new.subject_id,
+    calendar_start,
+    calendar_start + make_interval(mins => new.duration_minutes),
+    false,
+    new.meeting_url,
+    calendar_status,
+    student_visible,
+    'live_classes',
+    new.id
+  )
+  on conflict (source_table, source_id)
+    where source_table is not null and source_id is not null
+  do update set
+    teacher_id = excluded.teacher_id,
+    title = excluded.title,
+    description = excluded.description,
+    event_type = excluded.event_type,
+    grade = excluded.grade,
+    stream = excluded.stream,
+    subject_id = excluded.subject_id,
+    start_at = excluded.start_at,
+    end_at = excluded.end_at,
+    all_day = excluded.all_day,
+    meeting_url = excluded.meeting_url,
+    status = excluded.status,
+    is_visible_to_students = excluded.is_visible_to_students;
+
+  return new;
+end;
+$$;
+
+-- Material events use the recorded upload timestamp as an activity date, not a
+-- fabricated scheduled date. Only source rows already marked published are
+-- student-visible; drafts remain teacher-only Calendar entries.
+insert into public.calendar_events (
+  teacher_id,
+  title,
+  description,
+  event_type,
+  grade,
+  stream,
+  subject_id,
+  start_at,
+  all_day,
+  status,
+  is_visible_to_students,
+  source_table,
+  source_id
+)
+select
+  public.calendar_teacher_profile_id(material.teacher_id),
+  material.title,
+  material.description,
+  'material',
+  public.calendar_normalize_grade(material.grade::text),
+  nullif(btrim(material.stream), ''),
+  material.subject_id,
+  material.uploaded_at,
+  true,
+  case lower(btrim(material.status))
+    when 'published' then 'published'
+    when 'archived' then 'cancelled'
+    else 'draft'
+  end,
+  lower(btrim(material.status)) = 'published',
+  'materials',
+  material.id
+from public.materials material
+where material.uploaded_at is not null
+  and material.subject_id is not null
+  and public.calendar_normalize_grade(material.grade::text) is not null
+  and public.calendar_teacher_profile_id(material.teacher_id) is not null
+on conflict (source_table, source_id)
+  where source_table is not null and source_id is not null
+do update set
+  teacher_id = excluded.teacher_id,
+  title = excluded.title,
+  description = excluded.description,
+  event_type = excluded.event_type,
+  grade = excluded.grade,
+  stream = excluded.stream,
+  subject_id = excluded.subject_id,
+  start_at = excluded.start_at,
+  all_day = excluded.all_day,
+  status = excluded.status,
+  is_visible_to_students = excluded.is_visible_to_students;
+
+-- Quiz events use only the quiz's explicit availability start_at; null dates are not inferred.
+insert into public.calendar_events (
+  teacher_id,
+  title,
+  description,
+  event_type,
+  grade,
+  stream,
+  subject_id,
+  start_at,
+  end_at,
+  all_day,
+  status,
+  is_visible_to_students,
+  source_table,
+  source_id
+)
+select
+  public.calendar_teacher_profile_id(quiz.teacher_id),
+  quiz.title,
+  quiz.description,
+  'quiz',
+  quiz.grade,
+  quiz.stream,
+  quiz.subject_id,
+  quiz.start_at,
+  coalesce(
+    quiz.end_at,
+    case when quiz.duration_minutes > 0
+      then quiz.start_at + make_interval(mins => quiz.duration_minutes)
+      else null
+    end
+  ),
+  false,
+  case lower(btrim(quiz.status))
+    when 'published' then 'published'
+    when 'scheduled' then 'scheduled'
+    when 'archived' then 'cancelled'
+    else 'draft'
+  end,
+  lower(btrim(quiz.status)) = 'published'
+    and lower(btrim(quiz.student_access)) = 'class',
+  'quizzes',
+  quiz.id
+from public.quizzes quiz
+where quiz.start_at is not null
+  and quiz.subject_id is not null
+  and public.calendar_teacher_profile_id(quiz.teacher_id) is not null
+on conflict (source_table, source_id)
+  where source_table is not null and source_id is not null
+do update set
+  teacher_id = excluded.teacher_id,
+  title = excluded.title,
+  description = excluded.description,
+  event_type = excluded.event_type,
+  grade = excluded.grade,
+  stream = excluded.stream,
+  subject_id = excluded.subject_id,
+  start_at = excluded.start_at,
+  end_at = excluded.end_at,
+  all_day = excluded.all_day,
+  status = excluded.status,
+  is_visible_to_students = excluded.is_visible_to_students;
+
+-- Live classes have explicit class_date/start_time and are optional in deployments.
+do $$
+begin
+  if to_regclass('public.live_classes') is not null then
+    execute $sync$
+      insert into public.calendar_events (
+  teacher_id,
+  title,
+  description,
+  event_type,
+  grade,
+  stream,
+  subject_id,
+  start_at,
+  end_at,
+  all_day,
+  meeting_url,
+  status,
+  is_visible_to_students,
+  source_table,
+  source_id
+)
+select
+  public.calendar_teacher_profile_id(live.teacher_id),
+  live.title,
+  coalesce(live.description, live.topic, live.chapter),
+  'live_class',
+  public.calendar_normalize_grade(live.grade::text),
+  live.stream,
+  live.subject_id,
+  public.calendar_live_class_start_at(live.teacher_id, live.class_date, live.start_time),
+  public.calendar_live_class_start_at(live.teacher_id, live.class_date, live.start_time)
+    + make_interval(mins => live.duration_minutes),
+  false,
+  live.meeting_url,
+  case lower(btrim(live.status))
+    when 'scheduled' then 'published'
+    when 'live' then 'published'
+    when 'completed' then 'completed'
+    when 'missed' then 'completed'
+    when 'attended' then 'completed'
+    when 'cancelled' then 'cancelled'
+  end,
+  lower(btrim(live.status)) in ('scheduled', 'live'),
+  'live_classes',
+  live.id
+from public.live_classes live
+where lower(btrim(live.status)) in (
+    'scheduled', 'live', 'completed', 'cancelled', 'missed', 'attended'
+  )
+  and live.class_date is not null
+  and live.start_time is not null
+  and public.calendar_normalize_grade(live.grade::text) is not null
+  and public.calendar_teacher_profile_id(live.teacher_id) is not null
+on conflict (source_table, source_id)
+  where source_table is not null and source_id is not null
+do update set
+  teacher_id = excluded.teacher_id,
+  title = excluded.title,
+  description = excluded.description,
+  event_type = excluded.event_type,
+  grade = excluded.grade,
+  stream = excluded.stream,
+  subject_id = excluded.subject_id,
+  start_at = excluded.start_at,
+  end_at = excluded.end_at,
+  all_day = excluded.all_day,
+  meeting_url = excluded.meeting_url,
+  status = excluded.status,
+  is_visible_to_students = excluded.is_visible_to_students;
+    $sync$;
+  end if;
+end;
+$$;
+
+-- Announcements are optional and require an explicit publish/scheduled timestamp.
+do $$
+begin
+  if to_regclass('public.announcements') is not null then
+    execute $sync$
+      insert into public.calendar_events (
+  teacher_id,
+  title,
+  description,
+  event_type,
+  grade,
+  stream,
+  subject_id,
+  start_at,
+  all_day,
+  status,
+  is_visible_to_students,
+  source_table,
+  source_id
+)
+select
+  public.calendar_teacher_profile_id(announcement.teacher_id),
+  announcement.title,
+  announcement.message,
+  'announcement',
+  public.calendar_normalize_grade(announcement.grade::text),
+  announcement.stream,
+  announcement.subject_id,
+  case lower(btrim(announcement.status))
+    when 'published' then coalesce(announcement.published_at, announcement.publish_at)
+    when 'scheduled' then announcement.publish_at
+  end,
+  false,
+  lower(btrim(announcement.status)),
+  lower(btrim(announcement.status)) = 'published',
+  'announcements',
+  announcement.id
+from public.announcements announcement
+where (
+  (lower(btrim(announcement.status)) = 'published'
+    and coalesce(announcement.published_at, announcement.publish_at) is not null)
+  or
+  (lower(btrim(announcement.status)) = 'scheduled' and announcement.publish_at is not null)
+)
+and public.calendar_normalize_grade(announcement.grade::text) is not null
+and public.calendar_teacher_profile_id(announcement.teacher_id) is not null
+on conflict (source_table, source_id)
+  where source_table is not null and source_id is not null
+do update set
+  teacher_id = excluded.teacher_id,
+  title = excluded.title,
+  description = excluded.description,
+  event_type = excluded.event_type,
+  grade = excluded.grade,
+  stream = excluded.stream,
+  subject_id = excluded.subject_id,
+  start_at = excluded.start_at,
+  all_day = excluded.all_day,
+  status = excluded.status,
+  is_visible_to_students = excluded.is_visible_to_students;
+    $sync$;
+  end if;
+end;
+$$;
+
+alter function public.sync_quiz_calendar_event() owner to postgres;
+alter function public.sync_material_calendar_event() owner to postgres;
+alter function public.calendar_teacher_profile_id(uuid) owner to postgres;
+alter function public.calendar_normalize_grade(text) owner to postgres;
+alter function public.calendar_live_class_start_at(uuid, date, time without time zone) owner to postgres;
+alter function public.sync_live_class_calendar_event() owner to postgres;
+alter function public.sync_announcement_calendar_event() owner to postgres;
+
 alter function public.calendar_teacher_owns_event(uuid) owner to postgres;
 alter function public.calendar_teacher_scope_allowed(uuid, integer, text, bigint) owner to postgres;
 alter function public.calendar_student_can_view_event(integer, text, bigint, text, uuid) owner to postgres;
 alter function public.get_student_calendar_events(uuid) owner to postgres;
+alter function public.get_student_calendar_events_v2(uuid) owner to postgres;
 
 revoke all on function public.calendar_teacher_owns_event(uuid) from public, anon;
 revoke all on function public.calendar_teacher_scope_allowed(uuid, integer, text, bigint) from public, anon;
 revoke all on function public.calendar_student_can_view_event(integer, text, bigint, text, uuid) from public, anon;
+revoke all on function public.calendar_teacher_profile_id(uuid) from public, anon, authenticated;
+revoke all on function public.calendar_normalize_grade(text) from public, anon, authenticated;
 revoke all on function public.get_student_calendar_events(uuid) from public, anon;
+revoke all on function public.get_student_calendar_events_v2(uuid) from public, anon;
+revoke all on function public.sync_quiz_calendar_event() from public, anon, authenticated;
+revoke all on function public.sync_material_calendar_event() from public, anon, authenticated;
 revoke all on function public.sync_announcement_calendar_event() from public, anon, authenticated;
+revoke all on function public.calendar_live_class_start_at(uuid, date, time without time zone) from public, anon, authenticated;
+revoke all on function public.sync_live_class_calendar_event() from public, anon, authenticated;
 
 grant execute on function public.calendar_teacher_owns_event(uuid) to authenticated;
 grant execute on function public.calendar_teacher_scope_allowed(uuid, integer, text, bigint) to authenticated;
 grant execute on function public.calendar_student_can_view_event(integer, text, bigint, text, uuid) to authenticated;
 grant execute on function public.get_student_calendar_events(uuid) to authenticated;
+grant execute on function public.get_student_calendar_events_v2(uuid) to authenticated;
 
 alter table public.calendar_events enable row level security;
-revoke all on public.calendar_events from anon;
+revoke all on public.calendar_events from public, anon;
 grant select, insert, update, delete on public.calendar_events to authenticated;
 
 do $$
-declare
-  existing_policy record;
 begin
-  for existing_policy in
-    select policyname
+  if exists (
+    select 1
     from pg_policies
     where schemaname = 'public'
       and tablename = 'calendar_events'
-  loop
-    execute format(
-      'drop policy %I on public.calendar_events',
-      existing_policy.policyname
-    );
-  end loop;
+      and policyname not in (
+        'calendar_student_classwide_select',
+        'calendar_student_select',
+        'calendar_teacher_delete',
+        'calendar_teacher_insert',
+        'calendar_teacher_select',
+        'calendar_teacher_update'
+      )
+  ) then
+    raise exception
+      'Unexpected calendar_events RLS policies exist. Review them before applying this migration; no calendar policy was replaced.';
+  end if;
 end;
 $$;
+
+drop policy if exists calendar_student_classwide_select on public.calendar_events;
+drop policy if exists calendar_student_select on public.calendar_events;
+drop policy if exists calendar_teacher_delete on public.calendar_events;
+drop policy if exists calendar_teacher_insert on public.calendar_events;
+drop policy if exists calendar_teacher_select on public.calendar_events;
+drop policy if exists calendar_teacher_update on public.calendar_events;
 
 create policy calendar_teacher_select
   on public.calendar_events
   for select to authenticated
-  using (public.calendar_teacher_owns_event(teacher_id));
+  using (
+    public.calendar_teacher_owns_event(teacher_id)
+    and public.calendar_teacher_scope_allowed(teacher_id, grade, stream, subject_id)
+  );
 
 create policy calendar_teacher_insert
   on public.calendar_events
   for insert to authenticated
   with check (
+    source_table is null
+    and source_id is null
+    and
     public.calendar_teacher_scope_allowed(teacher_id, grade, stream, subject_id)
   );
 
 create policy calendar_teacher_update
   on public.calendar_events
   for update to authenticated
-  using (public.calendar_teacher_owns_event(teacher_id))
+  using (
+    source_table is null
+    and source_id is null
+    and public.calendar_teacher_owns_event(teacher_id)
+    and public.calendar_teacher_scope_allowed(teacher_id, grade, stream, subject_id)
+  )
   with check (
+    source_table is null
+    and source_id is null
+    and
     public.calendar_teacher_scope_allowed(teacher_id, grade, stream, subject_id)
   );
 
 create policy calendar_teacher_delete
   on public.calendar_events
   for delete to authenticated
-  using (public.calendar_teacher_owns_event(teacher_id));
+  using (
+    source_table is null
+    and source_id is null
+    and public.calendar_teacher_owns_event(teacher_id)
+    and public.calendar_teacher_scope_allowed(teacher_id, grade, stream, subject_id)
+  );
 
 create policy calendar_student_select
   on public.calendar_events
@@ -672,18 +1635,52 @@ create policy calendar_student_select
     )
   );
 
-drop trigger if exists announcements_sync_calendar_event on public.announcements;
-create trigger announcements_sync_calendar_event
-  after insert or update of
-    teacher_id, title, message, grade, stream, subject_id, status,
-    publish_at, published_at
-  on public.announcements
-  for each row execute function public.sync_announcement_calendar_event();
+drop trigger if exists quizzes_sync_calendar_event on public.quizzes;
+create trigger quizzes_sync_calendar_event
+  after insert or update
+  on public.quizzes
+  for each row execute function public.sync_quiz_calendar_event();
 
-drop trigger if exists announcements_delete_calendar_event on public.announcements;
-create trigger announcements_delete_calendar_event
-  after delete on public.announcements
-  for each row execute function public.sync_announcement_calendar_event();
+drop trigger if exists quizzes_delete_calendar_event on public.quizzes;
+create trigger quizzes_delete_calendar_event
+  after delete on public.quizzes
+  for each row execute function public.sync_quiz_calendar_event();
+
+drop trigger if exists materials_sync_calendar_event on public.materials;
+create trigger materials_sync_calendar_event
+  after insert or update on public.materials
+  for each row execute function public.sync_material_calendar_event();
+
+drop trigger if exists materials_delete_calendar_event on public.materials;
+create trigger materials_delete_calendar_event
+  after delete on public.materials
+  for each row execute function public.sync_material_calendar_event();
+
+do $$
+begin
+  if to_regclass('public.live_classes') is not null then
+    execute 'drop trigger if exists live_classes_sync_calendar_event on public.live_classes';
+    execute 'create trigger live_classes_sync_calendar_event
+      after insert or update on public.live_classes
+      for each row execute function public.sync_live_class_calendar_event()';
+    execute 'drop trigger if exists live_classes_delete_calendar_event on public.live_classes';
+    execute 'create trigger live_classes_delete_calendar_event
+      after delete on public.live_classes
+      for each row execute function public.sync_live_class_calendar_event()';
+  end if;
+
+  if to_regclass('public.announcements') is not null then
+    execute 'drop trigger if exists announcements_sync_calendar_event on public.announcements';
+    execute 'create trigger announcements_sync_calendar_event
+      after insert or update on public.announcements
+      for each row execute function public.sync_announcement_calendar_event()';
+    execute 'drop trigger if exists announcements_delete_calendar_event on public.announcements';
+    execute 'create trigger announcements_delete_calendar_event
+      after delete on public.announcements
+      for each row execute function public.sync_announcement_calendar_event()';
+  end if;
+end;
+$$;
 
 do $$
 begin

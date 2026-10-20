@@ -1,23 +1,35 @@
 (() => {
   const EVENT_TYPES = new Set([
+    "class",
     "event",
     "holiday",
     "material",
     "quiz",
+    "exam",
     "live_class",
     "announcement",
+    "assignment",
+    "meeting",
+    "other",
   ]);
   let activeChannel = null;
 
   const getClient = () => window.SmartLearningSupabase?.getClient?.() || null;
 
-  function isMissingTableError(error, table) {
-    const code = String(error?.code || "").toUpperCase();
-    const message = String(error?.message || "").toLowerCase();
-    return ["42P01", "PGRST205"].includes(code) && message.includes(table.toLowerCase());
-  }
-
-  function buildDateRange(date = new Date()) {
+  function buildDateRange(date = new Date(), view = "month") {
+    if (view === "day") {
+      const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const end = new Date(start);
+      end.setDate(end.getDate() + 1);
+      return { start, end };
+    }
+    if (view === "week") {
+      const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+      const end = new Date(start);
+      end.setDate(end.getDate() + 7);
+      return { start, end };
+    }
     const start = new Date(date.getFullYear(), date.getMonth(), 1);
     const end = new Date(date.getFullYear(), date.getMonth() + 1, 1);
     return { start, end };
@@ -63,14 +75,43 @@
         .select("grade, stream, teach_all_subjects")
         .eq("teacher_id", teacherId),
       client.from("teacher_subject_assignments")
-        .select("grade, stream, subject_id, subject")
+        .select("grade, stream, subject_id")
         .eq("teacher_id", teacherId),
     ]);
     if (groupsResult.error) throw groupsResult.error;
     if (assignmentsResult.error) throw assignmentsResult.error;
+
+    const { data: subjects, error: subjectsError } = await client
+      .from("subjects")
+      .select("id, name, grades, streams");
+    if (subjectsError) throw subjectsError;
+
+    const assignments = assignmentsResult.data || [];
+    const groups = (groupsResult.data || []).map((group) => {
+      const grade = Number(group.grade);
+      const stream = normalizeStream(group.stream);
+      const groupAssignments = assignments.filter((assignment) =>
+        Number(assignment.grade) === grade
+        && normalizeStream(assignment.stream) === stream);
+      const applicableSubjects = (subjects || []).filter((subject) =>
+        (subject.grades || []).includes(grade)
+        && (grade < 11 || (subject.streams || []).some((value) =>
+          normalizeStream(value) === stream)));
+      const allowedIds = group.teach_all_subjects
+        ? null
+        : new Set(groupAssignments.map((assignment) => String(assignment.subject_id)));
+
+      return {
+        ...group,
+        subjects: applicableSubjects
+          .filter((subject) => allowedIds === null || allowedIds.has(String(subject.id)))
+          .map(({ id, name }) => ({ id, name })),
+      };
+    });
+
     return {
-      groups: groupsResult.data || [],
-      assignments: assignmentsResult.data || [],
+      groups,
+      assignments,
     };
   }
 
@@ -78,7 +119,19 @@
     return String(value || "").trim().toLowerCase();
   }
 
-  async function validateEvent(input, scope, client) {
+  function eventMatchesScope(event, scope) {
+    const grade = Number(event.grade);
+    const stream = normalizeStream(event.stream);
+    const group = scope.groups.find((item) =>
+      Number(item.grade) === grade
+      && normalizeStream(item.stream) === stream);
+    if (!group) return false;
+    if (event.subject_id == null) return true;
+    return group.subjects.some((subject) =>
+      String(subject.id) === String(event.subject_id));
+  }
+
+  async function validateEvent(input, scope) {
     const title = String(input.title || "").trim();
     if (!title) throw new Error("Enter an event title.");
     if (title.length > 160) throw new Error("Event titles must be 160 characters or fewer.");
@@ -97,44 +150,45 @@
     const subjectId = input.subject_id === "" || input.subject_id == null
       ? null
       : String(input.subject_id).trim();
-    if (grade !== null && (!Number.isInteger(grade) || grade < 1 || grade > 12)) {
+    if (grade === null || !Number.isInteger(grade) || grade < 5 || grade > 12) {
       throw new Error("Choose a valid class grade.");
+    }
+    if ((grade < 11 && stream !== null) || (grade >= 11 && stream === null)) {
+      throw new Error("Choose the stream assigned to this class.");
     }
     if (subjectId !== null && !/^\d+$/.test(subjectId)) {
       throw new Error("Enter a valid subject ID.");
     }
 
-    if (grade !== null) {
-      const group = scope.groups.find((item) =>
-        Number(item.grade) === grade
-        && (grade < 11
-          ? !item.stream && !stream
-          : normalizeStream(item.stream) === normalizeStream(stream)));
-      if (!group) throw new Error("Choose a class and stream assigned to your teacher profile.");
+    const group = scope.groups.find((item) =>
+      Number(item.grade) === grade
+      && normalizeStream(item.stream) === normalizeStream(stream));
+    if (!group) throw new Error("Choose a class and stream assigned to your teacher profile.");
 
-      if (subjectId !== null && !group.teach_all_subjects) {
-        const assignedById = scope.assignments.some((item) =>
-          Number(item.grade) === grade
-          && normalizeStream(item.stream) === normalizeStream(stream)
-          && String(item.subject_id) === subjectId);
-        let subjectName = "";
-        if (!assignedById) {
-          const { data: subject, error } = await client.from("subjects")
-            .select("id, name")
-            .eq("id", subjectId)
-            .maybeSingle();
-          if (error) throw error;
-          subjectName = String(subject?.name || "").trim().toLowerCase();
-        }
-        const assignedByName = subjectName && scope.assignments.some((item) =>
-          Number(item.grade) === grade
-          && normalizeStream(item.stream) === normalizeStream(stream)
-          && String(item.subject || "").trim().toLowerCase() === subjectName);
-        const assigned = assignedById || assignedByName;
-        if (!assigned) throw new Error("Choose a subject assigned to this class.");
+    if (subjectId !== null && !group.subjects.some((subject) => String(subject.id) === subjectId)) {
+      throw new Error("Choose a subject assigned to this class.");
+    }
+
+    const visibleToStudents = Boolean(input.is_visible_to_students);
+    if (visibleToStudents && subjectId !== null) {
+      throw new Error("Student Calendar visibility currently supports class-wide events only. Clear the subject to publish this event to students.");
+    }
+
+    const status = String(input.status || "draft").trim().toLowerCase();
+    if (!["draft", "scheduled", "published", "completed", "cancelled"].includes(status)) {
+      throw new Error("Choose a valid event status.");
+    }
+    const meetingUrl = String(input.meeting_url || "").trim() || null;
+    if (meetingUrl) {
+      let parsedUrl;
+      try {
+        parsedUrl = new URL(meetingUrl);
+      } catch {
+        throw new Error("Enter a valid meeting URL.");
       }
-    } else if (stream || subjectId !== null) {
-      throw new Error("A class grade is required when specifying a stream or subject.");
+      if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+        throw new Error("Meeting URLs must use HTTP or HTTPS.");
+      }
     }
 
     return {
@@ -148,8 +202,9 @@
       end_at: end ? end.toISOString() : null,
       all_day: Boolean(input.all_day),
       location: String(input.location || "").trim() || null,
-      meeting_url: String(input.meeting_url || "").trim() || null,
-      is_visible_to_students: Boolean(input.is_visible_to_students),
+      meeting_url: meetingUrl,
+      status,
+      is_visible_to_students: visibleToStudents,
     };
   }
 
@@ -169,135 +224,36 @@
       start_at: start.toISOString(),
       end_at: row.end_at ? new Date(row.end_at).toISOString() : null,
       location: row.location || row.meeting_url || "",
+      meeting_url: row.meeting_url || "",
     };
   }
 
-  function normalizeSourceRow(row, source) {
-    const status = String(row.status || "").trim().toLowerCase();
-    if (source === "materials" && status && status !== "published") return null;
-    if (source === "quizzes" && !["published", "scheduled", "exam"].includes(status)) return null;
-    if (source === "announcements" && !["published", "scheduled"].includes(status)) return null;
-    if (source === "assignments" && status && status !== "published") return null;
-
-    const startValue = source === "live_classes"
-      ? row.start_at || (row.class_date ? `${row.class_date}T${row.start_time || "00:00:00"}` : null)
-      : source === "materials"
-        ? row.uploaded_at || row.created_at
-        : source === "quizzes"
-          ? row.start_at || row.published_at || row.created_at
-          : source === "announcements"
-            ? status === "scheduled"
-              ? row.publish_at
-              : row.published_at || row.publish_at || row.created_at
-            : source === "assignments"
-              ? row.due_at
-              : null;
-    const start = startValue ? new Date(startValue) : null;
-    if (!start || !Number.isFinite(start.getTime())) return null;
-
-    const duration = Number(row.duration_minutes || row.duration || 0);
-    const endValue = row.end_at || row.due_at || row.deadline
-      || (duration > 0 ? new Date(start.getTime() + duration * 60_000).toISOString() : null);
-    const end = endValue ? new Date(endValue) : null;
-    const type = source === "live_classes" ? "live_class"
-      : source === "materials" ? "material"
-        : source === "quizzes" ? (status === "exam" || row.event_type === "exam" ? "exam" : "quiz")
-          : source === "announcements" ? "announcement"
-            : "assignment";
-
-    return {
-      id: `${source}-${row.id}`,
-      source,
-      source_id: row.id,
-      source_table: source,
-      type,
-      title: row.title || row.name || row.topic || "Academic event",
-      description: row.description || row.instructions || row.message || row.topic || "",
-      class_grade: row.grade || row.class_grade || row.class || "",
-      stream: row.stream || row.class_stream || "",
-      subject: row.subject_name || row.subject || "",
-      subject_id: row.subject_id || null,
-      start_at: start.toISOString(),
-      end_at: end && Number.isFinite(end.getTime()) ? end.toISOString() : null,
-      status: row.status || "scheduled",
-      location: row.location || row.meeting_url || row.join_url || row.file_url || row.external_url || "",
-      duration_minutes: duration || null,
-      question_count: row.question_count || row.questions_count || null,
-    };
-  }
-
-  async function loadEvents(date = new Date()) {
+  async function loadEvents(date = new Date(), view = "month") {
     const { client, profile } = await requireTeacher();
-    const range = buildDateRange(date);
-    const teacherIds = [...new Set([profile.id, profile.user_id].filter(Boolean))];
-    const tables = ["live_classes", "materials", "quizzes", "announcements", "assignments"];
-    const [calendarResult, ...sourceResults] = await Promise.all([
-      client.from("calendar_events")
-        .select("*")
-        .eq("teacher_id", profile.id)
-        .gte("start_at", range.start.toISOString())
-        .lt("start_at", range.end.toISOString())
-        .order("start_at", { ascending: true }),
-      ...tables.map((table) => client.from(table)
-        .select("*")
-        .in("teacher_id", teacherIds)),
-    ]);
-    if (calendarResult.error) throw calendarResult.error;
-    sourceResults.forEach((result, index) => {
-      if (result.error) {
-        if (tables[index] === "assignments" && isMissingTableError(result.error, "assignments")) {
-          console.warn("The assignments table is unavailable; loading the remaining calendar data.");
-          return;
-        }
-        throw new Error(`Unable to load ${tables[index]} for the calendar: ${result.error.message}`, {
-          cause: result.error,
-        });
-      }
-    });
-
-    const eventsBySource = new Map();
-    const calendarEvents = (calendarResult.data || []).map(normalizeCalendarRow).filter(Boolean);
-    calendarEvents.forEach((event) => {
-      if (event.source_table && event.source_id) {
-        eventsBySource.set(`${event.source_table}:${event.source_id}`, event);
-      }
-    });
-
-    const monthStart = range.start.getTime();
-    const monthEnd = range.end.getTime();
-    sourceResults.forEach((result, index) => {
-      if (result.error) return;
-      (result.data || []).forEach((row) => {
-        const event = normalizeSourceRow(row, tables[index]);
-        if (!event) return;
-        const eventTime = new Date(event.start_at).getTime();
-        if (eventTime < monthStart || eventTime >= monthEnd) return;
-        const key = `${event.source_table}:${event.source_id}`;
-        if (!eventsBySource.has(key)) eventsBySource.set(key, event);
-      });
-    });
-
-    calendarEvents.forEach((event) => {
-      if (!event.source_table || !event.source_id) {
-        eventsBySource.set(event.id, event);
-      }
-    });
-    return [...eventsBySource.values()]
-      .sort((left, right) => new Date(left.start_at) - new Date(right.start_at));
+    const scope = await getTeacherScope(client, profile.id);
+    const range = buildDateRange(date, view);
+    const { data, error } = await client.from("calendar_events")
+      .select("*")
+      .eq("teacher_id", profile.id)
+      .gte("start_at", range.start.toISOString())
+      .lt("start_at", range.end.toISOString())
+      .order("start_at", { ascending: true });
+    if (error) throw error;
+    return (data || [])
+      .filter((row) => eventMatchesScope(row, scope))
+      .map(normalizeCalendarRow)
+      .filter(Boolean);
   }
 
   async function createEvent(input) {
     const { client, profile } = await requireTeacher();
     const scope = await getTeacherScope(client, profile.id);
-    const payload = await validateEvent(input, scope, client);
-    const id = input.id || crypto.randomUUID();
+    const payload = await validateEvent(input, scope);
     const { data, error } = await client.from("calendar_events")
-      .upsert({
-        id,
+      .insert({
         teacher_id: profile.id,
         ...payload,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "id" })
+      })
       .select("*")
       .single();
     if (error) throw error;
@@ -308,9 +264,9 @@
     const { client, profile } = await requireTeacher();
     if (!id) throw new Error("A calendar event ID is required.");
     const scope = await getTeacherScope(client, profile.id);
-    const payload = await validateEvent(input, scope, client);
+    const payload = await validateEvent(input, scope);
     const { data, error } = await client.from("calendar_events")
-      .update({ ...payload, updated_at: new Date().toISOString() })
+      .update(payload)
       .eq("id", id)
       .eq("teacher_id", profile.id)
       .select("*")

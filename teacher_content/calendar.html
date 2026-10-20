@@ -31,6 +31,10 @@
         background: #e7f5f8;
         color: #087f8a;
       }
+      .calendar-page .event-pill.material {
+        background: #fff4df;
+        color: #93600a;
+      }
       #calendarModalRoot .field input[type="checkbox"] {
         width: auto;
         min-height: 0;
@@ -42,6 +46,43 @@
       }
       #calendarModalRoot [data-modal-error] {
         color: #b63b4a;
+      }
+      .calendar-page #calendarMessage {
+        margin: 0 0 14px;
+        padding: 11px 14px;
+        border: 1px solid #cfe8dc;
+        border-radius: 10px;
+        background: #effaf4;
+        color: #176744;
+        font-size: 0.9rem;
+      }
+      .calendar-page #calendarMessage[data-type="error"] {
+        border-color: #f0c8cc;
+        background: #fff3f4;
+        color: #a53340;
+      }
+      .calendar-page .calendar-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding-top: 14px;
+      }
+      .calendar-page .calendar-filters label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #718196;
+        font-size: 0.72rem;
+        font-weight: 700;
+      }
+      .calendar-page .calendar-filters select {
+        min-height: 34px;
+        border: 1px solid #e3eaf0;
+        border-radius: 8px;
+        padding: 4px 8px;
+        background: #fff;
+        color: #172638;
+        font: inherit;
       }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -69,6 +110,7 @@
               <i class="fa-solid fa-crosshairs"></i> Today</button>
           </div>
         </header>
+        <div id="calendarMessage" role="status" aria-live="polite" hidden></div>
         <section class="summary-grid" aria-label="Calendar summary">
           <article class="summary-card">
             <span
@@ -155,13 +197,30 @@
                 ><button data-view="day">Day</button>
               </div>
             </div>
+            <div class="calendar-filters" aria-label="Filter calendar events">
+              <label>Class
+                <select id="calendarGradeFilter">
+                  <option value="">All assigned classes</option>
+                </select>
+              </label>
+              <label>Stream
+                <select id="calendarStreamFilter">
+                  <option value="">All streams</option>
+                </select>
+              </label>
+              <label>Subject
+                <select id="calendarSubjectFilter">
+                  <option value="">All assigned subjects</option>
+                </select>
+              </label>
+            </div>
             <div id="calendarView" aria-live="polite">
               <div class="empty">Loading calendar events...</div>
             </div>
             <div class="legend">
               <span>Live Class</span><span class="assessment">Assessment</span
               ><span class="assignment">Assignment</span
-              ><span>Announcement</span>
+              ><span>Announcement</span><span>Material upload</span>
             </div>
           </div>
           <aside>

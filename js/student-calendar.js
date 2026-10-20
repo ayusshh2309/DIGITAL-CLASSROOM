@@ -77,6 +77,7 @@
       end_at: end && Number.isFinite(end.getTime()) ? end.toISOString() : null,
       status: row.status || "scheduled",
       location: row.location || row.meeting_url || "",
+      meeting_url: row.meeting_url || "",
       all_day: Boolean(row.all_day),
     };
   }
@@ -92,15 +93,14 @@
     if (!userData?.user) {
       throw Object.assign(new Error("Authentication failed. Please sign in again."), {
         code: "AUTH_REQUIRED",
-      });
+        });
     }
 
     const { data: student, error: studentError } = await client
-      .from("students")
-      .select("id, user_id, grade, stream")
-      .eq("user_id", userData.user.id)
-      .maybeSingle();
-
+        .from("students")
+        .select("id, user_id, grade, stream")
+        .eq("user_id", userData.user.id)
+        .maybeSingle();
     if (studentError) throw studentError;
     if (!student) throw new Error("Student profile could not be found.");
 
@@ -108,21 +108,22 @@
   }
 
   async function loadEvents(date = state.date) {
-    const { client, user } = await getStudentProfile();
+    const { client } = await getStudentProfile();
     const range = monthRange(date);
-    const { data, error } = await client.rpc("get_student_calendar_events", {
-      requested_student_id: user.id,
-    });
+    const { data, error } = await client.from("calendar_events")
+        .select("*")
+        .eq("status", "published")
+        .eq("is_visible_to_students", true)
+        .is("subject_id", null)
+        .gte("start_at", range.start.toISOString())
+        .lt("start_at", range.end.toISOString())
+        .order("start_at", { ascending: true });
     if (error) throw error;
 
     return (data || [])
-      .map((row) => normalizeRow(row, row.source || "calendar_events", row.event_type))
-      .filter(Boolean)
-      .filter((event) => {
-        const eventTime = new Date(event.start_at).getTime();
-        return eventTime >= range.start.getTime() && eventTime < range.end.getTime();
-      })
-      .sort((left, right) => new Date(left.start_at) - new Date(right.start_at));
+        .map((row) => normalizeRow(row, "calendar_events", row.event_type))
+        .filter(Boolean)
+        .sort((left, right) => new Date(left.start_at) - new Date(right.start_at));
   }
 
   async function subscribe() {
@@ -259,6 +260,21 @@
       : `${formatDate(event.start_at, { hour: "numeric", minute: "2-digit" })} - ${formatDate(event.end_at || event.start_at, { hour: "numeric", minute: "2-digit" })}`;
     $("modalSubject").textContent = event.subject || "General";
     $("modalDetails").textContent = `${event.description || "No additional details provided."} ${event.location ? `Location: ${event.location}` : ""}`;
+    const meetingRow = $("modalMeetingRow");
+    const meetingLink = $("modalMeeting");
+    try {
+      const meetingUrl = new URL(event.meeting_url);
+      const allowedProtocol = ["http:", "https:"].includes(meetingUrl.protocol);
+      if (meetingRow && meetingLink && allowedProtocol) {
+        meetingLink.href = meetingUrl.href;
+        meetingRow.hidden = false;
+      } else if (meetingRow) {
+        meetingRow.hidden = true;
+      }
+    } catch {
+      if (meetingRow) meetingRow.hidden = true;
+      if (meetingLink) meetingLink.removeAttribute("href");
+    }
     modal.classList.add("show");
   }
 
