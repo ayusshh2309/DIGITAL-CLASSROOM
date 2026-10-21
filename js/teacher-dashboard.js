@@ -55,7 +55,7 @@
   const avatar = () => document.getElementById("avatarImg");
   if (profileName()) profileName().textContent = "Loading profile...";
   if (avatar()) avatar().hidden = true;
-  const state = { user: null, profile: null, client: null, classes: [], gradeGroups: [], assignmentRows: [], assignments: new Map(), materials: [], quizzes: [], students: [], attendance: [], performance: new Map(), liveClasses: [], announcements: [], calendarDate: new Date(), events: [], refreshing: false };
+  const state = { user: null, profile: null, client: null, classes: [], gradeGroups: [], assignmentRows: [], assignments: new Map(), materials: [], quizzes: [], students: [], studentsAvailable: true, attendance: [], attendanceAvailable: true, performance: new Map(), liveClasses: [], announcements: [], calendarDate: new Date(), events: [], refreshing: false };
   let profileChannel = null;
   let stopAuthWatch = null;
   const gradeOf = (row) => String(row.class_grade ?? row.grade ?? row.class ?? row.class_number ?? "").match(/\d+/)?.[0] || "";
@@ -171,6 +171,104 @@
     return data || [];
   }
 
+  async function loadStudentsForRegisteredGroups() {
+    const supportedStreams = new Set([
+      "science_pcm",
+      "science_pcb",
+      "commerce",
+      "arts_humanities",
+    ]);
+    const groups = state.gradeGroups.filter((group) => {
+      const grade = Number(group.grade);
+      const stream = String(group.stream || "").trim().toLowerCase();
+      return (grade >= 5 && grade <= 10 && !stream)
+        || (grade >= 11 && grade <= 12 && supportedStreams.has(stream));
+    });
+    if (!groups.length) {
+      state.students = [];
+      state.studentsAvailable = true;
+      return;
+    }
+
+    const results = await Promise.all(groups.map((group) => {
+      const grade = Number(group.grade);
+      const stream = String(group.stream || "").trim().toLowerCase();
+      let query = state.client
+        .from("students")
+        .select("id, student_id, full_name, email, profile_photo_url, grade, stream")
+        .eq("grade", grade);
+      query = stream ? query.eq("stream", stream) : query.is("stream", null);
+      return query;
+    }));
+    const failedResult = results.find((result) => result.error);
+    if (failedResult?.error) throw failedResult.error;
+
+    const allowedGroups = new Set(groups.map((group) =>
+      `${Number(group.grade)}|${String(group.stream || "").trim().toLowerCase()}`,
+    ));
+    const studentsById = new Map();
+    results.flatMap((result) => result.data || []).forEach((student) => {
+      const key = `${Number(student.grade)}|${String(student.stream || "").trim().toLowerCase()}`;
+      if (allowedGroups.has(key)) studentsById.set(student.id, student);
+    });
+    state.students = [...studentsById.values()];
+    state.studentsAvailable = true;
+  }
+
+  async function readAllRows(query) {
+    const rows = [];
+    const pageSize = 1000;
+    for (let offset = 0; ; offset += pageSize) {
+      const { data, error } = await query.range(offset, offset + pageSize - 1);
+      if (error) throw error;
+      rows.push(...(data || []));
+      if (!data || data.length < pageSize) return rows;
+    }
+  }
+
+  async function loadAttendanceRecords(teacherId) {
+    const sessions = await readAllRows(
+      state.client
+        .from("attendance_sessions")
+        .select("id, grade, stream, subject_id, attendance_date, subjects(name)")
+        .eq("teacher_id", teacherId)
+        .order("attendance_date", { ascending: false }),
+    );
+    if (!sessions.length) {
+      state.attendance = [];
+      state.attendanceAvailable = true;
+      return;
+    }
+
+    const recordsBySession = await Promise.all(
+      Array.from({ length: Math.ceil(sessions.length / 100) }, (_, index) =>
+        sessions.slice(index * 100, (index + 1) * 100),
+      ).map((sessionBatch) =>
+        readAllRows(
+          state.client
+            .from("attendance_records")
+            .select("id, session_id, student_id, status, created_at, updated_at")
+            .in("session_id", sessionBatch.map((session) => session.id)),
+        ),
+      ),
+    );
+    const sessionById = new Map(sessions.map((session) => [String(session.id), session]));
+    state.attendance = recordsBySession.flat().flatMap((record) => {
+      const session = sessionById.get(String(record.session_id));
+      return session
+        ? [{
+          ...record,
+          grade: session.grade,
+          stream: session.stream,
+          subject_id: session.subject_id,
+          attendance_date: session.attendance_date,
+          subjects: session.subjects,
+        }]
+        : [];
+    });
+    state.attendanceAvailable = true;
+  }
+
   function normalizeAssessment(row) {
     const quiz = state.quizzes.find((item) => String(item.id) === String(row.quiz_id || row.assessment_id));
     const score = Number(row.score ?? row.marks_obtained ?? row.obtained_marks ?? 0);
@@ -273,16 +371,26 @@
 
       const optionalQueries = [
         ["quizzes", state.profile.id, "*"],
-        ["students", state.user.id, "*"],
-        ["attendance", state.user.id, "*"],
         ["live_classes", state.user.id, "*, subjects(id, name)"],
         ["announcements", state.user.id, "*"],
       ];
       const optionalData = await Promise.all(optionalQueries.map(([table, ownerId, fields]) => queryTeacherTable(table, ownerId, fields, { optional: true })));
-      const [quizzes, students, attendance, liveClasses, announcements] = optionalData;
+      const [quizzes, liveClasses, announcements] = optionalData;
       state.quizzes = quizzes;
-      state.students = students.filter((student) => String(student.status || "Active").toLowerCase() !== "inactive");
-      state.attendance = attendance;
+      try {
+        await loadStudentsForRegisteredGroups();
+      } catch (studentError) {
+        state.students = [];
+        state.studentsAvailable = false;
+        console.error("Unable to load students for registered teacher classes.", studentError);
+      }
+      try {
+        await loadAttendanceRecords(profile.id);
+      } catch (attendanceError) {
+        state.attendance = [];
+        state.attendanceAvailable = false;
+        console.error("Unable to load teacher attendance records.", attendanceError);
+      }
       state.liveClasses = liveClasses;
       state.announcements = announcements;
       let quizAttempts = [];
@@ -333,17 +441,20 @@
   }
 
   function renderStats() {
-    const attendancePresent = state.attendance.filter((row) => ["present", "late"].includes(String(row.status || "").toLowerCase())).length;
-    const attendanceRate = state.attendance.length ? `${Math.round(attendancePresent / state.attendance.length * 100)}%` : "--";
-    const studentCount = new Set(state.students.map((row) => String(row.student_id || row.id))).size;
+    const markedAttendance = state.attendance.filter((row) => ["present", "late", "absent"].includes(String(row.status || "").toLowerCase()));
+    const attendancePresent = markedAttendance.filter((row) => ["present", "late"].includes(String(row.status || "").toLowerCase())).length;
+    const attendanceRate = state.attendanceAvailable && markedAttendance.length
+      ? `${Math.round(attendancePresent / markedAttendance.length * 100)}%`
+      : "--";
+    const studentCount = new Set(state.students.map((row) => String(row.id))).size;
     const subjectCount = state.assignmentRows.length;
     const values = [
       ["fa-chalkboard", "", state.classes.length || "0", "My Classes", state.classes.length ? `${subjectCount} registered subject assignments` : "No classes registered yet"],
       ["fa-folder-open", "teal", state.materials.length || "0", "Materials Uploaded", state.materials.length ? "Teacher-owned materials" : "No materials uploaded yet"],
       ["fa-clipboard-check", "purple", state.quizzes.length || "0", "Quizzes Created", state.quizzes.length ? "Published assessments" : "No quizzes created yet"],
-      ["fa-user-group", "green", studentCount || "0", "Total Students", studentCount ? "In your assigned classes" : "No linked students yet"],
+      ["fa-user-group", "green", state.studentsAvailable ? studentCount : "—", "Total Students", state.studentsAvailable ? studentCount ? "In your assigned classes" : "No students in your assigned classes" : "Student records unavailable"],
       ["fa-video", "orange", state.liveClasses.length || "0", "Live Classes", state.liveClasses.length ? "Scheduled by you" : "No classes scheduled yet"],
-      ["fa-chart-simple", "teal", attendanceRate, "Attendance Rate", state.attendance.length ? `${state.attendance.length} recorded check-ins` : "No attendance records yet"],
+      ["fa-chart-simple", "teal", attendanceRate, "Attendance Rate", !state.attendanceAvailable ? "Attendance records unavailable" : markedAttendance.length ? `${markedAttendance.length} marked attendance records` : "No attendance records yet"],
     ];
     $("dashboardStats").innerHTML = values.map((value) => statMarkup(...value)).join("");
   }
@@ -498,7 +609,7 @@
     if (state.client && state.user && state.profile?.id) {
       const channel = state.client.channel(`teacher-dashboard-${state.user.id}`);
       const teacherProfileTables = ["teacher_grade_groups", "teacher_subject_assignments", "materials", "quizzes"];
-      const authOwnedTables = ["students", "attendance", "announcements"];
+      const authOwnedTables = ["announcements"];
       teacherProfileTables.forEach((table) => {
         channel.on("postgres_changes", { event: "*", schema: "public", table, filter: `teacher_id=eq.${state.profile.id}` }, scheduleRefresh);
       });
@@ -506,6 +617,9 @@
         const ownerId = state.user.id;
         channel.on("postgres_changes", { event: "*", schema: "public", table, filter: `teacher_id=eq.${ownerId}` }, scheduleRefresh);
       });
+      channel.on("postgres_changes", { event: "*", schema: "public", table: "students" }, scheduleRefresh);
+      channel.on("postgres_changes", { event: "*", schema: "public", table: "attendance_sessions", filter: `teacher_id=eq.${state.profile.id}` }, scheduleRefresh);
+      channel.on("postgres_changes", { event: "*", schema: "public", table: "attendance_records" }, scheduleRefresh);
       channel.on("postgres_changes", { event: "*", schema: "public", table: "live_classes" }, scheduleRefresh);
       channel.on("postgres_changes", { event: "*", schema: "public", table: "quiz_attempts" }, scheduleRefresh);
       channel.subscribe();

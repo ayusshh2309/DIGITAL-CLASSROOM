@@ -1622,10 +1622,13 @@
         let client = null;
         let authUser = null;
         let channel = null;
+        let studentCountChannel = null;
         let stopAuthWatch = null;
         let connectionMessage = "";
         let teacherSubjects = [];
         let registrationLanguages = [];
+        let registeredGroups = [];
+        let studentCountRequest = 0;
         let savingProfile = false;
 
         const setText = (id, value) => {
@@ -1642,6 +1645,85 @@
           String(value || "")
             .replace(/[_-]+/g, " ")
             .replace(/\b\w/g, (letter) => letter.toUpperCase());
+        const supportedStreams = new Set([
+          "science_pcm",
+          "science_pcb",
+          "commerce",
+          "arts_humanities",
+        ]);
+
+        async function refreshStudentCount() {
+          const request = ++studentCountRequest;
+          const groups = registeredGroups.filter((group) =>
+            (group.grade >= 5 && group.grade <= 10 && !group.stream)
+            || (group.grade >= 11 && group.grade <= 12 && supportedStreams.has(group.stream)),
+          );
+          if (!groups.length) {
+            setText("profileStudentCount", 0);
+            return;
+          }
+
+          try {
+            const results = await Promise.all(groups.map((group) => {
+              let query = client
+                .from("students")
+                .select("id, grade, stream")
+                .eq("grade", group.grade);
+              query = group.stream
+                ? query.eq("stream", group.stream)
+                : query.is("stream", null);
+              return query;
+            }));
+            const failedResult = results.find((result) => result.error);
+            if (failedResult?.error) throw failedResult.error;
+            if (request !== studentCountRequest) return;
+
+            const allowedGroups = new Set(
+              groups.map((group) => `${group.grade}|${String(group.stream || "").trim().toLowerCase()}`),
+            );
+            const studentIds = new Set();
+            results.flatMap((result) => result.data || []).forEach((student) => {
+              const key = `${Number(student.grade)}|${String(student.stream || "").trim().toLowerCase()}`;
+              if (allowedGroups.has(key)) studentIds.add(student.id);
+            });
+            setText("profileStudentCount", studentIds.size);
+          } catch (error) {
+            if (request === studentCountRequest) {
+              setText("profileStudentCount", "—");
+              console.error("Unable to refresh teacher profile student count.", error);
+            }
+          }
+        }
+
+        function subscribeToStudentCount() {
+          if (!client || !profile) return;
+          studentCountChannel = client.channel(`teacher-profile-students-${profile.id}`)
+            .on("postgres_changes", {
+              event: "*",
+              schema: "public",
+              table: "students",
+            }, () => { void refreshStudentCount(); })
+            .on("postgres_changes", {
+              event: "*",
+              schema: "public",
+              table: "teacher_grade_groups",
+              filter: `teacher_id=eq.${profile.id}`,
+            }, async () => {
+              try {
+                const scope = await TeacherData.loadRegisteredTeachingScope(client, profile.id);
+                registeredGroups = scope;
+                await refreshStudentCount();
+              } catch (error) {
+                setText("profileStudentCount", "—");
+                console.error("Unable to refresh teacher student scope.", error);
+              }
+            })
+            .subscribe((status, error) => {
+              if (["CHANNEL_ERROR", "TIMED_OUT"].includes(status)) {
+                console.error("Teacher profile student count Realtime subscription failed.", error || status);
+              }
+            });
+        }
 
         function renderProfile() {
           if (!profile || !authUser) return;
@@ -1877,7 +1959,7 @@
           loadStatus.textContent = "";
           renderProfile();
 
-          const registeredGroups = await TeacherData.loadRegisteredTeachingScope(
+          registeredGroups = await TeacherData.loadRegisteredTeachingScope(
             client,
             profile.id,
           );
@@ -1906,6 +1988,7 @@
           const classCount = new Set(registeredGroups.map((group) => group.grade)).size;
           setText("profileClassCount", classCount);
           setText("profileSubjectCount", teacherSubjects.length);
+          await refreshStudentCount();
           const subjectContainer = document.getElementById("detailSubjects");
           subjectContainer.replaceChildren();
           teacherSubjects.forEach((subject) => {
@@ -1930,13 +2013,6 @@
             (profileLanguages.length ? profileLanguages : registrationLanguages).join(", "),
           );
 
-          const { count: studentCount, error: studentError } = await client
-            .from("students")
-            .select("id", { count: "exact", head: true })
-            .eq("teacher_id", authUser.id);
-          if (!studentError && studentCount !== null)
-            setText("profileStudentCount", studentCount);
-
           const { data: factors, error: mfaError } =
             await client.auth.mfa.listFactors();
           const hasVerifiedFactor = (factors?.all || []).some(
@@ -1951,6 +2027,7 @@
                 : "Not enabled",
           );
           renderProfile();
+          subscribeToStudentCount();
 
           channel = TeacherData.subscribeToTeacherProfile(
             authUser.id,
@@ -2120,6 +2197,7 @@
 
         window.addEventListener("beforeunload", () => {
           if (channel && client) client.removeChannel(channel);
+          if (studentCountChannel && client) client.removeChannel(studentCountChannel);
           stopAuthWatch?.();
         });
 
