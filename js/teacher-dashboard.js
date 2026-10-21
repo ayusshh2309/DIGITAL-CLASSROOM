@@ -23,10 +23,10 @@
         <div class="panel-heading">
           <div><h2><i class="fa-solid fa-chart-column" aria-hidden="true"></i> Class performance overview</h2><div class="panel-kicker">Assessment scores and attendance</div></div>
           <select class="period-select" id="performancePeriod" aria-label="Performance period">
-            <option value="week">This Week</option><option value="month">This Month</option><option value="term">This Term</option>
+            <option value="week">This Week</option><option value="month">This Month</option><option value="term">This Term</option><option value="year">This Year</option>
           </select>
         </div>
-        <div class="chart-wrap" id="performanceChart"></div>
+        <div class="chart-wrap" id="performanceChart" aria-live="polite"></div>
       </section>
       <section class="dashboard-panel">
         <div class="panel-heading"><div><h2><i class="fa-solid fa-calendar-day" aria-hidden="true"></i> Today's classes</h2><div class="panel-kicker" id="todaySummary"></div></div><a class="panel-link" href="live_classes.html">View all <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div>
@@ -58,6 +58,7 @@
   const state = { user: null, profile: null, client: null, classes: [], gradeGroups: [], assignmentRows: [], assignments: new Map(), materials: [], quizzes: [], students: [], studentsAvailable: true, attendance: [], attendanceAvailable: true, performance: new Map(), liveClasses: [], announcements: [], calendarDate: new Date(), events: [], refreshing: false };
   let profileChannel = null;
   let stopAuthWatch = null;
+  const chartState = { rows: [], assessments: [], status: "loading", message: "", requestId: 0, refreshTimer: null, periodLabel: "" };
   const gradeOf = (row) => String(row.class_grade ?? row.grade ?? row.class ?? row.class_number ?? "").match(/\d+/)?.[0] || "";
   const subjectOf = (row) => {
     const relation = Array.isArray(row.subjects) ? row.subjects[0] : row.subjects;
@@ -198,16 +199,14 @@
         .select("id, student_id, full_name, email, profile_photo_url, grade, stream")
         .eq("grade", grade);
       query = stream ? query.eq("stream", stream) : query.is("stream", null);
-      return query;
+      return readAllRows(query);
     }));
-    const failedResult = results.find((result) => result.error);
-    if (failedResult?.error) throw failedResult.error;
 
     const allowedGroups = new Set(groups.map((group) =>
       `${Number(group.grade)}|${String(group.stream || "").trim().toLowerCase()}`,
     ));
     const studentsById = new Map();
-    results.flatMap((result) => result.data || []).forEach((student) => {
+    results.flat().forEach((student) => {
       const key = `${Number(student.grade)}|${String(student.stream || "").trim().toLowerCase()}`;
       if (allowedGroups.has(key)) studentsById.set(student.id, student);
     });
@@ -226,12 +225,302 @@
     }
   }
 
+  async function loadReportingSettings() {
+    const { data, error } = await state.client
+      .from("teacher_settings")
+      .select("timezone, week_start_day")
+      .eq("teacher_id", state.profile.id)
+      .maybeSingle();
+    if (error) throw error;
+    const settings = data || { timezone: "Asia/Kolkata", week_start_day: "Monday" };
+    const timezone = settings.timezone || "Asia/Kolkata";
+    new Intl.DateTimeFormat("en", { timeZone: timezone });
+    const weekStartDay = settings.week_start_day || "Monday";
+    if (!["Monday", "Sunday"].includes(weekStartDay)) {
+      throw new Error("Your week-start setting must be Monday or Sunday.");
+    }
+    return { timezone, weekStartDay };
+  }
+
+  function localDateParts(date, timezone) {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(date);
+    return Object.fromEntries(parts
+      .filter((part) => part.type !== "literal")
+      .map(({ type, value }) => [type, Number(value)]));
+  }
+
+  function dateKey({ year, month, day }) {
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  }
+
+  function addCalendarDays(key, amount) {
+    const [year, month, day] = key.split("-").map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day + amount));
+    return dateKey({
+      year: date.getUTCFullYear(),
+      month: date.getUTCMonth() + 1,
+      day: date.getUTCDate(),
+    });
+  }
+
+  function startOfDayInTimezone(key, timezone) {
+    const [year, month, day] = key.split("-").map(Number);
+    const target = Date.UTC(year, month - 1, day);
+    let timestamp = target;
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const local = localDateParts(new Date(timestamp), timezone);
+      const represented = Date.UTC(local.year, local.month - 1, local.day);
+      const difference = represented - target;
+      if (difference === 0) break;
+      timestamp -= difference;
+    }
+    return new Date(timestamp).toISOString();
+  }
+
+  function formatDateKey(key) {
+    const [year, month, day] = key.split("-").map(Number);
+    return new Intl.DateTimeFormat(undefined, {
+      dateStyle: "medium",
+      timeZone: "UTC",
+    }).format(new Date(Date.UTC(year, month - 1, day)));
+  }
+
+  function reportingPeriod(period, settings) {
+    if (period === "term") {
+      return {
+        unavailable: "Academic-term dates are not configured in this project. Add a verified academic-terms source before using This Term.",
+      };
+    }
+    const current = localDateParts(new Date(), settings.timezone);
+    const todayKey = dateKey(current);
+    let startDate;
+    let endDate;
+    let note = "";
+    if (period === "week") {
+      const currentDate = new Date(Date.UTC(current.year, current.month - 1, current.day));
+      const weekStart = settings.weekStartDay === "Sunday" ? 0 : 1;
+      const daysSinceStart = (currentDate.getUTCDay() - weekStart + 7) % 7;
+      startDate = addCalendarDays(todayKey, -daysSinceStart);
+      endDate = addCalendarDays(startDate, 7);
+    } else if (period === "month") {
+      startDate = `${current.year}-${String(current.month).padStart(2, "0")}-01`;
+      endDate = current.month === 12
+        ? `${current.year + 1}-01-01`
+        : `${current.year}-${String(current.month + 1).padStart(2, "0")}-01`;
+    } else {
+      startDate = `${current.year}-01-01`;
+      endDate = `${current.year + 1}-01-01`;
+      note = "Calendar-year fallback (no configured academic-year setting)";
+    }
+    const weekNote = period === "week" ? `Week starts ${settings.weekStartDay.toLowerCase()}` : "";
+    return {
+      startDate,
+      endDate,
+      startAt: startOfDayInTimezone(startDate, settings.timezone),
+      endAt: startOfDayInTimezone(endDate, settings.timezone),
+      label: `${formatDateKey(startDate)} – ${formatDateKey(addCalendarDays(endDate, -1))}`,
+      note: [weekNote, note].filter(Boolean).join(" · "),
+    };
+  }
+
+  function classScopeKey(grade, stream) {
+    return `${Number(grade)}|${String(stream || "").trim().toLowerCase()}`;
+  }
+
+  function isAssignedChartSubject(grade, stream, subjectId) {
+    const key = classScopeKey(grade, stream);
+    const group = state.gradeGroups.find((item) =>
+      classScopeKey(item.grade, item.stream) === key);
+    return Boolean(group && (
+      group.teach_all_subjects
+      || state.assignmentRows.some((assignment) =>
+        classScopeKey(assignment.grade, assignment.stream) === key
+        && String(assignment.subject_id) === String(subjectId))
+    ));
+  }
+
+  function chartGroups() {
+    return state.gradeGroups.map((group) => ({
+      grade: Number(group.grade),
+      stream: String(group.stream || "").trim().toLowerCase(),
+    })).filter((group) => Number.isInteger(group.grade))
+      .sort((left, right) => left.grade - right.grade || left.stream.localeCompare(right.stream));
+  }
+
+  function chartClassLabel(group) {
+    const streamLabels = {
+      science_pcm: "Science (PCM)",
+      science_pcb: "Science (PCB)",
+      commerce: "Commerce",
+      arts_humanities: "Arts / Humanities",
+    };
+    const stream = group.stream
+      ? streamLabels[group.stream] || formatRegistrationValue(group.stream)
+      : "";
+    return `Class ${group.grade}${stream ? ` · ${stream}` : ""}`;
+  }
+
+  function formatRegistrationValue(value) {
+    return String(value || "")
+      .replace(/[_-]+/g, " ")
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  }
+
+  async function loadChartAssessments(groups, bounds) {
+    const quizzes = await readAllRows(
+      state.client
+        .from("quizzes")
+        .select("id, grade, stream, subject_id, status")
+        .eq("teacher_id", state.profile.id)
+        .eq("status", "published"),
+    );
+    const eligibleQuizzes = (quizzes || []).filter((quiz) =>
+      groups.some((group) =>
+        group.grade === Number(quiz.grade)
+        && group.stream === String(quiz.stream || "").trim().toLowerCase()
+        && isAssignedChartSubject(quiz.grade, quiz.stream, quiz.subject_id))
+      && state.students.some((student) =>
+        String(student.grade) === String(quiz.grade)
+        && String(student.stream || "").trim().toLowerCase() === String(quiz.stream || "").trim().toLowerCase()),
+    );
+    if (!eligibleQuizzes.length) return [];
+
+    const attempts = (await Promise.all(
+      Array.from({ length: Math.ceil(eligibleQuizzes.length / 100) }, (_, index) =>
+        eligibleQuizzes.slice(index * 100, (index + 1) * 100),
+      ).map((quizBatch) =>
+        readAllRows(
+          state.client
+            .from("quiz_attempts")
+            .select("id, quiz_id, student_id, score, total_marks, submitted_at, status")
+            .in("quiz_id", quizBatch.map((quiz) => quiz.id))
+            .eq("status", "submitted")
+            .gte("submitted_at", bounds.startAt)
+            .lt("submitted_at", bounds.endAt)
+            .order("submitted_at", { ascending: true }),
+        ),
+      ),
+    )).flat();
+    const quizzesById = new Map(eligibleQuizzes.map((quiz) => [String(quiz.id), quiz]));
+    const studentsById = new Map(state.students.map((student) => [String(student.id), student]));
+    const latestByStudentQuiz = new Map();
+    attempts.forEach((attempt) => {
+      const quiz = quizzesById.get(String(attempt.quiz_id));
+      const student = studentsById.get(String(attempt.student_id));
+      const score = Number(attempt.score);
+      const totalMarks = Number(attempt.total_marks);
+      if (!quiz || !student
+        || !Number.isFinite(score) || !Number.isFinite(totalMarks)
+        || totalMarks <= 0 || score < 0 || score > totalMarks) return;
+      if (String(student.grade) !== String(quiz.grade)
+        || String(student.stream || "").trim().toLowerCase() !== String(quiz.stream || "").trim().toLowerCase()) return;
+      const key = `${attempt.quiz_id}|${attempt.student_id}`;
+      const previous = latestByStudentQuiz.get(key);
+      if (!previous
+        || String(attempt.submitted_at) > String(previous.submitted_at)
+        || (attempt.submitted_at === previous.submitted_at && String(attempt.id) > String(previous.id))) {
+        latestByStudentQuiz.set(key, attempt);
+      }
+    });
+    return [...latestByStudentQuiz.values()].map((attempt) => {
+      const quiz = quizzesById.get(String(attempt.quiz_id));
+      const assignment = state.assignmentRows.find((item) =>
+        classScopeKey(item.grade, item.stream) === classScopeKey(quiz.grade, quiz.stream)
+        && String(item.subject_id) === String(quiz.subject_id));
+      return {
+        grade: Number(quiz.grade),
+        stream: String(quiz.stream || "").trim().toLowerCase(),
+        percentage: Number(attempt.score) / Number(attempt.total_marks) * 100,
+        quizId: String(attempt.quiz_id),
+        subject: assignment?.subject || "",
+      };
+    });
+  }
+
+  async function loadChartAttendance(groups, bounds) {
+    const sessions = await readAllRows(
+      state.client
+        .from("attendance_sessions")
+        .select("id, grade, stream, subject_id, attendance_date, status")
+        .eq("teacher_id", state.profile.id)
+        .eq("status", "completed")
+        .gte("attendance_date", bounds.startDate)
+        .lt("attendance_date", bounds.endDate),
+    );
+    const eligibleSessions = sessions.filter((session) =>
+      groups.some((group) =>
+        group.grade === Number(session.grade)
+        && group.stream === String(session.stream || "").trim().toLowerCase()
+        && isAssignedChartSubject(session.grade, session.stream, session.subject_id)),
+    );
+    if (!eligibleSessions.length) return [];
+
+    const sessionById = new Map(eligibleSessions.map((session) => [String(session.id), session]));
+    const records = (await Promise.all(
+      Array.from({ length: Math.ceil(eligibleSessions.length / 100) }, (_, index) =>
+        eligibleSessions.slice(index * 100, (index + 1) * 100),
+      ).map((sessionBatch) =>
+        readAllRows(
+          state.client
+            .from("attendance_records")
+            .select("id, session_id, student_id, status")
+            .in("session_id", sessionBatch.map((session) => session.id)),
+        ),
+      ),
+    )).flat();
+    const studentsById = new Map(state.students.map((student) => [String(student.id), student]));
+    const uniqueRecords = new Map();
+    records.forEach((record) => {
+      const session = sessionById.get(String(record.session_id));
+      const student = studentsById.get(String(record.student_id));
+      const status = String(record.status || "").toLowerCase();
+      if (!session || !student || !["present", "absent", "late"].includes(status)) return;
+      if (Number(student.grade) !== Number(session.grade)
+        || String(student.stream || "").trim().toLowerCase() !== String(session.stream || "").trim().toLowerCase()) return;
+      uniqueRecords.set(`${session.id}|${student.id}`, {
+        grade: Number(session.grade),
+        stream: String(session.stream || "").trim().toLowerCase(),
+        status,
+      });
+    });
+    return [...uniqueRecords.values()];
+  }
+
+  function buildChartRows(groups, assessments, attendance) {
+    return groups.map((group) => {
+      const classAssessments = assessments.filter((item) =>
+        item.grade === group.grade && item.stream === group.stream);
+      const classAttendance = attendance.filter((item) =>
+        item.grade === group.grade && item.stream === group.stream);
+      const score = classAssessments.length
+        ? classAssessments.reduce((sum, item) => sum + item.percentage, 0) / classAssessments.length
+        : null;
+      const present = classAttendance.filter((item) => item.status === "present").length;
+      return {
+        ...group,
+        label: chartClassLabel(group),
+        score,
+        assessmentCount: classAssessments.length,
+        assessmentQuizCount: new Set(classAssessments.map((item) => item.quizId)).size,
+        attendance: classAttendance.length ? present / classAttendance.length * 100 : null,
+        attendancePresent: present,
+        attendanceCount: classAttendance.length,
+      };
+    });
+  }
+
   async function loadAttendanceRecords(teacherId) {
     const sessions = await readAllRows(
       state.client
         .from("attendance_sessions")
         .select("id, grade, stream, subject_id, attendance_date, subjects(name)")
         .eq("teacher_id", teacherId)
+        .eq("status", "completed")
         .order("attendance_date", { ascending: false }),
     );
     if (!sessions.length) {
@@ -267,27 +556,6 @@
         : [];
     });
     state.attendanceAvailable = true;
-  }
-
-  function normalizeAssessment(row) {
-    const quiz = state.quizzes.find((item) => String(item.id) === String(row.quiz_id || row.assessment_id));
-    const score = Number(row.score ?? row.marks_obtained ?? row.obtained_marks ?? 0);
-    const total = Number(row.total_marks ?? row.max_score ?? row.points_possible ?? quiz?.total_marks ?? 0);
-    const subjectId = row.subject_id || quiz?.subject_id || null;
-    const assignment = state.assignmentRows.find((item) =>
-      String(item.grade) === String(row.grade || quiz?.grade || "")
-      && String(item.subject_id || "") === String(subjectId || "")
-      && (!streamOf(row) || String(item.stream || "") === streamOf(row)),
-    );
-    return {
-      ...row,
-      class_grade: row.class_grade || row.grade || gradeOf(quiz || {}),
-      stream: row.stream || quiz?.stream || "",
-      subject_id: subjectId,
-      subject: row.subject || subjectOf(quiz || {}) || assignment?.subject || "",
-      percentage: Number(row.percentage ?? row.percent ?? (total > 0 ? score / total * 100 : NaN)),
-      assessment_date: row.assessment_date || row.submitted_at || row.completed_at || row.created_at || null,
-    };
   }
 
   function renderDataNotice(message = "", isError = false) {
@@ -393,27 +661,8 @@
       }
       state.liveClasses = liveClasses;
       state.announcements = announcements;
-      let quizAttempts = [];
-      let performanceLoadError = false;
-      if (quizzes.length) {
-        const { data, error } = await state.client
-          .from("quiz_attempts")
-          .select("id, quiz_id, student_id, score, total_marks, percentage, submitted_at, status")
-          .in("quiz_id", quizzes.map((quiz) => quiz.id))
-          .eq("status", "submitted")
-          .order("submitted_at", { ascending: true });
-        if (error) {
-          console.error("Unable to load dashboard quiz results.", error);
-          performanceLoadError = true;
-        } else {
-          quizAttempts = data || [];
-        }
-      }
-      const assessments = quizAttempts.map(normalizeAssessment).filter((row) => Number.isFinite(row.percentage) && assignedRow(row));
-      state.performance = new Map(state.classes.map((grade) => [grade, assessments.filter((row) => gradeOf(row) === grade)]));
       renderAll();
-      if (performanceLoadError) renderDataNotice("Quiz performance is temporarily unavailable.", true);
-      else if (!quizAttempts.length) renderDataNotice();
+      schedulePerformanceChartRefresh();
 
       if (!profileChannel && window.TeacherData?.subscribeToTeacherProfile) {
         profileChannel = state.client.channel(`teacher-dashboard-profile-${state.user.id}`)
@@ -459,44 +708,112 @@
     $("dashboardStats").innerHTML = values.map((value) => statMarkup(...value)).join("");
   }
 
-  function filteredPerformance(grade) {
-    const period = $("performancePeriod").value;
-    const now = new Date();
-    const start = new Date(now);
-    if (period === "week") { start.setDate(start.getDate() - 6); start.setHours(0, 0, 0, 0); }
-    else if (period === "month") { start.setDate(1); start.setHours(0, 0, 0, 0); }
-    else { start.setMonth(Math.floor(start.getMonth() / 3) * 3, 1); start.setHours(0, 0, 0, 0); }
-    return (state.performance.get(grade) || []).filter((row) => {
-      const date = new Date(row.assessment_date || row.created_at || 0);
-      return Number.isFinite(date.getTime()) && date >= start && assignedRow(row);
-    });
-  }
-
   function renderChart() {
-    const rows = state.classes.map((grade) => {
-      const scores = filteredPerformance(grade).map((row) => Number(row.percentage)).filter(Number.isFinite);
-      const attendance = state.attendance.filter((row) => gradeOf(row) === grade && (!subjectOf(row) || state.assignments.get(grade)?.has(subjectOf(row))));
-      const present = attendance.filter((row) => ["present", "late"].includes(String(row.status || "").toLowerCase())).length;
-      return { grade, score: scores.length ? scores.reduce((sum, value) => sum + value, 0) / scores.length : null, attendance: attendance.length ? present / attendance.length * 100 : null };
-    });
-    const hasData = rows.some((row) => row.score !== null || row.attendance !== null);
-    if (!rows.length || !hasData) {
-      $("performanceChart").innerHTML = emptyStateMarkup(
-        "chart",
-        "",
-        rows.length ? "Performance data will appear here" : "No classes registered yet",
-        rows.length ? "After students complete assessments or attendance is recorded, you'll see class insights and trends." : "Register your classes to start tracking performance.",
-        rows.length ? "student_performance.html" : "my_classes.html",
-        rows.length ? "View Analytics" : "View Classes",
-      );
+    const root = $("performanceChart");
+    const setMessage = (title, description, kind = "status", retry = false) => {
+      root.innerHTML = `<div class="dashboard-blank-state" role="${kind}"><div class="empty-artwork chart-artwork" aria-hidden="true"><div class="mini-chart-card"><div class="mini-chart-lines"></div><div class="mini-chart-bars"><i></i><i></i><i></i><i></i></div><i class="fa-solid ${retry ? "fa-triangle-exclamation" : "fa-chart-column"} mini-chart-trend"></i></div></div><strong>${escapeHtml(title)}</strong><p>${escapeHtml(description)}</p>${retry ? '<button type="button" class="empty-state-action" id="performanceRetry"><i class="fa-solid fa-rotate-right" aria-hidden="true"></i>Retry</button>' : ""}</div>`;
+      $("performanceRetry")?.addEventListener("click", schedulePerformanceChartRefresh);
+    };
+    if (chartState.status === "loading") {
+      setMessage("Loading class performance…", "Fetching published assessment results and finalized attendance.");
       return;
     }
+    if (chartState.status === "error") {
+      setMessage("Performance data could not be loaded", chartState.message, "alert", true);
+      return;
+    }
+    if (chartState.status === "unavailable") {
+      setMessage("This Term is unavailable", chartState.message);
+      return;
+    }
+    const rows = chartState.rows;
+    if (!rows.length) {
+      setMessage("No classes registered", "Register your teaching classes to see performance.");
+      return;
+    }
+    const assessmentTotal = rows.reduce((sum, row) => sum + row.assessmentCount, 0);
+    const assessmentQuizTotal = rows.reduce((sum, row) => sum + row.assessmentQuizCount, 0);
+    const attendanceTotal = rows.reduce((sum, row) => sum + row.attendanceCount, 0);
+    const attendancePresent = rows.reduce((sum, row) => sum + row.attendancePresent, 0);
+    const periodSummary = `${chartState.periodLabel}${chartState.periodNote ? ` · ${chartState.periodNote}` : ""}`;
     const chartClasses = rows.map((row) => {
-      const scoreHeight = row.score === null ? 0 : Math.max(2, row.score * 1.45);
-      const attendanceHeight = row.attendance === null ? 0 : Math.max(2, row.attendance * 1.45);
-      return `<div class="chart-class"><div class="chart-values"><span>${row.score === null ? "--" : `${Math.round(row.score)}%`}</span><span>${row.attendance === null ? "--" : `${Math.round(row.attendance)}%`}</span></div><div class="bar-pair"><span class="bar ${row.score === null ? "no-data" : ""}" style="height:${scoreHeight}px" title="Assessment ${row.score === null ? "no data" : `${Math.round(row.score)}%`}"></span><span class="bar attendance ${row.attendance === null ? "no-data" : ""}" style="height:${attendanceHeight}px" title="Attendance ${row.attendance === null ? "no data" : `${Math.round(row.attendance)}%`}"></span></div><span class="chart-class-label">Class ${escapeHtml(row.grade)}</span></div>`;
+      const scoreText = row.score === null ? "--" : `${Math.round(row.score)}%`;
+      const attendanceText = row.attendance === null ? "--" : `${Math.round(row.attendance)}%`;
+      const scoreHeight = row.score === null ? 0 : Math.max(2, row.score * 2);
+      const attendanceHeight = row.attendance === null ? 0 : Math.max(2, row.attendance * 2);
+      const scoreTitle = `${row.label} · Average assessment score: ${row.score === null ? "No assessment data" : `${row.score.toFixed(1)}%`} · ${row.assessmentCount} unique graded student-assessment result(s) across ${row.assessmentQuizCount} published assessment(s) · ${periodSummary}`;
+      const attendanceTitle = `${row.label} · Attendance: ${row.attendance === null ? "No finalized attendance data" : `${row.attendance.toFixed(1)}% (${row.attendancePresent}/${row.attendanceCount})`} · Present records / finalized student-session records · ${periodSummary}`;
+      return `<div class="chart-class"><div class="chart-values"><span>${scoreText}</span><span>${attendanceText}</span></div><div class="bar-pair"><span class="bar ${row.score === null ? "no-data" : ""}" style="height:${scoreHeight}px" title="${escapeHtml(scoreTitle)}" aria-label="${escapeHtml(scoreTitle)}"></span><span class="bar attendance ${row.attendance === null ? "no-data" : ""}" style="height:${attendanceHeight}px" title="${escapeHtml(attendanceTitle)}" aria-label="${escapeHtml(attendanceTitle)}"></span></div><span class="chart-class-label" title="${escapeHtml(row.label)}">${escapeHtml(row.label)}</span></div>`;
     }).join("");
-    $("performanceChart").innerHTML = `<div class="chart-legend"><span class="legend-item"><i class="legend-dot"></i>Average assessment score</span><span class="legend-item"><i class="legend-dot attendance"></i>Attendance</span></div><div class="chart-scroller"><div class="chart-area"><div class="chart-y-axis"><span>100</span><span>75</span><span>50</span><span>25</span><span>0</span></div><div class="chart-columns">${chartClasses}</div></div></div>`;
+    const assessmentSummary = assessmentTotal
+      ? `${assessmentTotal} graded student-assessment result(s) across ${assessmentQuizTotal} published assessment(s)`
+      : "No assessment data";
+    const attendanceSummary = attendanceTotal
+      ? `${attendancePresent} present of ${attendanceTotal} finalized student-session record(s)`
+      : "No finalized attendance data";
+    root.innerHTML = `<div class="chart-legend"><span class="legend-item"><i class="legend-dot"></i>Average assessment score</span><span class="legend-item"><i class="legend-dot attendance"></i>Attendance</span></div><div class="chart-legend" role="status">${escapeHtml(periodSummary)} · Assessment: ${escapeHtml(assessmentSummary)} · Attendance: ${escapeHtml(attendanceSummary)}</div><div class="chart-scroller"><div class="chart-area"><div class="chart-y-axis"><span>100%</span><span>75%</span><span>50%</span><span>25%</span><span>0%</span></div><div class="chart-columns">${chartClasses}</div></div></div>`;
+  }
+
+  function schedulePerformanceChartRefresh() {
+    chartState.requestId += 1;
+    const requestId = chartState.requestId;
+    window.clearTimeout(chartState.refreshTimer);
+    chartState.status = "loading";
+    renderChart();
+    chartState.refreshTimer = window.setTimeout(() => {
+      void loadPerformanceChart(requestId);
+    }, 120);
+  }
+
+  async function loadPerformanceChart(requestId) {
+    try {
+      const settings = await loadReportingSettings();
+      const bounds = reportingPeriod($("performancePeriod").value, settings);
+      if (requestId !== chartState.requestId) return;
+      if (bounds.unavailable) {
+        chartState.status = "unavailable";
+        chartState.message = bounds.unavailable;
+        renderChart();
+        return;
+      }
+      if (!state.studentsAvailable) {
+        throw new Error("Student records could not be verified for your registered classes. Performance data is withheld until the Students page data is available.");
+      }
+      const groups = chartGroups();
+      const [assessments, attendance] = groups.length
+        ? await Promise.all([
+          loadChartAssessments(groups, bounds),
+          loadChartAttendance(groups, bounds),
+        ])
+        : [[], []];
+      if (requestId !== chartState.requestId) return;
+      const period = $("performancePeriod").value;
+      chartState.periodLabel = {
+        week: "This Week",
+        month: "This Month",
+        year: "This Year",
+      }[period] || period;
+      chartState.periodNote = [bounds.note, bounds.timezone ? `Timezone: ${bounds.timezone}` : ""]
+        .filter(Boolean)
+        .join(" · ");
+      chartState.periodLabel += ` · ${bounds.label}`;
+      chartState.rows = buildChartRows(groups, assessments, attendance);
+      chartState.assessments = assessments;
+      state.performance = new Map(state.classes.map((grade) => [
+        grade,
+        assessments.filter((item) => String(item.grade) === grade),
+      ]));
+      chartState.status = "ready";
+      chartState.message = "";
+      renderChart();
+      renderSubjects();
+    } catch (error) {
+      if (requestId !== chartState.requestId) return;
+      chartState.status = "error";
+      chartState.message = error?.message || "Check your connection and access permissions, then retry.";
+      console.error("Unable to load class performance chart data.", error);
+      renderChart();
+    }
   }
 
   function liveStatus(row, now = new Date()) {
@@ -655,7 +972,7 @@
     }, 250);
   }
 
-  $("performancePeriod").addEventListener("change", renderChart);
+  $("performancePeriod").addEventListener("change", schedulePerformanceChartRefresh);
   $("calendarPrevious").addEventListener("click", () => { state.calendarDate.setMonth(state.calendarDate.getMonth() - 1); renderCalendar(); });
   $("calendarNext").addEventListener("click", () => { state.calendarDate.setMonth(state.calendarDate.getMonth() + 1); renderCalendar(); });
   $("closeEventDialog").addEventListener("click", () => $("eventDialog").close());
