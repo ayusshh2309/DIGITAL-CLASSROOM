@@ -206,7 +206,9 @@
         ? "Missed"
         : (event.status || "Scheduled")
       : eventEnd < new Date() ? "Completed" : (event.status || "Scheduled");
-    const editable = !event.source_table;
+    const editable = (!event.source_table && !event.source)
+      || event.source_table === "calendar_events"
+      || event.source === "calendar_events";
     const meetingUrl = event.meeting_url || "";
     const locationUrl = event.location || "";
     const meetingLink = meetingUrl
@@ -252,8 +254,8 @@
     const grades = [...new Set(groups.map((group) => Number(group.grade)).filter(Number.isInteger))].sort((a, b) => a - b);
     const currentGrade = String(event?.grade ?? event?.class_grade ?? groups[0].grade);
     const gradeOptions = grades.map((grade) => `<option value="${grade}" ${currentGrade === String(grade) ? "selected" : ""}>Class ${grade}</option>`).join("");
-    const types = ["event", "class", "holiday", "material", "quiz", "exam", "live_class", "announcement", "meeting", "other"];
-    const typeOptions = types.map((type) => `<option value="${type}" ${String(event?.event_type || event?.type || "event") === type ? "selected" : ""}>${esc(displayType(type))}</option>`).join("");
+    const types = ["class", "live_class", "quiz", "exam", "assignment", "material", "announcement", "holiday", "meeting", "other"];
+    const typeOptions = types.map((type) => `<option value="${type}" ${String(event?.event_type || event?.type || "other") === type ? "selected" : ""}>${esc(displayType(type))}</option>`).join("");
     const statuses = ["draft", "scheduled", "published", "completed", "cancelled"];
     const statusOptions = statuses.map((status) => `<option value="${status}" ${String(event?.status || "draft") === status ? "selected" : ""}>${esc(displayType(status))}</option>`).join("");
     const currentStream = String(event?.stream || "");
