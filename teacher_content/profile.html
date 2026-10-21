@@ -1430,40 +1430,36 @@
                   <span class="detail-value" id="detailFullName">-</span>
                 </div>
                 <div class="detail-row-item">
-                  <span class="detail-label">Father's Name</span>
-                  <span class="detail-value">-</span>
+                  <span class="detail-label">Country</span>
+                  <span class="detail-value" id="detailCountry">-</span>
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Email Address</span>
                   <span class="detail-value" id="detailEmail">-</span>
                 </div>
                 <div class="detail-row-item">
-                  <span class="detail-label">Mother's Name</span>
-                  <span class="detail-value">-</span>
+                  <span class="detail-label">State / Province</span>
+                  <span class="detail-value" id="detailState">-</span>
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Phone Number</span>
                   <span class="detail-value" id="detailPhone">-</span>
                 </div>
                 <div class="detail-row-item">
-                  <span class="detail-label">Address</span>
-                  <span class="detail-value" id="detailAddress">-</span>
+                  <span class="detail-label">City</span>
+                  <span class="detail-value" id="detailCity">-</span>
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Date of Birth</span>
                   <span class="detail-value" id="detailDob">-</span>
                 </div>
                 <div class="detail-row-item">
-                  <span class="detail-label">Nationality</span>
-                  <span class="detail-value" id="detailCountry">-</span>
+                  <span class="detail-label">Address</span>
+                  <span class="detail-value" id="detailAddress">-</span>
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Gender</span>
                   <span class="detail-value" id="detailGender">-</span>
-                </div>
-                <div class="detail-row-item">
-                  <span class="detail-label">Languages Known</span>
-                  <span class="detail-value" id="detailLanguages">-</span>
                 </div>
               </div>
             </div>
@@ -1476,22 +1472,52 @@
               </div>
               <div class="details-grid-2">
                 <div class="detail-row-item">
-                  <span class="detail-label">Designation</span>
-                  <span class="detail-value" id="detailDesignation"
-                    >Teacher</span
-                  >
+                  <span class="detail-label">Employment Status</span>
+                  <span class="detail-value" id="detailEmploymentStatus">-</span>
                 </div>
                 <div class="detail-row-item">
-                  <span class="detail-label">Qualification</span>
+                  <span class="detail-label">Institution / School Name</span>
+                  <span class="detail-value" id="detailInstitution">-</span>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">Institution Type</span>
+                  <span class="detail-value" id="detailInstitutionType">-</span>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">Teaching Experience</span>
+                  <span class="detail-value" id="detailExperience">-</span>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">Highest Qualification</span>
                   <span class="detail-value" id="detailQualification">-</span>
                 </div>
                 <div class="detail-row-item">
-                  <span class="detail-label">Department</span>
-                  <span class="detail-value" id="detailDepartment">-</span>
+                  <span class="detail-label">Degree / Course</span>
+                  <span class="detail-value" id="detailDegree">-</span>
                 </div>
                 <div class="detail-row-item">
-                  <span class="detail-label">Experience</span>
-                  <span class="detail-value" id="detailExperience">-</span>
+                  <span class="detail-label">Specialization</span>
+                  <span class="detail-value" id="detailSpecialization">-</span>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">University / College</span>
+                  <span class="detail-value" id="detailUniversity">-</span>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">Graduation Year</span>
+                  <span class="detail-value" id="detailGraduationYear">-</span>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">Teaching Mode</span>
+                  <span class="detail-value" id="detailTeachingMode">-</span>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">Grades</span>
+                  <span class="detail-value" id="detailGrades">-</span>
+                </div>
+                <div class="detail-row-item">
+                  <span class="detail-label">Streams</span>
+                  <span class="detail-value" id="detailStreams">-</span>
                 </div>
                 <div class="detail-row-item">
                   <span class="detail-label">Subjects Teaching</span>
@@ -1500,16 +1526,8 @@
                   </div>
                 </div>
                 <div class="detail-row-item">
-                  <span class="detail-label">School / Institution</span>
-                  <span class="detail-value" id="detailInstitution">-</span>
-                </div>
-                <div class="detail-row-item">
-                  <span class="detail-label">Employee ID</span>
-                  <span class="detail-value" id="detailTeacherId">-</span>
-                </div>
-                <div class="detail-row-item">
-                  <span class="detail-label">Joining Date</span>
-                  <span class="detail-value" id="detailJoiningDate">-</span>
+                  <span class="detail-label">Languages Known</span>
+                  <span class="detail-value" id="detailLanguages">-</span>
                 </div>
               </div>
             </div>
@@ -1607,6 +1625,7 @@
         let stopAuthWatch = null;
         let connectionMessage = "";
         let teacherSubjects = [];
+        let registrationLanguages = [];
         let savingProfile = false;
 
         const setText = (id, value) => {
@@ -1618,6 +1637,11 @@
                 : value;
           }
         };
+
+        const formatRegistrationValue = (value) =>
+          String(value || "")
+            .replace(/[_-]+/g, " ")
+            .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
         function renderProfile() {
           if (!profile || !authUser) return;
@@ -1651,19 +1675,31 @@
           setText("detailAddress", profile.address);
           setText("detailDob", profile.date_of_birth);
           setText("detailCountry", profile.country);
+          setText("detailState", profile.state);
+          setText("detailCity", profile.city);
           setText("detailGender", profile.gender);
-          setText("detailLanguages", (profile.languages || []).join(", "));
-          setText("detailQualification", profile.highest_qualification);
-          setText("detailDepartment", profile.institution_type);
-          setText("detailExperience", profile.years_experience);
-          setText("detailInstitution", profile.institution_name);
-          setText("detailTeacherId", profile.teacher_id);
+          const profileLanguages = Array.isArray(profile.languages)
+            ? profile.languages
+            : [];
           setText(
-            "detailJoiningDate",
-            profile.created_at
-              ? new Date(profile.created_at).toLocaleDateString()
-              : "-",
+            "detailLanguages",
+            (profileLanguages.length ? profileLanguages : registrationLanguages).join(", "),
           );
+          setText(
+            "detailEmploymentStatus",
+            profile.employment_status === "teaching"
+              ? "Currently Teaching"
+              : formatRegistrationValue(profile.employment_status),
+          );
+          setText("detailInstitution", profile.institution_name);
+          setText("detailInstitutionType", formatRegistrationValue(profile.institution_type));
+          setText("detailExperience", profile.years_experience);
+          setText("detailQualification", profile.highest_qualification);
+          setText("detailDegree", profile.degree_course);
+          setText("detailSpecialization", profile.specialization);
+          setText("detailUniversity", profile.university_college);
+          setText("detailGraduationYear", profile.graduation_year);
+          setText("detailTeachingMode", formatRegistrationValue(profile.teaching_mode));
           setText("profileRoleEl", role);
           setText("profileRoleBadge", role);
           setText("profileAbout", profile.bio);
@@ -1848,6 +1884,25 @@
           teacherSubjects = [
             ...new Set(registeredGroups.flatMap((group) => group.subjects.map((subject) => subject.name))),
           ];
+          setText(
+            "detailGrades",
+            [...new Set(registeredGroups.map((group) => group.grade))]
+              .sort((left, right) => left - right)
+              .map((grade) => `Class ${grade}`)
+              .join(", "),
+          );
+          const streamLabels = {
+            science_pcm: "Science (PCM)",
+            science_pcb: "Science (PCB)",
+            commerce: "Commerce",
+            arts_humanities: "Arts / Humanities",
+          };
+          setText(
+            "detailStreams",
+            [...new Set(registeredGroups.map((group) => group.stream).filter(Boolean))]
+              .map((stream) => streamLabels[stream] || formatRegistrationValue(stream))
+              .join(", "),
+          );
           const classCount = new Set(registeredGroups.map((group) => group.grade)).size;
           setText("profileClassCount", classCount);
           setText("profileSubjectCount", teacherSubjects.length);
@@ -1859,6 +1914,21 @@
             badge.textContent = subject;
             subjectContainer.append(badge);
           });
+
+          const { data: languageRows, error: languageError } = await client
+            .from("teacher_languages")
+            .select("language")
+            .eq("teacher_id", profile.id)
+            .order("language", { ascending: true });
+          if (languageError) throw languageError;
+          registrationLanguages = (languageRows || []).map((row) => row.language);
+          const profileLanguages = Array.isArray(profile.languages)
+            ? profile.languages
+            : [];
+          setText(
+            "detailLanguages",
+            (profileLanguages.length ? profileLanguages : registrationLanguages).join(", "),
+          );
 
           const { count: studentCount, error: studentError } = await client
             .from("students")
