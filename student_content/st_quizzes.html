@@ -869,6 +869,383 @@
         font-size: 10px;
       }
 
+      .quiz-attempt-view[hidden] {
+        display: none;
+      }
+
+      .quiz-page [hidden] {
+        display: none !important;
+      }
+
+      .quiz-attempt-view {
+        color: #101a3b;
+      }
+
+      .attempt-back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 18px;
+        color: #087f8a;
+        font-size: 13px;
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      .attempt-back-link:hover {
+        color: #5a35db;
+      }
+
+      .attempt-overview,
+      .attempt-question-card,
+      .attempt-navigation-card {
+        border: 1px solid #e7ebf0;
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 8px 24px rgba(24, 37, 70, 0.05);
+      }
+
+      .attempt-overview {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 22px 24px;
+        margin-bottom: 18px;
+      }
+
+      .attempt-overview h1 {
+        margin: 6px 0 12px;
+        color: #08183e;
+        font-size: clamp(1.35rem, 2.4vw, 1.9rem);
+        line-height: 1.25;
+      }
+
+      .attempt-overview-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 18px;
+        color: #536789;
+        font-size: 12px;
+      }
+
+      .attempt-overview-meta strong {
+        color: #1a2747;
+      }
+
+      .attempt-timer {
+        min-width: 142px;
+        padding: 13px 18px;
+        border: 1px solid rgba(0, 139, 149, 0.2);
+        border-radius: 12px;
+        background: #f0fbfb;
+        text-align: center;
+      }
+
+      .attempt-timer-label {
+        display: block;
+        margin-bottom: 3px;
+        color: #087f8a;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .attempt-timer-value {
+        color: #08183e;
+        font-size: 27px;
+        font-variant-numeric: tabular-nums;
+        font-weight: 800;
+      }
+
+      .attempt-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 260px;
+        align-items: start;
+        gap: 18px;
+      }
+
+      .attempt-question-card,
+      .attempt-navigation-card {
+        padding: 22px;
+      }
+
+      .attempt-question-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+      }
+
+      .attempt-question-top h2,
+      .attempt-navigation-card h2 {
+        color: #111b3d;
+        font-size: 16px;
+      }
+
+      .attempt-question-subtitle {
+        margin-top: 5px;
+        color: #687999;
+        font-size: 12px;
+      }
+
+      .attempt-question-status {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 14px;
+        margin: 16px 0 10px;
+        color: #536789;
+        font-size: 11px;
+      }
+
+      .attempt-progress {
+        height: 7px;
+        overflow: hidden;
+        margin-bottom: 18px;
+        border-radius: 99px;
+        background: #edf1f6;
+      }
+
+      .attempt-progress > span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: #5a35db;
+        transition: width 160ms ease;
+      }
+
+      .attempt-question-prompt {
+        min-height: 155px;
+        padding: 20px;
+        border: 1px solid #e7ebf0;
+        border-radius: 12px;
+        background: #fbfcfe;
+      }
+
+      .attempt-question-prompt p {
+        margin: 10px 0 0;
+        color: #1a2747;
+        font-size: 15px;
+        line-height: 1.7;
+        white-space: pre-wrap;
+      }
+
+      .attempt-question-badges {
+        display: flex;
+        gap: 8px;
+      }
+
+      .attempt-question-badge {
+        padding: 6px 9px;
+        border-radius: 99px;
+        background: #f0edff;
+        color: #5935df;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: capitalize;
+      }
+
+      .attempt-options {
+        display: grid;
+        gap: 10px;
+        margin-top: 16px;
+      }
+
+      .attempt-option {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 13px 15px;
+        border: 1px solid #e3e8ef;
+        border-radius: 10px;
+        background: #fff;
+        color: #344563;
+        cursor: pointer;
+        transition: border-color 140ms ease, background 140ms ease;
+      }
+
+      .attempt-option:hover {
+        border-color: #9c8ae8;
+      }
+
+      .attempt-option.is-selected {
+        border-color: #5a35db;
+        background: #f5f2ff;
+        color: #251758;
+      }
+
+      .attempt-option input {
+        accent-color: #5a35db;
+        margin-top: 2px;
+      }
+
+      .attempt-navigation-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 8px;
+        margin: 16px 0;
+      }
+
+      .attempt-question-number {
+        min-height: 40px;
+        border: 1px solid #e1e6ed;
+        border-radius: 9px;
+        background: #f0f2f5;
+        color: #58677f;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .attempt-question-number.is-current {
+        border-color: #5a35db;
+        background: #5a35db;
+        color: #fff;
+      }
+
+      .attempt-question-number.is-answered:not(.is-current) {
+        border-color: #a7dfca;
+        background: #e8f7f0;
+        color: #08794c;
+      }
+
+      .attempt-question-number.is-review {
+        border-color: #e9b65a;
+        box-shadow: inset 0 0 0 2px #f7d58d;
+      }
+
+      .attempt-navigation-legend {
+        display: grid;
+        gap: 9px;
+        color: #536789;
+        font-size: 11px;
+      }
+
+      .attempt-navigation-legend span {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .attempt-legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+        background: #e8f7f0;
+      }
+
+      .attempt-legend-dot.current {
+        background: #5a35db;
+      }
+
+      .attempt-legend-dot.unanswered {
+        background: #f0f2f5;
+      }
+
+      .attempt-legend-dot.review {
+        border: 2px solid #e9b65a;
+        background: #fff7e6;
+      }
+
+      .attempt-question-actions,
+      .attempt-footer-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .attempt-footer-actions {
+        justify-content: flex-end;
+        margin-top: 16px;
+      }
+
+      .attempt-question-actions .attempt-btn,
+      .attempt-footer-actions .attempt-btn,
+      .attempt-review-button {
+        width: auto;
+        min-height: 40px;
+        padding: 9px 15px;
+      }
+
+      .attempt-review-button {
+        border: 1px solid #e9b65a;
+        border-radius: 8px;
+        background: #fff7e6;
+        color: #875b00;
+        cursor: pointer;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .attempt-submit-button {
+        background: #5a35db !important;
+      }
+
+      .attempt-submit-summary {
+        display: grid;
+        gap: 8px;
+        margin: 14px 0;
+        color: #536789;
+        font-size: 13px;
+      }
+
+      @media (max-width: 1000px) {
+        .attempt-layout {
+          grid-template-columns: minmax(0, 1fr) 230px;
+        }
+      }
+
+      @media (max-width: 750px) {
+        .attempt-overview {
+          align-items: stretch;
+          flex-direction: column;
+          padding: 18px;
+        }
+
+        .attempt-timer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          text-align: left;
+        }
+
+        .attempt-timer-label {
+          margin: 0;
+        }
+
+        .attempt-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .attempt-navigation-card {
+          order: -1;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .attempt-question-card,
+        .attempt-navigation-card {
+          padding: 16px;
+        }
+
+        .attempt-question-prompt {
+          min-height: 120px;
+          padding: 15px;
+        }
+
+        .attempt-question-actions {
+          flex-wrap: wrap;
+        }
+
+        .attempt-question-actions .attempt-review-button {
+          order: -1;
+          width: 100%;
+        }
+      }
+
       /* =====================================================
    RESPONSIVE
 ===================================================== */
@@ -1008,6 +1385,14 @@
           </div>
         </div>
       </div>
+
+      <section
+        id="quizAttemptView"
+        class="quiz-attempt-view"
+        tabindex="-1"
+        aria-live="polite"
+        hidden
+      ></section>
 
       <!-- =================================================
          STATISTICS
@@ -1259,6 +1644,9 @@
       let loadingQuizzes = false;
       let reloadQuizzesQueued = false;
       let studentQuizChannel = null;
+      const quizAnswerDrafts = new Map();
+      const quizReviewDrafts = new Map();
+      const quizPageSections = [".page-header", ".stats-grid", ".main-grid"];
       const streamLabels = {
         science_pcm: "Science (PCM)",
         science_pcb: "Science (PCB)",
@@ -2119,6 +2507,22 @@
         return dialog;
       }
 
+      function getQuizAttemptView() {
+        const view = document.getElementById("quizAttemptView");
+        if (!view) throw new Error("The quiz attempt content area is unavailable.");
+        return view;
+      }
+
+      function setQuizAttemptViewVisible(visible) {
+        const view = getQuizAttemptView();
+        view.hidden = !visible;
+        quizPageSections.forEach((selector) => {
+          const section = document.querySelector(`.quiz-page ${selector}`);
+          if (section) section.hidden = visible;
+        });
+        if (visible) view.focus({ preventScroll: true });
+      }
+
       let activeQuizTimer = null;
 
       function bindDialogClose(dialog) {
@@ -2144,8 +2548,11 @@
 
       function showQuizError(dialog, error) {
         console.error("Quiz workflow failed:", error);
+        window.clearInterval(activeQuizTimer);
+        setQuizAttemptViewVisible(false);
         dialog.innerHTML = `<section style="padding:28px;font-family:Inter,sans-serif;color:#101a3b"><h2>Quiz unavailable</h2><p role="alert" style="color:#b83d4b">${escapeHTML(error.message || "The quiz could not be loaded.")}</p><button type="button" data-close class="attempt-btn">Close</button></section>`;
         bindDialogClose(dialog);
+        if (!dialog.open) dialog.showModal();
       }
 
       function showQuizInstructions(quiz) {
@@ -2153,7 +2560,7 @@
         const streamLabel = quiz.stream
           ? streamLabels[quiz.stream] || quiz.stream
           : "General";
-        dialog.innerHTML = `<section style="padding:28px;font-family:Inter,sans-serif;color:#101a3b"><button type="button" data-close style="float:right;border:0;background:none;font-size:24px;cursor:pointer" aria-label="Close">×</button><span style="color:#008b95;font-size:12px;font-weight:800;text-transform:uppercase">Grade ${escapeHTML(quiz.grade)} · ${escapeHTML(streamLabel)}</span><h2 style="margin:10px 0">${escapeHTML(quiz.title)}</h2><p>${escapeHTML(quiz.subject)} · ${Number(quiz.question_count)} questions · ${Number(quiz.total_marks)} marks · ${Number(quiz.duration_minutes)} minutes</p><p>${escapeHTML(quiz.instructions || "Read each question carefully. Your timer starts when you begin.")}</p>        <p><strong>Starting begins your official timer.</strong> Answers saved on this device will be restored if you refresh this page.</p><button id="beginQuizButton" class="attempt-btn" type="button">Start Quiz</button></section>`;
+        dialog.innerHTML = `<section style="padding:28px;font-family:Inter,sans-serif;color:#101a3b"><button type="button" data-close style="float:right;border:0;background:none;font-size:24px;cursor:pointer" aria-label="Close">×</button><span style="color:#008b95;font-size:12px;font-weight:800;text-transform:uppercase">Grade ${escapeHTML(quiz.grade)} · ${escapeHTML(streamLabel)}</span><h2 style="margin:10px 0">${escapeHTML(quiz.title)}</h2><p>${escapeHTML(quiz.subject)} · ${Number(quiz.question_count)} questions · ${Number(quiz.total_marks)} marks · ${Number(quiz.duration_minutes)} minutes</p><p>${escapeHTML(quiz.instructions || "Read each question carefully. Your timer starts when you begin.")}</p><p><strong>Starting begins your official timer.</strong> Answers and review marks are held in this page until submission; refreshing may clear them.</p><button id="beginQuizButton" class="attempt-btn" type="button">Start Quiz</button></section>`;
         bindDialogClose(dialog);
         dialog.querySelector("#beginQuizButton").addEventListener("click", () => {
           void launchQuizAttempt(quiz);
@@ -2180,8 +2587,10 @@
 
       async function launchQuizAttempt(quiz) {
         const dialog = getQuizDialog();
-        dialog.innerHTML = `<section style="padding:28px;font-family:Inter,sans-serif;color:#101a3b"><p role="status">Loading quiz…</p></section>`;
-        if (!dialog.open) dialog.showModal();
+        if (dialog.open) dialog.close();
+        setQuizAttemptViewVisible(true);
+        const view = getQuizAttemptView();
+        view.innerHTML = `<div class="loading" role="status"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading your quiz attempt…</p></div>`;
         try {
           const {
             data: authData,
@@ -2231,6 +2640,7 @@
             renderQuizzes();
             updateStatistics();
             updatePerformance();
+            setQuizAttemptViewVisible(false);
             renderAttemptResult(attemptView, selectedQuiz);
             return;
           }
@@ -2281,6 +2691,7 @@
             renderQuizzes();
             updateStatistics();
             updatePerformance();
+            setQuizAttemptViewVisible(false);
             renderAttemptResult(attemptView, selectedQuiz);
             return;
           }
@@ -2331,6 +2742,29 @@
           if (!Array.isArray(questions) || !questions.length) {
             throw new Error("No questions are available for this attempt.");
           }
+          const questionIds = questions.map((question) => question?.id);
+          if (
+            questionIds.some(
+              (questionId) =>
+                typeof questionId !== "string" || !questionId.trim(),
+            ) ||
+            new Set(questionIds).size !== questionIds.length
+          ) {
+            console.error(
+              "Student question RPC did not return unique question IDs.",
+              {
+                quizId: selectedQuiz.id,
+                questionCount: questions.length,
+                idsPresent: questionIds.filter(
+                  (questionId) =>
+                    typeof questionId === "string" && questionId.trim(),
+                ).length,
+              },
+            );
+            throw new Error(
+              "The question service did not return unique question IDs required to safely save answers. Ask your administrator to verify the deployed get_student_quiz_questions function before retrying.",
+            );
+          }
           const unsupportedQuestion = questions.find(
             (question) =>
               question.question_type !== "mcq" &&
@@ -2346,51 +2780,22 @@
             status: attemptRecord.status,
             started_at: attemptRecord.started_at,
           };
-          const draftKey = getQuizDraftKey(selectedQuiz.id, attemptId);
-          const storedAnswers = window.localStorage.getItem(draftKey);
-          const restoredAnswers = storedAnswers ? JSON.parse(storedAnswers) : {};
-          if (
-            !restoredAnswers ||
-            typeof restoredAnswers !== "object" ||
-            Array.isArray(restoredAnswers)
-          ) {
-            throw new Error("Saved answers could not be restored. Clear this quiz's saved browser data and try again.");
-          }
-          const questionIds = new Set(questions.map((question) => String(question.id)));
-          const answers = new Map(
-            Object.entries(restoredAnswers)
-              .filter(
-                ([questionId, answer]) =>
-                  questionIds.has(questionId) &&
-                  (typeof answer === "string" || answer === null),
-              ),
-          );
+          const answers =
+            quizAnswerDrafts.get(String(attemptId)) || new Map();
+          const reviewQuestions =
+            quizReviewDrafts.get(String(attemptId)) || new Set();
+          quizAnswerDrafts.set(String(attemptId), answers);
+          quizReviewDrafts.set(String(attemptId), reviewQuestions);
           renderQuestionScreen(
             selectedQuiz,
             attempt,
             questions,
             answers,
             0,
-            draftKey,
+            reviewQuestions,
           );
         } catch (error) {
           showQuizError(dialog, error);
-        }
-      }
-
-      function getQuizDraftKey(quizId, attemptId) {
-        const studentId = studentData?.user_id;
-        if (!studentId) {
-          throw new Error("Your student account could not be identified for saving quiz progress.");
-        }
-        return `student-quiz-draft:${studentId}:${quizId}:${attemptId}`;
-      }
-
-      function clearQuizDraft(draftKey) {
-        try {
-          window.localStorage.removeItem(draftKey);
-        } catch (error) {
-          console.warn("Submitted quiz answers could not be removed from this browser.", error);
         }
       }
 
@@ -2400,13 +2805,13 @@
         questions,
         answers,
         initialIndex,
-        draftKey,
+        reviewQuestions,
       ) {
-        const dialog = getQuizDialog();
+        const view = getQuizAttemptView();
         let currentIndex = initialIndex;
         let submissionInFlight = false;
         let lastSubmissionConfirmed = false;
-        let draftStorageError = null;
+        let autoSubmitAttempted = false;
         const expiresAt =
           new Date(attempt.started_at).getTime() +
           Number(quiz.duration_minutes) * 60 * 1000;
@@ -2416,26 +2821,9 @@
 
         const saveAnswer = (question, answer) => {
           answers.set(String(question.id), answer);
-          try {
-            window.localStorage.setItem(
-              draftKey,
-              JSON.stringify(Object.fromEntries(answers)),
-            );
-            const status = dialog.querySelector("#answerSaveStatus");
-            if (status) status.textContent = "Saved on this device";
-            const errorElement = dialog.querySelector("#quizWorkflowError");
-            if (errorElement) errorElement.textContent = "";
-            draftStorageError = null;
-          } catch (error) {
-            draftStorageError = error;
-            const status = dialog.querySelector("#answerSaveStatus");
-            if (status) status.textContent = "Answer not saved on this device";
-            const errorElement = dialog.querySelector("#quizWorkflowError");
-            if (errorElement) {
-              errorElement.textContent =
-                "Your answer could not be saved in this browser. Check available storage and try again.";
-            }
-          }
+          const status = view.querySelector("#answerSaveStatus");
+          if (status) status.textContent = "Answer selected";
+          renderNavigation();
         };
 
         const formatRemainingTime = () => {
@@ -2454,6 +2842,26 @@
             return answer !== null && answer !== undefined && String(answer).trim() !== "";
           }).length;
 
+        const renderNavigation = () => {
+          const navigation = view.querySelector("#attemptNavigation");
+          if (!navigation) return;
+          navigation.innerHTML = questions
+            .map((question, index) => {
+              const isAnswered = answers.has(String(question.id)) &&
+                String(answers.get(String(question.id)) ?? "").trim() !== "";
+              const isCurrent = index === currentIndex;
+              const isReview = reviewQuestions.has(String(question.id));
+              const classes = [
+                "attempt-question-number",
+                isCurrent ? "is-current" : "",
+                isAnswered ? "is-answered" : "",
+                isReview ? "is-review" : "",
+              ].filter(Boolean).join(" ");
+              return `<button type="button" class="${classes}" data-question-index="${index}" aria-current="${isCurrent ? "step" : "false"}" aria-label="Question ${index + 1}${isAnswered ? ", answered" : ", unanswered"}${isReview ? ", marked for review" : ""}">${index + 1}</button>`;
+            })
+            .join("");
+        };
+
         const renderCurrentQuestion = () => {
           const question = questions[currentIndex];
           const savedValue = answers.get(String(question.id));
@@ -2471,36 +2879,84 @@
             answerControl = options
               .map(
                 (option) =>
-                  `<label style="display:flex;gap:10px;align-items:center;margin:10px 0;padding:12px;border:1px solid #e3e8ef;border-radius:8px"><input type="radio" name="quiz-answer" value="${escapeHTML(option.id)}" ${String(savedValue) === String(option.id) ? "checked" : ""}><span>${escapeHTML(option.text)}</span></label>`,
+                  `<label class="attempt-option${String(savedValue) === String(option.id) ? " is-selected" : ""}"><input type="radio" name="quiz-answer" value="${escapeHTML(option.id)}" ${String(savedValue) === String(option.id) ? "checked" : ""}><span>${escapeHTML(option.text)}</span></label>`,
               )
               .join("");
           } else if (question.question_type === "true_false") {
             answerControl = ["true", "false"]
               .map(
                 (value) =>
-                  `<label style="display:inline-flex;gap:8px;align-items:center;margin:10px 18px 10px 0;padding:12px 16px;border:1px solid #e3e8ef;border-radius:8px"><input type="radio" name="quiz-answer" value="${value}" ${String(savedValue).toLowerCase() === value ? "checked" : ""}><span>${value === "true" ? "True" : "False"}</span></label>`,
+                  `<label class="attempt-option${String(savedValue).toLowerCase() === value ? " is-selected" : ""}"><input type="radio" name="quiz-answer" value="${value}" ${String(savedValue).toLowerCase() === value ? "checked" : ""}><span>${value === "true" ? "True" : "False"}</span></label>`,
               )
               .join("");
+          } else if (question.question_type === "short_answer") {
+            answerControl = `<p role="alert">Short-answer questions are not supported by the deployed quiz submission function. This quiz cannot be safely submitted.</p><textarea id="shortAnswerInput" rows="5" disabled aria-disabled="true"></textarea>`;
           } else {
             throw new Error(`Unsupported question type: ${question.question_type}`);
           }
-
-          const navigation = questions
-            .map((item, index) => {
-              const value = answers.get(String(item.id));
-              const isAnswered =
-                value !== null &&
-                value !== undefined &&
-                String(value).trim() !== "";
-              return `<button type="button" data-question-index="${index}" aria-label="Question ${index + 1}${isAnswered ? ", answered" : ", unanswered"}" aria-current="${index === currentIndex ? "step" : "false"}" style="min-width:40px;margin:4px;padding:8px;border:1px solid ${index === currentIndex ? "#008b95" : "#d5dce7"};border-radius:8px;background:${isAnswered ? "#e5f7f2" : "#fff"};cursor:pointer">${index + 1}</button>`;
-            })
-            .join("");
-
-          dialog.innerHTML = `<section style="padding:28px;font-family:Inter,sans-serif;color:#101a3b"><button type="button" data-close style="float:right;border:0;background:none;font-size:24px;cursor:pointer" aria-label="Close and resume later">×</button><span style="color:#008b95;font-size:12px;font-weight:800;text-transform:uppercase">${escapeHTML(quiz.subject)} · Grade ${escapeHTML(quiz.grade)}</span><h2 style="margin:10px 0">${escapeHTML(quiz.title)}</h2><p>Time remaining: <strong id="quizTimer" role="timer">${formatRemainingTime()}</strong> · ${Number(quiz.total_marks)} marks</p><nav aria-label="Question navigation" style="margin:12px 0">${navigation}</nav><form id="quizQuestionForm"><fieldset style="border:0;border-bottom:1px solid #edf1f6;padding:18px 0"><legend style="font-weight:750;margin-bottom:8px">Question ${currentIndex + 1} of ${questions.length} · ${Number(question.marks)} marks</legend><p style="line-height:1.6">${escapeHTML(question.question_text)}</p>${answerControl}</fieldset><p id="answerSaveStatus" role="status" style="min-height:1.4em">Saved on this device</p><p id="quizWorkflowError" role="alert" style="color:#b83d4b"></p><div style="display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap"><button id="previousQuestionButton" type="button" class="attempt-btn" ${currentIndex === 0 ? "disabled" : ""}>Previous</button><button id="nextQuestionButton" type="button" class="attempt-btn" ${currentIndex === questions.length - 1 ? "disabled" : ""}>Next</button><button id="submitQuizButton" type="button" class="attempt-btn">Submit Quiz</button></div></form></section>`;
-          bindDialogClose(dialog);
+          const answered = answeredCount();
+          const currentReview = reviewQuestions.has(String(question.id));
+          const streamLabel = quiz.stream
+            ? streamLabels[quiz.stream] || quiz.stream
+            : "General";
+          view.innerHTML = `<a href="#" id="backToQuizzesLink" class="attempt-back-link"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to Quizzes</a>
+            <header class="attempt-overview">
+              <div>
+                <span class="page-eyebrow"><i class="fa-solid fa-clipboard-check" aria-hidden="true"></i> Quiz in progress</span>
+                <h1>${escapeHTML(quiz.title)}</h1>
+                <div class="attempt-overview-meta">
+                  <span>Subject: <strong>${escapeHTML(quiz.subject)}</strong></span>
+                  <span>Class: <strong>${escapeHTML(studentData.grade)}${studentData.stream ? ` – ${escapeHTML(streamLabel)}` : ""}</strong></span>
+                  <span>Questions: <strong>${questions.length}</strong></span>
+                  <span>Total Marks: <strong>${Number(quiz.total_marks)}</strong></span>
+                  <span>Duration: <strong>${Number(quiz.duration_minutes)} minutes</strong></span>
+                </div>
+              </div>
+              <div class="attempt-timer">
+                <span class="attempt-timer-label">Time Remaining</span>
+                <strong id="quizTimer" class="attempt-timer-value" role="timer">${formatRemainingTime()}</strong>
+              </div>
+            </header>
+            <div class="attempt-layout">
+              <section class="attempt-question-card" aria-labelledby="attemptQuestionTitle">
+                <div class="attempt-question-top">
+                  <div><h2 id="attemptQuestionTitle">Question ${currentIndex + 1} of ${questions.length}</h2><p class="attempt-question-subtitle">${answered} of ${questions.length} answered</p></div>
+                  <div class="attempt-question-badges"><span class="attempt-question-badge">${escapeHTML(question.question_type.replace(/_/g, " "))}</span><span class="attempt-question-badge">${Number(question.marks)} marks</span></div>
+                </div>
+                <div class="attempt-question-status"><span>Answered: <strong>${answered}</strong></span><span>Current: <strong>${currentIndex + 1}</strong></span><span>Unanswered: <strong>${questions.length - answered}</strong></span></div>
+                <div class="attempt-progress" role="progressbar" aria-label="Quiz progress" aria-valuemin="0" aria-valuemax="${questions.length}" aria-valuenow="${answered}"><span style="width:${Math.round(answered / questions.length * 100)}%"></span></div>
+                <article class="attempt-question-prompt"><span class="attempt-question-badge">Question ${currentIndex + 1}</span><p>${escapeHTML(question.question_text)}</p></article>
+                <div class="attempt-options">${answerControl}</div>
+                <p id="answerSaveStatus" role="status" class="attempt-question-subtitle">Answer is held for this attempt until submission.</p>
+                <p id="quizWorkflowError" role="alert" class="attempt-question-subtitle"></p>
+                <div class="attempt-question-actions">
+                  <button id="previousQuestionButton" type="button" class="attempt-btn" ${currentIndex === 0 ? "disabled" : ""}>Previous</button>
+                  <button id="markReviewButton" type="button" class="attempt-review-button" aria-pressed="${currentReview}">${currentReview ? "Remove Review Mark" : "Mark for Review"}</button>
+                  ${currentIndex < questions.length - 1 ? `<button id="nextQuestionButton" type="button" class="attempt-btn">Next Question</button>` : `<button id="finalQuestionSubmitButton" type="button" class="attempt-btn">Review & Submit</button>`}
+                </div>
+              </section>
+              <aside class="attempt-navigation-card" aria-labelledby="attemptNavigationTitle">
+                <h2 id="attemptNavigationTitle">Question Navigation</h2>
+                <p class="attempt-question-subtitle">Select a number to move to that question.</p>
+                <nav id="attemptNavigation" class="attempt-navigation-grid" aria-label="Question navigation"></nav>
+                <div class="attempt-navigation-legend">
+                  <span><i class="attempt-legend-dot current"></i> Current</span>
+                  <span><i class="attempt-legend-dot"></i> Answered</span>
+                  <span><i class="attempt-legend-dot unanswered"></i> Unanswered</span>
+                  <span><i class="attempt-legend-dot review"></i> Marked for review</span>
+                </div>
+              </aside>
+            </div>
+            <div class="attempt-footer-actions"><button id="submitQuizButton" type="button" class="attempt-btn attempt-submit-button">Submit Quiz</button></div>`;
+          renderNavigation();
 
           const currentQuestion = question;
-          dialog.querySelectorAll("[data-question-index]").forEach((button) => {
+          view.querySelector("#backToQuizzesLink").addEventListener("click", (event) => {
+            event.preventDefault();
+            window.clearInterval(activeQuizTimer);
+            setQuizAttemptViewVisible(false);
+          });
+          view.querySelectorAll("[data-question-index]").forEach((button) => {
             button.addEventListener("click", async () => {
               try {
                 await saveCurrentAnswer();
@@ -2511,14 +2967,20 @@
               }
             });
           });
-          dialog
+          view
             .querySelectorAll('input[name="quiz-answer"]')
             .forEach((input) =>
               input.addEventListener("change", () => {
                 saveAnswer(currentQuestion, input.value);
+                input.closest(".attempt-option")?.classList.add("is-selected");
+                view.querySelectorAll(".attempt-option").forEach((option) => {
+                  if (option !== input.closest(".attempt-option")) {
+                    option.classList.remove("is-selected");
+                  }
+                });
               }),
             );
-          dialog
+          view
             .querySelector("#previousQuestionButton")
             .addEventListener("click", async () => {
               try {
@@ -2529,9 +2991,8 @@
                 showWorkflowError(error);
               }
             });
-          dialog
-            .querySelector("#nextQuestionButton")
-            .addEventListener("click", async () => {
+          const nextQuestionButton = view.querySelector("#nextQuestionButton");
+          nextQuestionButton?.addEventListener("click", async () => {
               try {
                 await saveCurrentAnswer();
                 currentIndex += 1;
@@ -2540,7 +3001,24 @@
                 showWorkflowError(error);
               }
             });
-          dialog
+          view.querySelector("#finalQuestionSubmitButton")?.addEventListener(
+            "click",
+            async () => {
+              try {
+                await saveCurrentAnswer();
+                showSubmissionConfirmation(false);
+              } catch (error) {
+                showWorkflowError(error);
+              }
+            },
+          );
+          view.querySelector("#markReviewButton").addEventListener("click", () => {
+            const key = String(currentQuestion.id);
+            if (reviewQuestions.has(key)) reviewQuestions.delete(key);
+            else reviewQuestions.add(key);
+            renderCurrentQuestion();
+          });
+          view
             .querySelector("#submitQuizButton")
             .addEventListener("click", async () => {
               try {
@@ -2553,22 +3031,20 @@
         };
 
         const showWorkflowError = (error) => {
-          const errorElement = dialog.querySelector("#quizWorkflowError");
-          if (errorElement) errorElement.textContent = error.message;
+          const errorElement = view.querySelector("#quizWorkflowError");
+          if (errorElement) {
+            errorElement.textContent =
+              error?.message || "The answer could not be updated.";
+          }
         };
 
         const saveCurrentAnswer = async () => {
           const question = questions[currentIndex];
-          const selectedAnswer = dialog.querySelector(
+          const selectedAnswer = view.querySelector(
             'input[name="quiz-answer"]:checked',
           );
           if (selectedAnswer) {
             saveAnswer(question, selectedAnswer.value);
-          }
-          if (draftStorageError) {
-            throw new Error(
-              "Your current answer could not be saved in this browser. Free storage and try again before submitting.",
-            );
           }
         };
 
@@ -2578,11 +3054,33 @@
             return;
           }
           const answered = answeredCount();
-          dialog.innerHTML = `<section style="padding:28px;font-family:Inter,sans-serif;color:#101a3b"><h2>Submit this quiz?</h2><p>${answered} answered · ${questions.length - answered} unanswered</p><p>You cannot change answers after submitting.</p><p id="submitError" role="alert" style="color:#b83d4b"></p><button id="cancelSubmitButton" type="button" class="attempt-btn">Return to Quiz</button><button id="confirmSubmitButton" type="button" class="attempt-btn">Confirm Submission</button></section>`;
-          dialog
+          const reviewed = reviewQuestions.size;
+          view.innerHTML = `<a href="#" id="backToQuestionsLink" class="attempt-back-link"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Return to Quiz</a>
+            <section class="attempt-question-card" aria-labelledby="submitConfirmationTitle">
+              <h2 id="submitConfirmationTitle">Submit this quiz?</h2>
+              <p class="attempt-question-subtitle">${escapeHTML(quiz.title)}</p>
+              <div class="attempt-submit-summary">
+                <span><strong>${answered}</strong> answered</span>
+                <span><strong>${questions.length - answered}</strong> unanswered</span>
+                <span><strong>${reviewed}</strong> marked for review</span>
+              </div>
+              <p class="attempt-question-subtitle">You cannot change answers after submitting.</p>
+              <p id="submitError" role="alert" class="attempt-question-subtitle"></p>
+              <div class="attempt-footer-actions">
+                <button id="cancelSubmitButton" type="button" class="attempt-btn">Go Back</button>
+                <button id="confirmSubmitButton" type="button" class="attempt-btn attempt-submit-button">Confirm Submission</button>
+              </div>
+            </section>`;
+          view
+            .querySelector("#backToQuestionsLink")
+            .addEventListener("click", (event) => {
+              event.preventDefault();
+              renderCurrentQuestion();
+            });
+          view
             .querySelector("#cancelSubmitButton")
             .addEventListener("click", renderCurrentQuestion);
-          dialog
+          view
             .querySelector("#confirmSubmitButton")
             .addEventListener("click", () => void submitAttempt());
         };
@@ -2650,7 +3148,7 @@
         const showConfirmedSubmission = (attemptRecord, releasedQuizRow = null) => {
           lastSubmissionConfirmed = true;
           submissionInFlight = true;
-          clearQuizDraft(draftKey);
+          window.clearInterval(activeQuizTimer);
           const submittedAttempt = createStudentAttemptView(
             attemptRecord || {
               id: attempt.attempt_id,
@@ -2667,6 +3165,7 @@
           allAttempts.push(submittedAttempt);
           renderQuizzes();
           updateStatistics();
+          setQuizAttemptViewVisible(false);
           renderAttemptResult(submittedAttempt, quiz);
         };
 
@@ -2694,7 +3193,7 @@
           if (submissionInFlight || lastSubmissionConfirmed) return;
           submissionInFlight = true;
           window.clearInterval(activeQuizTimer);
-          const submitButton = dialog.querySelector("#confirmSubmitButton");
+          const submitButton = view.querySelector("#confirmSubmitButton");
           if (submitButton) {
             submitButton.disabled = true;
             submitButton.textContent = "Submitting…";
@@ -2783,10 +3282,13 @@
               );
               return;
             }
-            const errorElement = dialog.querySelector("#submitError");
+            const errorElement = view.querySelector("#submitError");
             const canRetry =
               currentAttempt?.status === "in_progress";
-            if (canRetry) submissionInFlight = false;
+            if (canRetry) {
+              submissionInFlight = false;
+              startCountdown();
+            }
             if (errorElement) {
               errorElement.textContent = verificationError
                 ? `${error.message} Submission status could not be verified (${verificationError.message}); answers are preserved. Do not retry until you refresh and check the quiz status.`
@@ -2801,7 +3303,7 @@
               }
             } else {
               showQuizError(
-                dialog,
+                getQuizDialog(),
                 verificationError
                   ? new Error(
                       `${error.message} The attempt status could not be verified (${verificationError.message}). Answers are preserved; refresh the quiz list before retrying.`,
@@ -2812,15 +3314,25 @@
           }
         };
 
-        renderCurrentQuestion();
-        window.clearInterval(activeQuizTimer);
-        activeQuizTimer = window.setInterval(() => {
-          const timer = dialog.querySelector("#quizTimer");
+        const updateCountdown = () => {
+          const timer = view.querySelector("#quizTimer");
           if (timer) timer.textContent = formatRemainingTime();
-          if (Date.now() >= expiresAt && !submissionInFlight) {
-            showSubmissionConfirmation(true);
+          if (
+            Date.now() >= expiresAt &&
+            !submissionInFlight &&
+            !autoSubmitAttempted
+          ) {
+            autoSubmitAttempted = true;
+            void submitAttempt();
           }
-        }, 1000);
+        };
+        const startCountdown = () => {
+          window.clearInterval(activeQuizTimer);
+          updateCountdown();
+          activeQuizTimer = window.setInterval(updateCountdown, 1000);
+        };
+        renderCurrentQuestion();
+        startCountdown();
       }
 
       /* =====================================================
