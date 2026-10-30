@@ -66,10 +66,18 @@
     const queries = await Promise.all([
       state.client.from("study_sessions").select("id,status,start_time,end_time,duration_seconds").eq("student_id", state.user.id),
       state.client.from("student_video_progress").select("video_id,completed").eq("student_id", state.user.id),
-      state.client.from("quiz_attempts").select("id,percentage,status,submitted_at").eq("student_id", state.studentId).eq("status", "submitted"),
+      state.client.rpc("get_student_quiz_catalog"),
     ]);
     if (queries[2].error) throw queries[2].error;
-    return { sessions: queries[0].error ? [] : queries[0].data || [], videos: queries[1].error ? [] : queries[1].data || [], quizzes: queries[2].data || [] };
+    const releasedAttempts = (queries[2].data || [])
+      .filter((quiz) => quiz.attempt_status === "submitted" && quiz.result_released)
+      .map((quiz) => ({
+        id: quiz.attempt_id,
+        percentage: quiz.percentage,
+        status: quiz.attempt_status,
+        submitted_at: quiz.submitted_at,
+      }));
+    return { sessions: queries[0].error ? [] : queries[0].data || [], videos: queries[1].error ? [] : queries[1].data || [], quizzes: releasedAttempts };
   }
 
   async function evaluate() {

@@ -265,7 +265,7 @@
         state.client.rpc("get_student_videos", { requested_student_id: state.user.id }),
         state.client.from("study_sessions").select("*").eq("student_id", state.user.id).order("start_time", { ascending: false }),
         state.client.from("study_session_segments").select("*").eq("student_id", state.user.id).order("start_time", { ascending: false }),
-        state.client.from("quiz_attempts").select("quiz_id,score,total_marks,percentage,submitted_at,status").eq("student_id", profileResult.data.id).eq("status", "submitted"),
+        state.client.rpc("get_student_quiz_catalog"),
       ]);
       state.profile = {
         ...profileResult.data,
@@ -284,7 +284,20 @@
       state.sessions = sessionsResult.error ? [] : (sessionsResult.data || []);
       state.segments = segmentsResult.error ? [] : (segmentsResult.data || []);
       if (attemptsResult.error) throw attemptsResult.error;
-      state.attempts = attemptsResult.data || [];
+      state.attempts = (attemptsResult.data || [])
+        .filter(
+          (quiz) =>
+            quiz.attempt_id && quiz.attempt_status === "submitted",
+        )
+        .map((quiz) => ({
+          quiz_id: quiz.id,
+          score: quiz.score,
+          total_marks: quiz.result_total_marks,
+          percentage: quiz.percentage,
+          submitted_at: quiz.submitted_at,
+          status: quiz.attempt_status,
+          result_released: quiz.result_released === true,
+        }));
       const attempts = new Set(state.attempts.map((attempt) => String(attempt.quiz_id)));
       state.events = state.events.map((event) => ({ ...event, attempted: attempts.has(eventId(event)) }));
       state.error = null;

@@ -58,10 +58,11 @@
 
     let quizQuery = client
       .from("quizzes")
-      .select("id, title, subject_id")
+      .select("id, title, subject_id, results_released")
       .eq("teacher_id", teacher.id)
       .eq("grade", Number(grade))
       .eq("status", "published")
+      .eq("results_released", true)
       .in("subject_id", subjectIds);
     quizQuery = stream ? quizQuery.eq("stream", stream) : quizQuery.is("stream", null);
 
