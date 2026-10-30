@@ -1477,22 +1477,43 @@
               ]),
             ).values(),
           ];
-          allAttempts = allQuizzes
-            .filter((quiz) => quiz.attempt_id)
-            .map((quiz) => ({
-              id: quiz.attempt_id,
-              quiz_id: quiz.id,
-              status: quiz.attempt_status,
-              started_at: quiz.started_at,
-              submitted_at: quiz.submitted_at,
-              result_released: quiz.result_released,
-              score: quiz.score,
-              total_marks: quiz.result_total_marks,
-              percentage: quiz.percentage,
-              correct_answers: quiz.correct_answers,
-              wrong_answers: quiz.wrong_answers,
-              unanswered: quiz.unanswered,
-            }));
+          const attemptsResult = allQuizzes.length
+            ? await supabaseClient
+                .from("quiz_attempts")
+                .select("id, quiz_id, student_id, started_at, submitted_at, status")
+                .eq("student_id", student.id)
+                .in(
+                  "quiz_id",
+                  allQuizzes.map((quiz) => quiz.id),
+                )
+                .order("started_at", { ascending: false })
+            : { data: [], error: null };
+          if (attemptsResult.error) {
+            console.error("Student-owned quiz attempt lookup failed.", {
+              studentId: student.id,
+              error: attemptsResult.error,
+            });
+            throw new Error(
+              `Your quiz attempt status could not be loaded: ${attemptsResult.error.message}`,
+            );
+          }
+          const catalogByQuizId = new Map(
+            allQuizzes.map((quiz) => [String(quiz.id), quiz]),
+          );
+          const latestAttemptByQuizId = new Map();
+          for (const row of attemptsResult.data || []) {
+            if (
+              String(row.student_id) !== String(student.id) ||
+              !catalogByQuizId.has(String(row.quiz_id)) ||
+              latestAttemptByQuizId.has(String(row.quiz_id))
+            ) {
+              continue;
+            }
+            latestAttemptByQuizId.set(String(row.quiz_id), row);
+          }
+          allAttempts = [...latestAttemptByQuizId.values()].map((row) =>
+            createStudentAttemptView(row, catalogByQuizId.get(String(row.quiz_id))),
+          );
 
           populateSubjectFilter();
           renderQuizzes();
@@ -1553,6 +1574,81 @@
         return allAttempts.find(
           (attempt) => String(attempt.quiz_id) === String(quizId),
         );
+      }
+
+      function createStudentAttemptView(attemptRecord, quizRecord) {
+        const publishedResult =
+          quizRecord?.result_released === true &&
+          String(quizRecord.attempt_id) === String(attemptRecord.id);
+        const attempt = {
+          id: attemptRecord.id,
+          quiz_id: attemptRecord.quiz_id,
+          student_id: attemptRecord.student_id,
+          status: attemptRecord.status,
+          started_at: attemptRecord.started_at,
+          submitted_at: attemptRecord.submitted_at,
+          result_released: publishedResult,
+          score: publishedResult ? quizRecord.score : null,
+          total_marks: publishedResult ? quizRecord.result_total_marks : null,
+          percentage: publishedResult ? quizRecord.percentage : null,
+          correct_answers: publishedResult ? quizRecord.correct_answers : null,
+          wrong_answers: publishedResult ? quizRecord.wrong_answers : null,
+          unanswered: publishedResult ? quizRecord.unanswered : null,
+        };
+        return attempt;
+      }
+
+      async function getStudentQuizAttempt(quizId, attemptId = null) {
+        if (!studentData?.id || !studentData?.user_id) {
+          throw new Error("The registered student identity is unavailable.");
+        }
+        const {
+          data: authData,
+          error: authError,
+        } = await supabaseClient.auth.getUser();
+        if (authError) {
+          console.error("Could not verify the student session for attempt lookup.", authError);
+          throw new Error(
+            `Your student session could not be verified: ${authError.message}`,
+          );
+        }
+        if (authData?.user?.id !== studentData.user_id) {
+          throw new Error(
+            "The authenticated account does not match the registered student.",
+          );
+        }
+        let query = supabaseClient
+          .from("quiz_attempts")
+          .select("id, quiz_id, student_id, started_at, submitted_at, status")
+          .eq("quiz_id", quizId)
+          .eq("student_id", studentData.id);
+        if (attemptId) query = query.eq("id", attemptId);
+        const { data, error } = await query
+          .order("started_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (error) {
+          console.error("Student-owned quiz attempt query failed.", {
+            attemptId,
+            quizId,
+            studentId: studentData.id,
+            error,
+          });
+          throw new Error(
+            `The attempt could not be retrieved under the current database permissions: ${error.message}`,
+          );
+        }
+        if (
+          data &&
+          (String(data.quiz_id) !== String(quizId) ||
+            String(data.student_id) !== String(studentData.id) ||
+            (attemptId && String(data.id) !== String(attemptId)))
+        ) {
+          throw new Error(
+            "The retrieved attempt does not match the authenticated student and selected quiz.",
+          );
+        }
+        return data || null;
       }
 
       function getSubmittedAttemptCount(quizId) {
@@ -2087,14 +2183,60 @@
         dialog.innerHTML = `<section style="padding:28px;font-family:Inter,sans-serif;color:#101a3b"><p role="status">Loading quiz…</p></section>`;
         if (!dialog.open) dialog.showModal();
         try {
-          const currentAttempt = getAttemptForQuiz(quiz.id);
-          if (currentAttempt?.status === "submitted") {
-            renderAttemptResult(currentAttempt, quiz);
+          const {
+            data: authData,
+            error: authError,
+          } = await supabaseClient.auth.getUser();
+          if (authError) throw authError;
+          if (authData?.user?.id !== studentData?.user_id) {
+            throw new Error(
+              "The authenticated account does not match the registered student.",
+            );
+          }
+          const { data: catalogRows, error: catalogError } =
+            await supabaseClient.rpc("get_student_quiz_catalog");
+          if (catalogError) {
+            console.error("Could not verify quiz eligibility before starting.", {
+              quizId: quiz.id,
+              studentId: studentData.id,
+              error: catalogError,
+            });
+            throw new Error(
+              `The eligible quiz catalog could not be verified: ${catalogError.message}`,
+            );
+          }
+          const eligibleQuiz = (catalogRows || []).find(
+            (row) => String(row.id) === String(quiz.id),
+          );
+          if (!eligibleQuiz) {
+            throw new Error(
+              "This quiz is no longer present in your eligible quiz catalog. Refresh the page before trying again.",
+            );
+          }
+          const selectedQuiz = {
+            ...quiz,
+            ...eligibleQuiz,
+            subject: eligibleQuiz.subject_name || quiz.subject,
+          };
+          const existingAttempt = await getStudentQuizAttempt(selectedQuiz.id);
+          if (existingAttempt?.status === "submitted") {
+            const attemptView = createStudentAttemptView(
+              existingAttempt,
+              eligibleQuiz,
+            );
+            allAttempts = allAttempts.filter(
+              (item) => String(item.quiz_id) !== String(selectedQuiz.id),
+            );
+            allAttempts.push(attemptView);
+            renderQuizzes();
+            updateStatistics();
+            updatePerformance();
+            renderAttemptResult(attemptView, selectedQuiz);
             return;
           }
           const { data: attemptId, error: startError } = await supabaseClient.rpc(
             "start_quiz_attempt",
-            { p_quiz_id: quiz.id },
+            { p_quiz_id: selectedQuiz.id },
           );
           if (startError) throw startError;
           if (
@@ -2105,56 +2247,42 @@
           ) {
             throw new Error("The server did not return a valid quiz attempt ID.");
           }
-          const {
-            data: attemptRecord,
-            error: attemptReadError,
-          } = await supabaseClient
-            .from("quiz_attempts")
-            .select("id, quiz_id, student_id, started_at, status")
-            .eq("id", attemptId)
-            .eq("quiz_id", quiz.id)
-            .eq("student_id", studentData.id)
-            .maybeSingle();
-          if (attemptReadError) {
-            console.error("Quiz attempt verification query failed.", {
-              attemptId,
-              quizId: quiz.id,
-              studentId: studentData.id,
-              error: attemptReadError,
-            });
-            throw new Error(
-              `The attempt started, but its saved state could not be verified: ${attemptReadError.message}`,
-            );
-          }
-          if (!attemptRecord) {
-            console.error("Quiz attempt verification returned no visible row.", {
-              attemptId,
-              quizId: quiz.id,
-              studentId: studentData.id,
-            });
-            throw new Error(
-              "The attempt started, but no matching attempt row is visible for this student and quiz. Check the quiz_attempts student SELECT policy and confirm the attempt, quiz, and student IDs match.",
-            );
-          }
           if (
-            String(attemptRecord.id) !== attemptId ||
-            String(attemptRecord.quiz_id) !== String(quiz.id) ||
-            String(attemptRecord.student_id) !== String(studentData.id)
+            existingAttempt?.status === "in_progress" &&
+            String(existingAttempt.id) !== attemptId
           ) {
             throw new Error(
-              "The attempt returned by the server does not belong to this student and quiz.",
+              "The start function returned a different attempt than the existing in-progress attempt. No additional attempt was opened.",
+            );
+          }
+          const attemptRecord = await getStudentQuizAttempt(
+            selectedQuiz.id,
+            attemptId,
+          );
+          if (!attemptRecord) {
+            console.error("Started quiz attempt row was not visible to its owner.", {
+              attemptId,
+              quizId: selectedQuiz.id,
+              studentId: studentData.id,
+            });
+            throw new Error(
+              "The start function returned an attempt ID, but no matching attempt row is visible for this student and quiz. Check the quiz_attempts student SELECT policy and database attempt row before retrying.",
             );
           }
           if (attemptRecord.status === "submitted") {
-            await loadQuizzes();
-            const submittedAttempt = getAttemptForQuiz(quiz.id);
-            if (submittedAttempt?.status === "submitted") {
-              renderAttemptResult(submittedAttempt, quiz);
-              return;
-            }
-            throw new Error(
-              "This attempt has already been submitted. Refresh the quiz list to view its current status.",
+            const attemptView = createStudentAttemptView(
+              attemptRecord,
+              eligibleQuiz,
             );
+            allAttempts = allAttempts.filter(
+              (item) => String(item.quiz_id) !== String(selectedQuiz.id),
+            );
+            allAttempts.push(attemptView);
+            renderQuizzes();
+            updateStatistics();
+            updatePerformance();
+            renderAttemptResult(attemptView, selectedQuiz);
+            return;
           }
           if (attemptRecord.status !== "in_progress") {
             throw new Error(
@@ -2164,7 +2292,7 @@
           if (!attemptRecord.started_at) {
             console.error("Verified quiz attempt is missing started_at.", {
               attemptId,
-              quizId: quiz.id,
+              quizId: selectedQuiz.id,
               attemptStatus: attemptRecord.status,
               attemptRecord,
             });
@@ -2173,7 +2301,7 @@
             );
           }
           const startedAtMs = Date.parse(attemptRecord.started_at);
-          const durationMinutes = Number(quiz.duration_minutes);
+          const durationMinutes = Number(selectedQuiz.duration_minutes);
           if (
             !Number.isFinite(startedAtMs) ||
             !Number.isFinite(durationMinutes) ||
@@ -2182,7 +2310,7 @@
             console.error("Quiz timer data is invalid.", {
               attemptId,
               startedAt: attemptRecord.started_at,
-              durationMinutes: quiz.duration_minutes,
+              durationMinutes: selectedQuiz.duration_minutes,
             });
             throw new Error(
               "The quiz start timestamp or duration is invalid. The timer cannot be initialized safely.",
@@ -2190,12 +2318,12 @@
           }
           const { data: questions, error: questionsError } =
             await supabaseClient.rpc("get_student_quiz_questions", {
-              p_quiz_id: quiz.id,
+              p_quiz_id: selectedQuiz.id,
             });
           if (questionsError) {
             console.error("Quiz question RPC failed after attempt verification.", {
               attemptId,
-              quizId: quiz.id,
+              quizId: selectedQuiz.id,
               error: questionsError,
             });
             throw questionsError;
@@ -2218,7 +2346,7 @@
             status: attemptRecord.status,
             started_at: attemptRecord.started_at,
           };
-          const draftKey = getQuizDraftKey(quiz.id, attemptId);
+          const draftKey = getQuizDraftKey(selectedQuiz.id, attemptId);
           const storedAnswers = window.localStorage.getItem(draftKey);
           const restoredAnswers = storedAnswers ? JSON.parse(storedAnswers) : {};
           if (
@@ -2238,7 +2366,7 @@
               ),
           );
           renderQuestionScreen(
-            quiz,
+            selectedQuiz,
             attempt,
             questions,
             answers,
@@ -2276,7 +2404,9 @@
       ) {
         const dialog = getQuizDialog();
         let currentIndex = initialIndex;
-        let autoSubmitStarted = false;
+        let submissionInFlight = false;
+        let lastSubmissionConfirmed = false;
+        let draftStorageError = null;
         const expiresAt =
           new Date(attempt.started_at).getTime() +
           Number(quiz.duration_minutes) * 60 * 1000;
@@ -2295,7 +2425,9 @@
             if (status) status.textContent = "Saved on this device";
             const errorElement = dialog.querySelector("#quizWorkflowError");
             if (errorElement) errorElement.textContent = "";
+            draftStorageError = null;
           } catch (error) {
+            draftStorageError = error;
             const status = dialog.querySelector("#answerSaveStatus");
             if (status) status.textContent = "Answer not saved on this device";
             const errorElement = dialog.querySelector("#quizWorkflowError");
@@ -2433,6 +2565,11 @@
           if (selectedAnswer) {
             saveAnswer(question, selectedAnswer.value);
           }
+          if (draftStorageError) {
+            throw new Error(
+              "Your current answer could not be saved in this browser. Free storage and try again before submitting.",
+            );
+          }
         };
 
         const showSubmissionConfirmation = (automatic) => {
@@ -2450,9 +2587,112 @@
             .addEventListener("click", () => void submitAttempt());
         };
 
+        const readCurrentAttemptState = async () => {
+          const {
+            data: authData,
+            error: authError,
+          } = await supabaseClient.auth.getUser();
+          if (authError) {
+            console.error("Could not verify the student session before quiz submission.", authError);
+            throw new Error(
+              `Your student session could not be verified: ${authError.message}`,
+            );
+          }
+          if (
+            !authData?.user ||
+            authData.user.id !== studentData?.user_id
+          ) {
+            throw new Error(
+              "The signed-in student changed during this attempt. Sign in with the same student account and refresh before submitting.",
+            );
+          }
+          const {
+            data: attemptRecord,
+            error: attemptReadError,
+          } = await supabaseClient
+            .from("quiz_attempts")
+            .select("id, quiz_id, student_id, started_at, submitted_at, status")
+            .eq("id", attempt.attempt_id)
+            .eq("quiz_id", quiz.id)
+            .eq("student_id", studentData.id)
+            .maybeSingle();
+          if (attemptReadError) {
+            console.error("Could not verify quiz attempt status before submission.", {
+              attemptId: attempt.attempt_id,
+              quizId: quiz.id,
+              studentId: studentData.id,
+              error: attemptReadError,
+            });
+            throw new Error(
+              `The attempt status could not be verified under the current database permissions: ${attemptReadError.message}`,
+            );
+          }
+          if (!attemptRecord) {
+            console.error("Student-owned attempt query returned no matching row.", {
+              attemptId: attempt.attempt_id,
+              quizId: quiz.id,
+              studentId: studentData.id,
+            });
+            return null;
+          }
+          if (
+            String(attemptRecord.id) !== String(attempt.attempt_id) ||
+            String(attemptRecord.quiz_id) !== String(quiz.id) ||
+            String(attemptRecord.student_id) !== String(studentData.id)
+          ) {
+            throw new Error(
+              "The current attempt does not match this student and selected quiz.",
+            );
+          }
+          return attemptRecord;
+        };
+
+        const showConfirmedSubmission = (attemptRecord, releasedQuizRow = null) => {
+          lastSubmissionConfirmed = true;
+          submissionInFlight = true;
+          clearQuizDraft(draftKey);
+          const submittedAttempt = createStudentAttemptView(
+            attemptRecord || {
+              id: attempt.attempt_id,
+              quiz_id: quiz.id,
+              student_id: studentData.id,
+              status: "submitted",
+              started_at: attempt.started_at,
+            },
+            releasedQuizRow,
+          );
+          allAttempts = allAttempts.filter(
+            (existing) => String(existing.quiz_id) !== String(quiz.id),
+          );
+          allAttempts.push(submittedAttempt);
+          renderQuizzes();
+          updateStatistics();
+          renderAttemptResult(submittedAttempt, quiz);
+        };
+
+        const getReleasedQuizRow = async (attemptRecord) => {
+          const { data: catalogRows, error } = await supabaseClient.rpc(
+            "get_student_quiz_catalog",
+          );
+          if (error) {
+            console.error("Could not refresh release-gated quiz result data.", {
+              attemptId: attemptRecord.id,
+              quizId: quiz.id,
+              error,
+            });
+            return null;
+          }
+          return (catalogRows || []).find(
+            (row) =>
+              String(row.id) === String(quiz.id) &&
+              String(row.attempt_id) === String(attemptRecord.id) &&
+              row.result_released === true,
+          ) || null;
+        };
+
         const submitAttempt = async () => {
-          if (autoSubmitStarted) return;
-          autoSubmitStarted = true;
+          if (submissionInFlight || lastSubmissionConfirmed) return;
+          submissionInFlight = true;
           window.clearInterval(activeQuizTimer);
           const submitButton = dialog.querySelector("#confirmSubmitButton");
           if (submitButton) {
@@ -2460,6 +2700,24 @@
             submitButton.textContent = "Submitting…";
           }
           try {
+            const currentAttempt = await readCurrentAttemptState();
+            if (!currentAttempt) {
+              throw new Error(
+                "The attempt is not visible for this student and quiz. Answers are preserved; refresh and check the attempt before retrying.",
+              );
+            }
+            if (currentAttempt.status === "submitted") {
+              showConfirmedSubmission(
+                currentAttempt,
+                await getReleasedQuizRow(currentAttempt),
+              );
+              return;
+            }
+            if (currentAttempt.status !== "in_progress") {
+              throw new Error(
+                `This attempt cannot be submitted because its current status is ${currentAttempt.status || "unknown"}.`,
+              );
+            }
             const { data, error } = await supabaseClient.rpc(
               "submit_quiz_attempt",
               {
@@ -2471,40 +2729,85 @@
               },
             );
             if (error) throw error;
-            if (data == null) {
-              throw new Error("The server returned no quiz submission result.");
-            }
-            if (
-              typeof data === "object" &&
-              data.status &&
-              data.status !== "submitted"
-            ) {
+            if (!data || data.status !== "submitted") {
               throw new Error(
-                `The server did not submit this quiz (status: ${data.status}).`,
+                `The server did not confirm submission (status: ${data?.status || "missing response"}).`,
               );
             }
-            await loadQuizzes();
-            const updatedAttempt = getAttemptForQuiz(quiz.id);
-            if (
-              updatedAttempt?.status !== "submitted" ||
-              String(updatedAttempt.id) !== String(attempt.attempt_id)
-            ) {
-              throw new Error("The submission request completed, but the quiz catalog has not confirmed that this attempt was submitted. Refresh the quiz list before retrying.");
+            if (String(data.attempt_id) !== String(attempt.attempt_id)) {
+              throw new Error(
+                "The server returned a different attempt ID. The saved answers were preserved; checking the current attempt status before any retry.",
+              );
             }
-            clearQuizDraft(draftKey);
-            renderAttemptResult(updatedAttempt, quiz);
+            lastSubmissionConfirmed = true;
+            let submittedRow = null;
+            let statusError = null;
+            try {
+              submittedRow = await readCurrentAttemptState();
+              if (submittedRow?.status === "submitted") {
+                showConfirmedSubmission(
+                  submittedRow,
+                  await getReleasedQuizRow(submittedRow),
+                );
+                return;
+              }
+            } catch (error) {
+              statusError = error;
+              console.error(
+                "Submission succeeded, but the saved attempt row could not be refreshed.",
+                error,
+              );
+            }
+            if (!submittedRow || submittedRow.status !== "submitted") {
+              console.error("Submission RPC confirmed success but the attempt row is not yet submitted.", {
+                attemptId: attempt.attempt_id,
+                quizId: quiz.id,
+                attemptStatus: submittedRow?.status || "unavailable",
+                statusError,
+              });
+              showConfirmedSubmission(null);
+            }
           } catch (error) {
             console.error("Quiz submission failed:", error);
-            autoSubmitStarted = false;
+            let currentAttempt = null;
+            let verificationError = null;
+            try {
+              currentAttempt = await readCurrentAttemptState();
+            } catch (stateError) {
+              verificationError = stateError;
+            }
+            if (currentAttempt?.status === "submitted") {
+              showConfirmedSubmission(
+                currentAttempt,
+                await getReleasedQuizRow(currentAttempt),
+              );
+              return;
+            }
             const errorElement = dialog.querySelector("#submitError");
+            const canRetry =
+              currentAttempt?.status === "in_progress";
+            if (canRetry) submissionInFlight = false;
             if (errorElement) {
-              errorElement.textContent = error.message;
+              errorElement.textContent = verificationError
+                ? `${error.message} Submission status could not be verified (${verificationError.message}); answers are preserved. Do not retry until you refresh and check the quiz status.`
+                : currentAttempt
+                  ? `${error.message} The same attempt is still in progress; your answers are preserved and retry is safe.`
+                  : `${error.message} The attempt row could not be verified for this student and quiz; answers are preserved. Refresh before retrying.`;
               if (submitButton) {
-                submitButton.disabled = false;
-                submitButton.textContent = "Retry Submission";
+                submitButton.disabled = !canRetry;
+                submitButton.textContent = canRetry
+                  ? "Retry Submission"
+                  : "Submission Status Unverified";
               }
             } else {
-              showQuizError(dialog, error);
+              showQuizError(
+                dialog,
+                verificationError
+                  ? new Error(
+                      `${error.message} The attempt status could not be verified (${verificationError.message}). Answers are preserved; refresh the quiz list before retrying.`,
+                    )
+                  : error,
+              );
             }
           }
         };
@@ -2514,7 +2817,7 @@
         activeQuizTimer = window.setInterval(() => {
           const timer = dialog.querySelector("#quizTimer");
           if (timer) timer.textContent = formatRemainingTime();
-          if (Date.now() >= expiresAt && !autoSubmitStarted) {
+          if (Date.now() >= expiresAt && !submissionInFlight) {
             showSubmissionConfirmation(true);
           }
         }, 1000);
