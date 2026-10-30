@@ -1463,17 +1463,8 @@
         try {
           const student = await getCurrentStudent();
           renderRegistrationContext(student);
-          let quizQuery = supabaseClient
-            .from("quizzes")
-            .select("id, title, grade, stream, subject_id, subject, description, instructions, duration_minutes, total_marks, question_count, attempts_allowed, start_at, end_at, status")
-            .eq("grade", Number(student.grade))
-            .eq("status", "published")
-            .order("start_at", { ascending: true });
-          quizQuery = student.stream
-            ? quizQuery.eq("stream", student.stream)
-            : quizQuery.is("stream", null);
           const [quizResult, attemptResult] = await Promise.all([
-            quizQuery,
+            supabaseClient.rpc("get_student_quiz_catalog"),
             supabaseClient
               .from("quiz_attempts")
               .select("id, quiz_id, student_id, started_at, submitted_at, score, total_marks, percentage, correct_answers, wrong_answers, unanswered, status")
@@ -1482,9 +1473,13 @@
           ]);
           if (quizResult.error) throw quizResult.error;
           if (attemptResult.error) throw attemptResult.error;
-          allQuizzes = (quizResult.data || [])
-            .filter((quiz) => !quiz.end_at || new Date(quiz.end_at) >= new Date())
-            .map((quiz) => ({ ...quiz, subject: quiz.subject || "Subject" }));
+          allQuizzes = (quizResult.data || []).map((quiz) => ({
+            ...quiz,
+            subject: quiz.subject_name || "Subject",
+            start_at: null,
+            end_at: null,
+            attempts_allowed: 1,
+          }));
           allAttempts = attemptResult.data || [];
 
           populateSubjectFilter();
