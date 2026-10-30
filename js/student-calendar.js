@@ -1,7 +1,9 @@
 ﻿(() => {
   const state = {
     date: new Date(),
+    selectedDate: new Date(),
     events: [],
+    profile: null,
     stopRealtime: () => {},
     refreshSequence: 0,
   };
@@ -30,7 +32,18 @@
   let activeChannel = null;
 
   function getClient() {
-    return window.SmartLearningSupabase?.getClient?.() || null;
+    const supabase = window.SmartLearningSupabase;
+    if (!supabase) {
+      throw new Error("The shared Supabase configuration did not initialize.");
+    }
+    if (!supabase.isConfigured?.()) {
+      throw new Error("Supabase is not configured for this application.");
+    }
+    const client = supabase.getClient?.();
+    if (!client) {
+      throw new Error("The Supabase SDK did not load. Check your connection and reload the page.");
+    }
+    return client;
   }
 
   function eventTypeClass(type) {
@@ -59,6 +72,21 @@
     return "Event";
   }
 
+  function eventTypeLabel(type) {
+    const labels = {
+      live_class: "Class",
+      class: "Class",
+      material: "Study material",
+      assignment: "Assignment",
+      holiday: "Holiday",
+      rescheduled_class: "Rescheduled class",
+      exam: "Exam",
+      quiz: "Quiz",
+      announcement: "Announcement",
+    };
+    return labels[String(type || "").toLowerCase()] || "Event";
+  }
+
   function normalizeRow(row, source, type) {
     const start = new Date(row.start_at);
     if (!Number.isFinite(start.getTime())) return null;
@@ -67,10 +95,15 @@
     return {
       id: `${source}-${row.id}`,
       source,
+      source_table: row.source_table || null,
+      source_id: row.source_id || null,
+      calendar_id: row.id,
       type: type || row.event_type || "event",
       title: row.title || row.name || row.topic || "Academic event",
       description: row.description || "",
+      teacher: row.teacher_name || "",
       subject: subjectRelation?.name || row.subject_name || row.subject || (row.subject_id ? `Subject ${row.subject_id}` : ""),
+      subject_id: row.subject_id,
       class_grade: row.grade ?? row.class_grade ?? "",
       stream: row.stream || "",
       start_at: start.toISOString(),
@@ -84,10 +117,6 @@
 
   async function getStudentProfile() {
     const client = getClient();
-    if (!client) {
-      throw new Error("Supabase is not configured.");
-    }
-
     const { data: userData, error: userError } = await client.auth.getUser();
     if (userError) throw userError;
     if (!userData?.user) {
@@ -104,31 +133,72 @@
     if (studentError) throw studentError;
     if (!student) throw new Error("Student profile could not be found.");
 
+    state.profile = student;
     return { client, user: userData.user, profile: student };
   }
 
   async function loadEvents(date = state.date) {
     const { client } = await getStudentProfile();
-    const range = monthRange(date);
-    const { data, error } = await client.from("calendar_events")
-        .select("*")
+    const now = new Date();
+    const upcomingEnd = new Date(now);
+    upcomingEnd.setFullYear(upcomingEnd.getFullYear() + 1);
+    const ranges = [monthRange(date), { start: now, end: upcomingEnd }];
+    const rowsById = new Map();
+
+    for (const range of ranges) {
+      const { data, error } = await client
+        .from("calendar_events")
+        .select("id, teacher_id, title, description, event_type, grade, stream, subject_id, start_at, end_at, all_day, location, meeting_url, status, is_visible_to_students, source_table, source_id")
         .eq("status", "published")
         .eq("is_visible_to_students", true)
-        .is("subject_id", null)
         .gte("start_at", range.start.toISOString())
         .lt("start_at", range.end.toISOString())
         .order("start_at", { ascending: true });
-    if (error) throw error;
+      if (error) throw error;
+      for (const row of data || []) rowsById.set(row.id, row);
+    }
 
-    return (data || [])
-        .map((row) => normalizeRow(row, "calendar_events", row.event_type))
-        .filter(Boolean)
+    const calendarEvents = [...rowsById.values()]
+      .map((row) => normalizeRow(row, "calendar_events", row.event_type))
+      .filter(Boolean);
+    const linkedLiveClassIds = new Set(
+      calendarEvents
+        .filter((event) => event.source_table === "live_classes" && event.source_id)
+        .map((event) => String(event.source_id)),
+    );
+    try {
+      const { data: liveClasses, error: liveClassError } = await client.rpc("get_student_live_classes");
+      if (liveClassError) throw liveClassError;
+      const liveClassEvents = (liveClasses || [])
+        .filter((liveClass) => {
+          const matchesRegisteredGrade = Number(liveClass.grade) === Number(state.profile.grade);
+          const registeredStream = String(state.profile.stream || "").trim().toLowerCase();
+          const classStream = String(liveClass.stream || "").trim().toLowerCase();
+          const start = new Date(liveClass.start_at);
+          return matchesRegisteredGrade
+            && classStream === registeredStream
+            && Number.isFinite(start.getTime())
+            && ranges.some((range) => start >= range.start && start < range.end);
+        })
+        .filter((liveClass) => !linkedLiveClassIds.has(String(liveClass.id)))
+        .map((liveClass) => normalizeRow({
+          ...liveClass,
+          source_table: "live_classes",
+          source_id: liveClass.id,
+          status: liveClass.status,
+          event_type: "live_class",
+        }, "live_classes", "live_class"))
+        .filter(Boolean);
+      return [...calendarEvents, ...liveClassEvents]
         .sort((left, right) => new Date(left.start_at) - new Date(right.start_at));
+    } catch (error) {
+      console.error("Could not load student live classes for the calendar.", error);
+      return calendarEvents.sort((left, right) => new Date(left.start_at) - new Date(right.start_at));
+    }
   }
 
   async function subscribe() {
     const client = getClient();
-    if (!client) throw new Error("Supabase is not configured.");
     if (activeChannel) await client.removeChannel(activeChannel);
     const channel = client.channel("student-calendar-events")
       .on("postgres_changes", { event: "*", schema: "public", table: "calendar_events" }, () => {
@@ -153,14 +223,11 @@
   function renderMonthGrid() {
     const firstDay = new Date(state.date.getFullYear(), state.date.getMonth(), 1);
     const daysInMonth = new Date(state.date.getFullYear(), state.date.getMonth() + 1, 0).getDate();
-    const offset = (firstDay.getDay() + 6) % 7;
+    const offset = firstDay.getDay();
     const grid = $("calendarGrid");
     if (!grid) return;
 
-    const weekdayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    const dayCells = [
-      ...weekdayNames.map((label) => `<div class="weekday">${label}</div>`),
-    ];
+    const dayCells = [];
 
     for (let index = 0; index < offset; index += 1) {
       dayCells.push('<div class="day other-month"></div>');
@@ -172,10 +239,11 @@
       const entries = state.events.filter((event) => dayKey(event.start_at) === currentKey);
       const content = entries.slice(0, 3).map((entry) => {
         const cssClass = eventTypeClass(entry.type);
-        return `<div class="event ${cssClass}" data-event-id="${escapeHtml(entry.id)}"><i class="fa-solid fa-circle"></i><span>${escapeHtml(entry.title)}</span></div>`;
+        return `<div class="event ${cssClass}" data-calendar-event-id="${escapeHtml(entry.id)}" role="button" tabindex="0"><i class="fa-solid fa-circle"></i><span>${escapeHtml(entry.title)}</span></div>`;
       }).join("");
       const todayClass = dayKey(new Date()) === currentKey ? "today" : "";
-      dayCells.push(`<div class="day ${todayClass}" data-date="${currentKey}"><div class="date-number">${day}</div>${content}</div>`);
+      const selectedClass = dayKey(state.selectedDate) === currentKey ? "selected-day" : "";
+      dayCells.push(`<div class="day ${todayClass} ${selectedClass}" data-date="${currentKey}"><div class="date-number">${day}</div>${content}</div>`);
     }
 
     const remainder = (7 - (dayCells.length % 7)) % 7;
@@ -184,6 +252,36 @@
     }
 
     grid.innerHTML = dayCells.join("");
+  }
+
+  function renderMiniCalendar() {
+    const title = $("miniCalendarTitle");
+    const grid = $("miniCalendarGrid");
+    if (!grid) return;
+    if (title) title.textContent = formatDate(state.date, { month: "long", year: "numeric" });
+
+    const year = state.date.getFullYear();
+    const month = state.date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const startOffset = firstDay.getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const cells = [];
+    const eventDays = new Set(state.events.map((event) => dayKey(event.start_at)));
+    for (let index = 0; index < 42; index += 1) {
+      const dayNumber = index - startOffset + 1;
+      const date = new Date(year, month, dayNumber);
+      const dateKey = dayKey(date);
+      const inCurrentMonth = dayNumber >= 1 && dayNumber <= daysInMonth;
+      const classes = [
+        "mini-calendar-day",
+        inCurrentMonth ? "" : "other-month",
+        dayKey(new Date()) === dateKey ? "today" : "",
+        dayKey(state.selectedDate) === dateKey ? "selected" : "",
+        eventDays.has(dateKey) ? "has-events" : "",
+      ].filter(Boolean).join(" ");
+      cells.push(`<button type="button" class="${classes}" data-mini-date="${dateKey}" aria-label="${formatDate(date, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}">${date.getDate()}</button>`);
+    }
+    grid.innerHTML = cells.join("");
   }
 
   function renderStats() {
@@ -204,6 +302,24 @@
     if (holidaysStat) holidaysStat.textContent = monthEvents.filter((event) => event.type === "holiday").length;
   }
 
+  function renderRegistrationContext() {
+    const profile = state.profile;
+    const context = $("registrationContext");
+    const text = $("registrationContextText");
+    if (!profile || !context || !text) return;
+    const streamLabels = {
+      science_pcm: "Science (PCM)",
+      science_pcb: "Science (PCB)",
+      commerce: "Commerce",
+      arts_humanities: "Arts / Humanities",
+    };
+    const grade = String(profile.grade ?? "").replace(/^class\s+/i, "").trim();
+    const stream = String(profile.stream ?? "").trim();
+    if (!grade) return;
+    text.textContent = `Grade ${grade}${stream ? ` - ${streamLabels[stream.toLowerCase()] || stream}` : ""}`;
+    context.hidden = false;
+  }
+
   function renderUpcoming() {
     const now = new Date();
     const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -215,27 +331,33 @@
     if (!container) return;
     container.innerHTML = '<div class="side-card-header"><h3>Upcoming</h3><span>Next 7 days</span></div>' + (upcoming.length ? upcoming.map((event) => {
       const date = new Date(event.start_at);
-      return `<div class="upcoming-event"><div class="event-date"><strong>${String(date.getDate()).padStart(2, "0")}</strong><span>${formatDate(date, { month: "short" }).slice(0, 3)}</span></div><div class="upcoming-info"><h4>${escapeHtml(event.title)}</h4><p><i class="fa-regular fa-clock"></i>${formatDate(event.start_at, { hour: "numeric", minute: "2-digit" })}${event.subject ? ` · ${escapeHtml(event.subject)}` : ""}</p></div></div>`;
+      return `<div class="upcoming-event" data-calendar-event-id="${escapeHtml(event.id)}" role="button" tabindex="0"><div class="event-date"><strong>${String(date.getDate()).padStart(2, "0")}</strong><span>${formatDate(date, { month: "short" }).slice(0, 3)}</span></div><div class="upcoming-info"><h4>${escapeHtml(event.title)}</h4><p><i class="fa-regular fa-clock"></i>${formatDate(event.start_at, { hour: "numeric", minute: "2-digit" })}${event.subject ? ` · ${escapeHtml(event.subject)}` : ""}</p></div></div>`;
     }).join("") : '<div class="upcoming-event"><div class="upcoming-info"><h4>No upcoming events</h4><p>There are no future events for your profile.</p></div></div>');
   }
 
   function renderHolidays() {
-    const holidays = state.events.filter((event) => event.type === "holiday").sort((left, right) => new Date(left.start_at) - new Date(right.start_at)).slice(0, 3);
+    const now = new Date();
+    const holidays = state.events
+      .filter((event) => event.type === "holiday" && new Date(event.start_at) >= now)
+      .sort((left, right) => new Date(left.start_at) - new Date(right.start_at))
+      .slice(0, 3);
     const container = $("holidaysCard");
     if (!container) return;
-    container.innerHTML = '<div class="side-card-header"><h3>Upcoming Holidays</h3><span id="holidayMonthLabel"></span></div>' + (holidays.length ? holidays.map((event) => `<div class="holiday-item"><div class="holiday-icon"><i class="fa-solid fa-umbrella-beach"></i></div><div class="holiday-info"><h4>${escapeHtml(event.title)}</h4><p>${formatDate(event.start_at, { month: "short", day: "numeric", year: "numeric" })}</p></div></div>`).join("") : '<div class="holiday-item"><div class="holiday-info"><h4>No upcoming holidays</h4><p>None for the current calendar.</p></div></div>');
+    container.innerHTML = '<div class="side-card-header"><h3>Upcoming Holidays</h3><span id="holidayMonthLabel"></span></div>' + (holidays.length ? holidays.map((event) => `<div class="holiday-item" data-calendar-event-id="${escapeHtml(event.id)}" role="button" tabindex="0"><div class="holiday-icon"><i class="fa-solid fa-umbrella-beach"></i></div><div class="holiday-info"><h4>${escapeHtml(event.title)}</h4><p>${formatDate(event.start_at, { month: "short", day: "numeric", year: "numeric" })}</p></div></div>`).join("") : '<div class="holiday-item"><div class="holiday-info"><h4>No upcoming holidays</h4><p>None for the current calendar.</p></div></div>');
   }
 
   function renderClassUpdate() {
-    const classUpdates = state.events.filter((event) => event.type === "rescheduled_class" || event.status === "cancelled").slice(0, 1);
+    const classUpdates = state.events
+      .filter((event) => event.type === "rescheduled_class" || event.status === "cancelled")
+      .sort((left, right) => new Date(left.start_at) - new Date(right.start_at));
     const container = $("classUpdateCard");
     if (!container) return;
     const update = classUpdates[0];
     if (!update) {
-      container.innerHTML = '<div class="side-card-header"><h3>Class Update</h3><span>Important</span></div><div class="reschedule-box"><p>No class schedule changes right now.</p></div>';
+      container.innerHTML = '<div class="side-card-header"><h3>Class Update</h3><span>Important</span></div><div class="reschedule-box"><p>No recent class updates.</p></div>';
       return;
     }
-    container.innerHTML = `<div class="side-card-header"><h3>Class Update</h3><span>Important</span></div><div class="reschedule-box"><div class="reschedule-top"><div class="reschedule-icon"><i class="fa-solid fa-calendar-xmark"></i></div><h4>${eventTypeBadge(update.type)}</h4></div><p>${escapeHtml(update.description || update.title)}</p><div class="schedule-change"><span class="old-time">${formatDate(update.start_at, { month: "short", day: "numeric" })}</span><i class="fa-solid fa-arrow-right"></i><span class="new-time">${formatDate(update.end_at || update.start_at, { month: "short", day: "numeric" })}</span></div></div>`;
+    container.innerHTML = `<div class="side-card-header"><h3>Class Update</h3><span>Important</span></div><div class="reschedule-box" data-calendar-event-id="${escapeHtml(update.id)}" role="button" tabindex="0"><div class="reschedule-top"><div class="reschedule-icon"><i class="fa-solid fa-calendar-xmark"></i></div><h4>${eventTypeBadge(update.type)}</h4></div><p>${escapeHtml(update.description || update.title)}</p><div class="schedule-change"><span class="new-time">${formatDate(update.start_at, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}</span></div></div>`;
   }
 
   function renderCalendar() {
@@ -243,7 +365,9 @@
     if (monthTitle) {
       monthTitle.textContent = formatDate(state.date, { month: "long", year: "numeric" });
     }
+    renderRegistrationContext();
     renderMonthGrid();
+    renderMiniCalendar();
     renderStats();
     renderUpcoming();
     renderClassUpdate();
@@ -257,15 +381,23 @@
     $("modalDate").textContent = formatDate(event.start_at, { month: "long", day: "numeric", year: "numeric" });
     $("modalTime").textContent = event.all_day
       ? "All day"
-      : `${formatDate(event.start_at, { hour: "numeric", minute: "2-digit" })} - ${formatDate(event.end_at || event.start_at, { hour: "numeric", minute: "2-digit" })}`;
+      : event.end_at
+        ? `${formatDate(event.start_at, { hour: "numeric", minute: "2-digit" })} - ${formatDate(event.end_at, { hour: "numeric", minute: "2-digit" })}`
+        : formatDate(event.start_at, { hour: "numeric", minute: "2-digit" });
     $("modalSubject").textContent = event.subject || "General";
-    $("modalDetails").textContent = `${event.description || "No additional details provided."} ${event.location ? `Location: ${event.location}` : ""}`;
+    const details = [
+      eventTypeLabel(event.type),
+      event.class_grade ? `Grade ${event.class_grade}${event.stream ? ` - ${event.stream}` : ""}` : "",
+      event.teacher ? `By ${event.teacher}` : "",
+      event.description || "No additional details provided.",
+      event.location && event.location !== event.meeting_url ? `Location: ${event.location}` : "",
+    ].filter(Boolean);
+    $("modalDetails").textContent = details.join(" · ");
     const meetingRow = $("modalMeetingRow");
     const meetingLink = $("modalMeeting");
     try {
       const meetingUrl = new URL(event.meeting_url);
-      const allowedProtocol = ["http:", "https:"].includes(meetingUrl.protocol);
-      if (meetingRow && meetingLink && allowedProtocol) {
+      if (meetingRow && meetingLink && ["http:", "https:"].includes(meetingUrl.protocol)) {
         meetingLink.href = meetingUrl.href;
         meetingRow.hidden = false;
       } else if (meetingRow) {
@@ -275,7 +407,42 @@
       if (meetingRow) meetingRow.hidden = true;
       if (meetingLink) meetingLink.removeAttribute("href");
     }
+    const materialRow = $("modalMaterialRow");
+    const materialButton = $("modalMaterial");
+    const isMaterial = event.source_table === "materials" && event.source_id;
+    if (materialRow) materialRow.hidden = !isMaterial;
+    if (materialButton) {
+      materialButton.dataset.materialId = isMaterial ? String(event.source_id) : "";
+    }
+    const liveClassRow = $("modalLiveClassRow");
+    const liveClassButton = $("modalLiveClass");
+    const isLiveClass = event.source_table === "live_classes" && event.source_id;
+    if (liveClassRow) liveClassRow.hidden = !isLiveClass || Boolean(event.meeting_url);
+    if (liveClassButton) {
+      liveClassButton.dataset.liveClassId = isLiveClass ? String(event.source_id) : "";
+    }
     modal.classList.add("show");
+  }
+
+  async function openAuthorizedUrl(getUrl, actionName) {
+    const popup = window.open("about:blank", "_blank");
+    if (popup) popup.opener = null;
+    try {
+      const url = await getUrl();
+      const parsed = new URL(url);
+      if (parsed.protocol !== "https:") {
+        throw new Error(`${actionName} links must use HTTPS.`);
+      }
+      if (popup) {
+        popup.location.replace(parsed.href);
+      } else {
+        window.location.assign(parsed.href);
+      }
+    } catch (error) {
+      popup?.close();
+      console.error(`Could not open ${actionName}.`, error);
+      window.alert(error.message || `Could not open ${actionName}.`);
+    }
   }
 
   async function refresh() {
@@ -301,35 +468,101 @@
 
   function bindUi() {
     document.addEventListener("click", (event) => {
-      const eventItem = event.target.closest(".event");
-      if (eventItem && eventItem.textContent) {
-        const matching = state.events.find((entry) => entry.id === eventItem.dataset.eventId);
+      const eventTrigger = event.target.closest("[data-calendar-event-id]");
+      if (eventTrigger) {
+        const matching = state.events.find((entry) => entry.id === eventTrigger.dataset.calendarEventId);
         if (matching) {
           event.stopPropagation();
           renderModal(matching);
           return;
         }
       }
+
+      const materialButton = event.target.closest("#modalMaterial");
+      if (materialButton?.dataset.materialId) {
+        event.stopPropagation();
+        void openAuthorizedUrl(
+          () => {
+            const downloads = window.SmartLearningDownloads;
+            if (!downloads?.getStudentMaterialUrl) {
+              throw new Error("Student material access is unavailable. Reload the page and try again.");
+            }
+            return downloads.getStudentMaterialUrl(materialButton.dataset.materialId);
+          },
+          "teacher material",
+        );
+        return;
+      }
+
+      const liveClassButton = event.target.closest("#modalLiveClass");
+      if (liveClassButton?.dataset.liveClassId) {
+        event.stopPropagation();
+        void openAuthorizedUrl(async () => {
+          const client = getClient();
+          const { data, error } = await client.rpc("get_student_live_class_join_url", {
+            requested_class_id: liveClassButton.dataset.liveClassId,
+          });
+          if (error) throw error;
+          if (!data) throw new Error("This class is not available to join right now.");
+          return data;
+        }, "live class");
+        return;
+      }
+
+      const miniMonthButton = event.target.closest("[data-mini-month]");
+      if (miniMonthButton) {
+        state.date = new Date(
+          state.date.getFullYear(),
+          state.date.getMonth() + Number(miniMonthButton.dataset.miniMonth),
+          1,
+        );
+        state.selectedDate = new Date(state.date);
+        void refresh();
+        return;
+      }
+
+      const miniDateButton = event.target.closest("[data-mini-date]");
+      if (miniDateButton) {
+        const [year, month, day] = miniDateButton.dataset.miniDate.split("-").map(Number);
+        state.selectedDate = new Date(year, month - 1, day);
+        state.date = new Date(year, month - 1, 1);
+        void refresh();
+        return;
+      }
+
       const dayElement = event.target.closest(".day");
       if (dayElement && dayElement.dataset.date) {
         const [year, month, day] = dayElement.dataset.date.split("-").map(Number);
+        state.selectedDate = new Date(year, month - 1, day);
         state.date = new Date(year, month - 1, 1);
         renderCalendar();
       }
     });
+    document.addEventListener("keydown", (event) => {
+      if (!["Enter", " "].includes(event.key)) return;
+      const trigger = event.target.closest("[data-calendar-event-id]");
+      if (!trigger) return;
+      const matching = state.events.find((entry) => entry.id === trigger.dataset.calendarEventId);
+      if (!matching) return;
+      event.preventDefault();
+      renderModal(matching);
+    });
 
     window.goToday = () => {
       state.date = new Date();
+      state.selectedDate = new Date();
       void refresh();
     };
 
     window.previousMonth = () => {
       state.date = new Date(state.date.getFullYear(), state.date.getMonth() - 1, 1);
+      state.selectedDate = new Date(state.date);
       void refresh();
     };
 
     window.nextMonth = () => {
       state.date = new Date(state.date.getFullYear(), state.date.getMonth() + 1, 1);
+      state.selectedDate = new Date(state.date);
       void refresh();
     };
 

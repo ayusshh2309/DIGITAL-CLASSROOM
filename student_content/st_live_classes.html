@@ -1272,6 +1272,11 @@
           status === "Completed" ? "Completed" :
             status === "Missed" ? "Missed" :
               "Join Class";
+        const joinHint = joinable
+          ? "Opens the teacher's meeting platform in a new tab."
+          : status === "Scheduled" && startDate && Date.now() < startDate.getTime() - 10 * 60_000
+            ? "Joining becomes available 10 minutes before the class starts."
+            : "Joining is only available during the scheduled class window.";
         const dateText = startDate
           ? startDate.toLocaleDateString("en-IN", {
               day: "2-digit",
@@ -1318,7 +1323,7 @@
               </div>
             </div>
             <div class="join-area">
-              <button class="join-button" ${buttonDisabled ? "disabled" : ""} data-live-class-id="${escapeHtml(String(item.id))}">
+              <button class="join-button" ${buttonDisabled ? "disabled" : ""} title="${joinHint}" aria-label="${buttonText}. ${joinHint}" data-live-class-id="${escapeHtml(String(item.id))}">
                 <i class="fa-solid fa-video"></i> ${buttonText}
                 ${!buttonDisabled && !isPrevious ? '<i class="fa-solid fa-arrow-right"></i>' : ""}
               </button>
