@@ -1,3 +1,0 @@
--- Superseded by sql_live_classes_teacher_student_security.sql.
--- Do not restore the former policies: they did not validate teacher subject
--- assignments or protect draft classes and meeting URLs.

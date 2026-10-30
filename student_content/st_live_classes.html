@@ -1059,6 +1059,14 @@
         const { data, error } = await client.rpc("get_student_live_classes");
         if (error) {
           console.error("Student live classes query failed.", error);
+          if (
+            error.code === "PGRST202" &&
+            /get_student_live_classes/i.test(error.message || "")
+          ) {
+            throw new Error(
+              "The live-class database function is not installed. Ask your administrator to run sql_live_classes_teacher_student_security.sql in the Supabase SQL Editor, then reload this page.",
+            );
+          }
           throw error;
         }
         currentLiveClasses = data || [];
