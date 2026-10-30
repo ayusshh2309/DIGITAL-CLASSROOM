@@ -385,7 +385,7 @@ returns table (
 )
 language sql
 security definer
-set search_path = public
+set search_path = ''
 as $$
   select
     'class-' || live.id::text,
@@ -400,17 +400,54 @@ as $$
     live.start_at + make_interval(mins => live.duration_minutes),
     live.status,
     null::text,
-    live.meeting_url,
+    null::text,
     null::text,
     live.duration_minutes,
     null::integer,
     null::timestamptz
   from public.live_classes live
-  join public.student_profiles student on student.student_id = auth.uid()
+  join public.students registered_student
+    on registered_student.user_id = auth.uid()
+  join public.teachers teacher
+    on teacher.id = live.teacher_id
+  join public.subjects subject
+    on lower(btrim(subject.name)) = lower(btrim(live.subject))
   where requested_student_id = auth.uid()
-    and live.class_grade = student.grade
-    and (live.stream is null or live.stream = '' or lower(live.stream) = lower(coalesce(student.stream, '')))
-    and lower(live.subject) = any(select lower(value) from unnest(student.eligible_subjects) value)
+    and to_jsonb(live)->>'publication_status' = 'published'
+    and lower(coalesce(live.status, '')) not in ('cancelled', 'canceled')
+    and nullif(regexp_replace(live.class_grade, '[^0-9]', '', 'g'), '')::integer
+      = registered_student.grade
+    and lower(coalesce(live.stream, '')) =
+      lower(coalesce(registered_student.stream, ''))
+    and coalesce(subject.grades, '{}'::integer[]) @> array[registered_student.grade]
+    and (
+      registered_student.grade between 5 and 10
+      or exists (
+        select 1
+        from unnest(coalesce(subject.streams, '{}'::text[])) allowed_stream(stream)
+        where lower(btrim(allowed_stream.stream))
+          = lower(btrim(registered_student.stream))
+      )
+    )
+    and exists (
+      select 1
+      from public.teacher_grade_groups grade_group
+      where grade_group.teacher_id = teacher.id
+        and grade_group.grade =
+          nullif(regexp_replace(live.class_grade, '[^0-9]', '', 'g'), '')::integer
+        and grade_group.stream is not distinct from nullif(btrim(live.stream), '')
+        and (
+          coalesce(grade_group.teach_all_subjects, false)
+          or exists (
+            select 1
+            from public.teacher_subject_assignments assignment
+            where assignment.teacher_id = teacher.id
+              and assignment.grade = grade_group.grade
+              and assignment.stream is not distinct from grade_group.stream
+              and assignment.subject_id::text = subject.id::text
+          )
+        )
+    )
   union all
   select
     'material-' || material.id::text,

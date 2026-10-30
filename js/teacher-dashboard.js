@@ -639,7 +639,7 @@
 
       const optionalQueries = [
         ["quizzes", state.profile.id, "*"],
-        ["live_classes", state.user.id, "*, subjects(id, name)"],
+        ["live_classes", state.profile.id, "id, teacher_id, title, class_grade, subject, topic, grade, stream, subject_id, description, class_date, start_time, end_time, start_at, end_at, duration_minutes, meeting_platform, status, publication_status, created_at, updated_at, subjects(id, name)"],
         ["announcements", state.user.id, "*"],
       ];
       const optionalData = await Promise.all(optionalQueries.map(([table, ownerId, fields]) => queryTeacherTable(table, ownerId, fields, { optional: true })));
@@ -833,20 +833,41 @@
     const todayKey = today.toDateString();
     const classes = state.liveClasses.filter((item) => {
       const start = new Date(liveClassDate(item));
-      return Number.isFinite(start.getTime()) && start.toDateString() === todayKey && assignedRow(item);
+      return item.publication_status === "published"
+        && Number.isFinite(start.getTime())
+        && start.toDateString() === todayKey
+        && assignedRow(item);
     }).sort((a, b) => new Date(liveClassDate(a)) - new Date(liveClassDate(b)));
     $("todaySummary").textContent = fmtDate(today, { weekday: "long", month: "long", day: "numeric" });
     $("todayClasses").innerHTML = classes.length ? classes.map((item) => {
       const start = new Date(liveClassDate(item));
       const end = item.end_at ? new Date(item.end_at) : new Date(start.getTime() + Number(item.duration_minutes || 60) * 60000);
       const status = liveStatus(item, today);
-      const joinUrl = item.meeting_url || item.join_url || item.meetingLink;
       const action = status === "Live"
-        ? `<a class="class-open" href="${escapeHtml(joinUrl || "live_classes.html")}" ${joinUrl ? 'target="_blank" rel="noopener"' : ""}>Join</a>`
+        ? `<button class="class-open" type="button" data-teacher-live-class-id="${escapeHtml(item.id)}">Join</button>`
         : ["Completed", "Missed", "Cancelled"].includes(status) ? "" : '<a class="class-open" href="live_classes.html">Open</a>';
       const stream = item.stream || item.class_stream;
       return `<article class="today-class"><div class="class-time">${fmtTime(start)}<br>${fmtTime(end)}</div><div class="class-detail"><strong>${escapeHtml(subjectOf(item) || item.title || "Class")}</strong><span>Class ${escapeHtml(gradeOf(item))}${stream ? ` · ${escapeHtml(stream)}` : ""}${item.topic ? ` · ${escapeHtml(item.topic)}` : ""}</span></div><div class="class-actions"><span class="status-pill ${status.toLowerCase()}">${status}</span>${action}</div></article>`;
     }).join("") : emptyStateMarkup("schedule", "fa-calendar-days", "No classes scheduled today", "Your planned classes will appear here once you schedule them.", "create_liveclass.html", "Schedule a class");
+    $("todayClasses").querySelectorAll("[data-teacher-live-class-id]").forEach((button) => {
+      button.addEventListener("click", () => openTeacherLiveClass(button.dataset.teacherLiveClassId));
+    });
+  }
+
+  async function openTeacherLiveClass(classId) {
+    const meetingWindow = window.open("about:blank", "_blank");
+    if (meetingWindow) meetingWindow.opener = null;
+    try {
+      const meetingUrl = await window.LiveClassService.getMeetingUrl(classId);
+      const parsedUrl = new URL(meetingUrl);
+      if (parsedUrl.protocol !== "https:") throw new Error("Meeting link is not a secure HTTPS URL.");
+      if (meetingWindow) meetingWindow.location.replace(parsedUrl.href);
+      else window.location.assign(parsedUrl.href);
+    } catch (error) {
+      meetingWindow?.close();
+      console.error("Could not authorize the teacher live-class meeting link.", error);
+      window.alert(error.message || "Meeting link is unavailable.");
+    }
   }
 
   function eventRows() {
@@ -937,7 +958,7 @@
       channel.on("postgres_changes", { event: "*", schema: "public", table: "students" }, scheduleRefresh);
       channel.on("postgres_changes", { event: "*", schema: "public", table: "attendance_sessions", filter: `teacher_id=eq.${state.profile.id}` }, scheduleRefresh);
       channel.on("postgres_changes", { event: "*", schema: "public", table: "attendance_records" }, scheduleRefresh);
-      channel.on("postgres_changes", { event: "*", schema: "public", table: "live_classes" }, scheduleRefresh);
+      channel.on("postgres_changes", { event: "*", schema: "public", table: "live_class_updates", filter: `teacher_id=eq.${state.profile.id}` }, scheduleRefresh);
       channel.on("postgres_changes", { event: "*", schema: "public", table: "quiz_attempts" }, scheduleRefresh);
       channel.subscribe();
       window.addEventListener("beforeunload", () => {

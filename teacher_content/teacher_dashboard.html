@@ -1411,7 +1411,8 @@
           const classes = records
             .filter((item) => {
               const startsAt = new Date(item.start_at).getTime();
-              return Number.isFinite(startsAt) &&
+              return item.publication_status === "published" &&
+                Number.isFinite(startsAt) &&
                 (statusForSchedule(item, now) === "Live" || startsAt + 24 * 60 * 60_000 > now);
             })
             .sort((first, second) => new Date(first.start_at) - new Date(second.start_at));
@@ -1429,7 +1430,7 @@
                   </div>
                   <div class="class-actions">
                       <span class="live-chip-badge ${status === "Live" || status === "Completed" ? "badge-green" : status === "Missed" ? "badge-amber" : status === "Cancelled" ? "badge-red" : "badge-blue"}">${status}</span>
-                      ${status === "Live" && item.meeting_url ? `<a class="live-chip-badge badge-blue" href="${escapeHtml(item.meeting_url)}" target="_blank" rel="noopener noreferrer">Join Class</a>` : ""}
+                      ${status === "Live" ? `<button class="live-chip-badge badge-blue schedule-join-btn" data-class-id="${escapeHtml(item.id)}" type="button">Join Class</button>` : ""}
                     ${status === "Scheduled" || status === "Live" ? `<button class="live-chip-badge badge-blue schedule-status-btn" data-class-id="${escapeHtml(item.id)}" data-action="${status === "Scheduled" ? "start" : "end"}">${status === "Scheduled" ? "Start Class" : "End Class"}</button>` : `<span class="live-chip-badge ${status === "Completed" ? "badge-green" : "badge-blue"}">${status}</span>`}
                   </div>
                 </div>`;
@@ -1449,6 +1450,25 @@
                   return;
                 }
                 window.alert(error.message || "Could not update this class. Please try again.");
+              }
+            });
+          });
+          scheduleTimeline.querySelectorAll(".schedule-join-btn").forEach((button) => {
+            button.addEventListener("click", async () => {
+              const meetingWindow = window.open("about:blank", "_blank");
+              if (meetingWindow) meetingWindow.opener = null;
+              try {
+                const meetingUrl = await LiveClassService.getMeetingUrl(button.dataset.classId);
+                const parsedUrl = new URL(meetingUrl);
+                if (parsedUrl.protocol !== "https:") {
+                  throw new Error("Meeting link is not a secure HTTPS URL.");
+                }
+                if (meetingWindow) meetingWindow.location.replace(parsedUrl.href);
+                else window.location.assign(parsedUrl.href);
+              } catch (error) {
+                meetingWindow?.close();
+                console.error("Could not authorize the teacher meeting link.", error);
+                window.alert(error.message || "Meeting link is unavailable.");
               }
             });
           });
@@ -1539,11 +1559,20 @@
             } = await supabase.auth.getUser();
             if (!user) return;
 
+            const { data: teacherProfile, error: teacherProfileError } = await supabase
+              .from("teachers")
+              .select("id")
+              .eq("user_id", user.id)
+              .maybeSingle();
+            if (teacherProfileError) throw teacherProfileError;
+
             const [materialsResult, quizzesResult, liveResult, studentsResult] =
               await Promise.all([
                 supabase.from("materials").select("created_at").eq("teacher_id", user.id),
                 supabase.from("quizzes").select("created_at, status").eq("teacher_id", user.id).eq("status", "published"),
-                supabase.from("live_classes").select("*, subjects(id, name)").eq("teacher_id", user.id),
+                teacherProfile
+                  ? supabase.from("live_classes").select("id, teacher_id, title, class_grade, grade, stream, subject_id, class_date, start_time, start_at, end_at, duration_minutes, status, publication_status, created_at, subjects(id, name)").eq("teacher_id", teacherProfile.id)
+                  : Promise.resolve({ data: [], error: null }),
                 supabase.from("students").select("*"),
               ]);
 
@@ -1578,7 +1607,7 @@
             .channel("teacher-dashboard-stats")
             .on("postgres_changes", { event: "*", schema: "public", table: "materials" }, refreshStats)
             .on("postgres_changes", { event: "*", schema: "public", table: "quizzes" }, refreshStats)
-            .on("postgres_changes", { event: "*", schema: "public", table: "live_classes" }, refreshStats)
+            .on("postgres_changes", { event: "*", schema: "public", table: "live_class_updates" }, refreshStats)
             .on("postgres_changes", { event: "*", schema: "public", table: "students" }, refreshStats)
             .subscribe();
         }

@@ -1662,6 +1662,11 @@
               Edit Details
             </button>
 
+            <button class="btn btn-secondary" onclick="scheduleLiveClass('draft')">
+              <i class="fa-regular fa-floppy-disk"></i>
+              Save Draft
+            </button>
+
             <button class="btn btn-primary" onclick="scheduleLiveClass()">
               <i class="fa-solid fa-calendar-check"></i>
               Schedule Live Class
@@ -1675,8 +1680,8 @@
               <i class="fa-solid fa-check"></i>
             </div>
 
-            <h2>Live Class Scheduled</h2>
-            <p>Your live class has been successfully scheduled.</p>
+            <h2 id="successTitle">Live Class Scheduled</h2>
+            <p id="successDescription">Your live class has been successfully scheduled.</p>
 
             <div class="success-details">
               <div>
@@ -2155,6 +2160,8 @@
           1,
           Math.round((new Date(`${date}T${endTime}:00`) - new Date(`${date}T${startTime}:00`)) / 60000),
         );
+        const startAt = new Date(`${date}T${startTime}:00`).toISOString();
+        const endAt = new Date(`${date}T${endTime}:00`).toISOString();
         const createdAt = new Date().toISOString();
 
         if (selectedSubject?.id === null || selectedSubject?.id === undefined || String(selectedSubject.id).trim() === "") {
@@ -2164,33 +2171,57 @@
         return {
           teacher_id: authenticatedTeacherId,
           grade,
+          class_grade: String(grade),
           stream,
           subject_id: selectedSubject.id,
+          subject: getSelectedSubjectName(),
           title,
           chapter: "",
           topic: description || title,
           description: description || null,
           class_date: date,
           start_time: startTime,
+          end_time: endTime,
+          start_at: startAt,
+          end_at: endAt,
           duration_minutes: durationMinutes,
+          meeting_platform: document.getElementById("platform").value,
           meeting_url: meetingUrl,
           status: "scheduled",
+          publication_status: "published",
           created_at: createdAt,
           updated_at: createdAt,
         };
       }
 
-      async function insertLiveClassRecord() {
+      async function insertLiveClassRecord(publicationStatus) {
         const client = window.SmartLearningSupabase?.getClient?.() || window.TeacherData?.getSupabaseClient?.();
         if (!client) {
           throw new Error("Supabase is not configured. Please check your project settings.");
         }
 
-        const payload = buildLiveClassPayload();
+        const payload = {
+          ...buildLiveClassPayload(),
+          publication_status: publicationStatus,
+        };
+        const { data: authData, error: authError } = await client.auth.getUser();
+        if (authError) throw authError;
+        if (!authData?.user?.id) {
+          throw new Error("Sign in with your teacher account before scheduling a class.");
+        }
+        const { data: teacher, error: teacherError } = await client
+          .from("teachers")
+          .select("id")
+          .eq("user_id", authData.user.id)
+          .maybeSingle();
+        if (teacherError) throw teacherError;
+        if (!teacher?.id || String(teacher.id) !== String(authenticatedTeacherId)) {
+          throw new Error("The authenticated teacher profile changed. Please reload and try again.");
+        }
         const { data, error } = await client
           .from("live_classes")
-          .insert(payload)
-          .select("*, subjects(id, name)")
+          .insert({ ...payload, teacher_id: teacher.id })
+          .select("id, teacher_id, title, grade, stream, subject_id, class_date, start_time, end_time, start_at, end_at, duration_minutes, meeting_platform, status, publication_status, created_at, updated_at, subjects(id, name)")
           .single();
         if (error) {
           console.error("Could not save the live class.", error);
@@ -2199,7 +2230,7 @@
         return data || payload;
       }
 
-      async function scheduleLiveClass() {
+      async function scheduleLiveClass(publicationStatus = "published") {
         if (!validateForm()) return;
 
         const scheduleButton = document.querySelector("#section3 .btn-primary");
@@ -2208,12 +2239,19 @@
         }
 
         try {
-          await insertLiveClassRecord();
+          await insertLiveClassRecord(publicationStatus);
           document.querySelectorAll(".schedule-section").forEach((section) => {
             section.classList.remove("active");
           });
 
           document.getElementById("successSection").classList.add("active");
+          const isDraft = publicationStatus === "draft";
+          document.getElementById("successTitle").textContent = isDraft
+            ? "Live Class Draft Saved"
+            : "Live Class Scheduled";
+          document.getElementById("successDescription").textContent = isDraft
+            ? "Your draft is saved and is not visible to students."
+            : "Your live class has been successfully scheduled.";
           const date = document.getElementById("classDate").value;
           const startTime = document.getElementById("startTime").value;
           const endTime = document.getElementById("endTime").value;

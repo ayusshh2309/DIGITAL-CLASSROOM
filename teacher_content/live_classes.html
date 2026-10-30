@@ -693,6 +693,24 @@
         background: #b91c1c;
       }
 
+      .reschedule-field {
+        display: grid;
+        gap: 6px;
+        margin-top: 14px;
+        color: #334155;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .reschedule-field + input {
+        width: 100%;
+        padding: 10px 11px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        color: #0f172a;
+        font: inherit;
+      }
+
       .class-status {
         display: inline-flex;
         align-items: center;
@@ -1156,6 +1174,20 @@
         </div>
       </form>
     </dialog>
+    <dialog class="delete-confirm-dialog" id="rescheduleLiveClassDialog" aria-labelledby="rescheduleLiveClassTitle">
+      <form id="rescheduleLiveClassForm">
+        <h2 id="rescheduleLiveClassTitle">Reschedule live class</h2>
+        <p>Choose the updated class date and time.</p>
+        <label class="reschedule-field" for="rescheduleStart">Start</label>
+        <input id="rescheduleStart" type="datetime-local" required />
+        <label class="reschedule-field" for="rescheduleEnd">End</label>
+        <input id="rescheduleEnd" type="datetime-local" required />
+        <div class="delete-confirm-actions">
+          <button class="btn-join btn-recording" id="cancelRescheduleLiveClass" type="button">Cancel</button>
+          <button class="btn-join" id="saveRescheduleLiveClass" type="submit">Save Schedule</button>
+        </div>
+      </form>
+    </dialog>
 
     <script src="../js/supabase.js"></script>
     <script src="../js/teacher-data.js"></script>
@@ -1183,9 +1215,9 @@
       }
 
       function startDate(item) {
-        const value = item.class_date && item.start_time
+        const value = item.start_at || (item.class_date && item.start_time
           ? `${item.class_date}T${item.start_time}`
-          : item.start_at || item.scheduled_at || item.datetime;
+          : item.scheduled_at || item.datetime);
         const parsed = value ? new Date(value) : null;
         return parsed && !Number.isNaN(parsed.getTime()) ? parsed : null;
       }
@@ -1290,6 +1322,7 @@
         const isMissed = statusValue === "Missed";
         const isLive = statusValue === "Live";
         const isScheduled = statusValue === "Scheduled";
+        const isDraft = item.publication_status === "draft";
         const startsAt = startDate(item);
         const grade = item.grade || item.class_grade;
         const stream = String(item.stream || "").trim().toLowerCase();
@@ -1340,8 +1373,8 @@
         ));
 
         const statusBadge = document.createElement("span");
-        statusBadge.className = `class-status${isDone ? " completed" : ""}${isCancelled ? " cancelled" : ""}${isLive ? " live" : ""}${isMissed ? " missed" : ""}`;
-        statusBadge.textContent = statusValue;
+        statusBadge.className = `class-status${isDraft ? " draft" : ""}${isDone ? " completed" : ""}${isCancelled ? " cancelled" : ""}${isLive ? " live" : ""}${isMissed ? " missed" : ""}`;
+        statusBadge.textContent = isDraft ? "Draft" : statusValue;
 
         const actions = document.createElement("div");
         actions.className = "class-card-right";
@@ -1349,24 +1382,32 @@
         const actionButtons = document.createElement("div");
         actionButtons.className = "class-actions";
 
-        if (isLive && item.meeting_url) {
-          const joinLink = document.createElement("a");
-          joinLink.className = "btn-join";
-          joinLink.href = item.meeting_url;
-          joinLink.target = "_blank";
-          joinLink.rel = "noopener noreferrer";
-          joinLink.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i> Join Class';
-          actionButtons.appendChild(joinLink);
+        if (isDraft) {
+          const publishButton = document.createElement("button");
+          publishButton.type = "button";
+          publishButton.className = "btn-join";
+          publishButton.textContent = "Publish";
+          publishButton.addEventListener("click", () => publishLiveClass(item));
+          actionButtons.appendChild(publishButton);
         }
 
-        if (isScheduled || isLive) {
+        if (!isDraft && isLive) {
+          const joinButton = document.createElement("button");
+          joinButton.type = "button";
+          joinButton.className = "btn-join";
+          joinButton.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i> Join Class';
+          joinButton.addEventListener("click", () => openTeacherClassMeeting(item.id, joinButton));
+          actionButtons.appendChild(joinButton);
+        }
+
+        if (!isDraft && (isScheduled || isLive)) {
           const statusButton = document.createElement("button");
           statusButton.type = "button";
           statusButton.className = `btn-join${isScheduled ? " btn-recording" : ""}`;
           statusButton.textContent = isScheduled ? "Start Class" : "End Class";
           statusButton.addEventListener("click", () => handleClassStatusChange(item, isScheduled ? "start" : "end"));
           actionButtons.appendChild(statusButton);
-        } else {
+        } else if (!isDraft) {
           const detailsButton = document.createElement("button");
           detailsButton.type = "button";
           detailsButton.className = "btn-join btn-recording";
@@ -1375,7 +1416,16 @@
           actionButtons.appendChild(detailsButton);
         }
 
-        if (isScheduled || isLive) {
+        if (!isDraft && isScheduled) {
+          const rescheduleButton = document.createElement("button");
+          rescheduleButton.type = "button";
+          rescheduleButton.className = "btn-join btn-recording";
+          rescheduleButton.textContent = "Reschedule";
+          rescheduleButton.addEventListener("click", () => openRescheduleDialog(item));
+          actionButtons.appendChild(rescheduleButton);
+        }
+
+        if (!isDraft && (isScheduled || isLive)) {
           const cancelButton = document.createElement("button");
           cancelButton.type = "button";
           cancelButton.className = "btn-join btn-recording";
@@ -1554,6 +1604,21 @@
         updateMetrics();
       }
 
+      async function publishLiveClass(item) {
+        try {
+          const updatedClass = await LiveClassService.publishClass(item.id);
+          replaceClass(updatedClass);
+          window.alert("Live class published. Eligible students can now see it.");
+        } catch (error) {
+          console.error("Could not publish live class.", error);
+          if (error?.code === "AUTH_REQUIRED") {
+            window.location.assign("../teacher_registration/login.html");
+            return;
+          }
+          window.alert(error.message || "Could not publish this class. Check its meeting link and teaching scope.");
+        }
+      }
+
       async function handleClassStatusChange(item, action) {
         try {
           const updatedClass = action === "start"
@@ -1567,6 +1632,64 @@
             return;
           }
           window.alert(error.message || "Could not update this class. Please try again.");
+        }
+      }
+
+      function openRescheduleDialog(item) {
+        const dialog = document.getElementById("rescheduleLiveClassDialog");
+        const start = startDate(item);
+        const startDateValue = item.class_date || (start ? start.toISOString().slice(0, 10) : "");
+        const startTimeValue = String(item.start_time || (start ? start.toTimeString().slice(0, 5) : "")).slice(0, 5);
+        const endTimeValue = String(item.end_time || "").slice(0, 5);
+        let endDateValue = startDateValue;
+        let endTimeFallback = endTimeValue;
+        if (!endTimeFallback && start) {
+          const end = new Date(start.getTime() + (Number(item.duration_minutes) || 60) * 60_000);
+          endDateValue = end.toISOString().slice(0, 10);
+          endTimeFallback = end.toTimeString().slice(0, 5);
+        }
+
+        document.getElementById("rescheduleLiveClassTitle").textContent =
+          `Reschedule ${item.title || "live class"}`;
+        document.getElementById("rescheduleStart").value =
+          startDateValue && startTimeValue ? `${startDateValue}T${startTimeValue}` : "";
+        document.getElementById("rescheduleEnd").value =
+          endDateValue && endTimeFallback ? `${endDateValue}T${endTimeFallback}` : "";
+        dialog.dataset.liveClassId = String(item.id);
+        dialog.showModal();
+      }
+
+      async function submitLiveClassReschedule(event) {
+        event.preventDefault();
+        const dialog = document.getElementById("rescheduleLiveClassDialog");
+        const saveButton = document.getElementById("saveRescheduleLiveClass");
+        const startValue = document.getElementById("rescheduleStart").value;
+        const endValue = document.getElementById("rescheduleEnd").value;
+        const [classDate, startTime] = startValue.split("T");
+        const [endDate, endTime] = endValue.split("T");
+        if (classDate !== endDate) {
+          window.alert("The end time must be on the same date and later than the start time.");
+          return;
+        }
+
+        saveButton.disabled = true;
+        try {
+          const updatedClass = await window.LiveClassService.rescheduleClass(
+            dialog.dataset.liveClassId,
+            { class_date: classDate, start_time: startTime, end_time: endTime },
+          );
+          dialog.close();
+          replaceClass(updatedClass);
+          window.alert("Live class rescheduled. Eligible students have been updated.");
+        } catch (error) {
+          console.error("Could not reschedule live class.", error);
+          if (error?.code === "AUTH_REQUIRED") {
+            window.location.assign("../teacher_registration/login.html");
+            return;
+          }
+          window.alert(error.message || "Could not reschedule this class. Please try again.");
+        } finally {
+          saveButton.disabled = false;
         }
       }
 
@@ -1585,8 +1708,35 @@
         }
       }
 
-      function showLiveClassDetails(item, status) {
+      async function openTeacherClassMeeting(classId, button) {
+        const meetingWindow = window.open("about:blank", "_blank");
+        if (meetingWindow) meetingWindow.opener = null;
+        if (button) button.disabled = true;
+        try {
+          const meetingUrl = await window.LiveClassService.getMeetingUrl(classId);
+          const parsedUrl = new URL(meetingUrl);
+          if (parsedUrl.protocol !== "https:") {
+            throw new Error("Meeting link is not a secure HTTPS URL.");
+          }
+          if (meetingWindow) meetingWindow.location.replace(parsedUrl.href);
+          else window.location.assign(parsedUrl.href);
+        } catch (error) {
+          meetingWindow?.close();
+          console.error("Could not authorize the teacher live-class meeting link.", error);
+          window.alert(error.message || "Meeting link is unavailable.");
+        } finally {
+          if (button) button.disabled = false;
+        }
+      }
+
+      async function showLiveClassDetails(item, status) {
         const startsAt = startDate(item);
+        let meetingUrl = "";
+        try {
+          meetingUrl = await window.LiveClassService.getMeetingUrl(item.id);
+        } catch (error) {
+          console.error("Could not load the teacher meeting link for class details.", error);
+        }
         const details = [
           `Status: ${status}`,
           `Class: ${item.grade || item.class_grade || "—"}${item.stream ? ` · ${streamLabels[String(item.stream).toLowerCase()] || item.stream}` : ""}`,
@@ -1594,7 +1744,7 @@
           `Date: ${startsAt ? formatClassDate(startsAt) : "—"}`,
           `Time: ${startsAt ? formatClassTime(startsAt) : "—"} (${Number(item.duration_minutes) || 60} min)`,
           item.topic ? `Topic: ${item.topic}` : "",
-          item.meeting_url ? `Meeting link: ${item.meeting_url}` : "",
+          meetingUrl ? `Meeting link: ${meetingUrl}` : "",
         ].filter(Boolean);
         document.getElementById("liveClassDetailsTitle").textContent = item.title || subjectName(item) || "Live class details";
         document.getElementById("liveClassDetailsBody").textContent = details.join("\n");
@@ -1602,6 +1752,10 @@
       }
 
       async function initializeLiveClassesPage() {
+        document.getElementById("rescheduleLiveClassForm")
+          .addEventListener("submit", submitLiveClassReschedule);
+        document.getElementById("cancelRescheduleLiveClass")
+          .addEventListener("click", () => document.getElementById("rescheduleLiveClassDialog").close());
         let teacher;
         try {
           teacher = await window.TeacherData.requireTeacher();

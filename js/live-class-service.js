@@ -1,4 +1,30 @@
 (() => {
+  const LIVE_CLASS_FIELDS = [
+    "id",
+    "teacher_id",
+    "title",
+    "class_grade",
+    "subject",
+    "topic",
+    "grade",
+    "stream",
+    "subject_id",
+    "description",
+    "chapter",
+    "class_date",
+    "start_time",
+    "end_time",
+    "start_at",
+    "end_at",
+    "duration_minutes",
+    "meeting_platform",
+    "status",
+    "publication_status",
+    "created_at",
+    "updated_at",
+    "subjects(id, name)",
+  ].join(", ");
+
   const normalizeStatus = (status) => {
     const normalized = String(status || "").trim().toLowerCase();
     if (["attended", "completed", "done", "finished"].includes(normalized)) return "Completed";
@@ -76,11 +102,11 @@
     const { client, user, teacher } = await getTeacherContext();
     if (!client || !teacher) return [];
 
-    const identityCandidates = [teacher.id, user?.id].filter(Boolean);
+    const identityCandidates = [teacher.id].filter(Boolean);
     for (const teacherId of identityCandidates) {
       const { data, error } = await client
         .from("live_classes")
-        .select("*, subjects(id, name)")
+        .select(LIVE_CLASS_FIELDS)
         .eq("teacher_id", teacherId)
         .order("class_date", { ascending: true })
         .order("start_time", { ascending: true });
@@ -109,17 +135,22 @@
     return {
       teacher_id: record.teacher_id,
       grade: Number(record.grade ?? 0) || null,
+      class_grade: String(record.grade ?? ""),
       stream: record.stream || null,
       subject_id: subjectId,
+      subject: record.subject_name || record.subject || "",
       title: record.title,
       chapter: record.chapter || null,
       topic: record.topic || record.title,
       description: record.description || null,
       class_date: record.class_date || (record.start_at ? new Date(record.start_at).toISOString().slice(0, 10) : null),
       start_time: record.start_time || (record.start_at ? new Date(record.start_at).toISOString().slice(11, 16) : null),
+      end_time: record.end_time || null,
       duration_minutes: Number(record.duration_minutes || 60),
+      meeting_platform: record.meeting_platform || null,
       meeting_url: record.meeting_url || "",
       status: "scheduled",
+      publication_status: record.publication_status || "published",
       created_at: createdAt,
       updated_at: createdAt,
     };
@@ -131,14 +162,14 @@
       throw new Error("No authenticated teacher was found for this live class.");
     }
 
-    const identityCandidates = [teacher.id, user?.id].filter(Boolean);
+    const identityCandidates = [teacher.id].filter(Boolean);
     for (const teacherId of identityCandidates) {
       const record = normalize({ ...input, teacher_id: teacherId, status: "Scheduled", created_at: now() });
       const payload = buildInsertPayload(record);
       const { data, error } = await client
         .from("live_classes")
         .insert(payload)
-        .select("*, subjects(id, name)")
+        .select(LIVE_CLASS_FIELDS)
         .single();
       if (!error) return normalize(data || payload);
       if (!/column .* does not exist|Unknown column|does not exist|invalid input syntax|not null|violates|foreign key/i.test(error.message || "")) {
@@ -161,7 +192,7 @@
       throw new Error("A live class ID is required.");
     }
 
-    const identityCandidates = [teacher.id, user?.id].filter(Boolean);
+    const identityCandidates = [teacher.id].filter(Boolean);
     for (const teacherId of identityCandidates) {
       const { data: liveClass, error: lookupError } = await client
         .from("live_classes")
@@ -186,7 +217,7 @@
         .eq("id", id)
         .eq("teacher_id", teacherId)
         .eq("status", liveClass.status)
-        .select("*, subjects(id, name)")
+        .select(LIVE_CLASS_FIELDS)
         .maybeSingle();
 
       if (error) throw error;
@@ -211,8 +242,101 @@
     return updateStatus(id, "completed", ["live"]);
   }
 
+  async function publishClass(id) {
+    const { client, user, teacher } = await getTeacherContext();
+    if (!client || !user || !teacher) {
+      throw Object.assign(new Error("An authenticated teacher account is required."), {
+        code: "AUTH_REQUIRED",
+      });
+    }
+
+    const { data: liveClass, error: lookupError } = await client
+      .from("live_classes")
+      .select("publication_status")
+      .eq("id", id)
+      .eq("teacher_id", teacher.id)
+      .maybeSingle();
+    if (lookupError) throw lookupError;
+    if (!liveClass) throw new Error("Live class not found or access denied.");
+    if (liveClass.publication_status !== "draft") {
+      throw new Error("Only draft classes can be published.");
+    }
+
+    const { data, error } = await client
+      .from("live_classes")
+      .update({ publication_status: "published", updated_at: now() })
+      .eq("id", id)
+      .eq("teacher_id", teacher.id)
+      .eq("publication_status", "draft")
+      .select(LIVE_CLASS_FIELDS)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) throw new Error("The draft changed before it could be published. Refresh and try again.");
+    return normalize(data);
+  }
+
   async function cancelClass(id) {
     return updateStatus(id, "cancelled", ["scheduled", "live"]);
+  }
+
+  async function rescheduleClass(id, schedule) {
+    const { client, user, teacher } = await getTeacherContext();
+    if (!client || !user || !teacher) {
+      throw Object.assign(new Error("An authenticated teacher account is required."), {
+        code: "AUTH_REQUIRED",
+      });
+    }
+
+    const classDate = String(schedule?.class_date || "");
+    const startTime = String(schedule?.start_time || "");
+    const endTime = String(schedule?.end_time || "");
+    const parsedDate = /^\d{4}-\d{2}-\d{2}$/.test(classDate)
+      ? new Date(`${classDate}T00:00:00.000Z`)
+      : null;
+    if (
+      !parsedDate ||
+      Number.isNaN(parsedDate.getTime()) ||
+      parsedDate.toISOString().slice(0, 10) !== classDate ||
+      !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(startTime) ||
+      !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(endTime) ||
+      endTime <= startTime
+    ) {
+      throw new Error("Choose a valid date, start time, and later end time.");
+    }
+
+    const { data: current, error: lookupError } = await client
+      .from("live_classes")
+      .select("status, publication_status")
+      .eq("id", id)
+      .eq("teacher_id", teacher.id)
+      .maybeSingle();
+    if (lookupError) throw lookupError;
+    if (!current) throw new Error("Live class not found or access denied.");
+    if (current.publication_status !== "published" || current.status !== "scheduled") {
+      throw new Error("Only published, scheduled classes can be rescheduled.");
+    }
+
+    const [startHour, startMinute] = startTime.split(":").map(Number);
+    const [endHour, endMinute] = endTime.split(":").map(Number);
+    const durationMinutes = endHour * 60 + endMinute - (startHour * 60 + startMinute);
+    const { data, error } = await client
+      .from("live_classes")
+      .update({
+        class_date: classDate,
+        start_time: startTime,
+        end_time: endTime,
+        duration_minutes: durationMinutes,
+        updated_at: now(),
+      })
+      .eq("id", id)
+      .eq("teacher_id", teacher.id)
+      .eq("status", "scheduled")
+      .eq("publication_status", "published")
+      .select(LIVE_CLASS_FIELDS)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) throw new Error("The class changed before the new schedule was saved. Refresh and retry.");
+    return normalize(data);
   }
 
   async function deleteLiveClass(liveClassId) {
@@ -271,6 +395,20 @@
     return deletedClass;
   }
 
+  async function getMeetingUrl(liveClassId) {
+    const { client, user, teacher } = await getTeacherContext();
+    if (!client || !user || !teacher) {
+      throw Object.assign(new Error("An authenticated teacher account is required."), {
+        code: "AUTH_REQUIRED",
+      });
+    }
+    const { data, error } = await client.rpc("get_teacher_live_class_meeting_url", {
+      requested_class_id: liveClassId,
+    });
+    if (error) throw error;
+    return data;
+  }
+
   function subscribe(onChange, onError = () => {}) {
     const handler = () => onChange();
     window.addEventListener("smart-learning-live-classes-updated", handler);
@@ -284,7 +422,8 @@
         .on("postgres_changes", {
           event: "*",
           schema: "public",
-          table: "live_classes",
+          table: "live_class_updates",
+          filter: `teacher_id=eq.${teacher.id}`,
         }, handler)
         .subscribe((status, error) => {
           if (["CHANNEL_ERROR", "TIMED_OUT"].includes(status)) {
@@ -312,8 +451,11 @@
     schedule,
     startClass,
     endClass,
+    publishClass,
     cancelClass,
+    rescheduleClass,
     deleteLiveClass,
+    getMeetingUrl,
     subscribe,
     normalize,
   };

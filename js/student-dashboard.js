@@ -322,7 +322,7 @@
     if (!state.client || !state.user) return;
     state.channel?.unsubscribe();
     state.channel = state.client.channel(`student-dashboard-${state.user.id}`);
-    ["students", "student_profiles", "study_sessions", "study_session_segments", "quiz_attempts", "student_video_progress", "materials", "live_classes", "quizzes", "assignments", "subjects"].forEach((table) => {
+    ["students", "student_profiles", "study_sessions", "study_session_segments", "quiz_attempts", "student_video_progress", "materials", "live_class_updates", "quizzes", "assignments", "subjects"].forEach((table) => {
       const filter = table === "students"
         ? `user_id=eq.${state.user.id}`
         : table === "quiz_attempts"

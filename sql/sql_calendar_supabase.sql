@@ -572,6 +572,33 @@ declare
   announcement_allowed boolean;
   source_allowed boolean;
 begin
+  if requested_source_table = 'live_classes' then
+    if requested_source_id is null
+      or to_regprocedure(
+        'public.live_class_student_can_view(uuid,integer,text,text)'
+      ) is null then
+      return false;
+    end if;
+
+    execute
+      'select exists (
+         select 1
+         from public.live_classes live
+         where live.id = $1
+           and live.publication_status = ''published''
+           and lower(coalesce(live.status, '''')) not in (''cancelled'', ''canceled'')
+           and live.grade::integer = $2
+           and live.stream is not distinct from $3
+           and live.subject_id::text = $4::text
+           and public.live_class_student_can_view(
+             live.teacher_id, live.grade::integer, live.stream, live.subject_id::text
+           )
+       )'
+      into source_allowed
+      using requested_source_id, requested_grade, requested_stream, requested_subject_id;
+    return coalesce(source_allowed, false);
+  end if;
+
   if requested_source_table = 'announcements' then
     if requested_source_id is null
       or to_regclass('public.announcements') is null
@@ -1179,13 +1206,12 @@ begin
     return new;
   end if;
 
-  calendar_status := case normalized_status
-    when 'scheduled' then 'published'
-    when 'live' then 'published'
-    when 'completed' then 'completed'
-    when 'missed' then 'completed'
-    when 'attended' then 'completed'
-    when 'cancelled' then 'cancelled'
+  calendar_status := case
+    when coalesce(to_jsonb(new)->>'publication_status', 'published') <> 'published'
+      then 'draft'
+    when normalized_status in ('scheduled', 'live') then 'published'
+    when normalized_status in ('completed', 'missed', 'attended') then 'completed'
+    when normalized_status in ('cancelled', 'canceled') then 'cancelled'
     else null
   end;
 
@@ -1193,7 +1219,9 @@ begin
     raise exception 'Unsupported live_classes.status value: %', new.status;
   end if;
 
-  student_visible := normalized_status in ('scheduled', 'live');
+  student_visible :=
+    coalesce(to_jsonb(new)->>'publication_status', 'published') = 'published'
+    and normalized_status in ('scheduled', 'live');
 
   insert into public.calendar_events (
     teacher_id,
@@ -1223,7 +1251,7 @@ begin
     calendar_start,
     calendar_start + make_interval(mins => new.duration_minutes),
     false,
-    new.meeting_url,
+    null,
     calendar_status,
     student_visible,
     'live_classes',
@@ -1242,7 +1270,7 @@ begin
     start_at = excluded.start_at,
     end_at = excluded.end_at,
     all_day = excluded.all_day,
-    meeting_url = excluded.meeting_url,
+    meeting_url = null,
     status = excluded.status,
     is_visible_to_students = excluded.is_visible_to_students;
 
@@ -1404,7 +1432,7 @@ select
   public.calendar_live_class_start_at(live.teacher_id, live.class_date, live.start_time)
     + make_interval(mins => live.duration_minutes),
   false,
-  live.meeting_url,
+  null,
   case lower(btrim(live.status))
     when 'scheduled' then 'published'
     when 'live' then 'published'
@@ -1437,7 +1465,7 @@ do update set
   start_at = excluded.start_at,
   end_at = excluded.end_at,
   all_day = excluded.all_day,
-  meeting_url = excluded.meeting_url,
+  meeting_url = null,
   status = excluded.status,
   is_visible_to_students = excluded.is_visible_to_students;
     $sync$;
