@@ -217,7 +217,7 @@
 
       .main-grid {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 380px;
+        grid-template-columns: minmax(0, 1fr);
         gap: 18px;
         align-items: start;
       }
@@ -1255,10 +1255,6 @@
           grid-template-columns: repeat(2, 1fr);
         }
 
-        .main-grid {
-          grid-template-columns: minmax(0, 1fr) 320px;
-        }
-
         .quiz-item {
           grid-template-columns:
             58px
@@ -1273,10 +1269,6 @@
           grid-template-columns: 1fr;
         }
 
-        .right-column {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-        }
       }
 
       @media (max-width: 750px) {
@@ -1285,10 +1277,6 @@
         }
 
         .stats-grid {
-          grid-template-columns: 1fr;
-        }
-
-        .right-column {
           grid-template-columns: 1fr;
         }
 
@@ -1510,113 +1498,6 @@
           </div>
         </section>
 
-        <!-- =================================================
-             RIGHT COLUMN
-        ================================================== -->
-
-        <div class="right-column">
-          <!-- =================================================
-                 UPCOMING QUIZ
-            ================================================== -->
-
-          <section class="right-card">
-            <div class="right-card-header">
-              <h2>Upcoming Quiz</h2>
-
-              <a href="#" class="view-all"> View all </a>
-            </div>
-
-            <div id="upcomingQuiz">
-              <div class="empty">
-                <i class="fa-regular fa-calendar"></i>
-                <h3>No upcoming quizzes</h3>
-                <p>Your teacher's quizzes will appear here when published.</p>
-              </div>
-            </div>
-          </section>
-
-          <!-- =================================================
-                 PERFORMANCE
-            ================================================== -->
-
-          <section class="right-card performance">
-            <div class="right-card-header">
-              <h2>Quiz Performance</h2>
-
-              <a href="#" class="view-all"> View all </a>
-            </div>
-
-            <div class="performance-content">
-              <div class="donut">
-                <div class="donut-center">
-                  <div class="donut-score" id="donutScore">—</div>
-
-                  <div class="donut-label">Average Score</div>
-                </div>
-              </div>
-
-              <div class="legend">
-                <div class="legend-item">
-                  <span class="legend-dot dot-green"></span>
-
-                  Excellent (90-100%)
-
-                  <span class="legend-count" id="excellentCount"> — </span>
-                </div>
-
-                <div class="legend-item">
-                  <span class="legend-dot dot-blue"></span>
-
-                  Good (75-89%)
-
-                  <span class="legend-count" id="goodCount"> — </span>
-                </div>
-
-                <div class="legend-item">
-                  <span class="legend-dot dot-orange"></span>
-
-                  Average (60-74%)
-
-                  <span class="legend-count" id="averageCount"> — </span>
-                </div>
-
-                <div class="legend-item">
-                  <span class="legend-dot dot-red"></span>
-
-                  Needs Help (&lt;60%)
-
-                  <span class="legend-count" id="poorCount"> — </span>
-                </div>
-              </div>
-            </div>
-
-            <div class="performance-bottom">
-              <div class="performance-stat">
-                <div class="performance-stat-icon">
-                  <i class="fa-regular fa-calendar"></i>
-                </div>
-
-                <div>
-                  <strong id="quizzesTaken"> 0 </strong>
-
-                  <span> Quizzes Taken </span>
-                </div>
-              </div>
-
-              <div class="performance-stat">
-                <div class="performance-stat-icon orange">
-                  <i class="fa-solid fa-trophy"></i>
-                </div>
-
-                <div>
-                  <strong id="bestScore"> — </strong>
-
-                  <span> Best Score </span>
-                </div>
-              </div>
-            </div>
-          </section>
-        </div>
       </div>
     </div>
 
@@ -1678,13 +1559,6 @@
                   <i class="fa-solid fa-clipboard-list"></i>
                   <h3>No quizzes uploaded</h3>
                   <p>No published quizzes are available for your registered class yet.</p>
-                </div>
-              `;
-        document.getElementById("upcomingQuiz").innerHTML = `
-                <div class="empty">
-                  <i class="fa-regular fa-calendar"></i>
-                  <h3>No upcoming quizzes</h3>
-                  <p>Your teacher's quizzes will appear here when published.</p>
                 </div>
               `;
       }
@@ -1906,7 +1780,6 @@
           populateSubjectFilter();
           renderQuizzes();
           updateStatistics();
-          renderUpcomingQuiz();
           updatePerformance();
           if (!allQuizzes.length) renderNoQuizzes();
           subscribeToStudentRealtime(student);
@@ -2310,182 +2183,9 @@
               values.reduce((sum, value) => sum + value, 0) / values.length,
             )
           : null;
-        const best = hasResults ? Math.max(...values) : null;
-        const categories = { excellent: 0, good: 0, average: 0, poor: 0 };
-        values.forEach((percentage) => {
-          if (percentage >= 90) categories.excellent += 1;
-          else if (percentage >= 75) categories.good += 1;
-          else if (percentage >= 60) categories.average += 1;
-          else categories.poor += 1;
-        });
         document.getElementById("averageScore").textContent = hasResults
           ? `${averageScore}%`
           : "—";
-        document.getElementById("donutScore").textContent = hasResults
-          ? `${averageScore}%`
-          : "—";
-        document.getElementById("quizzesTaken").textContent = String(
-          submitted.length,
-        );
-        document.getElementById("bestScore").textContent = hasResults
-          ? `${Math.round(best)}%`
-          : "—";
-        document.getElementById("excellentCount").textContent = hasResults
-          ? String(categories.excellent)
-          : "—";
-        document.getElementById("goodCount").textContent = hasResults
-          ? String(categories.good)
-          : "—";
-        document.getElementById("averageCount").textContent = hasResults
-          ? String(categories.average)
-          : "—";
-        document.getElementById("poorCount").textContent = hasResults
-          ? String(categories.poor)
-          : "—";
-        const total = submitted.length || 1;
-        const first = (categories.excellent / total) * 360;
-        const second = first + (categories.good / total) * 360;
-        const third = second + (categories.average / total) * 360;
-        document.querySelector(".donut").style.background = hasResults
-          ? `conic-gradient(#06a969 0deg ${first}deg, #2577dc ${first}deg ${second}deg, #f39a12 ${second}deg ${third}deg, #ef3b3b ${third}deg 360deg)`
-          : "#e5eaf1";
-      }
-
-      /* =====================================================
-         UPCOMING QUIZ
-      ===================================================== */
-
-      function renderUpcomingQuiz() {
-        const container = document.getElementById("upcomingQuiz");
-
-        const upcoming = allQuizzes
-          .filter((quiz) => {
-            const attempt = getAttemptForQuiz(quiz.id);
-
-            return (
-              (!attempt || attempt.status !== "submitted") &&
-              quiz.start_at &&
-              new Date(quiz.start_at) > new Date()
-            );
-          })
-          .sort((a, b) => new Date(a.start_at) - new Date(b.start_at))[0];
-
-        if (!upcoming) {
-          container.innerHTML = `
-
-                  <div class="empty">
-
-                      <i class="fa-solid fa-check-circle"></i>
-
-                      <h3>
-                          No upcoming quizzes
-                      </h3>
-
-                      <p>Quiz scheduling is not configured for these records.</p>
-
-                  </div>
-
-              `;
-
-          return;
-        }
-
-        const iconData = getQuizIcon(upcoming.subject);
-
-        container.innerHTML = `
-
-              <div class="upcoming-top">
-
-                  <div
-                      class="upcoming-icon">
-
-                      <i class="fa-solid ${iconData.icon}"></i>
-
-                  </div>
-
-
-                  <div class="upcoming-info">
-
-                      <h3>
-
-                          ${escapeHTML(upcoming.title)}
-
-                      </h3>
-
-                      <p>
-
-                          ${escapeHTML(upcoming.subject || "")}
-
-                          &nbsp; • &nbsp;
-
-                          ${escapeHTML(upcoming.description || "")}
-
-                      </p>
-
-                  </div>
-
-              </div>
-
-
-              <div class="upcoming-details">
-
-
-                  <div class="upcoming-detail">
-
-                      <i class="fa-regular fa-calendar"></i>
-
-                      ${formatDateTime(upcoming.start_at)}
-
-                  </div>
-
-
-                  <div class="upcoming-detail">
-
-                      <i class="fa-regular fa-clock"></i>
-
-                      ${upcoming.duration_minutes || 0}
-                      min
-
-                  </div>
-
-
-                  <div class="upcoming-detail">
-
-                      <i class="fa-regular fa-star"></i>
-
-                      ${upcoming.total_marks || 0}
-                      Marks
-
-                  </div>
-
-
-                  <div class="upcoming-detail">
-
-                      <i class="fa-regular fa-file-lines"></i>
-
-                      ${upcoming.question_count || 0}
-                      Questions
-
-                  </div>
-
-              </div>
-
-
-              <div class="due-box">
-
-                  <strong>
-
-                      ${upcoming.end_at ? `Due ${formatDateTime(upcoming.end_at)}` : `Starts ${formatDateTime(upcoming.start_at)}`}
-
-                  </strong>
-
-                  <span>
-                      Be ready and don't miss it!
-                  </span>
-
-              </div>
-
-          `;
       }
 
       /* =====================================================
