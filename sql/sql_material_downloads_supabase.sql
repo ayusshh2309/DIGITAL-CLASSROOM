@@ -1,50 +1,28 @@
--- Retire download-event tracking while retaining student material access policies.
+-- Retire download-event tracking and align student file access with materials RLS.
 begin;
 
 do $$
 begin
-  if to_regclass('public.materials') is null then
-    raise exception 'Expected public.materials to exist; this migration will not create a materials table';
+  if to_regclass('public.materials') is null
+    or to_regclass('public.students') is null
+    or to_regclass('public.subjects') is null
+    or to_regclass('storage.objects') is null then
+    raise exception 'Expected materials, students, subjects, and storage.objects to exist';
   end if;
-  if to_regclass('public.students') is null then
-    raise exception 'Expected public.students to exist before applying student material access policies';
-  end if;
-  if to_regclass('public.subjects') is null then
-    raise exception 'Expected public.subjects to exist before applying student material access policies';
+
+  if to_regprocedure('public.student_can_view_material(uuid)') is null then
+    raise exception 'Apply sql/sql_student_calendar_sources.sql first to install the student material access helper';
   end if;
 
   if not exists (
-    select 1 from pg_attribute
-    where attrelid = 'public.materials'::regclass
-      and attname = 'grade'
-      and not attisdropped
-  ) or not exists (
-    select 1 from pg_attribute
-    where attrelid = 'public.materials'::regclass
-      and attname = 'stream'
-      and not attisdropped
-  ) or not exists (
-    select 1 from pg_attribute
-    where attrelid = 'public.materials'::regclass
-      and attname = 'file_path'
-      and not attisdropped
-  ) or not exists (
-    select 1 from pg_attribute
-    where attrelid = 'public.materials'::regclass
-      and attname = 'storage_bucket'
-      and not attisdropped
-  ) or not exists (
-    select 1 from pg_attribute
-    where attrelid = 'public.materials'::regclass
-      and attname = 'subject_id'
-      and not attisdropped
-  ) or not exists (
-    select 1 from pg_attribute
-    where attrelid = 'public.materials'::regclass
-      and attname = 'status'
-      and not attisdropped
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'materials'
+      and column_name = 'grade'
+      and data_type = 'integer'
   ) then
-    raise exception 'Expected public.materials grade, stream, subject_id, file_path, storage_bucket and status columns; apply the existing materials migration first';
+    raise exception 'Expected public.materials.grade to use the verified integer type';
   end if;
 end;
 $$;
@@ -69,7 +47,8 @@ begin
 
     if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
       and exists (
-        select 1 from pg_publication_tables
+        select 1
+        from pg_publication_tables
         where pubname = 'supabase_realtime'
           and schemaname = 'public'
           and tablename = 'material_downloads'
@@ -89,159 +68,33 @@ $$;
 
 update public.materials
 set stream = null
-where grade in ('5', '6', '7', '8', '9', '10')
+where grade between 5 and 10
   and stream = '';
 
 drop policy if exists materials_students_select_eligible on public.materials;
-create policy materials_students_select_eligible
-on public.materials
-for select to authenticated
-using (exists (
-  select 1
-  from public.students as student
-  join public.subjects as subject
-    on subject.id = materials.subject_id
-  where student.user_id = (select auth.uid())
-    and materials.grade = student.grade::text
-    and materials.status = 'published'
-    and (
-      (materials.storage_bucket = 'pdfs' and materials.material_type = 'pdf')
-      or (
-        materials.storage_bucket = 'photos'
-        and materials.material_type in ('photo', 'image')
-      )
-      or (
-        materials.storage_bucket = 'documents'
-        and materials.material_type = 'document'
-      )
-    )
-    and subject.grades @> array[student.grade]
-    and (
-      (student.grade between 5 and 10 and materials.stream is null)
-      or (
-        student.grade in (11, 12)
-        and lower(btrim(materials.stream)) = lower(btrim(student.stream))
-        and exists (
-          select 1
-          from unnest(subject.streams) as subject_stream(stream)
-          where lower(btrim(subject_stream.stream)) = lower(btrim(student.stream))
-        )
-      )
-    )
-    and (
-      (
-        student.grade = 5
-        and lower(btrim(subject.name)) in (
-          'english', 'mathematics', 'evs', 'environmental studies', 'hindi'
-        )
-      )
-      or (
-        student.grade between 6 and 10
-        and lower(btrim(subject.name)) in (
-          'english', 'mathematics', 'science', 'social science', 'hindi'
-        )
-      )
-      or (
-        student.grade in (11, 12)
-        and lower(btrim(student.stream)) = 'science_pcm'
-        and lower(btrim(subject.name)) in ('physics', 'chemistry', 'mathematics')
-      )
-      or (
-        student.grade in (11, 12)
-        and lower(btrim(student.stream)) = 'science_pcb'
-        and lower(btrim(subject.name)) in ('physics', 'chemistry', 'biology')
-      )
-      or (
-        student.grade in (11, 12)
-        and lower(btrim(student.stream)) = 'commerce'
-        and lower(btrim(subject.name)) in ('accountancy', 'business studies', 'economics')
-      )
-      or (
-        student.grade in (11, 12)
-        and lower(btrim(student.stream)) in ('arts', 'humanities', 'arts_humanities')
-        and lower(btrim(subject.name)) in (
-          'history', 'geography', 'political science', 'psychology'
-        )
-      )
-    )
-));
+drop policy if exists materials_students_select_published_videos on public.materials;
+drop policy if exists materials_students_select_eligible_videos on public.materials;
+drop policy if exists materials_students_calendar_select on public.materials;
+create policy materials_students_calendar_select
+  on public.materials
+  for select to authenticated
+  using (public.student_can_view_material(id));
 
 drop policy if exists materials_students_read_eligible_storage on storage.objects;
-create policy materials_students_read_eligible_storage
-on storage.objects
-for select to authenticated
-using (
-  bucket_id in ('pdfs', 'photos', 'documents')
-  and exists (
-    select 1
-    from public.materials as material
-    join public.students as student on student.user_id = (select auth.uid())
-    join public.subjects as subject on subject.id = material.subject_id
-    where material.storage_bucket = storage.objects.bucket_id
-      and material.file_path = storage.objects.name
-      and material.grade = student.grade::text
-      and material.status = 'published'
-      and (
-        (material.storage_bucket = 'pdfs' and material.material_type = 'pdf')
-        or (
-          material.storage_bucket = 'photos'
-          and material.material_type in ('photo', 'image')
-        )
-        or (
-          material.storage_bucket = 'documents'
-          and material.material_type = 'document'
-        )
-      )
-      and subject.grades @> array[student.grade]
-      and (
-        (student.grade between 5 and 10 and material.stream is null)
-        or (
-          student.grade in (11, 12)
-          and lower(btrim(material.stream)) = lower(btrim(student.stream))
-          and exists (
-            select 1
-            from unnest(subject.streams) as subject_stream(stream)
-            where lower(btrim(subject_stream.stream)) = lower(btrim(student.stream))
-          )
-        )
-      )
-      and (
-        (
-          student.grade = 5
-          and lower(btrim(subject.name)) in (
-            'english', 'mathematics', 'evs', 'environmental studies', 'hindi'
-          )
-        )
-        or (
-          student.grade between 6 and 10
-          and lower(btrim(subject.name)) in (
-            'english', 'mathematics', 'science', 'social science', 'hindi'
-          )
-        )
-        or (
-          student.grade in (11, 12)
-          and lower(btrim(student.stream)) = 'science_pcm'
-          and lower(btrim(subject.name)) in ('physics', 'chemistry', 'mathematics')
-        )
-        or (
-          student.grade in (11, 12)
-          and lower(btrim(student.stream)) = 'science_pcb'
-          and lower(btrim(subject.name)) in ('physics', 'chemistry', 'biology')
-        )
-        or (
-          student.grade in (11, 12)
-          and lower(btrim(student.stream)) = 'commerce'
-          and lower(btrim(subject.name)) in ('accountancy', 'business studies', 'economics')
-        )
-        or (
-          student.grade in (11, 12)
-          and lower(btrim(student.stream)) in ('arts', 'humanities', 'arts_humanities')
-          and lower(btrim(subject.name)) in (
-            'history', 'geography', 'political science', 'psychology'
-          )
-        )
-      )
-  )
-);
+drop policy if exists materials_students_read_eligible_videos_storage on storage.objects;
+drop policy if exists materials_students_calendar_storage_select on storage.objects;
+create policy materials_students_calendar_storage_select
+  on storage.objects
+  for select to authenticated
+  using (
+    bucket_id in ('pdfs', 'videos', 'photos', 'documents')
+    and exists (
+      select 1
+      from public.materials material
+      where material.storage_bucket = storage.objects.bucket_id
+        and material.file_path = storage.objects.name
+        and public.student_can_view_material(material.id)
+    )
+  );
 
 commit;

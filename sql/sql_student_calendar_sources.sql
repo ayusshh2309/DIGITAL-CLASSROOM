@@ -22,6 +22,10 @@ begin
     end if;
   end loop;
 
+  if to_regclass('storage.objects') is null then
+    raise exception 'Required Storage table storage.objects is missing';
+  end if;
+
   if not exists (
     select 1
     from pg_publication
@@ -126,11 +130,34 @@ revoke all on function public.student_can_view_material(uuid) from public, anon;
 grant execute on function public.student_can_view_material(uuid) to authenticated;
 
 alter table public.materials enable row level security;
+drop policy if exists materials_students_select_eligible on public.materials;
+drop policy if exists materials_students_select_published_videos on public.materials;
+drop policy if exists materials_students_select_eligible_videos on public.materials;
 drop policy if exists materials_students_calendar_select on public.materials;
 create policy materials_students_calendar_select
   on public.materials
   for select to authenticated
   using (public.student_can_view_material(id));
+
+drop policy if exists materials_students_read_eligible_storage
+  on storage.objects;
+drop policy if exists materials_students_read_eligible_videos_storage
+  on storage.objects;
+drop policy if exists materials_students_calendar_storage_select
+  on storage.objects;
+create policy materials_students_calendar_storage_select
+  on storage.objects
+  for select to authenticated
+  using (
+    bucket_id in ('pdfs', 'videos', 'photos', 'documents')
+    and exists (
+      select 1
+      from public.materials material
+      where material.storage_bucket = storage.objects.bucket_id
+        and material.file_path = storage.objects.name
+        and public.student_can_view_material(material.id)
+    )
+  );
 
 do $$
 declare

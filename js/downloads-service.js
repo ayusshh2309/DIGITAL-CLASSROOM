@@ -273,16 +273,31 @@
     return (await getAuthenticatedStudent()).student;
   }
 
-  async function createMaterialSignedUrl(client, material, download = false) {
+  async function createMaterialUrl(client, material, download = false) {
     const bucket = String(material.storage_bucket || "");
     const path = String(material.file_path || "");
-    if (!STORAGE_BUCKETS.has(bucket) || !path) {
+    if (!STORAGE_BUCKETS.has(bucket) || !path || path.startsWith("/") || /^https?:\/\//i.test(path)) {
       throw new Error("This material does not have a valid file in the approved storage buckets.");
     }
+    const storage = client.storage.from(bucket);
+    const fileName = material.file_name || material.title || "study-material";
     const options = download
-      ? { download: material.file_name || material.title || true }
+      ? { download: fileName }
       : {};
-    const { data, error } = await client.storage.from(bucket).createSignedUrl(path, 120, options);
+    try {
+      const { data } = storage.getPublicUrl(path, options);
+      if (data?.publicUrl && typeof window.fetch === "function") {
+        const response = await window.fetch(data.publicUrl, {
+          method: "HEAD",
+          cache: "no-store",
+        });
+        if (response.ok) return data.publicUrl;
+      }
+    } catch (error) {
+      console.info("Public material URL is unavailable; trying a signed URL.", error);
+    }
+
+    const { data, error } = await storage.createSignedUrl(path, 120, options);
     if (error) throw error;
     if (!data?.signedUrl) throw new Error("Supabase did not return a signed file URL.");
     return data.signedUrl;
@@ -301,9 +316,9 @@
       throw new Error("This material is not available for your registered class and stream.");
     }
 
-    const signedUrl = await createMaterialSignedUrl(client, record, true);
+    const fileUrl = await createMaterialUrl(client, record, true);
     const anchor = document.createElement("a");
-    anchor.href = signedUrl;
+    anchor.href = fileUrl;
     anchor.download = record.file_name || record.title || "study-material";
     anchor.rel = "noopener";
     document.body.appendChild(anchor);
@@ -324,7 +339,7 @@
     if (!isEligibleMaterial(material, student)) {
       throw new Error("This material is not available for your registered class and stream.");
     }
-    return createMaterialSignedUrl(client, material);
+    return createMaterialUrl(client, material);
   }
 
   async function getTeacherMaterialUrl(materialId, download = false) {
@@ -336,7 +351,7 @@
       .eq("teacher_id", profile.id)
       .single();
     if (error) throw error;
-    return createMaterialSignedUrl(client, material, download);
+    return createMaterialUrl(client, material, download);
   }
 
   async function fetchFiles(currentTeacher = null) {
