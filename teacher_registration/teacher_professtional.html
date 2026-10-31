@@ -7,52 +7,6 @@
 
     <title>Smart Learning DC — Teacher Registration</title>
 
-    <script>
-      const subjectLabels = {
-        mathematics: "Mathematics",
-        english: "English",
-        physics: "Physics",
-        chemistry: "Chemistry",
-        biology: "Biology",
-        physical_education: "Physical Education",
-        computer_science: "Computer Science",
-        accountancy: "Accountancy",
-        business_studies: "Business Studies",
-        economics: "Economics",
-        history: "History",
-        geography: "Geography",
-        hindi: "Hindi",
-        science: "Science",
-        sst: "SST",
-        gk: "GK",
-      };
-
-      function generateGradeCheckboxes(subject, startGrade, endGrade) {
-        const subjectName = subjectLabels[subject] || subject;
-        let html = "";
-
-        for (let grade = startGrade; grade <= endGrade; grade++) {
-          const id = `specialist_${subject}_grade_${grade}`;
-
-          html += `
-            <div class="checkbox-card">
-              <input
-                type="checkbox"
-                id="${id}"
-                class="specialist-grade-checkbox"
-                data-subject="${subjectName}"
-                data-grade="${grade}"
-                value="${grade}"
-              />
-              <label for="${id}">Class ${grade}</label>
-            </div>
-          `;
-        }
-
-        return html;
-      }
-    </script>
-
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
 
@@ -889,7 +843,7 @@
 
         <div class="form-container">
           <form id="profForm">
-            <!-- ================================================= 
+            <!-- =================================================
                  CURRENT INSTITUTION 
             ================================================== -->
 
@@ -1162,10 +1116,6 @@
                     </div>
                   </div>
 
-                  <div class="info-note">
-                    Classes 5–10 use the standard subjects. If you select
-                    Classes 11–12, you must select one or more streams.
-                  </div>
                 </div>
 
                 <!-- SENIOR STREAM -->
@@ -1177,39 +1127,11 @@
                 >
                   <label> Select Stream(s) for Classes 11–12 </label>
 
-                  <div class="checkbox-grid">
-                    <div class="checkbox-card">
-                      <input type="checkbox" id="stPCM" value="science_pcm" />
-
-                      <label for="stPCM"> Science (PCM) </label>
-                    </div>
-
-                    <div class="checkbox-card">
-                      <input type="checkbox" id="stPCB" value="science_pcb" />
-
-                      <label for="stPCB"> Science (PCB) </label>
-                    </div>
-
-                    <div class="checkbox-card">
-                      <input type="checkbox" id="stCommerce" value="commerce" />
-
-                      <label for="stCommerce"> Commerce </label>
-                    </div>
-
-                    <div class="checkbox-card">
-                      <input
-                        type="checkbox"
-                        id="stArts"
-                        value="arts_humanities"
-                      />
-
-                      <label for="stArts"> Arts / Humanities </label>
-                    </div>
-                  </div>
+                  <div class="checkbox-grid"></div>
                 </div>
               </div>
 
-              <!-- ================================================= 
+            <!-- =================================================
                    SUBJECT SPECIALIST 
               ================================================== -->
 
@@ -1225,294 +1147,12 @@
                   </div>
                 </div>
 
-                <div class="subject-box-list">
-                  <!-- MATHEMATICS -->
-
-                  <div class="subject-card">
-                    <div class="subject-header">📐 Mathematics</div>
-
-                    <div class="subject-description">
-                      Mathematics — Classes 5 to 12
-                    </div>
-
-                    <div class="checkbox-grid">
-                      <script>
-                        document.write(
-                          generateGradeCheckboxes("mathematics", 5, 12),
-                        );
-                      </script>
-                    </div>
-                  </div>
-
-                  <!-- ENGLISH -->
-
-                  <div class="subject-card">
-                    <div class="subject-header">📖 English</div>
-
-                    <div class="subject-description">
-                      English — Classes 5 to 12
-                    </div>
-
-                    <div class="checkbox-grid">
-                      <script>
-                        document.write(
-                          generateGradeCheckboxes("english", 5, 12),
-                        );
-                      </script>
-                    </div>
-                  </div>
-
-                  <!-- PHYSICS -->
-
-                  <div class="subject-card">
-                    <div class="subject-header">⚛️ Physics</div>
-
-                    <div class="subject-description">
-                      Physics — Classes 9 to 12
-                    </div>
-
-                    <div class="checkbox-grid">
-                      <script>
-                        document.write(
-                          generateGradeCheckboxes("physics", 9, 12),
-                        );
-                      </script>
-                    </div>
-                  </div>
-
-                  <!-- CHEMISTRY -->
-
-                  <div class="subject-card">
-                    <div class="subject-header">🧪 Chemistry</div>
-
-                    <div class="subject-description">
-                      Chemistry — Classes 9 to 12
-                    </div>
-
-                    <div class="checkbox-grid">
-                      <script>
-                        document.write(
-                          generateGradeCheckboxes("chemistry", 9, 12),
-                        );
-                      </script>
-                    </div>
-                  </div>
-
-                  <!-- BIOLOGY -->
-
-                  <div class="subject-card">
-                    <div class="subject-header">🧬 Biology</div>
-
-                    <div class="subject-description">
-                      Biology — Classes 9 to 12
-                    </div>
-
-                    <div class="checkbox-grid">
-                      <script>
-                        document.write(
-                          generateGradeCheckboxes("biology", 9, 12),
-                        );
-                      </script>
-                    </div>
-                  </div>
-
-                  <!-- PHYSICAL EDUCATION -->
-
-                  <div class="subject-card">
-                    <div class="subject-header">🏃 Physical Education</div>
-
-                    <div class="subject-description">
-                      Physical Education — Classes 11 to 12
-                    </div>
-
-                    <div class="checkbox-grid">
-                      <script>
-                        document.write(
-                          generateGradeCheckboxes("physical_education", 11, 12),
-                        );
-                      </script>
-                    </div>
-                  </div>
-
-                  <!-- COMPUTER SCIENCE -->
-
-                  <div class="subject-card">
-                    <div class="subject-header">💻 Computer Science</div>
-
-                    <div class="subject-description">
-                      Computer Science — Classes 11 to 12
-                    </div>
-
-                    <div class="checkbox-grid">
-                      <script>
-                        document.write(
-                          generateGradeCheckboxes("computer_science", 11, 12),
-                        );
-                      </script>
-                    </div>
-                  </div>
-
-                  <!-- ACCOUNTANCY -->
-
-                  <div class="subject-card">
-                    <div class="subject-header">🧾 Accountancy</div>
-
-                    <div class="subject-description">
-                      Accountancy — Classes 11 to 12
-                    </div>
-
-                    <div class="checkbox-grid">
-                      <script>
-                        document.write(
-                          generateGradeCheckboxes("accountancy", 11, 12),
-                        );
-                      </script>
-                    </div>
-                  </div>
-
-                  <!-- BUSINESS STUDIES -->
-
-                  <div class="subject-card">
-                    <div class="subject-header">📊 Business Studies</div>
-
-                    <div class="subject-description">
-                      Business Studies — Classes 11 to 12
-                    </div>
-
-                    <div class="checkbox-grid">
-                      <script>
-                        document.write(
-                          generateGradeCheckboxes("business_studies", 11, 12),
-                        );
-                      </script>
-                    </div>
-                  </div>
-
-                  <!-- ECONOMICS -->
-
-                  <div class="subject-card">
-                    <div class="subject-header">💰 Economics</div>
-
-                    <div class="subject-description">
-                      Economics — Classes 11 to 12
-                    </div>
-
-                    <div class="checkbox-grid">
-                      <script>
-                        document.write(
-                          generateGradeCheckboxes("economics", 11, 12),
-                        );
-                      </script>
-                    </div>
-                  </div>
-
-                  <!-- HISTORY -->
-
-                  <div class="subject-card">
-                    <div class="subject-header">🏛️ History</div>
-
-                    <div class="subject-description">
-                      History — Classes 11 to 12
-                    </div>
-
-                    <div class="checkbox-grid">
-                      <script>
-                        document.write(
-                          generateGradeCheckboxes("history", 11, 12),
-                        );
-                      </script>
-                    </div>
-                  </div>
-
-                  <!-- GEOGRAPHY -->
-
-                  <div class="subject-card">
-                    <div class="subject-header">🌍 Geography</div>
-
-                    <div class="subject-description">
-                      Geography — Classes 11 to 12
-                    </div>
-
-                    <div class="checkbox-grid">
-                      <script>
-                        document.write(
-                          generateGradeCheckboxes("geography", 11, 12),
-                        );
-                      </script>
-                    </div>
-                  </div>
-
-                  <!-- HINDI -->
-
-                  <div class="subject-card">
-                    <div class="subject-header">🪔 Hindi</div>
-
-                    <div class="subject-description">
-                      Hindi — Classes 5 to 10
-                    </div>
-
-                    <div class="checkbox-grid">
-                      <script>
-                        document.write(generateGradeCheckboxes("hindi", 5, 10));
-                      </script>
-                    </div>
-                  </div>
-
-                  <!-- SCIENCE -->
-
-                  <div class="subject-card">
-                    <div class="subject-header">🔬 Science</div>
-
-                    <div class="subject-description">
-                      General Science — Classes 5 to 10
-                    </div>
-
-                    <div class="checkbox-grid">
-                      <script>
-                        document.write(
-                          generateGradeCheckboxes("science", 5, 10),
-                        );
-                      </script>
-                    </div>
-                  </div>
-
-                  <!-- SOCIAL SCIENCE -->
-
-                  <div class="subject-card">
-                    <div class="subject-header">🌎 Social Science (SST)</div>
-
-                    <div class="subject-description">
-                      Social Science — Classes 5 to 10
-                    </div>
-
-                    <div class="checkbox-grid">
-                      <script>
-                        document.write(generateGradeCheckboxes("sst", 5, 10));
-                      </script>
-                    </div>
-                  </div>
-
-                  <!-- GENERAL KNOWLEDGE -->
-
-                  <div class="subject-card">
-                    <div class="subject-header">🧠 General Knowledge</div>
-
-                    <div class="subject-description">
-                      General Knowledge — Classes 5 to 8
-                    </div>
-
-                    <div class="checkbox-grid">
-                      <script>
-                        document.write(generateGradeCheckboxes("gk", 5, 8));
-                      </script>
-                    </div>
-                  </div>
-                </div>
+                <div class="subject-box-list" aria-live="polite"></div>
               </div>
             </div>
 
-            <!-- ================================================= 
-                 LANGUAGES 
+            <!-- =================================================
+                 LANGUAGES
             ================================================== -->
 
             <div class="form-box">
@@ -1599,12 +1239,16 @@
       </main>
     </div>
     here is the html or css
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../js/supabase.js"></script>
+    <script src="../js/subject-service.js"></script>
     <script src="../js/teacher-registration-storage.js"></script>
     <script src="../js/teacher-registration.js"></script>
     <script>
       (function () {
         let employmentStatus = "fresher";
         let teachingMode = "teach_all";
+        let subjectOptionsReady = false;
 
         function getDraft() {
           return (
@@ -1723,13 +1367,21 @@
         }
 
         function getSelectedStreams() {
-          return Array.from(
-            document.querySelectorAll(
-              "#streamSelectPanel input[type='checkbox']",
-            ),
-          )
-            .filter((checkbox) => checkbox.checked)
-            .map((checkbox) => checkbox.value);
+          return [...new Set(
+            Object.values(getSelectedStreamsByGrade()).flat(),
+          )];
+        }
+
+        function getSelectedStreamsByGrade() {
+          const streamsByGrade = {};
+          document
+            .querySelectorAll("#streamSelectPanel input[type='checkbox']:checked")
+            .forEach((checkbox) => {
+              const grade = Number(checkbox.dataset.grade);
+              if (!streamsByGrade[grade]) streamsByGrade[grade] = [];
+              streamsByGrade[grade].push(checkbox.value);
+            });
+          return streamsByGrade;
         }
 
         function getSelectedSubjectAssignments() {
@@ -1741,14 +1393,199 @@
           const grouped = {};
           assignments.forEach((checkbox) => {
             const subject = checkbox.dataset.subject;
+            const subjectId = checkbox.dataset.subjectId;
             const grade = Number(checkbox.dataset.grade);
             if (!subject || !grade) return;
-            if (!grouped[subject]) grouped[subject] = [];
-            grouped[subject].push(grade);
+            const key = subjectId || subject.toLowerCase();
+            if (!grouped[key]) {
+              grouped[key] = {
+                subject,
+                subject_id: subjectId || null,
+                grades: [],
+                streamsByGrade: {},
+              };
+            }
+            if (!grouped[key].grades.includes(grade)) {
+              grouped[key].grades.push(grade);
+            }
+            const stream = checkbox.dataset.stream;
+            if (stream) {
+              if (!grouped[key].streamsByGrade[grade]) {
+                grouped[key].streamsByGrade[grade] = [];
+              }
+              if (!grouped[key].streamsByGrade[grade].includes(stream)) {
+                grouped[key].streamsByGrade[grade].push(stream);
+              }
+            }
           });
-          return Object.entries(grouped).flatMap(([subject, grades]) => [
-            { subject, grades },
-          ]);
+          return Object.values(grouped).map((assignment) => ({
+            ...assignment,
+            grades: assignment.grades.sort((a, b) => a - b),
+          }));
+        }
+
+        function formatStreamName(stream) {
+          const labels = {
+            science_pcm: "Science (PCM)",
+            science_pcb: "Science (PCB)",
+            commerce: "Commerce",
+            arts_humanities: "Arts / Humanities",
+          };
+          if (labels[stream]) return labels[stream];
+          return String(stream)
+            .replace(/[_-]+/g, " ")
+            .replace(/\b\w/g, (letter) => letter.toUpperCase());
+        }
+
+        function renderStreamOptions(streamsByGrade) {
+          const panel = document.getElementById("streamSelectPanel");
+          const grid = panel?.querySelector(".checkbox-grid");
+          if (!grid) throw new Error("The teacher stream selection panel is missing.");
+          grid.replaceChildren();
+          [11, 12].forEach((grade) => {
+            const streams = streamsByGrade[grade] || [];
+            if (!streams.length) return;
+            const group = document.createElement("div");
+            group.className = "stream-grade-group";
+            const heading = document.createElement("p");
+            heading.className = "subject-description";
+            heading.textContent = `Class ${grade}`;
+            group.appendChild(heading);
+            const options = document.createElement("div");
+            options.className = "checkbox-grid";
+            streams.forEach((stream, index) => {
+              const id = `teacher_stream_${grade}_${index}`;
+              const card = document.createElement("div");
+              card.className = "checkbox-card";
+              const input = document.createElement("input");
+              input.type = "checkbox";
+              input.id = id;
+              input.value = stream;
+              input.dataset.grade = String(grade);
+              const label = document.createElement("label");
+              label.htmlFor = id;
+              label.textContent = formatStreamName(stream);
+              card.append(input, label);
+              options.appendChild(card);
+            });
+            group.appendChild(options);
+            grid.appendChild(group);
+          });
+        }
+
+        function renderSubjectOptions(subjectOptions) {
+          const container = document.querySelector(".subject-box-list");
+          if (!container) throw new Error("The subject selection panel is missing.");
+          container.replaceChildren();
+          if (!subjectOptions.length) {
+            container.textContent = "No eligible subjects are configured for these grades.";
+            return;
+          }
+
+          const bySubject = new Map();
+          subjectOptions.forEach(({ subject, grade, stream }) => {
+            const key = String(subject.id);
+            if (!bySubject.has(key)) {
+              bySubject.set(key, { subject, offerings: [] });
+            }
+            bySubject.get(key).offerings.push({ grade, stream });
+          });
+
+          [...bySubject.values()]
+            .sort((left, right) => left.subject.name.localeCompare(right.subject.name))
+            .forEach(({ subject, offerings }, subjectIndex) => {
+              const card = document.createElement("div");
+              card.className = "subject-card";
+              const heading = document.createElement("div");
+              heading.className = "subject-header";
+              heading.textContent = subject.name;
+              const description = document.createElement("div");
+              description.className = "subject-description";
+              description.textContent = "Select the classes and streams you teach.";
+              const grid = document.createElement("div");
+              grid.className = "checkbox-grid";
+              offerings
+                .sort((left, right) =>
+                  left.grade - right.grade ||
+                  String(left.stream || "").localeCompare(String(right.stream || "")),
+                )
+                .forEach(({ grade, stream }, offeringIndex) => {
+                  const id = `specialist_subject_${subjectIndex}_${offeringIndex}`;
+                  const option = document.createElement("div");
+                  option.className = "checkbox-card";
+                  const input = document.createElement("input");
+                  input.type = "checkbox";
+                  input.id = id;
+                  input.className = "specialist-grade-checkbox";
+                  input.dataset.subject = subject.name;
+                  input.dataset.subjectId = String(subject.id);
+                  input.dataset.grade = String(grade);
+                  if (stream) input.dataset.stream = stream;
+                  input.value = String(grade);
+                  const label = document.createElement("label");
+                  label.htmlFor = id;
+                  label.textContent = stream
+                    ? `Class ${grade} · ${formatStreamName(stream)}`
+                    : `Class ${grade}`;
+                  option.append(input, label);
+                  grid.appendChild(option);
+                });
+              card.append(heading, description, grid);
+              container.appendChild(card);
+            });
+        }
+
+        async function initializeSubjectOptions() {
+          const container = document.querySelector(".subject-box-list");
+          if (container) container.textContent = "Loading eligible subjects...";
+          const client = window.SmartLearningSupabase?.getClient?.();
+          if (!client || !window.SubjectService) {
+            throw new Error("Supabase subject services are unavailable.");
+          }
+          const subjectOptions = [];
+          for (let grade = 5; grade <= 10; grade += 1) {
+            const subjects = await window.SubjectService.getEligibleSubjects(
+              grade,
+              null,
+              client,
+            );
+            subjects.forEach((subject) =>
+              subjectOptions.push({ subject, grade, stream: null }),
+            );
+          }
+          const streamsByGrade = {};
+          const standardStreams = [
+            "science_pcm",
+            "science_pcb",
+            "commerce",
+            "arts_humanities",
+          ];
+          for (const grade of [11, 12]) {
+            let streams = await window.SubjectService.getAvailableStreams(
+              grade,
+              client,
+            );
+            if (!streams.length) {
+              console.warn(
+                `No stream options were returned for Class ${grade}; showing the supported stream choices.`,
+              );
+              streams = standardStreams;
+            }
+            streamsByGrade[grade] = streams;
+            for (const stream of streams) {
+              const subjects = await window.SubjectService.getEligibleSubjects(
+                grade,
+                stream,
+                client,
+              );
+              subjects.forEach((subject) =>
+                subjectOptions.push({ subject, grade, stream }),
+              );
+            }
+          }
+          renderStreamOptions(streamsByGrade);
+          renderSubjectOptions(subjectOptions);
+          subjectOptionsReady = true;
         }
 
         function loadDraftIntoForm() {
@@ -1802,11 +1639,15 @@
             toggleSeniorStreamPanel();
           }
 
-          const streams = Array.isArray(step2.streams) ? step2.streams : [];
           document
             .querySelectorAll("#streamSelectPanel input[type='checkbox']")
             .forEach((checkbox) => {
-              checkbox.checked = streams.includes(checkbox.value);
+              const grade = Number(checkbox.dataset.grade);
+              const streamsByGrade = step2.streamsByGrade || {};
+              const selectedForGrade = streamsByGrade[grade];
+              checkbox.checked = Array.isArray(selectedForGrade)
+                ? selectedForGrade.includes(checkbox.value)
+                : (step2.streams || []).includes(checkbox.value);
             });
 
           const subjectAssignments = Array.isArray(step2.subjectAssignments)
@@ -1815,16 +1656,23 @@
           if (subjectAssignments.length) {
             subjectAssignments.forEach((assignment) => {
               (assignment.grades || []).forEach((grade) => {
-                const checkbox = Array.from(
+                const candidates = Array.from(
                   document.querySelectorAll(
                     '#subjectSpecialistPanel input[type="checkbox"][data-subject]',
                   ),
-                ).find(
-                  (candidate) =>
-                    candidate.dataset.subject === assignment.subject &&
-                    Number(candidate.dataset.grade) === Number(grade),
                 );
-                if (checkbox) checkbox.checked = true;
+                candidates
+                  .filter((candidate) =>
+                    (assignment.subject_id
+                      ? candidate.dataset.subjectId === String(assignment.subject_id)
+                      : candidate.dataset.subject === assignment.subject) &&
+                    Number(candidate.dataset.grade) === Number(grade) &&
+                    (!assignment.streamsByGrade?.[grade] ||
+                      assignment.streamsByGrade[grade].includes(candidate.dataset.stream)),
+                  )
+                  .forEach((checkbox) => {
+                    checkbox.checked = true;
+                  });
               });
             });
           } else {
@@ -1884,6 +1732,7 @@
             teachingMode,
             gradeGroups: getSelectedGradeGroups(),
             streams: getSelectedStreams(),
+            streamsByGrade: getSelectedStreamsByGrade(),
             subjectAssignments: getSelectedSubjectAssignments(),
             subjects: getSelectedSubjectAssignments().flatMap((entry) =>
               entry.subject ? [entry.subject] : [],
@@ -1894,6 +1743,10 @@
         }
 
         function validateProfessionalForm() {
+          if (!subjectOptionsReady) {
+            alert("Eligible subjects are not loaded. Please reload the page and try again.");
+            return false;
+          }
           const step2Data = parseProfessionalForm();
 
           if (employmentStatus === "teaching") {
@@ -1933,9 +1786,14 @@
             const containsSeniorGrades = step2Data.gradeGroups.some(
               (group) => group === "grades1112" || group === "grades_11_12",
             );
-            if (containsSeniorGrades && !step2Data.streams.length) {
-              alert("Please select at least one stream for Classes 11–12.");
-              return false;
+            if (containsSeniorGrades) {
+              const missingGrade = [11, 12].find(
+                (grade) => !(step2Data.streamsByGrade[grade] || []).length,
+              );
+              if (missingGrade) {
+                alert(`Please select at least one stream for Class ${missingGrade}.`);
+                return false;
+              }
             }
           }
 
@@ -1966,8 +1824,18 @@
             window.location.href = "review.html";
           });
 
-        document.addEventListener("DOMContentLoaded", function () {
+        document.addEventListener("DOMContentLoaded", async function () {
           populateGraduationYears();
+          try {
+            await initializeSubjectOptions();
+          } catch (error) {
+            console.error("Unable to load eligible registration subjects:", error);
+            const container = document.querySelector(".subject-box-list");
+            if (container) {
+              container.textContent = "Subject options could not be loaded. Please reload or try again later.";
+            }
+            return;
+          }
           loadDraftIntoForm();
           const draft = getDraft();
           const step2 = draft.step2 || {};

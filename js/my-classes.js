@@ -71,21 +71,10 @@
   }
 
   async function loadRegisteredClasses(client, teacherId) {
-    const [groups, assignmentRows] = await Promise.all([
-      readAllRows(() => client
-        .from("teacher_grade_groups")
-        .select("grade, stream")
-        .eq("teacher_id", teacherId)
-        .order("grade", { ascending: true })
-        .order("stream", { ascending: true })),
-      readAllRows(() => client
-        .from("teacher_subject_assignments")
-        .select("grade, stream, subject_id")
-        .eq("teacher_id", teacherId)
-        .order("grade", { ascending: true })
-        .order("stream", { ascending: true })),
-    ]);
-
+    const groups = await window.SubjectService.getTeacherTeachingScope(
+      client,
+      teacherId,
+    );
     const classes = new Map();
     groups.forEach((row) => {
       const grade = Number(row.grade);
@@ -95,36 +84,9 @@
       if (!classes.has(key)) {
         classes.set(key, { grade, stream: stream || null, subjects: new Map() });
       }
-    });
-
-    const matchedAssignments = assignmentRows.filter((row) => {
-      const grade = Number(row.grade);
-      const stream = grade >= 11 ? normalizeStream(row.stream) : "";
-      return row.subject_id && classes.has(classKey(grade, stream));
-    });
-    const subjectIds = [...new Set(matchedAssignments.map((row) => String(row.subject_id)))];
-    const subjects = subjectIds.length
-      ? await readAllRows(() => client
-        .from("subjects")
-        .select("id, name")
-        .in("id", subjectIds)
-        .order("name", { ascending: true }))
-      : [];
-    const subjectById = new Map(
-      subjects.filter((subject) => subject.name).map((subject) => [
-        String(subject.id),
-        { id: subject.id, name: subject.name },
-      ]),
-    );
-
-    matchedAssignments.forEach((row) => {
-      const grade = Number(row.grade);
-      const stream = grade >= 11 ? normalizeStream(row.stream) : "";
-      const subject = subjectById.get(String(row.subject_id));
-      if (!subject) {
-        throw new Error(`Assigned subject ID ${row.subject_id} is missing from public.subjects.`);
-      }
-      classes.get(classKey(grade, stream)).subjects.set(String(subject.id), subject);
+      (row.subjects || []).forEach((subject) => {
+        classes.get(key).subjects.set(String(subject.id), subject);
+      });
     });
 
     return classes;

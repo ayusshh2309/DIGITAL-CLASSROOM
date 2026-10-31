@@ -4,6 +4,7 @@
     selectedDate: new Date(),
     events: [],
     profile: null,
+    subjectIds: new Set(),
     stopRealtime: () => {},
     refreshSequence: 0,
   };
@@ -117,24 +118,12 @@
 
   async function getStudentProfile() {
     const client = getClient();
-    const { data: userData, error: userError } = await client.auth.getUser();
-    if (userError) throw userError;
-    if (!userData?.user) {
-      throw Object.assign(new Error("Authentication failed. Please sign in again."), {
-        code: "AUTH_REQUIRED",
-        });
-    }
-
-    const { data: student, error: studentError } = await client
-        .from("students")
-        .select("id, user_id, grade, stream")
-        .eq("user_id", userData.user.id)
-        .maybeSingle();
-    if (studentError) throw studentError;
-    if (!student) throw new Error("Student profile could not be found.");
-
-    state.profile = student;
-    return { client, user: userData.user, profile: student };
+    const curriculum = await window.SubjectService.getStudentSubjects(client);
+    state.profile = curriculum.student;
+    state.subjectIds = new Set(
+      curriculum.subjects.map((subject) => String(subject.id)),
+    );
+    return { client, user: curriculum.user, profile: curriculum.student };
   }
 
   async function loadEvents(date = state.date) {
@@ -159,6 +148,9 @@
     }
 
     const calendarEvents = [...rowsById.values()]
+      .filter((row) =>
+        row.subject_id == null || state.subjectIds.has(String(row.subject_id)),
+      )
       .map((row) => normalizeRow(row, "calendar_events", row.event_type))
       .filter(Boolean);
     const linkedLiveClassIds = new Set(
@@ -177,6 +169,7 @@
           const start = new Date(liveClass.start_at);
           return matchesRegisteredGrade
             && classStream === registeredStream
+            && (liveClass.subject_id == null || state.subjectIds.has(String(liveClass.subject_id)))
             && Number.isFinite(start.getTime())
             && ranges.some((range) => start >= range.start && start < range.end);
         })

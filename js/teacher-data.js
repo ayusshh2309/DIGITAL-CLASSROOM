@@ -186,180 +186,14 @@
   }
 
   function normalizeAcademicStream(value) {
-    const normalized = String(value || "")
-      .trim()
-      .toLowerCase()
-      .replace(/[()\s/-]+/g, "_")
-      .replace(/_+/g, "_");
-    if (normalized === "arts" || normalized === "humanities" || normalized === "arts_humanities") {
-      return "arts_humanities";
-    }
-    return normalized;
-  }
-
-  function eligibleSubjectNames(grade, stream) {
-    if (grade === 5) {
-      return new Set([
-        "english",
-        "mathematics",
-        "evs",
-        "environmental studies",
-        "hindi",
-      ]);
-    }
-    if (grade >= 6 && grade <= 10) {
-      return new Set([
-        "english",
-        "mathematics",
-        "science",
-        "social science",
-        "hindi",
-      ]);
-    }
-    const subjectsByStream = {
-      science_pcm: ["physics", "chemistry", "mathematics"],
-      science_pcb: ["physics", "chemistry", "biology"],
-      commerce: ["accountancy", "business studies", "economics"],
-      arts_humanities: [
-        "history",
-        "geography",
-        "political science",
-        "psychology",
-      ],
-    };
-    return new Set(subjectsByStream[normalizeAcademicStream(stream)] || []);
+    return window.SubjectService?.normalizeStream(value) || String(value || "").trim().toLowerCase();
   }
 
   async function loadRegisteredTeachingScope(client, teacherId) {
-    const [groupsResult, assignmentsResult] = await Promise.all([
-      client
-        .from("teacher_grade_groups")
-        .select("id, grade, stream, teach_all_subjects")
-        .eq("teacher_id", teacherId)
-        .order("grade", { ascending: true })
-        .order("stream", { ascending: true }),
-      client
-        .from("teacher_subject_assignments")
-        .select("grade, stream, subject_id")
-        .eq("teacher_id", teacherId)
-        .order("grade", { ascending: true })
-        .order("stream", { ascending: true }),
-    ]);
-    if (groupsResult.error) throw groupsResult.error;
-    if (assignmentsResult.error) throw assignmentsResult.error;
-
-    const groupKey = (grade, stream) => {
-      const normalizedGrade = Number(grade);
-      const normalizedStream = normalizedGrade >= 11
-        ? String(stream || "").trim().toLowerCase()
-        : "";
-      return `${normalizedGrade}|${normalizedStream}`;
-    };
-    const groups = (groupsResult.data || []).map((row) => ({
-      id: row.id,
-      grade: Number(row.grade),
-      stream: Number(row.grade) >= 11 ? String(row.stream || "").trim().toLowerCase() : "",
-      teachAllSubjects: Boolean(row.teach_all_subjects),
-      subjects: [],
-    })).filter((group) => Number.isInteger(group.grade) && group.grade >= 1 && group.grade <= 12);
-    const groupByKey = new Map(groups.map((group) => [groupKey(group.grade, group.stream), group]));
-    const assignments = (assignmentsResult.data || []).filter((row) => {
-      const group = groupByKey.get(groupKey(row.grade, row.stream));
-      return row.subject_id && group;
-    });
-    const subjectIds = [...new Set(assignments.map((row) => String(row.subject_id)))];
-    let subjectsById = new Map();
-    let subjectCatalog = [];
-    const loadAllSubjects = groups.some((group) => group.teachAllSubjects);
-    if (subjectIds.length || loadAllSubjects) {
-      let subjectQuery = client
-        .from("subjects")
-        .select("id, name, grades, streams");
-      if (!loadAllSubjects) subjectQuery = subjectQuery.in("id", subjectIds);
-      const { data, error } = await subjectQuery;
-      if (error) throw error;
-      subjectCatalog = data || [];
-      subjectsById = new Map(subjectCatalog.map((subject) => [String(subject.id), subject]));
+    if (!window.SubjectService) {
+      throw new Error("The shared subject service did not load.");
     }
-
-    assignments.forEach((assignment) => {
-      const subject = subjectsById.get(String(assignment.subject_id));
-      if (!subject?.name) {
-        throw new Error(`Registered subject ID ${assignment.subject_id} is missing from public.subjects.`);
-      }
-      const group = groupByKey.get(groupKey(assignment.grade, assignment.stream));
-      const eligibleNames = eligibleSubjectNames(group.grade, group.stream);
-      if (!eligibleNames.has(String(subject.name).trim().toLowerCase())) {
-        console.warn("Ignoring teacher subject assignment outside the approved curriculum.", {
-          grade: group.grade,
-          stream: group.stream,
-          subjectId: subject.id,
-          subjectName: subject.name,
-        });
-        return;
-      }
-      if (
-        !Array.isArray(subject.grades) ||
-        !subject.grades.includes(group.grade) ||
-        (group.grade >= 11 &&
-          (!Array.isArray(subject.streams) ||
-            !subject.streams.some(
-              (subjectStream) =>
-                normalizeAcademicStream(subjectStream) === group.stream,
-            )))
-      ) {
-        console.warn("Ignoring teacher assignment whose subject catalog scope does not match the class.", {
-          grade: group.grade,
-          stream: group.stream,
-          subjectId: subject.id,
-          subjectName: subject.name,
-        });
-        return;
-      }
-      if (!group.subjects.some((existing) => String(existing.id) === String(subject.id))) {
-        group.subjects.push({ id: subject.id, name: subject.name });
-      }
-    });
-
-    const subjectByName = new Map(
-      subjectCatalog.map((subject) => [String(subject.name).trim().toLowerCase(), subject]),
-    );
-    groups.filter((group) => group.teachAllSubjects).forEach((group) => {
-      const names = [...eligibleSubjectNames(group.grade, group.stream)];
-      names.forEach((name) => {
-        const subject = subjectByName.get(name.toLowerCase());
-        if (!subject) {
-          console.warn(`Registered curriculum subject '${name}' is missing from public.subjects.`);
-          return;
-        }
-        if (
-          !Array.isArray(subject.grades) ||
-          !subject.grades.includes(group.grade) ||
-          (group.grade >= 11 &&
-            (!Array.isArray(subject.streams) ||
-              !subject.streams.some(
-                (subjectStream) =>
-                  normalizeAcademicStream(subjectStream) === group.stream,
-              )))
-        ) {
-          console.warn("Ignoring subject catalog entry outside the approved teacher scope.", {
-            grade: group.grade,
-            stream: group.stream,
-            subjectId: subject.id,
-            subjectName: subject.name,
-          });
-          return;
-        }
-        if (!group.subjects.some((existing) => String(existing.id) === String(subject.id))) {
-          group.subjects.push({ id: subject.id, name: subject.name });
-        }
-      });
-    });
-
-    groups.forEach((group) => {
-      group.subjects.sort((left, right) => left.name.localeCompare(right.name));
-    });
-    return groups;
+    return window.SubjectService.getTeacherTeachingScope(client, teacherId);
   }
 
   async function updateCurrentTeacherProfile(changes) {
@@ -516,57 +350,9 @@
   }
 
   function getRegistrationAssignments(professional) {
-    const specialistAssignments = professional.specialistAssignments || [];
-    if (specialistAssignments.length) return specialistAssignments;
-
-    const gradeGroups = {
-      grades_5_6: [5, 6],
-      grades_7_8: [7, 8],
-      grades_9_10: [9, 10],
-      grades_11_12: [11, 12],
-    };
-    const standardSubjects = {
-      5: ["English", "Mathematics", "EVS", "Hindi"],
-      6: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-      7: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-      8: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-      9: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-      10: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-    };
-    const streamSubjects = {
-      science_pcm: ["Physics", "Chemistry", "Mathematics"],
-      science_pcb: ["Physics", "Chemistry", "Biology"],
-      commerce: ["Accountancy", "Business Studies", "Economics"],
-      arts_humanities: ["History", "Geography", "Political Science", "Psychology"],
-    };
-    const grades = [
-      ...(professional.grades || professional.selected_grades || []),
-      ...(professional.selected_grade_groups || []).flatMap((group) => gradeGroups[group] || []),
-    ].map(String);
-    const subjects = professional.subjects || professional.selected_subjects || [];
-    const streams = professional.streams || professional.selected_streams || [];
-
-    return grades.map((grade) => {
-      const gradeNumber = Number(grade);
-      const allowedSubjects = gradeNumber >= 11
-        ? new Set(
-            streams.flatMap((stream) => [
-              ...eligibleSubjectNames(gradeNumber, stream),
-            ]),
-          )
-        : eligibleSubjectNames(gradeNumber, "");
-      return {
-        subject: null,
-        grades: [grade],
-        subjects: subjects.length
-          ? subjects.filter((subject) =>
-              allowedSubjects.has(String(subject).trim().toLowerCase()),
-            )
-          : gradeNumber >= 11
-            ? [...new Set(streams.flatMap((stream) => streamSubjects[normalizeAcademicStream(stream)] || []))]
-            : standardSubjects[gradeNumber] || [],
-      };
-    });
+    return Array.isArray(professional.specialistAssignments)
+      ? professional.specialistAssignments
+      : [];
   }
 
   async function saveToSupabase(data) {

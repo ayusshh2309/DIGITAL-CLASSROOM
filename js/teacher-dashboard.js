@@ -100,7 +100,7 @@
     renderToday();
   }
 
-  function setupAssignments(gradeGroups = [], databaseAssignments = [], subjectCatalog = []) {
+  function setupAssignments(gradeGroups = []) {
     const assignments = new Map();
     const groupKeys = new Set();
     state.gradeGroups = gradeGroups.filter((row) => {
@@ -110,47 +110,14 @@
       return true;
     });
     state.classes = [...new Set(state.gradeGroups.map((row) => String(row.grade)))].sort((a, b) => Number(a) - Number(b));
-    const assignmentKeys = new Set();
-    state.assignmentRows = databaseAssignments.map((row) => {
-      const joinedSubject = Array.isArray(row.subjects) ? row.subjects[0] : row.subjects;
-      if (!joinedSubject?.name) throw new Error(`Registered subject ID ${row.subject_id} is missing from public.subjects.`);
-      return { grade: Number(row.grade), stream: row.stream || null, subject: joinedSubject.name, subject_id: row.subject_id };
-    }).filter((row) => {
-      const key = `${row.grade}|${row.stream || ""}|${row.subject_id}`;
-      if (assignmentKeys.has(key)) return false;
-      assignmentKeys.add(key);
-      return true;
-    });
-    const standardSubjects = {
-      5: ["English", "Mathematics", "EVS", "Hindi"],
-      6: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-      7: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-      8: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-      9: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-      10: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-    };
-    const streamSubjects = {
-      science_pcm: ["Physics", "Chemistry", "Mathematics"],
-      science_pcb: ["Physics", "Chemistry", "Biology"],
-      commerce: ["Accountancy", "Business Studies", "Economics"],
-      arts_humanities: ["History", "Geography", "Political Science", "Psychology"],
-    };
-    state.gradeGroups.filter((group) => group.teach_all_subjects).forEach((group) => {
-      const expected = Number(group.grade) < 11
-        ? standardSubjects[Number(group.grade)] || []
-        : [...(streamSubjects[group.stream] || []), "English", "Physical Education", "Computer Science"];
-      expected.forEach((name) => {
-        const subject = subjectCatalog.find((item) => String(item.name).trim().toLowerCase() === name.toLowerCase());
-        if (!subject) {
-          console.warn(`Subject '${name}' is missing from public.subjects.`);
-          return;
-        }
-        const key = `${group.grade}|${group.stream || ""}|${subject.id}`;
-        if (assignmentKeys.has(key)) return;
-        assignmentKeys.add(key);
-        state.assignmentRows.push({ grade: Number(group.grade), stream: group.stream || null, subject: subject.name, subject_id: subject.id });
-      });
-    });
+    state.assignmentRows = state.gradeGroups.flatMap((group) =>
+      (group.subjects || []).map((subject) => ({
+        grade: Number(group.grade),
+        stream: group.stream || null,
+        subject: subject.name,
+        subject_id: subject.id,
+      })),
+    );
     state.assignmentRows.forEach((row) => {
       const grade = String(row.grade);
       if (!assignments.has(grade)) assignments.set(grade, new Set());
@@ -599,23 +566,12 @@
       state.profile = profile;
 
       const teacherDbId = profile.id;
-      const [gradeResult, assignmentResult, materialResult] = await Promise.all([
-        state.client.from("teacher_grade_groups").select("grade, stream, teach_all_subjects").eq("teacher_id", teacherDbId),
-        state.client.from("teacher_subject_assignments").select("subject_id, grade, stream, subjects(name)").eq("teacher_id", teacherDbId),
+      const [gradeGroups, materialResult] = await Promise.all([
+        window.TeacherData.loadRegisteredTeachingScope(state.client, teacherDbId),
         state.client.from("materials").select("id, title, grade, stream, subject_id, material_type, created_at, subjects(name)").eq("teacher_id", teacherDbId).order("created_at", { ascending: false }),
       ]);
-      for (const [name, result] of [["teacher_grade_groups", gradeResult], ["teacher_subject_assignments", assignmentResult], ["materials", materialResult]]) {
-        if (result.error) throw new Error(`Unable to load ${name}. Check your access permissions. ${result.error.message}`);
-      }
-      const gradeGroups = gradeResult.data || [];
-      const assignmentRows = assignmentResult.data || [];
-      let subjectCatalog = [];
-      if (gradeGroups.some((group) => group.teach_all_subjects)) {
-        const { data, error } = await state.client.from("subjects").select("id, name");
-        if (error) throw new Error(`Unable to load subjects for teach-all assignments. ${error.message}`);
-        subjectCatalog = data || [];
-      }
-      setupAssignments(gradeGroups, assignmentRows, subjectCatalog);
+      if (materialResult.error) throw new Error(`Unable to load materials. Check your access permissions. ${materialResult.error.message}`);
+      setupAssignments(gradeGroups);
       state.materials = materialResult.data || [];
 
       teacherName = profile.full_name || "N/A";

@@ -152,7 +152,7 @@ alter table public.teacher_subjects
 create table if not exists public.teacher_grade_groups (
   id uuid primary key default gen_random_uuid(),
   teacher_id uuid not null references public.teachers(id) on delete cascade,
-  grade smallint not null check (grade between 1 and 12),
+  grade integer not null check (grade between 1 and 12),
   stream text,
   teach_all_subjects boolean not null default false,
   created_at timestamptz not null default now()
@@ -211,13 +211,12 @@ create unique index if not exists teacher_grade_groups_teacher_grade_stream_key
 create table if not exists public.teacher_subject_assignments (
   id uuid primary key default gen_random_uuid(),
   teacher_id uuid not null references public.teachers(id) on delete cascade,
-  grade smallint not null check (grade between 1 and 12),
-  subject text not null,
-  subject_id uuid,
+  grade integer not null check (grade between 1 and 12),
+  subject_id bigint,
   stream text,
   created_at timestamptz not null default now(),
   constraint teacher_subject_assignments_unique
-    unique nulls not distinct (teacher_id, grade, subject, stream)
+    unique nulls not distinct (teacher_id, grade, subject_id, stream)
 );
 
 create table if not exists public.teacher_languages (
@@ -235,7 +234,7 @@ begin
     and exists (
       select 1 from information_schema.columns
       where table_schema = 'public' and table_name = 'subjects'
-        and column_name = 'id' and data_type = 'uuid'
+        and column_name = 'id' and data_type = 'bigint'
     )
     and not exists (
       select 1 from pg_constraint

@@ -1,13 +1,46 @@
 (() => {
-  const STREAMS = {
-    science_pcm: "Science (PCM)",
-    science_pcb: "Science (PCB)",
-    commerce: "Commerce",
-    arts_humanities: "Arts / Humanities",
-  };
   const GRADES = new Set([5, 6, 7, 8, 9, 10, 11, 12]);
   const $ = (id) => document.getElementById(id);
   const normalized = (value) => String(value ?? "").trim();
+  let availableStreamsByGrade = {};
+
+  function streamLabel(stream) {
+    return String(stream)
+      .replace(/[_-]+/g, " ")
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  }
+
+  async function loadAvailableStreams() {
+    const client = window.SubjectService?.getClient?.();
+    if (!client) throw new Error("Supabase subject services are unavailable.");
+    const entries = await Promise.all([11, 12].map(async (grade) => [
+      grade,
+      await window.SubjectService.getAvailableStreams(grade, client),
+    ]));
+    availableStreamsByGrade = Object.fromEntries(entries);
+  }
+
+  function renderStreamOptions(grade, selected = "") {
+    const select = $("stream");
+    const options = availableStreamsByGrade[grade] || [];
+    select.replaceChildren();
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.disabled = true;
+    placeholder.selected = !selected || !options.includes(selected);
+    placeholder.textContent = options.length
+      ? "Select your stream"
+      : "No streams are configured for this grade";
+    select.appendChild(placeholder);
+    options.forEach((stream) => {
+      const option = document.createElement("option");
+      option.value = stream;
+      option.textContent = streamLabel(stream);
+      select.appendChild(option);
+    });
+    if (selected && options.includes(selected)) select.value = selected;
+    select.disabled = options.length === 0;
+  }
 
   function draft() {
     return window.StudentData?.getStudentDraft?.() || {};
@@ -117,7 +150,7 @@
     });
   }
 
-  function initializeAcademic() {
+  async function initializeAcademic() {
     const classSelect = $("classGrade");
     const streamSelect = $("stream");
     const current = draft();
@@ -129,15 +162,31 @@
         .find((option) => option.value === current.medium);
       if (radio) radio.checked = true;
     }
+    try {
+      await loadAvailableStreams();
+    } catch (error) {
+      console.error("Could not load eligible student registration streams.", error);
+      showMessage("Stream options could not be loaded. Please reload the page and try again.");
+      return;
+    }
 
     function updateStreamVisibility() {
       const requiresStream = ["11", "12"].includes(classSelect.value);
       $("streamContainer").classList.toggle("hidden", !requiresStream);
       streamSelect.required = requiresStream;
-      if (!requiresStream) streamSelect.value = "";
+      if (requiresStream) {
+        const selected = streamSelect.value || current.stream || "";
+        renderStreamOptions(Number(classSelect.value), selected);
+      } else {
+        streamSelect.value = "";
+        streamSelect.disabled = false;
+      }
     }
     updateStreamVisibility();
-    classSelect.addEventListener("change", updateStreamVisibility);
+    classSelect.addEventListener("change", () => {
+      streamSelect.value = "";
+      updateStreamVisibility();
+    });
 
     $("academicForm").addEventListener("submit", (event) => {
       event.preventDefault();
@@ -148,7 +197,7 @@
         window.alert("Select a valid class or grade.");
         return;
       }
-      if ((grade === 11 || grade === 12) && !Object.hasOwn(STREAMS, stream)) {
+      if ((grade === 11 || grade === 12) && !(availableStreamsByGrade[grade] || []).includes(stream)) {
         window.alert("Select a valid stream for this grade.");
         return;
       }
@@ -223,7 +272,7 @@
     appendReviewRow(profile, "State", data.state);
     appendReviewRow(profile, "Country", data.country);
     appendReviewRow(academic, "Class / Grade", data.classGrade ? `Class ${data.classGrade}` : "");
-    appendReviewRow(academic, "Stream", data.stream ? STREAMS[data.stream] : "Not applicable");
+    appendReviewRow(academic, "Stream", data.stream ? streamLabel(data.stream) : "Not applicable");
     appendReviewRow(academic, "School Name", data.schoolName);
     appendReviewRow(academic, "Board", data.board ? data.board.toUpperCase() : "");
     appendReviewRow(academic, "Academic Year", data.academicYear);
@@ -237,7 +286,7 @@
     if (personalError) return personalError;
     const grade = Number(data.classGrade);
     if (!GRADES.has(grade)) return "Select a valid class or grade.";
-    if (grade >= 11 && !Object.hasOwn(STREAMS, data.stream)) return "Select a valid stream for this grade.";
+    if (grade >= 11 && !(availableStreamsByGrade[grade] || []).includes(data.stream)) return "Select a valid stream for this grade.";
     if (grade < 11 && data.stream) return "Streams are not available for this grade.";
     for (const [key, message] of [
       ["schoolName", "School name is required."],
@@ -434,7 +483,14 @@
     return true;
   }
 
-  function initializeReview() {
+  async function initializeReview() {
+    try {
+      await loadAvailableStreams();
+    } catch (error) {
+      console.error("Could not load eligible student registration streams.", error);
+      showMessage("Stream eligibility could not be verified. Please reload this page and try again.");
+      return;
+    }
     const data = draft();
     renderReview(data);
     $("submitRegistrationBtn").addEventListener("click", async (event) => {

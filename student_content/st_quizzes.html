@@ -1503,6 +1503,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="../js/supabase.js"></script>
+    <script src="../js/subject-service.js"></script>
     <script>
       /* =====================================================
          SUPABASE CONFIGURATION
@@ -1522,6 +1523,7 @@
       let allQuizzes = [];
       let allAttempts = [];
       let studentData = null;
+      let studentSubjectIds = new Set();
       let loadingQuizzes = false;
       let reloadQuizzesQueued = false;
       let studentQuizChannel = null;
@@ -1705,6 +1707,15 @@
         if (!data || data.user_id !== authData.user.id) {
           throw new Error("No student registration is linked to this account.");
         }
+        const curriculum = await window.SubjectService.getStudentSubjects(
+          supabaseClient,
+        );
+        if (String(curriculum.student.id) !== String(data.id)) {
+          throw new Error("The authenticated student curriculum did not match the loaded profile.");
+        }
+        studentSubjectIds = new Set(
+          curriculum.subjects.map((subject) => String(subject.id)),
+        );
         studentData = data;
         return data;
       }
@@ -1728,7 +1739,12 @@
           if (quizResult.error) throw quizResult.error;
           allQuizzes = [
             ...new Map(
-              (quizResult.data || []).map((quiz) => [
+              (quizResult.data || [])
+                .filter((quiz) =>
+                  quiz.subject_id != null &&
+                  studentSubjectIds.has(String(quiz.subject_id)),
+                )
+                .map((quiz) => [
                 String(quiz.id),
                 {
                   ...quiz,

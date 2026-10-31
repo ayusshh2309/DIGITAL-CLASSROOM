@@ -295,6 +295,7 @@
       .from("materials")
       .select(includeSubject ? `${fields}, subjects(id, name)` : fields)
       .eq("grade", String(student.grade))
+      .in("subject_id", student.subjectIds)
       .in("material_type", SUPPORTED_MATERIAL_TYPES);
     if (materialId != null) query = query.eq("id", materialId);
     if (Number(student.grade) <= 10) query = query.is("stream", null);
@@ -321,6 +322,7 @@
   async function fetchAuthorizedMaterials(materialId = null) {
     const student = state.student;
     if (!student) throw new Error("The registered student profile has not been loaded.");
+    if (!student.subjectIds.length) return [];
     try {
       let { data, error } = await createMaterialsQuery(student, true, materialId);
       let usedSeparateSubjectQuery = false;
@@ -363,12 +365,20 @@
   }
 
   async function checkTargetMaterialVisibility(notes) {
+    const subjectIds = state.student?.subjectIds || [];
+    if (!subjectIds.length) {
+      console.info("Student Notes target material is not in an assigned subject.", {
+        materialId: TARGET_MATERIAL_ID,
+      });
+      return;
+    }
     let query;
     try {
       query = await state.client
         .from("materials")
         .select("id, grade, stream, material_type, storage_bucket, file_path")
         .eq("id", TARGET_MATERIAL_ID)
+        .in("subject_id", subjectIds)
         .maybeSingle();
     } catch (error) {
       console.error("Student Notes target material lookup failed.", {
@@ -427,66 +437,19 @@
   }
 
   async function loadCurrentStudent() {
-    let authData;
-    let authError;
     try {
-      ({ data: authData, error: authError } = await state.client.auth.getUser());
+      const curriculum = await window.SubjectService.getStudentSubjects(state.client);
+      state.student = {
+        ...curriculum.student,
+        grade: curriculum.grade,
+        subjects: curriculum.subjects,
+        subjectIds: curriculum.subjects.map((subject) => subject.id),
+        user: curriculum.user,
+      };
     } catch (error) {
-      console.error("Student Notes authentication lookup failed.", error);
+      console.error("Student Notes curriculum lookup failed.", error);
       throw error;
     }
-    if (authError) {
-      console.error("Student Notes authentication lookup failed.", authError);
-      if (
-        authError.name === "AuthSessionMissingError" ||
-        authError.code === "session_not_found"
-      ) {
-        const error = new Error("Sign in with your student account to view study materials.");
-        error.code = "AUTH_REQUIRED";
-        throw error;
-      }
-      throw authError;
-    }
-    const user = authData?.user;
-    if (!user?.id) {
-      console.error("Student Notes authentication lookup returned no signed-in user.");
-      const error = new Error("Sign in with your student account to view study materials.");
-      error.code = "AUTH_REQUIRED";
-      throw error;
-    }
-    console.info("Student Notes authenticated user verified.", { userId: user.id });
-    let student;
-    let studentError;
-    try {
-      ({ data: student, error: studentError } = await state.client
-        .from("students")
-        .select("id, user_id, grade, stream")
-        .eq("user_id", user.id)
-        .maybeSingle());
-    } catch (error) {
-      console.error("Student Notes student profile lookup failed.", error);
-      throw error;
-    }
-    if (studentError) {
-      console.error("Student Notes student profile lookup failed.", studentError);
-      throw studentError;
-    }
-    if (!student) {
-      console.error("Student Notes student profile lookup returned no profile.", {
-        userId: user.id,
-      });
-      const error = new Error("No student profile is linked to this account.");
-      error.code = "STUDENT_PROFILE_MISSING";
-      throw error;
-    }
-    const grade = Number(student.grade);
-    if (!Number.isInteger(grade) || grade < 5 || grade > 12) {
-      throw new Error("Your registered student profile has an invalid grade.");
-    }
-    if (grade >= 11 && !String(student.stream || "").trim()) {
-      throw new Error("Your registered Grade 11 or 12 profile is missing its stream.");
-    }
-    state.student = { ...student, grade, user };
   }
 
   async function loadNotes() {

@@ -91,72 +91,28 @@
   }
 
   async function fetchTeachingScope(client, teacherDbId) {
-    const [groupsResult, assignmentsResult] = await Promise.all([
-      client
-        .from("teacher_grade_groups")
-        .select("grade, stream")
-        .eq("teacher_id", teacherDbId)
-        .order("grade", { ascending: true })
-        .order("stream", { ascending: true }),
-      client
-        .from("teacher_subject_assignments")
-        .select("grade, stream, subject_id")
-        .eq("teacher_id", teacherDbId)
-        .order("grade", { ascending: true })
-        .order("stream", { ascending: true }),
-    ]);
-    if (groupsResult.error) throw groupsResult.error;
-    if (assignmentsResult.error) throw assignmentsResult.error;
-
+    const groups = await window.SubjectService.getTeacherTeachingScope(
+      client,
+      teacherDbId,
+    );
     const classes = new Map();
     const assignments = new Map();
     const subjectMap = new Map();
     const groupKeys = new Set();
-    (groupsResult.data || []).forEach((group) => {
+    groups.forEach((group) => {
       const grade = gradeValue(group.grade);
       if (!Number.isInteger(Number(grade)) || !grade) return;
       if (!classes.has(grade)) classes.set(grade, new Set());
       const stream = Number(grade) >= 11 ? normalizedStream(group.stream) : null;
       classes.get(grade).add(stream);
-      groupKeys.add(assignmentKey(grade, stream));
-    });
-
-    const registeredAssignments = (assignmentsResult.data || []).filter((row) => {
-      const grade = gradeValue(row.grade);
-      const stream = Number(grade) >= 11 ? normalizedStream(row.stream) : null;
-      return row.subject_id && groupKeys.has(assignmentKey(grade, stream));
-    });
-    const subjectIds = [...new Set(
-      registeredAssignments.map((row) => String(row.subject_id)),
-    )];
-    if (subjectIds.length) {
-      const { data: subjects, error } = await client
-        .from("subjects")
-        .select("id, name")
-        .in("id", subjectIds);
-      if (error) throw error;
-      (subjects || []).forEach((subject) => {
-        if (subject.name) {
-          subjectMap.set(String(subject.id), {
-            id: subject.id,
-            name: subject.name,
-          });
-        }
-      });
-    }
-
-    registeredAssignments.forEach((row) => {
-      const grade = gradeValue(row.grade);
-      const stream = Number(grade) >= 11 ? normalizedStream(row.stream) : null;
-      const subject = subjectMap.get(String(row.subject_id));
-      if (!subject) {
-        throw new Error(
-          `Assigned subject ID ${row.subject_id} is missing from public.subjects.`,
-        );
-      }
       const key = assignmentKey(grade, stream);
+      groupKeys.add(key);
       if (!assignments.has(key)) assignments.set(key, new Map());
-      assignments.get(key).set(String(subject.id), subject);
+      (group.subjects || []).forEach((subject) => {
+        const normalized = { id: subject.id, name: subject.name };
+        subjectMap.set(String(subject.id), normalized);
+        assignments.get(key).set(String(subject.id), normalized);
+      });
     });
 
     return { classes, assignments, subjectsById: subjectMap };

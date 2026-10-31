@@ -1101,6 +1101,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/supabase.js"></script>
+    <script src="../js/subject-service.js"></script>
     <script src="../js/student-curriculum.js"></script>
     <script>
       /* =====================================================
@@ -1576,9 +1577,11 @@
           });
           console.info("[My Subjects] Subjects returned by curriculum query", {
             query: {
-              table: "subjects",
-              gradesContains: [grade],
-              ...(grade >= 11 ? { streamsContains: [stream] } : {}),
+              table: "teacher_subject_assignments",
+              grade,
+              rowLevelSecurity: "student's registered grade and stream class",
+              subjectTable: "subjects",
+              subjectIds: records.map((record) => record.id),
             },
             records,
             count: records.length,
@@ -1723,7 +1726,7 @@
                         ] || registeredStudent.stream
                       }`
                     : ""
-                } curriculum.`
+                } class. Confirm the teacher assignments and apply the student assignment access SQL migration.`
               : "There are currently no subjects available for your registered class.",
           );
           updateSummary();

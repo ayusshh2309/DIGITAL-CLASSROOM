@@ -1672,6 +1672,7 @@
     <script src="../js/supabase.js"></script>
     <script src="../js/teacher-registration-storage.js"></script>
     <script src="../js/teacher-registration.js"></script>
+    <script src="../js/subject-service.js"></script>
     <script src="../js/teacher-data.js"></script>
     <script>
       const draft =
@@ -2126,32 +2127,6 @@
         return ids;
       }
 
-      async function resolveSubjectIds(client, names) {
-        const ids = new Map();
-        const uniqueNames = [...new Set(names.filter(Boolean))];
-        if (!uniqueNames.length) return ids;
-
-        const { data, error } = await client
-          .from("subjects")
-          .select("id, name");
-        if (error)
-          throw createRegistrationOperationError("subjects select", error);
-
-        for (const name of uniqueNames) {
-          const normalizedName = String(name).trim().toLowerCase();
-          const match = (data || []).find(
-            (row) =>
-              String(row.name || "")
-                .trim()
-                .toLowerCase() === normalizedName,
-          );
-          if (match?.id !== undefined && match?.id !== null) {
-            ids.set(normalizedName, match.id);
-          }
-        }
-        return ids;
-      }
-
       async function resolveLanguageIds(client, names) {
         const ids = new Map();
         const uniqueNames = [...new Set(names.filter(Boolean))];
@@ -2178,7 +2153,7 @@
         return ids;
       }
 
-      async function createAcademicRecords(client, authUserId, teacherDbId) {
+      async function createAcademicRecords(client, teacherDbId) {
         const groupGrades = {
           grades56: [5, 6],
           grades_5_6: [5, 6],
@@ -2189,28 +2164,10 @@
           grades1112: [11, 12],
           grades_11_12: [11, 12],
         };
-        const standardSubjects = {
-          5: ["English", "Mathematics", "EVS", "Hindi"],
-          6: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-          7: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-          8: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-          9: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-          10: ["English", "Mathematics", "Science", "Social Science", "Hindi"],
-        };
-        const streamSubjects = {
-          science_pcm: ["Physics", "Chemistry", "Mathematics"],
-          science_pcb: ["Physics", "Chemistry", "Biology"],
-          commerce: ["Accountancy", "Business Studies", "Economics"],
-          arts_humanities: [
-            "History",
-            "Geography",
-            "Political Science",
-            "Psychology",
-          ],
-        };
         const selectedStreams = Array.isArray(step2.streams)
           ? step2.streams
           : [];
+        const streamsByGrade = step2.streamsByGrade || {};
         const selectedGrades = new Set(
           (step2.gradeGroups || []).flatMap(
             (group) => groupGrades[group] || [],
@@ -2228,85 +2185,91 @@
               selectedGrades.add(numericGrade);
           });
         });
+        const gradeRowsByKey = new Map();
         const assignmentMap = new Map();
-        const addAssignment = (subject, grade, stream = null) => {
-          const normalizedSubject = String(subject || "").trim();
-          const numericGrade = Number(grade);
-          if (!normalizedSubject || numericGrade < 1 || numericGrade > 12)
-            return;
-          const key = `${numericGrade}|${normalizedSubject.toLowerCase()}|${stream || ""}`;
+        const addGroup = (grade, stream) => {
+          const normalizedStream = Number(grade) >= 11 ? stream : null;
+          const key = `${grade}|${normalizedStream || ""}`;
+          gradeRowsByKey.set(key, {
+            teacher_id: teacherDbId,
+            grade: Number(grade),
+            stream: normalizedStream,
+            teach_all_subjects: step2.teachingMode === "teach_all",
+          });
+          return normalizedStream;
+        };
+        const addAssignment = (subject, grade, stream) => {
+          if (!subject?.id || !subject?.name) {
+            throw new Error("A selected subject could not be resolved from public.subjects.");
+          }
+          const normalizedStream = addGroup(grade, stream);
+          const key = `${grade}|${normalizedStream || ""}|${subject.id}`;
           assignmentMap.set(key, {
             teacher_id: teacherDbId,
-            grade: numericGrade,
-            subjectName: normalizedSubject,
-            stream: stream || null,
+            subject_id: subject.id,
+            grade: Number(grade),
+            stream: normalizedStream,
+            subjectName: subject.name,
           });
         };
 
-        if (step2.teachingMode === "subject_specialist") {
-          (Array.isArray(step2.subjectAssignments)
-            ? step2.subjectAssignments
-            : []
-          ).forEach((assignment) => {
-            (assignment.grades || []).forEach((grade) => {
-              const streams =
-                Number(grade) >= 11 && selectedStreams.length
-                  ? selectedStreams
-                  : [null];
-              streams.forEach((stream) =>
-                addAssignment(assignment.subject, grade, stream),
-              );
-            });
-          });
-        } else {
-          [...selectedGrades].forEach((grade) => {
-            if (grade < 11) {
-              (standardSubjects[grade] || []).forEach((subject) =>
-                addAssignment(subject, grade),
-              );
-              return;
+        if (step2.teachingMode === "teach_all") {
+          for (const grade of selectedGrades) {
+            const streams = grade >= 11
+              ? streamsByGrade[grade] || selectedStreams
+              : [null];
+            if (grade >= 11 && !streams.length) {
+              throw new Error(`Select at least one stream for Grade ${grade}.`);
             }
-            selectedStreams.forEach((stream) => {
-              const subjects = new Set([
-                ...(streamSubjects[stream] || []),
-                "English",
-                "Physical Education",
-                "Computer Science",
-              ]);
-              subjects.forEach((subject) =>
+            for (const stream of streams) {
+              const eligibleSubjects = await window.SubjectService.getEligibleSubjects(
+                grade,
+                stream,
+                client,
+              );
+              addGroup(grade, stream);
+              eligibleSubjects.forEach((subject) =>
                 addAssignment(subject, grade, stream),
               );
-            });
-          });
+            }
+          }
+        } else {
+          for (const assignment of step2.subjectAssignments || []) {
+            for (const grade of assignment.grades || []) {
+              const streams = Number(grade) >= 11
+                ? assignment.streamsByGrade?.[grade] ||
+                  streamsByGrade[grade] ||
+                  selectedStreams
+                : [null];
+              if (Number(grade) >= 11 && !streams.length) {
+                throw new Error(`Select an eligible stream for Grade ${grade}.`);
+              }
+              for (const stream of streams) {
+                const eligibleSubjects = await window.SubjectService.getEligibleSubjects(
+                  grade,
+                  stream,
+                  client,
+                );
+                const selected = eligibleSubjects.find((subject) =>
+                  assignment.subject_id != null
+                    ? String(subject.id) === String(assignment.subject_id)
+                    : subject.name.trim().toLowerCase() ===
+                      String(assignment.subject || "").trim().toLowerCase(),
+                );
+                if (!selected) {
+                  throw new Error(
+                    `The selected subject is not eligible for Grade ${grade}${stream ? ` / ${stream}` : ""}.`,
+                  );
+                }
+                addAssignment(selected, grade, stream);
+              }
+            }
+          }
         }
 
         const assignmentRows = [...assignmentMap.values()];
-        const gradeRowsByKey = new Map();
-        assignmentRows.forEach((assignment) => {
-          const key = `${assignment.grade}|${assignment.stream || ""}`;
-          gradeRowsByKey.set(key, {
-            teacher_id: teacherDbId,
-            grade: assignment.grade,
-            stream: assignment.stream,
-            teach_all_subjects: step2.teachingMode === "teach_all",
-          });
-        });
         const gradeRows = [...gradeRowsByKey.values()];
-        const [subjectIds, languageIds] = await Promise.all([
-          resolveSubjectIds(
-            client,
-            assignmentRows.map((row) => row.subjectName),
-          ),
-          resolveLanguageIds(client, step2.languages || []),
-        ]);
-        assignmentRows.forEach((row) => {
-          row.subject_id = subjectIds.get(row.subjectName.toLowerCase());
-          if (row.subject_id === undefined) {
-            throw new Error(
-              `Unable to save subject assignments: '${row.subjectName}' was not found in public.subjects.`,
-            );
-          }
-        });
+        const languageIds = await resolveLanguageIds(client, step2.languages || []);
         const languageRows = (step2.languages || []).map((language) => {
           const normalizedLanguage = String(language).trim().toLowerCase();
           const languageId = languageIds.get(normalizedLanguage);
@@ -2364,29 +2327,6 @@
           if (error)
             throw createRegistrationOperationError(
               "teacher_languages insert",
-              error,
-            );
-        }
-        if (assignmentRows.length) {
-          const dashboardRowMap = new Map();
-          assignmentRows.forEach((row) => {
-            const key = `${authUserId}|${row.subjectName.toLowerCase()}|${row.grade}`;
-            if (!dashboardRowMap.has(key)) {
-              dashboardRowMap.set(key, {
-                teacher_id: authUserId,
-                subject: row.subjectName,
-                grade: String(row.grade),
-                stream: row.stream,
-              });
-            }
-          });
-          const dashboardRows = [...dashboardRowMap.values()];
-          const { error } = await client
-            .from("teacher_subjects")
-            .upsert(dashboardRows, { onConflict: "teacher_id,subject,grade" });
-          if (error)
-            throw createRegistrationOperationError(
-              "teacher_subjects upsert",
               error,
             );
         }
@@ -2594,7 +2534,7 @@
             );
           }
           const teacherDbId = teacherRecord.id;
-          await createAcademicRecords(client, authUserId, teacherDbId);
+          await createAcademicRecords(client, teacherDbId);
 
           window.TeacherRegistrationStorage.clearRegistrationDraft();
           sessionStorage.removeItem("teacherId");

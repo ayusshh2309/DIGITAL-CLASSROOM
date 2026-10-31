@@ -5,7 +5,7 @@ create table if not exists public.attendance_sessions (
   teacher_id uuid not null references public.teachers(id) on delete cascade,
   grade smallint not null check (grade between 5 and 12),
   stream text,
-  subject_id uuid not null references public.subjects(id) on delete restrict,
+  subject_id bigint not null references public.subjects(id) on delete restrict,
   attendance_date date not null,
   status text not null default 'draft' check (status in ('draft', 'completed')),
   created_at timestamptz not null default now(),
@@ -68,7 +68,7 @@ $$;
 create or replace function public.teacher_can_access_attendance_scope(
   requested_grade integer,
   requested_stream text,
-  requested_subject_id uuid
+  requested_subject_id bigint
 )
 returns boolean
 language sql
@@ -145,7 +145,7 @@ $$;
 create or replace function public.save_teacher_attendance(
   requested_grade smallint,
   requested_stream text,
-  requested_subject_id uuid,
+  requested_subject_id bigint,
   requested_attendance_date date,
   requested_records jsonb
 )
