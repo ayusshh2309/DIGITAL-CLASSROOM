@@ -276,7 +276,14 @@
       .filter((subject) => isEligible(subject, grade, stream))
       .map(({ id, name, grades, streams }) => ({ id, name, grades, streams }));
 
-    return { user, student: profile, grade, stream, subjects };
+    return {
+      user,
+      student: profile,
+      grade,
+      stream,
+      subjects,
+      subjectCatalog: catalog,
+    };
   }
 
   async function validateSubjectEligibility(grade, stream, subjectId, client = getClient()) {
