@@ -10,6 +10,49 @@
     }
     return normalized;
   };
+  const streamQueryValues = (value) => {
+    const raw = String(value || "").trim();
+    const normalized = normalizeStream(raw);
+    const aliases = {
+      science_pcm: ["Science (PCM)", "Science PCM"],
+      science_pcb: ["Science (PCB)", "Science PCB"],
+      commerce: ["Commerce"],
+      arts_humanities: ["Arts", "Humanities", "Arts / Humanities", "Arts & Humanities"],
+    };
+    return [...new Set([raw, normalized, ...(aliases[normalized] || [])].filter(Boolean))];
+  };
+  const eligibleSubjectNames = (grade, stream) => {
+    if (grade === 5) {
+      return new Set([
+        "english",
+        "mathematics",
+        "evs",
+        "environmental studies",
+        "hindi",
+      ]);
+    }
+    if (grade >= 6 && grade <= 10) {
+      return new Set([
+        "english",
+        "mathematics",
+        "science",
+        "social science",
+        "hindi",
+      ]);
+    }
+    const subjectsByStream = {
+      science_pcm: ["physics", "chemistry", "mathematics"],
+      science_pcb: ["physics", "chemistry", "biology"],
+      commerce: ["accountancy", "business studies", "economics"],
+      arts_humanities: [
+        "history",
+        "geography",
+        "political science",
+        "psychology",
+      ],
+    };
+    return new Set(subjectsByStream[normalizeStream(stream)] || []);
+  };
 
   async function getAuthenticatedUser(client) {
     if (!client) throw new Error("Supabase is not configured.");
@@ -40,7 +83,9 @@
       .from("subjects")
       .select("id, name, grades, streams")
       .contains("grades", [grade]);
-    if (grade >= 11) query = query.contains("streams", [stream]);
+    if (grade >= 11) {
+      query = query.overlaps("streams", streamQueryValues(student.stream));
+    }
 
     console.info("[Student Curriculum] Querying registered subjects", {
       userId: user.id,
@@ -49,7 +94,7 @@
       query: {
         table: "subjects",
         gradesContains: [grade],
-        ...(grade >= 11 ? { streamsContains: [stream] } : {}),
+        ...(grade >= 11 ? { streamsOverlaps: streamQueryValues(student.stream) } : {}),
       },
     });
 
@@ -66,9 +111,14 @@
 
     const subjectById = new Map();
     const nameKeys = new Set();
+    const allowedSubjectNames = eligibleSubjectNames(grade, student.stream);
     for (const subject of data || []) {
       const name = String(subject.name || "").trim();
-      if (subject.id == null || !name) continue;
+      if (
+        subject.id == null ||
+        !name ||
+        !allowedSubjectNames.has(name.toLowerCase())
+      ) continue;
       const nameKey = name.toLowerCase();
       if (subjectById.has(String(subject.id)) || nameKeys.has(nameKey)) continue;
       subjectById.set(String(subject.id), { id: subject.id, name });
@@ -98,5 +148,11 @@
     return loadSubjectsForStudent(client, user, student);
   }
 
-  window.StudentCurriculum = { loadCurrentStudent, loadForStudent, normalizeStream };
+  window.StudentCurriculum = {
+    loadCurrentStudent,
+    loadForStudent,
+    normalizeStream,
+    streamQueryValues,
+    eligibleSubjectNames,
+  };
 })();

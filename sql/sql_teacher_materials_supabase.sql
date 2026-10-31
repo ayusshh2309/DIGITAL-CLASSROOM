@@ -238,6 +238,56 @@ with check (exists (
           and assignment.stream is not distinct from materials.stream
       )
     )
+    and exists (
+      select 1
+      from public.subjects as subject
+      where subject.id = materials.subject_id
+        and subject.grades @> array[grade_group.grade]
+        and (
+          grade_group.grade between 5 and 10
+          or exists (
+            select 1
+            from unnest(subject.streams) as subject_stream(stream)
+            where lower(btrim(subject_stream.stream)) = lower(btrim(grade_group.stream))
+          )
+        )
+        and (
+          (
+            grade_group.grade = 5
+            and lower(btrim(subject.name)) in (
+              'english', 'mathematics', 'evs', 'environmental studies', 'hindi'
+            )
+          )
+          or (
+            grade_group.grade between 6 and 10
+            and lower(btrim(subject.name)) in (
+              'english', 'mathematics', 'science', 'social science', 'hindi'
+            )
+          )
+          or (
+            grade_group.grade between 11 and 12
+            and grade_group.stream = 'science_pcm'
+            and lower(btrim(subject.name)) in ('physics', 'chemistry', 'mathematics')
+          )
+          or (
+            grade_group.grade between 11 and 12
+            and grade_group.stream = 'science_pcb'
+            and lower(btrim(subject.name)) in ('physics', 'chemistry', 'biology')
+          )
+          or (
+            grade_group.grade between 11 and 12
+            and grade_group.stream = 'commerce'
+            and lower(btrim(subject.name)) in ('accountancy', 'business studies', 'economics')
+          )
+          or (
+            grade_group.grade between 11 and 12
+            and grade_group.stream = 'arts_humanities'
+            and lower(btrim(subject.name)) in (
+              'history', 'geography', 'political science', 'psychology'
+            )
+          )
+        )
+    )
 ));
 
 create policy materials_teacher_update_assigned on public.materials
@@ -269,6 +319,56 @@ with check (exists (
           and assignment.grade::text = materials.grade
           and assignment.stream is not distinct from materials.stream
       )
+    )
+    and exists (
+      select 1
+      from public.subjects as subject
+      where subject.id = materials.subject_id
+        and subject.grades @> array[grade_group.grade]
+        and (
+          grade_group.grade between 5 and 10
+          or exists (
+            select 1
+            from unnest(subject.streams) as subject_stream(stream)
+            where lower(btrim(subject_stream.stream)) = lower(btrim(grade_group.stream))
+          )
+        )
+        and (
+          (
+            grade_group.grade = 5
+            and lower(btrim(subject.name)) in (
+              'english', 'mathematics', 'evs', 'environmental studies', 'hindi'
+            )
+          )
+          or (
+            grade_group.grade between 6 and 10
+            and lower(btrim(subject.name)) in (
+              'english', 'mathematics', 'science', 'social science', 'hindi'
+            )
+          )
+          or (
+            grade_group.grade between 11 and 12
+            and grade_group.stream = 'science_pcm'
+            and lower(btrim(subject.name)) in ('physics', 'chemistry', 'mathematics')
+          )
+          or (
+            grade_group.grade between 11 and 12
+            and grade_group.stream = 'science_pcb'
+            and lower(btrim(subject.name)) in ('physics', 'chemistry', 'biology')
+          )
+          or (
+            grade_group.grade between 11 and 12
+            and grade_group.stream = 'commerce'
+            and lower(btrim(subject.name)) in ('accountancy', 'business studies', 'economics')
+          )
+          or (
+            grade_group.grade between 11 and 12
+            and grade_group.stream = 'arts_humanities'
+            and lower(btrim(subject.name)) in (
+              'history', 'geography', 'political science', 'psychology'
+            )
+          )
+        )
     )
 ));
 

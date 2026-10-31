@@ -259,9 +259,29 @@
       const profileResult = await state.client.from("students").select("*").eq("user_id", state.user.id).maybeSingle();
       if (profileResult.error) throw profileResult.error;
       if (!profileResult.data) throw new Error("No student profile is linked to this account.");
+      const curriculum = await window.StudentCurriculum.loadForStudent(state.client, profileResult.data);
+      let materialsQuery = Promise.resolve({ data: [], error: null });
+      if (curriculum.subjects.length) {
+        let query = state.client
+          .from("materials")
+          .select("id, grade, stream, subject_id, title, material_type, file_name, storage_bucket, created_at, subjects!inner(id, name)")
+          .eq("grade", String(curriculum.grade))
+          .in("subject_id", curriculum.subjects.map((subject) => subject.id))
+          .in("storage_bucket", ["pdfs", "photos", "documents"])
+          .order("created_at", { ascending: false });
+        query = curriculum.grade <= 10
+          ? query.is("stream", null)
+          : query.in(
+              "stream",
+              window.StudentCurriculum.streamQueryValues(
+                curriculum.student.stream,
+              ),
+            );
+        materialsQuery = query;
+      }
       const [eventsResult, materialsResult, videosResult, sessionsResult, segmentsResult, attemptsResult] = await Promise.all([
         state.client.rpc("get_student_calendar_events", { requested_student_id: state.user.id }),
-        state.client.rpc("get_student_materials", { requested_student_id: state.user.id }),
+        materialsQuery,
         state.client.rpc("get_student_videos", { requested_student_id: state.user.id }),
         state.client.from("study_sessions").select("*").eq("student_id", state.user.id).order("start_time", { ascending: false }),
         state.client.from("study_session_segments").select("*").eq("student_id", state.user.id).order("start_time", { ascending: false }),
@@ -274,12 +294,31 @@
         classGrade: String(profileResult.data.grade),
         class_grade: String(profileResult.data.grade),
       };
-      const curriculum = await window.StudentCurriculum.loadForStudent(state.client, profileResult.data);
       state.subjects = curriculum.subjects.map((subject) => subject.name);
       if (eventsResult.error) throw eventsResult.error;
       if (materialsResult.error) throw materialsResult.error;
       state.events = eventsResult.data || [];
-      state.materials = (materialsResult.data || []).sort((left, right) => new Date(right.uploaded_at || right.created_at) - new Date(left.uploaded_at || left.created_at));
+      state.materials = (materialsResult.data || [])
+        .map((material) => {
+          const subject = Array.isArray(material.subjects)
+            ? material.subjects[0]
+            : material.subjects;
+          return {
+            ...material,
+            subject: subject?.name || "",
+            uploaded_at: material.created_at,
+          };
+        })
+        .filter((material) => {
+          const type = normalize(material.material_type);
+          const bucket = normalize(material.storage_bucket);
+          return (
+            (bucket === "pdfs" && type === "pdf") ||
+            (bucket === "photos" && ["photo", "image"].includes(type)) ||
+            (bucket === "documents" && type === "document")
+          );
+        })
+        .sort((left, right) => new Date(right.created_at) - new Date(left.created_at));
       state.videos = videosResult.error ? [] : (videosResult.data || []);
       state.sessions = sessionsResult.error ? [] : (sessionsResult.data || []);
       state.segments = segmentsResult.error ? [] : (segmentsResult.data || []);

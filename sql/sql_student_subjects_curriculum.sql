@@ -42,17 +42,17 @@ begin
   for curriculum in
     select *
     from (values
-      ('English', array[5,6,7,8,9,10,11,12]::integer[], array['science_pcm','science_pcb','commerce','arts_humanities']::text[]),
+      ('English', array[5,6,7,8,9,10]::integer[], array[]::text[]),
       ('Mathematics', array[5,6,7,8,9,10,11,12]::integer[], array['science_pcm']::text[]),
       ('Environmental Studies', array[5]::integer[], array[]::text[]),
       ('Hindi', array[5,6,7,8,9,10]::integer[], array[]::text[]),
-      ('Computer Science', array[5,6,7,8,9,10,11,12]::integer[], array['science_pcm','science_pcb','commerce','arts_humanities']::text[]),
-      ('General Knowledge', array[5]::integer[], array[]::text[]),
-      ('Art', array[5]::integer[], array[]::text[]),
-      ('Physical Education', array[5,6,7,8,9,10,11,12]::integer[], array['science_pcm','science_pcb','commerce','arts_humanities']::text[]),
+      ('Computer Science', array[]::integer[], array[]::text[]),
+      ('General Knowledge', array[]::integer[], array[]::text[]),
+      ('Art', array[]::integer[], array[]::text[]),
+      ('Physical Education', array[]::integer[], array[]::text[]),
       ('Science', array[6,7,8,9,10]::integer[], array[]::text[]),
       ('Social Science', array[6,7,8,9,10]::integer[], array[]::text[]),
-      ('Sanskrit', array[6,7,8]::integer[], array[]::text[]),
+      ('Sanskrit', array[]::integer[], array[]::text[]),
       ('Physics', array[11,12]::integer[], array['science_pcm','science_pcb']::text[]),
       ('Chemistry', array[11,12]::integer[], array['science_pcm','science_pcb']::text[]),
       ('Biology', array[11,12]::integer[], array['science_pcb']::text[]),
@@ -62,7 +62,7 @@ begin
       ('History', array[11,12]::integer[], array['arts_humanities']::text[]),
       ('Political Science', array[11,12]::integer[], array['arts_humanities']::text[]),
       ('Geography', array[11,12]::integer[], array['arts_humanities']::text[]),
-      ('Sociology', array[11,12]::integer[], array['arts_humanities']::text[])
+      ('Psychology', array[11,12]::integer[], array['arts_humanities']::text[])
     ) as curriculum_data(name, grades, streams)
   loop
     existing_subject_id := null;
@@ -89,6 +89,11 @@ begin
       where id = existing_subject_id;
     end if;
   end loop;
+
+  update public.subjects
+  set grades = '{}'::integer[],
+      streams = '{}'::text[]
+  where lower(btrim(name)) = 'sociology';
 end;
 $$;
 

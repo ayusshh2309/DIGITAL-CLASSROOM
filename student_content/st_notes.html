@@ -203,6 +203,8 @@
 
       .toolbar-right {
         display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
         gap: 10px;
       }
 
@@ -216,6 +218,43 @@
         font-family: inherit;
         font-size: 12px;
         outline: none;
+        cursor: pointer;
+      }
+
+      .notes-search {
+        height: 36px;
+        min-width: 180px;
+        padding: 0 12px;
+        border: 1px solid #e2e7f0;
+        border-radius: 8px;
+        color: #15213e;
+        font-family: inherit;
+        font-size: 12px;
+      }
+
+      .notes-status {
+        padding: 10px 20px;
+        color: #596987;
+        font-size: 12px;
+      }
+
+      .notes-status:empty {
+        display: none;
+      }
+
+      .notes-status[data-state="error"] {
+        color: #a33142;
+        background: #fff5f5;
+      }
+
+      .notes-status button {
+        margin-left: 8px;
+        border: 0;
+        background: transparent;
+        color: #5532d8;
+        font: inherit;
+        font-weight: 800;
+        text-decoration: underline;
         cursor: pointer;
       }
 
@@ -392,6 +431,17 @@
         padding-bottom: 0;
       }
 
+      .recent-note.subject-filter-button {
+        padding: 11px 0;
+        border-bottom: 1px solid #edf0f7;
+        text-align: left;
+      }
+
+      .recent-note.subject-filter-button:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+
       .recent-icon {
         width: 35px;
         height: 35px;
@@ -414,6 +464,22 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+      }
+
+      .recent-title {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        margin-bottom: 3px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .recent-meta {
+        display: block;
+        font-size: 9px;
+        color: #73809a;
       }
 
       .recent-info p {
@@ -460,6 +526,26 @@
       .progress-bar {
         height: 100%;
         border-radius: 20px;
+      }
+
+      .subject-filter-button {
+        width: 100%;
+        border: 0;
+        padding: 0;
+        background: transparent;
+        text-align: left;
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .subject-filter-button:hover .subject-row span:first-child,
+      .subject-filter-button:focus-visible .subject-row span:first-child {
+        color: #5532d8;
+        text-decoration: underline;
+      }
+
+      .subject-filter-button .progress-track {
+        display: block;
       }
 
       /* =========================
@@ -633,8 +719,23 @@
             <h2>My Notes</h2>
 
             <div class="toolbar-right">
+              <input
+                id="notesSearch"
+                class="notes-search"
+                type="search"
+                placeholder="Search notes"
+                aria-label="Search notes"
+              />
+
               <select id="subjectFilter">
                 <option value="all">All Subjects</option>
+              </select>
+
+              <select id="typeFilter" aria-label="Filter by material type">
+                <option value="all">All Materials</option>
+                <option value="pdf">PDFs</option>
+                <option value="image">Photos</option>
+                <option value="document">Documents</option>
               </select>
 
               <select id="sortFilter">
@@ -645,6 +746,8 @@
               </select>
             </div>
           </div>
+
+          <div id="notesStatus" class="notes-status" role="status" aria-live="polite"></div>
 
           <div class="notes-grid" id="notesGrid">
             <div class="loading">Loading notes...</div>
