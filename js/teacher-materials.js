@@ -18,7 +18,7 @@
   };
 
   const $ = (id) => document.getElementById(id);
-  const normalizedStream = (stream) => stream || null;
+  const normalizedStream = (stream) => String(stream || "").trim().toLowerCase() || null;
   const assignmentKey = (grade, stream) => `${String(grade)}|${normalizedStream(stream) || ""}`;
   const escapeHtml = (value) =>
     String(value ?? "").replace(/[&<>"']/g, (character) => ({
@@ -91,27 +91,93 @@
   }
 
   async function fetchTeachingScope(client, teacherDbId) {
-    const registeredGroups = await window.TeacherData.loadRegisteredTeachingScope(client, teacherDbId);
+    const [groupsResult, assignmentsResult] = await Promise.all([
+      client
+        .from("teacher_grade_groups")
+        .select("grade, stream")
+        .eq("teacher_id", teacherDbId)
+        .order("grade", { ascending: true })
+        .order("stream", { ascending: true }),
+      client
+        .from("teacher_subject_assignments")
+        .select("grade, stream, subject_id")
+        .eq("teacher_id", teacherDbId)
+        .order("grade", { ascending: true })
+        .order("stream", { ascending: true }),
+    ]);
+    if (groupsResult.error) throw groupsResult.error;
+    if (assignmentsResult.error) throw assignmentsResult.error;
+
     const classes = new Map();
     const assignments = new Map();
     const subjectMap = new Map();
-    registeredGroups.forEach((group) => {
+    const groupKeys = new Set();
+    (groupsResult.data || []).forEach((group) => {
       const grade = gradeValue(group.grade);
-      if (!grade) return;
+      if (!Number.isInteger(Number(grade)) || !grade) return;
       if (!classes.has(grade)) classes.set(grade, new Set());
-      const stream = normalizedStream(group.stream);
+      const stream = Number(grade) >= 11 ? normalizedStream(group.stream) : null;
       classes.get(grade).add(stream);
-      const key = assignmentKey(grade, stream);
-      const groupSubjects = new Map();
-      group.subjects.forEach((subject) => {
-        const normalized = { id: subject.id, name: subject.name };
-        subjectMap.set(String(subject.id), normalized);
-        groupSubjects.set(String(subject.id), normalized);
+      groupKeys.add(assignmentKey(grade, stream));
+    });
+
+    const registeredAssignments = (assignmentsResult.data || []).filter((row) => {
+      const grade = gradeValue(row.grade);
+      const stream = Number(grade) >= 11 ? normalizedStream(row.stream) : null;
+      return row.subject_id && groupKeys.has(assignmentKey(grade, stream));
+    });
+    const subjectIds = [...new Set(
+      registeredAssignments.map((row) => String(row.subject_id)),
+    )];
+    if (subjectIds.length) {
+      const { data: subjects, error } = await client
+        .from("subjects")
+        .select("id, name")
+        .in("id", subjectIds);
+      if (error) throw error;
+      (subjects || []).forEach((subject) => {
+        if (subject.name) {
+          subjectMap.set(String(subject.id), {
+            id: subject.id,
+            name: subject.name,
+          });
+        }
       });
-      assignments.set(key, groupSubjects);
+    }
+
+    registeredAssignments.forEach((row) => {
+      const grade = gradeValue(row.grade);
+      const stream = Number(grade) >= 11 ? normalizedStream(row.stream) : null;
+      const subject = subjectMap.get(String(row.subject_id));
+      if (!subject) {
+        throw new Error(
+          `Assigned subject ID ${row.subject_id} is missing from public.subjects.`,
+        );
+      }
+      const key = assignmentKey(grade, stream);
+      if (!assignments.has(key)) assignments.set(key, new Map());
+      assignments.get(key).set(String(subject.id), subject);
     });
 
     return { classes, assignments, subjectsById: subjectMap };
+  }
+
+  async function loadAuthenticatedTeacherProfile() {
+    const client = window.TeacherData?.getSupabaseClient?.();
+    if (!client) throw new Error("Supabase is not configured for the Teacher Materials page.");
+    const { data: authData, error: authError } = await client.auth.getUser();
+    if (authError) throw new Error(`Authentication failed: ${authError.message}`);
+    const user = authData?.user;
+    if (!user?.id) throw new Error("Sign in with your teacher account to manage materials.");
+
+    const { data: profile, error: profileError } = await client
+      .from("teachers")
+      .select("id, user_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (profileError) throw new Error(`Teacher profile lookup failed: ${profileError.message}`);
+    if (!profile?.id) throw new Error("Teacher profile could not be found.");
+    return { client, user, profile };
   }
 
   function renderScope() {
@@ -283,7 +349,7 @@
   }
 
   async function loadCurrentScope() {
-    const current = await window.TeacherData.loadCurrentTeacherProfile();
+    const current = await loadAuthenticatedTeacherProfile();
     if (String(current.user.id) !== String(state.user.id) || String(current.profile.id) !== String(state.teacher.id)) {
       throw new Error("Your authenticated teacher profile changed. Reload the page to continue.");
     }
@@ -496,26 +562,19 @@
   async function removeMaterial(id) {
     if (!window.confirm("Delete this material and its stored file?")) return;
     try {
-      const { data: authData, error: authError } = await state.client.auth.getUser();
-      if (authError) throw new Error(`Authentication failed: ${authError.message}`);
-      const user = authData?.user;
-      if (!user || String(user.id) !== String(state.user?.id)) {
+      const current = await loadAuthenticatedTeacherProfile();
+      if (String(current.user.id) !== String(state.user?.id)) {
         throw new Error("Your session has expired. Please log in again.");
       }
-
-      const { data: teacher, error: teacherError } = await state.client
-        .from("teachers")
-        .select("id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (teacherError) throw new Error(`Teacher profile lookup failed: ${teacherError.message}`);
-      if (!teacher?.id) throw new Error("Teacher profile could not be found.");
+      if (String(current.profile.id) !== String(state.teacher?.id)) {
+        throw new Error("Your teacher profile changed. Reload the page to continue.");
+      }
 
       const { data: material, error: materialError } = await state.client
         .from("materials")
         .select("id, teacher_id, storage_bucket, file_path, file_name")
         .eq("id", id)
-        .eq("teacher_id", teacher.id)
+        .eq("teacher_id", current.profile.id)
         .maybeSingle();
       if (materialError) throw new Error(`Material lookup failed: ${materialError.message}`);
       if (!material) {
@@ -540,7 +599,7 @@
         .from("materials")
         .delete()
         .eq("id", material.id)
-        .eq("teacher_id", teacher.id)
+        .eq("teacher_id", current.profile.id)
         .select("id")
         .maybeSingle();
       if (deleteError) {
@@ -657,7 +716,9 @@
       $("subjectFilter").value = "";
       const validSubjects = new Map();
       state.assignments.forEach((subjects, key) => {
-        if (key.startsWith(`${grade}|`)) subjects.forEach((subject) => validSubjects.set(String(subject.id), subject.name));
+        if (!grade || key.startsWith(`${grade}|`)) {
+          subjects.forEach((subject) => validSubjects.set(String(subject.id), subject.name));
+        }
       });
       const filter = $("subjectFilter");
       filter.replaceChildren(new Option("All subjects", ""));
@@ -687,7 +748,7 @@
   async function initialize() {
     $("uploadMaterialBtn").disabled = true;
     try {
-      const current = await window.TeacherData.loadCurrentTeacherProfile();
+      const current = await loadAuthenticatedTeacherProfile();
       state.client = current.client;
       state.user = current.user;
       state.teacher = current.profile;
