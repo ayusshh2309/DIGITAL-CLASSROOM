@@ -349,86 +349,6 @@
       }
 
       /* =====================================================
-           PROGRESS
-        ===================================================== */
-
-      .progress-section {
-        margin-bottom: 23px;
-      }
-
-      .progress-label {
-        display: flex;
-
-        align-items: center;
-
-        justify-content: space-between;
-
-        margin-bottom: 10px;
-      }
-
-      .progress-label span {
-        font-size: 14px;
-
-        color: #233b67;
-      }
-
-      .progress-label strong {
-        font-size: 14px;
-
-        color: #0a183c;
-      }
-
-      .progress-track {
-        width: 100%;
-
-        height: 7px;
-
-        background: #e9eef4;
-
-        border-radius: 20px;
-
-        overflow: hidden;
-      }
-
-      .progress-fill {
-        height: 100%;
-
-        border-radius: 20px;
-
-        transition: width 0.6s ease;
-      }
-
-      /* Progress colors */
-
-      .progress-purple {
-        background: #5d39ee;
-      }
-
-      .progress-green {
-        background: #10bb80;
-      }
-
-      .progress-orange {
-        background: #ff9909;
-      }
-
-      .progress-blue {
-        background: #237bea;
-      }
-
-      .progress-pink {
-        background: #df3c8d;
-      }
-
-      .progress-teal {
-        background: #0aa9a5;
-      }
-
-      .progress-yellow {
-        background: #ffb00b;
-      }
-
-      /* =====================================================
            STATISTICS
         ===================================================== */
 
@@ -732,20 +652,6 @@
         height: 58px;
       }
 
-      .modal-progress {
-        margin-bottom: 22px;
-      }
-
-      .modal-progress-title {
-        display: flex;
-
-        justify-content: space-between;
-
-        margin-bottom: 9px;
-
-        font-size: 14px;
-      }
-
       .modal-info-grid {
         display: grid;
 
@@ -824,6 +730,28 @@
         color: #71819c;
 
         font-size: 13px;
+      }
+
+      #subjectsStatus {
+        min-height: 18px;
+        margin: 0 4px 12px;
+        color: #536789;
+        font-size: 12px;
+      }
+
+      #subjectsStatus:empty {
+        display: none;
+      }
+
+      #subjectsStatus[data-state="error"] {
+        color: #a52e28;
+      }
+
+      .modal-refresh-status {
+        min-height: 18px;
+        margin: -12px 0 16px;
+        color: #667895;
+        font-size: 12px;
       }
 
       /* =====================================================
@@ -919,7 +847,7 @@
           <h1>My Subjects</h1>
 
           <p id="subjectsDescription">
-            Manage and track all your subjects and their progress.
+            Explore all subjects in your registered curriculum and the learning content available for each.
           </p>
 
           <div class="registration-context" id="registrationContext" hidden>
@@ -929,6 +857,7 @@
               <span id="registrationContextText"></span>
             </span>
           </div>
+          <div id="subjectsStatus" role="status" aria-live="polite"></div>
         </div>
       </div>
 
@@ -961,7 +890,7 @@
           </div>
 
           <div>
-            <div class="summary-number" id="totalSubjects">0</div>
+            <div class="summary-number" id="totalSubjects">—</div>
 
             <div class="summary-title">Total Subjects</div>
 
@@ -977,7 +906,7 @@
           </div>
 
           <div>
-            <div class="summary-number" id="totalVideos">0</div>
+            <div class="summary-number" id="totalVideos">—</div>
 
             <div class="summary-title">Total Videos</div>
 
@@ -993,7 +922,7 @@
           </div>
 
           <div>
-            <div class="summary-number" id="totalNotes">0</div>
+            <div class="summary-number" id="totalNotes">—</div>
 
             <div class="summary-title">Total Notes</div>
 
@@ -1009,7 +938,7 @@
           </div>
 
           <div>
-            <div class="summary-number" id="totalQuizzes">0</div>
+            <div class="summary-number" id="totalQuizzes">—</div>
 
             <div class="summary-title">Total Quizzes</div>
 
@@ -1017,19 +946,19 @@
           </div>
         </div>
 
-        <!-- Average Progress -->
+        <!-- Subjects with learning content -->
 
         <div class="summary-item">
           <div class="summary-icon purple">
-            <i class="fa-solid fa-chart-pie"></i>
+            <i class="fa-solid fa-book-open"></i>
           </div>
 
           <div>
-            <div class="summary-number" id="averageProgress">0%</div>
+            <div class="summary-number" id="subjectsWithContent">—</div>
 
-            <div class="summary-title">Average Progress</div>
+            <div class="summary-title">Subjects with Content</div>
 
-            <div class="summary-subtitle">Overall</div>
+            <div class="summary-subtitle">Videos, notes, or quizzes</div>
           </div>
         </div>
       </div>
@@ -1053,29 +982,14 @@
           </button>
         </div>
 
+        <p class="modal-refresh-status" id="modalRefreshStatus" role="status" aria-live="polite"></p>
         <div class="modal-subject" id="modalSubject"></div>
-
-        <div class="modal-progress">
-          <div class="modal-progress-title">
-            <span> Overall Progress </span>
-
-            <strong id="modalProgress"> 72% </strong>
-          </div>
-
-          <div class="progress-track">
-            <div
-              class="progress-fill progress-purple"
-              id="modalProgressBar"
-              style="width: 72%"
-            ></div>
-          </div>
-        </div>
 
         <div class="modal-info-grid">
           <div class="modal-stat">
             <i class="fa-solid fa-play"></i>
 
-            <strong id="modalVideos"> 12 </strong>
+            <strong id="modalVideos"> — </strong>
 
             <span> Videos </span>
           </div>
@@ -1083,7 +997,7 @@
           <div class="modal-stat">
             <i class="fa-solid fa-file-lines"></i>
 
-            <strong id="modalNotes"> 8 </strong>
+            <strong id="modalNotes"> — </strong>
 
             <span> Notes </span>
           </div>
@@ -1091,7 +1005,7 @@
           <div class="modal-stat">
             <i class="fa-solid fa-bullseye"></i>
 
-            <strong id="modalQuizzes"> 6 </strong>
+            <strong id="modalQuizzes"> — </strong>
 
             <span> Quizzes </span>
           </div>
@@ -1109,63 +1023,28 @@
     ===================================================== */
 
       const subjectStyles = {
-        English: ["fa-book-open", "blue", "progress-blue", "blue-card"],
-        Mathematics: ["fa-sigma", "orange", "progress-orange", "orange-card"],
-        Physics: ["fa-atom", "purple", "progress-purple", ""],
-        Chemistry: ["fa-flask", "green", "progress-green", "green-card"],
-        Biology: ["fa-dna", "green", "progress-green", "green-card"],
-        Science: ["fa-flask", "green", "progress-green", "green-card"],
-        "General Science": [
-          "fa-flask",
-          "green",
-          "progress-green",
-          "green-card",
-        ],
-        "Social Science": ["fa-globe", "teal", "progress-teal", "teal-card"],
-        History: ["fa-landmark", "orange", "progress-orange", "orange-card"],
-        Geography: ["fa-earth-americas", "teal", "progress-teal", "teal-card"],
-        "Political Science": [
-          "fa-scale-balanced",
-          "purple",
-          "progress-purple",
-          "",
-        ],
-        Sociology: ["fa-people-group", "pink", "progress-pink", "pink-card"],
-        Hindi: ["fa-language", "pink", "progress-pink", "pink-card"],
-        Sanskrit: ["fa-scroll", "yellow", "progress-yellow", "yellow-card"],
-        "Environmental Studies": [
-          "fa-leaf",
-          "green",
-          "progress-green",
-          "green-card",
-        ],
-        "Computer Science": ["fa-code", "purple", "progress-purple", ""],
-        "Physical Education": [
-          "fa-person-running",
-          "pink",
-          "progress-pink",
-          "pink-card",
-        ],
-        "General Knowledge": [
-          "fa-lightbulb",
-          "yellow",
-          "progress-yellow",
-          "yellow-card",
-        ],
-        Art: ["fa-palette", "orange", "progress-orange", "orange-card"],
-        Accountancy: [
-          "fa-calculator",
-          "yellow",
-          "progress-yellow",
-          "yellow-card",
-        ],
-        "Business Studies": [
-          "fa-briefcase",
-          "blue",
-          "progress-blue",
-          "blue-card",
-        ],
-        Economics: ["fa-chart-line", "teal", "progress-teal", "teal-card"],
+        English: ["fa-book-open", "blue", "blue-card"],
+        Mathematics: ["fa-sigma", "orange", "orange-card"],
+        Physics: ["fa-atom", "purple", ""],
+        Chemistry: ["fa-flask", "green", "green-card"],
+        Biology: ["fa-dna", "green", "green-card"],
+        Science: ["fa-flask", "green", "green-card"],
+        "General Science": ["fa-flask", "green", "green-card"],
+        "Social Science": ["fa-globe", "teal", "teal-card"],
+        History: ["fa-landmark", "orange", "orange-card"],
+        Geography: ["fa-earth-americas", "teal", "teal-card"],
+        "Political Science": ["fa-scale-balanced", "purple", ""],
+        Sociology: ["fa-people-group", "pink", "pink-card"],
+        Hindi: ["fa-language", "pink", "pink-card"],
+        Sanskrit: ["fa-scroll", "yellow", "yellow-card"],
+        "Environmental Studies": ["fa-leaf", "green", "green-card"],
+        "Computer Science": ["fa-code", "purple", ""],
+        "Physical Education": ["fa-person-running", "pink", "pink-card"],
+        "General Knowledge": ["fa-lightbulb", "yellow", "yellow-card"],
+        Art: ["fa-palette", "orange", "orange-card"],
+        Accountancy: ["fa-calculator", "yellow", "yellow-card"],
+        "Business Studies": ["fa-briefcase", "blue", "blue-card"],
+        Economics: ["fa-chart-line", "teal", "teal-card"],
       };
 
       const streamLabels = {
@@ -1189,9 +1068,17 @@
       let subjects = [];
       let registeredStudent = null;
       let realtimeChannel = null;
+      let realtimeClient = null;
+      let realtimeChannelKey = null;
+      let authSubscription = null;
       let isLoading = false;
       let reloadQueued = false;
       let reloadTimer = null;
+      let fallbackRefreshTimer = null;
+      let selectedModalSubjectId = null;
+      let activeUserId = null;
+      let statisticsLoaded = false;
+      let loadGeneration = 0;
 
       function showState(title, message, icon = "fa-book-open") {
         emptyState.querySelector("i").className = `fa-solid ${icon}`;
@@ -1252,13 +1139,16 @@
 
       function queueSubjectReload() {
         window.clearTimeout(reloadTimer);
-        reloadTimer = window.setTimeout(() => void loadSubjects(), 150);
+        document.getElementById("subjectsStatus").textContent = "New learning content detected. Updating…";
+        reloadTimer = window.setTimeout(() => void loadSubjects(), 300);
       }
 
       function subscribeToChanges(client, userId, studentId) {
         const channelKey = `${userId}|${studentId}`;
-        if (realtimeChannel?.key === channelKey) return;
-        if (realtimeChannel) void client.removeChannel(realtimeChannel.channel);
+        if (realtimeChannelKey === channelKey && realtimeClient === client) return;
+        if (realtimeChannel && realtimeClient) {
+          void realtimeClient.removeChannel(realtimeChannel);
+        }
 
         let channel = client
           .channel(`student-subjects-${userId}`)
@@ -1299,237 +1189,107 @@
             },
             queueSubjectReload,
           )
-          .on(
-            "postgres_changes",
-            {
-              event: "*",
-              schema: "public",
-              table: "student_video_progress",
-              filter: `student_id=eq.${userId}`,
-            },
-            queueSubjectReload,
-          )
-          .on(
-            "postgres_changes",
-            {
-              event: "*",
-              schema: "public",
-              table: "quiz_attempts",
-              filter: `student_id=eq.${studentId}`,
-            },
-            queueSubjectReload,
-          );
-        const subscribedChannel = channel.subscribe((status) => {
-          if (["CHANNEL_ERROR", "TIMED_OUT"].includes(status)) {
+          .subscribe((status, error) => {
+          if (status === "SUBSCRIBED") {
+            document.getElementById("subjectsStatus").textContent = "";
+            document.getElementById("subjectsStatus").dataset.state = "ready";
+          } else if (["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].includes(status)) {
             console.error(
               "Student subjects realtime subscription is unavailable.",
-              status,
+              error || status,
             );
+            document.getElementById("subjectsStatus").textContent =
+              "Live updates are temporarily unavailable. The page will keep checking for updates.";
           }
         });
-        realtimeChannel = { key: channelKey, channel: subscribedChannel };
+        realtimeChannel = channel;
+        realtimeClient = client;
+        realtimeChannelKey = channelKey;
       }
 
       async function loadSubjectStatistics(client, curriculum) {
-        const { user, student, grade, stream } = curriculum;
-        const subjectIds = curriculum.subjects.map((subject) => subject.id);
-        const statisticsBySubject = new Map(
-          subjectIds.map((id) => [
-            String(id),
-            { videos: 0, notes: 0, quizzes: 0, progressValues: [] },
-          ]),
-        );
+        const { student, grade, stream } = curriculum;
+        const subjectIds = curriculum.subjects.map((subject) => String(subject.id));
+        const subjectIdSet = new Set(subjectIds);
+        const statisticsBySubject = new Map(subjectIds.map((id) => [
+          id,
+          { videos: 0, notes: 0, quizzes: 0 },
+        ]));
         if (!subjectIds.length) return statisticsBySubject;
 
         const materialQuery = () => {
           let query = client
             .from("materials")
-            .select("id, subject_id, grade, stream, material_type")
+            .select("id, subject_id, grade, stream, material_type, storage_bucket, file_path")
             .eq("grade", String(grade))
             .in("subject_id", subjectIds);
           return grade >= 11
-            ? query.eq("stream", student.stream)
+            ? query.eq("stream", stream)
             : query.is("stream", null);
         };
-        let materialRows;
-        let quizRows;
-        try {
-          const [materials, quizzes] = await Promise.all([
-            fetchAllRows(materialQuery),
-            client.rpc("get_student_quiz_catalog"),
-          ]);
-          if (quizzes.error) throw quizzes.error;
-          materialRows = materials;
-          quizRows = quizzes.data || [];
-        } catch (error) {
-          console.error(
-            "[My Subjects] Published material/quiz lookup failed.",
-            error,
-          );
-          throw error;
-        }
-
-        const scopedMaterials = materialRows.filter(
-          (material) =>
-            String(material.grade) === String(grade) &&
-            (grade < 11
-              ? material.stream == null
-              : normalizeStream(material.stream) === stream),
-        );
-        const videos = scopedMaterials.filter(
-          (material) =>
-            String(material.material_type || "")
-              .trim()
-              .toLowerCase() === "video",
-        );
-        const notes = scopedMaterials.filter(
-          (material) =>
-            String(material.material_type || "")
-              .trim()
-              .toLowerCase() !== "video",
-        );
-        const publishedQuizzes = quizRows.filter((quiz) => {
-          if (Number(quiz.grade) !== grade) return false;
-          if (grade >= 11 && normalizeStream(quiz.stream) !== stream)
-            return false;
-          return true;
+        const [rawMaterials, quizCatalog] = await Promise.all([
+          fetchAllRows(materialQuery),
+          fetchAllRows(() => client.rpc("get_student_quiz_catalog")),
+        ]);
+        const uniqueRows = (rows) => [...new Map(
+          rows
+            .filter((row) => row.id != null && row.subject_id != null)
+            .map((row) => [String(row.id), row]),
+        ).values()];
+        const materialRows = uniqueRows(rawMaterials).filter((material) => {
+          const type = String(material.material_type || "").trim().toLowerCase();
+          const bucket = String(material.storage_bucket || "");
+          const correctBucket = (type === "video" && bucket === "videos") ||
+            (type === "pdf" && bucket === "pdfs") ||
+            (["photo", "image"].includes(type) && bucket === "photos") ||
+            (type === "document" && bucket === "documents");
+          return subjectIdSet.has(String(material.subject_id)) &&
+            Number(material.grade) === grade &&
+            (grade >= 11
+              ? normalizeStream(material.stream) === stream
+              : material.stream == null) &&
+            correctBucket &&
+            Boolean(String(material.file_path || "").trim());
         });
-
-        const uniqueRows = (rows) => [
-          ...new Map(
-            rows
-              .filter((row) => row.id != null && row.subject_id != null)
-              .map((row) => [String(row.id), row]),
-          ).values(),
-        ];
-        for (const video of uniqueRows(videos)) {
-          const stats = statisticsBySubject.get(String(video.subject_id));
-          if (stats) stats.videos += 1;
-        }
-        for (const note of uniqueRows(notes)) {
-          const stats = statisticsBySubject.get(String(note.subject_id));
-          if (stats) stats.notes += 1;
-        }
-        const uniqueQuizzes = uniqueRows(publishedQuizzes);
-        for (const quiz of uniqueQuizzes) {
-          const stats = statisticsBySubject.get(String(quiz.subject_id));
-          if (stats) stats.quizzes += 1;
+        for (const material of materialRows) {
+          const type = String(material.material_type).trim().toLowerCase();
+          const stats = statisticsBySubject.get(String(material.subject_id));
+          if (type === "video") stats.videos += 1;
+          else if (["pdf", "photo", "image", "document"].includes(type)) {
+            stats.notes += 1;
+          }
         }
 
-        const videoIds = uniqueRows(videos).map((video) => String(video.id));
-        const scopedPublishedQuizzes = uniqueRows(publishedQuizzes);
-        const progressQueries = [];
-        if (videoIds.length) {
-          progressQueries.push(
-            fetchAllRows(() =>
-              client
-                .from("student_video_progress")
-                .select(
-                  "video_id, watch_position, duration, completed, last_watched_at",
-                )
-                .eq("student_id", user.id)
-                .in("video_id", videoIds),
-            ),
+        const eligibleQuizzes = uniqueRows(quizCatalog).filter((quiz) =>
+          subjectIdSet.has(String(quiz.subject_id)) &&
+          Number(quiz.grade) === grade &&
+          (grade < 11 || normalizeStream(quiz.stream) === stream) &&
+          String(quiz.quiz_status || "").toLowerCase() === "published",
+        );
+        const quizIds = [...new Set(eligibleQuizzes.map((quiz) => String(quiz.id)))];
+        if (quizIds.length) {
+          const quizRows = await fetchAllRows(() => client
+            .from("quizzes")
+            .select("id, status, start_at, end_at")
+            .in("id", quizIds));
+          const databaseQuizzes = new Map(
+            quizRows.map((quiz) => [String(quiz.id), quiz]),
           );
-        } else {
-          progressQueries.push(Promise.resolve({ data: [], error: null }));
-        }
-        progressQueries.push(Promise.resolve(
-          scopedPublishedQuizzes
-            .filter(
-              (quiz) =>
-                quiz.attempt_status === "submitted" &&
-                quiz.result_released === true,
-            )
-            .map((quiz) => ({
-              quiz_id: quiz.id,
-              percentage: quiz.percentage,
-              submitted_at: quiz.submitted_at,
-            })),
-        ));
-        const [videoProgressResult, quizProgressResult] =
-          await Promise.all(progressQueries);
-        if (videoProgressResult.error) {
-          console.error(
-            "[My Subjects] Student video progress query failed.",
-            videoProgressResult.error,
-          );
-          throw videoProgressResult.error;
-        }
-
-        const videoSubjectById = new Map(
-          uniqueRows(videos).map((video) => [
-            String(video.id),
-            String(video.subject_id),
-          ]),
-        );
-        const latestVideoProgress = new Map();
-        for (const progress of videoProgressResult || []) {
-          if (!latestVideoProgress.has(String(progress.video_id))) {
-            latestVideoProgress.set(String(progress.video_id), progress);
+          const now = Date.now();
+          const countedQuizIds = new Set();
+          for (const quiz of eligibleQuizzes) {
+            const id = String(quiz.id);
+            if (countedQuizIds.has(id)) continue;
+            const record = databaseQuizzes.get(id);
+            if (!record || String(record.status || "").toLowerCase() !== "published") continue;
+            const startAt = record.start_at ? new Date(record.start_at).getTime() : null;
+            const endAt = record.end_at ? new Date(record.end_at).getTime() : null;
+            if ((startAt != null && (!Number.isFinite(startAt) || startAt > now)) ||
+              (endAt != null && (!Number.isFinite(endAt) || endAt < now))) continue;
+            countedQuizIds.add(id);
+            statisticsBySubject.get(String(quiz.subject_id)).quizzes += 1;
           }
         }
-        for (const [videoId, progress] of latestVideoProgress) {
-          const subjectId = videoSubjectById.get(videoId);
-          const stats = statisticsBySubject.get(subjectId);
-          if (!stats) continue;
-          const duration = Number(progress.duration);
-          const progressValue = progress.completed
-            ? 100
-            : duration > 0
-              ? Math.min(
-                  100,
-                  Math.max(
-                    0,
-                    (Number(progress.watch_position || 0) / duration) * 100,
-                  ),
-                )
-              : 0;
-          stats.progressValues.push(progressValue);
-        }
-
-        const quizSubjectById = new Map(
-          scopedPublishedQuizzes.map((quiz) => [
-            String(quiz.id),
-            String(quiz.subject_id),
-          ]),
-        );
-        const latestQuizProgress = new Map();
-        for (const attempt of quizProgressResult || []) {
-          if (!latestQuizProgress.has(String(attempt.quiz_id))) {
-            latestQuizProgress.set(String(attempt.quiz_id), attempt);
-          }
-        }
-        for (const [quizId, attempt] of latestQuizProgress) {
-          const stats = statisticsBySubject.get(quizSubjectById.get(quizId));
-          const percentage = Number(attempt.percentage);
-          if (stats && Number.isFinite(percentage)) {
-            stats.progressValues.push(Math.min(100, Math.max(0, percentage)));
-          }
-        }
-
-        for (const stats of statisticsBySubject.values()) {
-          stats.progress = stats.progressValues.length
-            ? Math.round(
-                stats.progressValues.reduce((sum, value) => sum + value, 0) /
-                  stats.progressValues.length,
-              )
-            : 0;
-        }
-        console.info(
-          "[My Subjects] Per-subject content statistics",
-          Object.fromEntries(
-            [...statisticsBySubject].map(([subjectId, stats]) => [
-              subjectId,
-              {
-                videos: stats.videos,
-                notes: stats.notes,
-                quizzes: stats.quizzes,
-                progress: stats.progress,
-              },
-            ]),
-          ),
-        );
         return statisticsBySubject;
       }
 
@@ -1539,16 +1299,15 @@
           return;
         }
         isLoading = true;
-        subjects = [];
-        subjectsGrid
-          .querySelectorAll(".subject-card")
-          .forEach((card) => card.remove());
-        document.getElementById("totalSubjects").textContent = "0";
-        showState(
-          "Loading subjects",
-          "Checking your registered class...",
-          "fa-spinner fa-spin",
-        );
+        const generation = ++loadGeneration;
+        statisticsLoaded = false;
+        const status = document.getElementById("subjectsStatus");
+        if (!subjects.length) {
+          status.textContent = "Loading your registered curriculum and available content…";
+          status.dataset.state = "loading";
+        } else {
+          status.textContent = "Refreshing subject counts…";
+        }
 
         try {
           const client = window.SmartLearningSupabase?.getClient?.();
@@ -1556,9 +1315,11 @@
 
           const curriculum =
             await window.StudentCurriculum.loadCurrentStudent(client);
+          if (generation !== loadGeneration) return;
           if (!curriculum?.user?.id) {
-            window.location.href = "../login.html";
-            return;
+            throw Object.assign(new Error("Sign in to view your registered subjects."), {
+              code: "AUTH_REQUIRED",
+            });
           }
           const {
             user,
@@ -1567,6 +1328,7 @@
             stream,
             subjects: records,
           } = curriculum;
+          activeUserId = String(user.id);
           registeredStudent = student;
           setRegistrationContext(student);
 
@@ -1591,20 +1353,17 @@
             const style = subjectStyles[name] || [
               "fa-book",
               "blue",
-              "progress-blue",
               "blue-card",
             ];
             return {
               id: record.id,
               name,
-              progress: 0,
-              videos: 0,
-              notes: 0,
-              quizzes: 0,
+              videos: null,
+              notes: null,
+              quizzes: null,
               icon: style[0],
               color: style[1],
-              progressColor: style[2],
-              cardColor: style[3],
+              cardColor: style[2],
             };
           });
           renderSubjects();
@@ -1613,71 +1372,48 @@
           let statistics;
           try {
             statistics = await loadSubjectStatistics(client, curriculum);
+            if (generation !== loadGeneration) return;
+            statisticsLoaded = true;
           } catch (error) {
+            if (generation !== loadGeneration) return;
             console.error(
               "[My Subjects] Subject cards loaded, but statistics could not be loaded.",
               error,
             );
+            statisticsLoaded = false;
+            subjects = subjects.map((subject) => ({
+              ...subject,
+              videos: null,
+              notes: null,
+              quizzes: null,
+            }));
             renderSubjects();
+            status.textContent = `Subject counts could not be refreshed: ${error.message || "Please try again."}`;
+            status.dataset.state = "error";
             return;
           }
           subjects = subjects.map((subject) => {
             const stats = statistics.get(String(subject.id));
             return {
               ...subject,
-              progress: stats?.progress ?? 0,
               videos: stats?.videos ?? 0,
               notes: stats?.notes ?? 0,
               quizzes: stats?.quizzes ?? 0,
             };
           });
-          console.info(
-            "[My Subjects] Per-subject counts",
-            subjects.map(({ id, name, videos, notes, quizzes, progress }) => ({
-              subjectId: id,
-              name,
-              videos,
-              notes,
-              quizzes,
-              progress,
-            })),
-          );
-          console.info("[My Subjects] Final subject count", subjects.length);
-          console.info("[My Subjects] Final statistics", {
-            totalSubjects: subjects.length,
-            totalVideos: subjects.reduce(
-              (total, subject) => total + subject.videos,
-              0,
-            ),
-            totalNotes: subjects.reduce(
-              (total, subject) => total + subject.notes,
-              0,
-            ),
-            totalQuizzes: subjects.reduce(
-              (total, subject) => total + subject.quizzes,
-              0,
-            ),
-            averageProgress: subjects.length
-              ? Math.round(
-                  subjects.reduce(
-                    (total, subject) => total + subject.progress,
-                    0,
-                  ) / subjects.length,
-                )
-              : 0,
-          });
           renderSubjects();
+          status.textContent = "";
+          status.dataset.state = "ready";
         } catch (error) {
+          if (generation !== loadGeneration) return;
           console.error("Student subjects could not be loaded.", error);
           if (error.code === "AUTH_REQUIRED") {
-            window.location.href = "../login.html";
+            window.location.assign("../student_registration/login.html");
             return;
           }
-          subjects = [];
-          subjectsGrid
-            .querySelectorAll(".subject-card")
-            .forEach((card) => card.remove());
-          updateSummary();
+          if (!subjects.length) {
+            statisticsLoaded = false;
+          }
           const accessError = error.code === "42501";
           showState(
             "Subjects could not be loaded",
@@ -1686,9 +1422,11 @@
               : error.message || "Please try again later.",
             "fa-circle-exclamation",
           );
+          status.textContent = `Subjects could not be refreshed: ${error.message || "Please try again."}`;
+          status.dataset.state = "error";
         } finally {
-          isLoading = false;
-          if (reloadQueued) {
+          if (generation === loadGeneration) isLoading = false;
+          if (generation === loadGeneration && reloadQueued) {
             reloadQueued = false;
             window.setTimeout(() => void loadSubjects(), 0);
           }
@@ -1726,10 +1464,11 @@
                         ] || registeredStudent.stream
                       }`
                     : ""
-                } class. Confirm the teacher assignments and apply the student assignment access SQL migration.`
+                } class. Please ask your school administrator to verify the subject curriculum.`
               : "There are currently no subjects available for your registered class.",
           );
           updateSummary();
+          renderSelectedSubjectDetails();
 
           return;
         }
@@ -1813,71 +1552,8 @@
                                 </button>
 
 
-                                <button
-                                    onclick="editSubject(${index})"
-                                >
-
-                                    <i
-                                        class="fa-regular fa-pen-to-square"
-                                    ></i>
-
-                                    &nbsp;
-
-                                    Edit
-
-                                </button>
-
-
-                                <button
-                                    class="delete-btn"
-                                    onclick="deleteSubject(${index})"
-                                >
-
-                                    <i
-                                        class="fa-regular fa-trash-can"
-                                    ></i>
-
-                                    &nbsp;
-
-                                    Delete
-
-                                </button>
-
-
                             </div>
 
-
-                        </div>
-
-
-                    </div>
-
-
-
-                    <!-- PROGRESS -->
-
-                    <div class="progress-section">
-
-
-                        <div class="progress-label">
-
-                            <span>
-                                Progress
-                            </span>
-
-                            <strong>
-                                ${subject.progress}%
-                            </strong>
-
-                        </div>
-
-
-                        <div class="progress-track">
-
-                            <div
-                                class="progress-fill ${subject.progressColor}"
-                                style="width:${subject.progress}%"
-                            ></div>
 
                         </div>
 
@@ -1906,7 +1582,7 @@
                             </div>
 
                             <span class="stat-number">
-                                ${subject.videos}
+                                ${Number.isFinite(subject.videos) ? subject.videos : "—"}
                             </span>
 
                         </div>
@@ -1927,7 +1603,7 @@
                             </div>
 
                             <span class="stat-number">
-                                ${subject.notes}
+                                ${Number.isFinite(subject.notes) ? subject.notes : "—"}
                             </span>
 
                         </div>
@@ -1948,7 +1624,7 @@
                             </div>
 
                             <span class="stat-number">
-                                ${subject.quizzes}
+                                ${Number.isFinite(subject.quizzes) ? subject.quizzes : "—"}
                             </span>
 
                         </div>
@@ -1984,6 +1660,7 @@
         });
 
         updateSummary();
+        renderSelectedSubjectDetails();
       }
 
       /* =====================================================
@@ -1993,39 +1670,20 @@
       function updateSummary() {
         const totalSubjects = subjects.length;
 
-        const totalVideos = subjects.reduce(
-          (sum, subject) => sum + subject.videos,
-          0,
-        );
-
-        const totalNotes = subjects.reduce(
-          (sum, subject) => sum + subject.notes,
-          0,
-        );
-
-        const totalQuizzes = subjects.reduce(
-          (sum, subject) => sum + subject.quizzes,
-          0,
-        );
-
-        const averageProgress =
-          totalSubjects === 0
-            ? 0
-            : Math.round(
-                subjects.reduce((sum, subject) => sum + subject.progress, 0) /
-                  totalSubjects,
-              );
+        const totalVideos = subjects.reduce((sum, subject) => sum + (Number(subject.videos) || 0), 0);
+        const totalNotes = subjects.reduce((sum, subject) => sum + (Number(subject.notes) || 0), 0);
+        const totalQuizzes = subjects.reduce((sum, subject) => sum + (Number(subject.quizzes) || 0), 0);
+        const subjectsWithContent = subjects.filter((subject) =>
+          Number(subject.videos) + Number(subject.notes) + Number(subject.quizzes) > 0,
+        ).length;
 
         document.getElementById("totalSubjects").textContent = totalSubjects;
 
-        document.getElementById("totalVideos").textContent = totalVideos;
-
-        document.getElementById("totalNotes").textContent = totalNotes;
-
-        document.getElementById("totalQuizzes").textContent = totalQuizzes;
-
-        document.getElementById("averageProgress").textContent =
-          averageProgress + "%";
+        document.getElementById("totalVideos").textContent = statisticsLoaded ? String(totalVideos) : "—";
+        document.getElementById("totalNotes").textContent = statisticsLoaded ? String(totalNotes) : "—";
+        document.getElementById("totalQuizzes").textContent = statisticsLoaded ? String(totalQuizzes) : "—";
+        document.getElementById("subjectsWithContent").textContent =
+          statisticsLoaded ? String(subjectsWithContent) : "—";
       }
 
       /* =====================================================
@@ -2050,65 +1708,44 @@
 
       function viewDetails(index) {
         const subject = subjects[index];
-
-        document.getElementById("modalSubject").innerHTML = `
-
-
-            <div
-                class="subject-icon ${subject.color}"
-            >
-
-                <i
-                    class="fa-solid ${subject.icon}"
-                ></i>
-
-            </div>
-
-
-            <div>
-
-                <h3
-                    style="
-                        font-size:18px;
-                        margin-bottom:5px;
-                    "
-                >
-                    ${escapeHtml(subject.name)}
-                </h3>
-
-
-                <p
-                    style="
-                        font-size:12px;
-                        color:#71809a;
-                    "
-                >
-                    Your current learning progress
-                </p>
-
-            </div>
-
-
-        `;
-
-        document.getElementById("modalProgress").textContent =
-          subject.progress + "%";
-
-        const progressBar = document.getElementById("modalProgressBar");
-
-        progressBar.style.width = subject.progress + "%";
-
-        progressBar.className = `progress-fill ${subject.progressColor}`;
-
-        document.getElementById("modalVideos").textContent = subject.videos;
-
-        document.getElementById("modalNotes").textContent = subject.notes;
-
-        document.getElementById("modalQuizzes").textContent = subject.quizzes;
-
+        if (!subject) return;
+        selectedModalSubjectId = String(subject.id);
+        renderSelectedSubjectDetails();
         document.getElementById("detailsModal").classList.add("show");
-
+        document.getElementById("modalRefreshStatus").textContent =
+          "Checking for the latest counts…";
         closeAllMenus();
+        void loadSubjects();
+      }
+
+      function renderSelectedSubjectDetails() {
+        if (!selectedModalSubjectId ||
+          !document.getElementById("detailsModal").classList.contains("show")) return;
+        const subject = subjects.find((item) =>
+          String(item.id) === selectedModalSubjectId,
+        );
+        if (!subject) {
+          closeDetailsModal();
+          return;
+        }
+        document.getElementById("modalSubject").innerHTML = `
+          <div class="subject-icon ${subject.color}">
+            <i class="fa-solid ${subject.icon}"></i>
+          </div>
+          <div>
+            <h3 style="font-size:18px;margin-bottom:5px;">${escapeHtml(subject.name)}</h3>
+            <p style="font-size:12px;color:#71809a;">Available learning content for this subject</p>
+          </div>
+        `;
+        document.getElementById("modalVideos").textContent =
+          Number.isFinite(subject.videos) ? String(subject.videos) : "—";
+        document.getElementById("modalNotes").textContent =
+          Number.isFinite(subject.notes) ? String(subject.notes) : "—";
+        document.getElementById("modalQuizzes").textContent =
+          Number.isFinite(subject.quizzes) ? String(subject.quizzes) : "—";
+        if (statisticsLoaded) {
+          document.getElementById("modalRefreshStatus").textContent = "";
+        }
       }
 
       /* =====================================================
@@ -2117,6 +1754,7 @@
 
       function closeDetailsModal() {
         document.getElementById("detailsModal").classList.remove("show");
+        selectedModalSubjectId = null;
       }
 
       /* =====================================================
@@ -2127,57 +1765,6 @@
         if (event.target === document.getElementById("detailsModal")) {
           closeDetailsModal();
         }
-      }
-
-      /* =====================================================
-       DELETE SUBJECT
-    ===================================================== */
-
-      function deleteSubject(index) {
-        const subject = subjects[index];
-
-        const confirmation = confirm(
-          `Are you sure you want to delete ${subject.name}?`,
-        );
-
-        if (!confirmation) {
-          return;
-        }
-
-        subjects.splice(index, 1);
-
-        renderSubjects();
-      }
-
-      /* =====================================================
-       EDIT SUBJECT
-    ===================================================== */
-
-      function editSubject(index) {
-        const subject = subjects[index];
-
-        const newProgress = prompt(
-          `Enter new progress for ${subject.name} (0-100):`,
-          subject.progress,
-        );
-
-        if (newProgress === null) {
-          return;
-        }
-
-        const value = Number(newProgress);
-
-        if (isNaN(value) || value < 0 || value > 100) {
-          alert("Please enter a number between 0 and 100.");
-
-          return;
-        }
-
-        subject.progress = value;
-
-        renderSubjects();
-
-        closeAllMenus();
       }
 
       /* =====================================================
@@ -2212,11 +1799,76 @@
         }
       });
 
-      /* =====================================================
-       INITIAL LOAD
-    ===================================================== */
+      function clearStudentSubjects() {
+        loadGeneration += 1;
+        isLoading = false;
+        reloadQueued = false;
+        window.clearTimeout(reloadTimer);
+        subjects = [];
+        registeredStudent = null;
+        activeUserId = null;
+        statisticsLoaded = false;
+        selectedModalSubjectId = null;
+        if (realtimeChannel && realtimeClient) {
+          void realtimeClient.removeChannel(realtimeChannel);
+        }
+        realtimeChannel = null;
+        realtimeClient = null;
+        realtimeChannelKey = null;
+        document.getElementById("detailsModal").classList.remove("show");
+        subjectsGrid.querySelectorAll(".subject-card").forEach((card) => card.remove());
+        emptyState.style.display = "none";
+        document.getElementById("subjectsStatus").textContent = "";
+        updateSummary();
+      }
 
-      loadSubjects();
+      function cleanupSubjectsPage() {
+        window.clearTimeout(reloadTimer);
+        window.clearInterval(fallbackRefreshTimer);
+        if (realtimeChannel && realtimeClient) {
+          void realtimeClient.removeChannel(realtimeChannel);
+        }
+        realtimeChannel = null;
+        realtimeClient = null;
+        realtimeChannelKey = null;
+        authSubscription?.unsubscribe();
+        authSubscription = null;
+        loadGeneration += 1;
+      }
+
+      function initializeSubjectsPage() {
+        const client = window.SmartLearningSupabase?.getClient?.();
+        if (!client) {
+          document.getElementById("subjectsStatus").textContent =
+            "Supabase is not configured for this page.";
+          document.getElementById("subjectsStatus").dataset.state = "error";
+          showState("Subjects could not be loaded", "Supabase is not configured for this page.", "fa-circle-exclamation");
+          return;
+        }
+        const { data } = client.auth.onAuthStateChange((event, session) => {
+          if (event === "INITIAL_SESSION") return;
+          const nextUserId = session?.user?.id ? String(session.user.id) : null;
+          if (nextUserId && nextUserId === activeUserId) return;
+          clearStudentSubjects();
+          if (!session?.user) {
+            document.getElementById("subjectsStatus").textContent =
+              "Sign in to view your registered subjects.";
+            showState("Sign in required", "Please sign in with a student account to see your curriculum.");
+            return;
+          }
+          void loadSubjects();
+        });
+        authSubscription = data?.subscription || null;
+        fallbackRefreshTimer = window.setInterval(() => {
+          if (activeUserId && document.visibilityState !== "hidden") {
+            void loadSubjects();
+          }
+        }, 60_000);
+        window.addEventListener("pagehide", cleanupSubjectsPage, { once: true });
+        void loadSubjects();
+      }
+
+      initializeSubjectsPage();
     </script>
 
     <script src="../js/student-layout.js"></script>
