@@ -13,7 +13,9 @@ begin
     'teacher_subject_assignments',
     'live_classes',
     'quizzes',
-    'calendar_events'
+    'calendar_events',
+    'announcements',
+    'announcement_recipients'
   ] loop
     if to_regclass(format('public.%I', table_name)) is null then
       raise exception 'Required Student Calendar table public.% is missing', table_name;
@@ -139,7 +141,9 @@ begin
       'materials',
       'live_classes',
       'quizzes',
-      'calendar_events'
+      'calendar_events',
+      'announcements',
+      'announcement_recipients'
     ] loop
       if not exists (
         select 1

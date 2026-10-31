@@ -256,6 +256,10 @@
         background: #7b4bb7;
       }
 
+      .dot-announcement {
+        background: #087f8a;
+      }
+
       /* =========================================
        CALENDAR GRID
     ========================================= */
@@ -880,6 +884,16 @@
         background: #f8f9fc;
       }
 
+      .detail-row[hidden] {
+        display: none !important;
+      }
+
+      .detail-row-message span {
+        display: block;
+        white-space: pre-wrap;
+        line-height: 1.5;
+      }
+
       .detail-row i {
         width: 18px;
         color: #6246e5;
@@ -1029,14 +1043,6 @@
               <i class="fa-solid fa-book-open" aria-hidden="true"></i>
               Student workspace
             </div>
-            <div class="detail-row" id="modalQuizRow" hidden>
-              <i class="fa-solid fa-clipboard-question"></i>
-              <div>
-                <strong>Quiz</strong>
-                <button id="modalQuiz" type="button">Open quiz</button>
-              </div>
-            </div>
-
             <h1>Calendar</h1>
 
             <p>
@@ -1104,6 +1110,11 @@
             <div class="legend-item">
               <span class="legend-dot dot-quiz"></span>
               Quizzes
+            </div>
+
+            <div class="legend-item">
+              <span class="legend-dot dot-announcement"></span>
+              Announcements
             </div>
 
             <div class="legend-item">
@@ -1253,6 +1264,14 @@
             </div>
           </div>
 
+          <div class="detail-row detail-row-message" id="modalAnnouncementContentRow" hidden>
+            <i class="fa-solid fa-bullhorn"></i>
+            <div>
+              <strong>Announcement content</strong>
+              <span id="modalAnnouncementContent"></span>
+            </div>
+          </div>
+
           <div class="detail-row" id="modalMeetingRow" hidden>
             <i class="fa-solid fa-video"></i>
 
@@ -1278,6 +1297,13 @@
               <strong>Live class</strong>
 
               <button id="modalLiveClass" type="button">Join class</button>
+            </div>
+          </div>
+          <div class="detail-row" id="modalQuizRow" hidden>
+            <i class="fa-solid fa-clipboard-question"></i>
+            <div>
+              <strong>Quiz</strong>
+              <button id="modalQuiz" type="button">Open quiz</button>
             </div>
           </div>
         </div>

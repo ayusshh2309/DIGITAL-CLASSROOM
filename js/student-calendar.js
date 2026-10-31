@@ -119,6 +119,7 @@
       all_day: Boolean(row.all_day),
       material_type: row.material_type || "",
       file_name: row.file_name || "",
+      announcement_type: row.announcement_type || "",
     };
   }
 
@@ -177,12 +178,101 @@
     }
     const calendarEvents = [...rowsById.values()]
       .filter((row) =>
-        !["materials", "live_classes", "quizzes"].includes(row.source_table) &&
+        !["materials", "live_classes", "quizzes", "announcements"].includes(row.source_table) &&
         (row.subject_id == null || state.subjectIds.has(String(row.subject_id))),
       )
       .map((row) => normalizeRow(row, "calendar_events", row.event_type))
       .filter(Boolean);
     return calendarEvents;
+  }
+
+  async function loadAnnouncements(client, ranges) {
+    const recipients = [];
+    for (let offset = 0; ; offset += 1000) {
+      const { data, error } = await client
+        .from("announcement_recipients")
+        .select("announcement_id, created_at")
+        .eq("student_id", state.profile.id)
+        .order("created_at", { ascending: true })
+        .range(offset, offset + 999);
+      if (error) throw error;
+      recipients.push(...(data || []));
+      if ((data || []).length < 1000) break;
+    }
+
+    const recipientsByAnnouncement = new Map();
+    recipients.forEach((recipient) => {
+      const id = String(recipient.announcement_id);
+      if (!recipientsByAnnouncement.has(id)) {
+        recipientsByAnnouncement.set(id, recipient.created_at);
+      }
+    });
+
+    const announcementIds = [...recipientsByAnnouncement.keys()];
+    const announcements = [];
+    for (let index = 0; index < announcementIds.length; index += 500) {
+      const { data, error } = await client
+        .from("announcements")
+        .select("id, teacher_id, title, message, type, grade, stream, subject_id, status, published_at")
+        .in("id", announcementIds.slice(index, index + 500))
+        .eq("status", "published");
+      if (error) throw error;
+      announcements.push(...(data || []));
+    }
+
+    const eligibleAnnouncements = announcements.filter((announcement) => {
+      const gradeMatches = Number(announcement.grade) === Number(state.profile.grade);
+      const streamMatches = Number(state.profile.grade) < 11 ||
+        String(announcement.stream || "").trim().toLowerCase() ===
+          String(state.profile.stream || "").trim().toLowerCase();
+      const subjectMatches = announcement.subject_id == null ||
+        state.subjectIds.has(String(announcement.subject_id));
+      const startAt = announcement.published_at ||
+        recipientsByAnnouncement.get(String(announcement.id));
+      return gradeMatches &&
+        streamMatches &&
+        subjectMatches &&
+        startAt &&
+        eventIsInRanges({ start_at: startAt }, ranges);
+    });
+    const teacherIds = [...new Set(
+      eligibleAnnouncements.map((announcement) => announcement.teacher_id).filter(Boolean),
+    )];
+    let teacherNames = new Map();
+    if (teacherIds.length) {
+      const { data, error } = await client
+        .from("teachers")
+        .select("id, full_name")
+        .in("id", teacherIds);
+      if (error) {
+        console.warn("Student calendar could not load announcement teacher names.", error);
+      } else {
+        teacherNames = new Map((data || []).map((teacher) => [
+          String(teacher.id),
+          teacher.full_name,
+        ]));
+      }
+    }
+
+    return eligibleAnnouncements.map((announcement) => {
+      const startAt = announcement.published_at ||
+        recipientsByAnnouncement.get(String(announcement.id));
+      return normalizeRow({
+        ...announcement,
+        description: announcement.message || "",
+        teacher_name: teacherNames.get(String(announcement.teacher_id)) || "",
+        subject_name: announcement.subject_id == null
+          ? ""
+          : state.subjectsById.get(String(announcement.subject_id))?.name || "",
+        start_at: startAt,
+        end_at: startAt,
+        all_day: true,
+        source_table: "announcements",
+        source_id: announcement.id,
+        announcement_type: announcement.type || "",
+        event_type: "announcement",
+      }, "announcements", "announcement");
+    }).filter(Boolean);
   }
 
   async function loadMaterials(client, ranges) {
@@ -355,8 +445,15 @@
       loadMaterials(client, ranges),
       loadLiveClasses(client, ranges),
       loadQuizzes(client, ranges),
+      loadAnnouncements(client, ranges),
     ]);
-    const sourceNames = ["Calendar events", "Study materials", "Live classes", "Quizzes"];
+    const sourceNames = [
+      "Calendar events",
+      "Study materials",
+      "Live classes",
+      "Quizzes",
+      "Announcements",
+    ];
     state.sourceErrors = [];
     const events = [];
     sources.forEach((result, index) => {
@@ -377,16 +474,30 @@
     if (activeChannel) await client.removeChannel(activeChannel);
     const grade = Number(state.profile.grade);
     const channel = client.channel(`student-calendar-${state.profile.user_id}`);
-    for (const table of ["materials", "live_classes", "quizzes", "calendar_events"]) {
+    for (const table of [
+      "materials",
+      "live_classes",
+      "quizzes",
+      "calendar_events",
+      "announcements",
+    ]) {
       const subscription = {
         event: "*",
         schema: "public",
         table,
       };
-      if (table !== "calendar_events") subscription.filter = `grade=eq.${grade}`;
+      if (["materials", "live_classes", "quizzes"].includes(table)) {
+        subscription.filter = `grade=eq.${grade}`;
+      }
       channel.on("postgres_changes", subscription, () => void refresh());
     }
     channel
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "announcement_recipients",
+        filter: `student_id=eq.${state.profile.id}`,
+      }, () => void refresh())
       .on("postgres_changes", {
         event: "*",
         schema: "public",
@@ -448,9 +559,11 @@
                 : "fa-file-lines"
           : entry.type === "quiz"
             ? "fa-clipboard-question"
-            : entry.type === "live_class" || entry.type === "class"
-              ? "fa-video"
-              : "fa-circle";
+            : entry.type === "announcement"
+              ? "fa-bullhorn"
+              : entry.type === "live_class" || entry.type === "class"
+                ? "fa-video"
+                : "fa-circle";
         return `<div class="event ${cssClass}" data-calendar-event-id="${escapeHtml(entry.id)}" role="button" tabindex="0" aria-label="${escapeHtml(eventTypeLabel(entry.type))}: ${escapeHtml(entry.title)}"><i class="fa-solid ${icon}"></i><span>${escapeHtml(entry.title)}</span></div>`;
       }).join("");
       const todayClass = dayKey(new Date()) === currentKey ? "today" : "";
@@ -501,6 +614,7 @@
       categoryCount("materials", "No materials uploaded", "material", "materials"),
       categoryCount("live_classes", "No live classes scheduled", "live class", "live classes"),
       categoryCount("quizzes", "No quizzes published", "quiz", "quizzes"),
+      categoryCount("announcements", "No announcements published", "announcement", "announcements"),
     ].join(" · ");
     status.textContent = state.sourceErrors.length
       ? `${counts}. Some calendar sources could not be loaded: ${state.sourceErrors.join(" | ")}`
@@ -599,7 +713,9 @@
         : formatDate(event.start_at, { hour: "numeric", minute: "2-digit" });
     $("modalSubject").textContent = event.subject || "General";
     const details = [
-      eventTypeLabel(event.type),
+      event.type === "announcement" && event.announcement_type
+        ? `${event.announcement_type} announcement`
+        : eventTypeLabel(event.type),
       event.class_grade ? `Grade ${event.class_grade}${event.stream ? ` - ${event.stream}` : ""}` : "",
       event.teacher ? `By ${event.teacher}` : "",
       event.source_table === "quizzes" && event.status
@@ -609,6 +725,16 @@
       event.location && event.location !== event.meeting_url ? `Location: ${event.location}` : "",
     ].filter(Boolean);
     $("modalDetails").textContent = details.join(" · ");
+    const announcementContentRow = $("modalAnnouncementContentRow");
+    const announcementContent = $("modalAnnouncementContent");
+    const isAnnouncement = event.source_table === "announcements" &&
+      event.type === "announcement";
+    if (announcementContentRow) announcementContentRow.hidden = !isAnnouncement;
+    if (announcementContent) {
+      announcementContent.textContent = isAnnouncement
+        ? event.description || "No announcement content was provided."
+        : "";
+    }
     const meetingRow = $("modalMeetingRow");
     const meetingLink = $("modalMeeting");
     try {
