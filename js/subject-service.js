@@ -270,39 +270,13 @@
     if (grade >= 11 && !stream) {
       throw new Error("Your registered Grade 11 or 12 profile is missing its stream.");
     }
-    const assignments = await readAll(() => {
-      let query = client
-        .from("teacher_subject_assignments")
-        .select("id, teacher_id, subject_id, grade, stream")
-        .eq("grade", grade);
-      query = grade >= 11
-        ? query.eq("stream", stream)
-        : query.is("stream", null);
-      return query.order("id", { ascending: true });
-    });
-    const subjectIds = [...new Set(
-      assignments.map((row) => row.subject_id).filter((id) => id != null).map(String),
-    )];
-    if (!subjectIds.length) return { user, student: profile, grade, stream, subjects: [] };
-    const subjects = [];
-    for (let offset = 0; offset < subjectIds.length; offset += PAGE_SIZE) {
-      const ids = subjectIds.slice(offset, offset + PAGE_SIZE);
-      subjects.push(...await readAll(() => client
-        .from("subjects")
-        .select("id, name, grades, streams")
-        .in("id", ids)
-        .order("name", { ascending: true })));
-    }
-    const eligibleById = new Map(
-      subjects
-        .filter((subject) => isEligible(subject, grade, stream))
-        .map((subject) => [String(subject.id), subject]),
-    );
-    const result = [...new Set(subjectIds)]
-      .map((id) => eligibleById.get(id))
-      .filter(Boolean)
+
+    const catalog = await getSubjectCatalog(client);
+    const subjects = catalog
+      .filter((subject) => isEligible(subject, grade, stream))
       .map(({ id, name, grades, streams }) => ({ id, name, grades, streams }));
-    return { user, student: profile, grade, stream, subjects: result };
+
+    return { user, student: profile, grade, stream, subjects };
   }
 
   async function validateSubjectEligibility(grade, stream, subjectId, client = getClient()) {

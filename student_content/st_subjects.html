@@ -1226,7 +1226,7 @@
         registrationContextText.textContent = `Registered curriculum: Grade ${grade}${streamText}`;
         registrationContext.hidden = false;
         subjectsDescription.textContent =
-          "Only the subjects assigned to your registered curriculum are shown.";
+          "Only the subjects in your registered curriculum are shown.";
       }
 
       function normalizeStream(value) {
@@ -1577,10 +1577,10 @@
           });
           console.info("[My Subjects] Subjects returned by curriculum query", {
             query: {
-              table: "teacher_subject_assignments",
+              table: "subjects",
               grade,
-              rowLevelSecurity: "student's registered grade and stream class",
-              subjectTable: "subjects",
+              stream,
+              rowLevelSecurity: "student grade/stream eligibility from public.subjects",
               subjectIds: records.map((record) => record.id),
             },
             records,
