@@ -1527,6 +1527,7 @@
       let loadingQuizzes = false;
       let reloadQuizzesQueued = false;
       let studentQuizChannel = null;
+      let requestedQuizAttemptStarted = false;
       const quizAnswerDrafts = new Map();
       const quizReviewDrafts = new Map();
       const quizPageSections = [".page-header", ".stats-grid", ".main-grid"];
@@ -1797,6 +1798,16 @@
           renderQuizzes();
           updateStatistics();
           updatePerformance();
+          const requestedQuizId = new URLSearchParams(window.location.search)
+            .get("quiz_id");
+          if (
+            requestedQuizId &&
+            !requestedQuizAttemptStarted &&
+            allQuizzes.some((quiz) => String(quiz.id) === requestedQuizId)
+          ) {
+            requestedQuizAttemptStarted = true;
+            window.setTimeout(() => void attemptQuiz(requestedQuizId), 0);
+          }
           if (!allQuizzes.length) renderNoQuizzes();
           subscribeToStudentRealtime(student);
         } catch (error) {

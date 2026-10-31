@@ -252,12 +252,81 @@
         background: #7b4bb7;
       }
 
+      .dot-quiz {
+        background: #7b4bb7;
+      }
+
       /* =========================================
        CALENDAR GRID
     ========================================= */
 
       .calendar-wrapper {
         padding: 0 20px 20px;
+      }
+
+      .calendar-status {
+        margin: 12px 0;
+        color: #64748b;
+        font-size: 11px;
+        line-height: 1.5;
+      }
+
+      .calendar-status[data-state="error"] {
+        color: #a83434;
+      }
+
+      .selected-day-panel {
+        margin-top: 16px;
+        padding: 15px;
+        border: 1px solid #edf0f4;
+        border-radius: 12px;
+        background: #fbfcfe;
+      }
+
+      .selected-day-panel h3 {
+        margin-bottom: 10px;
+        color: #27344a;
+        font-size: 13px;
+      }
+
+      .selected-day-panel > p {
+        color: #778193;
+        font-size: 11px;
+      }
+
+      .selected-day-events {
+        display: grid;
+        gap: 7px;
+      }
+
+      .selected-day-event {
+        display: grid;
+        grid-template-columns: minmax(75px, auto) 1fr auto;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 9px 10px;
+        border: 0;
+        border-radius: 7px;
+        text-align: left;
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .selected-day-event strong {
+        overflow: hidden;
+        color: inherit;
+        font-size: 11px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .selected-day-event span {
+        font-size: 10px;
+      }
+
+      .selected-day-event-type {
+        font-weight: 800;
       }
 
       .weekdays {
@@ -391,6 +460,11 @@
       }
 
       .event-exam {
+        background: #f0e8f8;
+        color: #7440a4;
+      }
+
+      .event-quiz {
         background: #f0e8f8;
         color: #7440a4;
       }
@@ -893,6 +967,11 @@
           padding: 3px;
         }
 
+        .selected-day-event {
+          grid-template-columns: 1fr;
+          gap: 4px;
+        }
+
         .month-title h2 {
           font-size: 16px;
           min-width: 120px;
@@ -949,6 +1028,13 @@
             <div class="page-eyebrow">
               <i class="fa-solid fa-book-open" aria-hidden="true"></i>
               Student workspace
+            </div>
+            <div class="detail-row" id="modalQuizRow" hidden>
+              <i class="fa-solid fa-clipboard-question"></i>
+              <div>
+                <strong>Quiz</strong>
+                <button id="modalQuiz" type="button">Open quiz</button>
+              </div>
             </div>
 
             <h1>Calendar</h1>
@@ -1016,6 +1102,11 @@
             </div>
 
             <div class="legend-item">
+              <span class="legend-dot dot-quiz"></span>
+              Quizzes
+            </div>
+
+            <div class="legend-item">
               <span class="legend-dot dot-assignment"></span>
               Assignments
             </div>
@@ -1052,6 +1143,8 @@
             <div class="calendar-grid" id="calendarGrid" aria-live="polite">
               <div class="empty-state">Loading calendar events...</div>
             </div>
+            <div class="calendar-status" id="calendarStatus" role="status" aria-live="polite" hidden></div>
+            <section class="selected-day-panel" id="selectedDayEvents" aria-live="polite"></section>
           </div>
         </section>
 
@@ -1101,63 +1194,6 @@
             </div>
           </div>
 
-          <!-- RESCHEDULED CLASS -->
-
-          <div class="side-card" id="classUpdateCard">
-            <div class="side-card-header">
-              <h3>Class Update</h3>
-
-              <span>Important</span>
-            </div>
-
-            <div class="reschedule-box"><p>Loading class updates...</p></div>
-          </div>
-
-          <!-- HOLIDAYS -->
-
-          <div class="side-card" id="holidaysCard">
-            <div class="side-card-header">
-              <h3>Upcoming Holidays</h3>
-
-              <span id="holidayMonthLabel"></span>
-            </div>
-
-            <div class="holiday-item"><div class="holiday-info"><h4>Loading holidays...</h4></div></div>
-          </div>
-
-          <!-- QUICK STATS -->
-
-          <div class="side-card" id="monthStatsCard">
-            <div class="side-card-header">
-              <h3>This Month</h3>
-            </div>
-
-            <div class="stats-grid">
-              <div class="stat">
-                <strong id="classesStat">0</strong>
-
-                <span> Classes </span>
-              </div>
-
-              <div class="stat">
-                <strong id="assignmentsStat">0</strong>
-
-                <span> Assignments </span>
-              </div>
-
-              <div class="stat">
-                <strong id="assessmentsStat">0</strong>
-
-                <span> Exams / Quizzes </span>
-              </div>
-
-              <div class="stat">
-                <strong id="holidaysStat">0</strong>
-
-                <span> Holidays </span>
-              </div>
-            </div>
-          </div>
         </aside>
       </div>
     </main>

@@ -5,6 +5,10 @@
     events: [],
     profile: null,
     subjectIds: new Set(),
+    subjectsById: new Map(),
+    sourceErrors: [],
+    client: null,
+    authSubscription: null,
     stopRealtime: () => {},
     refreshSequence: 0,
   };
@@ -55,7 +59,7 @@
     if (normalized === "holiday") return "event-holiday";
     if (normalized === "rescheduled_class") return "event-rescheduled";
     if (normalized === "exam") return "event-exam";
-    if (normalized === "quiz") return "event-exam";
+    if (normalized === "quiz") return "event-quiz";
     if (normalized === "announcement") return "event-announcement";
     return "event-class";
   }
@@ -113,94 +117,296 @@
       location: row.location || row.meeting_url || "",
       meeting_url: row.meeting_url || "",
       all_day: Boolean(row.all_day),
+      material_type: row.material_type || "",
+      file_name: row.file_name || "",
     };
   }
 
   async function getStudentProfile() {
-    const client = getClient();
+    const client = state.client || getClient();
     const curriculum = await window.SubjectService.getStudentSubjects(client);
+    state.client = client;
     state.profile = curriculum.student;
     state.subjectIds = new Set(
       curriculum.subjects.map((subject) => String(subject.id)),
     );
+    state.subjectsById = new Map(
+      (curriculum.subjectCatalog || curriculum.subjects)
+        .map((subject) => [String(subject.id), subject]),
+    );
     return { client, user: curriculum.user, profile: curriculum.student };
+  }
+
+  function eventIsInRanges(event, ranges) {
+    const start = new Date(event.start_at);
+    return Number.isFinite(start.getTime()) &&
+      ranges.some((range) => start >= range.start && start < range.end);
+  }
+
+  function createEventRanges(date) {
+    const now = new Date();
+    const upcomingEnd = new Date(now);
+    upcomingEnd.setFullYear(upcomingEnd.getFullYear() + 1);
+    const month = monthRange(date);
+    return [
+      {
+        start: new Date(Math.min(month.start.getTime(), now.getTime())),
+        end: new Date(Math.max(month.end.getTime(), upcomingEnd.getTime())),
+      },
+    ];
+  }
+
+  async function loadCalendarEvents(client, ranges) {
+    const rowsById = new Map();
+    for (const range of ranges) {
+      for (let offset = 0; ; offset += 1000) {
+        const { data, error } = await client
+          .from("calendar_events")
+          .select("id, teacher_id, title, description, event_type, grade, stream, subject_id, start_at, end_at, all_day, location, meeting_url, status, is_visible_to_students, source_table, source_id")
+          .eq("status", "published")
+          .eq("is_visible_to_students", true)
+          .gte("start_at", range.start.toISOString())
+          .lt("start_at", range.end.toISOString())
+          .order("start_at", { ascending: true })
+          .range(offset, offset + 999);
+        if (error) throw error;
+        const page = data || [];
+        for (const row of page) rowsById.set(row.id, row);
+        if (page.length < 1000) break;
+      }
+    }
+    const calendarEvents = [...rowsById.values()]
+      .filter((row) =>
+        !["materials", "live_classes", "quizzes"].includes(row.source_table) &&
+        (row.subject_id == null || state.subjectIds.has(String(row.subject_id))),
+      )
+      .map((row) => normalizeRow(row, "calendar_events", row.event_type))
+      .filter(Boolean);
+    return calendarEvents;
+  }
+
+  async function loadMaterials(client, ranges) {
+    const data = [];
+    for (let offset = 0; ; offset += 1000) {
+      const { data: page, error } = await client
+        .from("materials")
+        .select("id, teacher_id, grade, stream, subject_id, title, description, material_type, file_name, storage_bucket, file_path, mime_type, created_at")
+        .eq("grade", Number(state.profile.grade))
+        .order("created_at", { ascending: false })
+        .range(offset, offset + 999);
+      if (error) throw error;
+      data.push(...(page || []));
+      if ((page || []).length < 1000) break;
+    }
+
+    const eligibleRows = data.filter((row) => {
+      const subjectId = String(row.subject_id);
+      return state.subjectIds.has(subjectId) &&
+        (Number(state.profile.grade) < 11 ||
+          String(row.stream || "").trim().toLowerCase() ===
+            String(state.profile.stream || "").trim().toLowerCase()) &&
+        eventIsInRanges({ start_at: row.created_at }, ranges);
+    });
+    const teacherIds = [...new Set(eligibleRows.map((row) => row.teacher_id).filter(Boolean))];
+    let teacherNames = new Map();
+    if (teacherIds.length) {
+      const { data: teachers, error: teacherError } = await client
+        .from("teachers")
+        .select("id, full_name")
+        .in("id", teacherIds);
+      if (teacherError) {
+        console.warn("Student calendar could not load material teacher names.", teacherError);
+      } else {
+        teacherNames = new Map((teachers || []).map((teacher) => [
+          String(teacher.id),
+          teacher.full_name,
+        ]));
+      }
+    }
+
+    return eligibleRows.map((row) => {
+      const subject = state.subjectsById.get(String(row.subject_id));
+      const type = String(row.material_type || "").trim().toLowerCase();
+      const iconLabel = type === "photo" || type === "image" ? "Photo" :
+        type ? type.charAt(0).toUpperCase() + type.slice(1) : "Material";
+      return normalizeRow({
+        ...row,
+        title: row.title || row.file_name || "Study material",
+        description: [iconLabel, row.file_name].filter(Boolean).join(" · "),
+        teacher_name: teacherNames.get(String(row.teacher_id)) || "",
+        subject_name: subject?.name || "",
+        start_at: row.created_at,
+        end_at: row.created_at,
+        all_day: true,
+        source_table: "materials",
+        source_id: row.id,
+      }, "materials", "material");
+    }).filter(Boolean);
+  }
+
+  async function loadLiveClasses(client, ranges) {
+    const { data, error } = await client.rpc("get_student_live_classes");
+    if (error) throw error;
+    return (data || [])
+      .filter((liveClass) => {
+        const gradeMatches = Number(liveClass.grade) === Number(state.profile.grade);
+        const streamMatches = Number(state.profile.grade) < 11 ||
+          String(liveClass.stream || "").trim().toLowerCase() ===
+            String(state.profile.stream || "").trim().toLowerCase();
+        return gradeMatches &&
+          streamMatches &&
+          state.subjectIds.has(String(liveClass.subject_id)) &&
+          eventIsInRanges(liveClass, ranges);
+      })
+      .map((liveClass) => normalizeRow({
+        ...liveClass,
+        source_table: "live_classes",
+        source_id: liveClass.id,
+        subject_name: liveClass.subject_name,
+        event_type: "live_class",
+      }, "live_classes", "live_class"))
+      .filter(Boolean);
+  }
+
+  async function loadQuizzes(client, ranges) {
+    const catalog = [];
+    for (let offset = 0; ; offset += 1000) {
+      const { data, error } = await client
+        .rpc("get_student_quiz_catalog")
+        .range(offset, offset + 999);
+      if (error) throw error;
+      catalog.push(...(data || []));
+      if ((data || []).length < 1000) break;
+    }
+    const eligibleCatalog = (catalog || []).filter((quiz) =>
+      quiz.subject_id != null &&
+      state.subjectIds.has(String(quiz.subject_id)) &&
+      Number(quiz.grade) === Number(state.profile.grade) &&
+      (Number(state.profile.grade) < 11 ||
+        String(quiz.stream || "").trim().toLowerCase() ===
+          String(state.profile.stream || "").trim().toLowerCase()),
+    );
+    if (!eligibleCatalog.length) return [];
+
+    const quizIds = [...new Set(eligibleCatalog.map((quiz) => quiz.id))];
+    const quizRows = [];
+    for (let index = 0; index < quizIds.length; index += 500) {
+      const { data, error } = await client
+        .from("quizzes")
+        .select("id, teacher_id, title, description, grade, stream, subject_id, status, student_access, start_at, end_at, published_at, duration_minutes")
+        .in("id", quizIds.slice(index, index + 500));
+      if (error) throw error;
+      quizRows.push(...(data || []));
+    }
+
+    const catalogById = new Map(eligibleCatalog.map((quiz) => [String(quiz.id), quiz]));
+    const rows = (quizRows || []).filter((quiz) => {
+      const catalogEntry = catalogById.get(String(quiz.id));
+      const date = quiz.start_at || quiz.published_at;
+      return catalogEntry &&
+        String(quiz.status || catalogEntry.quiz_status).toLowerCase() === "published" &&
+        date &&
+        eventIsInRanges({ start_at: date }, ranges);
+    });
+    const teacherIds = [...new Set(rows.map((quiz) => quiz.teacher_id).filter(Boolean))];
+    let teacherNames = new Map();
+    if (teacherIds.length) {
+      const { data: teachers, error: teacherError } = await client
+        .from("teachers")
+        .select("id, full_name")
+        .in("id", teacherIds);
+      if (teacherError) {
+        console.warn("Student calendar could not load quiz teacher names.", teacherError);
+      } else {
+        teacherNames = new Map((teachers || []).map((teacher) => [
+          String(teacher.id),
+          teacher.full_name,
+        ]));
+      }
+    }
+    return rows.map((quiz) => {
+      const catalogEntry = catalogById.get(String(quiz.id));
+      const startAt = quiz.start_at || quiz.published_at;
+      const endAt = quiz.end_at || (
+        quiz.duration_minutes
+          ? new Date(new Date(startAt).getTime() + Number(quiz.duration_minutes) * 60_000).toISOString()
+          : null
+      );
+      return normalizeRow({
+        ...quiz,
+        subject_name: state.subjectsById.get(String(quiz.subject_id))?.name ||
+          catalogEntry.subject_name,
+        teacher_name: teacherNames.get(String(quiz.teacher_id)) || "",
+        start_at: startAt,
+        end_at: endAt,
+        source_table: "quizzes",
+        source_id: quiz.id,
+        status: quiz.status || catalogEntry.quiz_status,
+        event_type: "quiz",
+      }, "quizzes", "quiz");
+    }).filter(Boolean);
   }
 
   async function loadEvents(date = state.date) {
     const { client } = await getStudentProfile();
-    const now = new Date();
-    const upcomingEnd = new Date(now);
-    upcomingEnd.setFullYear(upcomingEnd.getFullYear() + 1);
-    const ranges = [monthRange(date), { start: now, end: upcomingEnd }];
-    const rowsById = new Map();
-
-    for (const range of ranges) {
-      const { data, error } = await client
-        .from("calendar_events")
-        .select("id, teacher_id, title, description, event_type, grade, stream, subject_id, start_at, end_at, all_day, location, meeting_url, status, is_visible_to_students, source_table, source_id")
-        .eq("status", "published")
-        .eq("is_visible_to_students", true)
-        .gte("start_at", range.start.toISOString())
-        .lt("start_at", range.end.toISOString())
-        .order("start_at", { ascending: true });
-      if (error) throw error;
-      for (const row of data || []) rowsById.set(row.id, row);
-    }
-
-    const calendarEvents = [...rowsById.values()]
-      .filter((row) =>
-        row.subject_id == null || state.subjectIds.has(String(row.subject_id)),
-      )
-      .map((row) => normalizeRow(row, "calendar_events", row.event_type))
-      .filter(Boolean);
-    const linkedLiveClassIds = new Set(
-      calendarEvents
-        .filter((event) => event.source_table === "live_classes" && event.source_id)
-        .map((event) => String(event.source_id)),
+    const ranges = createEventRanges(date);
+    const sources = await Promise.allSettled([
+      loadCalendarEvents(client, ranges),
+      loadMaterials(client, ranges),
+      loadLiveClasses(client, ranges),
+      loadQuizzes(client, ranges),
+    ]);
+    const sourceNames = ["Calendar events", "Study materials", "Live classes", "Quizzes"];
+    state.sourceErrors = [];
+    const events = [];
+    sources.forEach((result, index) => {
+      if (result.status === "fulfilled") {
+        events.push(...result.value);
+        return;
+      }
+      console.error(`Student calendar ${sourceNames[index].toLowerCase()} query failed.`, result.reason);
+      state.sourceErrors.push(`${sourceNames[index]}: ${result.reason?.message || "query failed"}`);
+    });
+    return events.sort((left, right) =>
+      new Date(left.start_at) - new Date(right.start_at),
     );
-    try {
-      const { data: liveClasses, error: liveClassError } = await client.rpc("get_student_live_classes");
-      if (liveClassError) throw liveClassError;
-      const liveClassEvents = (liveClasses || [])
-        .filter((liveClass) => {
-          const matchesRegisteredGrade = Number(liveClass.grade) === Number(state.profile.grade);
-          const registeredStream = String(state.profile.stream || "").trim().toLowerCase();
-          const classStream = String(liveClass.stream || "").trim().toLowerCase();
-          const start = new Date(liveClass.start_at);
-          return matchesRegisteredGrade
-            && classStream === registeredStream
-            && (liveClass.subject_id == null || state.subjectIds.has(String(liveClass.subject_id)))
-            && Number.isFinite(start.getTime())
-            && ranges.some((range) => start >= range.start && start < range.end);
-        })
-        .filter((liveClass) => !linkedLiveClassIds.has(String(liveClass.id)))
-        .map((liveClass) => normalizeRow({
-          ...liveClass,
-          source_table: "live_classes",
-          source_id: liveClass.id,
-          status: liveClass.status,
-          event_type: "live_class",
-        }, "live_classes", "live_class"))
-        .filter(Boolean);
-      return [...calendarEvents, ...liveClassEvents]
-        .sort((left, right) => new Date(left.start_at) - new Date(right.start_at));
-    } catch (error) {
-      console.error("Could not load student live classes for the calendar.", error);
-      return calendarEvents.sort((left, right) => new Date(left.start_at) - new Date(right.start_at));
-    }
   }
 
   async function subscribe() {
-    const client = getClient();
+    const client = state.client || getClient();
     if (activeChannel) await client.removeChannel(activeChannel);
-    const channel = client.channel("student-calendar-events")
-      .on("postgres_changes", { event: "*", schema: "public", table: "calendar_events" }, () => {
-        void refresh();
-      });
+    const grade = Number(state.profile.grade);
+    const channel = client.channel(`student-calendar-${state.profile.user_id}`);
+    for (const table of ["materials", "live_classes", "quizzes", "calendar_events"]) {
+      const subscription = {
+        event: "*",
+        schema: "public",
+        table,
+      };
+      if (table !== "calendar_events") subscription.filter = `grade=eq.${grade}`;
+      channel.on("postgres_changes", subscription, () => void refresh());
+    }
+    channel
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "students",
+        filter: `user_id=eq.${state.profile.user_id}`,
+      }, () => void refresh())
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "subjects",
+      }, () => void refresh());
     activeChannel = channel;
     channel.subscribe((status, error) => {
-      if (error || status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-        console.error("Student calendar Realtime subscription failed.", error || status);
+      if (error || ["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].includes(status)) {
+        console.error("Student calendar Realtime subscription failed.", { status, error });
+        const statusElement = $("calendarStatus");
+        if (statusElement) {
+          statusElement.textContent = "Live updates are unavailable. Reload the page to check for changes.";
+          statusElement.hidden = false;
+        }
       }
     });
 
@@ -230,13 +436,26 @@
       const currentDate = new Date(state.date.getFullYear(), state.date.getMonth(), day);
       const currentKey = dayKey(currentDate);
       const entries = state.events.filter((event) => dayKey(event.start_at) === currentKey);
-      const content = entries.slice(0, 3).map((entry) => {
+      const content = entries.map((entry) => {
         const cssClass = eventTypeClass(entry.type);
-        return `<div class="event ${cssClass}" data-calendar-event-id="${escapeHtml(entry.id)}" role="button" tabindex="0"><i class="fa-solid fa-circle"></i><span>${escapeHtml(entry.title)}</span></div>`;
+        const icon = entry.type === "material"
+          ? entry.material_type === "video"
+            ? "fa-video"
+            : ["photo", "image"].includes(String(entry.material_type).toLowerCase())
+              ? "fa-image"
+              : entry.material_type === "pdf"
+                ? "fa-file-pdf"
+                : "fa-file-lines"
+          : entry.type === "quiz"
+            ? "fa-clipboard-question"
+            : entry.type === "live_class" || entry.type === "class"
+              ? "fa-video"
+              : "fa-circle";
+        return `<div class="event ${cssClass}" data-calendar-event-id="${escapeHtml(entry.id)}" role="button" tabindex="0" aria-label="${escapeHtml(eventTypeLabel(entry.type))}: ${escapeHtml(entry.title)}"><i class="fa-solid ${icon}"></i><span>${escapeHtml(entry.title)}</span></div>`;
       }).join("");
       const todayClass = dayKey(new Date()) === currentKey ? "today" : "";
       const selectedClass = dayKey(state.selectedDate) === currentKey ? "selected-day" : "";
-      dayCells.push(`<div class="day ${todayClass} ${selectedClass}" data-date="${currentKey}"><div class="date-number">${day}</div>${content}</div>`);
+      dayCells.push(`<div class="day ${todayClass} ${selectedClass}" data-date="${currentKey}" aria-label="${formatDate(currentDate, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}, ${entries.length} activities"><div class="date-number">${day}</div>${content}</div>`);
     }
 
     const remainder = (7 - (dayCells.length % 7)) % 7;
@@ -245,6 +464,51 @@
     }
 
     grid.innerHTML = dayCells.join("");
+  }
+
+  function renderSelectedDayEvents() {
+    const container = $("selectedDayEvents");
+    if (!container) return;
+    const selectedKey = dayKey(state.selectedDate);
+    const events = state.events
+      .filter((event) => dayKey(event.start_at) === selectedKey)
+      .sort((left, right) => new Date(left.start_at) - new Date(right.start_at));
+    container.innerHTML = `<h3>${formatDate(state.selectedDate, {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    })}</h3>` + (events.length
+      ? `<div class="selected-day-events">${events.map((event) => `<button type="button" class="selected-day-event ${eventTypeClass(event.type)}" data-calendar-event-id="${escapeHtml(event.id)}">
+          <span class="selected-day-event-type">${escapeHtml(eventTypeLabel(event.type))}</span>
+          <strong>${escapeHtml(event.title)}</strong>
+          <span>${event.all_day ? "All day" : formatDate(event.start_at, { hour: "numeric", minute: "2-digit" })}${event.subject ? ` · ${escapeHtml(event.subject)}` : ""}</span>
+        </button>`).join("")}</div>`
+      : '<p>No activities scheduled for this day.</p>');
+  }
+
+  function renderCalendarStatus() {
+    const status = $("calendarStatus");
+    if (!status) return;
+    const countFor = (source) => state.events.filter((event) =>
+      event.source_table === source
+    ).length;
+    const categoryCount = (source, emptyLabel, singular, plural) => {
+      const count = countFor(source);
+      return count ? `${count} ${count === 1 ? singular : plural}` : emptyLabel;
+    };
+    const counts = [
+      categoryCount("materials", "No materials uploaded", "material", "materials"),
+      categoryCount("live_classes", "No live classes scheduled", "live class", "live classes"),
+      categoryCount("quizzes", "No quizzes published", "quiz", "quizzes"),
+    ].join(" · ");
+    status.textContent = state.sourceErrors.length
+      ? `${counts}. Some calendar sources could not be loaded: ${state.sourceErrors.join(" | ")}`
+      : state.events.length
+        ? counts
+        : `No activities scheduled. ${counts}.`;
+    status.dataset.state = state.sourceErrors.length ? "error" : "info";
+    status.hidden = false;
   }
 
   function renderMiniCalendar() {
@@ -275,24 +539,6 @@
       cells.push(`<button type="button" class="${classes}" data-mini-date="${dateKey}" aria-label="${formatDate(date, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}">${date.getDate()}</button>`);
     }
     grid.innerHTML = cells.join("");
-  }
-
-  function renderStats() {
-    const month = state.date.getMonth();
-    const year = state.date.getFullYear();
-    const monthEvents = state.events.filter((event) => {
-      const start = new Date(event.start_at);
-      return start.getMonth() === month && start.getFullYear() === year;
-    });
-    const classesStat = $("classesStat");
-    const assignmentsStat = $("assignmentsStat");
-    const assessmentsStat = $("assessmentsStat");
-    const holidaysStat = $("holidaysStat");
-
-    if (classesStat) classesStat.textContent = monthEvents.filter((event) => ["live_class", "class"].includes(event.type)).length;
-    if (assignmentsStat) assignmentsStat.textContent = monthEvents.filter((event) => event.type === "assignment").length;
-    if (assessmentsStat) assessmentsStat.textContent = monthEvents.filter((event) => ["quiz", "exam"].includes(event.type)).length;
-    if (holidaysStat) holidaysStat.textContent = monthEvents.filter((event) => event.type === "holiday").length;
   }
 
   function renderRegistrationContext() {
@@ -328,31 +574,6 @@
     }).join("") : '<div class="upcoming-event"><div class="upcoming-info"><h4>No upcoming events</h4><p>There are no future events for your profile.</p></div></div>');
   }
 
-  function renderHolidays() {
-    const now = new Date();
-    const holidays = state.events
-      .filter((event) => event.type === "holiday" && new Date(event.start_at) >= now)
-      .sort((left, right) => new Date(left.start_at) - new Date(right.start_at))
-      .slice(0, 3);
-    const container = $("holidaysCard");
-    if (!container) return;
-    container.innerHTML = '<div class="side-card-header"><h3>Upcoming Holidays</h3><span id="holidayMonthLabel"></span></div>' + (holidays.length ? holidays.map((event) => `<div class="holiday-item" data-calendar-event-id="${escapeHtml(event.id)}" role="button" tabindex="0"><div class="holiday-icon"><i class="fa-solid fa-umbrella-beach"></i></div><div class="holiday-info"><h4>${escapeHtml(event.title)}</h4><p>${formatDate(event.start_at, { month: "short", day: "numeric", year: "numeric" })}</p></div></div>`).join("") : '<div class="holiday-item"><div class="holiday-info"><h4>No upcoming holidays</h4><p>None for the current calendar.</p></div></div>');
-  }
-
-  function renderClassUpdate() {
-    const classUpdates = state.events
-      .filter((event) => event.type === "rescheduled_class" || event.status === "cancelled")
-      .sort((left, right) => new Date(left.start_at) - new Date(right.start_at));
-    const container = $("classUpdateCard");
-    if (!container) return;
-    const update = classUpdates[0];
-    if (!update) {
-      container.innerHTML = '<div class="side-card-header"><h3>Class Update</h3><span>Important</span></div><div class="reschedule-box"><p>No recent class updates.</p></div>';
-      return;
-    }
-    container.innerHTML = `<div class="side-card-header"><h3>Class Update</h3><span>Important</span></div><div class="reschedule-box" data-calendar-event-id="${escapeHtml(update.id)}" role="button" tabindex="0"><div class="reschedule-top"><div class="reschedule-icon"><i class="fa-solid fa-calendar-xmark"></i></div><h4>${eventTypeBadge(update.type)}</h4></div><p>${escapeHtml(update.description || update.title)}</p><div class="schedule-change"><span class="new-time">${formatDate(update.start_at, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}</span></div></div>`;
-  }
-
   function renderCalendar() {
     const monthTitle = $("monthTitle");
     if (monthTitle) {
@@ -360,11 +581,10 @@
     }
     renderRegistrationContext();
     renderMonthGrid();
+    renderSelectedDayEvents();
     renderMiniCalendar();
-    renderStats();
+    renderCalendarStatus();
     renderUpcoming();
-    renderClassUpdate();
-    renderHolidays();
   }
 
   function renderModal(event) {
@@ -382,6 +602,9 @@
       eventTypeLabel(event.type),
       event.class_grade ? `Grade ${event.class_grade}${event.stream ? ` - ${event.stream}` : ""}` : "",
       event.teacher ? `By ${event.teacher}` : "",
+      event.source_table === "quizzes" && event.status
+        ? `Status: ${event.status}`
+        : "",
       event.description || "No additional details provided.",
       event.location && event.location !== event.meeting_url ? `Location: ${event.location}` : "",
     ].filter(Boolean);
@@ -406,6 +629,9 @@
     if (materialRow) materialRow.hidden = !isMaterial;
     if (materialButton) {
       materialButton.dataset.materialId = isMaterial ? String(event.source_id) : "";
+      materialButton.dataset.materialType = isMaterial
+        ? String(event.material_type || "")
+        : "";
     }
     const liveClassRow = $("modalLiveClassRow");
     const liveClassButton = $("modalLiveClass");
@@ -414,6 +640,11 @@
     if (liveClassButton) {
       liveClassButton.dataset.liveClassId = isLiveClass ? String(event.source_id) : "";
     }
+    const quizRow = $("modalQuizRow");
+    const quizButton = $("modalQuiz");
+    const isQuiz = event.source_table === "quizzes" && event.source_id;
+    if (quizRow) quizRow.hidden = !isQuiz;
+    if (quizButton) quizButton.dataset.quizId = isQuiz ? String(event.source_id) : "";
     modal.classList.add("show");
   }
 
@@ -450,12 +681,12 @@
       if (sequence !== state.refreshSequence) return;
       console.error("Unable to render student calendar.", error);
       state.events = [];
-      renderStats();
       block(error.message || "Unable to load student calendar data.");
       const message = escapeHtml(error.message || "Unable to load calendar data.");
       if ($("upcomingCard")) $("upcomingCard").innerHTML = `<div class="side-card-header"><h3>Upcoming</h3></div><div class="upcoming-event"><div class="upcoming-info"><h4>${message}</h4></div></div>`;
-      if ($("holidaysCard")) $("holidaysCard").innerHTML = `<div class="side-card-header"><h3>Upcoming Holidays</h3></div><div class="holiday-item"><div class="holiday-info"><h4>${message}</h4></div></div>`;
-      if ($("classUpdateCard")) $("classUpdateCard").innerHTML = `<div class="side-card-header"><h3>Class Update</h3></div><div class="reschedule-box"><p>${message}</p></div>`;
+      if (error?.code === "AUTH_REQUIRED") {
+        window.location.assign("../student_registration/login.html");
+      }
     }
   }
 
@@ -474,15 +705,11 @@
       const materialButton = event.target.closest("#modalMaterial");
       if (materialButton?.dataset.materialId) {
         event.stopPropagation();
-        void openAuthorizedUrl(
-          () => {
-            const downloads = window.SmartLearningDownloads;
-            if (!downloads?.getStudentMaterialUrl) {
-              throw new Error("Student material access is unavailable. Reload the page and try again.");
-            }
-            return downloads.getStudentMaterialUrl(materialButton.dataset.materialId);
-          },
-          "teacher material",
+        const page = materialButton.dataset.materialType === "video"
+          ? "st_videos.html"
+          : "st_notes.html";
+        window.location.assign(
+          `${page}?material_id=${encodeURIComponent(materialButton.dataset.materialId)}`,
         );
         return;
       }
@@ -499,6 +726,15 @@
           if (!data) throw new Error("This class is not available to join right now.");
           return data;
         }, "live class");
+        return;
+      }
+
+      const quizButton = event.target.closest("#modalQuiz");
+      if (quizButton?.dataset.quizId) {
+        event.stopPropagation();
+        window.location.assign(
+          `st_quizzes.html?quiz_id=${encodeURIComponent(quizButton.dataset.quizId)}`,
+        );
         return;
       }
 
@@ -568,13 +804,35 @@
   async function init() {
     bindUi();
     try {
+      await refresh();
+      const client = state.client || getClient();
       state.stopRealtime = await subscribe();
+      const authChange = client.auth.onAuthStateChange((_event, session) => {
+        const nextUserId = session?.user?.id || null;
+        if (nextUserId === state.profile?.user_id) return;
+        window.setTimeout(() => {
+          void (async () => {
+            await state.stopRealtime();
+            state.events = [];
+            state.profile = null;
+            await refresh();
+            state.stopRealtime = await subscribe();
+          })().catch((error) => {
+            console.error("Student calendar could not reload after an account change.", error);
+            block(error.message || "Calendar access changed. Reload the page.");
+          });
+        }, 0);
+      });
+      state.authSubscription = authChange.data?.subscription || null;
     } catch (error) {
-      console.error("Could not subscribe to student calendar Realtime updates.", error);
+      console.error("Student calendar initialization failed.", error);
+      block(error.message || "Unable to initialize the student calendar.");
     }
-    await refresh();
   }
 
-  window.addEventListener("pagehide", () => state.stopRealtime());
+  window.addEventListener("pagehide", () => {
+    void state.stopRealtime();
+    state.authSubscription?.unsubscribe();
+  }, { once: true });
   init();
 })();

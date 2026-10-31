@@ -18,6 +18,7 @@
     loadFailed: false,
     reloadQueued: false,
     refreshTimer: null,
+    deepLinkHandled: false,
   };
   const $ = (id) => document.getElementById(id);
 
@@ -374,6 +375,19 @@
         .map((row) => normalizeVideo(row, state.student))
         .filter(Boolean);
       logVideoDiagnostic("Final videos passed to renderer", state.videos);
+      const requestedMaterialId = new URLSearchParams(window.location.search)
+        .get("material_id");
+      if (requestedMaterialId && !state.deepLinkHandled) {
+        state.deepLinkHandled = true;
+        if (state.videos.some((video) => video.id === requestedMaterialId)) {
+          window.setTimeout(() => void openVideo(requestedMaterialId), 0);
+        } else {
+          setVideosStatus(
+            "The selected video is not available to your registered class.",
+            "error",
+          );
+        }
+      }
       state.loadFailed = false;
       renderVideos();
       setVideosStatus("");

@@ -6,14 +6,13 @@ declare
 begin
   if to_regclass('public.teachers') is null
     or to_regclass('public.students') is null
-    or to_regclass('public.student_profiles') is null
     or to_regclass('public.materials') is null
     or to_regclass('public.subjects') is null
     or to_regclass('public.teacher_grade_groups') is null
     or to_regclass('public.teacher_subject_assignments') is null
     or to_regclass('public.quizzes') is null then
     raise exception
-      'Calendar requires teachers, students, student_profiles, materials, subjects, teaching-scope tables, and quizzes.';
+      'Calendar requires teachers, students, materials, subjects, teaching-scope tables, and quizzes.';
   end if;
 
   if to_regclass('public.announcements') is not null
@@ -30,16 +29,14 @@ begin
       ('students', 'user_id', 'uuid'),
       ('students', 'grade', 'integer'),
       ('students', 'stream', 'text'),
-      ('student_profiles', 'student_id', 'uuid'),
-      ('student_profiles', 'eligible_subjects', 'ARRAY'),
       ('materials', 'id', 'uuid'),
       ('materials', 'teacher_id', 'uuid'),
       ('materials', 'title', 'text'),
       ('materials', 'description', 'text'),
       ('materials', 'stream', 'text'),
       ('materials', 'subject_id', 'bigint'),
-      ('materials', 'uploaded_at', 'timestamp with time zone'),
-      ('materials', 'status', 'text'),
+      ('materials', 'grade', 'integer'),
+      ('materials', 'created_at', 'timestamp with time zone'),
       ('subjects', 'id', 'bigint'),
       ('subjects', 'grades', 'ARRAY'),
       ('subjects', 'streams', 'ARRAY'),
@@ -101,26 +98,6 @@ begin
   ) then
     raise exception
       'Calendar dependency columns do not match the expected Supabase schema.';
-  end if;
-
-  if not exists (
-    select 1 from information_schema.columns
-    where table_schema = 'public'
-      and table_name = 'materials'
-      and column_name = 'grade'
-      and data_type in ('integer', 'text')
-  ) then
-    raise exception
-      'public.materials.grade must be integer or text; inspect the live schema before synchronization.';
-  end if;
-
-  if exists (
-    select 1 from public.materials
-    where status is null
-      or lower(btrim(status)) not in ('draft', 'published', 'archived')
-  ) then
-    raise exception
-      'public.materials contains a status outside draft/published/archived; inspect those rows before synchronization.';
   end if;
 
   if to_regclass('public.live_classes') is not null and not exists (
@@ -623,14 +600,17 @@ begin
     if requested_source_id is null then
       return false;
     end if;
+    if to_regprocedure('public.student_can_view_material(uuid)') is null then
+      return false;
+    end if;
 
     execute
       'select exists (
          select 1
          from public.materials material
          where material.id = $1
-           and lower(btrim(material.status)) = ''published''
-           and public.calendar_normalize_grade(material.grade::text) = $2
+           and public.student_can_view_material(material.id)
+           and material.grade = $2
            and nullif(btrim(material.stream), '''') is not distinct from $3
            and material.subject_id = $4
        )'
@@ -652,15 +632,12 @@ begin
         or exists (
           select 1
           from public.subjects subject
-          join public.student_profiles student_profile
-            on student_profile.student_id = student.user_id
           where subject.id = requested_subject_id
             and coalesce(subject.grades, '{}'::integer[]) @> array[student.grade]
             and (
               student.grade between 5 and 10
               or coalesce(subject.streams, '{}'::text[]) @> array[student.stream]
             )
-            and subject.name = any(student_profile.eligible_subjects)
         )
       )
   );
@@ -1043,14 +1020,10 @@ begin
   end if;
 
   calendar_teacher_id := public.calendar_teacher_profile_id(new.teacher_id);
-  calendar_grade := public.calendar_normalize_grade(new.grade::text);
-  calendar_status := case lower(btrim(new.status))
-    when 'published' then 'published'
-    when 'archived' then 'cancelled'
-    else 'draft'
-  end;
+  calendar_grade := new.grade;
+  calendar_status := 'published';
 
-  if new.uploaded_at is null
+  if new.created_at is null
     or new.subject_id is null
     or calendar_teacher_id is null
     or calendar_grade is null then
@@ -1091,10 +1064,10 @@ begin
     calendar_grade,
     nullif(btrim(new.stream), ''),
     new.subject_id,
-    new.uploaded_at,
+    new.created_at,
     true,
     calendar_status,
-    lower(btrim(new.status)) = 'published',
+    true,
     'materials',
     new.id
   )
@@ -1278,9 +1251,8 @@ begin
 end;
 $$;
 
--- Material events use the recorded upload timestamp as an activity date, not a
--- fabricated scheduled date. Only source rows already marked published are
--- student-visible; drafts remain teacher-only Calendar entries.
+-- Material events use created_at as the activity date; the materials schema has
+-- no status column, so stored teacher-uploaded materials are student-visible.
 insert into public.calendar_events (
   teacher_id,
   title,
@@ -1301,23 +1273,19 @@ select
   material.title,
   material.description,
   'material',
-  public.calendar_normalize_grade(material.grade::text),
+  material.grade,
   nullif(btrim(material.stream), ''),
   material.subject_id,
-  material.uploaded_at,
+  material.created_at,
   true,
-  case lower(btrim(material.status))
-    when 'published' then 'published'
-    when 'archived' then 'cancelled'
-    else 'draft'
-  end,
-  lower(btrim(material.status)) = 'published',
+  'published',
+  true,
   'materials',
   material.id
 from public.materials material
-where material.uploaded_at is not null
+where material.created_at is not null
   and material.subject_id is not null
-  and public.calendar_normalize_grade(material.grade::text) is not null
+  and material.grade between 5 and 12
   and public.calendar_teacher_profile_id(material.teacher_id) is not null
 on conflict (source_table, source_id)
   where source_table is not null and source_id is not null

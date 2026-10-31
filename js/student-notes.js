@@ -134,7 +134,7 @@
         ? `<button class="note-btn download-btn" type="button" data-view="${escape(note.id)}" data-material-action="download">Download</button>`
         : `<button class="note-btn view-btn" type="button" data-view="${escape(note.id)}" data-material-action="preview">${kind === "pdf" ? "View PDF" : "View Photo"}</button>
           <button class="note-btn download-btn" type="button" data-view="${escape(note.id)}" data-material-action="download">Download</button>`;
-      return `<article class="note-card">
+      return `<article class="note-card" data-note-id="${escape(note.id)}" tabindex="-1">
         <div class="note-top">
           <div class="note-icon ${colorFor(note.subject_name)}" aria-hidden="true"><i class="fa-solid ${iconFor(note)}"></i></div>
           <span class="file-type">${label}</span>
@@ -662,6 +662,22 @@
     $("notesGrid").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  function focusCalendarMaterial() {
+    const materialId = new URLSearchParams(window.location.search).get("material_id");
+    if (!materialId) return;
+    const note = state.notes.find((item) => item.id === materialId);
+    if (!note) {
+      showStatus("This study material is no longer available to your registered class.", "error");
+      return;
+    }
+    $("notesSearch").value = note.title || note.file_name;
+    render();
+    const card = [...$("notesGrid").querySelectorAll(".note-card")]
+      .find((item) => item.dataset.noteId === materialId);
+    card?.scrollIntoView({ behavior: "smooth", block: "center" });
+    card?.focus({ preventScroll: true });
+  }
+
   function cleanup() {
     window.clearTimeout(state.refreshTimer);
     window.clearInterval(state.refreshInterval);
@@ -715,6 +731,7 @@
     }
     loadNotes()
       .then(subscribeToMaterials)
+      .then(focusCalendarMaterial)
       .catch(displayLoadError);
   });
 })();
