@@ -1192,6 +1192,36 @@
         font-size: 0.62rem;
         font-weight: 800;
         cursor: pointer;
+        text-decoration: none;
+      }
+
+      .dashboard-stat-whole-link {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .dashboard-stat-whole-link:focus-visible {
+        outline: 2px solid #159565;
+        outline-offset: 2px;
+      }
+
+      .material-action,
+      .class-join-button {
+        border: 0;
+        border-radius: 7px;
+        padding: 8px 11px;
+        background: #159565;
+        color: #fff;
+        font: inherit;
+        font-size: 0.7rem;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .material-action:disabled,
+      .class-join-button:disabled {
+        cursor: wait;
+        opacity: 0.65;
       }
 
       .dashboard-stat-link i,
@@ -1200,6 +1230,142 @@
       .material-menu i {
         margin-left: 4px;
         font-size: 0.78em;
+      }
+
+      .dashboard-sync-status {
+        min-height: 0;
+        padding: 0;
+        color: #687889;
+        font-size: 0.72rem;
+      }
+
+      .dashboard-sync-status:not(:empty) {
+        padding: 8px 11px;
+        border-radius: 8px;
+        background: #ffffffb8;
+      }
+
+      .dashboard-sync-status[data-state="error"] {
+        color: #a52e28;
+        background: #fff0ef;
+      }
+
+      .dashboard-loading,
+      .dashboard-empty,
+      .dashboard-error {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-height: 58px;
+        color: #7b8b98;
+        font-size: 0.75rem;
+      }
+
+      .dashboard-error {
+        color: #a52e28;
+      }
+
+      .dashboard-skeleton {
+        height: 12px;
+        margin: 12px 0;
+        border-radius: 8px;
+        background: linear-gradient(90deg, #edf2f4 25%, #f7f9fa 50%, #edf2f4 75%);
+        background-size: 200% 100%;
+        animation: dashboard-loading 1.4s ease infinite;
+      }
+
+      @keyframes dashboard-loading {
+        to { background-position: -200% 0; }
+      }
+
+      .material-row {
+        gap: 10px;
+      }
+
+      .material-row-info {
+        flex: 1;
+      }
+
+      .material-row-meta {
+        line-height: 1.45;
+      }
+
+      .material-action,
+      .join-class-action {
+        border: 0;
+        border-radius: 7px;
+        padding: 7px 9px;
+        background: #e4f8ed;
+        color: #138557;
+        font: inherit;
+        font-size: 0.64rem;
+        font-weight: 800;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .material-action:disabled {
+        color: #87939d;
+        background: #edf1f3;
+        cursor: not-allowed;
+      }
+
+      .class-row {
+        grid-template-columns: 20px 76px minmax(0, 1fr) auto;
+      }
+
+      .class-status.completed {
+        background: #f0f2f4;
+        color: #687889;
+      }
+
+      .class-info span {
+        display: block;
+        margin-top: 3px;
+      }
+
+      .study-daily-activity {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .study-day {
+        display: grid;
+        grid-template-rows: 28px auto;
+        gap: 4px;
+        text-align: center;
+      }
+
+      .study-day-track {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        height: 28px;
+        overflow: hidden;
+        border-radius: 5px;
+        background: #edf2f4;
+      }
+
+      .study-day-fill {
+        width: 100%;
+        min-height: 0;
+        border-radius: 5px;
+        background: #18a36b;
+      }
+
+      .study-day-label {
+        color: #7b8b98;
+        font-size: 0.57rem;
+      }
+
+      .study-progress-copy {
+        min-width: 0;
+      }
+
+      .study-progress-panel {
+        grid-template-columns: auto minmax(0, 1fr) auto;
       }
 
       .dashboard-columns {
@@ -1543,12 +1709,62 @@
         height: 9px;
       }
 
+      .study-daily-activity {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 72px;
+        margin-top: 12px;
+      }
+
+      .study-day {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        color: #727b8b;
+        font-size: 11px;
+      }
+
+      .study-day-bar {
+        display: flex;
+        width: 100%;
+        height: 45px;
+        align-items: flex-end;
+        overflow: hidden;
+        border-radius: 5px;
+        background: #f0efff;
+      }
+
+      .study-day-bar > span {
+        display: block;
+        width: 100%;
+        border-radius: 5px;
+        background: #159565;
+      }
+
       @media (max-width: 1150px) {
         .dashboard-stats {
           grid-template-columns: repeat(3, minmax(0, 1fr));
         }
         .dashboard-columns {
           grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .class-row {
+          grid-template-columns: 18px 62px minmax(0, 1fr);
+        }
+
+        .class-row .class-status,
+        .class-row .join-class-action {
+          grid-column: 3;
+          justify-self: start;
+        }
+
+        .study-daily-activity {
+          gap: 4px;
         }
         .dashboard-columns .dashboard-panel:last-child {
           grid-column: 1 / -1;
@@ -1696,6 +1912,7 @@
       <!-- STRICT SCOPE: This redesign modifies only the main dashboard content. -->
       <section
         class="dashboard-redesign"
+        id="dashboard-redesign"
         aria-label="Student dashboard overview"
       >
         <section class="welcome-banner">
@@ -1707,7 +1924,7 @@
               onerror="this.style.display = 'none'"
             />
             <div class="welcome-text">
-              <h1 id="welcomeGreeting">Good morning, Ayush! 👋</h1>
+              <h1 id="welcomeGreeting">Welcome back!</h1>
               <p>Stay consistent, keep learning and make today count!</p>
               <div class="welcome-pills">
                 <span class="welcome-pill"
@@ -1730,18 +1947,18 @@
           </div>
         </section>
 
-        <section class="dashboard-stats" aria-label="Learning statistics">
+          <div class="dashboard-sync-status" id="dashboardSyncStatus" role="status" aria-live="polite"></div>
+
+          <section class="dashboard-stats" aria-label="Learning statistics">
           <article class="dashboard-stat">
             <div class="dashboard-stat-icon accent-purple">
               <i class="fa-solid fa-book-open"></i>
             </div>
             <div>
               <div class="dashboard-stat-label">My Subjects</div>
-              <div class="dashboard-stat-value" id="dashboardSubjectCount">
-                5
-              </div>
-              <span class="dashboard-stat-link" onclick="viewAllSubjects()"
-                >View All <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span
+              <div class="dashboard-stat-value" id="dashboardSubjectCount">--</div>
+              <a class="dashboard-stat-link" href="st_subjects.html"
+                >View All <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a
               >
             </div>
           </article>
@@ -1751,9 +1968,9 @@
             </div>
             <div>
               <div class="dashboard-stat-label">Live Classes</div>
-              <div class="dashboard-stat-value">3</div>
-              <span class="dashboard-stat-link" onclick="action('live')"
-                >View Schedule <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span
+              <div class="dashboard-stat-value" id="dashboardLiveClassCount">--</div>
+              <a class="dashboard-stat-link" href="st_live_classes.html"
+                >View Schedule <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a
               >
             </div>
           </article>
@@ -1763,9 +1980,9 @@
             </div>
             <div>
               <div class="dashboard-stat-label">Quizzes Available</div>
-              <div class="dashboard-stat-value">4</div>
-              <span class="dashboard-stat-link" onclick="action('quiz')"
-                >View All <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span
+              <div class="dashboard-stat-value" id="dashboardQuizCount">--</div>
+              <a class="dashboard-stat-link" href="st_quizzes.html"
+                >View All <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a
               >
             </div>
           </article>
@@ -1775,234 +1992,63 @@
             </div>
             <div>
               <div class="dashboard-stat-label">Notes</div>
-              <div class="dashboard-stat-value">12</div>
-              <span class="dashboard-stat-link" onclick="action('materials')"
-                >View All <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span
+              <div class="dashboard-stat-value" id="dashboardMaterialCount">--</div>
+              <a class="dashboard-stat-link" href="st_notes.html"
+                >View All <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a
               >
             </div>
           </article>
-          <article class="dashboard-stat">
+          <a class="dashboard-stat dashboard-stat-whole-link" href="st_study_time.html" aria-label="Open Study Time">
             <div class="dashboard-stat-icon accent-red">
               <i class="fa-solid fa-stopwatch"></i>
             </div>
             <div>
               <div class="dashboard-stat-label">Study Time</div>
-              <div class="dashboard-stat-value">14h 32m</div>
-              <span class="dashboard-stat-link"
-                ><i class="fa-solid fa-arrow-trend-up" aria-hidden="true"></i> +2h 15m this week</span
+              <div class="dashboard-stat-value" id="dashboardStudyTime">--</div>
+              <span class="dashboard-stat-link">
+                <i class="fa-solid fa-arrow-trend-up" aria-hidden="true"></i>
+                <span id="dashboardStudyTimeNote">This week</span>
+              </span>
             </div>
-          </article>
+          </a>
         </section>
 
         <section class="dashboard-columns">
-          <article class="dashboard-panel">
+          <article class="dashboard-panel" id="subjectsPanel">
             <div class="dashboard-panel-header">
               <h2 class="dashboard-panel-title">
                 <i class="fa-solid fa-book-open"></i>Your Subjects
               </h2>
-              <span class="dashboard-panel-link" onclick="viewAllSubjects()"
-                >View All <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span
-              >
+              <a class="dashboard-panel-link" href="st_subjects.html"
+                >View All <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
             </div>
-            <div class="subject-row">
-              <div class="subject-row-top">
-                <span class="subject-row-name"
-                  ><span class="subject-icon subject-icon-math" aria-hidden="true"
-                    >&pi;</span
-                  >Mathematics</span
-                ><span class="subject-progress-label"
-                  ><strong>82%</strong></span
-                >
-              </div>
-              <div class="dashboard-progress-track">
-                <div class="dashboard-progress-fill" style="width: 82%"></div>
-              </div>
-            </div>
-            <div class="subject-row">
-              <div class="subject-row-top">
-                <span class="subject-row-name"
-                  ><i class="fa-solid fa-atom subject-icon-physics"></i
-                  >Physics</span
-                ><span class="subject-progress-label"
-                  ><strong>76%</strong></span
-                >
-              </div>
-              <div class="dashboard-progress-track">
-                <div
-                  class="dashboard-progress-fill"
-                  style="width: 76%; background: #3989da"
-                ></div>
-              </div>
-            </div>
-            <div class="subject-row">
-              <div class="subject-row-top">
-                <span class="subject-row-name"
-                  ><i class="fa-solid fa-flask subject-icon-chemistry"></i
-                  >Chemistry</span
-                ><span class="subject-progress-label"
-                  ><strong>65%</strong></span
-                >
-              </div>
-              <div class="dashboard-progress-track">
-                <div
-                  class="dashboard-progress-fill"
-                  style="width: 65%; background: #f29b19"
-                ></div>
-              </div>
-            </div>
-            <div class="subject-row">
-              <div class="subject-row-top">
-                <span class="subject-row-name"
-                  ><i class="fa-solid fa-book subject-icon-english"></i
-                  >English</span
-                ><span class="subject-progress-label"
-                  ><strong>58%</strong></span
-                >
-              </div>
-              <div class="dashboard-progress-track">
-                <div
-                  class="dashboard-progress-fill"
-                  style="width: 58%; background: #8d63df"
-                ></div>
-              </div>
-            </div>
-            <div class="subject-row">
-              <div class="subject-row-top">
-                <span class="subject-row-name"
-                  ><i class="fa-solid fa-code subject-icon-computer"></i
-                  >Computer Science</span
-                ><span class="subject-progress-label"
-                  ><strong>42%</strong></span
-                >
-              </div>
-              <div class="dashboard-progress-track">
-                <div
-                  class="dashboard-progress-fill"
-                  style="width: 42%; background: #159f8b"
-                ></div>
-              </div>
+            <div id="registeredSubjectsList" aria-live="polite">
+              <div class="dashboard-loading">Loading registered subjects…</div>
             </div>
           </article>
 
-          <article class="dashboard-panel">
+          <article class="dashboard-panel" id="materialsPanel">
             <div class="dashboard-panel-header">
               <h2 class="dashboard-panel-title">
                 <i class="fa-solid fa-file-lines"></i>Recent Materials
               </h2>
-              <span class="dashboard-panel-link" onclick="action('materials')"
-                >View All <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span
-              >
+              <a class="dashboard-panel-link" href="st_notes.html"
+                >View All <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
             </div>
-            <div class="material-row">
-              <div class="material-type-icon accent-red">
-                <i class="fa-regular fa-file-pdf"></i>
-              </div>
-              <div class="material-row-info">
-                <div class="material-row-title">Chapter 3 Notes.pdf</div>
-                <div class="material-row-meta">Mathematics · 2 hours ago</div>
-              </div>
-              <span class="material-menu" aria-label="More material actions"
-                ><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i
-              ></span>
-            </div>
-            <div class="material-row">
-              <div class="material-type-icon accent-red">
-                <i class="fa-regular fa-file-pdf"></i>
-              </div>
-              <div class="material-row-info">
-                <div class="material-row-title">
-                  Organic Chemistry Notes.pdf
-                </div>
-                <div class="material-row-meta">Chemistry · 5 hours ago</div>
-              </div>
-              <span class="material-menu" aria-label="More material actions"
-                ><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i
-              ></span>
-            </div>
-            <div class="material-row">
-              <div class="material-type-icon accent-blue">
-                <i class="fa-solid fa-video"></i>
-              </div>
-              <div class="material-row-info">
-                <div class="material-row-title">
-                  Electromagnetic Waves Video.mp4
-                </div>
-                <div class="material-row-meta">Physics · 1 day ago</div>
-              </div>
-              <span class="material-menu" aria-label="More material actions"
-                ><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i
-              ></span>
-            </div>
-            <div class="material-row">
-              <div class="material-type-icon accent-orange">
-                <i class="fa-regular fa-image"></i>
-              </div>
-              <div class="material-row-info">
-                <div class="material-row-title">Cell Structure Image.png</div>
-                <div class="material-row-meta">Biology · 3 days ago</div>
-              </div>
-              <span class="material-menu" aria-label="More material actions"
-                ><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i
-              ></span>
+            <div id="recentMaterialsList" aria-live="polite">
+              <div class="dashboard-loading">Loading recent materials…</div>
             </div>
           </article>
 
-          <article class="dashboard-panel">
+          <article class="dashboard-panel" id="classesPanel">
             <div class="dashboard-panel-header">
               <h2 class="dashboard-panel-title">
                 <i class="fa-regular fa-calendar"></i>Today's Classes
               </h2>
-              <span class="dashboard-panel-link" onclick="action('calendar')"
-                >View Schedule <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span
-              >
+              <a class="dashboard-panel-link" href="st_live_classes.html"
+                >View Schedule <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
             </div>
-            <div class="schedule-timeline">
-              <div class="class-row">
-                <span class="class-dot"></span
-                ><span class="class-time">08:00 AM</span>
-                <div class="class-info">
-                  <strong>Mathematics · Class 12</strong
-                  ><span>08:00 AM – 09:00 AM</span>
-                </div>
-                <span class="class-status">Live <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
-              </div>
-              <div class="class-row">
-                <span
-                  class="class-dot"
-                  style="background: #3989da; box-shadow: 0 0 0 1px #b9d8f5"
-                ></span
-                ><span class="class-time">10:15 AM</span>
-                <div class="class-info">
-                  <strong>Physics · Class 12</strong
-                  ><span>10:15 AM – 11:15 AM</span>
-                </div>
-                <span class="class-status upcoming">Upcoming <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
-              </div>
-              <div class="class-row">
-                <span
-                  class="class-dot"
-                  style="background: #f29b19; box-shadow: 0 0 0 1px #f6d69c"
-                ></span
-                ><span class="class-time">12:00 PM</span>
-                <div class="class-info">
-                  <strong>Chemistry · Class 12</strong
-                  ><span>12:00 PM – 01:00 PM</span>
-                </div>
-                <span class="class-status upcoming">Upcoming <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
-              </div>
-              <div class="class-row">
-                <span
-                  class="class-dot"
-                  style="background: #ef5263; box-shadow: 0 0 0 1px #f3b9bf"
-                ></span
-                ><span class="class-time">02:00 PM</span>
-                <div class="class-info">
-                  <strong>Biology · Class 12</strong
-                  ><span>02:00 PM – 03:00 PM</span>
-                </div>
-                <span class="class-status upcoming">Upcoming <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
-              </div>
-            </div>
+            <div class="schedule-timeline" id="todayClassesList"></div>
           </article>
         </section>
 
@@ -2012,12 +2058,13 @@
           </div>
           <div class="study-progress-copy">
             <h2>Study Progress</h2>
-            <p>Keep going! You're doing great!</p>
+            <p id="studyProgressText">Loading your recorded study activity…</p>
             <div class="dashboard-progress-track">
-              <div class="dashboard-progress-fill" style="width: 72%"></div>
+              <div class="dashboard-progress-fill" id="studyProgressFill" style="width: 0%"></div>
             </div>
+            <div class="study-daily-activity" id="studyDailyActivity" aria-label="Daily study time this week"></div>
           </div>
-          <div class="study-progress-value">72%</div>
+          <div class="study-progress-value" id="studyProgressValue">0%</div>
         </section>
       </section>
 
@@ -2763,6 +2810,7 @@
     <script src="../js/subject-service.js"></script>
     <script src="../js/student-curriculum.js"></script>
     <script src="../js/student-data.js"></script>
+    <script src="../js/downloads-service.js"></script>
     <script src="../js/student-dashboard.js"></script>
     <script src="../js/student-layout.js"></script>
   </body>

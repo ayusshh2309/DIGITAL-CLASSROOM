@@ -1,424 +1,852 @@
 (() => {
-  const root = document.querySelector(".dashboard-redesign");
-  if (!root) return;
+  "use strict";
 
+  const MATERIAL_TYPES = ["pdf", "document", "photo", "image", "video"];
+  const DEFAULT_GOAL_MINUTES = 360;
+  const FALLBACK_REFRESH_MS = 60_000;
+  const REFRESH_DEBOUNCE_MS = 500;
   const state = {
     client: null,
     user: null,
-    profile: {},
+    student: null,
     subjects: [],
-    events: [],
     materials: [],
-    videos: [],
+    materialCount: null,
+    classes: [],
+    joinableClassIds: new Set(),
+    quizCount: null,
     sessions: [],
-    attempts: [],
+    segments: [],
+    dailyGoalMinutes: null,
+    errors: {},
     channel: null,
-    loading: true,
-    error: null,
+    authSubscription: null,
+    debounce: null,
+    fallback: null,
+    clock: null,
+    loadSequence: 0,
+    identitySequence: 0,
+    started: false,
   };
 
-  const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
+  const $ = (id) => document.getElementById(id);
+  const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
     "&": "&amp;",
     "<": "&lt;",
     ">": "&gt;",
     '"': "&quot;",
-    "'": "&#039;",
-  })[character]);
+    "'": "&#39;",
+  })[char]);
 
-  const profileValue = (key, fallback = "") => state.profile[key] ?? state.profile.academic?.[key] ?? fallback;
-  const normalize = (value) => String(value ?? "").trim().toLowerCase();
-  const eventId = (event) => String(event.source_id || event.id || "").replace(/^[^-]+-/, "");
-  const now = () => new Date();
-
-  function subjectIcon(subject) {
-    const value = normalize(subject);
-    if (value.includes("math")) return { markup: "&pi;", className: "subject-icon-math" };
-    if (value.includes("physics")) return { markup: '<i class="fa-solid fa-atom"></i>', className: "subject-icon-physics" };
-    if (value.includes("chem")) return { markup: '<i class="fa-solid fa-flask"></i>', className: "subject-icon-chemistry" };
-    if (value.includes("english")) return { markup: '<i class="fa-solid fa-book"></i>', className: "subject-icon-english" };
-    if (value.includes("computer") || value.includes("program")) return { markup: '<i class="fa-solid fa-code"></i>', className: "subject-icon-computer" };
-    if (value.includes("biology")) return { markup: '<i class="fa-solid fa-dna"></i>', className: "subject-icon-biology" };
-    if (value.includes("history")) return { markup: '<i class="fa-solid fa-landmark"></i>', className: "subject-icon-history" };
-    return { markup: '<i class="fa-solid fa-book-open"></i>', className: "subject-icon-default" };
+  function displayError(error) {
+    return String(error?.message || error || "Please try again.");
   }
 
-  function materialIcon(material) {
-    const type = normalize(material.material_type || material.type || material.file_name).replace("application/", "");
-    if (type.includes("pdf")) return { icon: "fa-regular fa-file-pdf", className: "accent-red" };
-    if (type.includes("video")) return { icon: "fa-solid fa-video", className: "accent-blue" };
-    if (type.includes("image")) return { icon: "fa-regular fa-image", className: "accent-orange" };
-    if (type.includes("link")) return { icon: "fa-solid fa-link", className: "accent-green" };
-    return { icon: "fa-regular fa-file-lines", className: "accent-blue" };
-  }
-
-  function formatDate(date) {
-    return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(date);
-  }
-
-  function formatTime(date) {
-    return new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(date);
-  }
-
-  function relativeTime(value) {
-    const date = new Date(value);
-    if (Number.isNaN(date.valueOf())) return "Date unavailable";
-    const minutes = Math.max(0, Math.round((Date.now() - date.getTime()) / 60000));
-    if (minutes < 60) return `${minutes || 1} min ago`;
-    const hours = Math.round(minutes / 60);
-    if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
-    const days = Math.round(hours / 24);
-    return `${days} day${days === 1 ? "" : "s"} ago`;
+  function setSyncStatus(message, isError = false) {
+    const element = $("dashboardSyncStatus");
+    if (!element) return;
+    element.textContent = message;
+    element.dataset.state = isError ? "error" : "ready";
   }
 
   function formatDuration(seconds) {
-    const safe = Math.max(0, Math.floor(Number(seconds) || 0));
-    const hours = Math.floor(safe / 3600);
-    const minutes = Math.floor((safe % 3600) / 60);
-    return hours ? `${hours}h ${minutes}m` : `${minutes}m`;
+    const minutes = Math.max(0, Math.floor(Number(seconds || 0) / 60));
+    const hours = Math.floor(minutes / 60);
+    const rest = minutes % 60;
+    if (hours && rest) return `${hours}h ${rest}m`;
+    if (hours) return `${hours}h`;
+    return `${rest}m`;
   }
 
-  function dateKey(value) {
+  function formatDate(value) {
     const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "Date unavailable";
+    return date.toLocaleDateString(undefined, {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  }
+
+  function formatTime(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleTimeString(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  }
+
+  function localDateKey(date) {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
   }
 
-  function isToday(value) {
-    return dateKey(value) === dateKey(now());
+  function localMidnight(date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }
 
-  function sessionSeconds(session) {
-    let seconds = Number(session.duration_seconds) || 0;
-    if (session.status === "active" && session.last_resumed_at) seconds += Math.max(0, (Date.now() - new Date(session.last_resumed_at).getTime()) / 1000);
-    return seconds;
+  async function readAll(createQuery) {
+    const rows = [];
+    for (let offset = 0; ; offset += 1000) {
+      const { data, error } = await createQuery(offset, offset + 999);
+      if (error) throw error;
+      const page = data || [];
+      rows.push(...page);
+      if (page.length < 1000) return rows;
+    }
   }
 
-  function todayStudySeconds() {
-    return state.sessions.reduce((total, session) => {
-      if (!isToday(session.start_time) && !isToday(session.end_time || session.start_time)) return total;
-      return total + sessionSeconds(session);
-    }, 0);
-  }
-
-  function weekStudySeconds() {
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
-    return state.sessions.reduce((total, session) => {
-      const sessionDate = new Date(session.start_time);
-      return sessionDate >= start ? total + sessionSeconds(session) : total;
-    }, 0);
-  }
-
-  function eventStart(event) {
-    const value = event.start_at || event.start_time || event.scheduled_at || event.published_at;
-    const date = new Date(value);
-    return Number.isNaN(date.valueOf()) ? null : date;
-  }
-
-  function eventEnd(event) {
-    const start = eventStart(event);
-    if (!start) return null;
-    if (event.end_at || event.end_time) return new Date(event.end_at || event.end_time);
-    return new Date(start.getTime() + (Number(event.duration_minutes) || 60) * 60000);
-  }
-
-  function classStatus(event) {
-    const raw = normalize(event.status);
-    if (raw.includes("cancel")) return { label: "Cancelled", className: "upcoming" };
-    if (["completed", "attended", "done", "finished"].includes(raw)) return { label: "Completed", className: "upcoming" };
-    if (raw === "missed") return { label: "Missed", className: "upcoming" };
-    if (["live", "live now", "in_progress", "in progress", "ongoing"].includes(raw)) return { label: "Live", className: "" };
-    const start = eventStart(event);
-    const end = eventEnd(event);
-    if (!start || !end) return { label: "Upcoming", className: "upcoming" };
-    if (now() >= end) return { label: "Missed", className: "upcoming" };
-    return { label: "Upcoming", className: "upcoming" };
-  }
-
-  function setStatus(message = "") {
-    root.dataset.syncStatus = message ? "error" : "connected";
-    root.setAttribute("aria-busy", String(state.loading));
-    root.title = message || "Dashboard synchronized";
-  }
-
-  function setText(selector, value) {
-    const element = root.querySelector(selector);
-    if (element) element.textContent = value;
-  }
-
-  function renderGreeting() {
-    const hour = new Date().getHours();
-    const period = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-    const name = String(profileValue("name") || profileValue("full_name") || profileValue("first_name") || profileValue("firstName") || "Student").split(" ")[0];
-    setText("#welcomeGreeting", `${period}, ${name}!`);
-    setText("#todayDate", formatDate(now()));
-    setText("#currentTime", formatTime(now()));
-    const grade = profileValue("grade") || profileValue("classGrade") || profileValue("class_grade");
-    const stream = profileValue("stream") || profileValue("classStream");
-    setText("#studentLocation", [grade && `Grade ${grade}`, stream].filter(Boolean).join(" · ") || "Learning space");
-  }
-
-  function renderStats() {
-    const stats = root.querySelectorAll(".dashboard-stat");
-    const availableQuizzes = state.events.filter((event) => {
-      if (event.source !== "quizzes" || event.attempted) return false;
-      const status = normalize(event.status);
-      if (status === "published") return true;
-      return status === "scheduled" && eventStart(event) >= now();
-    }).length;
-    const liveClasses = state.events.filter((event) => event.source === "live_classes" && !normalize(event.status).includes("cancel") && eventEnd(event) >= now()).length;
-    const studySeconds = todayStudySeconds();
-    const values = [state.subjects.length, liveClasses, availableQuizzes, state.materials.length, formatDuration(studySeconds)];
-    values.forEach((value, index) => {
-      const target = stats[index]?.querySelector(".dashboard-stat-value");
-      if (target) target.textContent = value;
+  function currentWeekDays(now = new Date()) {
+    const monday = localMidnight(now);
+    monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+    return Array.from({ length: 7 }, (_, index) => {
+      const start = new Date(monday);
+      start.setDate(monday.getDate() + index);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 1);
+      return { start, end, key: localDateKey(start) };
     });
-    const change = stats[4]?.querySelector(".dashboard-stat-link");
-    if (change) change.innerHTML = `<i class="fa-solid fa-arrow-trend-up" aria-hidden="true"></i> ${formatDuration(weekStudySeconds())} this week`;
   }
 
-  function subjectProgress(subject) {
-    const key = normalize(subject);
-    const subjectVideos = state.videos.filter((item) => normalize(item.subject) === key);
-    const completedVideos = subjectVideos.filter((item) => item.completed).length;
-    const quizTotal = state.events.filter((event) => event.source === "quizzes" && normalize(event.subject) === key).length;
-    const quizCompleted = state.events.filter((event) => event.source === "quizzes" && normalize(event.subject) === key && event.attempted).length;
-    const total = subjectVideos.length + quizTotal;
-    return total ? Math.min(100, Math.round(((completedVideos + quizCompleted) / total) * 100)) : 0;
+  function getStudyIntervals(now = new Date()) {
+    const sessionsById = new Map(state.sessions.map((session) => [String(session.id), session]));
+    const intervals = [];
+    for (const segment of state.segments) {
+      const start = new Date(segment.start_time);
+      const end = new Date(segment.end_time);
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) continue;
+      const session = sessionsById.get(String(segment.session_id));
+      intervals.push({
+        start,
+        end,
+        durationSeconds: Number(segment.duration_seconds),
+        subjectId: session?.subject_id == null ? null : String(session.subject_id),
+      });
+    }
+    for (const session of state.sessions) {
+      if (session.status !== "active") continue;
+      const start = new Date(session.last_resumed_at);
+      if (!Number.isNaN(start.getTime()) && start < now) {
+        intervals.push({
+          start,
+          end: now,
+          durationSeconds: null,
+          subjectId: session.subject_id == null ? null : String(session.subject_id),
+        });
+      }
+    }
+    return intervals;
   }
 
-  function renderSubjects() {
-    const panel = root.querySelector(".dashboard-panel");
-    if (!panel) return;
-    const rows = state.subjects.length ? state.subjects.map((subject) => {
-      const icon = subjectIcon(subject);
-      const progress = subjectProgress(subject);
-      return `<div class="subject-row"><div class="subject-row-top"><span class="subject-row-name"><span class="subject-icon ${icon.className}" aria-hidden="true">${icon.markup}</span>${escapeHtml(subject)}</span><span class="subject-progress-label"><strong>${progress}%</strong></span></div><div class="dashboard-progress-track"><div class="dashboard-progress-fill" style="width:${progress}%"></div></div></div>`;
-    }).join("") : '<div class="dashboard-empty"><i class="fa-solid fa-book-open"></i><span>No registered subjects found.</span></div>';
-    panel.innerHTML = `<div class="dashboard-panel-header"><h2 class="dashboard-panel-title"><i class="fa-solid fa-book-open"></i>Your Subjects</h2><span class="dashboard-panel-link" onclick="viewAllSubjects()">View All <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span></div>${rows}`;
+  function calculateStudyStats(now = new Date()) {
+    const days = currentWeekDays(now);
+    const byDay = new Map(days.map((day) => [day.key, 0]));
+    const bySubject = new Map();
+    let weekSeconds = 0;
+    let todaySeconds = 0;
+    for (const interval of getStudyIntervals(now)) {
+      for (const day of days) {
+        const start = Math.max(interval.start.getTime(), day.start.getTime());
+        const end = Math.min(interval.end.getTime(), day.end.getTime());
+        if (end <= start) continue;
+        const overlapMilliseconds = end - start;
+        const intervalMilliseconds = interval.end.getTime() - interval.start.getTime();
+        const fullInterval = start === interval.start.getTime() && end === interval.end.getTime();
+        const seconds = Number.isFinite(interval.durationSeconds)
+          ? (fullInterval
+            ? interval.durationSeconds
+            : Math.round(interval.durationSeconds * overlapMilliseconds / intervalMilliseconds))
+          : Math.round(overlapMilliseconds / 1000);
+        weekSeconds += seconds;
+        byDay.set(day.key, (byDay.get(day.key) || 0) + seconds);
+        if (day.key === localDateKey(now)) todaySeconds += seconds;
+        if (interval.subjectId) {
+          bySubject.set(interval.subjectId, (bySubject.get(interval.subjectId) || 0) + seconds);
+        }
+      }
+    }
+    return { days, byDay, bySubject, weekSeconds, todaySeconds };
+  }
+
+  function renderSubjects(stats) {
+    const container = $("registeredSubjectsList");
+    if (!container) return;
+    if (state.errors.curriculum) {
+      container.innerHTML = `<div class="dashboard-error">Subjects could not be loaded: ${escapeHtml(displayError(state.errors.curriculum))}</div>`;
+      return;
+    }
+    if (!state.subjects.length) {
+      container.innerHTML = '<div class="dashboard-empty">No subjects are available for your registered grade and stream.</div>';
+      return;
+    }
+    const maxStudySeconds = Math.max(0, ...state.subjects.map((subject) =>
+      stats.bySubject.get(String(subject.id)) || 0,
+    ));
+    container.innerHTML = state.subjects.map((subject) => {
+      const seconds = stats.bySubject.get(String(subject.id)) || 0;
+      const width = maxStudySeconds ? Math.min(100, Math.round(seconds / maxStudySeconds * 100)) : 0;
+      return `<div class="subject-row">
+        <div class="subject-row-top">
+          <span class="subject-row-name">${escapeHtml(subject.name)}</span>
+          <span class="subject-progress-label">${escapeHtml(formatDuration(seconds))}</span>
+        </div>
+        <div class="dashboard-progress-track" role="progressbar" aria-label="${escapeHtml(subject.name)} study time compared with the most studied subject" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${width}">
+          <div class="dashboard-progress-fill" style="width: ${width}%"></div>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  function getMaterialType(material) {
+    const type = String(material.material_type || "").toLowerCase();
+    if (type === "pdf") return { label: "PDF", icon: "fa-file-pdf" };
+    if (type === "video") return { label: "Video", icon: "fa-file-video" };
+    if (type === "photo" || type === "image") return { label: "Image", icon: "fa-file-image" };
+    return { label: "Document", icon: "fa-file-word" };
   }
 
   function renderMaterials() {
-    const panel = root.querySelectorAll(".dashboard-panel")[1];
-    if (!panel) return;
-    const rows = state.materials.slice(0, 4).map((material) => {
-      const icon = materialIcon(material);
-      const title = material.title || material.name || material.file_name || "Untitled material";
-      return `<div class="material-row"><div class="material-type-icon ${icon.className}"><i class="${icon.icon}"></i></div><div class="material-row-info"><div class="material-row-title">${escapeHtml(title)}</div><div class="material-row-meta">${escapeHtml(material.subject || "General")} · ${relativeTime(material.uploaded_at || material.created_at)}</div></div><span class="material-menu" aria-label="More material actions"><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i></span></div>`;
+    const container = $("recentMaterialsList");
+    if (!container) return;
+    if (state.errors.materials) {
+      container.innerHTML = `<div class="dashboard-error">Materials could not be loaded: ${escapeHtml(displayError(state.errors.materials))}</div>`;
+      return;
+    }
+    if (!state.materials.length) {
+      container.innerHTML = '<div class="dashboard-empty">No recent materials are available for your subjects.</div>';
+      return;
+    }
+    container.innerHTML = state.materials.map((material) => {
+      const type = getMaterialType(material);
+      const subject = state.subjectsById?.get(String(material.subject_id))?.name || "Subject";
+      const teacher = material.teacher_name
+        ? `<span class="material-teacher">${escapeHtml(material.teacher_name)}</span>`
+        : "";
+      const actionLabel = type.label === "Document" ? "Download" : "View";
+      return `<div class="material">
+        <div class="material-icon" aria-hidden="true"><i class="fa-regular ${type.icon}"></i></div>
+        <div class="material-info">
+          <strong>${escapeHtml(material.title || material.file_name || "Untitled material")}</strong>
+          <span>${escapeHtml(subject)} · ${type.label}${teacher ? ` · ${teacher}` : ""}</span>
+          <small>${escapeHtml(formatDate(material.created_at))}</small>
+        </div>
+        <button class="material-action" type="button" data-material-open="${escapeHtml(material.id)}" data-material-action="${actionLabel.toLowerCase()}">${actionLabel}</button>
+      </div>`;
     }).join("");
-    panel.innerHTML = `<div class="dashboard-panel-header"><h2 class="dashboard-panel-title"><i class="fa-solid fa-file-lines"></i>Recent Materials</h2><span class="dashboard-panel-link" onclick="action('materials')">View All <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span></div>${rows || '<div class="dashboard-empty"><i class="fa-regular fa-file-lines"></i><span>No materials available yet.</span></div>'}`;
   }
 
-  function renderClasses() {
-    const panel = root.querySelectorAll(".dashboard-panel")[2];
-    if (!panel) return;
-    const classes = state.events.filter((event) => event.source === "live_classes" && isToday(eventStart(event)) && !normalize(event.status).includes("cancel")).sort((left, right) => eventStart(left) - eventStart(right)).slice(0, 6);
-    const rows = classes.map((event) => {
-      const start = eventStart(event);
-      const status = classStatus(event);
-      return `<div class="class-row"><span class="class-dot"></span><span class="class-time">${formatTime(start)}</span><div class="class-info"><strong>${escapeHtml(event.subject || event.title || "Class")}${event.teacher_name ? ` · ${escapeHtml(event.teacher_name)}` : ""}</strong><span>${formatTime(start)} – ${formatTime(eventEnd(event))}</span></div><span class="class-status ${status.className}">${status.label} <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span></div>`;
+  function classDateTime(item, key) {
+    const timestamp = item[key];
+    if (timestamp) {
+      const date = new Date(timestamp);
+      if (!Number.isNaN(date.getTime())) return date;
+    }
+    const datePart = item.class_date;
+    const timePart = key === "start_at" ? item.start_time : item.end_time;
+    if (datePart && timePart) {
+      const date = new Date(`${datePart}T${String(timePart).slice(0, 8)}`);
+      if (!Number.isNaN(date.getTime())) return date;
+    }
+    return null;
+  }
+
+  function getClassStatus(item, now = new Date()) {
+    const start = classDateTime(item, "start_at");
+    const end = classDateTime(item, "end_at");
+    const raw = String(item.status || "").toLowerCase();
+    if (["cancelled", "canceled", "completed", "ended"].includes(raw)) return "Completed";
+    if (start && end && now >= start && now < end) return "Live";
+    if (end && now >= end) return "Completed";
+    return "Upcoming";
+  }
+
+  function isClassRelevant(item) {
+    return Number(item.grade) === Number(state.student.grade) &&
+      (Number(state.student.grade) <= 10 ||
+        String(item.stream || "").trim().toLowerCase() ===
+          String(state.student.stream || "").trim().toLowerCase()) &&
+      state.subjectIds.has(String(item.subject_id));
+  }
+
+  function renderClasses(now = new Date()) {
+    const container = $("todayClassesList");
+    if (!container) return;
+    if (state.errors.classes) {
+      container.innerHTML = `<div class="dashboard-error">Classes could not be loaded: ${escapeHtml(displayError(state.errors.classes))}</div>`;
+      return;
+    }
+    const todayKey = localDateKey(now);
+    const today = state.classes.filter((item) => {
+      if (!isClassRelevant(item)) return false;
+      const start = classDateTime(item, "start_at");
+      return start && localDateKey(start) === todayKey;
+    }).sort((left, right) =>
+      (classDateTime(left, "start_at")?.getTime() || 0) -
+      (classDateTime(right, "start_at")?.getTime() || 0),
+    );
+    if (!today.length) {
+      container.innerHTML = '<div class="dashboard-empty">No classes scheduled today.</div>';
+      return;
+    }
+    container.innerHTML = today.map((item) => {
+      const status = getClassStatus(item, now);
+      const start = classDateTime(item, "start_at");
+      const end = classDateTime(item, "end_at");
+      const joinButton = status === "Live" && state.joinableClassIds.has(String(item.id))
+        ? `<button class="class-join-button" type="button" data-class-join="${escapeHtml(item.id)}">Join Class</button>`
+        : "";
+      return `<div class="schedule-item">
+        <div class="schedule-time">${escapeHtml(start ? formatTime(start) : "")}${end ? ` – ${escapeHtml(formatTime(end))}` : ""}</div>
+        <div class="schedule-info">
+          <strong>${escapeHtml(item.title || item.topic || "Live class")}</strong>
+          <span>${escapeHtml(item.subject_name || "Subject")}${item.teacher_name ? ` · ${escapeHtml(item.teacher_name)}` : ""}</span>
+        </div>
+        <span class="live-tag">${status}</span>
+        ${joinButton}
+      </div>`;
     }).join("");
-    panel.innerHTML = `<div class="dashboard-panel-header"><h2 class="dashboard-panel-title"><i class="fa-regular fa-calendar"></i>Today's Classes</h2><span class="dashboard-panel-link" onclick="action('calendar')">View Schedule <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span></div><div class="schedule-timeline">${rows || '<div class="dashboard-empty"><i class="fa-regular fa-calendar-xmark"></i><span>No classes scheduled today.</span></div>'}</div>`;
   }
 
-  function renderProgress() {
-    const completedVideos = state.videos.filter((item) => item.completed).length;
-    const completedQuizzes = state.attempts.length;
-    const availableActivities = state.videos.length + state.events.filter((event) => event.source === "quizzes").length;
-    const progress = availableActivities ? Math.min(100, Math.round(((completedVideos + completedQuizzes) / availableActivities) * 100)) : 0;
-    const fill = root.querySelector(".study-progress-panel .dashboard-progress-fill");
-    if (fill) fill.style.width = `${progress}%`;
-    setText(".study-progress-value", `${progress}%`);
-    setText(".study-progress-copy p", availableActivities ? "Based on completed videos and quizzes" : "Complete a learning activity to begin");
+  function renderStudyProgress(now = new Date()) {
+    const progressText = $("studyProgressText");
+    const progressValue = $("studyProgressValue");
+    const progressFill = $("studyProgressFill");
+    const activity = $("studyDailyActivity");
+    if (state.errors.study) {
+      if (progressText) progressText.textContent = `Study activity could not be loaded: ${displayError(state.errors.study)}`;
+      if (progressValue) progressValue.textContent = "—";
+      if (progressFill) progressFill.style.width = "0%";
+      if (activity) activity.innerHTML = "";
+      return;
+    }
+    if (state.errors.goal) {
+      if (progressText) progressText.textContent = `Study sessions are loaded, but the daily goal could not be retrieved: ${displayError(state.errors.goal)}`;
+    }
+    const stats = calculateStudyStats(now);
+    const dailyGoalSeconds = state.dailyGoalMinutes == null
+      ? null
+      : state.dailyGoalMinutes * 60;
+    const goalSecondsForWeek = dailyGoalSeconds == null ? null : dailyGoalSeconds * 7;
+    const percent = goalSecondsForWeek
+      ? Math.min(100, Math.round(stats.weekSeconds / goalSecondsForWeek * 100))
+      : null;
+    if (!state.errors.goal && progressText) {
+      const todayGoal = dailyGoalSeconds == null ? "daily goal unavailable" :
+        `${formatDuration(stats.todaySeconds)} of ${formatDuration(dailyGoalSeconds)} today`;
+      progressText.textContent = stats.weekSeconds
+        ? `${formatDuration(stats.weekSeconds)} studied this week · ${todayGoal}.`
+        : `No study activity recorded this week · ${todayGoal}.`;
+    }
+    if (progressValue) progressValue.textContent = percent == null ? "—" : `${percent}%`;
+    if (progressFill) progressFill.style.width = `${percent || 0}%`;
+    if (activity) {
+      activity.innerHTML = stats.days.map((day) => {
+        const seconds = stats.byDay.get(day.key) || 0;
+        const height = dailyGoalSeconds
+          ? Math.min(100, Math.round(seconds / dailyGoalSeconds * 100))
+          : (seconds ? 100 : 0);
+        const label = day.start.toLocaleDateString(undefined, { weekday: "short" });
+        return `<div class="study-day" title="${escapeHtml(label)}: ${escapeHtml(formatDuration(seconds))}">
+          <span class="study-day-bar"><span style="height: ${height}%"></span></span>
+          <small>${escapeHtml(label)}</small>
+        </div>`;
+      }).join("");
+    }
   }
 
-  function renderAll() {
-    renderGreeting();
-    renderStats();
-    renderSubjects();
-    renderMaterials();
-    renderClasses();
-    renderProgress();
-    setStatus(state.error);
-  }
-
-  function renderLoading() {
-    root.setAttribute("aria-busy", "true");
-    root.querySelectorAll(".dashboard-stat-value").forEach((element) => { element.textContent = "..."; });
-    root.querySelectorAll(".dashboard-panel").forEach((panel) => {
-      panel.innerHTML = '<div class="dashboard-loading"><i class="fa-solid fa-circle-notch fa-spin"></i><span>Loading your learning data...</span></div>';
+  function renderSummary(now = new Date()) {
+    const stats = state.errors.study ? null : calculateStudyStats(now);
+    $("dashboardSubjectCount").textContent = state.errors.curriculum ? "—" : String(state.subjects.length);
+    const relevantClasses = state.classes.filter((item) => {
+      if (!isClassRelevant(item)) return false;
+      const start = classDateTime(item, "start_at");
+      const end = classDateTime(item, "end_at");
+      const status = getClassStatus(item, now);
+      return status === "Live" || (status === "Upcoming" && start && start > now && (!end || end > now));
     });
-    setText(".study-progress-value", "...");
+    $("dashboardLiveClassCount").textContent = state.errors.classes ? "—" : String(relevantClasses.length);
+    $("dashboardQuizCount").textContent = state.errors.quizzes ? "—" : String(state.quizCount ?? 0);
+    $("dashboardMaterialCount").textContent = state.errors.materials ? "—" : String(state.materialCount ?? 0);
+    $("dashboardStudyTime").textContent = stats ? formatDuration(stats.weekSeconds) : "—";
+    $("dashboardStudyTimeNote").textContent = state.errors.study ? "Unavailable" : "This week";
+    const greeting = $("welcomeGreeting");
+    if (greeting) {
+      const firstName = String(state.student?.full_name || "").trim().split(/\s+/)[0];
+      greeting.textContent = firstName ? `Good to see you, ${firstName}!` : "Welcome back!";
+    }
   }
 
-  async function loadData() {
-    if (!state.client || !state.user) return;
-    state.loading = true;
-    try {
-      const profileResult = await state.client.from("students").select("*").eq("user_id", state.user.id).maybeSingle();
-      if (profileResult.error) throw profileResult.error;
-      if (!profileResult.data) throw new Error("No student profile is linked to this account.");
-      const curriculum = await window.StudentCurriculum.loadForStudent(state.client, profileResult.data);
-      let materialsQuery = Promise.resolve({ data: [], error: null });
-      if (curriculum.subjects.length) {
-        let query = state.client
-          .from("materials")
-          .select("id, grade, stream, subject_id, title, material_type, file_name, storage_bucket, created_at, subjects!inner(id, name)")
-          .eq("grade", String(curriculum.grade))
-          .in("subject_id", curriculum.subjects.map((subject) => subject.id))
-          .in("storage_bucket", ["pdfs", "photos", "documents"])
-          .order("created_at", { ascending: false });
-        query = curriculum.grade <= 10
-          ? query.is("stream", null)
-          : query.in(
-              "stream",
-              window.StudentCurriculum.streamQueryValues(
-                curriculum.student.stream,
-              ),
-            );
-        materialsQuery = query;
-      }
-      const [eventsResult, materialsResult, videosResult, sessionsResult, attemptsResult] = await Promise.all([
-        state.client.rpc("get_student_calendar_events", { requested_student_id: state.user.id }),
-        materialsQuery,
-        state.client.rpc("get_student_videos", { requested_student_id: state.user.id }),
-        state.client.from("study_sessions").select("*").eq("student_id", state.user.id).order("start_time", { ascending: false }),
-        state.client.rpc("get_student_quiz_catalog"),
-      ]);
-      state.profile = {
-        ...profileResult.data,
-        name: profileResult.data.full_name,
-        grade: String(profileResult.data.grade),
-        classGrade: String(profileResult.data.grade),
-        class_grade: String(profileResult.data.grade),
-      };
-      state.subjects = curriculum.subjects.map((subject) => subject.name);
-      if (eventsResult.error) throw eventsResult.error;
-      if (materialsResult.error) throw materialsResult.error;
-      if (sessionsResult.error) throw sessionsResult.error;
-      state.events = eventsResult.data || [];
-      state.materials = (materialsResult.data || [])
-        .map((material) => {
-          const subject = Array.isArray(material.subjects)
-            ? material.subjects[0]
-            : material.subjects;
-          return {
-            ...material,
-            subject: subject?.name || "",
-            uploaded_at: material.created_at,
-          };
-        })
-        .filter((material) => {
-          const type = normalize(material.material_type);
-          const bucket = normalize(material.storage_bucket);
-          return (
-            (bucket === "pdfs" && type === "pdf") ||
-            (bucket === "photos" && ["photo", "image"].includes(type)) ||
-            (bucket === "documents" && type === "document")
-          );
-        })
-        .sort((left, right) => new Date(right.created_at) - new Date(left.created_at));
-      state.videos = videosResult.error ? [] : (videosResult.data || []);
-      state.sessions = sessionsResult.data || [];
-      if (attemptsResult.error) throw attemptsResult.error;
-      state.attempts = (attemptsResult.data || [])
-        .filter(
-          (quiz) =>
-            quiz.attempt_id && quiz.attempt_status === "submitted",
-        )
-        .map((quiz) => ({
-          quiz_id: quiz.id,
-          score: quiz.score,
-          total_marks: quiz.result_total_marks,
-          percentage: quiz.percentage,
-          submitted_at: quiz.submitted_at,
-          status: quiz.attempt_status,
-          result_released: quiz.result_released === true,
+  function renderAll(now = new Date()) {
+    if (state.student) {
+      state.subjectsById = new Map(state.subjects.map((subject) => [String(subject.id), subject]));
+      state.subjectIds = new Set(state.subjects.map((subject) => String(subject.id)));
+      const stats = state.errors.study ? { bySubject: new Map() } : calculateStudyStats(now);
+      renderSubjects(stats);
+      renderSummary(now);
+      renderMaterials();
+      renderClasses(now);
+      renderStudyProgress(now);
+    }
+    const todayElement = $("todayDate");
+    if (todayElement) {
+      todayElement.textContent = now.toLocaleDateString(undefined, {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      });
+    }
+    const clockElement = $("currentTime");
+    if (clockElement) {
+      clockElement.textContent = now.toLocaleTimeString(undefined, {
+        hour: "numeric",
+        minute: "2-digit",
+      });
+    }
+  }
+
+  function recordSourceError(key, error, label) {
+    state.errors[key] = error;
+    console.error(`Student dashboard ${label} query failed.`, error);
+  }
+
+  async function loadMaterials(sequence) {
+    if (!state.subjects.length) {
+      state.materials = [];
+      state.materialCount = 0;
+      delete state.errors.materials;
+      return;
+    }
+    let query = state.client
+      .from("materials")
+      .select("id, teacher_id, grade, stream, subject_id, title, material_type, file_name, file_path, storage_bucket, mime_type, created_at", { count: "exact" })
+      .eq("grade", state.student.grade)
+      .in("subject_id", [...state.subjectIds])
+      .in("material_type", MATERIAL_TYPES);
+    query = Number(state.student.grade) <= 10
+      ? query.is("stream", null)
+      : query.eq("stream", state.student.stream);
+    const { data, error, count } = await query
+      .order("created_at", { ascending: false })
+      .limit(5);
+    if (sequence !== state.loadSequence) return;
+    if (error) throw error;
+    state.materials = data || [];
+    state.materialCount = count ?? state.materials.length;
+    delete state.errors.materials;
+    const teacherIds = [...new Set(state.materials.map((row) => row.teacher_id).filter(Boolean))];
+    if (teacherIds.length) {
+      const { data: teachers, error: teacherError } = await state.client
+        .from("teachers")
+        .select("id, full_name")
+        .in("id", teacherIds);
+      if (teacherError) {
+        console.warn("Student dashboard could not load optional teacher names.", teacherError);
+      } else {
+        const names = new Map((teachers || []).map((teacher) => [String(teacher.id), teacher.full_name]));
+        state.materials = state.materials.map((material) => ({
+          ...material,
+          teacher_name: names.get(String(material.teacher_id)) || "",
         }));
-      const attempts = new Set(state.attempts.map((attempt) => String(attempt.quiz_id)));
-      state.events = state.events.map((event) => ({ ...event, attempted: attempts.has(eventId(event)) }));
-      state.error = null;
-    } catch (error) {
-      console.error("Dashboard data load failed.", error);
-      state.error = "Dashboard synchronization is temporarily unavailable.";
-    } finally {
-      state.loading = false;
-      renderAll();
+      }
     }
   }
 
-  async function loadProfileAndData() {
-    renderLoading();
-    state.client = window.SmartLearningSupabase?.getClient?.() || null;
-    if (!state.client) {
-      state.loading = false;
-      state.error = "Student services are not configured.";
-      renderAll();
+  async function loadClasses(sequence) {
+    const data = await readAll((from, to) => state.client
+      .rpc("get_student_live_classes")
+      .range(from, to));
+    if (sequence !== state.loadSequence) return;
+    state.classes = data.filter(isClassRelevant);
+    state.joinableClassIds = new Set();
+    delete state.errors.join;
+    const now = new Date();
+    const liveClasses = state.classes.filter((item) => getClassStatus(item, now) === "Live");
+    const joinChecks = await Promise.all(liveClasses.map(async (item) => {
+      const { data: url, error } = await state.client.rpc("get_student_live_class_join_url", {
+        requested_class_id: item.id,
+      });
+      if (sequence !== state.loadSequence) return null;
+      if (error) {
+        if (error.code !== "42501") {
+          recordSourceError("join", error, "class-join validation");
+        }
+        return null;
+      }
+      if (typeof url === "string" && /^https:\/\/[^\s]+$/i.test(url)) {
+        return String(item.id);
+      }
+      return null;
+    }));
+    if (sequence !== state.loadSequence) return;
+    state.joinableClassIds = new Set(joinChecks.filter(Boolean));
+    delete state.errors.classes;
+  }
+
+  function quizIsAvailable(quiz, now) {
+    if (String(quiz.status || "").toLowerCase() !== "published") return false;
+    const startsAt = quiz.start_at ? new Date(quiz.start_at) : null;
+    const endsAt = quiz.end_at ? new Date(quiz.end_at) : null;
+    return (!startsAt || (!Number.isNaN(startsAt.getTime()) && startsAt <= now)) &&
+      (!endsAt || (!Number.isNaN(endsAt.getTime()) && endsAt >= now));
+  }
+
+  async function loadQuizzes(now, sequence) {
+    const catalog = await readAll((from, to) => state.client
+      .rpc("get_student_quiz_catalog")
+      .range(from, to));
+    if (sequence !== state.loadSequence) return;
+    const eligible = catalog.filter((quiz) =>
+      quiz.subject_id != null &&
+      state.subjectIds.has(String(quiz.subject_id)) &&
+      Number(quiz.grade) === Number(state.student.grade) &&
+      (Number(state.student.grade) <= 10 ||
+        String(quiz.stream || "").trim().toLowerCase() ===
+          String(state.student.stream || "").trim().toLowerCase()) &&
+      String(quiz.quiz_status || "").toLowerCase() === "published",
+    );
+    if (!eligible.length) {
+      state.quizCount = 0;
+      delete state.errors.quizzes;
       return;
     }
-    const { data: { user } = {}, error } = await state.client.auth.getUser();
-    if (error || !user) {
-      state.loading = false;
-      state.error = "Sign in to view your personalized dashboard.";
-      renderAll();
-      return;
+    const ids = [...new Set(eligible.map((quiz) => quiz.id))];
+    const { data, error } = await state.client
+      .from("quizzes")
+      .select("id, status, start_at, end_at")
+      .in("id", ids);
+    if (sequence !== state.loadSequence) return;
+    if (error) throw error;
+    const availableIds = new Set((data || [])
+      .filter((quiz) => quizIsAvailable(quiz, now))
+      .map((quiz) => String(quiz.id)));
+    state.quizCount = availableIds.size;
+    delete state.errors.quizzes;
+  }
+
+  async function loadStudyData(sequence) {
+    const [sessionsResult, segmentsResult, goalResult] = await Promise.all([
+      readAll((from, to) => state.client.from("study_sessions")
+        .select("id, student_id, subject_id, subject, topic, start_time, last_resumed_at, pause_time, end_time, duration_seconds, status, created_at")
+        .eq("student_id", state.user.id)
+        .order("start_time", { ascending: false })
+        .range(from, to))
+        .then((data) => ({ data, error: null }), (error) => ({ data: null, error })),
+      readAll((from, to) => state.client.from("study_session_segments")
+        .select("id, session_id, student_id, start_time, end_time, duration_seconds")
+        .eq("student_id", state.user.id)
+        .order("start_time", { ascending: false })
+        .range(from, to))
+        .then((data) => ({ data, error: null }), (error) => ({ data: null, error })),
+      state.client.rpc("get_student_daily_study_goal"),
+    ]);
+    if (sequence !== state.loadSequence) return;
+    if (sessionsResult.error || segmentsResult.error) {
+      const error = sessionsResult.error || segmentsResult.error;
+      recordSourceError("study", error, "study-session");
+      state.sessions = [];
+      state.segments = [];
+    } else {
+      state.sessions = sessionsResult.data || [];
+      state.segments = segmentsResult.data || [];
+      delete state.errors.study;
+    }
+    if (goalResult.error) {
+      recordSourceError("goal", goalResult.error, "daily-goal");
+      state.dailyGoalMinutes = null;
+    } else {
+      const value = Array.isArray(goalResult.data)
+        ? goalResult.data[0]
+        : goalResult.data;
+      const minutes = Number(typeof value === "object" && value !== null
+        ? value.daily_study_goal_minutes
+        : value);
+      state.dailyGoalMinutes = Number.isFinite(minutes) && minutes > 0
+        ? minutes
+        : DEFAULT_GOAL_MINUTES;
+      delete state.errors.goal;
+    }
+  }
+
+  async function refreshDashboard(showLoading = false) {
+    if (!state.client || !state.user || !state.student) return;
+    const sequence = ++state.loadSequence;
+    if (showLoading) setSyncStatus("Refreshing dashboard…");
+    const now = new Date();
+    const tasks = [
+      ["materials", "materials", () => loadMaterials(sequence)],
+      ["classes", "classes", () => loadClasses(sequence)],
+      ["quizzes", "quizzes", () => loadQuizzes(now, sequence)],
+      ["study", "study", () => loadStudyData(sequence)],
+    ];
+    await Promise.all(tasks.map(async ([key, label, load]) => {
+      try {
+        await load();
+        if (sequence === state.loadSequence && key !== "study") delete state.errors[key];
+      } catch (error) {
+        if (sequence !== state.loadSequence) return;
+        recordSourceError(key, error, label);
+        if (key === "materials") {
+          state.materials = [];
+          state.materialCount = null;
+        } else if (key === "classes") {
+          state.classes = [];
+          state.joinableClassIds = new Set();
+        } else if (key === "quizzes") {
+          state.quizCount = null;
+        }
+      }
+    }));
+    if (sequence !== state.loadSequence) return;
+    renderAll();
+    const errors = Object.entries(state.errors);
+    if (errors.length) {
+      setSyncStatus(`Some dashboard data is unavailable (${errors.map(([key]) => key).join(", ")}).`, true);
+    } else {
+      setSyncStatus(state.realtimeReady ? "Live updates active" : "Dashboard updated");
+    }
+  }
+
+  async function loadStudent(user) {
+    const identitySequence = ++state.identitySequence;
+    const curriculum = await window.StudentCurriculum.loadCurrentStudent(state.client);
+    if (identitySequence !== state.identitySequence) return;
+    if (String(curriculum.user.id) !== String(user.id)) {
+      throw new Error("The signed-in account changed while the dashboard was loading.");
     }
     state.user = user;
-    await loadData();
-    subscribe();
-  }
-
-  function subscribe() {
-    if (!state.client || !state.user) return;
-    state.channel?.unsubscribe();
-    state.channel = state.client.channel(`student-dashboard-${state.user.id}`);
-    ["students", "study_sessions", "quiz_attempts", "student_video_progress", "materials", "live_class_updates", "quizzes", "assignments", "subjects"].forEach((table) => {
-      const filter = table === "students"
-        ? `user_id=eq.${state.user.id}`
-        : table === "quiz_attempts"
-          ? `student_id=eq.${state.profile.id}`
-          : ["study_sessions", "student_video_progress"].includes(table)
-            ? `student_id=eq.${state.user.id}`
-          : undefined;
-      state.channel.on("postgres_changes", { event: "*", schema: "public", table, ...(filter ? { filter } : {}) }, loadData);
-    });
-    state.channel.subscribe((status) => {
-      if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-        state.error = "Live updates are reconnecting.";
-        setStatus(state.error);
-      }
-      if (status === "SUBSCRIBED") {
-        state.error = null;
-        setStatus();
-      }
-    });
-  }
-
-  window.viewAllSubjects = () => { window.location.href = "st_subjects.html"; };
-  window.action = (type) => {
-    const pages = { materials: "st_notes.html", quiz: "st_quizzes.html", live: "st_live_classes.html", calendar: "st_calendar.html", assignments: "st_calendar.html" };
-    if (pages[type]) window.location.href = pages[type];
-  };
-  window.joinClass = () => { window.location.href = "st_live_classes.html"; };
-
-  renderGreeting();
-  const clock = window.setInterval(renderGreeting, 60000);
-  const liveRefresh = window.setInterval(() => {
-    if (!state.loading) {
-      renderStats();
-      renderClasses();
-      renderProgress();
-    }
-  }, 30000);
-  window.addEventListener("beforeunload", () => {
-    window.clearInterval(clock);
-    window.clearInterval(liveRefresh);
-    state.channel?.unsubscribe();
-  });
-  document.addEventListener("DOMContentLoaded", () => loadProfileAndData().catch((error) => {
-    console.error("Dashboard initialization failed.", error);
-    state.error = "Dashboard synchronization is temporarily unavailable.";
-    state.loading = false;
+    state.student = curriculum.student;
+    state.subjects = curriculum.subjects || [];
+    state.subjectIds = new Set(state.subjects.map((subject) => String(subject.id)));
+    state.subjectsById = new Map(state.subjects.map((subject) => [String(subject.id), subject]));
+    state.errors = {};
     renderAll();
-  }));
+    await refreshDashboard(true);
+  }
+
+  function scheduleRefresh() {
+    if (state.debounce) window.clearTimeout(state.debounce);
+    state.debounce = window.setTimeout(() => {
+      state.debounce = null;
+      void refreshDashboard();
+    }, REFRESH_DEBOUNCE_MS);
+  }
+
+  function stopRealtime() {
+    if (state.channel && state.client) {
+      void state.client.removeChannel(state.channel);
+      state.channel = null;
+    }
+    state.realtimeReady = false;
+  }
+
+  function startRealtime() {
+    stopRealtime();
+    if (!state.client || !state.user) return;
+    const channel = state.client.channel(`student-dashboard-${state.user.id}`);
+    const subscribeTable = (table, filter) => {
+      const config = { event: "*", schema: "public", table };
+      if (filter) config.filter = filter;
+      channel.on("postgres_changes", config, scheduleRefresh);
+    };
+    subscribeTable("materials");
+    subscribeTable("live_classes");
+    subscribeTable("quizzes");
+    subscribeTable("students", `user_id=eq.${state.user.id}`);
+    subscribeTable("subjects");
+    subscribeTable("study_sessions", `student_id=eq.${state.user.id}`);
+    subscribeTable("study_session_segments", `student_id=eq.${state.user.id}`);
+    state.channel = channel.subscribe((status, error) => {
+      if (status === "SUBSCRIBED") {
+        state.realtimeReady = true;
+        if (!Object.keys(state.errors).length) setSyncStatus("Live updates active");
+      } else if (["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].includes(status)) {
+        state.realtimeReady = false;
+        console.error("Student dashboard Realtime subscription is unavailable.", error || status);
+        setSyncStatus("Live updates unavailable; checking periodically.", true);
+      }
+    });
+  }
+
+  async function openMaterial(materialId, action, button) {
+    const helper = window.SmartLearningDownloads;
+    if (!helper?.getStudentMaterialUrl || (action === "download" && !helper.downloadMaterial)) {
+      setSyncStatus("Material preview is unavailable because the download service did not load.", true);
+      return;
+    }
+    const newTab = window.open("about:blank", "_blank");
+    if (newTab) newTab.opener = null;
+    if (button) {
+      button.disabled = true;
+      button.textContent = "Opening…";
+    }
+    try {
+      if (action === "download") {
+        const material = state.materials.find((row) => String(row.id) === String(materialId));
+        if (!material) throw new Error("This material is no longer available.");
+        await helper.downloadMaterial(material);
+        if (newTab) newTab.close();
+      } else {
+        const url = await helper.getStudentMaterialUrl(materialId);
+        if (newTab) newTab.location.replace(url);
+        else window.location.assign(url);
+      }
+    } catch (error) {
+      if (newTab) newTab.close();
+      console.error("Student dashboard could not open material.", error);
+      setSyncStatus(`Material could not be opened: ${displayError(error)}`, true);
+    } finally {
+      if (button?.isConnected) {
+        button.disabled = false;
+        button.textContent = "View";
+      }
+    }
+  }
+
+  async function joinClass(classId, button) {
+    if (!state.client) return;
+    button.disabled = true;
+    button.textContent = "Checking…";
+    const newTab = window.open("about:blank", "_blank");
+    if (newTab) newTab.opener = null;
+    try {
+      const { data, error } = await state.client.rpc("get_student_live_class_join_url", {
+        requested_class_id: classId,
+      });
+      if (error) throw error;
+      const url = Array.isArray(data) ? data[0] : data;
+      if (typeof url !== "string" || !/^https:\/\/[^\s]+$/i.test(url)) {
+        throw new Error("The class did not provide a valid secure meeting link.");
+      }
+      if (newTab) newTab.location.replace(url);
+      else window.location.assign(url);
+    } catch (error) {
+      if (newTab) newTab.close();
+      console.error("Student dashboard could not join the class.", error);
+      setSyncStatus(`Class could not be joined: ${displayError(error)}`, true);
+      button.disabled = false;
+      button.textContent = "Join Class";
+    }
+  }
+
+  function handleDashboardClick(event) {
+    const materialButton = event.target.closest("[data-material-open]");
+    if (materialButton) {
+      void openMaterial(
+        materialButton.dataset.materialOpen,
+        materialButton.dataset.materialAction,
+        materialButton,
+      );
+      return;
+    }
+    const joinButton = event.target.closest("[data-class-join]");
+    if (joinButton) void joinClass(joinButton.dataset.classJoin, joinButton);
+  }
+
+  function clearStudentData() {
+    stopRealtime();
+    state.identitySequence += 1;
+    state.user = null;
+    state.student = null;
+    state.subjects = [];
+    state.materials = [];
+    state.materialCount = null;
+    state.classes = [];
+    state.quizCount = null;
+    state.sessions = [];
+    state.segments = [];
+    state.dailyGoalMinutes = null;
+    state.errors = {};
+    state.loadSequence += 1;
+    $("dashboardSubjectCount").textContent = "—";
+    $("dashboardLiveClassCount").textContent = "—";
+    $("dashboardQuizCount").textContent = "—";
+    $("dashboardMaterialCount").textContent = "—";
+    $("dashboardStudyTime").textContent = "—";
+    $("registeredSubjectsList").innerHTML = '<div class="dashboard-empty">Sign in to view your subjects.</div>';
+    $("recentMaterialsList").innerHTML = '<div class="dashboard-empty">Sign in to view your materials.</div>';
+    $("todayClassesList").innerHTML = '<div class="dashboard-empty">Sign in to view your classes.</div>';
+    $("studyProgressText").textContent = "Sign in to view your study activity.";
+    $("studyProgressValue").textContent = "—";
+    $("studyProgressFill").style.width = "0%";
+    $("studyDailyActivity").innerHTML = "";
+    setSyncStatus("Sign in to load your dashboard.", true);
+  }
+
+  async function startForCurrentUser() {
+    if (!window.SmartLearningSupabase?.isConfigured?.()) {
+      throw new Error("Supabase is not configured for this application.");
+    }
+    state.client = window.SmartLearningSupabase.getClient();
+    if (!state.client) throw new Error("Supabase could not be initialized.");
+    const { data, error } = await state.client.auth.getUser();
+    if (error) throw error;
+    if (!data?.user?.id) {
+      clearStudentData();
+      return;
+    }
+    if (state.user?.id && state.user.id !== data.user.id) clearStudentData();
+    await loadStudent(data.user);
+    startRealtime();
+  }
+
+  function showInitializationError(error) {
+    console.error("Student dashboard could not be initialized.", error);
+    setSyncStatus(`Dashboard could not be loaded: ${displayError(error)}`, true);
+    const message = `<div class="dashboard-error">${escapeHtml(displayError(error))}</div>`;
+    $("registeredSubjectsList").innerHTML = message;
+    $("recentMaterialsList").innerHTML = message;
+    $("todayClassesList").innerHTML = message;
+    $("studyProgressText").textContent = `Dashboard data could not be loaded: ${displayError(error)}`;
+    $("studyProgressValue").textContent = "—";
+  }
+
+  function init() {
+    if (state.started) return;
+    state.started = true;
+    $("dashboard-redesign")?.addEventListener("click", handleDashboardClick);
+    void startForCurrentUser().catch(showInitializationError);
+    state.fallback = window.setInterval(() => {
+      if (state.user) void refreshDashboard();
+    }, FALLBACK_REFRESH_MS);
+    state.clock = window.setInterval(() => renderAll(new Date()), 15_000);
+    const { data: authData } = state.client.auth.onAuthStateChange((event, session) => {
+      if (event === "INITIAL_SESSION") return;
+      const nextUserId = session?.user?.id || null;
+      if (nextUserId === state.user?.id) return;
+      clearStudentData();
+      if (session?.user) {
+        void loadStudent(session.user)
+          .then(startRealtime)
+          .catch(showInitializationError);
+      }
+    });
+    state.authSubscription = authData?.subscription || null;
+    window.addEventListener("pagehide", () => {
+      stopRealtime();
+      state.authSubscription?.unsubscribe();
+      state.authSubscription = null;
+      if (state.fallback) window.clearInterval(state.fallback);
+      if (state.clock) window.clearInterval(state.clock);
+      if (state.debounce) window.clearTimeout(state.debounce);
+    }, { once: true });
+  }
+
+  window.viewAllSubjects = () => window.location.assign("st_subjects.html");
+  window.action = (name) => {
+    const destinations = {
+      subjects: "st_subjects.html",
+      materials: "st_notes.html",
+      quizzes: "st_quizzes.html",
+      calendar: "st_live_classes.html",
+      "live-classes": "st_live_classes.html",
+      "study-time": "st_study_time.html",
+    };
+    if (destinations[name]) window.location.assign(destinations[name]);
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init, { once: true });
+  } else {
+    init();
+  }
 })();

@@ -246,7 +246,7 @@
     const user = await getUser(client);
     const { data, error } = await client
       .from("students")
-      .select("id, user_id, grade, stream")
+      .select("id, user_id, full_name, grade, stream")
       .eq("user_id", user.id)
       .maybeSingle();
     if (error) throw error;
