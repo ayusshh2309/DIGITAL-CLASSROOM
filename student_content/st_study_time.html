@@ -462,6 +462,10 @@
         background: linear-gradient(to top, #1e72df, #4398f2);
       }
 
+      .bar.zero {
+        min-height: 0;
+      }
+
       .day {
         font-size: 9px;
         color: #657998;
@@ -593,6 +597,20 @@
 
       .goal-info-item:last-child {
         text-align: right;
+      }
+
+      .study-time-status {
+        margin: 0 0 16px;
+        padding: 11px 14px;
+        border-radius: 9px;
+        background: #f0edff;
+        color: #5034c5;
+        font-size: 13px;
+      }
+
+      .study-time-status[data-state="error"] {
+        background: #fff0ef;
+        color: #a52e28;
       }
 
       /* =========================================
@@ -1045,6 +1063,8 @@
         </div>
       </header>
 
+      <div class="study-time-status" id="studyTimeStatus" role="status" aria-live="polite" hidden></div>
+
       <!-- =========================================
          STATISTICS
     ========================================== -->
@@ -1200,6 +1220,12 @@
               <span> Daily Target </span>
 
               <strong id="goalTarget"> 6h 00m </strong>
+            </div>
+
+            <div class="goal-info-item">
+              <span> Remaining </span>
+
+              <strong id="goalRemaining"> 6h 00m </strong>
             </div>
           </div>
         </div>

@@ -11,7 +11,6 @@
     materials: [],
     videos: [],
     sessions: [],
-    segments: [],
     attempts: [],
     channel: null,
     loading: true,
@@ -279,12 +278,11 @@
             );
         materialsQuery = query;
       }
-      const [eventsResult, materialsResult, videosResult, sessionsResult, segmentsResult, attemptsResult] = await Promise.all([
+      const [eventsResult, materialsResult, videosResult, sessionsResult, attemptsResult] = await Promise.all([
         state.client.rpc("get_student_calendar_events", { requested_student_id: state.user.id }),
         materialsQuery,
         state.client.rpc("get_student_videos", { requested_student_id: state.user.id }),
         state.client.from("study_sessions").select("*").eq("student_id", state.user.id).order("start_time", { ascending: false }),
-        state.client.from("study_session_segments").select("*").eq("student_id", state.user.id).order("start_time", { ascending: false }),
         state.client.rpc("get_student_quiz_catalog"),
       ]);
       state.profile = {
@@ -297,6 +295,7 @@
       state.subjects = curriculum.subjects.map((subject) => subject.name);
       if (eventsResult.error) throw eventsResult.error;
       if (materialsResult.error) throw materialsResult.error;
+      if (sessionsResult.error) throw sessionsResult.error;
       state.events = eventsResult.data || [];
       state.materials = (materialsResult.data || [])
         .map((material) => {
@@ -320,8 +319,7 @@
         })
         .sort((left, right) => new Date(right.created_at) - new Date(left.created_at));
       state.videos = videosResult.error ? [] : (videosResult.data || []);
-      state.sessions = sessionsResult.error ? [] : (sessionsResult.data || []);
-      state.segments = segmentsResult.error ? [] : (segmentsResult.data || []);
+      state.sessions = sessionsResult.data || [];
       if (attemptsResult.error) throw attemptsResult.error;
       state.attempts = (attemptsResult.data || [])
         .filter(
@@ -374,12 +372,12 @@
     if (!state.client || !state.user) return;
     state.channel?.unsubscribe();
     state.channel = state.client.channel(`student-dashboard-${state.user.id}`);
-    ["students", "student_profiles", "study_sessions", "study_session_segments", "quiz_attempts", "student_video_progress", "materials", "live_class_updates", "quizzes", "assignments", "subjects"].forEach((table) => {
+    ["students", "study_sessions", "quiz_attempts", "student_video_progress", "materials", "live_class_updates", "quizzes", "assignments", "subjects"].forEach((table) => {
       const filter = table === "students"
         ? `user_id=eq.${state.user.id}`
         : table === "quiz_attempts"
           ? `student_id=eq.${state.profile.id}`
-          : ["student_profiles", "study_sessions", "study_session_segments", "student_video_progress"].includes(table)
+          : ["study_sessions", "student_video_progress"].includes(table)
             ? `student_id=eq.${state.user.id}`
           : undefined;
       state.channel.on("postgres_changes", { event: "*", schema: "public", table, ...(filter ? { filter } : {}) }, loadData);

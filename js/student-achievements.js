@@ -68,6 +68,7 @@
       state.client.from("student_video_progress").select("video_id,completed").eq("student_id", state.user.id),
       state.client.rpc("get_student_quiz_catalog"),
     ]);
+    if (queries[0].error) throw queries[0].error;
     if (queries[2].error) throw queries[2].error;
     const releasedAttempts = (queries[2].data || [])
       .filter((quiz) => quiz.attempt_status === "submitted" && quiz.result_released)
@@ -77,7 +78,7 @@
         status: quiz.attempt_status,
         submitted_at: quiz.submitted_at,
       }));
-    return { sessions: queries[0].error ? [] : queries[0].data || [], videos: queries[1].error ? [] : queries[1].data || [], quizzes: releasedAttempts };
+    return { sessions: queries[0].data || [], videos: queries[1].error ? [] : queries[1].data || [], quizzes: releasedAttempts };
   }
 
   async function evaluate() {
