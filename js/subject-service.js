@@ -3,6 +3,7 @@
   const normalizeStream = (value) => String(value ?? "").trim().toLowerCase();
   const classKey = (grade, stream) =>
     `${Number(grade)}|${Number(grade) >= 11 ? normalizeStream(stream) : ""}`;
+  const subjectCatalogs = new WeakMap();
 
   function getClient() {
     const client = window.SmartLearningSupabase?.getClient?.();
@@ -33,12 +34,53 @@
     }
   }
 
+  async function readSubjectCatalog(client) {
+    const rows = await readAll(() => client
+      .from("subjects")
+      .select("id, name, grades, streams")
+      .order("name", { ascending: true }));
+    return rows.map((row) => {
+      if (row.id === undefined || row.id === null || !String(row.name || "").trim()) {
+        throw new Error("A public.subjects row is missing its id or name.");
+      }
+      if (row.grades != null && !Array.isArray(row.grades)) {
+        throw new Error(`Subject ${row.name} has grades that are not returned as an integer array.`);
+      }
+      if (row.streams != null && !Array.isArray(row.streams)) {
+        throw new Error(`Subject ${row.name} has streams that are not returned as a text array.`);
+      }
+      return {
+        id: row.id,
+        name: String(row.name).trim(),
+        grades: (row.grades || []).map(Number).filter(Number.isInteger),
+        streams: (row.streams || []).map((stream) => String(stream).trim()).filter(Boolean),
+      };
+    });
+  }
+
+  function getSubjectCatalog(client = getClient()) {
+    if (!client || (typeof client !== "object" && typeof client !== "function")) {
+      throw new Error("Supabase subject services are unavailable.");
+    }
+    if (!subjectCatalogs.has(client)) {
+      const catalogPromise = readSubjectCatalog(client).catch((error) => {
+        subjectCatalogs.delete(client);
+        throw error;
+      });
+      subjectCatalogs.set(client, catalogPromise);
+    }
+    return subjectCatalogs.get(client);
+  }
+
   function isEligible(subject, grade, stream) {
     const normalizedGrade = Number(grade);
+    if (!Number.isInteger(normalizedGrade) || normalizedGrade < 5 || normalizedGrade > 12) {
+      return false;
+    }
     if (!Array.isArray(subject.grades) || !subject.grades.includes(normalizedGrade)) {
       return false;
     }
-    if (normalizedGrade < 11) return true;
+    if (normalizedGrade <= 10) return true;
     return Boolean(
       stream &&
       Array.isArray(subject.streams) &&
@@ -54,14 +96,8 @@
     if (normalizedGrade >= 11 && !String(stream || "").trim()) {
       throw new Error("Select a stream for Grades 11 and 12.");
     }
-    const { data, error } = await client.rpc("get_eligible_subjects", {
-      requested_grade: normalizedGrade,
-      requested_stream: normalizedGrade >= 11 ? String(stream).trim() : null,
-    });
-    if (error) throw error;
-    return (data || [])
-      .filter((subject) => subject.name)
-      .map(({ id, name, grades, streams }) => ({ id, name, grades, streams }));
+    const catalog = await getSubjectCatalog(client);
+    return catalog.filter((subject) => isEligible(subject, normalizedGrade, stream));
   }
 
   async function getAvailableStreams(grade, client = getClient()) {
@@ -69,11 +105,11 @@
     if (!Number.isInteger(normalizedGrade) || normalizedGrade < 11 || normalizedGrade > 12) {
       return [];
     }
-    const { data, error } = await client.rpc("get_eligible_streams", {
-      requested_grade: normalizedGrade,
-    });
-    if (error) throw error;
-    return [...new Set((data || []).map((row) => String(row.stream || "").trim()).filter(Boolean))];
+    const catalog = await getSubjectCatalog(client);
+    return [...new Set(catalog
+      .filter((subject) => subject.grades.includes(normalizedGrade))
+      .flatMap((subject) => subject.streams))]
+      .sort((left, right) => left.localeCompare(right));
   }
 
   async function getTeacherProfile(client = getClient()) {
@@ -277,6 +313,7 @@
   window.SubjectService = {
     getClient,
     getUser,
+    getSubjectCatalog,
     getEligibleSubjects,
     getAvailableStreams,
     getTeacherProfile,

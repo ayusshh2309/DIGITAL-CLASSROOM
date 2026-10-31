@@ -505,13 +505,10 @@
         margin-bottom: 12px;
       }
 
-      /*
-        Description is hidden because the grades themselves
-        already tell the teacher which classes are available.
-      */
-
       .subject-description {
-        display: none;
+        margin-bottom: 10px;
+        color: var(--muted-text);
+        font-size: 0.82rem;
       }
 
       /*
@@ -1080,6 +1077,9 @@
               <div id="teachAllPanel" class="dynamic-panel show">
                 <div class="input-field full-width">
                   <label> Select Grade Group(s) You Want to Teach </label>
+                  <div class="info-note" id="gradeAssignmentDescription">
+                    Select the grade groups you teach.
+                  </div>
 
                   <div class="checkbox-grid">
                     <div class="checkbox-card">
@@ -1148,7 +1148,9 @@
                 </div>
 
                 <div class="subject-box-list" aria-live="polite"></div>
+                <div id="selectedSubjectSummary" class="tags-container"></div>
               </div>
+              <div id="subjectCatalogStatus" class="info-note" role="alert" hidden></div>
             </div>
 
             <!-- =================================================
@@ -1241,7 +1243,7 @@
     here is the html or css
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="../js/supabase.js"></script>
-    <script src="../js/subject-service.js"></script>
+    <script src="../js/subject-service.js?v=20261031-2"></script>
     <script src="../js/teacher-registration-storage.js"></script>
     <script src="../js/teacher-registration.js"></script>
     <script>
@@ -1249,6 +1251,15 @@
         let employmentStatus = "fresher";
         let teachingMode = "teach_all";
         let subjectOptionsReady = false;
+        let subjectLoadError = null;
+        let subjectLoadVersion = 0;
+        const specialistSelections = new Map();
+        const streamOptions = [
+          ["science_pcm", "Science PCM"],
+          ["science_pcb", "Science PCB"],
+          ["commerce", "Commerce"],
+          ["arts_humanities", "Arts / Humanities"],
+        ];
 
         function getDraft() {
           return (
@@ -1281,29 +1292,38 @@
           }
         }
 
-        function setTeachingMode(mode) {
+        function setTeachingMode(mode, persist = true) {
           teachingMode =
             mode === "subject_specialist" ? "subject_specialist" : "teach_all";
           const teachAllButton = document.getElementById("btnTeachAll");
           const specialistButton = document.getElementById("btnSpecialist");
-          const teachAllPanel = document.getElementById("teachAllPanel");
           const specialistPanel = document.getElementById(
             "subjectSpecialistPanel",
+          );
+          const gradeDescription = document.getElementById(
+            "gradeAssignmentDescription",
           );
 
           if (teachingMode === "subject_specialist") {
             specialistButton?.classList.add("active");
             teachAllButton?.classList.remove("active");
             specialistPanel?.classList.add("show");
-            teachAllPanel?.classList.remove("show");
+            gradeDescription.textContent =
+              "Select the grade groups for your subject assignments.";
           } else {
             teachAllButton?.classList.add("active");
             specialistButton?.classList.remove("active");
-            teachAllPanel?.classList.add("show");
             specialistPanel?.classList.remove("show");
+            gradeDescription.textContent =
+              "All eligible subjects for the selected grade groups and streams will be assigned.";
           }
-
           toggleSeniorStreamPanel();
+          if (persist) {
+            saveCurrentDraft();
+            if (teachingMode === "subject_specialist") {
+              void refreshSubjectOptions();
+            }
+          }
         }
 
         function toggleSeniorStreamPanel() {
@@ -1313,14 +1333,6 @@
 
           if (streamPanel) {
             streamPanel.classList.toggle("show", shouldShow);
-          }
-
-          if (!shouldShow) {
-            document
-              .querySelectorAll("#streamSelectPanel input[type='checkbox']")
-              .forEach((checkbox) => {
-                checkbox.checked = false;
-              });
           }
         }
 
@@ -1367,60 +1379,44 @@
         }
 
         function getSelectedStreams() {
-          return [...new Set(
-            Object.values(getSelectedStreamsByGrade()).flat(),
-          )];
+          return Array.from(
+            document.querySelectorAll("#streamSelectPanel input[type='checkbox']:checked"),
+          ).map((checkbox) => checkbox.value);
         }
 
         function getSelectedStreamsByGrade() {
-          const streamsByGrade = {};
-          document
-            .querySelectorAll("#streamSelectPanel input[type='checkbox']:checked")
-            .forEach((checkbox) => {
-              const grade = Number(checkbox.dataset.grade);
-              if (!streamsByGrade[grade]) streamsByGrade[grade] = [];
-              streamsByGrade[grade].push(checkbox.value);
-            });
-          return streamsByGrade;
+          if (!getSelectedGradeGroups().includes("grades_11_12")) return {};
+          const streams = getSelectedStreams();
+          return { 11: [...streams], 12: [...streams] };
         }
 
         function getSelectedSubjectAssignments() {
-          const assignments = Array.from(
-            document.querySelectorAll(
-              '#subjectSpecialistPanel input[type="checkbox"][data-subject]:checked',
-            ),
-          );
-          const grouped = {};
-          assignments.forEach((checkbox) => {
-            const subject = checkbox.dataset.subject;
-            const subjectId = checkbox.dataset.subjectId;
-            const grade = Number(checkbox.dataset.grade);
-            if (!subject || !grade) return;
-            const key = subjectId || subject.toLowerCase();
-            if (!grouped[key]) {
-              grouped[key] = {
-                subject,
-                subject_id: subjectId || null,
+          const grouped = new Map();
+          specialistSelections.forEach((selection) => {
+            if (!grouped.has(selection.subjectId)) {
+              grouped.set(selection.subjectId, {
+                subject: selection.subject,
+                subject_id: selection.subjectId,
                 grades: [],
                 streamsByGrade: {},
-              };
+              });
             }
-            if (!grouped[key].grades.includes(grade)) {
-              grouped[key].grades.push(grade);
+            const assignment = grouped.get(selection.subjectId);
+            if (!assignment.grades.includes(selection.grade)) {
+              assignment.grades.push(selection.grade);
             }
-            const stream = checkbox.dataset.stream;
-            if (stream) {
-              if (!grouped[key].streamsByGrade[grade]) {
-                grouped[key].streamsByGrade[grade] = [];
+            if (selection.stream) {
+              if (!assignment.streamsByGrade[selection.grade]) {
+                assignment.streamsByGrade[selection.grade] = [];
               }
-              if (!grouped[key].streamsByGrade[grade].includes(stream)) {
-                grouped[key].streamsByGrade[grade].push(stream);
+              if (!assignment.streamsByGrade[selection.grade].includes(selection.stream)) {
+                assignment.streamsByGrade[selection.grade].push(selection.stream);
               }
             }
           });
-          return Object.values(grouped).map((assignment) => ({
+          return [...grouped.values()].map((assignment) => ({
             ...assignment,
-            grades: assignment.grades.sort((a, b) => a - b),
+            grades: assignment.grades.sort((left, right) => left - right),
           }));
         }
 
@@ -1437,39 +1433,25 @@
             .replace(/\b\w/g, (letter) => letter.toUpperCase());
         }
 
-        function renderStreamOptions(streamsByGrade) {
+        function renderStreamOptions(selectedStreams = []) {
           const panel = document.getElementById("streamSelectPanel");
           const grid = panel?.querySelector(".checkbox-grid");
           if (!grid) throw new Error("The teacher stream selection panel is missing.");
           grid.replaceChildren();
-          [11, 12].forEach((grade) => {
-            const streams = streamsByGrade[grade] || [];
-            if (!streams.length) return;
-            const group = document.createElement("div");
-            group.className = "stream-grade-group";
-            const heading = document.createElement("p");
-            heading.className = "subject-description";
-            heading.textContent = `Class ${grade}`;
-            group.appendChild(heading);
-            const options = document.createElement("div");
-            options.className = "checkbox-grid";
-            streams.forEach((stream, index) => {
-              const id = `teacher_stream_${grade}_${index}`;
-              const card = document.createElement("div");
-              card.className = "checkbox-card";
-              const input = document.createElement("input");
-              input.type = "checkbox";
-              input.id = id;
-              input.value = stream;
-              input.dataset.grade = String(grade);
-              const label = document.createElement("label");
-              label.htmlFor = id;
-              label.textContent = formatStreamName(stream);
-              card.append(input, label);
-              options.appendChild(card);
-            });
-            group.appendChild(options);
-            grid.appendChild(group);
+          streamOptions.forEach(([stream, label], index) => {
+            const id = `teacher_stream_${index}`;
+            const card = document.createElement("div");
+            card.className = "checkbox-card";
+            const input = document.createElement("input");
+            input.type = "checkbox";
+            input.id = id;
+            input.value = stream;
+            input.checked = selectedStreams.includes(stream);
+            const optionLabel = document.createElement("label");
+            optionLabel.htmlFor = id;
+            optionLabel.textContent = label;
+            card.append(input, optionLabel);
+            grid.appendChild(card);
           });
         }
 
@@ -1478,22 +1460,24 @@
           if (!container) throw new Error("The subject selection panel is missing.");
           container.replaceChildren();
           if (!subjectOptions.length) {
-            container.textContent = "No eligible subjects are configured for these grades.";
+            const empty = document.createElement("p");
+            empty.className = "info-note";
+            empty.textContent = "No subjects were returned from public.subjects.";
+            container.appendChild(empty);
+            renderSelectedSubjectSummary();
             return;
           }
 
-          const bySubject = new Map();
-          subjectOptions.forEach(({ subject, grade, stream }) => {
-            const key = String(subject.id);
-            if (!bySubject.has(key)) {
-              bySubject.set(key, { subject, offerings: [] });
-            }
-            bySubject.get(key).offerings.push({ grade, stream });
-          });
-
-          [...bySubject.values()]
-            .sort((left, right) => left.subject.name.localeCompare(right.subject.name))
-            .forEach(({ subject, offerings }, subjectIndex) => {
+          [...subjectOptions]
+            .sort((left, right) => left.name.localeCompare(right.name))
+            .forEach((subject, subjectIndex) => {
+              const offerings = subject.grades.flatMap((grade) => {
+                if (grade >= 5 && grade <= 10) return [{ grade, stream: null }];
+                if (grade >= 11 && grade <= 12) {
+                  return subject.streams.map((stream) => ({ grade, stream }));
+                }
+                return [];
+              });
               const card = document.createElement("div");
               card.className = "subject-card";
               const heading = document.createElement("div");
@@ -1501,15 +1485,12 @@
               heading.textContent = subject.name;
               const description = document.createElement("div");
               description.className = "subject-description";
-              description.textContent = "Select the classes and streams you teach.";
+              description.textContent = offerings.length
+                ? `Eligible: ${offerings.map(({ grade, stream }) => `Class ${grade}${stream ? ` (${formatStreamName(stream)})` : ""}`).join(", ")}`
+                : "No eligible grades or streams are configured.";
               const grid = document.createElement("div");
               grid.className = "checkbox-grid";
-              offerings
-                .sort((left, right) =>
-                  left.grade - right.grade ||
-                  String(left.stream || "").localeCompare(String(right.stream || "")),
-                )
-                .forEach(({ grade, stream }, offeringIndex) => {
+              offerings.forEach(({ grade, stream }, offeringIndex) => {
                   const id = `specialist_subject_${subjectIndex}_${offeringIndex}`;
                   const option = document.createElement("div");
                   option.className = "checkbox-card";
@@ -1522,6 +1503,23 @@
                   input.dataset.grade = String(grade);
                   if (stream) input.dataset.stream = stream;
                   input.value = String(grade);
+                  const scope = `${grade}|${stream || ""}`;
+                  input.checked = specialistSelections.has(`${subject.id}|${scope}`);
+                  input.addEventListener("change", () => {
+                    const key = `${subject.id}|${scope}`;
+                    if (input.checked) {
+                      specialistSelections.set(key, {
+                        subject: subject.name,
+                        subjectId: String(subject.id),
+                        grade,
+                        stream,
+                      });
+                    } else {
+                      specialistSelections.delete(key);
+                    }
+                    renderSelectedSubjectSummary();
+                    saveCurrentDraft();
+                  });
                   const label = document.createElement("label");
                   label.htmlFor = id;
                   label.textContent = stream
@@ -1533,59 +1531,150 @@
               card.append(heading, description, grid);
               container.appendChild(card);
             });
+          renderSelectedSubjectSummary();
         }
 
-        async function initializeSubjectOptions() {
+        function renderSelectedSubjectSummary() {
+          const summary = document.getElementById("selectedSubjectSummary");
+          if (!summary) return;
+          summary.replaceChildren();
+          const assignments = getSelectedSubjectAssignments();
+          if (!assignments.length) {
+            summary.hidden = true;
+            return;
+          }
+          summary.hidden = false;
+          const heading = document.createElement("strong");
+          heading.textContent = "Selected assignments";
+          summary.appendChild(heading);
+          assignments.forEach((assignment) => {
+            assignment.grades.forEach((grade) => {
+              const streams = assignment.streamsByGrade[grade] || [null];
+              streams.forEach((stream) => {
+                const key = `${assignment.subject_id}|${grade}|${stream || ""}`;
+                const tag = document.createElement("span");
+                tag.className = "tag";
+                tag.textContent = `${assignment.subject} · Class ${grade}${stream ? ` · ${formatStreamName(stream)}` : ""}`;
+                const remove = document.createElement("button");
+                remove.type = "button";
+                remove.setAttribute("aria-label", `Remove ${assignment.subject}, Class ${grade}`);
+                remove.textContent = "×";
+                remove.addEventListener("click", () => {
+                  specialistSelections.delete(key);
+                  renderSubjectOptions(currentSubjectOptions);
+                  saveCurrentDraft();
+                });
+                tag.appendChild(remove);
+                summary.appendChild(tag);
+              });
+            });
+          });
+        }
+
+        let currentSubjectOptions = [];
+
+        function getSelectedSubjectAssignmentsForDraft() {
+          return getSelectedSubjectAssignments();
+        }
+
+        function saveCurrentDraft() {
+          if (!window.TeacherRegistrationStorage?.updateStep2) return;
+          const data = parseProfessionalForm();
+          saveDraft(data);
+        }
+
+        async function loadEligibleSubjectOptions() {
           const container = document.querySelector(".subject-box-list");
-          if (container) container.textContent = "Loading eligible subjects...";
+          if (!container) throw new Error("The subject selection panel is missing.");
+          const version = ++subjectLoadVersion;
+          subjectOptionsReady = false;
+          subjectLoadError = null;
+          if (teachingMode === "subject_specialist") {
+            container.textContent = "Loading subjects from public.subjects...";
+          }
           const client = window.SmartLearningSupabase?.getClient?.();
           if (!client || !window.SubjectService) {
             throw new Error("Supabase subject services are unavailable.");
           }
-          const subjectOptions = [];
-          for (let grade = 5; grade <= 10; grade += 1) {
-            const subjects = await window.SubjectService.getEligibleSubjects(
-              grade,
-              null,
-              client,
-            );
-            subjects.forEach((subject) =>
-              subjectOptions.push({ subject, grade, stream: null }),
-            );
-          }
-          const streamsByGrade = {};
-          const standardStreams = [
-            "science_pcm",
-            "science_pcb",
-            "commerce",
-            "arts_humanities",
-          ];
-          for (const grade of [11, 12]) {
-            let streams = await window.SubjectService.getAvailableStreams(
-              grade,
-              client,
-            );
-            if (!streams.length) {
-              console.warn(
-                `No stream options were returned for Class ${grade}; showing the supported stream choices.`,
-              );
-              streams = standardStreams;
-            }
-            streamsByGrade[grade] = streams;
-            for (const stream of streams) {
-              const subjects = await window.SubjectService.getEligibleSubjects(
-                grade,
-                stream,
-                client,
-              );
-              subjects.forEach((subject) =>
-                subjectOptions.push({ subject, grade, stream }),
-              );
-            }
-          }
-          renderStreamOptions(streamsByGrade);
-          renderSubjectOptions(subjectOptions);
+          const subjects = await window.SubjectService.getSubjectCatalog(client);
+          if (version !== subjectLoadVersion) return;
+          currentSubjectOptions = subjects;
           subjectOptionsReady = true;
+          subjectLoadError = null;
+          const status = document.getElementById("subjectCatalogStatus");
+          if (status) {
+            status.replaceChildren();
+            status.hidden = true;
+          }
+          if (teachingMode === "subject_specialist") {
+            renderSubjectOptions(currentSubjectOptions);
+          }
+        }
+
+        async function refreshSubjectOptions() {
+          try {
+            await loadEligibleSubjectOptions();
+          } catch (error) {
+            subjectOptionsReady = false;
+            subjectLoadError = error;
+            console.error("Teacher registration could not load public.subjects.", {
+              code: error?.code || null,
+              message: error?.message || "Supabase request failed.",
+              details: error?.details || null,
+              hint: error?.hint || null,
+              error,
+            });
+            const status = document.getElementById("subjectCatalogStatus");
+            if (status) {
+              status.replaceChildren();
+              const details = document.createElement("span");
+              details.textContent = `Unable to load public.subjects (${error?.code || "unknown error"}): ${error?.message || "Supabase request failed."}${error?.details ? ` Details: ${error.details}` : ""}${error?.hint ? ` Hint: ${error.hint}` : ""}`;
+              const statusRetry = document.createElement("button");
+              statusRetry.type = "button";
+              statusRetry.className = "btn-secondary";
+              statusRetry.textContent = "Retry subject loading";
+              statusRetry.addEventListener("click", () => void refreshSubjectOptions());
+              status.append(details, document.createTextNode(" "), statusRetry);
+              status.hidden = false;
+            }
+            if (teachingMode === "subject_specialist") {
+              const container = document.querySelector(".subject-box-list");
+              if (!container) throw error;
+              container.replaceChildren();
+            }
+          }
+        }
+
+        function restoreSpecialistSelections(assignments) {
+          specialistSelections.clear();
+          (assignments || []).forEach((assignment) => {
+            const subjectId = assignment.subject_id;
+            if (subjectId == null) return;
+            (assignment.grades || []).forEach((gradeValue) => {
+              const grade = Number(gradeValue);
+              const streams = grade >= 11
+                ? assignment.streamsByGrade?.[grade] || []
+                : [null];
+              streams.forEach((stream) => {
+                const scope = `${grade}|${stream || ""}`;
+                const key = `${subjectId}|${scope}`;
+                specialistSelections.set(key, {
+                  subject: assignment.subject,
+                  subjectId: String(subjectId),
+                  grade,
+                  stream,
+                });
+              });
+            });
+          });
+        }
+
+        function initializeSubjectOptions() {
+          const container = document.querySelector(".subject-box-list");
+          if (container) {
+            container.textContent =
+              "Select grade groups and streams to load eligible subjects.";
+          }
         }
 
         function loadDraftIntoForm() {
@@ -1593,7 +1682,7 @@
           const step2 = draft.step2 || {};
 
           setEmploymentStatus(step2.employmentStatus || "fresher");
-          setTeachingMode(step2.teachingMode || "teach_all");
+          setTeachingMode(step2.teachingMode || "teach_all", false);
 
           const {
             institutionName,
@@ -1639,61 +1728,15 @@
             toggleSeniorStreamPanel();
           }
 
-          document
-            .querySelectorAll("#streamSelectPanel input[type='checkbox']")
-            .forEach((checkbox) => {
-              const grade = Number(checkbox.dataset.grade);
-              const streamsByGrade = step2.streamsByGrade || {};
-              const selectedForGrade = streamsByGrade[grade];
-              checkbox.checked = Array.isArray(selectedForGrade)
-                ? selectedForGrade.includes(checkbox.value)
-                : (step2.streams || []).includes(checkbox.value);
-            });
-
+          const savedStreams = [
+            ...(Array.isArray(step2.streams) ? step2.streams : []),
+            ...Object.values(step2.streamsByGrade || {}).flat(),
+          ];
+          renderStreamOptions(savedStreams);
           const subjectAssignments = Array.isArray(step2.subjectAssignments)
             ? step2.subjectAssignments
             : [];
-          if (subjectAssignments.length) {
-            subjectAssignments.forEach((assignment) => {
-              (assignment.grades || []).forEach((grade) => {
-                const candidates = Array.from(
-                  document.querySelectorAll(
-                    '#subjectSpecialistPanel input[type="checkbox"][data-subject]',
-                  ),
-                );
-                candidates
-                  .filter((candidate) =>
-                    (assignment.subject_id
-                      ? candidate.dataset.subjectId === String(assignment.subject_id)
-                      : candidate.dataset.subject === assignment.subject) &&
-                    Number(candidate.dataset.grade) === Number(grade) &&
-                    (!assignment.streamsByGrade?.[grade] ||
-                      assignment.streamsByGrade[grade].includes(candidate.dataset.stream)),
-                  )
-                  .forEach((checkbox) => {
-                    checkbox.checked = true;
-                  });
-              });
-            });
-          } else {
-            const subjects = Array.isArray(step2.subjects)
-              ? step2.subjects
-              : [];
-            const selected = new Set(
-              subjects.map((subject) => String(subject).trim().toLowerCase()),
-            );
-            document
-              .querySelectorAll(
-                '#subjectSpecialistPanel input[type="checkbox"][data-subject]',
-              )
-              .forEach((checkbox) => {
-                checkbox.checked = selected.has(
-                  String(checkbox.dataset.subject || "")
-                    .trim()
-                    .toLowerCase(),
-                );
-              });
-          }
+          restoreSpecialistSelections(subjectAssignments);
 
           const languages = Array.isArray(step2.languages)
             ? step2.languages
@@ -1743,8 +1786,11 @@
         }
 
         function validateProfessionalForm() {
-          if (!subjectOptionsReady) {
-            alert("Eligible subjects are not loaded. Please reload the page and try again.");
+          if (teachingMode === "subject_specialist" && !subjectOptionsReady) {
+            if (subjectLoadError) {
+              const status = document.getElementById("subjectCatalogStatus");
+              if (status) status.hidden = false;
+            }
             return false;
           }
           const step2Data = parseProfessionalForm();
@@ -1783,15 +1829,9 @@
               alert("Please select at least one grade group.");
               return false;
             }
-            const containsSeniorGrades = step2Data.gradeGroups.some(
-              (group) => group === "grades1112" || group === "grades_11_12",
-            );
-            if (containsSeniorGrades) {
-              const missingGrade = [11, 12].find(
-                (grade) => !(step2Data.streamsByGrade[grade] || []).length,
-              );
-              if (missingGrade) {
-                alert(`Please select at least one stream for Class ${missingGrade}.`);
+            if (step2Data.gradeGroups.includes("grades_11_12")) {
+              if (!step2Data.streams.length) {
+                alert("Please select at least one stream for Classes 11–12.");
                 return false;
               }
             }
@@ -1824,26 +1864,24 @@
             window.location.href = "review.html";
           });
 
-        document.addEventListener("DOMContentLoaded", async function () {
+        document.addEventListener("DOMContentLoaded", function () {
           populateGraduationYears();
-          try {
-            await initializeSubjectOptions();
-          } catch (error) {
-            console.error("Unable to load eligible registration subjects:", error);
-            const container = document.querySelector(".subject-box-list");
-            if (container) {
-              container.textContent = "Subject options could not be loaded. Please reload or try again later.";
-            }
-            return;
-          }
+          renderStreamOptions();
+          initializeSubjectOptions();
           loadDraftIntoForm();
-          const draft = getDraft();
-          const step2 = draft.step2 || {};
-          if (step2.teachingMode === "subject_specialist") {
-            setTeachingMode("subject_specialist");
-          } else {
-            setTeachingMode("teach_all");
-          }
+          document
+            .querySelectorAll("#teachAllPanel input[id^='grades']")
+            .forEach((checkbox) => checkbox.addEventListener("change", () => {
+              toggleSeniorStreamPanel();
+              saveCurrentDraft();
+            }));
+          document
+            .querySelector("#streamSelectPanel .checkbox-grid")
+            ?.addEventListener("change", () => {
+              saveCurrentDraft();
+            });
+          renderSelectedSubjectSummary();
+          void refreshSubjectOptions();
         });
 
         function populateGraduationYears() {

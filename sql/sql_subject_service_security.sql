@@ -258,18 +258,19 @@ create policy "Students read assigned class subjects"
       )
   ));
 
-drop policy if exists "Teachers read the subject catalog"
-  on public.subjects;
-create policy "Teachers read the subject catalog"
-  on public.subjects
-  for select to authenticated
-  using (exists (
-    select 1
-    from public.teachers as teacher
-    where teacher.user_id = (select auth.uid())
-  ));
+grant select on public.teacher_subject_assignments to authenticated;
 
-grant select on public.subjects, public.teacher_subject_assignments
-  to authenticated;
+drop policy if exists "Public read subject catalog"
+  on public.subjects;
+create policy "Public read subject catalog"
+  on public.subjects
+  for select to anon, authenticated
+  using (true);
+
+revoke all on public.subjects from public, anon, authenticated;
+grant select (id, name, grades, streams)
+  on public.subjects to anon, authenticated;
+revoke insert, update, delete, truncate, references, trigger
+  on public.subjects from anon, authenticated;
 
 commit;
