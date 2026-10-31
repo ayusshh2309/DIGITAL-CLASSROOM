@@ -437,6 +437,22 @@
         gap: 10px;
       }
 
+      #streamSelectPanel .checkbox-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      #streamSelectPanel .checkbox-card,
+      #streamSelectPanel .checkbox-card label {
+        height: 100%;
+      }
+
+      #streamSelectPanel .checkbox-card label {
+        display: flex;
+        min-height: 48px;
+        align-items: center;
+        justify-content: center;
+      }
+
       .checkbox-card {
         position: relative;
       }
@@ -484,16 +500,17 @@
       }
 
       .subject-card {
-        border: 1.5px solid #e2e8f0;
+        border: 1px solid #e2e8f0;
         border-radius: 14px;
-        padding: 16px 18px;
-        background: #f8fafc;
-        transition: 0.2s ease;
+        padding: 18px 20px;
+        background: #ffffff;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
       }
 
       .subject-card:hover {
         border-color: #c7d2fe;
-        background: #fafaff;
+        box-shadow: 0 5px 16px rgba(15, 23, 42, 0.08);
       }
 
       .subject-header {
@@ -502,13 +519,7 @@
         gap: 9px;
         font-weight: 800;
         font-size: 1rem;
-        margin-bottom: 12px;
-      }
-
-      .subject-description {
-        margin-bottom: 10px;
-        color: var(--muted-text);
-        font-size: 0.82rem;
+        margin-bottom: 14px;
       }
 
       /*
@@ -589,6 +600,12 @@
         font-size: 0.82rem;
         line-height: 1.5;
         color: #166534;
+      }
+
+      @media (max-width: 600px) {
+        #streamSelectPanel .checkbox-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
       }
 
       /* ================= BUTTONS ================= */
@@ -1077,9 +1094,6 @@
               <div id="teachAllPanel" class="dynamic-panel show">
                 <div class="input-field full-width">
                   <label> Select Grade Group(s) You Want to Teach </label>
-                  <div class="info-note" id="gradeAssignmentDescription">
-                    Select the grade groups you teach.
-                  </div>
 
                   <div class="checkbox-grid">
                     <div class="checkbox-card">
@@ -1300,22 +1314,18 @@
           const specialistPanel = document.getElementById(
             "subjectSpecialistPanel",
           );
-          const gradeDescription = document.getElementById(
-            "gradeAssignmentDescription",
-          );
+          const teachAllPanel = document.getElementById("teachAllPanel");
 
           if (teachingMode === "subject_specialist") {
             specialistButton?.classList.add("active");
             teachAllButton?.classList.remove("active");
             specialistPanel?.classList.add("show");
-            gradeDescription.textContent =
-              "Select the grade groups for your subject assignments.";
+            teachAllPanel?.classList.remove("show");
           } else {
             teachAllButton?.classList.add("active");
             specialistButton?.classList.remove("active");
             specialistPanel?.classList.remove("show");
-            gradeDescription.textContent =
-              "All eligible subjects for the selected grade groups and streams will be assigned.";
+            teachAllPanel?.classList.add("show");
           }
           toggleSeniorStreamPanel();
           if (persist) {
@@ -1483,11 +1493,6 @@
               const heading = document.createElement("div");
               heading.className = "subject-header";
               heading.textContent = subject.name;
-              const description = document.createElement("div");
-              description.className = "subject-description";
-              description.textContent = offerings.length
-                ? `Eligible: ${offerings.map(({ grade, stream }) => `Class ${grade}${stream ? ` (${formatStreamName(stream)})` : ""}`).join(", ")}`
-                : "No eligible grades or streams are configured.";
               const grid = document.createElement("div");
               grid.className = "checkbox-grid";
               offerings.forEach(({ grade, stream }, offeringIndex) => {
@@ -1528,7 +1533,7 @@
                   option.append(input, label);
                   grid.appendChild(option);
                 });
-              card.append(heading, description, grid);
+              card.append(heading, grid);
               container.appendChild(card);
             });
           renderSelectedSubjectSummary();
