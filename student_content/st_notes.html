@@ -417,10 +417,12 @@
 
       .note-actions {
         display: flex;
+        gap: 8px;
       }
 
       .note-btn {
         flex: 1;
+        min-width: 0;
         height: 37px;
         border: none;
         border-radius: 10px;
@@ -450,6 +452,16 @@
 
       .view-btn:active {
         transform: scale(0.99);
+      }
+
+      .download-btn {
+        background: #f3f5fa;
+        color: #435372;
+      }
+
+      .download-btn:hover {
+        background: #e8ecf5;
+        color: #243653;
       }
 
       /* =========================

@@ -1,5 +1,7 @@
 (() => {
   const SUPPORTED_MATERIAL_TYPES = ["pdf", "photo", "image", "document"];
+  const STORAGE_BUCKETS = new Set(["pdfs", "photos", "documents"]);
+  const SIGNED_URL_EXPIRY_SECONDS = 3600;
   const TARGET_MATERIAL_ID = "e993b7b1-9e78-4ad3-9eca-850961878003";
   const REFRESH_INTERVAL_MS = 60_000;
   const state = {
@@ -128,7 +130,10 @@
     $("notesGrid").innerHTML = notes.map((note) => {
       const kind = materialKind(note);
       const label = kind === "image" ? "Photo" : kind.toUpperCase();
-      const openLabel = kind === "document" ? "Open" : "View";
+      const actions = kind === "document"
+        ? `<button class="note-btn download-btn" type="button" data-view="${escape(note.id)}" data-material-action="download">Download</button>`
+        : `<button class="note-btn view-btn" type="button" data-view="${escape(note.id)}" data-material-action="preview">${kind === "pdf" ? "View PDF" : "View Photo"}</button>
+          <button class="note-btn download-btn" type="button" data-view="${escape(note.id)}" data-material-action="download">Download</button>`;
       return `<article class="note-card">
         <div class="note-top">
           <div class="note-icon ${colorFor(note.subject_name)}" aria-hidden="true"><i class="fa-solid ${iconFor(note)}"></i></div>
@@ -137,9 +142,7 @@
         <h3 class="note-title">${escape(note.title || "Untitled Note")}</h3>
         <p class="note-meta">${escape(note.subject_name)}${note.teacher_name ? ` • ${escape(note.teacher_name)}` : ""}<br>${escape(formatDate(noteDate(note)))}</p>
         <div class="note-bottom"><span class="file-type">${escape(note.file_name)}</span><span class="file-size">${escape(formatSize(note.file_size))}</span></div>
-        <div class="note-actions">
-          <button class="note-btn view-btn" type="button" data-view="${escape(note.id)}">${openLabel}</button>
-        </div>
+        <div class="note-actions">${actions}</div>
       </article>`;
     }).join("");
   }
@@ -149,7 +152,7 @@
       .sort((left, right) => (noteDate(right)?.getTime() || 0) - (noteDate(left)?.getTime() || 0))
       .slice(0, 5);
     $("recentNotesList").innerHTML = recent.length
-      ? recent.map((note) => `<button class="recent-note subject-filter-button" type="button" data-view="${escape(note.id)}" aria-label="Open ${escape(note.title || "study material")}">
+      ? recent.map((note) => `<button class="recent-note subject-filter-button" type="button" data-view="${escape(note.id)}" data-material-action="${materialKind(note) === "document" ? "download" : "preview"}" aria-label="${materialKind(note) === "document" ? "Download" : "Open"} ${escape(note.title || "study material")}">
           <span class="recent-icon ${colorFor(note.subject_name)}" aria-hidden="true"><i class="fa-solid ${iconFor(note)}"></i></span>
           <span class="recent-info"><span class="recent-title">${escape(note.title || "Untitled Note")}</span><span class="recent-meta">${escape(note.subject_name)} • ${escape(formatDate(noteDate(note)))}</span></span>
         </button>`).join("")
@@ -551,13 +554,53 @@
     return material;
   }
 
-  async function signedMaterialUrl(material) {
-    const { data, error } = await state.client.storage
-      .from(material.storage_bucket)
-      .createSignedUrl(material.file_path, 120);
+  async function getMaterialUrl(material) {
+    const bucket = String(material.storage_bucket || "").trim();
+    const path = String(material.file_path || "");
+    if (!STORAGE_BUCKETS.has(bucket) || !path || path.startsWith("/") || /^https?:\/\//i.test(path)) {
+      throw new Error("This material has invalid Storage bucket or file path metadata.");
+    }
+
+    const storage = state.client.storage.from(bucket);
+    const fileName = material.file_name || material.title || "study-material";
+    try {
+      const { data } = storage.getPublicUrl(path);
+      const publicUrl = data?.publicUrl;
+      if (publicUrl) {
+        const response = await window.fetch(publicUrl, {
+          method: "HEAD",
+          cache: "no-store",
+        });
+        if (response.ok) {
+          if (material.download) {
+            const result = storage.getPublicUrl(path, { download: fileName });
+            if (result.data?.publicUrl) return result.data.publicUrl;
+          } else {
+            return publicUrl;
+          }
+        }
+      }
+    } catch (error) {
+      console.info("Public material URL is unavailable; trying a signed URL.", error);
+    }
+
+    const options = material.download ? { download: fileName } : {};
+    const { data, error } = await storage
+      .createSignedUrl(path, SIGNED_URL_EXPIRY_SECONDS, options);
     if (error) throw error;
     if (!data?.signedUrl) throw new Error("A secure file link could not be created.");
     return data.signedUrl;
+  }
+
+  function materialAccessError(error) {
+    const message = String(error?.message || "");
+    if (/object not found|not found/i.test(message) || String(error?.statusCode) === "404") {
+      return "This file is missing from its stored Storage location. Ask your teacher to upload it again.";
+    }
+    if (/permission|not authorized|unauthorized|row-level security/i.test(message)) {
+      return "You do not have permission to access this file. Confirm that it is published for your registered class.";
+    }
+    return `This file could not be opened. ${message || "Check Storage access and try again."}`;
   }
 
   async function handleMaterialAction(event) {
@@ -565,17 +608,36 @@
     if (!control) return;
     const noteId = control.dataset.view;
     if (!noteId) return;
-    const preview = window.open("about:blank", "_blank");
+    const action = control.dataset.materialAction || "preview";
+    const preview = action === "preview" ? window.open("about:blank", "_blank") : null;
     if (preview) preview.opener = null;
     try {
-      if (!preview) {
+      if (action === "preview" && !preview) {
         throw new Error("Allow pop-ups to preview this material.");
       }
       control.disabled = true;
+      showStatus(action === "download" ? "Preparing your download..." : "Preparing preview...");
       const material = await fetchSelectedMaterial(noteId);
-      const url = await signedMaterialUrl(material);
-      preview.location.replace(url);
-      showStatus("");
+      if (action === "preview" && materialKind(material) === "document") {
+        throw new Error("Preview is not supported for this document type. Use Download instead.");
+      }
+      const url = await getMaterialUrl({
+        ...material,
+        download: action === "download",
+      });
+      if (action === "download") {
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = material.file_name || material.title || "study-material";
+        link.rel = "noopener";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        showStatus("Your download has started.");
+      } else {
+        preview.location.replace(url);
+        showStatus("");
+      }
     } catch (error) {
       console.error("Unable to access the selected study material.", error);
       if (preview && !preview.closed) preview.close();
@@ -586,7 +648,7 @@
       showStatus(
         error?.message === "This study material is no longer available to your account."
           ? error.message
-          : `This file could not be opened. ${error?.message || "Check Storage access and try again."}`,
+          : materialAccessError(error),
         "error",
       );
     } finally {

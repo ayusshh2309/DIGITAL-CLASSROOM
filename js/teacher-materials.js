@@ -373,6 +373,10 @@
   function setUploadMode(material = null) {
     state.editing = material;
     const editing = Boolean(material);
+    if (!editing) {
+      $("materialFile").value = "";
+      $("fileName").textContent = "No file chosen";
+    }
     $("materialModalTitle").textContent = editing ? "Edit material details" : "Upload material";
     $("submitMaterial").textContent = editing ? "Save changes" : "Save material";
     $("materialType").disabled = editing;
@@ -391,6 +395,8 @@
     $("materialModal").hidden = true;
     state.editing = null;
     $("materialForm").reset();
+    $("materialFile").value = "";
+    $("fileName").textContent = "No file chosen";
     $("materialType").disabled = false;
     $("materialFile").disabled = false;
     $("materialFile").required = false;

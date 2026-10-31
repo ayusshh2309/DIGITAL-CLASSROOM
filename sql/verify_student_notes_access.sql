@@ -83,10 +83,15 @@ select
   subject.name as subject_name,
   material.material_type,
   material.storage_bucket,
+  material.file_path,
   material.file_name,
-  material.created_at
+  material.created_at,
+  (stored_object.id is not null) as storage_object_exists
 from public.materials as material
 left join public.subjects as subject on subject.id = material.subject_id
+left join storage.objects as stored_object
+  on stored_object.bucket_id = material.storage_bucket
+  and stored_object.name = material.file_path
 where material.grade::text = '11'
   and lower(btrim(coalesce(material.stream, ''))) = 'commerce'
   and lower(btrim(coalesce(subject.name, ''))) = 'computer science'
