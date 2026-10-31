@@ -535,8 +535,9 @@
       }
 
       .subject-list {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        display: flex;
+        flex-wrap: wrap;
+        align-content: flex-start;
         gap: 8px;
         margin: 14px 0 16px;
       }
@@ -545,7 +546,9 @@
         display: flex;
         align-items: center;
         gap: 8px;
+        flex: 1 1 155px;
         min-width: 0;
+        max-width: 100%;
         padding: 8px;
         border: 1px solid #e2e8f0;
         border-radius: 10px;
@@ -567,9 +570,16 @@
       }
 
       .subject-item span:last-child {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        min-width: 0;
+        overflow-wrap: anywhere;
+        white-space: normal;
+        line-height: 1.35;
+      }
+
+      .class-empty-subjects {
+        padding: 8px 0;
+        color: var(--text-muted);
+        font-size: 0.82rem;
       }
 
       .empty-state {
@@ -688,7 +698,7 @@
       }
 
       .donut-chart::before {
-        content: "0%";
+        content: attr(data-label);
         position: absolute;
         width: 42px;
         height: 42px;
@@ -1151,7 +1161,7 @@
             <div class="metric-group">
               <div class="metric-icon-circle">👤</div>
               <div class="metric-data">
-                <span class="metric-number" id="totalClassesMetric">0</span>
+                <span class="metric-number" id="totalClassesMetric">—</span>
                 <span class="metric-label">Total Classes</span>
               </div>
             </div>
@@ -1159,7 +1169,7 @@
             <div class="metric-group">
               <div class="metric-icon-circle">👥</div>
               <div class="metric-data">
-                <span class="metric-number" id="totalStudentsMetric">0</span>
+                <span class="metric-number" id="totalStudentsMetric">—</span>
                 <span class="metric-label">Total Students</span>
               </div>
             </div>
@@ -1167,18 +1177,18 @@
             <div class="metric-group">
               <div class="metric-icon-circle">🎖️</div>
               <div class="metric-data">
-                <span class="metric-number" id="totalLessonsMetric">0</span>
+                <span class="metric-number" id="totalLessonsMetric">—</span>
                 <span class="metric-label">Total Lessons</span>
               </div>
             </div>
 
             <div class="donut-container">
-              <div class="donut-chart" id="averageProgressChart"></div>
+              <div class="donut-chart" id="averageProgressChart" data-label="—" role="img" aria-label="Average progress unavailable."></div>
               <div class="metric-data">
                 <span class="metric-number" style="font-size: 1rem"
                   >Average Progress</span
                 >
-                <span class="metric-label">Across all classes</span>
+                <span class="metric-label" id="averageProgressLabel">Loading assessment data</span>
               </div>
             </div>
           </div>
@@ -1189,239 +1199,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="../js/supabase.js"></script>
     <script src="../js/teacher-data.js"></script>
-    <script>
-      document.addEventListener("DOMContentLoaded", async () => {
-        const profileNameElement = document.getElementById("profileNameEl");
-        const avatarElement = document.getElementById("avatarImg");
-        const classesGrid = document.getElementById("classesGrid");
-        const gridViewButton = document.getElementById("gridViewButton");
-        const listViewButton = document.getElementById("listViewButton");
-        const escapeHtml = (value) =>
-          String(value ?? "").replace(/[&<>'"]/g, (character) => ({
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            "'": "&#39;",
-            '"': "&quot;",
-          })[character]);
-        const setView = (view) => {
-          const isList = view === "list";
-          classesGrid?.classList.toggle("list-view", isList);
-          gridViewButton?.classList.toggle("active", !isList);
-          listViewButton?.classList.toggle("active", isList);
-          gridViewButton?.setAttribute("aria-pressed", String(!isList));
-          listViewButton?.setAttribute("aria-pressed", String(isList));
-          localStorage.setItem("teacherClassesView", view);
-        };
-
-        gridViewButton?.addEventListener("click", () => setView("grid"));
-        listViewButton?.addEventListener("click", () => setView("list"));
-        setView(localStorage.getItem("teacherClassesView") || "grid");
-
-        let supabase = null;
-        let user = null;
-        let teacherProfile = null;
-        let classLoadError = "";
-        const classesByGrade = new Map();
-
-        try {
-          const currentTeacher = await TeacherData.loadCurrentTeacherProfile();
-          supabase = currentTeacher.client;
-          user = currentTeacher.user;
-          teacherProfile = currentTeacher.profile;
-
-          if (profileNameElement) {
-            profileNameElement.textContent = teacherProfile.full_name || "Teacher";
-          }
-          if (teacherProfile.profile_photo_url && avatarElement) {
-            try {
-              avatarElement.src = await TeacherData.getTeacherProfilePhotoUrl(
-                teacherProfile.profile_photo_url,
-              );
-            } catch {
-              avatarElement.hidden = true;
-            }
-          }
-
-          const registeredGroups = await TeacherData.loadRegisteredTeachingScope(
-            supabase,
-            teacherProfile.id,
-          );
-          registeredGroups.forEach((group) => {
-            const key = `${group.grade}|${group.stream || ""}`;
-            classesByGrade.set(key, {
-              grade: group.grade,
-              stream: group.stream || null,
-              teachAllSubjects: group.teachAllSubjects,
-              subjects: new Set(group.subjects.map((subject) => subject.name)),
-            });
-          });
-        } catch (error) {
-          console.error("Unable to load registered teacher classes from Supabase.", error);
-          classLoadError = error?.message || "Unable to load registered classes from the database.";
-        }
-
-        const subjectDetails = {
-          English: ["Aa", "var(--chip-purple)"],
-          Mathematics: ["+", "var(--chip-pink)"],
-          EVS: ["🌱", "var(--chip-green)"],
-          Science: ["⚗", "var(--chip-green)"],
-          "Social Science": ["🏛", "var(--chip-cyan)"],
-          SST: ["🏛", "var(--chip-cyan)"],
-          Hindi: ["अ", "var(--chip-orange)"],
-          Physics: ["⚛", "var(--chip-orange)"],
-          Chemistry: ["⚗", "var(--chip-blue)"],
-          Biology: ["🧬", "var(--chip-green)"],
-          Accountancy: ["▤", "var(--chip-purple)"],
-          "Business Studies": ["▥", "var(--chip-blue)"],
-          Economics: ["▰", "var(--chip-amber)"],
-          History: ["🏛", "var(--chip-cyan)"],
-          Geography: ["◎", "var(--chip-green)"],
-          "Political Science": ["⚖", "var(--chip-purple)"],
-          Psychology: ["◉", "var(--chip-pink)"],
-          Sociology: ["◌", "var(--chip-cyan)"],
-          "Physical Education": ["⚽", "var(--chip-orange)"],
-          "Computer Science": ["⌘", "var(--chip-amber)"],
-        };
-
-        const streamLabels = {
-          science_pcm: "PCM",
-          science_pcb: "PCB",
-          commerce: "Commerce",
-          arts_humanities: "Arts / Humanities",
-        };
-        const allSelectedClasses = [...classesByGrade.entries()].sort(
-          ([, left], [, right]) =>
-            left.grade - right.grade || String(left.stream || "").localeCompare(String(right.stream || "")),
-        );
-        const query = new URLSearchParams(window.location.search);
-        const requestedGrade = Number(query.get("class_grade"));
-        const pageSize = 4;
-        let currentPage = Math.max(1, Number(query.get("page")) || 1);
-        const selectedClasses = requestedGrade && allSelectedClasses.some(([, item]) => item.grade === requestedGrade)
-          ? allSelectedClasses.filter(([, item]) => item.grade === requestedGrade)
-          : allSelectedClasses;
-        const totalPages = Math.max(1, Math.ceil(selectedClasses.length / pageSize));
-        currentPage = Math.min(currentPage, totalPages);
-        const pageClasses = () => selectedClasses.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-        const subjectIcon = (subject) => subjectDetails[subject] || ["•", "var(--primary)"];
-
-        const classStats = new Map(
-          [...new Set(selectedClasses.map(([, item]) => item.grade))].map((grade) => [grade, { students: 0, lessons: 0 }]),
-        );
-
-        const getRecordGrade = (record) => {
-          const value =
-            record.class_grade ??
-            record.grade ??
-            record.class_number ??
-            record.class;
-          const match = String(value ?? "").match(/\d+/);
-          return match ? Number(match[0]) : null;
-        };
-
-        if (supabase && user && teacherProfile && selectedClasses.length && !classLoadError) {
-          const registeredGrades = [...new Set(selectedClasses.map(([, item]) => item.grade))];
-          const [studentsResult, materialsResult] = await Promise.all([
-            supabase.from("students").select("class_grade").eq("teacher_id", user.id),
-            supabase.from("materials").select("grade").eq("teacher_id", teacherProfile.id),
-          ]);
-
-          if (!studentsResult.error) {
-            (studentsResult.data || []).forEach((student) => {
-              const grade = getRecordGrade(student);
-              if (classStats.has(grade)) classStats.get(grade).students += 1;
-            });
-          }
-
-          if (!materialsResult.error) {
-            (materialsResult.data || []).forEach((material) => {
-              const grade = getRecordGrade(material);
-              if (classStats.has(grade)) classStats.get(grade).lessons += 1;
-            });
-          }
-        }
-
-        if (classesGrid) {
-          classesGrid.innerHTML = classLoadError
-            ? `<p class="empty-state">Database error: ${escapeHtml(classLoadError)}</p>`
-            : selectedClasses.length
-              ? pageClasses().map(([, classInfo]) => {
-                const { grade, stream, subjects } = classInfo;
-                const subjectArray = [...subjects];
-                const stats = classStats.get(grade) || { students: 0, lessons: 0 };
-                const subjectCards = subjectArray.map((subject) => {
-                  const [icon, color] = subjectIcon(subject);
-                  return `<div class="subject-item" title="${escapeHtml(subject)}">
-                    <span class="subject-item-icon" style="background-color: ${color}">${icon}</span>
-                    <span>${escapeHtml(subject)}</span>
-                  </div>`;
-                }).join("");
-                const accent = subjectIcon(subjectArray[0])[1];
-                return `
-                  <div class="class-card registered-class-card">
-                    <div class="class-card-top">
-                      <div class="class-icon-wrapper" style="background-color: ${accent}">📚</div>
-                      <div class="class-info-header">
-                        <h3>Class ${grade}${stream ? ` · ${escapeHtml(streamLabels[stream] || stream)}` : ""}</h3>
-                        <p>${subjectArray.length} registered subjects</p>
-                      </div>
-                    </div>
-                    <div class="class-meta-line">
-                      <span class="meta-item">👥 ${stats.students} Students</span>
-                      <span class="meta-item">📄 ${stats.lessons} Lessons</span>
-                      <span class="meta-item"><span class="status-dot-active"></span> Active</span>
-                    </div>
-                    <div class="subject-list">${subjectCards}</div>
-                    <div class="progress-section">
-                      <div class="progress-labels"><span>Teaching assignment</span><span>Ready</span></div>
-                    </div>
-                    <button class="btn-view-class" type="button">View Class</button>
-                  </div>
-                `;
-              }).join("")
-                : '<p class="empty-state">No classes registered yet.</p>';
-
-          const pager = document.createElement("nav");
-          pager.className = "classes-pager";
-          pager.setAttribute("aria-label", "Class pages");
-          pager.innerHTML = Array.from({ length: totalPages }, (_, index) => {
-            const page = index + 1;
-            return `<button type="button" class="classes-page-button${page === currentPage ? " active" : ""}" data-page="${page}">${page}</button>`;
-          }).join("");
-          if (totalPages > 1) classesGrid.after(pager);
-          pager.querySelectorAll(".classes-page-button").forEach((button) => {
-            button.addEventListener("click", () => {
-              const nextPage = Number(button.dataset.page);
-              const params = new URLSearchParams(window.location.search);
-              params.set("page", String(nextPage));
-              window.location.search = params.toString();
-            });
-          });
-        }
-
-        const totalStudents = [...classStats.values()].reduce(
-          (total, stats) => total + stats.students,
-          0,
-        );
-        const totalLessons = [...classStats.values()].reduce(
-          (total, stats) => total + stats.lessons,
-          0,
-        );
-        document.getElementById("totalClassesMetric").textContent = selectedClasses.length;
-        document.getElementById("totalStudentsMetric").textContent = totalStudents;
-        document.getElementById("totalLessonsMetric").textContent = totalLessons;
-
-        document
-          .getElementById("logoutBtn")
-          ?.addEventListener("click", async () => {
-            if (supabase) {
-              await supabase.auth.signOut();
-            }
-            window.location.href = "index.html";
-          });
-      });
-    </script>
+    <script src="../js/my-classes.js"></script>
     <script src="../js/layout.js"></script>
   </body>
 </html>
