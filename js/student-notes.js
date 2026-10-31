@@ -128,7 +128,7 @@
     $("notesGrid").innerHTML = notes.map((note) => {
       const kind = materialKind(note);
       const label = kind === "image" ? "Photo" : kind.toUpperCase();
-      const openLabel = kind === "document" ? "Open / Download" : "View";
+      const openLabel = kind === "document" ? "Open" : "View";
       return `<article class="note-card">
         <div class="note-top">
           <div class="note-icon ${colorFor(note.subject_name)}" aria-hidden="true"><i class="fa-solid ${iconFor(note)}"></i></div>
@@ -139,7 +139,6 @@
         <div class="note-bottom"><span class="file-type">${escape(note.file_name)}</span><span class="file-size">${escape(formatSize(note.file_size))}</span></div>
         <div class="note-actions">
           <button class="note-btn view-btn" type="button" data-view="${escape(note.id)}">${openLabel}</button>
-          <button class="note-btn download-btn" type="button" data-download="${escape(note.id)}">↓ Download</button>
         </div>
       </article>`;
     }).join("");
@@ -589,45 +588,30 @@
     return material;
   }
 
-  async function signedMaterialUrl(material, download) {
+  async function signedMaterialUrl(material) {
     const { data, error } = await state.client.storage
       .from(material.storage_bucket)
-      .createSignedUrl(
-        material.file_path,
-        120,
-        download && material.file_name ? { download: material.file_name } : {},
-      );
+      .createSignedUrl(material.file_path, 120);
     if (error) throw error;
     if (!data?.signedUrl) throw new Error("A secure file link could not be created.");
     return data.signedUrl;
   }
 
   async function handleMaterialAction(event) {
-    const control = event.target.closest("[data-view], [data-download]");
+    const control = event.target.closest("[data-view]");
     if (!control) return;
-    const noteId = control.dataset.view || control.dataset.download;
+    const noteId = control.dataset.view;
     if (!noteId) return;
-    const isDownload = control.hasAttribute("data-download");
-    const preview = isDownload ? null : window.open("about:blank", "_blank");
+    const preview = window.open("about:blank", "_blank");
     if (preview) preview.opener = null;
     try {
-      if (!isDownload && !preview) {
+      if (!preview) {
         throw new Error("Allow pop-ups to preview this material.");
       }
       control.disabled = true;
       const material = await fetchSelectedMaterial(noteId);
-      const url = await signedMaterialUrl(material, isDownload);
-      if (isDownload) {
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = material.file_name;
-        link.rel = "noopener";
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-      } else {
-        preview.location.replace(url);
-      }
+      const url = await signedMaterialUrl(material);
+      preview.location.replace(url);
       showStatus("");
     } catch (error) {
       console.error("Unable to access the selected study material.", error);
