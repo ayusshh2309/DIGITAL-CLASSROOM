@@ -127,6 +127,9 @@
         type="search"
         placeholder="Search anything..."
         autocomplete="off"
+        aria-label="Search this page and student pages"
+        aria-controls="studentSearchResults"
+        aria-expanded="false"
       />
     </label>
     <div class="student-topbar-actions">
@@ -142,18 +145,16 @@
       <a
         class="student-profile-button"
         href="st_profile.html"
-        aria-label="Open Ayush Kumar profile"
+        aria-label="Open student profile"
       >
         <img
           class="student-avatar"
-          src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&amp;auto=format&amp;fit=crop&amp;q=80"
-          alt="Ayush Kumar"
+          alt="Student profile"
+          hidden
         />
+        <span class="student-avatar-fallback" aria-hidden="true" hidden></span>
         <span class="student-user-info"
-          ><strong>Ayush Kumar</strong
-          ><small
-            >Grade 12 <span aria-hidden="true">&bull;</span> PCM</small
-          ></span
+          ><strong>Loading profile...</strong><small>Student</small></span
         >
         <i
           class="fa-solid fa-chevron-down student-profile-chevron"
