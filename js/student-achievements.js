@@ -185,6 +185,24 @@
     }
   }
 
+  async function loadUnlockedAchievements() {
+    const queryForStudent = (studentId) => readAllRows(() => state.client.from("student_achievements")
+      .select("achievement_id,unlocked_at,xp_earned,achievement_definition:achievement_definitions(id,title,description,icon,category,requirement_value,xp_reward,is_active)")
+      .eq("student_id", studentId)
+      .order("unlocked_at", { ascending: false })
+      .order("achievement_id", { ascending: true }));
+    const authUserAchievements = await queryForStudent(state.user.id);
+    if (authUserAchievements.length || String(state.studentId) === String(state.user.id)) {
+      return authUserAchievements;
+    }
+
+    const profileAchievements = await queryForStudent(state.studentId);
+    if (profileAchievements.length) {
+      console.info("Loaded student achievements using the linked student profile.");
+    }
+    return profileAchievements;
+  }
+
   async function loadRows() {
     const [quizAttempts, sessions, definitions, unlocked] = await Promise.all([
       loadOptionalRows("submitted quiz attempts", () => readAllRows(() => state.client.from("quiz_attempts")
@@ -200,11 +218,7 @@
         .select("id,title,description,icon,category,requirement_value,xp_reward,is_active,created_at")
         .eq("is_active", true)
         .order("created_at", { ascending: true })),
-      readAllRows(() => state.client.from("student_achievements")
-        .select("achievement_id,unlocked_at,xp_earned,achievement_definition:achievement_definitions(id,title,description,icon,category,requirement_value,xp_reward,is_active)")
-        .eq("student_id", state.user.id)
-        .order("unlocked_at", { ascending: false })
-        .order("achievement_id", { ascending: true })),
+      loadUnlockedAchievements(),
     ]);
     let segments = null;
     if (sessions) {
@@ -244,7 +258,11 @@
     state.definitions = rows.definitions;
     state.unlocked = rows.unlocked.map((item) => ({
       ...item,
-      definition: item.achievement_definition,
+      definition: (Array.isArray(item.achievement_definition)
+        ? item.achievement_definition[0]
+        : item.achievement_definition) ||
+        rows.definitions.find((definition) => String(definition.id) === String(item.achievement_id)) ||
+        null,
     }));
     render();
   }
@@ -255,7 +273,9 @@
     console.info("Student achievements evaluated.", { result: data });
   }
 
-  function unlockedFor(definition) { return state.unlocked.find((item) => item.achievement_id === definition.id); }
+  function unlockedFor(definition) {
+    return state.unlocked.find((item) => String(item.achievement_id) === String(definition.id));
+  }
   function percent(value, total) { return total ? Math.min(100, Math.round(value / total * 100)) : 0; }
   function relativeDate(value) {
     const date = new Date(value);
@@ -303,7 +323,7 @@
         : available
           ? `${Math.max(0, requirement - current)} remaining`
           : progressText;
-      return `<div class="badge-card ${earned ? "earned" : "locked"}" data-status="${earned ? "earned" : "locked"}" data-achievement-id="${escapeHtml(definition.id)}"><div class="badge-big"><i class="fa-solid ${escapeHtml(definition.icon)}"></i></div><h3>${escapeHtml(definition.title)}</h3><p>${escapeHtml(definition.description)}</p><div class="next-progress"><div class="next-progress-bar"><div class="next-progress-fill" style="width:${earned ? 100 : progress}%"></div></div><div class="next-progress-text"><span>${earned ? `${requirement} / ${requirement}` : escapeHtml(progressText)}</span><span>${earned ? 100 : progress}%</span></div></div><span class="${earned ? "badge-check" : "badge-lock"}"><i class="fa-solid fa-${earned ? "check" : "lock"}"></i> ${earned ? "Earned" : "Locked"}</span><p>${xp} XP · ${escapeHtml(unlockText)}</p></div>`;
+      return `<div class="badge-card ${earned ? "earned" : "locked"}" data-status="${earned ? "earned" : "locked"}" data-achievement-id="${escapeHtml(definition.id)}"><div class="badge-big ${earned ? "badge-earned" : "badge-locked"}"><i class="fa-solid ${escapeHtml(definition.icon)}"></i></div><h3>${escapeHtml(definition.title)}</h3><p>${escapeHtml(definition.description)}</p><div class="next-progress"><div class="next-progress-bar"><div class="next-progress-fill" style="width:${earned ? 100 : progress}%"></div></div><div class="next-progress-text"><span>${earned ? `${requirement} / ${requirement}` : escapeHtml(progressText)}</span><span>${earned ? 100 : progress}%</span></div></div><span class="${earned ? "badge-check" : "badge-lock"}"><i class="fa-solid fa-${earned ? "check" : "lock"}"></i> ${earned ? "Earned" : "Locked"}</span><p>${earned ? `${Number(unlock.xp_earned || 0)} XP earned` : `${xp} XP reward`} · ${escapeHtml(unlockText)}</p></div>`;
     }).join("");
   }
 
@@ -360,8 +380,8 @@
       $("nextRemainingLabel").textContent = "0 more";
     }
     const recent = [...state.unlocked].sort((a, b) => new Date(b.unlocked_at) - new Date(a.unlocked_at)).slice(0, 5).map((item) => {
-      const definition = item.achievement_definition ||
-        state.definitions.find((entry) => entry.id === item.achievement_id);
+      const definition = item.definition ||
+        state.definitions.find((entry) => String(entry.id) === String(item.achievement_id));
       if (!definition) return "";
       return `<div class="achievement-item"><div class="achievement-left"><div class="badge"><i class="fa-solid ${escapeHtml(definition.icon)}"></i></div><div class="achievement-info"><strong>${escapeHtml(definition.title)}</strong><span>${escapeHtml(definition.description)}</span></div></div><div class="earned-date">${relativeDate(item.unlocked_at)}</div></div>`;
     }).join("");
