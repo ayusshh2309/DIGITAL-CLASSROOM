@@ -213,13 +213,14 @@
       science_pcm: "Science (PCM)",
       science_pcb: "Science (PCB)",
       commerce: "Commerce",
+      arts: "Arts / Humanities",
       arts_humanities: "Arts / Humanities",
     };
     const streamText = grade >= 11
       ? ` - ${streamLabels[stream] || stream}`
       : "";
     $("registrationContextText").textContent =
-      `Registered curriculum: Grade ${grade}${streamText}`;
+      `Grade ${grade}${streamText}`;
     $("registrationContext").hidden = false;
   }
 

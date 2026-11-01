@@ -35,6 +35,88 @@
     });
   }
 
+  function addRegistrationContext(pageContent) {
+    if (!pageContent || pageContent.querySelector("#registrationContext")) return;
+
+    const profileKeys = [
+      "studentProfile",
+      "studentData",
+      "finalStudentRegistration",
+      "studentRegistrationData",
+    ];
+    let profile = null;
+    for (const key of profileKeys) {
+      try {
+        const value = JSON.parse(localStorage.getItem(key) || "null");
+        if (
+          value &&
+          typeof value === "object" &&
+          (value.classGrade ||
+            value.class_grade ||
+            value.grade ||
+            value.academic?.grade)
+        ) {
+          profile = value;
+          break;
+        }
+      } catch (error) {
+        console.warn(`Unable to read student registration from ${key}.`, error);
+      }
+    }
+    if (!profile) return;
+
+    const grade = String(
+      profile.classGrade ??
+        profile.class_grade ??
+        profile.grade ??
+        profile.academic?.grade ??
+        "",
+    ).match(/\d+/)?.[0];
+    if (!grade) return;
+
+    const stream = String(
+      profile.stream ??
+        profile.classStream ??
+        profile.class_stream ??
+        profile.academic?.stream ??
+        "",
+    )
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, "_");
+    const streamLabels = {
+      science_pcm: "Science (PCM)",
+      science_pcb: "Science (PCB)",
+      commerce: "Commerce",
+      arts: "Arts / Humanities",
+    };
+
+    const context = document.createElement("div");
+    context.className = "student-registration-context";
+    context.setAttribute("aria-label", "Your registered curriculum");
+
+    const label = document.createElement("span");
+    label.className = "student-registration-context-label";
+    label.textContent = "Your registered curriculum";
+
+    const value = document.createElement("span");
+    value.className = "student-registration-context-value";
+
+    const icon = document.createElement("i");
+    icon.className = "fa-solid fa-graduation-cap";
+    icon.setAttribute("aria-hidden", "true");
+
+    const text = document.createElement("span");
+    const curriculum = Number(grade) >= 11
+      ? `Grade ${grade} - ${streamLabels[stream] || "Selected stream"}`
+      : `Grade ${grade}`;
+    text.textContent = curriculum;
+
+    value.append(icon, text);
+    context.append(label, value);
+    pageContent.prepend(context);
+  }
+
   if (!document.querySelector('link[data-student-layout-icons="font-awesome"]')) {
     const iconStylesheet = document.createElement("link");
     iconStylesheet.rel = "stylesheet";
@@ -64,6 +146,7 @@
       if (pageContent && mainContent) {
         pageContent.classList.add("student-page-content");
         mainContent.appendChild(pageContent);
+        addRegistrationContext(pageContent);
       }
 
       document.querySelectorAll(".student-nav-link[data-page]").forEach((link) => {

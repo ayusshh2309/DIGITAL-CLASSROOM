@@ -209,10 +209,13 @@
       science_pcm: "Science (PCM)",
       science_pcb: "Science (PCB)",
       commerce: "Commerce",
+      arts: "Arts / Humanities",
       arts_humanities: "Arts / Humanities",
     };
     const normalizedStream = stream.toLowerCase().replace(/[()\s/-]+/g, "_").replace(/_+/g, "_");
-    const streamLabel = stream ? ` · ${labels[normalizedStream] || stream}` : "";
+    const streamLabel = Number(student.grade) >= 11 && stream
+      ? ` - ${labels[normalizedStream] || stream}`
+      : "";
     $("registrationContextText").textContent =
       `Grade ${student.grade}${streamLabel}`;
     $("registrationContext").hidden = false;

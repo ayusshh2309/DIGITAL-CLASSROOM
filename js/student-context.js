@@ -19,21 +19,34 @@
     if (!context || !text) return;
 
     const profile = readProfile();
-    const grade = String(profile.classGrade || profile.class_grade || profile.grade || "");
+    const grade = String(
+      profile.classGrade ||
+        profile.class_grade ||
+        profile.grade ||
+        profile.academic?.grade ||
+        "",
+    ).replace(/^(class|grade)\s*/i, "").trim();
     if (!grade) return;
 
-    const stream = String(profile.stream || profile.classStream || "").toLowerCase();
+    const stream = String(
+      profile.stream ||
+        profile.classStream ||
+        profile.class_stream ||
+        profile.academic?.stream ||
+        "",
+    ).toLowerCase().trim().replace(/[\s-]+/g, "_");
     const streamLabels = {
       science_pcm: "Science (PCM)",
       science_pcb: "Science (PCB)",
       commerce: "Commerce",
       arts: "Arts / Humanities",
+      arts_humanities: "Arts / Humanities",
     };
-    const streamText = grade === "11" || grade === "12"
-      ? ` - ${streamLabels[stream] || "Selected stream"}`
+    const streamText = Number(grade) >= 11
+      ? ` - ${streamLabels[stream] || stream.replace(/_/g, " ")}`
       : "";
 
-    text.textContent = `Registered curriculum: Grade ${grade}${streamText}`;
+    text.textContent = `Grade ${grade}${streamText}`;
     context.hidden = false;
   }
 

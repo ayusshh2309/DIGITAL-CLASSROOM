@@ -90,6 +90,44 @@ body {
   gap: 24px;
 }
 
+.student-registration-context,
+.student-page-content .registration-context {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: fit-content;
+  margin-top: 16px;
+  padding: 8px 14px;
+  border: 1px solid #a9e7f2;
+  border-radius: 12px;
+  background: #f0fcff;
+  color: #24566f;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  box-shadow: 0 4px 12px rgba(30, 48, 86, 0.035);
+}
+.student-registration-context-label,
+.student-page-content .registration-context .scope-label {
+  color: #6846f5;
+  font-weight: 800;
+}
+.student-registration-context-value,
+.student-page-content .registration-context .scope-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #24566f;
+  font-weight: 700;
+}
+.student-registration-context-value i,
+.student-page-content .registration-context .scope-value i {
+  color: #164d62;
+  font-size: 16px;
+}
+
 @media (max-width: 760px) {
   :root { --student-sidebar-width: 270px; }
   .student-sidebar { transform: translateX(-100%); transition: transform .18s ease; }

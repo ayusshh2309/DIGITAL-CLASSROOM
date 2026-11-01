@@ -43,6 +43,27 @@
     status.hidden = !message;
   }
 
+  function renderRegistrationContext(student) {
+    const context = $("registrationContext");
+    const text = $("registrationContextText");
+    const grade = Number(student?.grade);
+    if (!context || !text || !Number.isInteger(grade)) return;
+
+    const stream = String(student.stream || "").trim().toLowerCase();
+    const streamLabels = {
+      science_pcm: "Science (PCM)",
+      science_pcb: "Science (PCB)",
+      commerce: "Commerce",
+      arts: "Arts / Humanities",
+      arts_humanities: "Arts / Humanities",
+    };
+    const streamText = grade >= 11
+      ? ` - ${streamLabels[stream] || stream.replace(/_/g, " ")}`
+      : "";
+    text.textContent = `Grade ${grade}${streamText}`;
+    context.hidden = false;
+  }
+
   function formatTime(seconds) {
     const safe = Math.max(0, Math.floor(Number(seconds) || 0));
     return [Math.floor(safe / 3600), Math.floor((safe % 3600) / 60), safe % 60]
@@ -515,6 +536,7 @@
         throw new Error("The authenticated student profile could not be verified.");
       }
 
+      renderRegistrationContext(curriculum.student);
       state.studentId = String(curriculum.student.id);
       state.subjects = curriculum.subjects;
       state.subjectsById = new Map(

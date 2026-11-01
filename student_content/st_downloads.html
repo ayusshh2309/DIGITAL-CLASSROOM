@@ -978,9 +978,19 @@
               new Date(item.created_at).getTime() >= Date.now() - 30 * 86400000,
           ).length.toLocaleString();
           const student = await service.getStudentRegistration();
-          const context = [`Grade ${student.grade}`, student.stream]
-            .filter(Boolean)
-            .join(" · ");
+          const streamLabels = {
+            science_pcm: "Science (PCM)",
+            science_pcb: "Science (PCB)",
+            commerce: "Commerce",
+            arts: "Arts / Humanities",
+            arts_humanities: "Arts / Humanities",
+          };
+          const stream = String(student.stream || "").trim().toLowerCase();
+          const context = `Grade ${student.grade}${
+            Number(student.grade) >= 11 && stream
+              ? ` - ${streamLabels[stream] || stream.replace(/_/g, " ")}`
+              : ""
+          }`;
           document.getElementById("registrationContext").hidden = !context;
           document.getElementById("registrationContextText").textContent = context;
           showStatus("");
@@ -1011,7 +1021,6 @@
         });
       })();
     </script>
-    <script src="../js/student-context.js"></script>
     <script src="../js/student-layout.js"></script>
   </body>
 </html>

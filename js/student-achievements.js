@@ -1,13 +1,28 @@
 (() => {
-  const profileKeys = ["studentProfile", "studentData", "finalStudentRegistration"];
   const $ = (id) => document.getElementById(id);
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
   const state = { client: null, user: null, studentId: null, definitions: [], unlocked: [], transactions: [], metrics: null };
 
-  function readProfile() {
-    return profileKeys.map((key) => {
-      try { return JSON.parse(localStorage.getItem(key) || "null"); } catch { return null; }
-    }).find((profile) => profile && (profile.classGrade || profile.class_grade || profile.grade)) || {};
+  function renderRegistrationContext(student) {
+    const context = $("registrationContext");
+    const text = $("registrationContextText");
+    if (!context || !text || !student?.grade) return;
+
+    const grade = Number(student.grade);
+    const stream = String(student.stream || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+    const streamLabels = {
+      science_pcm: "Science (PCM)",
+      science_pcb: "Science (PCB)",
+      commerce: "Commerce",
+      arts: "Arts / Humanities",
+      arts_humanities: "Arts / Humanities",
+    };
+    const streamText = grade >= 11
+      ? ` - ${streamLabels[stream] || stream.replace(/_/g, " ")}`
+      : "";
+
+    text.textContent = `Grade ${grade}${streamText}`;
+    context.hidden = false;
   }
 
   function dateKey(value) {
@@ -200,8 +215,9 @@
     const { data: { user } } = await state.client.auth.getUser();
     state.user = user;
     if (!user) return;
-    const { data: student, error } = await state.client.from("students").select("id").eq("user_id", user.id).single();
+    const { data: student, error } = await state.client.from("students").select("id, grade, stream").eq("user_id", user.id).single();
     if (error) throw error;
+    renderRegistrationContext(student);
     state.studentId = student.id;
     await evaluate();
     state.client.channel(`achievements-${user.id}`)
