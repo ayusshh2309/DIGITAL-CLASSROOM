@@ -521,6 +521,7 @@
     const video = state.videos.find((item) => item.id === String(id));
     if (!video) return;
     const request = ++state.playbackRequest;
+    $("videoPlayer").pause();
     state.activeVideo = video;
     $("modalTitle").textContent = video.title;
     $("modalDescription").textContent = video.description;
@@ -534,7 +535,6 @@
       const url = await videoUrl(authorizedVideo);
       if (request !== state.playbackRequest || state.activeVideo?.id !== video.id) return;
       const player = $("videoPlayer");
-      player.pause();
       player.removeAttribute("src");
       player.load();
       player.src = url;

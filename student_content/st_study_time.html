@@ -736,227 +736,11 @@
         color: #21375d;
       }
 
-      /* =========================================
-           RECENT SESSIONS
-        ========================================= */
-
-      .sessions-card {
-        padding-bottom: 8px;
-      }
-
-      .session-list {
-        padding: 0 22px;
-      }
-
-      .session {
-        display: flex;
-
-        align-items: center;
-
-        justify-content: space-between;
-
-        padding: 14px 0;
-
-        border-bottom: 1px solid #edf1f5;
-      }
-
-      .session:last-child {
-        border-bottom: none;
-      }
-
-      .session-left {
-        display: flex;
-
-        align-items: center;
-
-        gap: 11px;
-      }
-
-      .session-icon {
-        width: 37px;
-        height: 37px;
-
-        border-radius: 9px;
-
-        display: flex;
-
-        align-items: center;
-        justify-content: center;
-
-        font-size: 13px;
-      }
-
-      .session-icon.purple {
-        background: #eeeaff;
-        color: #5e3ae2;
-      }
-
-      .session-icon.green {
-        background: #e6faf3;
-        color: #06a978;
-      }
-
-      .session-icon.orange {
-        background: #fff2df;
-        color: #ed8a00;
-      }
-
-      .session-info strong {
-        display: block;
-
-        font-size: 11px;
-
-        margin-bottom: 4px;
-      }
-
-      .session-info span {
-        color: #788aa4;
-
-        font-size: 9px;
-      }
-
-      .session-time {
-        font-size: 11px;
-
-        font-weight: 700;
-
-        color: #253b60;
-      }
-
-      /* =========================================
-           TIMER SECTION
-        ========================================= */
-
-      .timer-card {
-        margin-top: 20px;
-
-        padding: 22px;
-
-        display: flex;
-
-        align-items: center;
-
-        justify-content: space-between;
-
-        gap: 30px;
-      }
-
-      .timer-info h2 {
-        font-size: 17px;
-
-        margin-bottom: 7px;
-      }
-
-      .timer-info p {
-        font-size: 10px;
-
-        color: #7486a2;
-
-        max-width: 440px;
-
-        line-height: 1.6;
-      }
-
-      .timer-fields {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-top: 15px;
-      }
-
-      .timer-fields select,
-      .timer-fields input {
-        height: 34px;
-        padding: 0 10px;
-        border: 1px solid #dce5ef;
-        border-radius: 8px;
-        outline: none;
-        color: #29436d;
-        background: #fff;
-        font-size: 10px;
-      }
-
-      .timer-fields select:focus,
-      .timer-fields input:focus {
-        border-color: #6847e9;
-      }
-
-      .timer-fields select {
-        min-width: 145px;
-      }
-
-      .timer-fields input {
-        width: 190px;
-      }
-
-      .timer-status {
-        min-height: 15px;
-        margin-top: 5px;
-        color: #6f819d;
-        font-size: 10px;
-      }
-
       .empty-state {
         padding: 20px 0;
         color: #788aa4;
         font-size: 11px;
         text-align: center;
-      }
-
-      .timer-display {
-        font-size: 29px;
-
-        font-weight: 800;
-
-        letter-spacing: 1px;
-
-        color: #5534df;
-
-        margin-top: 13px;
-      }
-
-      .timer-controls {
-        display: flex;
-
-        gap: 9px;
-      }
-
-      .timer-button {
-        height: 42px;
-
-        padding: 0 18px;
-
-        border-radius: 9px;
-
-        border: none;
-
-        font-size: 11px;
-
-        font-weight: 700;
-
-        display: flex;
-
-        align-items: center;
-
-        gap: 7px;
-      }
-
-      .start-btn {
-        color: white;
-
-        background: linear-gradient(135deg, #6740ed, #512bd9);
-
-        box-shadow: 0 7px 15px rgba(87, 48, 220, 0.2);
-      }
-
-      .reset-btn {
-        background: #f1f4f8;
-
-        color: #405676;
-      }
-
-      .timer-button:hover {
-        transform: translateY(-1px);
       }
 
       /* =========================================
@@ -1001,21 +785,6 @@
             50px;
         }
 
-        .timer-card {
-          flex-direction: column;
-
-          align-items: flex-start;
-        }
-
-        .timer-controls {
-          width: 100%;
-        }
-
-        .timer-button {
-          flex: 1;
-
-          justify-content: center;
-        }
       }
     </style>
     <link rel="stylesheet" href="../css/student-layout.css" />
@@ -1038,7 +807,7 @@
 
             <h1>Study Time</h1>
 
-            <p>Track your learning time and build better study habits.</p>
+            <p>Review automatically tracked, interaction-based learning time—not self-reported timer duration.</p>
 
             <div class="registration-context" id="registrationContext" hidden>
               <span class="scope-label">Your registered curriculum</span>
@@ -1081,12 +850,12 @@
             <span class="stat-change" id="todayChange"> 0% </span>
           </div>
 
-          <div class="stat-label">Today's Study Time</div>
+          <div class="stat-label">Today's Verified Learning Time</div>
 
           <div class="stat-value" id="todayStudyTime">0m</div>
 
           <div class="stat-small" id="todayStudyNote">
-            No completed study yet
+            From tracked learning activities
           </div>
         </div>
 
@@ -1101,7 +870,7 @@
             <span class="stat-change" id="weekChange"> 0% </span>
           </div>
 
-          <div class="stat-label">This Week</div>
+          <div class="stat-label">Weekly Verified Learning Time</div>
 
           <div class="stat-value" id="weekStudyTime">0m</div>
 
@@ -1193,10 +962,9 @@
             <div>
               <h2>Daily Goal</h2>
 
-              <p>Keep up your study routine</p>
+              <p>Progress from verified learning activity</p>
             </div>
-
-            <button class="edit-goal" id="editGoal" title="Edit goal">
+            <button class="edit-goal" id="editGoal" title="Edit goal" aria-label="Edit daily goal">
               <i class="fa-solid fa-pen"></i>
             </button>
           </div>
@@ -1238,81 +1006,15 @@
       <section class="card subject-card">
         <div class="card-header">
           <div>
-            <h2>Study Time by Subject</h2>
+            <h2>Verified Study Time by Assigned Subject</h2>
 
-            <p>See where you are spending most of your study time</p>
+            <p>Your assigned subjects and their automatically tracked learning time.</p>
           </div>
         </div>
 
         <div class="subject-list" id="subjectList"></div>
       </section>
 
-      <!-- =========================================
-         RECENT SESSIONS
-    ========================================== -->
-
-      <section class="card sessions-card">
-        <div class="card-header">
-          <div>
-            <h2>Recent Study Sessions</h2>
-
-            <p>Your latest learning activity</p>
-          </div>
-        </div>
-
-        <div class="session-list" id="sessionList"></div>
-      </section>
-
-      <!-- =========================================
-         STUDY TIMER
-    ========================================== -->
-
-      <section class="card timer-card">
-        <div class="timer-info">
-          <h2>Start a Study Session</h2>
-
-          <p id="timerDescription">
-            Start the timer when you begin studying. Your session is saved to
-            your study-time records.
-          </p>
-
-          <div class="timer-fields">
-            <select id="studySubject" aria-label="Study subject">
-              <option value="">Select subject</option>
-            </select>
-            <input
-              id="studyTopic"
-              type="text"
-              maxlength="120"
-              placeholder="Chapter or topic (optional)"
-              aria-label="Chapter or topic"
-            />
-          </div>
-
-          <div class="timer-display" id="timerDisplay">00:00:00</div>
-          <div class="timer-status" id="timerStatus"></div>
-        </div>
-
-        <div class="timer-controls">
-          <button class="timer-button start-btn" id="startTimer">
-            <i class="fa-solid fa-play"></i>
-
-            Start Studying
-          </button>
-
-          <button class="timer-button reset-btn" id="pauseTimer" disabled>
-            <i class="fa-solid fa-pause"></i>
-
-            Pause
-          </button>
-
-          <button class="timer-button reset-btn" id="finishTimer" disabled>
-            <i class="fa-solid fa-stop"></i>
-
-            Finish
-          </button>
-        </div>
-      </section>
     </div>
 
     <script src="../js/supabase.js"></script>

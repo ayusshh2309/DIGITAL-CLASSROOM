@@ -419,6 +419,48 @@
         transform: translateY(-1px);
       }
 
+      .learning-preview {
+        position: fixed;
+        z-index: 10000;
+        inset: 0;
+        display: grid;
+        grid-template-rows: auto 1fr;
+        background: rgba(5, 14, 35, 0.88);
+      }
+
+      .learning-preview-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 18px;
+        background: #fff;
+        color: #172d53;
+      }
+
+      .learning-preview-close {
+        border: 0;
+        border-radius: 8px;
+        padding: 8px 12px;
+        background: #ece9ff;
+        color: #3921a3;
+        font: inherit;
+        font-weight: 700;
+      }
+
+      .learning-preview-pages {
+        overflow: auto;
+        padding: 18px;
+        text-align: center;
+      }
+
+      .learning-preview-page {
+        width: min(100%, 900px);
+        margin: 0 auto 18px;
+        background: #fff;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+      }
+
       /* ================= RECENT ================= */
 
       .recent-grid {
@@ -715,6 +757,13 @@
     <script src="../js/supabase.js"></script>
     <script src="../js/student-data.js"></script>
     <script src="../js/downloads-service.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+      if (window.pdfjsLib) {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      }
+    </script>
     <script>
       (() => {
         const service = window.SmartLearningDownloads;
@@ -800,9 +849,14 @@
             const [className, icon] = iconFor(item.file_type);
             const row = document.createElement("div");
             row.className = "download-item";
-            row.innerHTML = `<div class="file-icon ${className}"><i class="fa-solid ${icon}" aria-hidden="true"></i></div><div class="file-info"><h3>${esc(item.file_name)}</h3><div class="file-meta"><span class="subject-tag">${esc(item.subject || "Subject unavailable")}</span><span><i class="fa-regular fa-file" aria-hidden="true"></i>${esc(item.file_type)}</span><span><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>Grade ${esc(item.class_grade)}${item.stream ? ` · ${esc(item.stream)}` : ""}</span><span><i class="fa-solid fa-hard-drive" aria-hidden="true"></i>${service.formatBytes(item.file_size)}</span><span><i class="fa-regular fa-calendar" aria-hidden="true"></i>${service.formatDate(item.created_at)}</span></div></div><button class="download-btn" type="button" title="Download"><i class="fa-solid fa-download" aria-hidden="true"></i></button>`;
+            const canPreview = ["pdf", "photo", "image"].includes(String(item.material_type || "").toLowerCase());
+            row.innerHTML = `<div class="file-icon ${className}"><i class="fa-solid ${icon}" aria-hidden="true"></i></div><div class="file-info"><h3>${esc(item.file_name)}</h3><div class="file-meta"><span class="subject-tag">${esc(item.subject || "Subject unavailable")}</span><span><i class="fa-regular fa-file" aria-hidden="true"></i>${esc(item.file_type)}</span><span><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>Grade ${esc(item.class_grade)}${item.stream ? ` · ${esc(item.stream)}` : ""}</span><span><i class="fa-solid fa-hard-drive" aria-hidden="true"></i>${service.formatBytes(item.file_size)}</span><span><i class="fa-regular fa-calendar" aria-hidden="true"></i>${service.formatDate(item.created_at)}</span></div></div>${canPreview ? '<button class="download-btn preview-btn" type="button" title="Preview"><i class="fa-solid fa-eye" aria-hidden="true"></i></button>' : ''}<button class="download-btn" type="button" title="Download"><i class="fa-solid fa-download" aria-hidden="true"></i></button>`;
+            const previewButton = row.querySelector(".preview-btn");
+            if (previewButton) {
+              previewButton.addEventListener("click", () => void previewMaterial(item));
+            }
             row
-              .querySelector("button")
+              .querySelector('button[title="Download"]')
               .addEventListener("click", (event) => handleMaterial(item, event.currentTarget));
             list.insertBefore(row, emptyState);
           });
@@ -837,6 +891,77 @@
           } finally {
             button.disabled = false;
             if (icon.classList.contains("fa-spinner")) icon.className = "fa-solid fa-download";
+          }
+        }
+
+        async function previewMaterial(item) {
+          const type = String(item.material_type || "").toLowerCase();
+          if (!["pdf", "photo", "image"].includes(type)) return;
+          let overlay = null;
+          let pdfDocument = null;
+          let observer = null;
+          try {
+            const url = await service.getStudentMaterialUrl(item.id);
+            overlay = document.createElement("section");
+            overlay.className = "learning-preview";
+            overlay.setAttribute("role", "dialog");
+            overlay.setAttribute("aria-modal", "true");
+            overlay.setAttribute("aria-label", `Preview ${item.title || item.file_name}`);
+            overlay.innerHTML = `<div class="learning-preview-toolbar"><strong>${esc(item.title || item.file_name)}</strong><button class="learning-preview-close" type="button">Close preview</button></div><div class="learning-preview-pages" tabindex="0"></div>`;
+            const pages = overlay.querySelector(".learning-preview-pages");
+            const close = async () => {
+              observer?.disconnect();
+              if (pdfDocument) await pdfDocument.destroy();
+              overlay?.remove();
+            };
+            overlay.querySelector(".learning-preview-close").addEventListener("click", () => void close());
+            document.body.appendChild(overlay);
+            if (type === "pdf") {
+              if (!window.pdfjsLib) throw new Error("The PDF reader could not be loaded.");
+              pdfDocument = await window.pdfjsLib.getDocument(url).promise;
+              observer = new IntersectionObserver((entries) => {
+                for (const entry of entries) {
+                  if (!entry.isIntersecting || entry.target.dataset.rendered === "true") continue;
+                  entry.target.dataset.rendered = "true";
+                  void (async () => {
+                    const page = await pdfDocument.getPage(Number(entry.target.dataset.page));
+                    const baseViewport = page.getViewport({ scale: 1 });
+                    const viewport = page.getViewport({ scale: Math.min(1.25, 900 / baseViewport.width) });
+                    const canvas = entry.target;
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    canvas.style.width = "100%";
+                    canvas.style.height = "auto";
+                    await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+                    observer.unobserve(canvas);
+                  })().catch((error) => {
+                    console.error("Could not render a learning document page.", error);
+                    showStatus("A document page could not be displayed.", true);
+                  });
+                }
+              }, { root: pages, rootMargin: "400px" });
+              for (let pageNumber = 1; pageNumber <= pdfDocument.numPages; pageNumber += 1) {
+                const canvas = document.createElement("canvas");
+                canvas.className = "learning-preview-page";
+                canvas.dataset.page = String(pageNumber);
+                pages.appendChild(canvas);
+                observer.observe(canvas);
+              }
+            } else {
+              const image = document.createElement("img");
+              image.src = url;
+              image.alt = item.title || item.file_name || "Learning resource";
+              image.style.cssText = "max-width:min(100%,1000px);max-height:calc(100vh - 100px);object-fit:contain";
+              pages.appendChild(image);
+            }
+          } catch (error) {
+            console.error("Could not preview this learning material.", error);
+            if (overlay) {
+              observer?.disconnect();
+              if (pdfDocument) await pdfDocument.destroy();
+              overlay.remove();
+            }
+            showStatus(error.message || "Unable to preview this material.", true);
           }
         }
 

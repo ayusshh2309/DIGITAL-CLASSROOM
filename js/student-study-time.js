@@ -1,38 +1,20 @@
 (() => {
-  const PAGE_SIZE = 1000;
   const DEFAULT_GOAL_MINUTES = 360;
   const state = {
-    client: null,
-    user: null,
-    profile: null,
     dailyGoalMinutes: DEFAULT_GOAL_MINUTES,
     subjects: [],
     subjectsById: new Map(),
     subjectIdsByName: new Map(),
+    subjectsLoading: true,
+    subjectLoadError: null,
     sessions: [],
     segments: [],
-    activeSession: null,
     selectedDate: new Date(),
-    timer: null,
-    channel: null,
     busy: false,
-    loadSequence: 0,
-    refreshTimer: null,
-    disposed: false,
   };
 
   const $ = (id) => document.getElementById(id);
   const subjectColors = ["purple", "green", "orange", "blue", "pink"];
-  const subjectIcons = {
-    physics: "fa-atom",
-    chemistry: "fa-flask",
-    mathematics: "fa-calculator",
-    math: "fa-calculator",
-    biology: "fa-dna",
-    english: "fa-book-open",
-    computer: "fa-code",
-    history: "fa-landmark",
-  };
 
   function showStatus(message, isError = false) {
     const status = $("studyTimeStatus");
@@ -55,12 +37,6 @@
     const minutes = Math.floor((safe % 3600) / 60);
     if (hours) return `${hours}h ${minutes}m`;
     return `${minutes}m`;
-  }
-
-  function formatDateTime(value) {
-    const date = new Date(value);
-    if (!Number.isFinite(date.getTime())) return "Date unavailable";
-    return date.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" });
   }
 
   function dateKey(date) {
@@ -94,52 +70,28 @@
     })[character]);
   }
 
-  function subjectClass(subject) {
-    const value = String(subject || "").toLowerCase();
-    if (value.includes("chem")) return "green";
-    if (value.includes("math")) return "orange";
-    if (value.includes("english")) return "blue";
-    if (value.includes("physical")) return "pink";
-    return "purple";
-  }
-
-  function subjectIcon(subject) {
-    const value = String(subject || "").toLowerCase();
-    const key = Object.keys(subjectIcons).find((candidate) => value.includes(candidate));
-    return key ? subjectIcons[key] : "fa-book";
-  }
-
-  function subjectName(session) {
-    return state.subjectsById.get(String(session.subject_id))?.name ||
-      String(session.subject || "Subject unavailable");
-  }
-
-  async function readAll(createQuery) {
-    const rows = [];
-    for (let offset = 0; ; offset += PAGE_SIZE) {
-      const { data, error } = await createQuery().range(offset, offset + PAGE_SIZE - 1);
-      if (error) throw error;
-      const page = data || [];
-      rows.push(...page);
-      if (page.length < PAGE_SIZE) return rows;
-    }
-  }
-
   function segmentsFor(session, now = new Date()) {
     const segments = state.segments
       .filter((segment) => String(segment.session_id) === String(session.id))
+      .filter((segment) => segment.started_at && segment.ended_at)
       .map((segment) => ({
-        start: new Date(segment.start_time),
-        end: new Date(segment.end_time),
+        start: new Date(segment.started_at),
+        end: new Date(segment.ended_at),
+        durationSeconds: Number(segment.duration_seconds),
       }));
-    if (session.status === "active" && session.last_resumed_at) {
-      segments.push({ start: new Date(session.last_resumed_at), end: now });
+    if (session.status === "active" && session.started_at) {
+      segments.push({
+        start: new Date(session.started_at),
+        end: now,
+        durationSeconds: null,
+      });
     }
     if (!segments.length && Number(session.duration_seconds) > 0) {
-      const end = new Date(session.end_time || session.start_time);
+      const end = new Date(session.ended_at || session.started_at);
       segments.push({
         start: new Date(end.getTime() - Number(session.duration_seconds) * 1000),
         end,
+        durationSeconds: Number(session.duration_seconds),
       });
     }
     return segments.filter((segment) =>
@@ -171,8 +123,19 @@
           ));
           if (intervalEnd > cursor && intervalEnd > rangeStart) {
             const key = dateKey(cursor);
-            totals[key] = (totals[key] || 0) +
-              Math.max(0, (intervalEnd.getTime() - cursor.getTime()) / 1000);
+            const overlapMilliseconds = intervalEnd.getTime() - cursor.getTime();
+            const intervalMilliseconds = segment.end.getTime() - segment.start.getTime();
+            const fullInterval =
+              cursor.getTime() === segment.start.getTime() &&
+              intervalEnd.getTime() === segment.end.getTime();
+            const seconds = Number.isFinite(segment.durationSeconds)
+              ? (fullInterval
+                ? segment.durationSeconds
+                : Math.round(
+                  segment.durationSeconds * overlapMilliseconds / intervalMilliseconds,
+                ))
+              : Math.round(overlapMilliseconds / 1000);
+            totals[key] = (totals[key] || 0) + Math.max(0, seconds);
           }
           cursor = intervalEnd;
         }
@@ -188,25 +151,6 @@
   function selectedWeekSeconds() {
     const start = mondayOf(state.selectedDate);
     return secondsByDate(start, addDays(start, 6));
-  }
-
-  function renderRegistrationContext() {
-    const profile = state.profile;
-    if (!profile) return;
-    const grade = Number(profile.grade);
-    const stream = window.StudentCurriculum.normalizeStream(profile.stream);
-    const streamLabels = {
-      science_pcm: "Science (PCM)",
-      science_pcb: "Science (PCB)",
-      commerce: "Commerce",
-      arts_humanities: "Arts / Humanities",
-    };
-    const streamText = grade >= 11
-      ? ` - ${streamLabels[stream] || profile.stream}`
-      : "";
-    $("registrationContextText").textContent =
-      `Registered curriculum: Grade ${grade}${streamText}`;
-    $("registrationContext").hidden = false;
   }
 
   function renderDate() {
@@ -232,8 +176,8 @@
     $("weekStudyTime").textContent = formatDuration(weekSeconds);
     $("averageStudyTime").textContent = formatDuration(weekSeconds / 7);
     $("todayStudyNote").textContent = dateKey(state.selectedDate) === dateKey(new Date())
-      ? "Completed and active study time"
-      : "Selected date total";
+      ? "From tracked learning activities"
+      : "Verified activity total";
     $("weekStudyNote").textContent = "Monday to Sunday";
     $("averageStudyNote").textContent = "Weekly total divided by 7 days";
     $("goalPercent").textContent = `${percent}%`;
@@ -244,16 +188,16 @@
     $("circleProgress").style.background =
       `conic-gradient(#603ce7 0deg ${degrees}deg, #e9e5fa ${degrees}deg 360deg)`;
 
-    const completedDays = new Set();
+    const studyDays = new Set();
     const now = new Date();
     state.sessions
-      .filter((session) => session.status === "completed" && Number(session.duration_seconds) > 0)
+      .filter((session) => ["completed", "active", "paused"].includes(session.status))
       .forEach((session) => {
         segmentsFor(session, now).forEach((segment) => {
           let cursor = localDayStart(segment.start);
           const finalDay = localDayStart(new Date(segment.end.getTime() - 1));
           while (cursor <= finalDay) {
-            completedDays.add(dateKey(cursor));
+            studyDays.add(dateKey(cursor));
             cursor = addDays(cursor, 1);
           }
         });
@@ -261,16 +205,16 @@
 
     let streak = 0;
     let streakCursor = localDayStart(new Date());
-    if (!completedDays.has(dateKey(streakCursor))) streakCursor = addDays(streakCursor, -1);
-    while (completedDays.has(dateKey(streakCursor))) {
+    if (!studyDays.has(dateKey(streakCursor))) streakCursor = addDays(streakCursor, -1);
+    while (studyDays.has(dateKey(streakCursor))) {
       streak += 1;
       streakCursor = addDays(streakCursor, -1);
     }
     $("studyStreak").textContent = `${streak} Day${streak === 1 ? "" : "s"}`;
     $("streakStatus").textContent = streak ? "Active" : "None";
     $("streakNote").textContent = streak
-      ? "Keep your streak going!"
-      : "Complete a session to start";
+      ? "Keep your verified activity streak going!"
+      : "Complete a tracked learning activity to start";
     $("todayChange").textContent =
       dateKey(state.selectedDate) === dateKey(new Date()) ? "Today" : "Selected";
     $("weekChange").textContent =
@@ -280,11 +224,19 @@
   function renderChart() {
     const weekStart = mondayOf(state.selectedDate);
     const totals = selectedWeekSeconds();
-    const maximum = 6 * 3600;
+    const maximum = Math.max(
+      6 * 3600,
+      Math.ceil(Math.max(0, ...Object.values(totals)) / 3600) * 3600,
+    );
+    $("weeklyBars").parentElement
+      .querySelector(".y-labels").innerHTML = Array.from({ length: 7 }, (_, index) => {
+        const hours = (maximum / 3600) * (1 - index / 6);
+        return `<span>${Number.isInteger(hours) ? hours : hours.toFixed(1)}h</span>`;
+      }).join("");
     $("weeklyBars").innerHTML = Array.from({ length: 7 }, (_, index) => {
       const day = addDays(weekStart, index);
       const seconds = totals[dateKey(day)] || 0;
-      const height = seconds ? Math.max(1, Math.round((seconds / maximum) * 100)) : 0;
+      const height = seconds ? Math.min(100, Math.max(1, Math.round((seconds / maximum) * 100))) : 0;
       const todayClass = dateKey(day) === dateKey(new Date()) ? " today" : "";
       const zeroClass = seconds ? "" : " zero";
       return `<div class="bar-group"><div class="bar-wrapper"><div class="bar${todayClass}${zeroClass}" style="height:${height}%" title="${day.toLocaleDateString("en-US", { weekday: "long" })}: ${formatDuration(seconds)}"></div></div><span class="hours">${seconds ? `${(seconds / 3600).toFixed(1)}h` : "0h"}</span><span class="day">${day.toLocaleDateString("en-US", { weekday: "short" })}</span></div>`;
@@ -308,77 +260,39 @@
       segmentsFor(session, now).forEach((segment) => {
         const start = Math.max(segment.start.getTime(), weekStart.getTime());
         const end = Math.min(segment.end.getTime(), weekEnd.getTime());
-        if (end > start) totals.set(subjectId, totals.get(subjectId) + (end - start) / 1000);
+        if (end <= start) return;
+        const overlapMilliseconds = end - start;
+        const intervalMilliseconds = segment.end.getTime() - segment.start.getTime();
+        const fullInterval =
+          start === segment.start.getTime() && end === segment.end.getTime();
+        const seconds = Number.isFinite(segment.durationSeconds)
+          ? (fullInterval
+            ? segment.durationSeconds
+            : Math.round(
+              segment.durationSeconds * overlapMilliseconds / intervalMilliseconds,
+            ))
+          : Math.round(overlapMilliseconds / 1000);
+        totals.set(subjectId, totals.get(subjectId) + seconds);
       });
     });
 
     const maximum = Math.max(...totals.values(), 1);
-    $("subjectList").innerHTML = state.subjects.length
+    $("subjectList").innerHTML = state.subjectsLoading
+      ? '<div class="empty-state">Loading your assigned subjects…</div>'
+      : state.subjectLoadError
+        ? '<div class="empty-state">Assigned subjects could not be loaded.</div>'
+        : state.subjects.length
       ? state.subjects.map((subject, index) => {
         const seconds = totals.get(String(subject.id)) || 0;
         const color = subjectColors[index % subjectColors.length];
         const width = Math.min(100, Math.round((seconds / maximum) * 100));
         return `<div class="subject-row"><div class="subject-name"><span class="subject-dot dot-${color}"></span>${escapeHtml(subject.name)}</div><div class="subject-progress"><div class="subject-progress-fill fill-${color}" style="width:${width}%"></div></div><div class="subject-time">${formatDuration(seconds)}</div></div>`;
       }).join("")
-      : '<div class="empty-state">No registered subjects found.</div>';
+      : '<div class="empty-state">No assigned subjects found for your registered grade and stream.</div>';
   }
 
-  function renderSessions() {
-    const sessions = [...state.sessions]
-      .sort((left, right) =>
-        new Date(right.start_time).getTime() - new Date(left.start_time).getTime(),
-      )
-      .slice(0, 10);
-    $("sessionList").innerHTML = sessions.length
-      ? sessions.map((session) => {
-        const subject = subjectName(session);
-        const color = subjectClass(subject);
-        const elapsed = segmentsFor(session).reduce((sum, segment) =>
-          sum + (segment.end.getTime() - segment.start.getTime()) / 1000, 0);
-        const start = formatDateTime(session.start_time);
-        const end = session.end_time ? formatDateTime(session.end_time) : "In progress";
-        const topic = session.topic ? ` · ${session.topic}` : "";
-        const status = String(session.status || "unknown");
-        return `<div class="session"><div class="session-left"><div class="session-icon ${color}"><i class="fa-solid ${subjectIcon(subject)}"></i></div><div class="session-info"><strong>${escapeHtml(subject)}${topic ? ` - ${escapeHtml(session.topic)}` : ""}</strong><span>${escapeHtml(start)} – ${escapeHtml(end)} · ${escapeHtml(status)}</span></div></div><div class="session-time">${formatDuration(elapsed)}</div></div>`;
-      }).join("")
-      : '<div class="empty-state">No study sessions yet. Start your first session below.</div>';
-  }
-
-  function activeElapsedSeconds(session) {
-    const accumulated = Math.max(0, Number(session.duration_seconds) || 0);
-    if (session.status !== "active" || !session.last_resumed_at) return accumulated;
-    return accumulated + Math.max(
-      0,
-      (Date.now() - new Date(session.last_resumed_at).getTime()) / 1000,
-    );
-  }
-
-  function renderTimer() {
-    const session = state.activeSession;
-    $("timerDisplay").textContent = formatTime(session ? activeElapsedSeconds(session) : 0);
-    if (session) {
-      $("timerStatus").textContent =
-        `${subjectName(session)}${session.topic ? ` - ${session.topic}` : ""} · ${session.status}`;
-    } else if (!state.busy && !$("timerStatus").dataset.error) {
-      $("timerStatus").textContent = "";
-    }
-    $("studySubject").disabled = Boolean(session) || state.busy || !state.user;
-    $("studyTopic").disabled = Boolean(session) || state.busy || !state.user;
-    $("startTimer").disabled = Boolean(session) || state.busy || !state.user;
-    $("pauseTimer").disabled = !session || state.busy || !state.user;
-    $("finishTimer").disabled = !session || state.busy || !state.user;
-    $("editGoal").disabled = state.busy || !state.user;
-    if (!session) {
-      $("startTimer").innerHTML = '<i class="fa-solid fa-play"></i> Start Studying';
-      $("pauseTimer").innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
-    } else if (session.status === "paused") {
-      $("startTimer").innerHTML = '<i class="fa-solid fa-play"></i> Resume';
-      $("pauseTimer").innerHTML = '<i class="fa-solid fa-play"></i> Resume';
-      $("startTimer").disabled = state.busy;
-    } else {
-      $("startTimer").innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
-      $("pauseTimer").innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
-    }
+  function renderGoalControls() {
+    $("editGoal").disabled = state.busy;
   }
 
   function renderAll() {
@@ -386,83 +300,7 @@
     renderStats();
     renderChart();
     renderSubjects();
-    renderSessions();
-    renderTimer();
-  }
-
-  async function loadData() {
-    if (!state.client || !state.user) return;
-    const sequence = ++state.loadSequence;
-    const [sessions, segments, goalResult] = await Promise.all([
-      readAll(() => state.client
-        .from("study_sessions")
-        .select("*")
-        .eq("student_id", state.user.id)
-        .order("start_time", { ascending: false })),
-      readAll(() => state.client
-        .from("study_session_segments")
-        .select("*")
-        .eq("student_id", state.user.id)
-        .order("start_time", { ascending: false })),
-      state.client.rpc("get_student_daily_study_goal"),
-    ]);
-    if (goalResult.error) throw goalResult.error;
-    if (sequence !== state.loadSequence || state.disposed) return;
-    state.sessions = sessions;
-    state.segments = segments;
-    state.dailyGoalMinutes = Number(goalResult.data) || DEFAULT_GOAL_MINUTES;
-    state.activeSession = sessions.find((session) =>
-      session.status === "active" || session.status === "paused",
-    ) || null;
-    renderAll();
-  }
-
-  async function refreshData() {
-    try {
-      await loadData();
-      if ($("studyTimeStatus").dataset.state === "error") showStatus("");
-    } catch (error) {
-      console.error("Could not refresh study-time data.", error);
-      showStatus(`Study data could not be refreshed: ${error.message || "Check your connection and try again."}`, true);
-    }
-  }
-
-  function rowFromRpc(data) {
-    return Array.isArray(data) ? data[0] : data;
-  }
-
-  async function runAction(action, args = {}) {
-    if (state.busy || !state.client || !state.user) return;
-    state.busy = true;
-    delete $("timerStatus").dataset.error;
-    renderTimer();
-    try {
-      const { data, error } = await state.client.rpc(action, args);
-      if (error) throw error;
-      const row = rowFromRpc(data);
-      if (!row?.id) throw new Error("The study session update was not confirmed by the server.");
-      await loadData();
-      if (action === "finish_student_study_session") {
-        window.StudentAchievements?.evaluate?.();
-      }
-      showStatus(
-        action === "finish_student_study_session"
-          ? "Study session saved."
-          : action === "start_student_study_session"
-            ? "Study session started."
-            : action === "pause_student_study_session"
-              ? "Study session paused."
-              : "Study session resumed.",
-      );
-    } catch (error) {
-      console.error(`Study session action failed: ${action}`, error);
-      $("timerStatus").textContent = error.message || "Unable to save this study session.";
-      $("timerStatus").dataset.error = "true";
-      showStatus(error.message || "Unable to save this study session.", true);
-    } finally {
-      state.busy = false;
-      renderAll();
-    }
+    renderGoalControls();
   }
 
   async function updateGoal() {
@@ -476,22 +314,17 @@
     }
     const minutes = Math.round(hours * 60);
     state.busy = true;
-    renderTimer();
+    renderGoalControls();
     try {
-      const { data, error } = await state.client.rpc(
-        "set_student_daily_study_goal",
-        { requested_minutes: minutes },
-      );
-      if (error) throw error;
-      state.dailyGoalMinutes = Number(data) || minutes;
+      state.dailyGoalMinutes = minutes;
       renderAll();
-      showStatus("Daily study goal saved.");
+      showStatus("Daily goal updated for this page only; no backend is connected.");
     } catch (error) {
-      console.error("Could not save the daily study goal.", error);
-      showStatus(error.message || "Unable to save your daily goal.", true);
+      console.error("Could not update the daily study goal.", error);
+      showStatus(error.message || "Unable to update your daily goal.", true);
     } finally {
       state.busy = false;
-      renderTimer();
+      renderGoalControls();
     }
   }
 
@@ -505,192 +338,47 @@
       state.selectedDate = addDays(state.selectedDate, 1);
       renderAll();
     });
-    $("startTimer").addEventListener("click", () => {
-      if (state.activeSession?.status === "paused") {
-        void runAction("resume_student_study_session", {
-          requested_session_id: state.activeSession.id,
-        });
-        return;
-      }
-      if (state.activeSession?.status === "active") {
-        void runAction("pause_student_study_session", {
-          requested_session_id: state.activeSession.id,
-        });
-        return;
-      }
-      const subjectId = $("studySubject").value;
-      if (!state.subjectsById.has(String(subjectId))) {
-        showStatus("Select a subject from your registered curriculum before starting.", true);
-        return;
-      }
-      delete $("timerStatus").dataset.error;
-      void runAction("start_student_study_session", {
-        requested_subject_id: Number(subjectId),
-        requested_topic: $("studyTopic").value.trim(),
-      });
-    });
-    $("pauseTimer").addEventListener("click", () => {
-      if (!state.activeSession) return;
-      const action = state.activeSession.status === "paused"
-        ? "resume_student_study_session"
-        : "pause_student_study_session";
-      void runAction(action, { requested_session_id: state.activeSession.id });
-    });
-    $("finishTimer").addEventListener("click", () => {
-      if (state.activeSession) {
-        void runAction("finish_student_study_session", {
-          requested_session_id: state.activeSession.id,
-        });
-      }
-    });
     $("editGoal").addEventListener("click", () => void updateGoal());
-  }
-
-  async function refreshCurriculum() {
-    const curriculum = await window.StudentCurriculum.loadCurrentStudent(state.client);
-    if (String(curriculum.user.id) !== String(state.user.id)) {
-      throw new Error("Your signed-in student account changed. Reload the Study Time page.");
-    }
-    state.profile = { ...curriculum.student };
-    setSubjects(curriculum.subjects);
-    renderRegistrationContext();
-    renderAll();
-  }
-
-  function setSubjects(subjects) {
-    state.subjects = subjects;
-    state.subjectsById = new Map(subjects.map((subject) => [String(subject.id), subject]));
-    state.subjectIdsByName = new Map();
-    subjects.forEach((subject) => {
-      const key = subject.name.trim().toLowerCase();
-      if (!state.subjectIdsByName.has(key)) state.subjectIdsByName.set(key, []);
-      state.subjectIdsByName.get(key).push(String(subject.id));
-    });
-    const selected = $("studySubject").value;
-    $("studySubject").innerHTML = '<option value="">Select subject</option>' +
-      subjects.map((subject) =>
-        `<option value="${escapeHtml(subject.id)}">${escapeHtml(subject.name)}</option>`,
-      ).join("");
-    if (state.subjectsById.has(String(selected))) $("studySubject").value = selected;
-  }
-
-  async function subscribe() {
-    if (state.channel) await state.client.removeChannel(state.channel);
-    const channel = state.client.channel(`student-study-time-${state.user.id}`);
-    channel
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "study_sessions",
-        filter: `student_id=eq.${state.user.id}`,
-      }, () => void refreshData())
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "study_session_segments",
-        filter: `student_id=eq.${state.user.id}`,
-      }, () => void refreshData())
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "students",
-        filter: `user_id=eq.${state.user.id}`,
-      }, async () => {
-        try {
-          await refreshCurriculum();
-          await refreshData();
-        } catch (error) {
-          console.error("Could not refresh the registered study curriculum.", error);
-          showStatus(error.message || "Your registered curriculum could not be refreshed.", true);
-        }
-      })
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "subjects",
-      }, async () => {
-        try {
-          await refreshCurriculum();
-        } catch (error) {
-          console.error("Could not refresh study subjects.", error);
-          showStatus(error.message || "Registered subjects could not be refreshed.", true);
-        }
-      })
-      .subscribe((status, error) => {
-        if (error || ["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].includes(status)) {
-          console.error("Study-time Realtime subscription failed.", { status, error });
-          showStatus("Live updates are unavailable. Data will refresh periodically.", true);
-        }
-      });
-    state.channel = channel;
   }
 
   async function init() {
     bindEvents();
-    showStatus("Loading your registered curriculum and study records.");
-    const shared = window.SmartLearningSupabase;
-    if (!shared?.isConfigured?.()) {
-      throw new Error("Supabase is not configured for Study Time.");
-    }
-    state.client = shared.getClient?.();
-    if (!state.client) throw new Error("Supabase could not be initialized.");
-
-    const curriculum = await window.StudentCurriculum.loadCurrentStudent(state.client);
-    state.user = curriculum.user;
-    state.profile = { ...curriculum.student };
-    setSubjects(curriculum.subjects);
-    renderRegistrationContext();
     renderAll();
-    await loadData();
-    await subscribe();
-    showStatus("");
+    showStatus("Loading your assigned subjects…");
+    try {
+      const client = window.SmartLearningSupabase?.getClient?.();
+      if (!client) throw new Error("Supabase is not configured.");
+      const curriculum = await window.StudentCurriculum.loadCurrentStudent(client);
+      if (!Array.isArray(curriculum?.subjects)) {
+        throw new Error("The student curriculum query returned an invalid subjects list.");
+      }
 
-    state.timer = window.setInterval(() => {
-      if (!state.activeSession) return;
-      renderTimer();
-      renderStats();
-      renderChart();
-      renderSubjects();
-      renderSessions();
-    }, 1000);
-    state.refreshTimer = window.setInterval(() => void refreshData(), 60_000);
-
-    window.addEventListener("focus", () => void refreshData());
-    window.addEventListener("online", () => void refreshData());
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") void refreshData();
-    });
-    const authResult = state.client.auth.onAuthStateChange((_event, session) => {
-      if (session?.user?.id === state.user?.id) return;
-      state.user = null;
-      state.profile = null;
-      setSubjects([]);
-      state.activeSession = null;
-      state.sessions = [];
-      state.segments = [];
-      $("registrationContext").hidden = true;
-      if (state.channel) void state.client.removeChannel(state.channel);
-      state.channel = null;
-      showStatus("Your signed-in account changed. Reload this page to continue.", true);
+      state.subjects = curriculum.subjects;
+      state.subjectsById = new Map(
+        state.subjects.map((subject) => [String(subject.id), subject]),
+      );
+      state.subjectIdsByName = new Map();
+      state.subjects.forEach((subject) => {
+        const key = String(subject.name || "").trim().toLowerCase();
+        if (!key) return;
+        const matches = state.subjectIdsByName.get(key) || [];
+        matches.push(String(subject.id));
+        state.subjectIdsByName.set(key, matches);
+      });
+      state.subjectsLoading = false;
       renderAll();
-    });
-    state.authSubscription = authResult.data?.subscription || null;
-    window.addEventListener("pagehide", () => {
-      state.disposed = true;
-      state.loadSequence += 1;
-      window.clearInterval(state.timer);
-      window.clearInterval(state.refreshTimer);
-      if (state.channel) void state.client.removeChannel(state.channel);
-      state.channel = null;
-      state.authSubscription?.unsubscribe();
-    }, { once: true });
+      showStatus("Assigned subjects loaded. Study records are unavailable because the Study Time backend is disconnected.");
+    } catch (error) {
+      console.error("Could not load assigned subjects for study time.", error);
+      state.subjectsLoading = false;
+      state.subjectLoadError = error;
+      renderAll();
+      showStatus(
+        `Unable to load assigned subjects: ${error.message || "An unexpected error occurred."}`,
+        true,
+      );
+    }
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
-    void init().catch((error) => {
-      console.error("Study Time could not be initialized.", error);
-      showStatus(error.message || "Study tracking is temporarily unavailable.", true);
-      $("timerStatus").textContent = error.message || "Study tracking is temporarily unavailable.";
-    });
-  });
+  document.addEventListener("DOMContentLoaded", () => void init());
 })();

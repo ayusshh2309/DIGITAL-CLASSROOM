@@ -3,6 +3,8 @@
     date: new Date(),
     selectedDate: new Date(),
     events: [],
+    publishedQuizzes: [],
+    publishedQuizError: false,
     profile: null,
     subjectIds: new Set(),
     subjectsById: new Map(),
@@ -35,6 +37,14 @@
     if (root) root.innerHTML = `<div class="empty-state">${escapeHtml(message)}</div>`;
   };
   let activeChannel = null;
+
+  function responseRows(data, source) {
+    if (data == null) return [];
+    if (!Array.isArray(data)) {
+      throw new Error(`${source} query returned an unexpected response; expected a row array.`);
+    }
+    return data;
+  }
 
   function getClient() {
     const supabase = window.SmartLearningSupabase;
@@ -104,7 +114,7 @@
       source_id: row.source_id || null,
       calendar_id: row.id,
       type: type || row.event_type || "event",
-      title: row.title || row.name || row.topic || "Academic event",
+      title: row.title || row.name || "Academic event",
       description: row.description || "",
       teacher: row.teacher_name || "",
       subject: subjectRelation?.name || row.subject_name || row.subject || (row.subject_id ? `Subject ${row.subject_id}` : ""),
@@ -126,14 +136,20 @@
   async function getStudentProfile() {
     const client = state.client || getClient();
     const curriculum = await window.SubjectService.getStudentSubjects(client);
+    if (!Array.isArray(curriculum?.subjects)) {
+      throw new Error("The student curriculum query returned an invalid subjects list.");
+    }
+    const subjectCatalog = curriculum.subjectCatalog ?? curriculum.subjects;
+    if (!Array.isArray(subjectCatalog)) {
+      throw new Error("The student subject catalog query returned an invalid row list.");
+    }
     state.client = client;
     state.profile = curriculum.student;
     state.subjectIds = new Set(
       curriculum.subjects.map((subject) => String(subject.id)),
     );
     state.subjectsById = new Map(
-      (curriculum.subjectCatalog || curriculum.subjects)
-        .map((subject) => [String(subject.id), subject]),
+      subjectCatalog.map((subject) => [String(subject.id), subject]),
     );
     return { client, user: curriculum.user, profile: curriculum.student };
   }
@@ -171,7 +187,7 @@
           .order("start_at", { ascending: true })
           .range(offset, offset + 999);
         if (error) throw error;
-        const page = data || [];
+        const page = responseRows(data, "Calendar events");
         for (const row of page) rowsById.set(row.id, row);
         if (page.length < 1000) break;
       }
@@ -196,8 +212,9 @@
         .order("created_at", { ascending: true })
         .range(offset, offset + 999);
       if (error) throw error;
-      recipients.push(...(data || []));
-      if ((data || []).length < 1000) break;
+      const page = responseRows(data, "Announcement recipients");
+      recipients.push(...page);
+      if (page.length < 1000) break;
     }
 
     const recipientsByAnnouncement = new Map();
@@ -217,7 +234,7 @@
         .in("id", announcementIds.slice(index, index + 500))
         .eq("status", "published");
       if (error) throw error;
-      announcements.push(...(data || []));
+      announcements.push(...responseRows(data, "Announcements"));
     }
 
     const eligibleAnnouncements = announcements.filter((announcement) => {
@@ -247,7 +264,7 @@
       if (error) {
         console.warn("Student calendar could not load announcement teacher names.", error);
       } else {
-        teacherNames = new Map((data || []).map((teacher) => [
+        teacherNames = new Map(responseRows(data, "Announcement teachers").map((teacher) => [
           String(teacher.id),
           teacher.full_name,
         ]));
@@ -280,50 +297,29 @@
     for (let offset = 0; ; offset += 1000) {
       const { data: page, error } = await client
         .from("materials")
-        .select("id, teacher_id, grade, stream, subject_id, title, description, material_type, file_name, storage_bucket, file_path, mime_type, created_at")
+        .select("id, grade, stream, subject_id, title, description, material_type, created_at")
         .eq("grade", Number(state.profile.grade))
         .order("created_at", { ascending: false })
         .range(offset, offset + 999);
       if (error) throw error;
-      data.push(...(page || []));
-      if ((page || []).length < 1000) break;
+      const rows = responseRows(page, "Materials");
+      data.push(...rows);
+      if (rows.length < 1000) break;
     }
 
     const eligibleRows = data.filter((row) => {
       const subjectId = String(row.subject_id);
       return state.subjectIds.has(subjectId) &&
-        (Number(state.profile.grade) < 11 ||
-          String(row.stream || "").trim().toLowerCase() ===
-            String(state.profile.stream || "").trim().toLowerCase()) &&
+        String(row.stream || "").trim().toLowerCase() ===
+          String(state.profile.stream || "").trim().toLowerCase() &&
         eventIsInRanges({ start_at: row.created_at }, ranges);
     });
-    const teacherIds = [...new Set(eligibleRows.map((row) => row.teacher_id).filter(Boolean))];
-    let teacherNames = new Map();
-    if (teacherIds.length) {
-      const { data: teachers, error: teacherError } = await client
-        .from("teachers")
-        .select("id, full_name")
-        .in("id", teacherIds);
-      if (teacherError) {
-        console.warn("Student calendar could not load material teacher names.", teacherError);
-      } else {
-        teacherNames = new Map((teachers || []).map((teacher) => [
-          String(teacher.id),
-          teacher.full_name,
-        ]));
-      }
-    }
 
     return eligibleRows.map((row) => {
       const subject = state.subjectsById.get(String(row.subject_id));
-      const type = String(row.material_type || "").trim().toLowerCase();
-      const iconLabel = type === "photo" || type === "image" ? "Photo" :
-        type ? type.charAt(0).toUpperCase() + type.slice(1) : "Material";
       return normalizeRow({
         ...row,
-        title: row.title || row.file_name || "Study material",
-        description: [iconLabel, row.file_name].filter(Boolean).join(" · "),
-        teacher_name: teacherNames.get(String(row.teacher_id)) || "",
+        title: row.title || "Study material",
         subject_name: subject?.name || "",
         start_at: row.created_at,
         end_at: row.created_at,
@@ -335,16 +331,31 @@
   }
 
   async function loadLiveClasses(client, ranges) {
-    const { data, error } = await client.rpc("get_student_live_classes");
-    if (error) throw error;
-    return (data || [])
+    const liveClasses = [];
+    for (let offset = 0; ; offset += 1000) {
+      const { data, error } = await client
+        .from("live_classes")
+        .select("id, title, description, grade, stream, subject_id, class_date, start_time, end_time, start_at, end_at, status, publication_status")
+        .eq("grade", Number(state.profile.grade))
+        .eq("publication_status", "published")
+        .order("start_at", { ascending: true })
+        .range(offset, offset + 999);
+      if (error) throw error;
+      const page = responseRows(data, "Live classes");
+      liveClasses.push(...page);
+      if (page.length < 1000) break;
+    }
+
+    return liveClasses
       .filter((liveClass) => {
+        const status = String(liveClass.status || "").toLowerCase();
         const gradeMatches = Number(liveClass.grade) === Number(state.profile.grade);
-        const streamMatches = Number(state.profile.grade) < 11 ||
+        const streamMatches =
           String(liveClass.stream || "").trim().toLowerCase() ===
-            String(state.profile.stream || "").trim().toLowerCase();
+          String(state.profile.stream || "").trim().toLowerCase();
         return gradeMatches &&
           streamMatches &&
+          !["cancelled", "canceled"].includes(status) &&
           state.subjectIds.has(String(liveClass.subject_id)) &&
           eventIsInRanges(liveClass, ranges);
       })
@@ -358,83 +369,29 @@
       .filter(Boolean);
   }
 
-  async function loadQuizzes(client, ranges) {
-    const catalog = [];
+  async function loadQuizzes(client) {
+    const quizzes = [];
     for (let offset = 0; ; offset += 1000) {
       const { data, error } = await client
-        .rpc("get_student_quiz_catalog")
+        .from("quizzes")
+        .select("id, grade, stream, subject_id, title, description, status")
+        .eq("grade", Number(state.profile.grade))
+        .eq("status", "published")
+        .order("updated_at", { ascending: false })
         .range(offset, offset + 999);
       if (error) throw error;
-      catalog.push(...(data || []));
-      if ((data || []).length < 1000) break;
+      const page = responseRows(data, "Quizzes");
+      quizzes.push(...page);
+      if (page.length < 1000) break;
     }
-    const eligibleCatalog = (catalog || []).filter((quiz) =>
+    return quizzes.filter((quiz) =>
+      Number(quiz.grade) === Number(state.profile.grade) &&
+      String(quiz.stream || "").trim().toLowerCase() ===
+        String(state.profile.stream || "").trim().toLowerCase() &&
       quiz.subject_id != null &&
       state.subjectIds.has(String(quiz.subject_id)) &&
-      Number(quiz.grade) === Number(state.profile.grade) &&
-      (Number(state.profile.grade) < 11 ||
-        String(quiz.stream || "").trim().toLowerCase() ===
-          String(state.profile.stream || "").trim().toLowerCase()),
+      String(quiz.status).toLowerCase() === "published",
     );
-    if (!eligibleCatalog.length) return [];
-
-    const quizIds = [...new Set(eligibleCatalog.map((quiz) => quiz.id))];
-    const quizRows = [];
-    for (let index = 0; index < quizIds.length; index += 500) {
-      const { data, error } = await client
-        .from("quizzes")
-        .select("id, teacher_id, title, description, grade, stream, subject_id, status, student_access, start_at, end_at, published_at, duration_minutes")
-        .in("id", quizIds.slice(index, index + 500));
-      if (error) throw error;
-      quizRows.push(...(data || []));
-    }
-
-    const catalogById = new Map(eligibleCatalog.map((quiz) => [String(quiz.id), quiz]));
-    const rows = (quizRows || []).filter((quiz) => {
-      const catalogEntry = catalogById.get(String(quiz.id));
-      const date = quiz.start_at || quiz.published_at;
-      return catalogEntry &&
-        String(quiz.status || catalogEntry.quiz_status).toLowerCase() === "published" &&
-        date &&
-        eventIsInRanges({ start_at: date }, ranges);
-    });
-    const teacherIds = [...new Set(rows.map((quiz) => quiz.teacher_id).filter(Boolean))];
-    let teacherNames = new Map();
-    if (teacherIds.length) {
-      const { data: teachers, error: teacherError } = await client
-        .from("teachers")
-        .select("id, full_name")
-        .in("id", teacherIds);
-      if (teacherError) {
-        console.warn("Student calendar could not load quiz teacher names.", teacherError);
-      } else {
-        teacherNames = new Map((teachers || []).map((teacher) => [
-          String(teacher.id),
-          teacher.full_name,
-        ]));
-      }
-    }
-    return rows.map((quiz) => {
-      const catalogEntry = catalogById.get(String(quiz.id));
-      const startAt = quiz.start_at || quiz.published_at;
-      const endAt = quiz.end_at || (
-        quiz.duration_minutes
-          ? new Date(new Date(startAt).getTime() + Number(quiz.duration_minutes) * 60_000).toISOString()
-          : null
-      );
-      return normalizeRow({
-        ...quiz,
-        subject_name: state.subjectsById.get(String(quiz.subject_id))?.name ||
-          catalogEntry.subject_name,
-        teacher_name: teacherNames.get(String(quiz.teacher_id)) || "",
-        start_at: startAt,
-        end_at: endAt,
-        source_table: "quizzes",
-        source_id: quiz.id,
-        status: quiz.status || catalogEntry.quiz_status,
-        event_type: "quiz",
-      }, "quizzes", "quiz");
-    }).filter(Boolean);
   }
 
   async function loadEvents(date = state.date) {
@@ -444,35 +401,64 @@
       loadCalendarEvents(client, ranges),
       loadMaterials(client, ranges),
       loadLiveClasses(client, ranges),
-      loadQuizzes(client, ranges),
+      loadQuizzes(client),
       loadAnnouncements(client, ranges),
     ]);
     const sourceNames = [
       "Calendar events",
       "Study materials",
       "Live classes",
-      "Quizzes",
+      "Published quizzes",
       "Announcements",
     ];
-    state.sourceErrors = [];
+    const sourceErrors = [];
+    let publishedQuizError = false;
+    let publishedQuizzes = [];
     const events = [];
     sources.forEach((result, index) => {
       if (result.status === "fulfilled") {
+        if (!Array.isArray(result.value)) {
+          const error = new Error(`${sourceNames[index]} query returned an unexpected response; expected a row array.`);
+          console.error(`Student calendar ${sourceNames[index].toLowerCase()} query failed.`, error);
+          sourceErrors.push(`${sourceNames[index]}: ${error.message}`);
+          if (index === 3) publishedQuizError = true;
+          return;
+        }
+        if (index === 3) {
+          publishedQuizzes = result.value;
+          return;
+        }
         events.push(...result.value);
         return;
       }
       console.error(`Student calendar ${sourceNames[index].toLowerCase()} query failed.`, result.reason);
-      state.sourceErrors.push(`${sourceNames[index]}: ${result.reason?.message || "query failed"}`);
+      sourceErrors.push(`${sourceNames[index]}: ${result.reason?.message || "query failed"}`);
+      if (index === 3) publishedQuizError = true;
     });
-    return events.sort((left, right) =>
-      new Date(left.start_at) - new Date(right.start_at),
-    );
+    const uniqueEvents = new Map();
+    events.forEach((event) => {
+      const key = `${event.source_table || event.source}:${event.source_id || event.id}`;
+      uniqueEvents.set(key, event);
+    });
+    return {
+      events: [...uniqueEvents.values()].sort((left, right) =>
+        new Date(left.start_at) - new Date(right.start_at),
+      ),
+      publishedQuizzes,
+      publishedQuizError,
+      sourceErrors,
+    };
+  }
+
+  let refreshTimer = null;
+  function scheduleRealtimeRefresh() {
+    window.clearTimeout(refreshTimer);
+    refreshTimer = window.setTimeout(() => void refresh(), 100);
   }
 
   async function subscribe() {
     const client = state.client || getClient();
     if (activeChannel) await client.removeChannel(activeChannel);
-    const grade = Number(state.profile.grade);
     const channel = client.channel(`student-calendar-${state.profile.user_id}`);
     for (const table of [
       "materials",
@@ -486,10 +472,7 @@
         schema: "public",
         table,
       };
-      if (["materials", "live_classes", "quizzes"].includes(table)) {
-        subscription.filter = `grade=eq.${grade}`;
-      }
-      channel.on("postgres_changes", subscription, () => void refresh());
+      channel.on("postgres_changes", subscription, scheduleRealtimeRefresh);
     }
     channel
       .on("postgres_changes", {
@@ -497,18 +480,18 @@
         schema: "public",
         table: "announcement_recipients",
         filter: `student_id=eq.${state.profile.id}`,
-      }, () => void refresh())
+      }, scheduleRealtimeRefresh)
       .on("postgres_changes", {
         event: "*",
         schema: "public",
         table: "students",
         filter: `user_id=eq.${state.profile.user_id}`,
-      }, () => void refresh())
+      }, scheduleRealtimeRefresh)
       .on("postgres_changes", {
         event: "*",
         schema: "public",
         table: "subjects",
-      }, () => void refresh());
+      }, scheduleRealtimeRefresh);
     activeChannel = channel;
     channel.subscribe((status, error) => {
       if (error || ["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].includes(status)) {
@@ -613,7 +596,9 @@
     const counts = [
       categoryCount("materials", "No materials uploaded", "material", "materials"),
       categoryCount("live_classes", "No live classes scheduled", "live class", "live classes"),
-      categoryCount("quizzes", "No quizzes published", "quiz", "quizzes"),
+      state.publishedQuizzes.length
+        ? `${state.publishedQuizzes.length} ${state.publishedQuizzes.length === 1 ? "quiz" : "quizzes"} published (not scheduled)`
+        : "No quizzes published",
       categoryCount("announcements", "No announcements published", "announcement", "announcements"),
     ].join(" · ");
     status.textContent = state.sourceErrors.length
@@ -688,6 +673,24 @@
     }).join("") : '<div class="upcoming-event"><div class="upcoming-info"><h4>No upcoming events</h4><p>There are no future events for your profile.</p></div></div>');
   }
 
+  function renderPublishedQuizzes() {
+    const container = $("publishedQuizList");
+    if (!container) return;
+    container.innerHTML = state.publishedQuizzes.length
+      ? state.publishedQuizzes.map((quiz) => {
+        const subject = state.subjectsById.get(String(quiz.subject_id))?.name || "Subject";
+        const description = String(quiz.description || "").trim();
+        return `<a class="published-quiz-item" href="st_quizzes.html?quiz_id=${encodeURIComponent(quiz.id)}">
+          <strong>${escapeHtml(quiz.title || "Published quiz")}</strong>
+          <span>${escapeHtml(subject)} · Published, not scheduled</span>
+          ${description ? `<p>${escapeHtml(description)}</p>` : ""}
+        </a>`;
+      }).join("")
+      : `<p class="published-quiz-empty">${state.publishedQuizError
+        ? "Published quizzes could not be loaded."
+        : "No published quizzes are available for your registered curriculum."}</p>`;
+  }
+
   function renderCalendar() {
     const monthTitle = $("monthTitle");
     if (monthTitle) {
@@ -699,6 +702,7 @@
     renderMiniCalendar();
     renderCalendarStatus();
     renderUpcoming();
+    renderPublishedQuizzes();
   }
 
   function renderModal(event) {
@@ -716,6 +720,9 @@
       event.type === "announcement" && event.announcement_type
         ? `${event.announcement_type} announcement`
         : eventTypeLabel(event.type),
+      event.source_table === "materials" && event.material_type
+        ? `Material type: ${event.material_type}`
+        : "",
       event.class_grade ? `Grade ${event.class_grade}${event.stream ? ` - ${event.stream}` : ""}` : "",
       event.teacher ? `By ${event.teacher}` : "",
       event.source_table === "quizzes" && event.status
@@ -799,15 +806,23 @@
     const sequence = ++state.refreshSequence;
     const requestedDate = new Date(state.date);
     try {
-      const events = await loadEvents(requestedDate);
+      const result = await loadEvents(requestedDate);
       if (sequence !== state.refreshSequence) return;
-      state.events = events;
+      state.events = result.events;
+      state.publishedQuizzes = result.publishedQuizzes;
+      state.publishedQuizError = result.publishedQuizError;
+      state.sourceErrors = result.sourceErrors;
       renderCalendar();
     } catch (error) {
       if (sequence !== state.refreshSequence) return;
       console.error("Unable to render student calendar.", error);
       state.events = [];
+      state.publishedQuizzes = [];
+      state.publishedQuizError = true;
+      state.sourceErrors = [`Calendar: ${error.message || "Unable to load calendar data."}`];
       block(error.message || "Unable to load student calendar data.");
+      renderCalendarStatus();
+      renderPublishedQuizzes();
       const message = escapeHtml(error.message || "Unable to load calendar data.");
       if ($("upcomingCard")) $("upcomingCard").innerHTML = `<div class="side-card-header"><h3>Upcoming</h3></div><div class="upcoming-event"><div class="upcoming-info"><h4>${message}</h4></div></div>`;
       if (error?.code === "AUTH_REQUIRED") {
@@ -940,6 +955,9 @@
           void (async () => {
             await state.stopRealtime();
             state.events = [];
+            state.publishedQuizzes = [];
+            state.publishedQuizError = false;
+            renderPublishedQuizzes();
             state.profile = null;
             await refresh();
             state.stopRealtime = await subscribe();
@@ -957,6 +975,7 @@
   }
 
   window.addEventListener("pagehide", () => {
+    window.clearTimeout(refreshTimer);
     void state.stopRealtime();
     state.authSubscription?.unsubscribe();
   }, { once: true });

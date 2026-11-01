@@ -2,7 +2,6 @@
   "use strict";
 
   const MATERIAL_TYPES = ["pdf", "document", "photo", "image", "video"];
-  const DEFAULT_GOAL_MINUTES = 360;
   const FALLBACK_REFRESH_MS = 60_000;
   const REFRESH_DEBOUNCE_MS = 500;
   const state = {
@@ -85,12 +84,20 @@
     return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }
 
+  function responseRows(data, source) {
+    if (data == null) return [];
+    if (!Array.isArray(data)) {
+      throw new Error(`${source} query returned an unexpected response; expected a row array.`);
+    }
+    return data;
+  }
+
   async function readAll(createQuery) {
     const rows = [];
     for (let offset = 0; ; offset += 1000) {
       const { data, error } = await createQuery(offset, offset + 999);
       if (error) throw error;
-      const page = data || [];
+      const page = responseRows(data, "Student dashboard");
       rows.push(...page);
       if (page.length < 1000) return rows;
     }
@@ -112,8 +119,9 @@
     const sessionsById = new Map(state.sessions.map((session) => [String(session.id), session]));
     const intervals = [];
     for (const segment of state.segments) {
-      const start = new Date(segment.start_time);
-      const end = new Date(segment.end_time);
+      if (!segment.started_at || !segment.ended_at) continue;
+      const start = new Date(segment.started_at);
+      const end = new Date(segment.ended_at);
       if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) continue;
       const session = sessionsById.get(String(segment.session_id));
       intervals.push({
@@ -125,7 +133,7 @@
     }
     for (const session of state.sessions) {
       if (session.status !== "active") continue;
-      const start = new Date(session.last_resumed_at);
+      const start = new Date(session.started_at);
       if (!Number.isNaN(start.getTime()) && start < now) {
         intervals.push({
           start,
@@ -313,14 +321,14 @@
     const progressFill = $("studyProgressFill");
     const activity = $("studyDailyActivity");
     if (state.errors.study) {
-      if (progressText) progressText.textContent = `Study activity could not be loaded: ${displayError(state.errors.study)}`;
+      if (progressText) progressText.textContent = `Verified learning activity could not be loaded: ${displayError(state.errors.study)}`;
       if (progressValue) progressValue.textContent = "—";
       if (progressFill) progressFill.style.width = "0%";
       if (activity) activity.innerHTML = "";
       return;
     }
     if (state.errors.goal) {
-      if (progressText) progressText.textContent = `Study sessions are loaded, but the daily goal could not be retrieved: ${displayError(state.errors.goal)}`;
+      if (progressText) progressText.textContent = `Verified activity is loaded, but the daily goal could not be retrieved: ${displayError(state.errors.goal)}`;
     }
     const stats = calculateStudyStats(now);
     const dailyGoalSeconds = state.dailyGoalMinutes == null
@@ -334,8 +342,8 @@
       const todayGoal = dailyGoalSeconds == null ? "daily goal unavailable" :
         `${formatDuration(stats.todaySeconds)} of ${formatDuration(dailyGoalSeconds)} today`;
       progressText.textContent = stats.weekSeconds
-        ? `${formatDuration(stats.weekSeconds)} studied this week · ${todayGoal}.`
-        : `No study activity recorded this week · ${todayGoal}.`;
+        ? `${formatDuration(stats.weekSeconds)} verified this week · ${todayGoal}.`
+        : `No verified activity recorded this week · ${todayGoal}.`;
     }
     if (progressValue) progressValue.textContent = percent == null ? "—" : `${percent}%`;
     if (progressFill) progressFill.style.width = `${percent || 0}%`;
@@ -368,7 +376,7 @@
     $("dashboardQuizCount").textContent = state.errors.quizzes ? "—" : String(state.quizCount ?? 0);
     $("dashboardMaterialCount").textContent = state.errors.materials ? "—" : String(state.materialCount ?? 0);
     $("dashboardStudyTime").textContent = stats ? formatDuration(stats.weekSeconds) : "—";
-    $("dashboardStudyTimeNote").textContent = state.errors.study ? "Unavailable" : "This week";
+    $("dashboardStudyTimeNote").textContent = state.errors.study ? "Unavailable" : "Verified this week";
     const greeting = $("welcomeGreeting");
     if (greeting) {
       const firstName = String(state.student?.full_name || "").trim().split(/\s+/)[0];
@@ -430,7 +438,7 @@
       .limit(5);
     if (sequence !== state.loadSequence) return;
     if (error) throw error;
-    state.materials = data || [];
+    state.materials = responseRows(data, "Student materials");
     state.materialCount = count ?? state.materials.length;
     delete state.errors.materials;
     const teacherIds = [...new Set(state.materials.map((row) => row.teacher_id).filter(Boolean))];
@@ -523,50 +531,6 @@
     delete state.errors.quizzes;
   }
 
-  async function loadStudyData(sequence) {
-    const [sessionsResult, segmentsResult, goalResult] = await Promise.all([
-      readAll((from, to) => state.client.from("study_sessions")
-        .select("id, student_id, subject_id, subject, topic, start_time, last_resumed_at, pause_time, end_time, duration_seconds, status, created_at")
-        .eq("student_id", state.user.id)
-        .order("start_time", { ascending: false })
-        .range(from, to))
-        .then((data) => ({ data, error: null }), (error) => ({ data: null, error })),
-      readAll((from, to) => state.client.from("study_session_segments")
-        .select("id, session_id, student_id, start_time, end_time, duration_seconds")
-        .eq("student_id", state.user.id)
-        .order("start_time", { ascending: false })
-        .range(from, to))
-        .then((data) => ({ data, error: null }), (error) => ({ data: null, error })),
-      state.client.rpc("get_student_daily_study_goal"),
-    ]);
-    if (sequence !== state.loadSequence) return;
-    if (sessionsResult.error || segmentsResult.error) {
-      const error = sessionsResult.error || segmentsResult.error;
-      recordSourceError("study", error, "study-session");
-      state.sessions = [];
-      state.segments = [];
-    } else {
-      state.sessions = sessionsResult.data || [];
-      state.segments = segmentsResult.data || [];
-      delete state.errors.study;
-    }
-    if (goalResult.error) {
-      recordSourceError("goal", goalResult.error, "daily-goal");
-      state.dailyGoalMinutes = null;
-    } else {
-      const value = Array.isArray(goalResult.data)
-        ? goalResult.data[0]
-        : goalResult.data;
-      const minutes = Number(typeof value === "object" && value !== null
-        ? value.daily_study_goal_minutes
-        : value);
-      state.dailyGoalMinutes = Number.isFinite(minutes) && minutes > 0
-        ? minutes
-        : DEFAULT_GOAL_MINUTES;
-      delete state.errors.goal;
-    }
-  }
-
   async function refreshDashboard(showLoading = false) {
     if (!state.client || !state.user || !state.student) return;
     const sequence = ++state.loadSequence;
@@ -576,7 +540,6 @@
       ["materials", "materials", () => loadMaterials(sequence)],
       ["classes", "classes", () => loadClasses(sequence)],
       ["quizzes", "quizzes", () => loadQuizzes(now, sequence)],
-      ["study", "study", () => loadStudyData(sequence)],
     ];
     await Promise.all(tasks.map(async ([key, label, load]) => {
       try {
@@ -609,6 +572,9 @@
   async function loadStudent(user) {
     const identitySequence = ++state.identitySequence;
     const curriculum = await window.StudentCurriculum.loadCurrentStudent(state.client);
+    if (!Array.isArray(curriculum?.subjects)) {
+      throw new Error("The student curriculum query returned an invalid subjects list.");
+    }
     if (identitySequence !== state.identitySequence) return;
     if (String(curriculum.user.id) !== String(user.id)) {
       throw new Error("The signed-in account changed while the dashboard was loading.");
@@ -619,6 +585,10 @@
     state.subjectIds = new Set(state.subjects.map((subject) => String(subject.id)));
     state.subjectsById = new Map(state.subjects.map((subject) => [String(subject.id), subject]));
     state.errors = {};
+    state.errors.study = new Error("Study Time backend is disconnected.");
+    state.sessions = [];
+    state.segments = [];
+    state.dailyGoalMinutes = null;
     renderAll();
     await refreshDashboard(true);
   }
@@ -653,8 +623,6 @@
     subscribeTable("quizzes");
     subscribeTable("students", `user_id=eq.${state.user.id}`);
     subscribeTable("subjects");
-    subscribeTable("study_sessions", `student_id=eq.${state.user.id}`);
-    subscribeTable("study_session_segments", `student_id=eq.${state.user.id}`);
     state.channel = channel.subscribe((status, error) => {
       if (status === "SUBSCRIBED") {
         state.realtimeReady = true;

@@ -16,7 +16,7 @@
   }
 
   function calculateStreak(sessions) {
-    const days = [...new Set(sessions.filter((session) => session.status === "completed").map((session) => dateKey(session.end_time || session.start_time)).filter(Boolean))].sort().reverse();
+    const days = [...new Set(sessions.filter((session) => session.status === "completed").map((session) => dateKey(session.ended_at || session.created_at)).filter(Boolean))].sort().reverse();
     if (!days.length) return { current: 0, best: 0 };
     const dayNumber = (key) => Date.parse(`${key}T00:00:00`);
     let best = 1;
@@ -38,9 +38,9 @@
     const completedSessions = sessions.filter((session) => session.status === "completed");
     const minutes = completedSessions.reduce((total, session) => total + Number(session.duration_seconds || 0) / 60, 0);
     const currentWeek = Date.now() - 7 * 86400000;
-    const weeklyMinutes = completedSessions.filter((session) => new Date(session.end_time || session.start_time).getTime() >= currentWeek).reduce((total, session) => total + Number(session.duration_seconds || 0) / 60, 0);
+    const weeklyMinutes = completedSessions.filter((session) => new Date(session.ended_at || session.created_at).getTime() >= currentWeek).reduce((total, session) => total + Number(session.duration_seconds || 0) / 60, 0);
     const today = dateKey(new Date());
-    const sessionsToday = completedSessions.filter((session) => dateKey(session.end_time || session.start_time) === today).length;
+    const sessionsToday = completedSessions.filter((session) => dateKey(session.ended_at || session.created_at) === today).length;
     const highScoreQuizzes = (rows.quizzes || []).filter((attempt) => Number(attempt.percentage) >= 90).length;
     const streak = calculateStreak(sessions);
     return {
@@ -64,13 +64,11 @@
 
   async function loadRows() {
     const queries = await Promise.all([
-      state.client.from("study_sessions").select("id,status,start_time,end_time,duration_seconds").eq("student_id", state.user.id),
       state.client.from("student_video_progress").select("video_id,completed").eq("student_id", state.user.id),
       state.client.rpc("get_student_quiz_catalog"),
     ]);
-    if (queries[0].error) throw queries[0].error;
-    if (queries[2].error) throw queries[2].error;
-    const releasedAttempts = (queries[2].data || [])
+    if (queries[1].error) throw queries[1].error;
+    const releasedAttempts = (queries[1].data || [])
       .filter((quiz) => quiz.attempt_status === "submitted" && quiz.result_released)
       .map((quiz) => ({
         id: quiz.attempt_id,
@@ -78,7 +76,11 @@
         status: quiz.attempt_status,
         submitted_at: quiz.submitted_at,
       }));
-    return { sessions: queries[0].data || [], videos: queries[1].error ? [] : queries[1].data || [], quizzes: releasedAttempts };
+    return {
+      sessions: [],
+      videos: queries[0].data || [],
+      quizzes: releasedAttempts,
+    };
   }
 
   async function evaluate() {
@@ -203,7 +205,6 @@
     state.studentId = student.id;
     await evaluate();
     state.client.channel(`achievements-${user.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "study_sessions", filter: `student_id=eq.${user.id}` }, evaluate)
       .on("postgres_changes", { event: "*", schema: "public", table: "student_video_progress", filter: `student_id=eq.${user.id}` }, evaluate)
       .on("postgres_changes", { event: "*", schema: "public", table: "quiz_attempts", filter: `student_id=eq.${state.studentId}` }, evaluate)
       .on("postgres_changes", { event: "*", schema: "public", table: "student_achievements", filter: `student_id=eq.${user.id}` }, evaluate)
