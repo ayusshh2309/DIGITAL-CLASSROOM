@@ -1060,7 +1060,9 @@
         background: #fff;
         color: #344563;
         cursor: pointer;
-        transition: border-color 140ms ease, background 140ms ease;
+        transition:
+          border-color 140ms ease,
+          background 140ms ease;
       }
 
       .attempt-option:hover {
@@ -1268,7 +1270,6 @@
         .main-grid {
           grid-template-columns: 1fr;
         }
-
       }
 
       @media (max-width: 750px) {
@@ -1366,9 +1367,7 @@
             <span class="scope-label">Your registered curriculum</span>
             <span class="scope-value">
               <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
-              <span id="registrationContextText"
-                >Loading...</span
-              >
+              <span id="registrationContextText">Loading...</span>
             </span>
           </div>
         </div>
@@ -1497,7 +1496,6 @@
             </div>
           </div>
         </section>
-
       </div>
     </div>
 
@@ -1528,6 +1526,7 @@
       let reloadQuizzesQueued = false;
       let studentQuizChannel = null;
       let requestedQuizAttemptStarted = false;
+      const achievementEvaluationsStarted = new Set();
       const quizAnswerDrafts = new Map();
       const quizReviewDrafts = new Map();
       const quizPageSections = [".page-header", ".stats-grid", ".main-grid"];
@@ -1548,10 +1547,14 @@
 
       function renderRegistrationContext(student) {
         const grade = normalizeGrade(student?.grade);
-        const stream = String(student?.stream || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
-        const streamLabel = Number(grade) >= 11 && stream
-          ? ` - ${streamLabels[stream] || stream.replace(/_/g, " ")}`
-          : "";
+        const stream = String(student?.stream || "")
+          .trim()
+          .toLowerCase()
+          .replace(/[\s-]+/g, "_");
+        const streamLabel =
+          Number(grade) >= 11 && stream
+            ? ` - ${streamLabels[stream] || stream.replace(/_/g, " ")}`
+            : "";
         document.getElementById("registrationContextText").textContent =
           `Grade ${grade}${streamLabel}`;
       }
@@ -1708,11 +1711,12 @@
         if (!data || data.user_id !== authData.user.id) {
           throw new Error("No student registration is linked to this account.");
         }
-        const curriculum = await window.SubjectService.getStudentSubjects(
-          supabaseClient,
-        );
+        const curriculum =
+          await window.SubjectService.getStudentSubjects(supabaseClient);
         if (String(curriculum.student.id) !== String(data.id)) {
-          throw new Error("The authenticated student curriculum did not match the loaded profile.");
+          throw new Error(
+            "The authenticated student curriculum did not match the loaded profile.",
+          );
         }
         studentSubjectIds = new Set(
           curriculum.subjects.map((subject) => String(subject.id)),
@@ -1741,25 +1745,28 @@
           allQuizzes = [
             ...new Map(
               (quizResult.data || [])
-                .filter((quiz) =>
-                  quiz.subject_id != null &&
-                  studentSubjectIds.has(String(quiz.subject_id)),
+                .filter(
+                  (quiz) =>
+                    quiz.subject_id != null &&
+                    studentSubjectIds.has(String(quiz.subject_id)),
                 )
                 .map((quiz) => [
-                String(quiz.id),
-                {
-                  ...quiz,
-                  subject: quiz.subject_name || "Subject",
-                  question_count: Number(quiz.question_count || 0),
-                  result_released: quiz.result_released === true,
-                },
-              ]),
+                  String(quiz.id),
+                  {
+                    ...quiz,
+                    subject: quiz.subject_name || "Subject",
+                    question_count: Number(quiz.question_count || 0),
+                    result_released: quiz.result_released === true,
+                  },
+                ]),
             ).values(),
           ];
           const attemptsResult = allQuizzes.length
             ? await supabaseClient
                 .from("quiz_attempts")
-                .select("id, quiz_id, student_id, started_at, submitted_at, status")
+                .select(
+                  "id, quiz_id, student_id, started_at, submitted_at, status",
+                )
                 .eq("student_id", student.id)
                 .in(
                   "quiz_id",
@@ -1791,15 +1798,19 @@
             latestAttemptByQuizId.set(String(row.quiz_id), row);
           }
           allAttempts = [...latestAttemptByQuizId.values()].map((row) =>
-            createStudentAttemptView(row, catalogByQuizId.get(String(row.quiz_id))),
+            createStudentAttemptView(
+              row,
+              catalogByQuizId.get(String(row.quiz_id)),
+            ),
           );
 
           populateSubjectFilter();
           renderQuizzes();
           updateStatistics();
           updatePerformance();
-          const requestedQuizId = new URLSearchParams(window.location.search)
-            .get("quiz_id");
+          const requestedQuizId = new URLSearchParams(
+            window.location.search,
+          ).get("quiz_id");
           if (
             requestedQuizId &&
             !requestedQuizAttemptStarted &&
@@ -1890,12 +1901,13 @@
         if (!studentData?.id || !studentData?.user_id) {
           throw new Error("The registered student identity is unavailable.");
         }
-        const {
-          data: authData,
-          error: authError,
-        } = await supabaseClient.auth.getUser();
+        const { data: authData, error: authError } =
+          await supabaseClient.auth.getUser();
         if (authError) {
-          console.error("Could not verify the student session for attempt lookup.", authError);
+          console.error(
+            "Could not verify the student session for attempt lookup.",
+            authError,
+          );
           throw new Error(
             `Your student session could not be verified: ${authError.message}`,
           );
@@ -2121,9 +2133,11 @@
                       class="quiz-date ${dateClass}">
 
                       <div>${escapeHTML(status.label)}</div>
-                      <div class="due">${attempt?.submitted_at
-                        ? `Submitted ${escapeHTML(formatDate(attempt.submitted_at))}`
-                        : "No scheduled date"}</div>
+                      <div class="due">${
+                        attempt?.submitted_at
+                          ? `Submitted ${escapeHTML(formatDate(attempt.submitted_at))}`
+                          : "No scheduled date"
+                      }</div>
 
                   </div>
 
@@ -2236,7 +2250,8 @@
 
       function getQuizAttemptView() {
         const view = document.getElementById("quizAttemptView");
-        if (!view) throw new Error("The quiz attempt content area is unavailable.");
+        if (!view)
+          throw new Error("The quiz attempt content area is unavailable.");
         return view;
       }
 
@@ -2253,9 +2268,11 @@
       let activeQuizTimer = null;
 
       function bindDialogClose(dialog) {
-        dialog.querySelectorAll("[data-close]").forEach((button) =>
-          button.addEventListener("click", () => dialog.close()),
-        );
+        dialog
+          .querySelectorAll("[data-close]")
+          .forEach((button) =>
+            button.addEventListener("click", () => dialog.close()),
+          );
       }
 
       function renderAttemptResult(attempt, quiz) {
@@ -2289,9 +2306,11 @@
           : "General";
         dialog.innerHTML = `<section style="padding:28px;font-family:Inter,sans-serif;color:#101a3b"><button type="button" data-close style="float:right;border:0;background:none;font-size:24px;cursor:pointer" aria-label="Close">×</button><span style="color:#008b95;font-size:12px;font-weight:800;text-transform:uppercase">Grade ${escapeHTML(quiz.grade)} · ${escapeHTML(streamLabel)}</span><h2 style="margin:10px 0">${escapeHTML(quiz.title)}</h2><p>${escapeHTML(quiz.subject)} · ${Number(quiz.question_count)} questions · ${Number(quiz.total_marks)} marks · ${Number(quiz.duration_minutes)} minutes</p><p>${escapeHTML(quiz.instructions || "Read each question carefully. Your timer starts when you begin.")}</p><p><strong>Starting begins your official timer.</strong> Answers and review marks are held in this page until submission; refreshing may clear them.</p><button id="beginQuizButton" class="attempt-btn" type="button">Start Quiz</button></section>`;
         bindDialogClose(dialog);
-        dialog.querySelector("#beginQuizButton").addEventListener("click", () => {
-          void launchQuizAttempt(quiz);
-        });
+        dialog
+          .querySelector("#beginQuizButton")
+          .addEventListener("click", () => {
+            void launchQuizAttempt(quiz);
+          });
         if (!dialog.open) dialog.showModal();
       }
 
@@ -2319,10 +2338,8 @@
         const view = getQuizAttemptView();
         view.innerHTML = `<div class="loading" role="status"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading your quiz attempt…</p></div>`;
         try {
-          const {
-            data: authData,
-            error: authError,
-          } = await supabaseClient.auth.getUser();
+          const { data: authData, error: authError } =
+            await supabaseClient.auth.getUser();
           if (authError) throw authError;
           if (authData?.user?.id !== studentData?.user_id) {
             throw new Error(
@@ -2332,11 +2349,14 @@
           const { data: catalogRows, error: catalogError } =
             await supabaseClient.rpc("get_student_quiz_catalog");
           if (catalogError) {
-            console.error("Could not verify quiz eligibility before starting.", {
-              quizId: quiz.id,
-              studentId: studentData.id,
-              error: catalogError,
-            });
+            console.error(
+              "Could not verify quiz eligibility before starting.",
+              {
+                quizId: quiz.id,
+                studentId: studentData.id,
+                error: catalogError,
+              },
+            );
             throw new Error(
               `The eligible quiz catalog could not be verified: ${catalogError.message}`,
             );
@@ -2371,10 +2391,10 @@
             renderAttemptResult(attemptView, selectedQuiz);
             return;
           }
-          const { data: attemptId, error: startError } = await supabaseClient.rpc(
-            "start_quiz_attempt",
-            { p_quiz_id: selectedQuiz.id },
-          );
+          const { data: attemptId, error: startError } =
+            await supabaseClient.rpc("start_quiz_attempt", {
+              p_quiz_id: selectedQuiz.id,
+            });
           if (startError) throw startError;
           if (
             typeof attemptId !== "string" ||
@@ -2382,7 +2402,9 @@
               attemptId,
             )
           ) {
-            throw new Error("The server did not return a valid quiz attempt ID.");
+            throw new Error(
+              "The server did not return a valid quiz attempt ID.",
+            );
           }
           if (
             existingAttempt?.status === "in_progress" &&
@@ -2397,11 +2419,14 @@
             attemptId,
           );
           if (!attemptRecord) {
-            console.error("Started quiz attempt row was not visible to its owner.", {
-              attemptId,
-              quizId: selectedQuiz.id,
-              studentId: studentData.id,
-            });
+            console.error(
+              "Started quiz attempt row was not visible to its owner.",
+              {
+                attemptId,
+                quizId: selectedQuiz.id,
+                studentId: studentData.id,
+              },
+            );
             throw new Error(
               "The start function returned an attempt ID, but no matching attempt row is visible for this student and quiz. Check the quiz_attempts student SELECT policy and database attempt row before retrying.",
             );
@@ -2459,11 +2484,14 @@
               p_quiz_id: selectedQuiz.id,
             });
           if (questionsError) {
-            console.error("Quiz question RPC failed after attempt verification.", {
-              attemptId,
-              quizId: selectedQuiz.id,
-              error: questionsError,
-            });
+            console.error(
+              "Quiz question RPC failed after attempt verification.",
+              {
+                attemptId,
+                quizId: selectedQuiz.id,
+                error: questionsError,
+              },
+            );
             throw questionsError;
           }
           if (!Array.isArray(questions) || !questions.length) {
@@ -2507,8 +2535,7 @@
             status: attemptRecord.status,
             started_at: attemptRecord.started_at,
           };
-          const answers =
-            quizAnswerDrafts.get(String(attemptId)) || new Map();
+          const answers = quizAnswerDrafts.get(String(attemptId)) || new Map();
           const reviewQuestions =
             quizReviewDrafts.get(String(attemptId)) || new Set();
           quizAnswerDrafts.set(String(attemptId), answers);
@@ -2539,11 +2566,39 @@
         let submissionInFlight = false;
         let lastSubmissionConfirmed = false;
         let autoSubmitAttempted = false;
+        async function evaluateAchievementsAfterQuizSubmission() {
+          const attemptId = String(attempt.attempt_id);
+          if (achievementEvaluationsStarted.has(attemptId)) return;
+          achievementEvaluationsStarted.add(attemptId);
+
+          try {
+            const { data, error } = await supabaseClient.rpc(
+              "evaluate_student_achievements_v1",
+            );
+            if (error) throw error;
+            console.info(
+              "Student achievements evaluated after quiz submission.",
+              {
+                attemptId,
+                quizId: quiz.id,
+                result: data,
+              },
+            );
+          } catch (error) {
+            console.error(
+              "Could not evaluate student achievements after quiz submission.",
+              { attemptId, quizId: quiz.id, error },
+            );
+          }
+        }
+
         const expiresAt =
           new Date(attempt.started_at).getTime() +
           Number(quiz.duration_minutes) * 60 * 1000;
         if (!Number.isFinite(expiresAt)) {
-          throw new Error("The quiz timer could not be initialized from the server's attempt start time.");
+          throw new Error(
+            "The quiz timer could not be initialized from the server's attempt start time.",
+          );
         }
 
         const saveAnswer = (question, answer) => {
@@ -2566,7 +2621,11 @@
         const answeredCount = () =>
           questions.filter((question) => {
             const answer = answers.get(String(question.id));
-            return answer !== null && answer !== undefined && String(answer).trim() !== "";
+            return (
+              answer !== null &&
+              answer !== undefined &&
+              String(answer).trim() !== ""
+            );
           }).length;
 
         const renderNavigation = () => {
@@ -2574,7 +2633,8 @@
           if (!navigation) return;
           navigation.innerHTML = questions
             .map((question, index) => {
-              const isAnswered = answers.has(String(question.id)) &&
+              const isAnswered =
+                answers.has(String(question.id)) &&
                 String(answers.get(String(question.id)) ?? "").trim() !== "";
               const isCurrent = index === currentIndex;
               const isReview = reviewQuestions.has(String(question.id));
@@ -2583,7 +2643,9 @@
                 isCurrent ? "is-current" : "",
                 isAnswered ? "is-answered" : "",
                 isReview ? "is-review" : "",
-              ].filter(Boolean).join(" ");
+              ]
+                .filter(Boolean)
+                .join(" ");
               return `<button type="button" class="${classes}" data-question-index="${index}" aria-current="${isCurrent ? "step" : "false"}" aria-label="Question ${index + 1}${isAnswered ? ", answered" : ", unanswered"}${isReview ? ", marked for review" : ""}">${index + 1}</button>`;
             })
             .join("");
@@ -2619,7 +2681,9 @@
           } else if (question.question_type === "short_answer") {
             answerControl = `<p role="alert">Short-answer questions are not supported by the deployed quiz submission function. This quiz cannot be safely submitted.</p><textarea id="shortAnswerInput" rows="5" disabled aria-disabled="true"></textarea>`;
           } else {
-            throw new Error(`Unsupported question type: ${question.question_type}`);
+            throw new Error(
+              `Unsupported question type: ${question.question_type}`,
+            );
           }
           const answered = answeredCount();
           const currentReview = reviewQuestions.has(String(question.id));
@@ -2651,7 +2715,7 @@
                   <div class="attempt-question-badges"><span class="attempt-question-badge">${escapeHTML(question.question_type.replace(/_/g, " "))}</span><span class="attempt-question-badge">${Number(question.marks)} marks</span></div>
                 </div>
                 <div class="attempt-question-status"><span>Answered: <strong>${answered}</strong></span><span>Current: <strong>${currentIndex + 1}</strong></span><span>Unanswered: <strong>${questions.length - answered}</strong></span></div>
-                <div class="attempt-progress" role="progressbar" aria-label="Quiz progress" aria-valuemin="0" aria-valuemax="${questions.length}" aria-valuenow="${answered}"><span style="width:${Math.round(answered / questions.length * 100)}%"></span></div>
+                <div class="attempt-progress" role="progressbar" aria-label="Quiz progress" aria-valuemin="0" aria-valuemax="${questions.length}" aria-valuenow="${answered}"><span style="width:${Math.round((answered / questions.length) * 100)}%"></span></div>
                 <article class="attempt-question-prompt"><span class="attempt-question-badge">Question ${currentIndex + 1}</span><p>${escapeHTML(question.question_text)}</p></article>
                 <div class="attempt-options">${answerControl}</div>
                 <p id="answerSaveStatus" role="status" class="attempt-question-subtitle">Answer is held for this attempt until submission.</p>
@@ -2678,11 +2742,13 @@
           renderNavigation();
 
           const currentQuestion = question;
-          view.querySelector("#backToQuizzesLink").addEventListener("click", (event) => {
-            event.preventDefault();
-            window.clearInterval(activeQuizTimer);
-            setQuizAttemptViewVisible(false);
-          });
+          view
+            .querySelector("#backToQuizzesLink")
+            .addEventListener("click", (event) => {
+              event.preventDefault();
+              window.clearInterval(activeQuizTimer);
+              setQuizAttemptViewVisible(false);
+            });
           view.querySelectorAll("[data-question-index]").forEach((button) => {
             button.addEventListener("click", async () => {
               try {
@@ -2694,19 +2760,17 @@
               }
             });
           });
-          view
-            .querySelectorAll('input[name="quiz-answer"]')
-            .forEach((input) =>
-              input.addEventListener("change", () => {
-                saveAnswer(currentQuestion, input.value);
-                input.closest(".attempt-option")?.classList.add("is-selected");
-                view.querySelectorAll(".attempt-option").forEach((option) => {
-                  if (option !== input.closest(".attempt-option")) {
-                    option.classList.remove("is-selected");
-                  }
-                });
-              }),
-            );
+          view.querySelectorAll('input[name="quiz-answer"]').forEach((input) =>
+            input.addEventListener("change", () => {
+              saveAnswer(currentQuestion, input.value);
+              input.closest(".attempt-option")?.classList.add("is-selected");
+              view.querySelectorAll(".attempt-option").forEach((option) => {
+                if (option !== input.closest(".attempt-option")) {
+                  option.classList.remove("is-selected");
+                }
+              });
+            }),
+          );
           view
             .querySelector("#previousQuestionButton")
             .addEventListener("click", async () => {
@@ -2720,31 +2784,32 @@
             });
           const nextQuestionButton = view.querySelector("#nextQuestionButton");
           nextQuestionButton?.addEventListener("click", async () => {
-              try {
-                await saveCurrentAnswer();
-                currentIndex += 1;
-                renderCurrentQuestion();
-              } catch (error) {
-                showWorkflowError(error);
-              }
-            });
-          view.querySelector("#finalQuestionSubmitButton")?.addEventListener(
-            "click",
-            async () => {
+            try {
+              await saveCurrentAnswer();
+              currentIndex += 1;
+              renderCurrentQuestion();
+            } catch (error) {
+              showWorkflowError(error);
+            }
+          });
+          view
+            .querySelector("#finalQuestionSubmitButton")
+            ?.addEventListener("click", async () => {
               try {
                 await saveCurrentAnswer();
                 showSubmissionConfirmation(false);
               } catch (error) {
                 showWorkflowError(error);
               }
-            },
-          );
-          view.querySelector("#markReviewButton").addEventListener("click", () => {
-            const key = String(currentQuestion.id);
-            if (reviewQuestions.has(key)) reviewQuestions.delete(key);
-            else reviewQuestions.add(key);
-            renderCurrentQuestion();
-          });
+            });
+          view
+            .querySelector("#markReviewButton")
+            .addEventListener("click", () => {
+              const key = String(currentQuestion.id);
+              if (reviewQuestions.has(key)) reviewQuestions.delete(key);
+              else reviewQuestions.add(key);
+              renderCurrentQuestion();
+            });
           view
             .querySelector("#submitQuizButton")
             .addEventListener("click", async () => {
@@ -2813,51 +2878,55 @@
         };
 
         const readCurrentAttemptState = async () => {
-          const {
-            data: authData,
-            error: authError,
-          } = await supabaseClient.auth.getUser();
+          const { data: authData, error: authError } =
+            await supabaseClient.auth.getUser();
           if (authError) {
-            console.error("Could not verify the student session before quiz submission.", authError);
+            console.error(
+              "Could not verify the student session before quiz submission.",
+              authError,
+            );
             throw new Error(
               `Your student session could not be verified: ${authError.message}`,
             );
           }
-          if (
-            !authData?.user ||
-            authData.user.id !== studentData?.user_id
-          ) {
+          if (!authData?.user || authData.user.id !== studentData?.user_id) {
             throw new Error(
               "The signed-in student changed during this attempt. Sign in with the same student account and refresh before submitting.",
             );
           }
-          const {
-            data: attemptRecord,
-            error: attemptReadError,
-          } = await supabaseClient
-            .from("quiz_attempts")
-            .select("id, quiz_id, student_id, started_at, submitted_at, status")
-            .eq("id", attempt.attempt_id)
-            .eq("quiz_id", quiz.id)
-            .eq("student_id", studentData.id)
-            .maybeSingle();
+          const { data: attemptRecord, error: attemptReadError } =
+            await supabaseClient
+              .from("quiz_attempts")
+              .select(
+                "id, quiz_id, student_id, started_at, submitted_at, status",
+              )
+              .eq("id", attempt.attempt_id)
+              .eq("quiz_id", quiz.id)
+              .eq("student_id", studentData.id)
+              .maybeSingle();
           if (attemptReadError) {
-            console.error("Could not verify quiz attempt status before submission.", {
-              attemptId: attempt.attempt_id,
-              quizId: quiz.id,
-              studentId: studentData.id,
-              error: attemptReadError,
-            });
+            console.error(
+              "Could not verify quiz attempt status before submission.",
+              {
+                attemptId: attempt.attempt_id,
+                quizId: quiz.id,
+                studentId: studentData.id,
+                error: attemptReadError,
+              },
+            );
             throw new Error(
               `The attempt status could not be verified under the current database permissions: ${attemptReadError.message}`,
             );
           }
           if (!attemptRecord) {
-            console.error("Student-owned attempt query returned no matching row.", {
-              attemptId: attempt.attempt_id,
-              quizId: quiz.id,
-              studentId: studentData.id,
-            });
+            console.error(
+              "Student-owned attempt query returned no matching row.",
+              {
+                attemptId: attempt.attempt_id,
+                quizId: quiz.id,
+                studentId: studentData.id,
+              },
+            );
             return null;
           }
           if (
@@ -2872,9 +2941,13 @@
           return attemptRecord;
         };
 
-        const showConfirmedSubmission = (attemptRecord, releasedQuizRow = null) => {
+        const showConfirmedSubmission = (
+          attemptRecord,
+          releasedQuizRow = null,
+        ) => {
           lastSubmissionConfirmed = true;
           submissionInFlight = true;
+          void evaluateAchievementsAfterQuizSubmission();
           window.clearInterval(activeQuizTimer);
           const submittedAttempt = createStudentAttemptView(
             attemptRecord || {
@@ -2908,12 +2981,14 @@
             });
             return null;
           }
-          return (catalogRows || []).find(
-            (row) =>
-              String(row.id) === String(quiz.id) &&
-              String(row.attempt_id) === String(attemptRecord.id) &&
-              row.result_released === true,
-          ) || null;
+          return (
+            (catalogRows || []).find(
+              (row) =>
+                String(row.id) === String(quiz.id) &&
+                String(row.attempt_id) === String(attemptRecord.id) &&
+                row.result_released === true,
+            ) || null
+          );
         };
 
         const submitAttempt = async () => {
@@ -2985,12 +3060,15 @@
               );
             }
             if (!submittedRow || submittedRow.status !== "submitted") {
-              console.error("Submission RPC confirmed success but the attempt row is not yet submitted.", {
-                attemptId: attempt.attempt_id,
-                quizId: quiz.id,
-                attemptStatus: submittedRow?.status || "unavailable",
-                statusError,
-              });
+              console.error(
+                "Submission RPC confirmed success but the attempt row is not yet submitted.",
+                {
+                  attemptId: attempt.attempt_id,
+                  quizId: quiz.id,
+                  attemptStatus: submittedRow?.status || "unavailable",
+                  statusError,
+                },
+              );
               showConfirmedSubmission(null);
             }
           } catch (error) {
@@ -3010,8 +3088,7 @@
               return;
             }
             const errorElement = view.querySelector("#submitError");
-            const canRetry =
-              currentAttempt?.status === "in_progress";
+            const canRetry = currentAttempt?.status === "in_progress";
             if (canRetry) {
               submissionInFlight = false;
               startCountdown();

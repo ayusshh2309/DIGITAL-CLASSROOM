@@ -988,6 +988,8 @@
         </div>
       </header>
 
+      <p id="achievementStatus" role="status" aria-live="polite" hidden></p>
+
       <!-- =====================================
          OVERVIEW
     ====================================== -->
@@ -1513,83 +1515,7 @@
       </section>
     </div>
 
-    <script>
-      /* =========================================
-       BADGE FILTER
-    ========================================= */
-
-      const filterButtons = document.querySelectorAll(".filter-btn");
-
-      const badgeCards = document.querySelectorAll(".badge-card");
-
-      filterButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-          filterButtons.forEach((btn) => {
-            btn.classList.remove("active");
-          });
-
-          button.classList.add("active");
-
-          const filter = button.dataset.filter;
-
-          badgeCards.forEach((card) => {
-            if (filter === "all" || card.dataset.status === filter) {
-              card.style.display = "block";
-            } else {
-              card.style.display = "none";
-            }
-          });
-        });
-      });
-
-      /* =========================================
-       SMALL BADGE INTERACTION
-    ========================================= */
-
-      badgeCards.forEach((card) => {
-        card.addEventListener("click", () => {
-          const title = card.querySelector("h3");
-
-          if (!title) return;
-
-          if (card.dataset.status === "locked") {
-            alert(
-              `${title.textContent.trim()} is still locked. Keep learning to unlock it!`,
-            );
-          } else {
-            alert(`🏆 ${title.textContent.trim()} achievement earned!`);
-          }
-        });
-      });
-
-      /* =========================================
-       SIMPLE XP ANIMATION
-    ========================================= */
-
-      const pointsElement = document.getElementById("totalPoints");
-
-      let xp = 0;
-
-      const targetXP = 0;
-
-      const duration = 900;
-
-      const startTime = performance.now();
-
-      function animateXP(currentTime) {
-        const progress = Math.min((currentTime - startTime) / duration, 1);
-
-        xp = Math.floor(targetXP * progress);
-
-        pointsElement.textContent = xp.toLocaleString() + " XP";
-
-        if (progress < 1) {
-          requestAnimationFrame(animateXP);
-        }
-      }
-
-      requestAnimationFrame(animateXP);
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/supabase.js"></script>
     <script src="../js/student-achievements.js"></script>
     <script src="../js/student-layout.js"></script>

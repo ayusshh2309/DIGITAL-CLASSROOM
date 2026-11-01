@@ -25,6 +25,22 @@
   };
   const $ = (id) => document.getElementById(id);
 
+  async function evaluateAchievementsAfterStudySession(sessionId) {
+    try {
+      const { data, error } = await state.client.rpc("evaluate_student_achievements_v1");
+      if (error) throw error;
+      console.info("Student achievements evaluated after study session.", {
+        sessionId,
+        result: data,
+      });
+    } catch (error) {
+      console.error("Could not evaluate achievements after stopping a study session.", {
+        sessionId,
+        error,
+      });
+    }
+  }
+
   function escape(value) {
     return String(value ?? "").replace(/[&<>"']/g, (character) => ({
       "&": "&amp;",
@@ -659,6 +675,7 @@
       );
       if (error) throw error;
       if (state.pdfTracking === tracking) state.pdfTracking = null;
+      void evaluateAchievementsAfterStudySession(tracking.sessionId);
       return true;
     })().catch((error) => {
       console.error("Could not stop the PDF study-time session.", error);
@@ -770,6 +787,7 @@
       );
       if (error) throw error;
       if (state.previewTracking === tracking) state.previewTracking = null;
+      void evaluateAchievementsAfterStudySession(tracking.sessionId);
       return true;
     })().catch((error) => {
       console.error("Could not stop the material preview study-time session.", error);
