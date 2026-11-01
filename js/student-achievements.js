@@ -254,7 +254,10 @@
   }
 
   function displayProgressNumber(value) {
-    return Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/, "");
+    if (!Number.isFinite(value)) return "0";
+    return Number.isInteger(value)
+      ? String(value)
+      : value.toFixed(3).replace(/\.?0+$/, "");
   }
 
   function renderNextAchievement() {
@@ -545,18 +548,20 @@
       const current = available ? Math.min(metric, requirement) : 0;
       const progress = available ? percent(current, requirement) : 0;
       const xp = Number(definition.xp_reward) || 0;
+      const currentText = displayProgressNumber(current);
+      const requirementText = displayProgressNumber(requirement);
       const progressText = !available
         ? (String(definition.title || "").toLowerCase().match(/knowledge seeker|bookworm|material|resource/)
           ? "Completion tracking is not implemented yet."
           : "Progress unavailable")
-        : `${current} / ${requirement}`;
+        : `${currentText} / ${requirementText}`;
       const unlockText = earned
         ? `Unlocked ${formatUnlockDate(unlock.unlocked_at)}`
         : available
-          ? `${Math.max(0, requirement - current)} remaining`
+          ? `${displayProgressNumber(Math.max(0, requirement - current))} remaining`
           : progressText;
       const illustration = achievementIllustration(definition);
-      return `<article class="badge-card ${earned ? "earned" : "locked"}" data-tone="${illustration.tone}" data-status="${earned ? "earned" : "locked"}" data-achievement-id="${escapeHtml(definition.id)}"><div class="badge-illustration">${illustration.svg}</div><h3>${escapeHtml(definition.title)}</h3><p class="badge-description">${escapeHtml(definition.description)}</p><div class="badge-progress"><div class="next-progress-bar"><div class="next-progress-fill" style="width:${earned ? 100 : progress}%"></div></div><div class="next-progress-text"><span>${earned ? `${requirement} / ${requirement}` : escapeHtml(available ? `${current} / ${requirement}` : progressText)}</span><span>${available || earned ? `${earned ? 100 : progress}%` : "—"}</span></div></div><span class="${earned ? "badge-check" : "badge-lock"}"><i class="fa-solid fa-${earned ? "check" : "lock"}"></i> ${earned ? "Earned" : "Locked"}</span><p class="badge-reward">${earned ? `${Number(unlock.xp_earned || 0)} XP earned` : `${xp} XP reward`}<span>${escapeHtml(unlockText)}</span></p></article>`;
+      return `<article class="badge-card ${earned ? "earned" : "locked"}" data-tone="${illustration.tone}" data-status="${earned ? "earned" : "locked"}" data-achievement-id="${escapeHtml(definition.id)}"><div class="badge-illustration">${illustration.svg}</div><h3>${escapeHtml(definition.title)}</h3><p class="badge-description">${escapeHtml(definition.description)}</p><div class="badge-progress"><div class="next-progress-bar"><div class="next-progress-fill" style="width:${earned ? 100 : progress}%"></div></div><div class="next-progress-text"><span>${earned ? `${requirementText} / ${requirementText}` : escapeHtml(available ? `${currentText} / ${requirementText}` : progressText)}</span><span>${available || earned ? `${earned ? 100 : progress}%` : "—"}</span></div></div><span class="${earned ? "badge-check" : "badge-lock"}"><i class="fa-solid fa-${earned ? "check" : "lock"}"></i> ${earned ? "Earned" : "Locked"}</span><p class="badge-reward">${earned ? `${Number(unlock.xp_earned || 0)} XP earned` : `${xp} XP reward`}<span>${escapeHtml(unlockText)}</span></p></article>`;
     }).join("");
   }
 
