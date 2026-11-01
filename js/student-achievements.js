@@ -98,7 +98,9 @@
       studyStreak: null,
       bestStreak: null,
       highScoreQuizzes: null,
+      perfectScoreQuizzes: null,
       submittedQuizzes: null,
+      totalStudyMinutes: null,
       distinctSubjects: null,
       completedResources: null,
       challengesCompleted: 0,
@@ -109,6 +111,7 @@
       const attempts = rows.quizAttempts;
       metrics.submittedQuizzes = attempts.length;
       metrics.highScoreQuizzes = attempts.filter((attempt) => Number(attempt.percentage) >= 90).length;
+      metrics.perfectScoreQuizzes = attempts.filter((attempt) => Number(attempt.percentage) >= 100).length;
       metrics.distinctSubjects = new Set(attempts
         .map((attempt) => Array.isArray(attempt.quiz) ? attempt.quiz[0]?.subject_id : attempt.quiz?.subject_id)
         .filter((subjectId) => subjectId != null)
@@ -126,6 +129,7 @@
     const dailyStudySeconds = new Map();
     const currentWeek = Date.now() - 7 * 86400000;
     let weeklyStudySeconds = 0;
+    let totalStudySeconds = 0;
 
     for (const segment of rows.segments) {
       const session = sessionsById.get(String(segment.session_id));
@@ -144,6 +148,7 @@
       if (!day) continue;
       dailyStudySeconds.set(day, (dailyStudySeconds.get(day) || 0) + duration);
       if (session.status === "completed") completedStudySessions.add(sessionId);
+      totalStudySeconds += duration;
       const daySessions = sessionsByDay.get(day) || new Set();
       daySessions.add(sessionId);
       sessionsByDay.set(day, daySessions);
@@ -154,6 +159,7 @@
     metrics.completedSessions = Math.max(metrics.completedSessions || 0, completedStudySessions.size);
     metrics.sessionsToday = sessionsByDay.get(dateKey(new Date()))?.size || 0;
     metrics.weeklyStudyMinutes = weeklyStudySeconds / 60;
+    metrics.totalStudyMinutes = totalStudySeconds / 60;
     metrics.studyStreak = streak.current;
     metrics.bestStreak = streak.best;
     return metrics;
@@ -165,9 +171,14 @@
     if (title.includes("knowledge seeker") || title.includes("bookworm") ||
       title.includes("material") || title.includes("resource")) return null;
     if (title.includes("subject explorer")) return metrics.distinctSubjects;
+    if (title.includes("perfect score")) return metrics.perfectScoreQuizzes;
+    if (title.includes("top performer")) return metrics.highScoreQuizzes;
     if (title.includes("streak")) return metrics.studyStreak;
     if (title.includes("quiz master") || title.includes("high score")) return metrics.highScoreQuizzes;
     if (title.includes("quiz")) return metrics.submittedQuizzes;
+    if (title.includes("first hour") || title.includes("dedicated learner") || title.includes("study champion")) {
+      return metrics.totalStudyMinutes;
+    }
     if (title.includes("time champion") || title.includes("study time") || title.includes("weekly")) {
       return metrics.weeklyStudyMinutes;
     }
@@ -277,6 +288,65 @@
     return state.unlocked.find((item) => String(item.achievement_id) === String(definition.id));
   }
   function percent(value, total) { return total ? Math.min(100, Math.round(value / total * 100)) : 0; }
+
+  function achievementIllustration(definition) {
+    const title = String(definition.title || "").toLowerCase();
+    const id = String(definition.id || "achievement").replace(/[^a-zA-Z0-9_-]/g, "") || "achievement";
+    let type = "trophy";
+    let art = '<path d="M33 25h30v15c0 12-7 20-15 20s-15-8-15-20V25Z" fill="url(#gold-' + id + ')" stroke="#b87415" stroke-width="2.5"/><path d="M33 31H22v8c0 9 6 14 15 14M63 31h11v8c0 9-6 14-15 14" fill="none" stroke="#dc9b2b" stroke-width="5" stroke-linecap="round"/><path d="M48 60v10m-11 5h22m-19-5h16" stroke="#a66b23" stroke-width="4" stroke-linecap="round"/><path d="m48 31 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L48 31Z" fill="#fff7d1"/>';
+    if (/perfect|diamond/.test(title)) {
+      type = "diamond";
+      art = '<path d="m48 16 24 12-8 39H32l-8-39 24-12Z" fill="url(#blue-' + id + ')" stroke="#2563b8" stroke-width="2.5" stroke-linejoin="round"/><path d="m24 28 16 2 8-14 8 14 16-2M40 30 32 67m16-37 0 37m8-37 8 37M24 28l24 39 24-39" fill="none" stroke="#e5f7ff" stroke-width="2.4" stroke-linejoin="round"/><path d="m36 24 5-7m22 13 5-3" stroke="#fff" stroke-width="3" stroke-linecap="round"/>';
+    } else if (/quiz master|owl/.test(title)) {
+      type = "owl";
+      art = '<path d="m30 30 3-13 13 8 13-8 7 15v20c0 14-8 22-18 22S30 66 30 52V30Z" fill="url(#purple-' + id + ')" stroke="#6042a9" stroke-width="2.5"/><path d="m30 27-9-8 2 18 10 5m33-15 9-8-2 18-10 5" fill="#8f6add" stroke="#6042a9" stroke-width="2.5" stroke-linejoin="round"/><path d="m30 25 18-10 18 10-18 5-18-5Zm18-1v-9" fill="#f3b832" stroke="#9e6d13" stroke-width="2.2" stroke-linejoin="round"/><circle cx="40" cy="43" r="8" fill="#fff"/><circle cx="56" cy="43" r="8" fill="#fff"/><circle cx="41" cy="44" r="3.5" fill="#28324a"/><circle cx="55" cy="44" r="3.5" fill="#28324a"/><path d="m48 49-5 7h10l-5-7Z" fill="#f18b30"/>';
+    } else if (/top performer|medal|study champion/.test(title)) {
+      type = /study champion/.test(title) ? "laurel" : "medal";
+      art = '<path d="m34 18 14 16 14-16 7 34H27l7-34Z" fill="url(#purple-' + id + ')" stroke="#6846bd" stroke-width="2.5" stroke-linejoin="round"/><circle cx="48" cy="53" r="22" fill="url(#gold-' + id + ')" stroke="#bd841f" stroke-width="2.5"/><circle cx="48" cy="53" r="16" fill="#fff3c4" stroke="#fff" stroke-width="2"/><path d="m48 40 4 8 9 1.3-6.5 6.3 1.5 9L48 60l-8 4.6 1.5-9-6.5-6.3 9-1.3 4-8Z" fill="#e7a327"/><path d="M25 67c-7 2-10 8-10 14 8 0 14-3 17-9m39-5c7 2 10 8 10 14-8 0-14-3-17-9" fill="none" stroke="#2d9d70" stroke-width="4" stroke-linecap="round"/>';
+    } else if (/hour|first hour/.test(title)) {
+      type = "hourglass";
+      art = '<path d="M31 19h34M31 77h34M35 21c0 12 4 18 13 27-9 9-13 15-13 27m26-54c0 12-4 18-13 27 9 9 13 15 13 27" fill="#e9f2ff" stroke="#3976b8" stroke-width="3" stroke-linecap="round"/><path d="M38 26h20c-1 8-4 12-10 17-6-5-9-9-10-17Zm0 44h20c-1-8-4-12-10-17-6 5-9 9-10 17Z" fill="url(#gold-' + id + ')"/><path d="M46 49h4m-2-2v5" stroke="#dc941d" stroke-width="3" stroke-linecap="round"/><circle cx="69" cy="29" r="4" fill="#ffd66b"/>';
+    } else if (/dedicated learner|bookworm|book/.test(title)) {
+      type = "book";
+      art = '<path d="M17 29c12-5 22-3 31 4v43c-9-7-19-9-31-4V29Zm62 0c-12-5-22-3-31 4v43c9-7 19-9 31-4V29Z" fill="url(#blue-' + id + ')" stroke="#3766b0" stroke-width="2.5" stroke-linejoin="round"/><path d="M48 34v42M25 39c7-2 13-1 18 2m28-2c-7-2-13-1-18 2" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><circle cx="48" cy="22" r="11" fill="url(#gold-' + id + ')" stroke="#d6931e" stroke-width="2"/><path d="m48 15 2.2 4.5 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5-3.6-3.5 5-.7L48 15Z" fill="#fff8d6"/>';
+    } else if (/3.day|three.day|streak/.test(title) && /30.day|month/.test(title)) {
+      type = "calendar-sun";
+      art = '<rect x="20" y="24" width="56" height="51" rx="8" fill="#fff" stroke="#4777c7" stroke-width="3"/><path d="M20 38h56" stroke="#4777c7" stroke-width="7"/><path d="M33 18v12m30-12v12" stroke="#f08a4b" stroke-width="5" stroke-linecap="round"/><circle cx="50" cy="55" r="11" fill="url(#gold-' + id + ')"/><path d="M50 39v-4m0 40v-4m16-16h4m-40 0h4m27-11 3-3m-28 28 3-3m22 0 3 3m-28-28 3 3" stroke="#e59c24" stroke-width="3" stroke-linecap="round"/><path d="m43 58 5 5 10-11" fill="none" stroke="#438d64" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';
+    } else if (/7.day|seven.day/.test(title)) {
+      type = "calendar-flame";
+      art = '<rect x="20" y="24" width="56" height="51" rx="8" fill="#fff" stroke="#4777c7" stroke-width="3"/><path d="M20 38h56" stroke="#4777c7" stroke-width="7"/><path d="M33 18v12m30-12v12" stroke="#f08a4b" stroke-width="5" stroke-linecap="round"/><path d="M49 68c-10 0-15-7-12-15 1-4 5-7 6-13 6 4 8 9 8 13 3-3 4-6 4-9 8 7 11 15 7 20-3 3-7 4-13 4Z" fill="url(#orange-' + id + ')" stroke="#dc7131" stroke-width="2"/><path d="M49 64c-4-3-3-7 1-11 3 5 5 8 1 11Z" fill="#fff3b0"/>';
+    } else if (/3.day|three.day/.test(title)) {
+      type = "flames";
+      art = '<path d="M30 73c-11-3-13-15-5-24 0 7 5 7 5 12 5-8 7-14 6-23 12 10 17 20 12 29-3 5-10 8-18 6Z" fill="url(#orange-' + id + ')"/><path d="M49 73c-11-3-13-15-5-24 0 7 5 7 5 12 5-8 7-14 6-23 12 10 17 20 12 29-3 5-10 8-18 6Z" fill="url(#red-' + id + ')"/><path d="M67 73c-11-3-13-15-5-24 0 7 5 7 5 12 5-8 7-14 6-23 12 10 17 20 12 29-3 5-10 8-18 6Z" fill="url(#gold-' + id + ')"/><path d="M31 67c-4-4-2-8 2-12 2 4 3 7 0 11m18 1c-4-4-2-8 2-12 2 4 3 7 0 11m18 0c-4-4-2-8 2-12 2 4 3 7 0 11" fill="#fff4b1"/>';
+    } else if (/subject explorer|compass/.test(title)) {
+      type = "compass";
+      art = '<circle cx="48" cy="48" r="31" fill="url(#blue-' + id + ')" stroke="#3767a7" stroke-width="3"/><circle cx="48" cy="48" r="23" fill="#f8fcff" stroke="#9fc6e5" stroke-width="2"/><path d="m57 36-6 17-17 7 6-17 17-7Z" fill="#ed6b55" stroke="#b94a45" stroke-width="2" stroke-linejoin="round"/><circle cx="48" cy="48" r="3.5" fill="#f5bd46"/><path d="m25 25 4 4m38 38 4 4m0-46-4 4m-38 38-4 4" stroke="#fff" stroke-width="3" stroke-linecap="round"/><circle cx="70" cy="27" r="5" fill="#f5bd46"/>';
+    } else if (/knowledge seeker|bookshelf|library/.test(title)) {
+      type = "bookshelf";
+      art = '<path d="M20 24h56v49H20z" fill="#fff7e6" stroke="#93602d" stroke-width="3"/><path d="M20 47h56M20 73h56" stroke="#93602d" stroke-width="4"/><path d="M26 29h9v16h-9zm12-3h10v19H38zm13 5h8v14h-8zm12-4h8v18h-8zM27 51h8v18h-8zm11 3h10v15H38zm13-5h9v20h-9zm12 4h8v16h-8z" fill="#7961d4"/><path d="M26 29h9v16h-9zm25 2h8v14h-8zm11 20h8v16h-8z" fill="#ef8164"/><path d="M47 19c0-5 4-8 8-8s8 3 8 8c0 3-2 5-4 7H51c-2-2-4-4-4-7Zm5 10h8m-7 4h6" fill="#ffd45c" stroke="#d79c32" stroke-width="2" stroke-linecap="round"/>';
+    }
+
+    const tone = {
+      trophy: "gold",
+      diamond: "blue",
+      owl: "purple",
+      medal: "purple",
+      laurel: "green",
+      hourglass: "gold",
+      book: "blue",
+      "calendar-sun": "gold",
+      "calendar-flame": "orange",
+      flames: "orange",
+      compass: "blue",
+      bookshelf: "green",
+    }[type] || "purple";
+    return {
+      type,
+      tone,
+      svg: `<svg class="achievement-illustration illustration-${type}" viewBox="0 0 96 96" role="img" aria-label="${escapeHtml(definition.title)} illustration" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="gold-${id}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe17a"/><stop offset="1" stop-color="#e79a24"/></linearGradient><linearGradient id="blue-${id}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#77dcff"/><stop offset="1" stop-color="#5484e8"/></linearGradient><linearGradient id="purple-${id}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#bca7ff"/><stop offset="1" stop-color="#7654d9"/></linearGradient><linearGradient id="orange-${id}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffd76e"/><stop offset="1" stop-color="#f07b35"/></linearGradient><linearGradient id="red-${id}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff9a68"/><stop offset="1" stop-color="#e84f59"/></linearGradient></defs><circle class="illustration-halo" cx="48" cy="48" r="44"/><g class="illustration-art">${art}</g></svg>`,
+    };
+  }
+
   function relativeDate(value) {
     const date = new Date(value);
     if (!Number.isFinite(date.getTime())) return "Date unavailable";
@@ -323,7 +393,8 @@
         : available
           ? `${Math.max(0, requirement - current)} remaining`
           : progressText;
-      return `<div class="badge-card ${earned ? "earned" : "locked"}" data-status="${earned ? "earned" : "locked"}" data-achievement-id="${escapeHtml(definition.id)}"><div class="badge-big ${earned ? "badge-earned" : "badge-locked"}"><i class="fa-solid ${escapeHtml(definition.icon)}"></i></div><h3>${escapeHtml(definition.title)}</h3><p>${escapeHtml(definition.description)}</p><div class="next-progress"><div class="next-progress-bar"><div class="next-progress-fill" style="width:${earned ? 100 : progress}%"></div></div><div class="next-progress-text"><span>${earned ? `${requirement} / ${requirement}` : escapeHtml(progressText)}</span><span>${earned ? 100 : progress}%</span></div></div><span class="${earned ? "badge-check" : "badge-lock"}"><i class="fa-solid fa-${earned ? "check" : "lock"}"></i> ${earned ? "Earned" : "Locked"}</span><p>${earned ? `${Number(unlock.xp_earned || 0)} XP earned` : `${xp} XP reward`} · ${escapeHtml(unlockText)}</p></div>`;
+      const illustration = achievementIllustration(definition);
+      return `<article class="badge-card ${earned ? "earned" : "locked"}" data-tone="${illustration.tone}" data-status="${earned ? "earned" : "locked"}" data-achievement-id="${escapeHtml(definition.id)}"><div class="badge-illustration">${illustration.svg}</div><h3>${escapeHtml(definition.title)}</h3><p class="badge-description">${escapeHtml(definition.description)}</p><div class="badge-progress"><div class="next-progress-bar"><div class="next-progress-fill" style="width:${earned ? 100 : progress}%"></div></div><div class="next-progress-text"><span>${earned ? `${requirement} / ${requirement}` : escapeHtml(available ? `${current} / ${requirement}` : progressText)}</span><span>${available || earned ? `${earned ? 100 : progress}%` : "—"}</span></div></div><span class="${earned ? "badge-check" : "badge-lock"}"><i class="fa-solid fa-${earned ? "check" : "lock"}"></i> ${earned ? "Earned" : "Locked"}</span><p class="badge-reward">${earned ? `${Number(unlock.xp_earned || 0)} XP earned` : `${xp} XP reward`}<span>${escapeHtml(unlockText)}</span></p></article>`;
     }).join("");
   }
 

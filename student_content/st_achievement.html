@@ -654,7 +654,7 @@
 
         border-radius: 8px;
 
-        font-size: 9px;
+        font-size: 11px;
 
         font-weight: 650;
 
@@ -663,11 +663,10 @@
 
       .filter-btn:hover,
       .filter-btn.active {
-        background: #eeeaff;
-
-        color: #5b39e0;
-
-        border-color: #dcd5ff;
+        background: #6346dc;
+        color: #fff;
+        border-color: #6346dc;
+        box-shadow: 0 4px 10px rgba(99, 70, 220, 0.2);
       }
 
       /* ===============================
@@ -683,94 +682,214 @@
 
         grid-template-columns: repeat(4, 1fr);
 
-        gap: 13px;
+        align-items: stretch;
+        gap: 16px;
 
         padding: 5px 22px 0;
       }
 
       .badge-card {
+        display: flex;
+        min-width: 0;
+        min-height: 305px;
+        flex-direction: column;
+        align-items: center;
         border: 1px solid #e7edf3;
-
-        border-radius: 12px;
-
-        padding: 17px 12px;
-
+        border-radius: 16px;
+        padding: 19px 16px 16px;
         text-align: center;
-
-        transition: 0.2s;
-
+        transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
         background: white;
-        box-shadow: 0 2px 8px rgba(35, 54, 82, 0.035);
+        box-shadow: 0 4px 14px rgba(35, 54, 82, 0.045);
       }
 
       .badge-card:hover {
-        transform: translateY(-2px);
-
-        box-shadow: 0 8px 20px rgba(35, 54, 82, 0.07);
+        transform: translateY(-4px);
+        border-color: #d7d0fa;
+        box-shadow: 0 12px 26px rgba(35, 54, 82, 0.11);
       }
 
-      .badge-big {
-        width: 58px;
-        height: 58px;
-
+      .badge-illustration {
+        display: grid;
+        width: 92px;
+        height: 92px;
+        flex: 0 0 92px;
+        place-items: center;
         margin: 0 auto 11px;
+        border-radius: 24px;
+        background: #f7f8fc;
+      }
 
-        border-radius: 50%;
+      .achievement-illustration {
+        display: block;
+        width: 82px;
+        height: 82px;
+        overflow: visible;
+        filter: drop-shadow(0 5px 4px rgba(39, 51, 83, 0.12));
+      }
 
-        display: flex;
-        align-items: center;
-        justify-content: center;
+      .illustration-halo {
+        fill: #f1efff;
+      }
 
-        font-size: 22px;
+      .illustration-art {
+        transform-origin: center;
+        transition: transform 0.22s ease;
+      }
+
+      .badge-card:hover .illustration-art {
+        transform: translateY(-2px) scale(1.035);
+      }
+
+      .badge-card[data-tone="gold"] .badge-illustration {
+        background: linear-gradient(145deg, #fff8df, #fff1c4);
+      }
+
+      .badge-card[data-tone="blue"] .badge-illustration {
+        background: linear-gradient(145deg, #eff9ff, #e5f1ff);
+      }
+
+      .badge-card[data-tone="purple"] .badge-illustration {
+        background: linear-gradient(145deg, #f5f1ff, #eee9ff);
+      }
+
+      .badge-card[data-tone="green"] .badge-illustration {
+        background: linear-gradient(145deg, #effbf5, #e5f7ed);
+      }
+
+      .badge-card[data-tone="orange"] .badge-illustration {
+        background: linear-gradient(145deg, #fff6ec, #ffeedf);
       }
 
       .badge-card h3 {
-        color: #26364d;
-        font-size: 12px;
-
-        margin-bottom: 5px;
+        width: 100%;
+        color: #1e2b40;
+        font-size: 13px;
+        font-weight: 750;
+        line-height: 1.35;
+        margin: 0 0 5px;
       }
 
-      .badge-card p {
+      .badge-card .badge-description {
+        min-height: 32px;
+        margin: 0;
+        color: #66758b;
         font-size: 10px;
+        line-height: 1.55;
+      }
 
-        color: #64748b;
+      .badge-progress {
+        width: 100%;
+        margin-top: auto;
+        padding-top: 16px;
+      }
 
-        line-height: 1.5;
+      .badge-card .next-progress-bar {
+        height: 8px;
+        overflow: hidden;
+        border-radius: 20px;
+        background: #edf0f5;
+      }
+
+      .badge-card .next-progress-fill {
+        width: 0;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #7153e7, #a18df8);
+        transition: width 0.55s ease;
+      }
+
+      .badge-card[data-tone="gold"] .next-progress-fill {
+        background: linear-gradient(90deg, #e7a32b, #ffd36d);
+      }
+
+      .badge-card[data-tone="blue"] .next-progress-fill {
+        background: linear-gradient(90deg, #4c7fe0, #69c4f1);
+      }
+
+      .badge-card[data-tone="green"] .next-progress-fill {
+        background: linear-gradient(90deg, #15966c, #5bc99c);
+      }
+
+      .badge-card[data-tone="orange"] .next-progress-fill {
+        background: linear-gradient(90deg, #ef7c38, #ffbd5c);
       }
 
       .badge-card.earned {
-        border-color: #c9bfff;
-        background: linear-gradient(180deg, #ffffff 0%, #fbfaff 100%);
+        border-color: #bde8d4;
+        background: linear-gradient(180deg, #ffffff 0%, #f2fbf6 100%);
+        box-shadow: 0 5px 16px rgba(26, 132, 91, 0.075);
+      }
+
+      .badge-card.earned:hover {
+        border-color: #8ed8b7;
+        box-shadow: 0 12px 26px rgba(26, 132, 91, 0.13);
+      }
+
+      .badge-card.earned .next-progress-fill {
+        background: linear-gradient(90deg, #15966c, #5bc99c);
       }
 
       .badge-card.locked {
         opacity: 1;
-        background: #ffffff;
+        background: #fff;
       }
 
-      .badge-big.badge-earned {
-        background: linear-gradient(145deg, #ede9ff, #dcd4ff);
-        color: #6243d8;
-        box-shadow: inset 0 0 0 1px rgba(98, 67, 216, 0.08);
+      .badge-card .next-progress-text {
+        margin-top: 7px;
+        color: #64748b;
+        font-size: 9px;
+        font-weight: 600;
       }
 
-      .badge-big.badge-locked {
-        background: #edf2f8;
-        color: #60738d;
-        box-shadow: inset 0 0 0 1px #e2e8f0;
+      .badge-card .badge-check,
+      .badge-card .badge-lock {
+        margin-top: 11px;
+        padding: 5px 9px;
+        font-size: 9px;
       }
 
-      .badge-card .next-progress-bar {
-        background: #e9edf4;
+      .badge-card .badge-reward {
+        display: flex;
+        width: 100%;
+        min-height: 32px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        margin-top: 8px;
+        color: #52647d;
+        font-size: 9px;
+        font-weight: 700;
       }
 
-      .badge-card .next-progress-fill {
-        background: linear-gradient(90deg, #7356e8, #9a84f4);
+      .badge-card .badge-reward span {
+        color: #7b8ba1;
+        font-size: 9px;
+        font-weight: 500;
       }
 
-      .badge-card.earned .next-progress-fill {
-        background: linear-gradient(90deg, #10a878, #45c99a);
+      .badge-card.earned .badge-reward {
+        color: #16835f;
+      }
+
+      .badge-card.earned .badge-reward span {
+        color: #397c64;
+      }
+
+      .badge-card .badge-lock {
+        background: #f0f3f8;
+        color: #52647d;
+      }
+
+      .badge-card .badge-check {
+        background: #e4f7ed;
+        color: #138258;
+      }
+
+      .badge-card:focus-visible {
+        outline: 3px solid rgba(99, 70, 220, 0.32);
+        outline-offset: 3px;
       }
 
       .badge-check {
@@ -899,7 +1018,7 @@
            RESPONSIVE
         =============================== */
 
-      @media (max-width: 1100px) {
+      @media (max-width: 1200px) {
         .overview-grid {
           grid-template-columns: repeat(2, 1fr);
         }
@@ -909,7 +1028,7 @@
         }
 
         .badges-grid {
-          grid-template-columns: repeat(2, 1fr);
+          grid-template-columns: repeat(3, minmax(0, 1fr));
         }
 
         .category-grid {
@@ -942,7 +1061,27 @@
         }
 
         .badges-grid {
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+          padding-right: 16px;
+          padding-left: 16px;
+        }
+
+        .badge-card {
+          min-height: 290px;
+          padding: 16px 12px 13px;
+        }
+
+        .badge-illustration {
+          width: 82px;
+          height: 82px;
+          flex-basis: 82px;
+          border-radius: 21px;
+        }
+
+        .achievement-illustration {
+          width: 74px;
+          height: 74px;
         }
 
         .category-grid {
@@ -961,6 +1100,31 @@
 
         .filter-btn {
           flex: 1;
+        }
+      }
+
+      @media (max-width: 460px) {
+        .badges-grid {
+          grid-template-columns: 1fr;
+          gap: 12px;
+          padding-right: 14px;
+          padding-left: 14px;
+        }
+
+        .badge-card {
+          min-height: 0;
+          padding: 17px 16px 14px;
+        }
+
+        .badge-illustration {
+          width: 88px;
+          height: 88px;
+          flex-basis: 88px;
+        }
+
+        .achievement-illustration {
+          width: 78px;
+          height: 78px;
         }
       }
     </style>
@@ -1284,142 +1448,8 @@
           </div>
         </div>
 
-        <div class="badges-grid" id="badgesGrid">
-          <!-- BADGE 1 -->
-
-          <div class="badge-card earned" data-status="earned">
-            <div class="badge-big badge-purple">
-              <i class="fa-solid fa-bolt"></i>
-            </div>
-
-            <h3>Quick Learner</h3>
-
-            <p>Complete 5 lessons in one day.</p>
-
-            <span class="badge-check">
-              <i class="fa-solid fa-check"></i>
-              Earned
-            </span>
-          </div>
-
-          <!-- BADGE 2 -->
-
-          <div class="badge-card earned" data-status="earned">
-            <div class="badge-big badge-orange">
-              <i class="fa-solid fa-fire"></i>
-            </div>
-
-            <h3>Streak Master</h3>
-
-            <p>Maintain a 7 day study streak.</p>
-
-            <span class="badge-check">
-              <i class="fa-solid fa-check"></i>
-              Earned
-            </span>
-          </div>
-
-          <!-- BADGE 3 -->
-
-          <div class="badge-card earned" data-status="earned">
-            <div class="badge-big badge-green">
-              <i class="fa-solid fa-star"></i>
-            </div>
-
-            <h3>Quiz Master</h3>
-
-            <p>Score 90% in five quizzes.</p>
-
-            <span class="badge-check">
-              <i class="fa-solid fa-check"></i>
-              Earned
-            </span>
-          </div>
-
-          <!-- BADGE 4 -->
-
-          <div class="badge-card earned" data-status="earned">
-            <div class="badge-big badge-blue">
-              <i class="fa-solid fa-clock"></i>
-            </div>
-
-            <h3>Time Champion</h3>
-
-            <p>Study for 20+ hours in a week.</p>
-
-            <span class="badge-check">
-              <i class="fa-solid fa-check"></i>
-              Earned
-            </span>
-          </div>
-
-          <!-- BADGE 5 -->
-
-          <div class="badge-card earned" data-status="earned">
-            <div class="badge-big badge-pink">
-              <i class="fa-solid fa-graduation-cap"></i>
-            </div>
-
-            <h3>First Step</h3>
-
-            <p>Complete your first lesson.</p>
-
-            <span class="badge-check">
-              <i class="fa-solid fa-check"></i>
-              Earned
-            </span>
-          </div>
-
-          <!-- BADGE 6 -->
-
-          <div class="badge-card earned" data-status="earned">
-            <div class="badge-big badge-purple">
-              <i class="fa-solid fa-book"></i>
-            </div>
-
-            <h3>Bookworm</h3>
-
-            <p>Complete 20 learning resources.</p>
-
-            <span class="badge-check">
-              <i class="fa-solid fa-check"></i>
-              Earned
-            </span>
-          </div>
-
-          <!-- BADGE 7 -->
-
-          <div class="badge-card locked" data-status="locked">
-            <div class="badge-big">
-              <i class="fa-solid fa-gem"></i>
-            </div>
-
-            <h3>Knowledge Seeker</h3>
-
-            <p>Complete 30 study sessions.</p>
-
-            <span class="badge-lock">
-              <i class="fa-solid fa-lock"></i>
-              Locked
-            </span>
-          </div>
-
-          <!-- BADGE 8 -->
-
-          <div class="badge-card locked" data-status="locked">
-            <div class="badge-big">
-              <i class="fa-solid fa-crown"></i>
-            </div>
-
-            <h3>Top Scholar</h3>
-
-            <p>Reach the top 5 in your class.</p>
-
-            <span class="badge-lock">
-              <i class="fa-solid fa-lock"></i>
-              Locked
-            </span>
-          </div>
+        <div class="badges-grid" id="badgesGrid" aria-live="polite">
+          <p class="empty-state" role="status">Loading your achievements…</p>
         </div>
       </section>
 
