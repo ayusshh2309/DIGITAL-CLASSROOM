@@ -1,7 +1,42 @@
 ﻿(() => {
+  const CALENDAR_TIME_ZONE = "Asia/Kolkata";
+  const calendarFormatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: CALENDAR_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const calendarDateParts = (value) => Object.fromEntries(
+    calendarFormatter.formatToParts(new Date(value))
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, Number(part.value)]),
+  );
+  const calendarDate = (year, monthIndex, day) =>
+    new Date(Date.UTC(year, monthIndex, day, 12));
+  const calendarDateKey = (year, monthIndex, day) =>
+    `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  const calendarBoundary = (year, monthIndex, day) => {
+    const normalized = new Date(Date.UTC(year, monthIndex, day));
+    return new Date(`${calendarDateKey(
+      normalized.getUTCFullYear(),
+      normalized.getUTCMonth(),
+      normalized.getUTCDate(),
+    )}T00:00:00+05:30`);
+  };
+  const quizScheduledAt = (quiz) => {
+    const date = String(quiz.scheduled_date || "").trim();
+    if (!date) return null;
+    const time = String(quiz.scheduled_time || "").trim().slice(0, 8) || "00:00:00";
+    const scheduledAt = new Date(`${date}T${time}+05:30`);
+    return Number.isFinite(scheduledAt.getTime()) ? scheduledAt : null;
+  };
+  const calendarToday = () => {
+    const { year, month, day } = calendarDateParts(new Date());
+    return calendarDate(year, month - 1, day);
+  };
   const state = {
-    date: new Date(),
-    selectedDate: new Date(),
+    date: calendarToday(),
+    selectedDate: calendarToday(),
     events: [],
     publishedQuizzes: [],
     publishedQuizError: false,
@@ -24,14 +59,20 @@
     "'": "&#39;",
   })[character]);
   const dayKey = (value) => {
-    const date = new Date(value);
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const { year, month, day } = calendarDateParts(value);
+    return calendarDateKey(year, month - 1, day);
   };
-  const formatDate = (value, options = {}) => new Intl.DateTimeFormat("en-US", options).format(new Date(value));
-  const monthRange = (date) => ({
-    start: new Date(date.getFullYear(), date.getMonth(), 1),
-    end: new Date(date.getFullYear(), date.getMonth() + 1, 1),
-  });
+  const formatDate = (value, options = {}) => new Intl.DateTimeFormat("en-US", {
+    ...options,
+    timeZone: CALENDAR_TIME_ZONE,
+  }).format(new Date(value));
+  const monthRange = (date) => {
+    const { year, month } = calendarDateParts(date);
+    return {
+      start: calendarBoundary(year, month - 1, 1),
+      end: calendarBoundary(year, month, 1),
+    };
+  };
   const block = (message) => {
     const root = $("calendarGrid");
     if (root) root.innerHTML = `<div class="empty-state">${escapeHtml(message)}</div>`;
@@ -162,8 +203,7 @@
 
   function createEventRanges(date) {
     const now = new Date();
-    const upcomingEnd = new Date(now);
-    upcomingEnd.setFullYear(upcomingEnd.getFullYear() + 1);
+    const upcomingEnd = new Date(now.getTime() + 366 * 24 * 60 * 60 * 1000);
     const month = monthRange(date);
     return [
       {
@@ -369,12 +409,12 @@
       .filter(Boolean);
   }
 
-  async function loadQuizzes(client) {
+  async function loadQuizzes(client, ranges) {
     const quizzes = [];
     for (let offset = 0; ; offset += 1000) {
       const { data, error } = await client
         .from("quizzes")
-        .select("id, grade, stream, subject_id, title, description, status")
+        .select("id, teacher_id, grade, stream, subject_id, title, description, status, scheduled_date, scheduled_time, duration_minutes, created_at")
         .eq("grade", Number(state.profile.grade))
         .eq("status", "published")
         .order("updated_at", { ascending: false })
@@ -384,7 +424,7 @@
       quizzes.push(...page);
       if (page.length < 1000) break;
     }
-    return quizzes.filter((quiz) =>
+    const eligibleQuizzes = quizzes.filter((quiz) =>
       Number(quiz.grade) === Number(state.profile.grade) &&
       String(quiz.stream || "").trim().toLowerCase() ===
         String(state.profile.stream || "").trim().toLowerCase() &&
@@ -392,6 +432,33 @@
       state.subjectIds.has(String(quiz.subject_id)) &&
       String(quiz.status).toLowerCase() === "published",
     );
+    const scheduledEvents = [];
+    const publishedQuizzes = [];
+    eligibleQuizzes.forEach((quiz) => {
+      if (!String(quiz.scheduled_date || "").trim()) {
+        publishedQuizzes.push(quiz);
+        return;
+      }
+      const startAt = quizScheduledAt(quiz);
+      if (!startAt) return;
+      if (!eventIsInRanges({ start_at: startAt }, ranges)) return;
+      const endAt = quiz.scheduled_time
+        ? new Date(startAt.getTime() + Number(quiz.duration_minutes || 0) * 60_000).toISOString()
+        : null;
+      scheduledEvents.push(normalizeRow({
+        ...quiz,
+        subject_name: state.subjectsById.get(String(quiz.subject_id))?.name || "",
+        start_at: startAt.toISOString(),
+        end_at: endAt,
+        source_table: "quizzes",
+        source_id: quiz.id,
+        all_day: !quiz.scheduled_time,
+      }, "quizzes", "quiz"));
+    });
+    return {
+      events: scheduledEvents.filter(Boolean),
+      publishedQuizzes,
+    };
   }
 
   async function loadEvents(date = state.date) {
@@ -401,7 +468,7 @@
       loadCalendarEvents(client, ranges),
       loadMaterials(client, ranges),
       loadLiveClasses(client, ranges),
-      loadQuizzes(client),
+      loadQuizzes(client, ranges),
       loadAnnouncements(client, ranges),
     ]);
     const sourceNames = [
@@ -417,15 +484,22 @@
     const events = [];
     sources.forEach((result, index) => {
       if (result.status === "fulfilled") {
+        if (index === 3 && (!Array.isArray(result.value?.events) || !Array.isArray(result.value?.publishedQuizzes))) {
+          const error = new Error(`${sourceNames[index]} query returned an unexpected response; expected scheduled and unscheduled quiz lists.`);
+          console.error(`Student calendar ${sourceNames[index].toLowerCase()} query failed.`, error);
+          sourceErrors.push(`${sourceNames[index]}: ${error.message}`);
+          publishedQuizError = true;
+          return;
+        }
+        if (index === 3) {
+          publishedQuizzes = result.value.publishedQuizzes;
+          events.push(...result.value.events);
+          return;
+        }
         if (!Array.isArray(result.value)) {
           const error = new Error(`${sourceNames[index]} query returned an unexpected response; expected a row array.`);
           console.error(`Student calendar ${sourceNames[index].toLowerCase()} query failed.`, error);
           sourceErrors.push(`${sourceNames[index]}: ${error.message}`);
-          if (index === 3) publishedQuizError = true;
-          return;
-        }
-        if (index === 3) {
-          publishedQuizzes = result.value;
           return;
         }
         events.push(...result.value);
@@ -514,9 +588,9 @@
   }
 
   function renderMonthGrid() {
-    const firstDay = new Date(state.date.getFullYear(), state.date.getMonth(), 1);
-    const daysInMonth = new Date(state.date.getFullYear(), state.date.getMonth() + 1, 0).getDate();
-    const offset = firstDay.getDay();
+    const { year, month } = calendarDateParts(state.date);
+    const offset = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
+    const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
     const grid = $("calendarGrid");
     if (!grid) return;
 
@@ -527,7 +601,7 @@
     }
 
     for (let day = 1; day <= daysInMonth; day += 1) {
-      const currentDate = new Date(state.date.getFullYear(), state.date.getMonth(), day);
+      const currentDate = calendarDate(year, month - 1, day);
       const currentKey = dayKey(currentDate);
       const entries = state.events.filter((event) => dayKey(event.start_at) === currentKey);
       const content = entries.map((entry) => {
@@ -593,12 +667,18 @@
       const count = countFor(source);
       return count ? `${count} ${count === 1 ? singular : plural}` : emptyLabel;
     };
+    const scheduledQuizCount = state.events.filter((event) => event.type === "quiz").length;
+    const quizCounts = [];
+    if (scheduledQuizCount) {
+      quizCounts.push(`${scheduledQuizCount} scheduled ${scheduledQuizCount === 1 ? "quiz" : "quizzes"}`);
+    }
+    if (state.publishedQuizzes.length) {
+      quizCounts.push(`${state.publishedQuizzes.length} ${state.publishedQuizzes.length === 1 ? "quiz" : "quizzes"} published without a scheduled date`);
+    }
     const counts = [
       categoryCount("materials", "No materials uploaded", "material", "materials"),
       categoryCount("live_classes", "No live classes scheduled", "live class", "live classes"),
-      state.publishedQuizzes.length
-        ? `${state.publishedQuizzes.length} ${state.publishedQuizzes.length === 1 ? "quiz" : "quizzes"} published (not scheduled)`
-        : "No quizzes published",
+      quizCounts.join(" · ") || "No quizzes published",
       categoryCount("announcements", "No announcements published", "announcement", "announcements"),
     ].join(" · ");
     status.textContent = state.sourceErrors.length
@@ -616,16 +696,15 @@
     if (!grid) return;
     if (title) title.textContent = formatDate(state.date, { month: "long", year: "numeric" });
 
-    const year = state.date.getFullYear();
-    const month = state.date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const startOffset = firstDay.getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const { year, month: monthNumber } = calendarDateParts(state.date);
+    const month = monthNumber - 1;
+    const startOffset = new Date(Date.UTC(year, month, 1)).getUTCDay();
+    const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
     const cells = [];
     const eventDays = new Set(state.events.map((event) => dayKey(event.start_at)));
     for (let index = 0; index < 42; index += 1) {
       const dayNumber = index - startOffset + 1;
-      const date = new Date(year, month, dayNumber);
+      const date = calendarDate(year, month, dayNumber);
       const dateKey = dayKey(date);
       const inCurrentMonth = dayNumber >= 1 && dayNumber <= daysInMonth;
       const classes = [
@@ -635,7 +714,7 @@
         dayKey(state.selectedDate) === dateKey ? "selected" : "",
         eventDays.has(dateKey) ? "has-events" : "",
       ].filter(Boolean).join(" ");
-      cells.push(`<button type="button" class="${classes}" data-mini-date="${dateKey}" aria-label="${formatDate(date, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}">${date.getDate()}</button>`);
+      cells.push(`<button type="button" class="${classes}" data-mini-date="${dateKey}" aria-label="${formatDate(date, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}">${dayNumber}</button>`);
     }
     grid.innerHTML = cells.join("");
   }
@@ -661,15 +740,20 @@
   function renderUpcoming() {
     const now = new Date();
     const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const { year: todayYear, month: todayMonth, day: todayDay } = calendarDateParts(now);
+    const todayStart = calendarBoundary(todayYear, todayMonth - 1, todayDay);
     const upcoming = state.events.filter((event) => {
       const start = new Date(event.start_at);
-      return start >= now && start <= nextWeek;
+      const earliest = event.all_day ? todayStart : now;
+      return start >= earliest && start <= nextWeek;
     }).sort((left, right) => new Date(left.start_at) - new Date(right.start_at)).slice(0, 4);
     const container = $("upcomingCard");
     if (!container) return;
     container.innerHTML = '<div class="side-card-header"><h3>Upcoming</h3><span>Next 7 days</span></div>' + (upcoming.length ? upcoming.map((event) => {
       const date = new Date(event.start_at);
-      return `<div class="upcoming-event" data-calendar-event-id="${escapeHtml(event.id)}" role="button" tabindex="0"><div class="event-date"><strong>${String(date.getDate()).padStart(2, "0")}</strong><span>${formatDate(date, { month: "short" }).slice(0, 3)}</span></div><div class="upcoming-info"><h4>${escapeHtml(event.title)}</h4><p><i class="fa-regular fa-clock"></i>${formatDate(event.start_at, { hour: "numeric", minute: "2-digit" })}${event.subject ? ` · ${escapeHtml(event.subject)}` : ""}</p></div></div>`;
+      const { day } = calendarDateParts(date);
+      const timeLabel = event.all_day ? "All day" : formatDate(event.start_at, { hour: "numeric", minute: "2-digit" });
+      return `<div class="upcoming-event" data-calendar-event-id="${escapeHtml(event.id)}" role="button" tabindex="0"><div class="event-date"><strong>${String(day).padStart(2, "0")}</strong><span>${formatDate(date, { month: "short" }).slice(0, 3)}</span></div><div class="upcoming-info"><h4>${escapeHtml(event.title)}</h4><p><i class="fa-regular fa-clock"></i>${timeLabel}${event.subject ? ` · ${escapeHtml(event.subject)}` : ""}</p></div></div>`;
     }).join("") : '<div class="upcoming-event"><div class="upcoming-info"><h4>No upcoming events</h4><p>There are no future events for your profile.</p></div></div>');
   }
 
@@ -682,7 +766,7 @@
         const description = String(quiz.description || "").trim();
         return `<a class="published-quiz-item" href="st_quizzes.html?quiz_id=${encodeURIComponent(quiz.id)}">
           <strong>${escapeHtml(quiz.title || "Published quiz")}</strong>
-          <span>${escapeHtml(subject)} · Published, not scheduled</span>
+          <span>${escapeHtml(subject)} · Published without a scheduled date${quiz.created_at ? ` · Created ${escapeHtml(formatDate(quiz.created_at, { month: "short", day: "numeric", year: "numeric" }))}` : ""}</span>
           ${description ? `<p>${escapeHtml(description)}</p>` : ""}
         </a>`;
       }).join("")
@@ -881,11 +965,8 @@
 
       const miniMonthButton = event.target.closest("[data-mini-month]");
       if (miniMonthButton) {
-        state.date = new Date(
-          state.date.getFullYear(),
-          state.date.getMonth() + Number(miniMonthButton.dataset.miniMonth),
-          1,
-        );
+        const { year, month } = calendarDateParts(state.date);
+        state.date = calendarDate(year, month - 1 + Number(miniMonthButton.dataset.miniMonth), 1);
         state.selectedDate = new Date(state.date);
         void refresh();
         return;
@@ -894,8 +975,8 @@
       const miniDateButton = event.target.closest("[data-mini-date]");
       if (miniDateButton) {
         const [year, month, day] = miniDateButton.dataset.miniDate.split("-").map(Number);
-        state.selectedDate = new Date(year, month - 1, day);
-        state.date = new Date(year, month - 1, 1);
+        state.selectedDate = calendarDate(year, month - 1, day);
+        state.date = calendarDate(year, month - 1, 1);
         void refresh();
         return;
       }
@@ -903,8 +984,8 @@
       const dayElement = event.target.closest(".day");
       if (dayElement && dayElement.dataset.date) {
         const [year, month, day] = dayElement.dataset.date.split("-").map(Number);
-        state.selectedDate = new Date(year, month - 1, day);
-        state.date = new Date(year, month - 1, 1);
+        state.selectedDate = calendarDate(year, month - 1, day);
+        state.date = calendarDate(year, month - 1, 1);
         renderCalendar();
       }
     });
@@ -919,19 +1000,21 @@
     });
 
     window.goToday = () => {
-      state.date = new Date();
-      state.selectedDate = new Date();
+      state.date = calendarToday();
+      state.selectedDate = calendarToday();
       void refresh();
     };
 
     window.previousMonth = () => {
-      state.date = new Date(state.date.getFullYear(), state.date.getMonth() - 1, 1);
+      const { year, month } = calendarDateParts(state.date);
+      state.date = calendarDate(year, month - 2, 1);
       state.selectedDate = new Date(state.date);
       void refresh();
     };
 
     window.nextMonth = () => {
-      state.date = new Date(state.date.getFullYear(), state.date.getMonth() + 1, 1);
+      const { year, month } = calendarDateParts(state.date);
+      state.date = calendarDate(year, month, 1);
       state.selectedDate = new Date(state.date);
       void refresh();
     };

@@ -1041,23 +1041,13 @@
             <div class="setting-body">
               <div class="setting-grid">
                 <div class="form-group">
-                  <label>Start Date</label>
-                  <input type="date" id="startDate" />
+                  <label for="scheduledDate">Scheduled Date</label>
+                  <input type="date" id="scheduledDate" />
                 </div>
 
                 <div class="form-group">
-                  <label>Start Time</label>
-                  <input type="time" id="startTime" />
-                </div>
-
-                <div class="form-group">
-                  <label>End Date</label>
-                  <input type="date" id="endDate" />
-                </div>
-
-                <div class="form-group">
-                  <label>End Time</label>
-                  <input type="time" id="endTime" />
+                  <label for="scheduledTime">Scheduled Time (optional)</label>
+                  <input type="time" id="scheduledTime" />
                 </div>
               </div>
             </div>
@@ -1500,10 +1490,8 @@
               questions: [],
 
               settings: {
-                startDate: "",
-                startTime: "",
-                endDate: "",
-                endTime: "",
+                scheduledDate: "",
+                scheduledTime: "",
                 attemptsAllowed: "1",
                 shuffleQuestions: false,
                 shuffleOptions: false,
@@ -2220,15 +2208,11 @@
                 document.getElementById("quizDuration").value,
               );
 
-              quizData.settings.startDate =
-                document.getElementById("startDate").value;
+              quizData.settings.scheduledDate =
+                document.getElementById("scheduledDate").value;
 
-              quizData.settings.startTime =
-                document.getElementById("startTime").value;
-
-              quizData.settings.endDate = document.getElementById("endDate").value;
-
-              quizData.settings.endTime = document.getElementById("endTime").value;
+              quizData.settings.scheduledTime =
+                document.getElementById("scheduledTime").value;
 
               quizData.settings.attemptsAllowed =
                 document.getElementById("attemptsAllowed").value;
@@ -2610,18 +2594,8 @@
                 passing_percentage: 40,
                 shuffle_questions: Boolean(quizData.settings.shuffleQuestions),
                 shuffle_options: Boolean(quizData.settings.shuffleOptions),
-                start_at:
-                  quizData.settings.startDate && quizData.settings.startTime
-                    ? new Date(
-                        `${quizData.settings.startDate}T${quizData.settings.startTime}`,
-                      ).toISOString()
-                    : null,
-                end_at:
-                  quizData.settings.endDate && quizData.settings.endTime
-                    ? new Date(
-                        `${quizData.settings.endDate}T${quizData.settings.endTime}`,
-                      ).toISOString()
-                    : null,
+                scheduled_date: quizData.settings.scheduledDate || null,
+                scheduled_time: quizData.settings.scheduledTime || null,
                 published_at: now,
                 question_count: quizData.questions.length,
                 total_marks: calculateTotalMarks(),
@@ -2699,14 +2673,8 @@
               quizData.total_questions = quizData.questions.length;
               quizData.total_marks = calculateTotalMarks();
               quizData.published_at = quizData.updatedAt;
-              quizData.start_at =
-                quizData.settings.startDate && quizData.settings.startTime
-                  ? `${quizData.settings.startDate}T${quizData.settings.startTime}`
-                  : null;
-              quizData.end_at =
-                quizData.settings.endDate && quizData.settings.endTime
-                  ? `${quizData.settings.endDate}T${quizData.settings.endTime}`
-                  : null;
+              quizData.scheduled_date = quizData.settings.scheduledDate || null;
+              quizData.scheduled_time = quizData.settings.scheduledTime || null;
 
               try {
                 const client =

@@ -369,8 +369,13 @@ as $$
   join public.quizzes quiz on quiz.id = question.quiz_id
   where quiz.id = p_quiz_id
     and public.quiz_student_is_eligible(quiz.id)
-    and (quiz.start_at is null or quiz.start_at <= now())
-    and (quiz.end_at is null or quiz.end_at >= now())
+    and (
+      quiz.scheduled_date is null
+      or (
+        (quiz.scheduled_date + coalesce(quiz.scheduled_time, time '00:00'))
+          at time zone 'Asia/Kolkata'
+      ) <= now()
+    )
     and question.question_type in ('mcq', 'true_false')
   order by question.question_number;
 $$;
@@ -411,8 +416,11 @@ begin
   if not found then
     raise exception 'This published quiz is not available to your registered class.' using errcode = '42501';
   end if;
-  if (quiz_record.start_at is not null and quiz_record.start_at > now())
-    or (quiz_record.end_at is not null and quiz_record.end_at < now()) then
+  if quiz_record.scheduled_date is not null
+    and (
+      (quiz_record.scheduled_date + coalesce(quiz_record.scheduled_time, time '00:00'))
+        at time zone 'Asia/Kolkata'
+    ) > now() then
     raise exception 'This quiz is outside its availability window.' using errcode = '22023';
   end if;
   if not exists (

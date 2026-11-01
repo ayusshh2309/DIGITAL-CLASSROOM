@@ -1227,9 +1227,16 @@
             ? query.eq("stream", stream)
             : query.is("stream", null);
         };
-        const [rawMaterials, quizCatalog] = await Promise.all([
+        const [rawMaterials, quizRows] = await Promise.all([
           fetchAllRows(materialQuery),
-          fetchAllRows(() => client.rpc("get_student_quiz_catalog")),
+          fetchAllRows(() => {
+            return client
+              .from("quizzes")
+              .select("id, subject_id, grade, stream, status")
+              .eq("grade", grade)
+              .in("subject_id", subjectIds)
+              .eq("status", "published");
+          }),
         ]);
         const uniqueRows = (rows) => [...new Map(
           rows
@@ -1260,35 +1267,18 @@
           }
         }
 
-        const eligibleQuizzes = uniqueRows(quizCatalog).filter((quiz) =>
+        const eligibleQuizzes = uniqueRows(quizRows).filter((quiz) =>
           subjectIdSet.has(String(quiz.subject_id)) &&
           Number(quiz.grade) === grade &&
           (grade < 11 || normalizeStream(quiz.stream) === stream) &&
-          String(quiz.quiz_status || "").toLowerCase() === "published",
+          String(quiz.status || "").toLowerCase() === "published",
         );
-        const quizIds = [...new Set(eligibleQuizzes.map((quiz) => String(quiz.id)))];
-        if (quizIds.length) {
-          const quizRows = await fetchAllRows(() => client
-            .from("quizzes")
-            .select("id, status, start_at, end_at")
-            .in("id", quizIds));
-          const databaseQuizzes = new Map(
-            quizRows.map((quiz) => [String(quiz.id), quiz]),
-          );
-          const now = Date.now();
-          const countedQuizIds = new Set();
-          for (const quiz of eligibleQuizzes) {
-            const id = String(quiz.id);
-            if (countedQuizIds.has(id)) continue;
-            const record = databaseQuizzes.get(id);
-            if (!record || String(record.status || "").toLowerCase() !== "published") continue;
-            const startAt = record.start_at ? new Date(record.start_at).getTime() : null;
-            const endAt = record.end_at ? new Date(record.end_at).getTime() : null;
-            if ((startAt != null && (!Number.isFinite(startAt) || startAt > now)) ||
-              (endAt != null && (!Number.isFinite(endAt) || endAt < now))) continue;
-            countedQuizIds.add(id);
-            statisticsBySubject.get(String(quiz.subject_id)).quizzes += 1;
-          }
+        const countedQuizIds = new Set();
+        for (const quiz of eligibleQuizzes) {
+          const id = String(quiz.id);
+          if (countedQuizIds.has(id)) continue;
+          countedQuizIds.add(id);
+          statisticsBySubject.get(String(quiz.subject_id)).quizzes += 1;
         }
         return statisticsBySubject;
       }

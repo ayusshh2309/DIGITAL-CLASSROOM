@@ -80,8 +80,8 @@ alter table public.quizzes
   add column if not exists attempts_allowed integer not null default 1,
   add column if not exists shuffle_questions boolean not null default false,
   add column if not exists shuffle_options boolean not null default false,
-  add column if not exists start_at timestamptz,
-  add column if not exists end_at timestamptz,
+  add column if not exists scheduled_date date,
+  add column if not exists scheduled_time time without time zone,
   add column if not exists show_question_numbers boolean not null default true,
   add column if not exists show_score boolean not null default true,
   add column if not exists show_answers boolean not null default false,
@@ -417,8 +417,8 @@ declare
   quiz_status text;
   quiz_duration integer;
   quiz_attempts integer;
-  quiz_start_at timestamptz;
-  quiz_end_at timestamptz;
+  quiz_scheduled_date date;
+  quiz_scheduled_time time without time zone;
   question_item jsonb;
   question_index integer := 0;
   question_kind text;
@@ -453,8 +453,8 @@ begin
   quiz_status := coalesce(nullif(p_quiz->>'status', ''), 'published');
   quiz_duration := coalesce(nullif(p_quiz->>'duration_minutes', '')::integer, 30);
   quiz_attempts := coalesce(nullif(p_quiz->>'attempts_allowed', '')::integer, 1);
-  quiz_start_at := nullif(p_quiz->>'start_at', '')::timestamptz;
-  quiz_end_at := nullif(p_quiz->>'end_at', '')::timestamptz;
+  quiz_scheduled_date := nullif(p_quiz->>'scheduled_date', '')::date;
+  quiz_scheduled_time := nullif(p_quiz->>'scheduled_time', '')::time;
 
   if quiz_title is null or quiz_grade is null or quiz_subject_id is null then
     raise exception 'Quiz title, grade, and subject are required.';
@@ -465,11 +465,11 @@ begin
   if quiz_duration < 1 or quiz_attempts < 1 then
     raise exception 'Duration and attempts must be positive.';
   end if;
+  if quiz_scheduled_time is not null and quiz_scheduled_date is null then
+    raise exception 'A scheduled time requires a scheduled date.';
+  end if;
   if quiz_status = 'published' and coalesce(jsonb_array_length(p_questions), 0) = 0 then
     raise exception 'A published quiz must contain at least one complete question.';
-  end if;
-  if quiz_end_at is not null and quiz_start_at is not null and quiz_end_at <= quiz_start_at then
-    raise exception 'The end time must be after the start time.';
   end if;
 
   if not exists (
@@ -544,8 +544,8 @@ begin
         attempts_allowed = quiz_attempts,
         shuffle_questions = coalesce((p_quiz->>'shuffle_questions')::boolean, false),
         shuffle_options = coalesce((p_quiz->>'shuffle_options')::boolean, false),
-        start_at = quiz_start_at,
-        end_at = quiz_end_at,
+        scheduled_date = quiz_scheduled_date,
+        scheduled_time = quiz_scheduled_time,
         show_question_numbers = coalesce((p_quiz->>'show_question_numbers')::boolean, true),
         show_score = coalesce((p_quiz->>'show_score')::boolean, true),
         show_answers = coalesce((p_quiz->>'show_answers')::boolean, false),
@@ -570,7 +570,7 @@ begin
     insert into public.quizzes (
       teacher_id, title, grade, class_grade, stream, subject_id, subject, topic,
       description, instructions, duration_minutes, attempts_allowed, shuffle_questions,
-      shuffle_options, start_at, end_at, show_question_numbers, show_score,
+      shuffle_options, scheduled_date, scheduled_time, show_question_numbers, show_score,
       show_answers, show_explanations, student_access, builder_draft, status, question_count,
       total_marks, published_at, updated_at
     )
@@ -578,7 +578,7 @@ begin
       quiz_stream, quiz_subject_id, subject_record.name, quiz_title,
       quiz_description, quiz_instructions, quiz_duration, quiz_attempts,
       coalesce((p_quiz->>'shuffle_questions')::boolean, false),
-      coalesce((p_quiz->>'shuffle_options')::boolean, false), quiz_start_at, quiz_end_at,
+      coalesce((p_quiz->>'shuffle_options')::boolean, false), quiz_scheduled_date, quiz_scheduled_time,
       coalesce((p_quiz->>'show_question_numbers')::boolean, true),
       coalesce((p_quiz->>'show_score')::boolean, true),
       coalesce((p_quiz->>'show_answers')::boolean, false),

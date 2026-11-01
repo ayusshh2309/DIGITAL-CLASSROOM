@@ -1442,11 +1442,11 @@
           </div>
 
           <div>
-            <div class="stat-number" id="averageScore">0%</div>
+            <div class="stat-number" id="averageScore">—</div>
 
             <div class="stat-label">Average Score</div>
 
-            <div class="stat-change">Your overall performance</div>
+            <div class="stat-change" id="averageScoreNote">Average of published results</div>
           </div>
         </div>
       </div>
@@ -2213,11 +2213,16 @@
       function updatePerformance() {
         const submitted = allAttempts.filter(
           (attempt) =>
-            attempt.status === "submitted" &&
-            attempt.result_released === true &&
-            Number(attempt.total_marks) > 0,
+            attempt.status === "submitted",
         );
-        const values = submitted.map((attempt) => Number(attempt.percentage));
+        const values = submitted
+          .filter(
+            (attempt) =>
+              attempt.result_released === true &&
+              Number(attempt.total_marks) > 0 &&
+              Number.isFinite(Number(attempt.percentage)),
+          )
+          .map((attempt) => Number(attempt.percentage));
         const hasResults = values.length > 0;
         const averageScore = hasResults
           ? Math.round(
@@ -2226,7 +2231,14 @@
           : null;
         document.getElementById("averageScore").textContent = hasResults
           ? `${averageScore}%`
-          : "—";
+          : submitted.length
+            ? "Pending"
+            : "—";
+        document.getElementById("averageScoreNote").textContent = hasResults
+          ? `Average of ${values.length} published ${values.length === 1 ? "result" : "results"}`
+          : submitted.length
+            ? "Waiting for your teacher to release results"
+            : "Attempt a quiz to see your average";
       }
 
       /* =====================================================

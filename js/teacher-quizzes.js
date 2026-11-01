@@ -84,7 +84,7 @@
   async function loadQuizzes() {
     try {
       const { data: quizzes, error } = await state.client.from("quizzes")
-        .select("id, teacher_id, title, grade, stream, subject_id, description, instructions, duration_minutes, status, total_marks, created_at, updated_at")
+        .select("id, teacher_id, title, grade, stream, subject_id, description, instructions, duration_minutes, status, total_marks, scheduled_date, scheduled_time, created_at, updated_at")
         .eq("teacher_id", state.teacher.id)
         .order("created_at", { ascending: false });
       if (error) throw error;

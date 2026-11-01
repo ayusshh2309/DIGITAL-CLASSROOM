@@ -651,10 +651,10 @@
 
   function quizIsAvailable(quiz, now) {
     if (String(quiz.status || "").toLowerCase() !== "published") return false;
-    const startsAt = quiz.start_at ? new Date(quiz.start_at) : null;
-    const endsAt = quiz.end_at ? new Date(quiz.end_at) : null;
-    return (!startsAt || (!Number.isNaN(startsAt.getTime()) && startsAt <= now)) &&
-      (!endsAt || (!Number.isNaN(endsAt.getTime()) && endsAt >= now));
+    if (!quiz.scheduled_date) return true;
+    const time = String(quiz.scheduled_time || "").slice(0, 8) || "00:00:00";
+    const startsAt = new Date(`${quiz.scheduled_date}T${time}+05:30`);
+    return Number.isFinite(startsAt.getTime()) && startsAt <= now;
   }
 
   async function loadQuizzes(now, sequence) {
@@ -679,7 +679,7 @@
     const ids = [...new Set(eligible.map((quiz) => quiz.id))];
     const { data, error } = await state.client
       .from("quizzes")
-      .select("id, status, start_at, end_at")
+      .select("id, status, scheduled_date, scheduled_time")
       .in("id", ids);
     if (sequence !== state.loadSequence) return;
     if (error) throw error;

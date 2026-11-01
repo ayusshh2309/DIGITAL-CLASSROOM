@@ -23,6 +23,10 @@
   const escapeHTML = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
   })[character]);
+  function setScheduleInputs(dateId, timeId, scheduledDate, scheduledTime) {
+    $(dateId).value = scheduledDate || "";
+    $(timeId).value = String(scheduledTime || "").slice(0, 5);
+  }
   const gradeNumber = (value) => {
     const match = String(value ?? "").match(/\d+/);
     return match ? Number(match[0]) : null;
@@ -209,10 +213,8 @@
 
   function collectSettings() {
     state.settings = {
-      startDate: $("startDate").value,
-      startTime: $("startTime").value,
-      endDate: $("endDate").value,
-      endTime: $("endTime").value,
+      scheduledDate: $("scheduledDate").value,
+      scheduledTime: $("scheduledTime").value,
       attemptsAllowed: $("attemptsAllowed").value,
       shuffleQuestions: $("shuffleQuestions").checked,
       shuffleOptions: $("shuffleOptions").checked,
@@ -767,8 +769,6 @@
   function quizPayload(status) {
     const info = collectQuizInformation();
     const settings = info.settings;
-    const startAt = settings.startDate && settings.startTime ? new Date(`${settings.startDate}T${settings.startTime}`).toISOString() : null;
-    const endAt = settings.endDate && settings.endTime ? new Date(`${settings.endDate}T${settings.endTime}`).toISOString() : null;
     return {
       ...(state.quizId ? { id: state.quizId } : {}),
       title: info.title,
@@ -787,8 +787,8 @@
       show_answers: settings.showAnswers,
       show_explanations: settings.showExplanations,
       student_access: settings.studentAccess,
-      start_at: startAt,
-      end_at: endAt,
+      scheduled_date: settings.scheduledDate || null,
+      scheduled_time: settings.scheduledTime || null,
       builder_draft: status === "draft" && (state.editingIndex >= 0 || state.draft?.type || state.draft?.text.trim() || state.draft?.options.some((option) => option.trim()))
         ? { question: state.draft, editing_index: state.editingIndex }
         : null,
@@ -799,11 +799,10 @@
   function validateSettings() {
     collectSettings();
     const settings = state.settings;
-    const start = settings.startDate && settings.startTime ? new Date(`${settings.startDate}T${settings.startTime}`) : null;
-    const end = settings.endDate && settings.endTime ? new Date(`${settings.endDate}T${settings.endTime}`) : null;
-    if (Boolean(settings.startDate) !== Boolean(settings.startTime)) { showToast("Select both a start date and time, or leave both empty.", true); return false; }
-    if (Boolean(settings.endDate) !== Boolean(settings.endTime)) { showToast("Select both an end date and time, or leave both empty.", true); return false; }
-    if (start && end && end <= start) { showToast("The end time must be after the start time.", true); return false; }
+    if (settings.scheduledTime && !settings.scheduledDate) {
+      showToast("Choose a scheduled date before selecting a time.", true);
+      return false;
+    }
     return true;
   }
 
@@ -878,13 +877,14 @@
   }
 
   async function loadExistingQuiz() {
-    const { data: quiz, error } = await state.client.from("quizzes").select("id, teacher_id, title, grade, stream, subject_id, description, instructions, duration_minutes, status").eq("id", state.quizId).eq("teacher_id", state.teacher.id).maybeSingle();
+    const { data: quiz, error } = await state.client.from("quizzes").select("id, teacher_id, title, grade, stream, subject_id, description, instructions, duration_minutes, status, scheduled_date, scheduled_time").eq("id", state.quizId).eq("teacher_id", state.teacher.id).maybeSingle();
     if (error) throw new Error(`Could not load quiz draft. ${error.message}`);
     if (!quiz) throw new Error("This quiz could not be found under your teacher account.");
     $("quizTitle").value = quiz.title || "";
     $("quizDescription").value = quiz.description || "";
     $("quizInstructions").value = quiz.instructions || "";
     $("quizDuration").value = String(quiz.duration_minutes || 30);
+    setScheduleInputs("scheduledDate", "scheduledTime", quiz.scheduled_date, quiz.scheduled_time);
     populateGrades(quiz.grade ?? quiz.class_grade);
     const stream = quiz.stream || "";
     if (gradeHasStreams(selectedGrade())) $("quizStream").value = stream;

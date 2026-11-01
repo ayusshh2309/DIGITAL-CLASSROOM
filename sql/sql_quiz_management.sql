@@ -20,22 +20,24 @@ create table if not exists public.quizzes (
   passing_percentage numeric not null default 40 check (passing_percentage between 0 and 100),
   shuffle_questions boolean not null default false,
   shuffle_options boolean not null default false,
-  start_at timestamptz,
-  end_at timestamptz,
+  scheduled_date date,
+  scheduled_time time without time zone,
   published_at timestamptz,
   question_count integer not null default 0,
   total_marks numeric not null default 0,
   response_count integer not null default 0,
   average_score numeric not null default 0,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  constraint quiz_availability_order check (end_at is null or start_at is null or end_at > start_at)
+  updated_at timestamptz not null default now()
 );
 
 alter table public.quizzes add column if not exists grade text;
 alter table public.quizzes add column if not exists stream text;
 alter table public.quizzes add column if not exists published_at timestamptz;
 alter table public.quizzes add column if not exists duration_minutes integer not null default 30;
+alter table public.quizzes add column if not exists scheduled_date date;
+alter table public.quizzes add column if not exists scheduled_time time without time zone;
+alter table public.quizzes drop constraint if exists quiz_availability_order;
 
 do $$
 begin
@@ -64,7 +66,7 @@ create table if not exists public.quiz_questions (
 );
 
 create index if not exists quizzes_teacher_updated_idx on public.quizzes(teacher_id, updated_at desc);
-create index if not exists quizzes_target_idx on public.quizzes(class_grade, stream, subject, status, start_at);
+create index if not exists quizzes_target_idx on public.quizzes(class_grade, stream, subject, status, scheduled_date);
 create index if not exists quiz_questions_quiz_position_idx on public.quiz_questions(quiz_id, position);
 
 alter table public.quizzes enable row level security;
@@ -484,8 +486,12 @@ as $$
     quiz.class_grade,
     quiz.stream,
     quiz.subject,
-    coalesce(quiz.start_at, quiz.published_at),
-    coalesce(quiz.end_at, quiz.start_at, quiz.published_at),
+    (quiz.scheduled_date + coalesce(quiz.scheduled_time, time '00:00')) at time zone 'Asia/Kolkata',
+    case when quiz.scheduled_time is not null
+      then ((quiz.scheduled_date + quiz.scheduled_time) at time zone 'Asia/Kolkata')
+        + make_interval(mins => quiz.duration_minutes)
+      else (quiz.scheduled_date + time '00:00') at time zone 'Asia/Kolkata'
+    end,
     quiz.status,
     null::text,
     null::text,
@@ -499,6 +505,7 @@ as $$
     and quiz.status in ('published', 'scheduled')
     and quiz.class_grade = student.grade
     and (quiz.stream is null or quiz.stream = '' or lower(quiz.stream) = lower(coalesce(student.stream, '')))
+    and quiz.scheduled_date is not null
     and lower(quiz.subject) = any(select lower(value) from unnest(student.eligible_subjects) value)
   union all
   select

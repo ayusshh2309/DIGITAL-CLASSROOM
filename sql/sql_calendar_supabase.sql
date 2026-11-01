@@ -55,11 +55,10 @@ begin
       ('quizzes', 'grade', 'integer'),
       ('quizzes', 'stream', 'text'),
       ('quizzes', 'subject_id', 'bigint'),
-      ('quizzes', 'start_at', 'timestamp with time zone'),
-      ('quizzes', 'end_at', 'timestamp with time zone'),
+      ('quizzes', 'scheduled_date', 'date'),
+      ('quizzes', 'scheduled_time', 'time without time zone'),
       ('quizzes', 'duration_minutes', 'integer'),
       ('quizzes', 'status', 'text'),
-      ('quizzes', 'student_access', 'text'),
       ('live_classes', 'id', 'uuid'),
       ('live_classes', 'teacher_id', 'uuid'),
       ('live_classes', 'stream', 'text'),
@@ -132,9 +131,12 @@ begin
   end if;
 
   if exists (
-    select 1 from public.quizzes
-    where student_access is null
-      or lower(btrim(student_access)) not in ('class', 'assigned')
+    select 1 from public.quizzes quiz
+    where to_jsonb(quiz) ? 'student_access'
+      and (
+        to_jsonb(quiz)->>'student_access' is null
+        or lower(btrim(to_jsonb(quiz)->>'student_access')) not in ('class', 'assigned')
+      )
   ) then
     raise exception
       'public.quizzes contains an unrecognized student_access value; inspect those rows before synchronization.';
@@ -909,6 +911,7 @@ as $$
 declare
   calendar_status text;
   calendar_teacher_id uuid;
+  calendar_start_at timestamptz;
 begin
   if tg_op = 'DELETE' then
     delete from public.calendar_events
@@ -924,8 +927,13 @@ begin
     else 'draft'
   end;
   calendar_teacher_id := public.calendar_teacher_profile_id(new.teacher_id);
+  calendar_start_at := case when new.scheduled_date is not null then
+    (new.scheduled_date + coalesce(new.scheduled_time, time '00:00'))
+      at time zone 'Asia/Kolkata'
+    else null
+  end;
 
-  if new.start_at is null
+  if calendar_start_at is null
     or new.subject_id is null
     or calendar_teacher_id is null then
     update public.calendar_events
@@ -966,18 +974,15 @@ begin
     new.grade,
     new.stream,
     new.subject_id,
-    new.start_at,
-    coalesce(
-      new.end_at,
-      case when new.duration_minutes > 0
-        then new.start_at + make_interval(mins => new.duration_minutes)
+    calendar_start_at,
+    case when new.scheduled_time is not null and new.duration_minutes > 0
+        then calendar_start_at + make_interval(mins => new.duration_minutes)
         else null
-      end
-    ),
-    false,
+      end,
+    new.scheduled_time is null,
     calendar_status,
     lower(btrim(new.status)) = 'published'
-      and lower(btrim(new.student_access)) = 'class',
+      and lower(btrim(coalesce(to_jsonb(new)->>'student_access', 'class'))) = 'class',
     'quizzes',
     new.id
   )
@@ -1327,15 +1332,15 @@ select
   quiz.grade,
   quiz.stream,
   quiz.subject_id,
-  quiz.start_at,
-  coalesce(
-    quiz.end_at,
-    case when quiz.duration_minutes > 0
-      then quiz.start_at + make_interval(mins => quiz.duration_minutes)
+  (quiz.scheduled_date + coalesce(quiz.scheduled_time, time '00:00'))
+    at time zone 'Asia/Kolkata',
+  case when quiz.scheduled_time is not null and quiz.duration_minutes > 0
+      then ((quiz.scheduled_date + quiz.scheduled_time)
+        at time zone 'Asia/Kolkata')
+        + make_interval(mins => quiz.duration_minutes)
       else null
-    end
-  ),
-  false,
+    end,
+  quiz.scheduled_time is null,
   case lower(btrim(quiz.status))
     when 'published' then 'published'
     when 'scheduled' then 'scheduled'
@@ -1343,11 +1348,11 @@ select
     else 'draft'
   end,
   lower(btrim(quiz.status)) = 'published'
-    and lower(btrim(quiz.student_access)) = 'class',
+    and lower(btrim(coalesce(to_jsonb(quiz)->>'student_access', 'class'))) = 'class',
   'quizzes',
   quiz.id
 from public.quizzes quiz
-where quiz.start_at is not null
+where quiz.scheduled_date is not null
   and quiz.subject_id is not null
   and public.calendar_teacher_profile_id(quiz.teacher_id) is not null
 on conflict (source_table, source_id)
@@ -1365,6 +1370,14 @@ do update set
   all_day = excluded.all_day,
   status = excluded.status,
   is_visible_to_students = excluded.is_visible_to_students;
+
+update public.calendar_events event
+set status = 'draft',
+    is_visible_to_students = false
+from public.quizzes quiz
+where event.source_table = 'quizzes'
+  and event.source_id = quiz.id
+  and quiz.scheduled_date is null;
 
 -- Live classes have explicit class_date/start_time and are optional in deployments.
 do $$

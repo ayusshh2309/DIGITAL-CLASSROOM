@@ -828,7 +828,17 @@
 
   function eventRows() {
     const liveEvents = state.liveClasses.map((row) => ({ ...row, subject_name: subjectOf(row), eventType: "class", title: row.title || subjectOf(row) || "Live class", eventDate: dateOf(row), description: row.topic || "Scheduled class" }));
-    const quizEvents = state.quizzes.filter((row) => row.start_at || row.due_date || row.end_at).map((row) => ({ ...row, eventType: "quiz", title: row.title || "Assessment", eventDate: row.start_at || row.due_date || row.end_at, description: row.description || row.subject || "Quiz or assessment" }));
+    const quizEvents = state.quizzes.filter((row) => row.scheduled_date).map((row) => {
+      const time = String(row.scheduled_time || "").slice(0, 8) || "00:00:00";
+      const scheduledAt = new Date(`${row.scheduled_date}T${time}+05:30`);
+      return {
+        ...row,
+        eventType: "quiz",
+        title: row.title || "Assessment",
+        eventDate: Number.isFinite(scheduledAt.getTime()) ? scheduledAt.toISOString() : null,
+        description: row.description || row.subject || "Quiz or assessment",
+      };
+    });
     const announcementEvents = state.announcements.filter((row) => row.scheduled_at || row.published_at).map((row) => ({ ...row, eventType: "announcement", title: row.title || "Announcement", eventDate: row.scheduled_at || row.published_at, description: row.message || row.description || "Teacher announcement" }));
     return [...liveEvents, ...quizEvents, ...announcementEvents].filter((row) => row.eventDate && assignedRow(row) && Number.isFinite(new Date(row.eventDate).getTime())).sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate));
   }
