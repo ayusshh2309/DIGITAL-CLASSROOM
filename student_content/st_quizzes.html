@@ -1433,7 +1433,6 @@
             <div class="stat-change">Waiting to be attempted</div>
           </div>
         </div>
-
       </div>
 
       <!-- =================================================
@@ -1511,6 +1510,7 @@
       let reloadQuizzesQueued = false;
       let studentQuizChannel = null;
       let requestedQuizAttemptStarted = false;
+      let quizAvailabilityTimer = null;
       const achievementEvaluationsStarted = new Set();
       const quizAnswerDrafts = new Map();
       const quizReviewDrafts = new Map();
@@ -1651,6 +1651,111 @@
             hour12: true,
           })
         );
+      }
+
+      function getQuizSchedule(quiz) {
+        const scheduledDate = String(quiz?.scheduled_date || "").trim();
+        const scheduledTime = String(quiz?.scheduled_time || "").trim();
+        const configured = Boolean(scheduledDate || scheduledTime);
+        if (!configured) {
+          return { configured: false, valid: true, startsAt: null, label: "" };
+        }
+
+        const dateMatch = scheduledDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        const timeMatch = scheduledTime
+          ? scheduledTime.match(/^(\d{2}):(\d{2})(?::(\d{2}))?$/)
+          : null;
+        if (!dateMatch || (scheduledTime && !timeMatch)) {
+          return { configured: true, valid: false, startsAt: null, label: "" };
+        }
+
+        const [, yearText, monthText, dayText] = dateMatch;
+        const year = Number(yearText);
+        const month = Number(monthText);
+        const day = Number(dayText);
+        const dateCheck = new Date(Date.UTC(year, month - 1, day));
+        if (
+          dateCheck.getUTCFullYear() !== year ||
+          dateCheck.getUTCMonth() !== month - 1 ||
+          dateCheck.getUTCDate() !== day
+        ) {
+          return { configured: true, valid: false, startsAt: null, label: "" };
+        }
+
+        const hours = timeMatch ? Number(timeMatch[1]) : 0;
+        const minutes = timeMatch ? Number(timeMatch[2]) : 0;
+        const seconds = timeMatch?.[3] ? Number(timeMatch[3]) : 0;
+        if (hours > 23 || minutes > 59 || seconds > 59) {
+          return { configured: true, valid: false, startsAt: null, label: "" };
+        }
+
+        const dateForDisplay = new Date(Date.UTC(year, month - 1, day, 12));
+        const dateLabel = new Intl.DateTimeFormat("en-IN", {
+          timeZone: "Asia/Kolkata",
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        }).format(dateForDisplay);
+        const timeLabel = timeMatch
+          ? new Intl.DateTimeFormat("en-US", {
+              timeZone: "Asia/Kolkata",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            }).format(new Date(
+              `${scheduledDate}T${timeMatch[1]}:${timeMatch[2]}:${String(seconds).padStart(2, "0")}+05:30`,
+            ))
+          : "";
+
+        return {
+          configured: true,
+          valid: true,
+          startsAt: new Date(
+            `${scheduledDate}T${timeMatch ? `${timeMatch[1]}:${timeMatch[2]}:${String(seconds).padStart(2, "0")}` : "00:00:00"}+05:30`,
+          ),
+          label: timeLabel ? `${dateLabel} at ${timeLabel}` : dateLabel,
+        };
+      }
+
+      function quizScheduleAvailability(quiz) {
+        const schedule = getQuizSchedule(quiz);
+        if (!schedule.configured) {
+          return { ...schedule, available: true, message: "" };
+        }
+        if (!schedule.valid) {
+          return {
+            ...schedule,
+            available: false,
+            message: "Schedule unavailable. Contact your teacher.",
+          };
+        }
+        const available = Date.now() >= schedule.startsAt.getTime();
+        return {
+          ...schedule,
+          available,
+          message: available ? "" : `Available on ${schedule.label}`,
+        };
+      }
+
+      function scheduleQuizAvailabilityRefresh() {
+        window.clearTimeout(quizAvailabilityTimer);
+        const now = Date.now();
+        const nextStart = allQuizzes
+          .filter((quiz) => getAttemptForQuiz(quiz.id)?.status !== "in_progress")
+          .map((quiz) => getQuizSchedule(quiz))
+          .filter((schedule) =>
+            schedule.configured &&
+            schedule.valid &&
+            schedule.startsAt.getTime() > now,
+          )
+          .reduce((earliest, schedule) =>
+            Math.min(earliest, schedule.startsAt.getTime()), Infinity);
+        if (Number.isFinite(nextStart)) {
+          quizAvailabilityTimer = window.setTimeout(
+            () => renderQuizzes(),
+            Math.min(nextStart - now + 50, 2147483647),
+          );
+        }
       }
 
       /* =====================================================
@@ -1979,6 +2084,7 @@
 
       function renderQuizzes() {
         const container = document.getElementById("quizList");
+        scheduleQuizAvailabilityRefresh();
 
         let quizzes = [...allQuizzes];
 
@@ -2031,6 +2137,7 @@
       function createQuizHTML(quiz) {
         const attempt = getAttemptForQuiz(quiz.id);
         const status = getQuizStatus(quiz, attempt);
+        const availability = quizScheduleAvailability(quiz);
         const iconData = getQuizIcon(quiz.subject);
         const dateClass =
           status.type === "completed"
@@ -2046,7 +2153,8 @@
         } else {
           const buttonLabel =
             status.type === "in_progress" ? "Continue Quiz" : "Start Quiz";
-          actionHTML = `<button class="attempt-btn" onclick="attemptQuiz('${escapeHTML(quiz.id)}')">${buttonLabel}</button>`;
+          const canStart = status.type === "in_progress" || availability.available;
+          actionHTML = `<button class="attempt-btn" onclick="attemptQuiz('${escapeHTML(quiz.id)}')"${canStart ? "" : " disabled"}>${buttonLabel}</button>`;
         }
         const streamLabel = quiz.stream
           ? streamLabels[quiz.stream] || quiz.stream
@@ -2116,11 +2224,26 @@
                   <div
                       class="quiz-date ${dateClass}">
 
-                      <div>${escapeHTML(status.label)}</div>
+                      ${
+                        status.type === "pending" &&
+                        availability.configured &&
+                        availability.valid &&
+                        !availability.available
+                          ? ""
+                          : `<div>${escapeHTML(status.label)}</div>`
+                      }
                       <div class="due">${
                         attempt?.submitted_at
                           ? `Submitted ${escapeHTML(formatDate(attempt.submitted_at))}`
-                          : "No scheduled date"
+                          : availability.configured
+                            ? availability.valid
+                              ? escapeHTML(
+                                  status.type === "pending" && !availability.available
+                                    ? availability.message
+                                    : availability.label,
+                                )
+                              : escapeHTML(availability.message)
+                            : "No scheduled date"
                       }</div>
 
                   </div>
@@ -2289,6 +2412,11 @@
           await launchQuizAttempt(quiz);
           return;
         }
+        const availability = quizScheduleAvailability(quiz);
+        if (!availability.available) {
+          showQuizError(getQuizDialog(), new Error(availability.message));
+          return;
+        }
         showQuizInstructions(quiz);
       }
 
@@ -2350,6 +2478,12 @@
             setQuizAttemptViewVisible(false);
             renderAttemptResult(attemptView, selectedQuiz);
             return;
+          }
+          if (existingAttempt?.status !== "in_progress") {
+            const availability = quizScheduleAvailability(selectedQuiz);
+            if (!availability.available) {
+              throw new Error(availability.message);
+            }
           }
           const { data: attemptId, error: startError } =
             await supabaseClient.rpc("start_quiz_attempt", {
