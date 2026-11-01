@@ -38,6 +38,16 @@
       .replace(/\b\w/g, (letter) => letter.toUpperCase());
   }
 
+  function initials(name) {
+    return String(name || "Student")
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0] || "")
+      .join("")
+      .toUpperCase();
+  }
+
   function setProfileField(field, value) {
     document
       .querySelectorAll(`[data-profile-field="${field}"]`)
@@ -76,6 +86,18 @@
 
     document.querySelectorAll(".page-header .profile-user-name").forEach((node) => {
       node.textContent = name;
+    });
+    const sideName = document.querySelector(".profile-side-name");
+    if (sideName) sideName.textContent = name;
+    const sideGrade = document.querySelector(".profile-side-grade span");
+    if (sideGrade) {
+      sideGrade.textContent = hasGrade
+        ? `Grade ${grade}${grade >= 11 && student.stream ? ` · ${streamLabel(student.stream)}` : ""}`
+        : FALLBACK;
+    }
+    document.querySelectorAll(".header-avatar-fallback, .profile-side-initials").forEach((node) => {
+      node.textContent = initials(student.full_name);
+      node.hidden = false;
     });
     document.querySelectorAll(".banner-student-id, .student-id-box .id").forEach((node) => {
       node.textContent = studentId;
@@ -134,10 +156,21 @@
   }
 
   async function renderProfilePhoto(client, photoPath) {
-    const avatar = document.querySelector(".header-avatar");
-    if (!avatar) return;
-    avatar.hidden = true;
-    avatar.removeAttribute("src");
+    const avatars = [
+      {
+        image: document.querySelector(".header-avatar"),
+        fallback: document.querySelector(".header-avatar-fallback"),
+      },
+      {
+        image: document.querySelector(".profile-side-avatar"),
+        fallback: document.querySelector(".profile-side-initials"),
+      },
+    ].filter(({ image }) => image);
+    avatars.forEach(({ image, fallback }) => {
+      image.hidden = true;
+      image.removeAttribute("src");
+      if (fallback) fallback.hidden = false;
+    });
     if (!photoPath) return;
 
     let photoUrl = photoPath;
@@ -149,13 +182,19 @@
       photoUrl = data.signedUrl;
     }
 
-    avatar.addEventListener("error", () => {
-      avatar.hidden = true;
-      setMessage("Your profile details loaded, but the registered profile photo could not be displayed.");
-      console.error("The registered student profile photo could not be displayed.");
-    }, { once: true });
-    avatar.src = photoUrl;
-    avatar.hidden = false;
+    avatars.forEach(({ image, fallback }) => {
+      image.addEventListener("error", () => {
+        image.hidden = true;
+        if (fallback) fallback.hidden = false;
+        setMessage("Your profile details loaded, but the registered profile photo could not be displayed.");
+        console.error("The registered student profile photo could not be displayed.");
+      }, { once: true });
+      image.addEventListener("load", () => {
+        image.hidden = false;
+        if (fallback) fallback.hidden = true;
+      }, { once: true });
+      image.src = photoUrl;
+    });
   }
 
   function renderSubjects(subjects) {
@@ -248,6 +287,34 @@
       subscribeToStudent(client, user.id);
     } catch (error) {
       console.error("Student profile could not be loaded.", error);
+      document.querySelectorAll(".page-header .profile-user-name, .profile-side-name").forEach((node) => {
+        node.textContent = "Profile unavailable";
+      });
+      document.querySelectorAll(".header-avatar-fallback, .profile-side-initials").forEach((node) => {
+        node.textContent = "?";
+        node.hidden = false;
+      });
+      document.querySelectorAll(".header-avatar, .profile-side-avatar").forEach((node) => {
+        node.hidden = true;
+        node.removeAttribute("src");
+      });
+      const gradeBadge = document.querySelector(".profile-grade-badge");
+      if (gradeBadge) {
+        const icon = document.createElement("i");
+        icon.className = "fa-solid fa-graduation-cap";
+        gradeBadge.replaceChildren(icon, document.createTextNode(" Profile unavailable"));
+      }
+      const sideGrade = document.querySelector(".profile-side-grade span");
+      if (sideGrade) sideGrade.textContent = "Sign in to view your grade";
+      document.querySelectorAll(".banner-student-id, .student-id-box .id").forEach((node) => {
+        node.textContent = "Unavailable";
+      });
+      document.querySelectorAll("[data-profile-field]").forEach((node) => {
+        node.textContent = "Unavailable";
+      });
+      document.querySelectorAll(".contact-item span, .header-meta-item span:last-child").forEach((node) => {
+        node.textContent = "Unavailable";
+      });
       const accountStatus = document.getElementById("account");
       accountStatus?.classList.add("unavailable");
       const heading = accountStatus?.querySelector("h4");
