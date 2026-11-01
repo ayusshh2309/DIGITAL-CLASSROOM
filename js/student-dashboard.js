@@ -4,6 +4,17 @@
   const MATERIAL_TYPES = ["pdf", "document", "photo", "image", "video"];
   const FALLBACK_REFRESH_MS = 60_000;
   const REFRESH_DEBOUNCE_MS = 500;
+  const CALENDAR_TIME_ZONE = "Asia/Kolkata";
+  const calendarFormatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: CALENDAR_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  });
   const state = {
     client: null,
     user: null,
@@ -58,30 +69,98 @@
   }
 
   function formatDate(value) {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "Date unavailable";
-    return date.toLocaleDateString(undefined, {
+    const date = parseZonedTimestamp(value);
+    if (!date) return "Date unavailable";
+    return date.toLocaleDateString("en-IN", {
       day: "numeric",
       month: "short",
       year: "numeric",
+      timeZone: CALENDAR_TIME_ZONE,
     });
   }
 
   function formatTime(value) {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "";
-    return date.toLocaleTimeString(undefined, {
+    const date = parseZonedTimestamp(value);
+    if (!date) return "";
+    return date.toLocaleTimeString("en-IN", {
       hour: "numeric",
       minute: "2-digit",
+      timeZone: CALENDAR_TIME_ZONE,
     });
   }
 
-  function localDateKey(date) {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  function parseZonedTimestamp(value) {
+    if (value instanceof Date) {
+      return Number.isFinite(value.getTime()) ? new Date(value.getTime()) : null;
+    }
+    const raw = String(value ?? "").trim();
+    const timestamp = raw.replace(/^(\d{4}-\d{2}-\d{2})\s+/, "$1T");
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}(?::?\d{2})?)$/i.test(timestamp)) {
+      return null;
+    }
+    const normalized = timestamp.replace(
+      /([+-])(\d{2})(?::?(\d{2}))?$/,
+      (_, sign, hours, minutes = "00") => `${sign}${hours}:${minutes}`,
+    );
+    const milliseconds = Date.parse(normalized);
+    return Number.isFinite(milliseconds) ? new Date(milliseconds) : null;
   }
 
-  function localMidnight(date) {
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  function calendarDateParts(date) {
+    const parts = Object.fromEntries(
+      calendarFormatter.formatToParts(new Date(date))
+        .filter((part) => part.type !== "literal")
+        .map((part) => [part.type, Number(part.value)]),
+    );
+    return {
+      year: parts.year,
+      month: parts.month,
+      day: parts.day,
+      hour: parts.hour,
+      minute: parts.minute,
+      second: parts.second,
+    };
+  }
+
+  function dateKey(date) {
+    const parts = calendarDateParts(date);
+    return `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
+  }
+
+  function instantAtCalendarMidnight(year, month, day) {
+    const targetUtc = Date.UTC(year, month - 1, day);
+    let timestamp = targetUtc;
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const parts = calendarDateParts(timestamp);
+      const displayedAsUtc = Date.UTC(
+        parts.year,
+        parts.month - 1,
+        parts.day,
+        parts.hour,
+        parts.minute,
+        parts.second,
+      );
+      const correction = targetUtc - displayedAsUtc;
+      timestamp += correction;
+      if (correction === 0) break;
+    }
+    return new Date(timestamp);
+  }
+
+  function calendarMidnight(date) {
+    const parts = calendarDateParts(date);
+    return instantAtCalendarMidnight(parts.year, parts.month, parts.day);
+  }
+
+  function addCalendarDays(date, amount) {
+    const parts = calendarDateParts(date);
+    const calendarDate = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
+    calendarDate.setUTCDate(calendarDate.getUTCDate() + amount);
+    return instantAtCalendarMidnight(
+      calendarDate.getUTCFullYear(),
+      calendarDate.getUTCMonth() + 1,
+      calendarDate.getUTCDate(),
+    );
   }
 
   function responseRows(data, source) {
@@ -104,14 +183,16 @@
   }
 
   function currentWeekDays(now = new Date()) {
-    const monday = localMidnight(now);
-    monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+    const parts = calendarDateParts(now);
+    const calendarDate = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
+    const monday = addCalendarDays(
+      calendarMidnight(now),
+      -((calendarDate.getUTCDay() + 6) % 7),
+    );
     return Array.from({ length: 7 }, (_, index) => {
-      const start = new Date(monday);
-      start.setDate(monday.getDate() + index);
-      const end = new Date(start);
-      end.setDate(start.getDate() + 1);
-      return { start, end, key: localDateKey(start) };
+      const start = addCalendarDays(monday, index);
+      const end = addCalendarDays(start, 1);
+      return { start, end, key: dateKey(start) };
     });
   }
 
@@ -120,9 +201,9 @@
     const intervals = [];
     for (const segment of state.segments) {
       if (!segment.started_at || !segment.ended_at) continue;
-      const start = new Date(segment.started_at);
-      const end = new Date(segment.ended_at);
-      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) continue;
+      const start = parseZonedTimestamp(segment.started_at);
+      const end = parseZonedTimestamp(segment.ended_at);
+      if (!start || !end || end <= start) continue;
       const session = sessionsById.get(String(segment.session_id));
       intervals.push({
         start,
@@ -133,8 +214,8 @@
     }
     for (const session of state.sessions) {
       if (session.status !== "active") continue;
-      const start = new Date(session.started_at);
-      if (!Number.isNaN(start.getTime()) && start < now) {
+      const start = parseZonedTimestamp(session.started_at);
+      if (start && start < now) {
         intervals.push({
           start,
           end: now,
@@ -167,7 +248,7 @@
           : Math.round(overlapMilliseconds / 1000);
         weekSeconds += seconds;
         byDay.set(day.key, (byDay.get(day.key) || 0) + seconds);
-        if (day.key === localDateKey(now)) todaySeconds += seconds;
+        if (day.key === dateKey(now)) todaySeconds += seconds;
         if (interval.subjectId) {
           bySubject.set(interval.subjectId, (bySubject.get(interval.subjectId) || 0) + seconds);
         }
@@ -283,11 +364,11 @@
       container.innerHTML = `<div class="dashboard-error">Classes could not be loaded: ${escapeHtml(displayError(state.errors.classes))}</div>`;
       return;
     }
-    const todayKey = localDateKey(now);
+    const todayKey = dateKey(now);
     const today = state.classes.filter((item) => {
       if (!isClassRelevant(item)) return false;
       const start = classDateTime(item, "start_at");
-      return start && localDateKey(start) === todayKey;
+      return start && dateKey(start) === todayKey;
     }).sort((left, right) =>
       (classDateTime(left, "start_at")?.getTime() || 0) -
       (classDateTime(right, "start_at")?.getTime() || 0),
@@ -353,7 +434,10 @@
         const height = dailyGoalSeconds
           ? Math.min(100, Math.round(seconds / dailyGoalSeconds * 100))
           : (seconds ? 100 : 0);
-        const label = day.start.toLocaleDateString(undefined, { weekday: "short" });
+        const label = day.start.toLocaleDateString("en-IN", {
+          weekday: "short",
+          timeZone: CALENDAR_TIME_ZONE,
+        });
         return `<div class="study-day" title="${escapeHtml(label)}: ${escapeHtml(formatDuration(seconds))}">
           <span class="study-day-bar"><span style="height: ${height}%"></span></span>
           <small>${escapeHtml(label)}</small>
@@ -401,6 +485,7 @@
         weekday: "long",
         month: "long",
         day: "numeric",
+        timeZone: CALENDAR_TIME_ZONE,
       });
     }
     const clockElement = $("currentTime");
@@ -408,6 +493,7 @@
       clockElement.textContent = now.toLocaleTimeString(undefined, {
         hour: "numeric",
         minute: "2-digit",
+        timeZone: CALENDAR_TIME_ZONE,
       });
     }
   }

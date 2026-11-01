@@ -63,6 +63,21 @@
     return `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
   }
 
+  function parseUtcTimestamp(value) {
+    const raw = String(value ?? "").trim();
+    const timestamp = raw.replace(/^(\d{4}-\d{2}-\d{2})\s+/, "$1T");
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}(?::?\d{2})?)$/i.test(timestamp)) {
+      return null;
+    }
+
+    const normalized = timestamp.replace(
+      /([+-])(\d{2})(?::?(\d{2}))?$/,
+      (_, sign, hours, minutes = "00") => `${sign}${hours}:${minutes}`,
+    );
+    const milliseconds = Date.parse(normalized);
+    return Number.isFinite(milliseconds) ? new Date(milliseconds) : null;
+  }
+
   function indiaDateTimeParts(date) {
     const parts = Object.fromEntries(
       calendarFormatter.formatToParts(new Date(date))
@@ -160,19 +175,20 @@
       if (!session) continue;
 
       const durationSeconds = Number(segment.duration_seconds);
-      const start = new Date(segment.started_at);
+      const start = parseUtcTimestamp(segment.started_at);
       if (
         !Number.isFinite(durationSeconds) ||
         durationSeconds <= 0 ||
+        !start ||
         !Number.isFinite(start.getTime())
       ) {
         continue;
       }
 
       const end = segment.ended_at
-        ? new Date(segment.ended_at)
+        ? parseUtcTimestamp(segment.ended_at)
         : new Date(start.getTime() + durationSeconds * 1000);
-      if (!Number.isFinite(end.getTime()) || end <= start) continue;
+      if (!end || !Number.isFinite(end.getTime()) || end <= start) continue;
 
       if (segment.id != null) {
         const id = String(segment.id);
