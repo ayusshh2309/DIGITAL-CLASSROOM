@@ -3,6 +3,7 @@
   const SIGNED_URL_EXPIRY_SECONDS = 3600;
   const REFRESH_DELAY_MS = 250;
   const VIDEO_DIAGNOSTICS = true;
+  const VIDEO_HEARTBEAT_INTERVAL_MS = 15_000;
   const state = {
     client: null,
     user: null,
@@ -14,6 +15,9 @@
     channel: null,
     activeVideo: null,
     playbackRequest: 0,
+    videoTracking: null,
+    videoTrackingQueue: Promise.resolve(),
+    videoPlaybackReady: false,
     loading: false,
     loadFailed: false,
     reloadQueued: false,
@@ -34,6 +38,165 @@
 
   function normalize(value) {
     return String(value ?? "").trim().toLowerCase();
+  }
+
+  function isUuid(value) {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      .test(String(value || ""));
+  }
+
+  function sessionIdFromRpcResult(data) {
+    const result = Array.isArray(data) ? data[0] : data;
+    const sessionId = typeof result === "string"
+      ? result
+      : result?.session_id ?? result?.id;
+    if (!isUuid(sessionId)) {
+      throw new Error("The video study-time RPC did not return a valid session ID.");
+    }
+    return String(sessionId);
+  }
+
+  function canTrackVideoPlayback() {
+    const player = $("videoPlayer");
+    return Boolean(
+      state.activeVideo &&
+      state.videoPlaybackReady &&
+      !document.hidden &&
+      !player.paused &&
+      !player.ended &&
+      !player.seeking,
+    );
+  }
+
+  function queueVideoTrackingOperation(operation) {
+    const queued = state.videoTrackingQueue.then(operation, operation);
+    state.videoTrackingQueue = queued.catch(() => {});
+    return queued;
+  }
+
+  async function stopVideoTracking() {
+    const tracking = state.videoTracking;
+    if (!tracking) return true;
+    tracking.stopRequested = true;
+    window.clearInterval(tracking.heartbeatTimer);
+    window.clearTimeout(tracking.stopRetryTimer);
+    tracking.heartbeatTimer = null;
+    tracking.stopRetryTimer = null;
+    if (tracking.stopPromise) return tracking.stopPromise;
+
+    tracking.stopPromise = (async () => {
+      if (tracking.heartbeatInFlight) await tracking.heartbeatInFlight;
+      const { error } = await state.client.rpc(
+        "study_time_stop_activity_v1",
+        { p_session_id: tracking.sessionId },
+      );
+      if (error) throw error;
+      if (state.videoTracking === tracking) state.videoTracking = null;
+      return true;
+    })().catch((error) => {
+      console.error("Could not stop the video study-time session.", error);
+      tracking.stopPromise = null;
+      if (state.videoTracking === tracking) {
+        tracking.stopRetryTimer = window.setTimeout(() => {
+          tracking.stopRetryTimer = null;
+          void queueVideoTrackingOperation(stopVideoTracking);
+        }, VIDEO_HEARTBEAT_INTERVAL_MS);
+      }
+      return false;
+    });
+    return tracking.stopPromise;
+  }
+
+  async function sendVideoHeartbeat(tracking) {
+    if (
+      state.videoTracking !== tracking ||
+      tracking.stopRequested ||
+      tracking.heartbeatInFlight
+    ) {
+      return;
+    }
+    if (!canTrackVideoPlayback()) {
+      void queueVideoTrackingOperation(stopVideoTracking);
+      return;
+    }
+
+    tracking.heartbeatInFlight = (async () => {
+      const { error } = await state.client.rpc(
+        "study_time_heartbeat_activity_v1",
+        { p_session_id: tracking.sessionId },
+      );
+      if (error) throw error;
+    })();
+    try {
+      await tracking.heartbeatInFlight;
+    } catch (error) {
+      console.error("The video study-time heartbeat failed.", error);
+      tracking.heartbeatFailed = true;
+    } finally {
+      tracking.heartbeatInFlight = null;
+    }
+    if (tracking.heartbeatFailed) {
+      void queueVideoTrackingOperation(stopVideoTracking);
+    }
+  }
+
+  async function startVideoTracking(video) {
+    if (!isUuid(video?.id)) {
+      console.error("Video study-time tracking was not started because its material ID is invalid.");
+      return false;
+    }
+    try {
+      const previousStopped = await stopVideoTracking();
+      if (!previousStopped || !canTrackVideoPlayback() ||
+        String(state.activeVideo.id) !== String(video.id)) {
+        return false;
+      }
+      const { data, error } = await state.client.rpc(
+        "study_time_start_activity_v1",
+        {
+          p_activity_type: "material",
+          p_resource_id: video.id,
+        },
+      );
+      if (error) throw error;
+
+      const tracking = {
+        sessionId: sessionIdFromRpcResult(data),
+        materialId: String(video.id),
+        heartbeatTimer: null,
+        stopRetryTimer: null,
+        heartbeatInFlight: null,
+        heartbeatFailed: false,
+        stopRequested: false,
+        stopPromise: null,
+      };
+      state.videoTracking = tracking;
+      if (!canTrackVideoPlayback() ||
+        String(state.activeVideo.id) !== tracking.materialId) {
+        await stopVideoTracking();
+        return false;
+      }
+      tracking.heartbeatTimer = window.setInterval(() => {
+        void sendVideoHeartbeat(tracking);
+      }, VIDEO_HEARTBEAT_INTERVAL_MS);
+      return true;
+    } catch (error) {
+      console.error("Could not start the video study-time session.", error);
+      return false;
+    }
+  }
+
+  function startVideoTrackingWhenPlaying() {
+    state.videoPlaybackReady = true;
+    const video = state.activeVideo;
+    if (video) {
+      void queueVideoTrackingOperation(() => startVideoTracking(video));
+    }
+  }
+
+  function pauseVideoTracking() {
+    state.videoPlaybackReady = false;
+    void queueVideoTrackingOperation(stopVideoTracking);
   }
 
   function logVideoDiagnostic(step, details) {
@@ -521,6 +684,7 @@
     const video = state.videos.find((item) => item.id === String(id));
     if (!video) return;
     const request = ++state.playbackRequest;
+    state.videoPlaybackReady = false;
     $("videoPlayer").pause();
     state.activeVideo = video;
     $("modalTitle").textContent = video.title;
@@ -584,8 +748,10 @@
   function closeVideoModal() {
     state.playbackRequest += 1;
     state.activeVideo = null;
+    state.videoPlaybackReady = false;
     const player = $("videoPlayer");
     player.pause();
+    void queueVideoTrackingOperation(stopVideoTracking);
     player.removeAttribute("src");
     player.load();
     player.hidden = true;
@@ -604,6 +770,27 @@
   }
 
   function setupEvents() {
+    const player = $("videoPlayer");
+    player.addEventListener("playing", startVideoTrackingWhenPlaying);
+    player.addEventListener("pause", pauseVideoTracking);
+    player.addEventListener("waiting", pauseVideoTracking);
+    player.addEventListener("stalled", pauseVideoTracking);
+    player.addEventListener("seeking", pauseVideoTracking);
+    player.addEventListener("seeked", () => {
+      if (!player.paused && !player.ended && player.readyState >= 3) {
+        startVideoTrackingWhenPlaying();
+      }
+    });
+    player.addEventListener("ended", pauseVideoTracking);
+    player.addEventListener("error", pauseVideoTracking);
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        pauseVideoTracking();
+      } else if (!player.paused && !player.ended && !player.seeking &&
+        player.readyState >= 3) {
+        startVideoTrackingWhenPlaying();
+      }
+    });
     $("searchInput").addEventListener("input", renderVideos);
     $("subjectFilter").addEventListener("change", renderVideos);
     $("sortFilter").addEventListener("change", renderVideos);
