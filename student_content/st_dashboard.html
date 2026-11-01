@@ -573,6 +573,12 @@
         color: #20a56a;
       }
 
+      .material-blue {
+        background: #e7f0ff;
+
+        color: #3478d4;
+      }
+
       .material-orange {
         background: #fff1dc;
 
@@ -1668,45 +1674,197 @@
         color: #3982cf;
       }
 
-      .study-progress-panel {
+      .study-progress-panel.student-rank-panel {
         display: grid;
-        grid-template-columns: auto 1fr auto;
+        grid-template-columns: minmax(180px, 0.9fr) minmax(260px, 1.5fr) minmax(150px, 0.8fr);
         align-items: center;
-        gap: 15px;
-        min-height: 96px;
-        padding: 17px 20px;
-        background: linear-gradient(100deg, #f4fff9, #ffffff);
+        gap: 26px;
+        min-height: 132px;
+        padding: 22px 26px;
+        background: #fff;
+        border: 1px solid #e3eaf0;
+        border-radius: 10px;
+        box-shadow: 0 8px 24px rgba(31, 67, 83, 0.055);
       }
 
-      .study-progress-icon {
-        width: 40px;
-        height: 40px;
+      .student-rank-identity {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .student-rank-icon {
+        width: 48px;
+        height: 48px;
         display: grid;
         place-items: center;
-        border-radius: 10px;
-        background: #ddf7eb;
+        flex: 0 0 48px;
+        border: 1px solid #d8f1e4;
+        border-radius: 13px;
+        background: #eaf8f0;
         color: #159565;
-        font-size: 18px;
+        font-size: 20px;
       }
 
-      .study-progress-copy h2 {
+      .student-rank-icon[data-level-color="blue"] {
+        background: #e4f0ff;
+        color: #287de5;
+      }
+
+      .student-rank-icon[data-level-color="gold"] {
+        background: #fff2d6;
+        color: #bd8100;
+      }
+
+      .student-rank-icon[data-level-color="purple"] {
+        background: #eee8ff;
+        color: #6541e9;
+      }
+
+      .student-rank-icon[data-level-color="cyan"] {
+        background: #e0f8fb;
+        color: #168799;
+      }
+
+      .student-rank-icon[data-level-color="orange"] {
+        background: #fff0e2;
+        color: #c76a12;
+      }
+
+      .student-rank-identity-copy,
+      .student-rank-progress,
+      .student-rank-account {
+        min-width: 0;
+      }
+
+      .student-rank-title {
+        margin: 0 0 5px;
         color: #1a263a;
-        font-size: 0.92rem;
-        margin-bottom: 4px;
-      }
-      .study-progress-copy p {
-        color: #7b8b98;
-        font-size: 0.63rem;
-        margin-bottom: 11px;
-      }
-      .study-progress-value {
-        color: #1a3450;
-        font-size: 1.1rem;
+        font-size: 1rem;
         font-weight: 800;
+        line-height: 1.2;
       }
 
-      .study-progress-panel .dashboard-progress-track {
+      .student-rank-subtitle {
+        color: #8190a0;
+        font-size: 0.7rem;
+        font-weight: 650;
+      }
+
+      .student-rank-progress-copy {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        color: #53657b;
+        font-size: 0.72rem;
+        font-weight: 700;
+      }
+
+      .student-rank-percent {
+        color: #159565;
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      .student-rank-track-area {
+        position: relative;
+        padding-top: 25px;
+      }
+
+      .student-rank-track-area .dashboard-progress-track {
         height: 9px;
+        background: #eaf0f3;
+      }
+
+      .student-rank-track-area .dashboard-progress-fill {
+        background: linear-gradient(90deg, #159565, #31b982);
+      }
+
+      .student-rank-xp-badge {
+        position: absolute;
+        top: 0;
+        left: 0;
+        transform: translateX(-50%);
+        padding: 3px 7px;
+        border: 1px solid #d8f1e4;
+        border-radius: 999px;
+        background: #effaf4;
+        color: #138557;
+        font-size: 0.59rem;
+        font-weight: 800;
+        line-height: 1.2;
+        white-space: nowrap;
+      }
+
+      .student-rank-xp-badge::after {
+        position: absolute;
+        bottom: -5px;
+        left: 50%;
+        width: 7px;
+        height: 7px;
+        border-right: 1px solid #d8f1e4;
+        border-bottom: 1px solid #d8f1e4;
+        background: #effaf4;
+        content: "";
+        transform: translateX(-50%) rotate(45deg);
+      }
+
+      .student-rank-next {
+        margin: 11px 0 0;
+        color: #77869a;
+        font-size: 0.67rem;
+        line-height: 1.4;
+      }
+
+      .student-rank-next strong {
+        color: #34475f;
+      }
+
+      .student-rank-account {
+        display: grid;
+        gap: 10px;
+        align-content: center;
+        padding-left: 22px;
+        border-left: 1px solid #e8edf1;
+      }
+
+      .student-rank-level {
+        color: #1a3450;
+        font-size: 1.08rem;
+        font-weight: 850;
+        line-height: 1;
+      }
+
+      .student-rank-account-detail {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 3px 5px;
+        color: #77869a;
+        font-size: 0.65rem;
+      }
+
+      .student-rank-account-detail strong {
+        color: #43556d;
+        font-weight: 750;
+      }
+
+      .student-rank-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .student-rank-status::before {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #20a56a;
+        content: "";
+      }
+
+      .student-rank-panel[data-rank-error="true"] .student-rank-xp-badge {
+        display: none;
       }
 
       .study-daily-activity {
@@ -1749,6 +1907,17 @@
         .dashboard-stats {
           grid-template-columns: repeat(3, minmax(0, 1fr));
         }
+
+        .study-progress-panel.student-rank-panel {
+          grid-template-columns: minmax(150px, 0.8fr) minmax(220px, 1.4fr) minmax(120px, 0.7fr);
+          gap: 15px;
+          padding: 18px;
+        }
+
+        .student-rank-account {
+          padding-left: 14px;
+        }
+
         .dashboard-columns {
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
@@ -1824,10 +1993,34 @@
           grid-column: auto;
         }
 
-        .study-progress-panel {
-          grid-template-columns: auto 1fr auto;
-          gap: 10px;
-          padding: 15px;
+        .study-progress-panel.student-rank-panel {
+          grid-template-columns: 1fr;
+          gap: 18px;
+          padding: 18px;
+        }
+
+        .student-rank-identity {
+          gap: 12px;
+        }
+
+        .student-rank-account {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px 14px;
+          padding: 13px 0 0;
+          border-top: 1px solid #e8edf1;
+          border-left: 0;
+        }
+
+        .student-rank-level {
+          grid-column: 1 / -1;
+        }
+
+        .student-rank-progress-copy {
+          font-size: 0.68rem;
+        }
+
+        .student-rank-next {
+          font-size: 0.65rem;
         }
       }
 
@@ -2052,19 +2245,34 @@
           </article>
         </section>
 
-        <section class="study-progress-panel">
-          <div class="study-progress-icon">
-            <i class="fa-solid fa-chart-line"></i>
-          </div>
-          <div class="study-progress-copy">
-            <h2>Verified Learning Progress</h2>
-            <p id="studyProgressText">Loading automatically tracked learning activity…</p>
-            <div class="dashboard-progress-track">
-              <div class="dashboard-progress-fill" id="studyProgressFill" style="width: 0%"></div>
+        <section class="study-progress-panel student-rank-panel" aria-live="polite">
+          <div class="student-rank-identity">
+            <div class="student-rank-icon" id="studentRankIcon" data-level-color="green">
+              <i class="fa-solid fa-seedling" aria-hidden="true"></i>
             </div>
-            <div class="study-daily-activity" id="studyDailyActivity" aria-label="Daily verified learning time this week"></div>
+            <div class="student-rank-identity-copy">
+              <h2 class="student-rank-title" id="studentRankTitle">Beginner Rank</h2>
+              <span class="student-rank-subtitle" id="studentRankSubtitle">Current Rank</span>
+            </div>
           </div>
-          <div class="study-progress-value" id="studyProgressValue">0%</div>
+          <div class="student-rank-progress">
+            <div class="student-rank-progress-copy">
+              <span id="studentRankProgressLabel">Loading rank progress…</span>
+              <span class="student-rank-percent" id="studentRankProgressPercent">—</span>
+            </div>
+            <div class="student-rank-track-area">
+              <span class="student-rank-xp-badge" id="studentRankXpBadge">0 XP</span>
+              <div class="dashboard-progress-track" id="studentRankProgressTrack" role="progressbar" aria-label="XP level progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="Loading rank progress">
+                <div class="dashboard-progress-fill" id="studentRankProgressFill" style="width: 0%"></div>
+              </div>
+            </div>
+            <p class="student-rank-next" id="studentRankRemaining"></p>
+          </div>
+          <div class="student-rank-account">
+            <div class="student-rank-level" id="studentRankLevel">Level —</div>
+            <div class="student-rank-account-detail">User Since: <strong id="studentRankSince">—</strong></div>
+            <div class="student-rank-account-detail student-rank-status">Status: <strong id="studentRankStatus">—</strong></div>
+          </div>
         </section>
       </section>
 
@@ -2811,6 +3019,8 @@
     <script src="../js/student-curriculum.js"></script>
     <script src="../js/student-data.js"></script>
     <script src="../js/downloads-service.js"></script>
+    <script src="../js/student-study-utils.js"></script>
+    <script src="../js/student-xp-level.js"></script>
     <script src="../js/student-dashboard.js"></script>
     <script src="../js/student-layout.js"></script>
   </body>

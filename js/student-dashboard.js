@@ -27,7 +27,8 @@
     quizCount: null,
     sessions: [],
     segments: [],
-    dailyGoalMinutes: null,
+    studyLoading: false,
+    rankXp: null,
     errors: {},
     channel: null,
     authSubscription: null,
@@ -196,35 +197,19 @@
     });
   }
 
-  function getStudyIntervals(now = new Date()) {
-    const sessionsById = new Map(state.sessions.map((session) => [String(session.id), session]));
-    const intervals = [];
-    for (const segment of state.segments) {
-      if (!segment.started_at || !segment.ended_at) continue;
-      const start = parseZonedTimestamp(segment.started_at);
-      const end = parseZonedTimestamp(segment.ended_at);
-      if (!start || !end || end <= start) continue;
-      const session = sessionsById.get(String(segment.session_id));
-      intervals.push({
-        start,
-        end,
-        durationSeconds: Number(segment.duration_seconds),
-        subjectId: session?.subject_id == null ? null : String(session.subject_id),
-      });
+  function getStudyIntervals() {
+    const utils = window.StudentStudyTimeUtils;
+    if (!utils?.getVerifiedSegments) {
+      throw new Error("The verified study-time service did not load.");
     }
-    for (const session of state.sessions) {
-      if (session.status !== "active") continue;
-      const start = parseZonedTimestamp(session.started_at);
-      if (start && start < now) {
-        intervals.push({
-          start,
-          end: now,
-          durationSeconds: null,
-          subjectId: session.subject_id == null ? null : String(session.subject_id),
-        });
-      }
-    }
-    return intervals;
+    return utils.getVerifiedSegments(state.sessions, state.segments).map((segment) => ({
+      start: segment.start,
+      end: segment.end,
+      durationSeconds: segment.durationSeconds,
+      subjectId: segment.session.subject_id == null
+        ? null
+        : String(segment.session.subject_id),
+    }));
   }
 
   function calculateStudyStats(now = new Date()) {
@@ -233,7 +218,8 @@
     const bySubject = new Map();
     let weekSeconds = 0;
     let todaySeconds = 0;
-    for (const interval of getStudyIntervals(now)) {
+    const intervals = getStudyIntervals();
+    for (const interval of intervals) {
       for (const day of days) {
         const start = Math.max(interval.start.getTime(), day.start.getTime());
         const end = Math.min(interval.end.getTime(), day.end.getTime());
@@ -249,10 +235,18 @@
         weekSeconds += seconds;
         byDay.set(day.key, (byDay.get(day.key) || 0) + seconds);
         if (day.key === dateKey(now)) todaySeconds += seconds;
-        if (interval.subjectId) {
-          bySubject.set(interval.subjectId, (bySubject.get(interval.subjectId) || 0) + seconds);
-        }
       }
+    }
+    const weekStart = days[0].start.getTime();
+    const weekEnd = days[days.length - 1].end.getTime();
+    for (const interval of intervals) {
+      if (!interval.subjectId) continue;
+      const start = Math.max(interval.start.getTime(), weekStart);
+      const end = Math.min(interval.end.getTime(), weekEnd);
+      if (end <= start) continue;
+      const duration = interval.end.getTime() - interval.start.getTime();
+      const seconds = interval.durationSeconds * (end - start) / duration;
+      bySubject.set(interval.subjectId, (bySubject.get(interval.subjectId) || 0) + seconds);
     }
     return { days, byDay, bySubject, weekSeconds, todaySeconds };
   }
@@ -262,6 +256,14 @@
     if (!container) return;
     if (state.errors.curriculum) {
       container.innerHTML = `<div class="dashboard-error">Subjects could not be loaded: ${escapeHtml(displayError(state.errors.curriculum))}</div>`;
+      return;
+    }
+    if (state.studyLoading) {
+      container.innerHTML = '<div class="dashboard-loading">Loading verified study time…</div>';
+      return;
+    }
+    if (state.errors.study) {
+      container.innerHTML = `<div class="dashboard-error">Study time could not be loaded: ${escapeHtml(displayError(state.errors.study))}</div>`;
       return;
     }
     if (!state.subjects.length) {
@@ -287,11 +289,37 @@
   }
 
   function getMaterialType(material) {
-    const type = String(material.material_type || "").toLowerCase();
-    if (type === "pdf") return { label: "PDF", icon: "fa-file-pdf" };
-    if (type === "video") return { label: "Video", icon: "fa-file-video" };
-    if (type === "photo" || type === "image") return { label: "Image", icon: "fa-file-image" };
-    return { label: "Document", icon: "fa-file-word" };
+    const type = String(material.material_type || "").trim().toLowerCase();
+    const mimeType = String(material.mime_type || "").trim().toLowerCase();
+    const fileName = String(material.file_name || material.title || "").trim().toLowerCase();
+    const extension = fileName.match(/\.([a-z0-9]+)$/)?.[1] || "";
+    if (type === "video" || mimeType.startsWith("video/") ||
+      ["mp4", "webm", "mov", "m4v", "avi", "mkv"].includes(extension)) {
+      return { label: "Video", icon: "fa-file-video", color: "material-purple" };
+    }
+    if (type === "pdf" || mimeType === "application/pdf" || extension === "pdf") {
+      return { label: "PDF", icon: "fa-file-pdf", color: "material-red" };
+    }
+    if (["photo", "image"].includes(type) || mimeType.startsWith("image/") ||
+      ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "tif", "tiff"].includes(extension)) {
+      return { label: "Image", icon: "fa-file-image", color: "material-green" };
+    }
+    if (["presentation", "ppt", "pptx"].includes(type) ||
+      ["application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation"].includes(mimeType) ||
+      ["ppt", "pptx"].includes(extension)) {
+      return { label: "Presentation", icon: "fa-file-powerpoint", color: "material-orange" };
+    }
+    if (["spreadsheet", "excel", "xls", "xlsx"].includes(type) ||
+      ["application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"].includes(mimeType) ||
+      ["xls", "xlsx", "csv"].includes(extension)) {
+      return { label: "Spreadsheet", icon: "fa-file-excel", color: "material-green" };
+    }
+    if (["document", "doc", "docx"].includes(type) ||
+      ["application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"].includes(mimeType) ||
+      ["doc", "docx"].includes(extension)) {
+      return { label: "Document", icon: "fa-file-word", color: "material-blue" };
+    }
+    return { label: "Document", icon: "fa-file-lines", color: "material-blue" };
   }
 
   function renderMaterials() {
@@ -313,7 +341,7 @@
         : "";
       const actionLabel = type.label === "Document" ? "Download" : "View";
       return `<div class="material">
-        <div class="material-icon" aria-hidden="true"><i class="fa-regular ${type.icon}"></i></div>
+        <div class="material-icon ${type.color}" aria-hidden="true"><i class="fa-solid ${type.icon}"></i></div>
         <div class="material-info">
           <strong>${escapeHtml(material.title || material.file_name || "Untitled material")}</strong>
           <span>${escapeHtml(subject)} · ${type.label}${teacher ? ` · ${teacher}` : ""}</span>
@@ -396,58 +424,101 @@
     }).join("");
   }
 
-  function renderStudyProgress(now = new Date()) {
-    const progressText = $("studyProgressText");
-    const progressValue = $("studyProgressValue");
-    const progressFill = $("studyProgressFill");
-    const activity = $("studyDailyActivity");
-    if (state.errors.study) {
-      if (progressText) progressText.textContent = `Verified learning activity could not be loaded: ${displayError(state.errors.study)}`;
-      if (progressValue) progressValue.textContent = "—";
-      if (progressFill) progressFill.style.width = "0%";
-      if (activity) activity.innerHTML = "";
+  function renderStudentRank() {
+    const title = $("studentRankTitle");
+    const subtitle = $("studentRankSubtitle");
+    const icon = $("studentRankIcon");
+    const progressTrack = $("studentRankProgressTrack");
+    const progressFill = $("studentRankProgressFill");
+    const progressLabel = $("studentRankProgressLabel");
+    const progressPercent = $("studentRankProgressPercent");
+    const remaining = $("studentRankRemaining");
+    const levelNumber = $("studentRankLevel");
+    const xpBadge = $("studentRankXpBadge");
+    const panel = document.querySelector(".student-rank-panel");
+    const since = $("studentRankSince");
+    const status = $("studentRankStatus");
+    if (!title || !subtitle || !icon || !progressTrack || !progressFill) return;
+
+    const userCreatedAt = state.user?.created_at
+      ? new Date(state.user.created_at)
+      : null;
+    since.textContent = userCreatedAt && !Number.isNaN(userCreatedAt.getTime())
+      ? userCreatedAt.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+      : "—";
+    status.textContent = state.user && state.student ? "Active" : "—";
+
+    if (state.errors.rank) {
+      title.textContent = "Your XP Rank";
+      subtitle.textContent = `Rank could not be loaded: ${displayError(state.errors.rank)}`;
+      progressLabel.textContent = "Progress unavailable";
+      progressPercent.textContent = "—";
+      progressFill.style.width = "0%";
+      progressTrack.setAttribute("aria-valuenow", "0");
+      progressTrack.setAttribute("aria-valuetext", "Rank progress unavailable");
+      remaining.textContent = "";
+      if (xpBadge) xpBadge.textContent = "— XP";
+      levelNumber.textContent = "Level —";
+      if (panel) panel.dataset.rankError = "true";
       return;
     }
-    if (state.errors.goal) {
-      if (progressText) progressText.textContent = `Verified activity is loaded, but the daily goal could not be retrieved: ${displayError(state.errors.goal)}`;
+
+    if (state.rankXp == null) {
+      title.textContent = "Loading rank…";
+      subtitle.textContent = "Current Rank";
+      progressLabel.textContent = "Loading rank progress…";
+      progressPercent.textContent = "—";
+      progressFill.style.width = "0%";
+      progressTrack.setAttribute("aria-valuenow", "0");
+      progressTrack.setAttribute("aria-valuetext", "Loading rank progress");
+      remaining.textContent = "";
+      if (xpBadge) xpBadge.textContent = "— XP";
+      levelNumber.textContent = "Level —";
+      if (panel) panel.dataset.rankError = "false";
+      return;
     }
-    const stats = calculateStudyStats(now);
-    const dailyGoalSeconds = state.dailyGoalMinutes == null
-      ? null
-      : state.dailyGoalMinutes * 60;
-    const goalSecondsForWeek = dailyGoalSeconds == null ? null : dailyGoalSeconds * 7;
-    const percent = goalSecondsForWeek
-      ? Math.min(100, Math.round(stats.weekSeconds / goalSecondsForWeek * 100))
-      : null;
-    if (!state.errors.goal && progressText) {
-      const todayGoal = dailyGoalSeconds == null ? "daily goal unavailable" :
-        `${formatDuration(stats.todaySeconds)} of ${formatDuration(dailyGoalSeconds)} today`;
-      progressText.textContent = stats.weekSeconds
-        ? `${formatDuration(stats.weekSeconds)} verified this week · ${todayGoal}.`
-        : `No verified activity recorded this week · ${todayGoal}.`;
+
+    const rankService = window.StudentXpLevel;
+    if (!rankService?.getLevel) {
+      throw new Error("The shared XP level service did not load.");
     }
-    if (progressValue) progressValue.textContent = percent == null ? "—" : `${percent}%`;
-    if (progressFill) progressFill.style.width = `${percent || 0}%`;
-    if (activity) {
-      activity.innerHTML = stats.days.map((day) => {
-        const seconds = stats.byDay.get(day.key) || 0;
-        const height = dailyGoalSeconds
-          ? Math.min(100, Math.round(seconds / dailyGoalSeconds * 100))
-          : (seconds ? 100 : 0);
-        const label = day.start.toLocaleDateString("en-IN", {
-          weekday: "short",
-          timeZone: CALENDAR_TIME_ZONE,
-        });
-        return `<div class="study-day" title="${escapeHtml(label)}: ${escapeHtml(formatDuration(seconds))}">
-          <span class="study-day-bar"><span style="height: ${height}%"></span></span>
-          <small>${escapeHtml(label)}</small>
-        </div>`;
-      }).join("");
+    const { currentXp, current, next, progress, remaining: xpRemaining } =
+      rankService.getLevel(state.rankXp);
+    title.textContent = `${current.title} Rank`;
+    subtitle.textContent = "Current Rank";
+    icon.dataset.levelColor = current.color;
+    icon.innerHTML = `<i class="fa-solid ${current.icon}" aria-hidden="true"></i>`;
+    levelNumber.textContent = `Level ${current.number}`;
+    progressPercent.textContent = `(${Math.round(progress)}% Complete)`;
+    progressFill.style.width = `${progress}%`;
+    if (xpBadge) {
+      xpBadge.textContent = `${currentXp.toLocaleString()} XP`;
+      xpBadge.style.left = `${Math.max(4, Math.min(96, progress))}%`;
+    }
+    if (panel) panel.dataset.rankError = "false";
+    progressTrack.setAttribute("aria-valuenow", String(Math.round(progress)));
+    progressTrack.setAttribute(
+      "aria-valuetext",
+      next
+        ? `${currentXp} XP Coins; ${xpRemaining} needed for ${next.title}`
+        : "Maximum XP level reached",
+    );
+    if (next) {
+      progressLabel.textContent = `${currentXp.toLocaleString()} / ${next.minXp.toLocaleString()} XP`;
+      remaining.textContent = `Next: ${next.title} Rank (requires ${xpRemaining.toLocaleString()} XP)`;
+    } else {
+      progressLabel.textContent = "MAX LEVEL";
+      progressPercent.textContent = "(100% Complete)";
+      remaining.textContent = "You have reached the highest rank.";
     }
   }
 
   function renderSummary(now = new Date()) {
-    const stats = state.errors.study ? null : calculateStudyStats(now);
+    const stats = state.errors.study || state.studyLoading ? null : calculateStudyStats(now);
     $("dashboardSubjectCount").textContent = state.errors.curriculum ? "—" : String(state.subjects.length);
     const relevantClasses = state.classes.filter((item) => {
       if (!isClassRelevant(item)) return false;
@@ -472,12 +543,14 @@
     if (state.student) {
       state.subjectsById = new Map(state.subjects.map((subject) => [String(subject.id), subject]));
       state.subjectIds = new Set(state.subjects.map((subject) => String(subject.id)));
-      const stats = state.errors.study ? { bySubject: new Map() } : calculateStudyStats(now);
+      const stats = state.errors.study || state.studyLoading
+        ? { bySubject: new Map() }
+        : calculateStudyStats(now);
       renderSubjects(stats);
       renderSummary(now);
       renderMaterials();
       renderClasses(now);
-      renderStudyProgress(now);
+      renderStudentRank();
     }
     const todayElement = $("todayDate");
     if (todayElement) {
@@ -617,6 +690,59 @@
     delete state.errors.quizzes;
   }
 
+  async function loadStudyData(sequence) {
+    const sessions = await readAll((from, to) => state.client
+      .from("study_sessions")
+      .select("id, student_id, subject_id, status")
+      .eq("student_id", state.student.id)
+      .order("id", { ascending: true })
+      .range(from, to));
+    if (sequence !== state.loadSequence) return;
+
+    const sessionIds = sessions
+      .map((session) => String(session.id))
+      .filter(Boolean);
+    const segments = [];
+    for (let index = 0; index < sessionIds.length; index += 100) {
+      const batch = sessionIds.slice(index, index + 100);
+      const rows = await readAll((from, to) => state.client
+        .from("study_session_segments")
+        .select("id, session_id, started_at, ended_at, duration_seconds")
+        .in("session_id", batch)
+        .order("id", { ascending: true })
+        .range(from, to));
+      if (sequence !== state.loadSequence) return;
+      segments.push(...rows);
+    }
+
+    if (sequence !== state.loadSequence) return;
+    state.sessions = sessions;
+    state.segments = segments;
+    state.studyLoading = false;
+    delete state.errors.study;
+  }
+
+  async function loadAchievementXp(sequence) {
+    const queryForStudent = (studentId) => readAll((from, to) => state.client
+      .from("student_achievements")
+      .select("achievement_id, xp_earned")
+      .eq("student_id", studentId)
+      .order("unlocked_at", { ascending: false })
+      .order("achievement_id", { ascending: true })
+      .range(from, to));
+    let achievements = await queryForStudent(state.user.id);
+    if (sequence !== state.loadSequence) return;
+    if (!achievements.length && String(state.student.id) !== String(state.user.id)) {
+      achievements = await queryForStudent(state.student.id);
+      if (sequence !== state.loadSequence) return;
+    }
+    state.rankXp = achievements.reduce(
+      (total, achievement) => total + (Number(achievement.xp_earned) || 0),
+      0,
+    );
+    delete state.errors.rank;
+  }
+
   async function refreshDashboard(showLoading = false) {
     if (!state.client || !state.user || !state.student) return;
     const sequence = ++state.loadSequence;
@@ -626,11 +752,13 @@
       ["materials", "materials", () => loadMaterials(sequence)],
       ["classes", "classes", () => loadClasses(sequence)],
       ["quizzes", "quizzes", () => loadQuizzes(now, sequence)],
+      ["study", "verified study time", () => loadStudyData(sequence)],
+      ["rank", "student rank", () => loadAchievementXp(sequence)],
     ];
     await Promise.all(tasks.map(async ([key, label, load]) => {
       try {
         await load();
-        if (sequence === state.loadSequence && key !== "study") delete state.errors[key];
+        if (sequence === state.loadSequence) delete state.errors[key];
       } catch (error) {
         if (sequence !== state.loadSequence) return;
         recordSourceError(key, error, label);
@@ -642,6 +770,12 @@
           state.joinableClassIds = new Set();
         } else if (key === "quizzes") {
           state.quizCount = null;
+        } else if (key === "study") {
+          state.sessions = [];
+          state.segments = [];
+          state.studyLoading = false;
+        } else if (key === "rank") {
+          state.rankXp = null;
         }
       }
     }));
@@ -651,7 +785,7 @@
     if (errors.length) {
       setSyncStatus(`Some dashboard data is unavailable (${errors.map(([key]) => key).join(", ")}).`, true);
     } else {
-      setSyncStatus(state.realtimeReady ? "Live updates active" : "Dashboard updated");
+      setSyncStatus("");
     }
   }
 
@@ -671,10 +805,10 @@
     state.subjectIds = new Set(state.subjects.map((subject) => String(subject.id)));
     state.subjectsById = new Map(state.subjects.map((subject) => [String(subject.id), subject]));
     state.errors = {};
-    state.errors.study = new Error("Study Time backend is disconnected.");
     state.sessions = [];
     state.segments = [];
-    state.dailyGoalMinutes = null;
+    state.studyLoading = true;
+    state.rankXp = null;
     renderAll();
     await refreshDashboard(true);
   }
@@ -709,10 +843,16 @@
     subscribeTable("quizzes");
     subscribeTable("students", `user_id=eq.${state.user.id}`);
     subscribeTable("subjects");
+    subscribeTable("study_sessions", `student_id=eq.${state.student.id}`);
+    subscribeTable("study_session_segments");
+    subscribeTable("student_achievements", `student_id=eq.${state.student.id}`);
+    if (String(state.student.id) !== String(state.user.id)) {
+      subscribeTable("student_achievements", `student_id=eq.${state.user.id}`);
+    }
     state.channel = channel.subscribe((status, error) => {
       if (status === "SUBSCRIBED") {
         state.realtimeReady = true;
-        if (!Object.keys(state.errors).length) setSyncStatus("Live updates active");
+        if (!Object.keys(state.errors).length) setSyncStatus("");
       } else if (["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].includes(status)) {
         state.realtimeReady = false;
         console.error("Student dashboard Realtime subscription is unavailable.", error || status);
@@ -802,7 +942,8 @@
     state.quizCount = null;
     state.sessions = [];
     state.segments = [];
-    state.dailyGoalMinutes = null;
+    state.studyLoading = false;
+    state.rankXp = null;
     state.errors = {};
     state.loadSequence += 1;
     $("dashboardSubjectCount").textContent = "—";
@@ -813,10 +954,18 @@
     $("registeredSubjectsList").innerHTML = '<div class="dashboard-empty">Sign in to view your subjects.</div>';
     $("recentMaterialsList").innerHTML = '<div class="dashboard-empty">Sign in to view your materials.</div>';
     $("todayClassesList").innerHTML = '<div class="dashboard-empty">Sign in to view your classes.</div>';
-    $("studyProgressText").textContent = "Sign in to view your study activity.";
-    $("studyProgressValue").textContent = "—";
-    $("studyProgressFill").style.width = "0%";
-    $("studyDailyActivity").innerHTML = "";
+    $("studentRankTitle").textContent = "Your XP Rank";
+    $("studentRankSubtitle").textContent = "Sign in to view your current rank.";
+    $("studentRankIcon").dataset.levelColor = "green";
+    $("studentRankIcon").innerHTML = '<i class="fa-solid fa-seedling" aria-hidden="true"></i>';
+    $("studentRankLevel").textContent = "Level —";
+    $("studentRankProgressLabel").textContent = "—";
+    $("studentRankProgressPercent").textContent = "—";
+    $("studentRankProgressFill").style.width = "0%";
+    $("studentRankXpBadge").textContent = "— XP";
+    $("studentRankRemaining").textContent = "";
+    $("studentRankSince").textContent = "—";
+    $("studentRankStatus").textContent = "—";
     setSyncStatus("Sign in to load your dashboard.", true);
   }
 
@@ -844,8 +993,13 @@
     $("registeredSubjectsList").innerHTML = message;
     $("recentMaterialsList").innerHTML = message;
     $("todayClassesList").innerHTML = message;
-    $("studyProgressText").textContent = `Dashboard data could not be loaded: ${displayError(error)}`;
-    $("studyProgressValue").textContent = "—";
+    $("studentRankSubtitle").textContent = `Rank could not be loaded: ${displayError(error)}`;
+    $("studentRankLevel").textContent = "Level —";
+    $("studentRankProgressLabel").textContent = "Progress unavailable";
+    $("studentRankProgressPercent").textContent = "—";
+    $("studentRankProgressFill").style.width = "0%";
+    $("studentRankXpBadge").textContent = "— XP";
+    $("studentRankRemaining").textContent = "";
   }
 
   function init() {

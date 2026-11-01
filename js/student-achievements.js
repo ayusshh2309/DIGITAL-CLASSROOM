@@ -618,38 +618,24 @@
     renderBadges();
   }
 
-  const XP_LEVELS = [
-    { number: 1, title: "Beginner", minXp: 0, icon: "fa-seedling", color: "green" },
-    { number: 2, title: "Learner", minXp: 100, icon: "fa-book-open", color: "blue" },
-    { number: 3, title: "Achiever", minXp: 300, icon: "fa-star", color: "gold" },
-    { number: 4, title: "Scholar", minXp: 600, icon: "fa-graduation-cap", color: "purple" },
-    { number: 5, title: "Expert", minXp: 1000, icon: "fa-gem", color: "cyan" },
-    { number: 6, title: "Champion", minXp: 1500, icon: "fa-trophy", color: "gold" },
-    { number: 7, title: "Master", minXp: 2500, icon: "fa-crown", color: "purple" },
-    { number: 8, title: "Legend", minXp: 5000, icon: "fa-fire", color: "orange" },
-  ];
-
   function renderXpLevel(xp) {
-    const currentXp = Number.isFinite(xp) ? Math.max(0, xp) : 0;
-    let levelIndex = 0;
-    for (let index = 1; index < XP_LEVELS.length; index += 1) {
-      if (currentXp < XP_LEVELS[index].minXp) break;
-      levelIndex = index;
+    const levelService = window.StudentXpLevel;
+    if (!levelService?.getLevel) {
+      throw new Error("The shared XP level service did not load.");
     }
-    const currentLevel = XP_LEVELS[Math.max(0, levelIndex)];
-    const nextLevel = XP_LEVELS[currentLevel.number];
+    const { currentXp, current, next, progress, remaining } = levelService.getLevel(xp);
     const icon = $("xpLevelIcon");
     const progressTrack = $("xpLevelProgressTrack");
     const progressFill = $("xpLevelProgressFill");
     if (!icon || !progressTrack || !progressFill) return;
 
-    $("xpLevelTitle").textContent = currentLevel.title;
-    $("xpLevelNumber").textContent = `Level ${currentLevel.number}`;
+    $("xpLevelTitle").textContent = current.title;
+    $("xpLevelNumber").textContent = `Level ${current.number}`;
     $("xpLevelBalance").textContent = `${currentXp.toLocaleString()} XP Coins`;
-    icon.dataset.levelColor = currentLevel.color;
-    icon.innerHTML = `<i class="fa-solid ${currentLevel.icon}" aria-hidden="true"></i>`;
+    icon.dataset.levelColor = current.color;
+    icon.innerHTML = `<i class="fa-solid ${current.icon}" aria-hidden="true"></i>`;
 
-    if (!nextLevel) {
+    if (!next) {
       $("xpLevelProgressLabel").textContent = "MAX LEVEL";
       $("xpLevelPercent").textContent = "100%";
       $("xpLevelRemaining").textContent = "You reached the highest XP level.";
@@ -659,22 +645,16 @@
       return;
     }
 
-    const progress = Math.max(0, Math.min(
-      100,
-      (currentXp - currentLevel.minXp) /
-        (nextLevel.minXp - currentLevel.minXp) * 100,
-    ));
-    const remaining = Math.max(0, nextLevel.minXp - currentXp);
     $("xpLevelProgressLabel").textContent =
-      `${currentXp.toLocaleString()} / ${nextLevel.minXp.toLocaleString()} XP`;
+      `${currentXp.toLocaleString()} / ${next.minXp.toLocaleString()} XP`;
     $("xpLevelPercent").textContent = `${Math.round(progress)}%`;
     $("xpLevelRemaining").textContent =
-      `${remaining.toLocaleString()} XP Coins to ${nextLevel.title}`;
+      `${remaining.toLocaleString()} XP Coins to ${next.title}`;
     progressFill.style.width = `${progress}%`;
     progressTrack.setAttribute("aria-valuenow", String(Math.round(progress)));
     progressTrack.setAttribute(
       "aria-valuetext",
-      `${currentXp} XP Coins; ${remaining} needed for ${nextLevel.title}`,
+      `${currentXp} XP Coins; ${remaining} needed for ${next.title}`,
     );
   }
 

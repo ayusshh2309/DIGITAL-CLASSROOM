@@ -1,7 +1,6 @@
 (() => {
   const DEFAULT_GOAL_MINUTES = 360;
   const PAGE_SIZE = 1000;
-  const SESSION_STATUSES = new Set(["active", "completed", "abandoned", "paused"]);
   const STREAK_THRESHOLD_SECONDS = 30 * 60;
   const CALENDAR_TIME_ZONE = "Asia/Kolkata";
   const calendarFormatter = new Intl.DateTimeFormat("en-US", {
@@ -82,21 +81,6 @@
   function dateKey(date) {
     const parts = indiaDateTimeParts(date);
     return `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
-  }
-
-  function parseUtcTimestamp(value) {
-    const raw = String(value ?? "").trim();
-    const timestamp = raw.replace(/^(\d{4}-\d{2}-\d{2})\s+/, "$1T");
-    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}(?::?\d{2})?)$/i.test(timestamp)) {
-      return null;
-    }
-
-    const normalized = timestamp.replace(
-      /([+-])(\d{2})(?::?(\d{2}))?$/,
-      (_, sign, hours, minutes = "00") => `${sign}${hours}:${minutes}`,
-    );
-    const milliseconds = Date.parse(normalized);
-    return Number.isFinite(milliseconds) ? new Date(milliseconds) : null;
   }
 
   function indiaDateTimeParts(date) {
@@ -182,76 +166,11 @@
   }
 
   function verifiedSegments() {
-    const sessionsById = new Map(
-      state.sessions
-        .filter((session) => SESSION_STATUSES.has(String(session.status || "").toLowerCase()))
-        .map((session) => [String(session.id), session]),
-    );
-    const seenIds = new Set();
-    const seenRanges = new Set();
-    const segments = [];
-
-    for (const segment of state.segments) {
-      const session = sessionsById.get(String(segment.session_id));
-      if (!session) continue;
-
-      const durationSeconds = Number(segment.duration_seconds);
-      const start = parseUtcTimestamp(segment.started_at);
-      if (
-        !Number.isFinite(durationSeconds) ||
-        durationSeconds <= 0 ||
-        !start ||
-        !Number.isFinite(start.getTime())
-      ) {
-        continue;
-      }
-
-      const end = segment.ended_at
-        ? parseUtcTimestamp(segment.ended_at)
-        : new Date(start.getTime() + durationSeconds * 1000);
-      if (!end || !Number.isFinite(end.getTime()) || end <= start) continue;
-
-      if (segment.id != null) {
-        const id = String(segment.id);
-        if (seenIds.has(id)) continue;
-        seenIds.add(id);
-      }
-      const rangeKey = [
-        session.id,
-        start.getTime(),
-        end.getTime(),
-        durationSeconds,
-      ].join(":");
-      if (seenRanges.has(rangeKey)) continue;
-      seenRanges.add(rangeKey);
-
-      segments.push({
-        session,
-        start,
-        end,
-        durationSeconds,
-      });
+    const utils = window.StudentStudyTimeUtils;
+    if (!utils?.getVerifiedSegments) {
+      throw new Error("The verified study-time service did not load.");
     }
-    segments.sort((left, right) =>
-      left.start.getTime() - right.start.getTime() ||
-      String(left.session.id).localeCompare(String(right.session.id)),
-    );
-    const nonOverlappingSegments = [];
-    let coveredUntil = -Infinity;
-    for (const segment of segments) {
-      const originalStart = segment.start.getTime();
-      const originalEnd = segment.end.getTime();
-      if (originalEnd <= coveredUntil) continue;
-      if (originalStart < coveredUntil) {
-        const originalInterval = originalEnd - originalStart;
-        const retainedInterval = originalEnd - coveredUntil;
-        segment.durationSeconds *= retainedInterval / originalInterval;
-        segment.start = new Date(coveredUntil);
-      }
-      coveredUntil = segment.end.getTime();
-      nonOverlappingSegments.push(segment);
-    }
-    return nonOverlappingSegments;
+    return utils.getVerifiedSegments(state.sessions, state.segments);
   }
 
   function addSegmentToDailyTotals(totals, segment, rangeStart, rangeEnd) {
