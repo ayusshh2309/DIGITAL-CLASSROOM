@@ -1,11 +1,13 @@
 (() => {
   const PAGE_SIZE = 1000;
   const STUDY_SESSION_STATUSES = new Set(["active", "completed", "abandoned", "paused"]);
+  const STREAK_THRESHOLD_SECONDS = 30 * 60;
   const $ = (id) => document.getElementById(id);
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
-  const state = { client: null, user: null, studentId: null, definitions: [], unlocked: [], metrics: null, progressErrors: [] };
+  const state = { client: null, user: null, studentId: null, definitions: [], unlocked: [], metrics: null, progressErrors: [], loaded: false };
 
   function setStatus(message, isError = false) {
+    if (isError && !state.loaded) renderAchievementProgressError(message);
     const status = $("achievementStatus");
     if (!status) return;
     status.textContent = message || "";
@@ -18,6 +20,17 @@
     const grid = $("badgesGrid");
     if (!grid) return;
     grid.innerHTML = `<p class="empty-state"${isError ? ' role="alert"' : ' role="status"'}>${escapeHtml(message)}</p>`;
+  }
+
+  function setRecentMessage(message, type = "loading") {
+    const recent = $("recentAchievements");
+    if (!recent) return;
+    const icons = {
+      loading: "fa-spinner fa-spin",
+      empty: "fa-award",
+      error: "fa-triangle-exclamation",
+    };
+    recent.innerHTML = `<div class="recent-state recent-state-${type}" role="${type === "error" ? "alert" : "status"}"><span class="recent-state-icon"><i class="fa-solid ${icons[type] || icons.empty}" aria-hidden="true"></i></span><span>${escapeHtml(message)}</span></div>`;
   }
 
   function renderRegistrationContext(student) {
@@ -70,7 +83,7 @@
 
   function calculateStreak(dailyStudySeconds) {
     const days = [...dailyStudySeconds.entries()]
-      .filter(([, seconds]) => seconds > 0)
+      .filter(([, seconds]) => seconds >= STREAK_THRESHOLD_SECONDS)
       .map(([day]) => day)
       .sort()
       .reverse();
@@ -88,6 +101,25 @@
       if (dayNumber(days[index - 1]) - dayNumber(days[index]) === 86400000) current += 1; else break;
     }
     return { current, best: Math.max(best, current) };
+  }
+
+  function addDailyStudySeconds(totals, segment, durationSeconds) {
+    let cursor = new Date(segment.started_at);
+    const end = segment.ended_at
+      ? new Date(segment.ended_at)
+      : new Date(cursor.getTime() + durationSeconds * 1000);
+    if (!Number.isFinite(cursor.getTime()) || !Number.isFinite(end.getTime()) || end <= cursor) return false;
+    const intervalMilliseconds = end.getTime() - cursor.getTime();
+    while (cursor < end) {
+      const day = dateKey(cursor);
+      if (!day) return false;
+      const nextMidnight = Date.parse(`${day}T00:00:00Z`) - 19800000 + 86400000;
+      const intervalEnd = Math.min(nextMidnight, end.getTime());
+      const seconds = durationSeconds * (intervalEnd - cursor.getTime()) / intervalMilliseconds;
+      totals.set(day, (totals.get(day) || 0) + seconds);
+      cursor = new Date(intervalEnd);
+    }
+    return true;
   }
 
   function metricsFrom(rows) {
@@ -134,24 +166,22 @@
     for (const segment of rows.segments) {
       const session = sessionsById.get(String(segment.session_id));
       const duration = Number(segment.duration_seconds);
-      const endedAt = new Date(segment.ended_at || segment.started_at);
       if (
         !session ||
         !STUDY_SESSION_STATUSES.has(String(session.status || "").toLowerCase()) ||
         !Number.isFinite(duration) ||
-        duration <= 0 ||
-        !Number.isFinite(endedAt.getTime())
+        duration <= 0
       ) continue;
 
       const sessionId = String(session.id);
-      const day = dateKey(endedAt);
-      if (!day) continue;
-      dailyStudySeconds.set(day, (dailyStudySeconds.get(day) || 0) + duration);
+      if (!addDailyStudySeconds(dailyStudySeconds, segment, duration)) continue;
+      const endedAt = new Date(segment.ended_at);
       if (session.status === "completed") completedStudySessions.add(sessionId);
       totalStudySeconds += duration;
-      const daySessions = sessionsByDay.get(day) || new Set();
+      const lastDay = dateKey(endedAt);
+      const daySessions = sessionsByDay.get(lastDay) || new Set();
       daySessions.add(sessionId);
-      sessionsByDay.set(day, daySessions);
+      sessionsByDay.set(lastDay, daySessions);
       if (endedAt.getTime() >= currentWeek) weeklyStudySeconds += duration;
     }
 
@@ -174,7 +204,8 @@
     if (title.includes("perfect score")) return metrics.perfectScoreQuizzes;
     if (title.includes("top performer")) return metrics.highScoreQuizzes;
     if (title.includes("streak")) return metrics.studyStreak;
-    if (title.includes("quiz master") || title.includes("high score")) return metrics.highScoreQuizzes;
+    if (title.includes("quiz master")) return metrics.submittedQuizzes;
+    if (title.includes("high score")) return metrics.highScoreQuizzes;
     if (title.includes("quiz")) return metrics.submittedQuizzes;
     if (title.includes("first hour") || title.includes("dedicated learner") || title.includes("study champion")) {
       return metrics.totalStudyMinutes;
@@ -185,6 +216,130 @@
     if (title.includes("quick learner")) return metrics.sessionsToday;
     if (title.includes("session") || title.includes("first step")) return metrics.completedSessions;
     return null;
+  }
+
+  function nextAchievementProgress(definition) {
+    const rawCurrent = metricValue(definition);
+    if (!Number.isFinite(rawCurrent)) return null;
+    const title = String(definition.title || "").toLowerCase();
+    const requirement = Number(definition.requirement_value);
+    if (!Number.isFinite(requirement) || requirement <= 0) return null;
+
+    let current = rawCurrent;
+    let target = requirement;
+    let unit = "milestones";
+    if (title.includes("streak")) {
+      unit = "days";
+    } else if (title.includes("first hour") || title.includes("dedicated learner") ||
+      title.includes("study champion") || title.includes("time champion") ||
+      title.includes("study time") || title.includes("weekly")) {
+      current = rawCurrent / 60;
+      target = requirement >= 60 ? requirement / 60 : requirement;
+      unit = "hours";
+    } else if (title.includes("subject explorer")) {
+      unit = "subjects";
+    } else if (title.includes("quiz")) {
+      unit = "quizzes";
+    } else if (title.includes("session")) {
+      unit = "sessions";
+    }
+
+    current = Math.min(current, target);
+    return {
+      current,
+      target,
+      ratio: Math.max(0, Math.min(1, current / target)),
+      unit,
+    };
+  }
+
+  function displayProgressNumber(value) {
+    return Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/, "");
+  }
+
+  function renderNextAchievement() {
+    const panel = $("nextAchievementPanel");
+    const completePanel = $("nextAchievementComplete");
+    const milestones = $("nextMilestones");
+    if (!state.definitions.length) {
+      panel.hidden = false;
+      completePanel.classList.remove("is-visible");
+      $("nextAchievementName").textContent = "Finding your next milestone…";
+      $("nextAchievementDescription").textContent = "Your progress will appear here.";
+      $("nextProgressLabel").textContent = "—";
+      $("nextRemainingLabel").textContent = "Loading progress…";
+      return;
+    }
+    const locked = state.definitions.filter((definition) => !unlockedFor(definition));
+    if (!locked.length && state.definitions.length) {
+      panel.hidden = true;
+      completePanel.classList.add("is-visible");
+      return;
+    }
+
+    completePanel.classList.remove("is-visible");
+    panel.hidden = false;
+    const candidates = locked
+      .map((definition) => ({ definition, progress: nextAchievementProgress(definition) }))
+      .filter((entry) => entry.progress)
+      .sort((a, b) => {
+        const aStarted = a.progress.current > 0;
+        const bStarted = b.progress.current > 0;
+        if (aStarted !== bStarted) return aStarted ? -1 : 1;
+        return b.progress.ratio - a.progress.ratio;
+      });
+    const selected = candidates[0] || { definition: locked[0], progress: null };
+    const { definition, progress } = selected;
+
+    $("nextAchievementName").textContent = definition.title;
+    $("nextAchievementDescription").textContent = progress
+      ? definition.description
+      : /knowledge seeker|bookworm|material|resource/i.test(definition.title)
+        ? "Completion tracking is not implemented yet."
+        : "Progress is currently unavailable.";
+    $("nextAchievementIcon").innerHTML = achievementIllustration(definition).svg;
+    $("nextAchievementIcon").setAttribute("aria-label", `${definition.title} badge illustration`);
+
+    const requirement = Number(definition.requirement_value) || 0;
+    if (!progress) {
+      $("nextProgressLabel").textContent = "Unavailable";
+      $("nextRemainingLabel").textContent = "Progress unavailable";
+      milestones.querySelectorAll(".next-milestone").forEach((milestone) => {
+        milestone.classList.remove("complete");
+        milestone.querySelector(".next-milestone-fill").style.width = "0%";
+      });
+      milestones.setAttribute("aria-label", "Achievement progress is unavailable");
+      return;
+    }
+
+    const currentText = displayProgressNumber(progress.current);
+    const targetText = displayProgressNumber(progress.target);
+    const remaining = Math.max(0, progress.target - progress.current);
+    const remainingUnit = remaining === 1
+      ? progress.unit.replace(/s$/, "")
+      : progress.unit;
+    $("nextProgressLabel").textContent = `${currentText} / ${targetText} ${progress.unit}`;
+    $("nextRemainingLabel").textContent = remaining > 0
+      ? `${displayProgressNumber(remaining)} more ${remainingUnit} to go`
+      : "Milestone reached";
+    const steps = [...milestones.querySelectorAll(".next-milestone")];
+    steps.forEach((step, index) => {
+      const stepProgress = Math.max(0, Math.min(1, progress.ratio * steps.length - index));
+      step.classList.toggle("complete", stepProgress >= 1);
+      step.querySelector(".next-milestone-fill").style.width = `${Math.round(stepProgress * 100)}%`;
+    });
+    milestones.setAttribute(
+      "aria-label",
+      `${currentText} of ${targetText} ${progress.unit} completed`,
+    );
+    const achievementId = String(definition.id);
+    if (panel.dataset.achievementId && panel.dataset.achievementId !== achievementId) {
+      panel.classList.remove("is-changing");
+      void panel.offsetWidth;
+      panel.classList.add("is-changing");
+      window.setTimeout(() => panel.classList.remove("is-changing"), 400);
+    }
+    panel.dataset.achievementId = achievementId;
   }
 
   async function loadOptionalRows(label, query) {
@@ -275,6 +430,7 @@
         rows.definitions.find((definition) => String(definition.id) === String(item.achievement_id)) ||
         null,
     }));
+    state.loaded = true;
     render();
   }
 
@@ -316,8 +472,8 @@
       type = "calendar-flame";
       art = '<rect x="20" y="24" width="56" height="51" rx="8" fill="#fff" stroke="#4777c7" stroke-width="3"/><path d="M20 38h56" stroke="#4777c7" stroke-width="7"/><path d="M33 18v12m30-12v12" stroke="#f08a4b" stroke-width="5" stroke-linecap="round"/><path d="M49 68c-10 0-15-7-12-15 1-4 5-7 6-13 6 4 8 9 8 13 3-3 4-6 4-9 8 7 11 15 7 20-3 3-7 4-13 4Z" fill="url(#orange-' + id + ')" stroke="#dc7131" stroke-width="2"/><path d="M49 64c-4-3-3-7 1-11 3 5 5 8 1 11Z" fill="#fff3b0"/>';
     } else if (/3.day|three.day/.test(title)) {
-      type = "flames";
-      art = '<path d="M30 73c-11-3-13-15-5-24 0 7 5 7 5 12 5-8 7-14 6-23 12 10 17 20 12 29-3 5-10 8-18 6Z" fill="url(#orange-' + id + ')"/><path d="M49 73c-11-3-13-15-5-24 0 7 5 7 5 12 5-8 7-14 6-23 12 10 17 20 12 29-3 5-10 8-18 6Z" fill="url(#red-' + id + ')"/><path d="M67 73c-11-3-13-15-5-24 0 7 5 7 5 12 5-8 7-14 6-23 12 10 17 20 12 29-3 5-10 8-18 6Z" fill="url(#gold-' + id + ')"/><path d="M31 67c-4-4-2-8 2-12 2 4 3 7 0 11m18 1c-4-4-2-8 2-12 2 4 3 7 0 11m18 0c-4-4-2-8 2-12 2 4 3 7 0 11" fill="#fff4b1"/>';
+      type = "calendar-flame";
+      art = '<rect x="20" y="25" width="56" height="50" rx="8" fill="#fff" stroke="#c58b27" stroke-width="3"/><path d="M20 39h56" stroke="#e1ae48" stroke-width="7"/><path d="M33 19v12m30-12v12" stroke="#bb7a22" stroke-width="5" stroke-linecap="round"/><text x="48" y="63" text-anchor="middle" font-family="Arial,sans-serif" font-size="24" font-weight="800" fill="#a96b1c">3</text><path d="M49 37c-5-7-1-12 4-18 0 6 6 8 8 14 3 8-3 15-11 15-7 0-12-5-10-12 1-4 4-6 4-10 4 3 5 7 5 11Z" fill="url(#orange-' + id + ')" stroke="#d96c31" stroke-width="1.8"/><path d="M50 43c-2-3 0-6 3-8 2 3 3 6 0 8Z" fill="#fff3b0"/>';
     } else if (/subject explorer|compass/.test(title)) {
       type = "compass";
       art = '<circle cx="48" cy="48" r="31" fill="url(#blue-' + id + ')" stroke="#3767a7" stroke-width="3"/><circle cx="48" cy="48" r="23" fill="#f8fcff" stroke="#9fc6e5" stroke-width="2"/><path d="m57 36-6 17-17 7 6-17 17-7Z" fill="#ed6b55" stroke="#b94a45" stroke-width="2" stroke-linejoin="round"/><circle cx="48" cy="48" r="3.5" fill="#f5bd46"/><path d="m25 25 4 4m38 38 4 4m0-46-4 4m-38 38-4 4" stroke="#fff" stroke-width="3" stroke-linecap="round"/><circle cx="70" cy="27" r="5" fill="#f5bd46"/>';
@@ -350,10 +506,16 @@
   function relativeDate(value) {
     const date = new Date(value);
     if (!Number.isFinite(date.getTime())) return "Date unavailable";
-    const days = Math.floor((Date.now() - date.getTime()) / 86400000);
+    const days = (Date.parse(`${dateKey(new Date())}T00:00:00Z`) -
+      Date.parse(`${dateKey(date)}T00:00:00Z`)) / 86400000;
     if (days <= 0) return "Today";
     if (days === 1) return "Yesterday";
-    return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    return date.toLocaleDateString("en-GB", {
+      timeZone: "Asia/Kolkata",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
   }
 
   function formatUnlockDate(value) {
@@ -399,7 +561,11 @@
   }
 
   function render() {
-    const earned = state.definitions.filter(unlockedFor).length;
+    if (!state.loaded) return;
+    const earnedIds = new Set(state.definitions
+      .filter(unlockedFor)
+      .map((definition) => String(definition.id)));
+    const earned = earnedIds.size;
     const total = state.definitions.length;
     const completion = percent(earned, total);
     const metrics = state.metrics || {};
@@ -418,60 +584,79 @@
     $("challengesPeriod").textContent = "Configured challenges";
     $("achievementRank").textContent = "Not ranked";
     $("rankDescription").textContent = "Ranking is not enabled";
-    $("completionPercent").textContent = `${completion}%`;
-    $("progressDescription").textContent = `You have unlocked ${earned} out of ${total} available achievements.`;
-    $("progressFill").style.width = `${completion}%`;
-    $("earnedLabel").textContent = `${earned} earned`;
-    $("remainingLabel").textContent = `${Math.max(0, total - earned)} remaining`;
-    $("categoryCard").style.display = total ? "" : "none";
-    const lockedDefinitions = state.definitions.filter((definition) => !unlockedFor(definition));
-    const locked = lockedDefinitions
-      .filter((definition) => Number.isFinite(metricValue(definition)))
-      .sort((a, b) => metricValue(b) / Number(b.requirement_value) - metricValue(a) / Number(a.requirement_value))[0]
-      || lockedDefinitions[0];
-    if (locked) {
-      const value = metricValue(locked);
-      const available = Number.isFinite(value);
-      const current = available ? Math.min(value, Number(locked.requirement_value)) : 0;
-      $("nextAchievementName").textContent = locked.title;
-      $("nextAchievementDescription").textContent = available
-        ? locked.description
-        : /knowledge seeker|bookworm|material|resource/i.test(locked.title)
-          ? "Completion tracking is not implemented yet."
-          : "Progress is currently unavailable.";
-      $("nextAchievementIcon").className = `fa-solid ${locked.icon}`;
-      $("nextProgressFill").style.width = `${available ? percent(current, Number(locked.requirement_value)) : 0}%`;
-      $("nextProgressLabel").textContent = available ? `${current} / ${locked.requirement_value}` : "Unavailable";
-      $("nextRemainingLabel").textContent = available
-        ? `${Math.max(0, Number(locked.requirement_value) - current)} more`
-        : "Progress unavailable";
-    } else {
-      $("nextProgressFill").style.width = "0%";
-      $("nextProgressLabel").textContent = "0 / 0";
-      $("nextRemainingLabel").textContent = "0 more";
-    }
+    renderAchievementProgress(earnedIds, completion);
+    renderNextAchievement();
     const recent = [...state.unlocked].sort((a, b) => new Date(b.unlocked_at) - new Date(a.unlocked_at)).slice(0, 5).map((item) => {
       const definition = item.definition ||
         state.definitions.find((entry) => String(entry.id) === String(item.achievement_id));
       if (!definition) return "";
-      return `<div class="achievement-item"><div class="achievement-left"><div class="badge"><i class="fa-solid ${escapeHtml(definition.icon)}"></i></div><div class="achievement-info"><strong>${escapeHtml(definition.title)}</strong><span>${escapeHtml(definition.description)}</span></div></div><div class="earned-date">${relativeDate(item.unlocked_at)}</div></div>`;
+      const illustration = achievementIllustration(definition);
+      const xp = Number(item.xp_earned);
+      const xpIndicator = Number.isFinite(xp) && xp > 0
+        ? `<span class="achievement-xp">+${xp.toLocaleString()} XP</span>`
+        : "";
+      return `<article class="achievement-item" data-tone="${illustration.tone}"><div class="achievement-art">${illustration.svg}</div><div class="achievement-info"><strong>${escapeHtml(definition.title)}</strong><span>${escapeHtml(definition.description)}</span><div class="achievement-meta">${xpIndicator}<span class="achievement-earned"><i class="fa-solid fa-check" aria-hidden="true"></i> Earned</span></div></div><div class="achievement-date">${relativeDate(item.unlocked_at)}</div></article>`;
     }).join("");
-    $("recentAchievements").innerHTML = recent || '<p class="empty-state">No achievements unlocked yet.</p>';
+    $("recentAchievements").innerHTML = recent || "";
+    if (!recent) setRecentMessage("Your unlocked badges will appear here as you reach each milestone.", "empty");
     renderBadges();
-    renderCategories();
   }
 
-  function renderCategories() {
-    const grid = $("categoryGrid");
-    if (!grid) return;
-    [...grid.querySelectorAll(".category")].forEach((category) => {
-      const name = category.querySelector(".category-name")?.textContent.trim();
-      const definitions = state.definitions.filter((definition) => String(definition.category || "").toLowerCase() === String(name).toLowerCase());
-      const earned = definitions.filter(unlockedFor).length;
-      const value = percent(earned, definitions.length);
-      category.querySelector(".category-percent").textContent = `${value}%`;
-      category.querySelector(".category-fill").style.width = `${value}%`;
-    });
+  function renderAchievementProgress(earnedIds, completion) {
+    const content = $("achievementProgressContent");
+    const empty = $("achievementProgressEmpty");
+    const ring = $("achievementProgressRing");
+    const details = $("achievementProgressDetails");
+    const milestones = $("progressMilestones");
+    if (!content || !empty || !ring || !details || !milestones) return;
+
+    content.hidden = false;
+    empty.classList.remove("is-visible");
+    empty.setAttribute("role", "status");
+    ring.classList.remove("is-loading", "is-error");
+    details.classList.remove("is-loading");
+
+    if (!state.definitions.length) {
+      content.hidden = true;
+      empty.textContent = "No active achievements are available yet. Check back as new learning milestones are added.";
+      empty.classList.add("is-visible");
+      milestones.replaceChildren();
+      return;
+    }
+
+    const total = state.definitions.length;
+    const remaining = Math.max(0, total - earnedIds.size);
+    const circumference = 2 * Math.PI * 65;
+    $("completionPercent").textContent = `${completion}%`;
+    $("progressHeading").textContent = remaining ? "Keep going!" : "All achievements unlocked!";
+    $("progressDescription").textContent = remaining
+      ? `You have unlocked ${earnedIds.size} out of ${total} available achievements.`
+      : `Congratulations! You have unlocked all ${total} available achievements.`;
+    $("earnedLabel").innerHTML = `<i class="fa-solid fa-star" aria-hidden="true"></i> ${earnedIds.size} earned`;
+    $("remainingLabel").innerHTML = `<i class="fa-solid fa-lock" aria-hidden="true"></i> ${remaining} remaining`;
+    $("achievementProgressArc").style.strokeDasharray = `${circumference}`;
+    $("achievementProgressArc").style.strokeDashoffset = `${circumference * (1 - completion / 100)}`;
+    ring.setAttribute("aria-label", `${completion}% completed; ${earnedIds.size} of ${total} achievements earned`);
+    milestones.setAttribute("aria-label", `${earnedIds.size} of ${total} achievements earned`);
+    milestones.innerHTML = state.definitions.map((definition) => {
+      const earned = earnedIds.has(String(definition.id));
+      const title = escapeHtml(definition.title || "Achievement");
+      return `<span class="progress-milestone ${earned ? "is-earned" : "is-locked"}" title="${title}" aria-label="${title}: ${earned ? "earned" : "locked"}" role="img"><i class="fa-solid fa-${earned ? "check" : "lock"}" aria-hidden="true"></i></span>`;
+    }).join("");
+  }
+
+  function renderAchievementProgressError(message) {
+    const content = $("achievementProgressContent");
+    const empty = $("achievementProgressEmpty");
+    const ring = $("achievementProgressRing");
+    if (!content || !empty || !ring) return;
+    content.hidden = true;
+    ring.classList.remove("is-loading");
+    ring.classList.add("is-error");
+    $("completionPercent").textContent = "—";
+    empty.textContent = `Achievement progress is unavailable: ${message || "Please try again later."}`;
+    empty.setAttribute("role", "alert");
+    empty.classList.add("is-visible");
   }
 
   function bindFilters() {
@@ -501,12 +686,14 @@
     render();
     setStatus("Loading your achievements…");
     setGridMessage("Loading your achievements…");
+    setRecentMessage("Loading your recent achievements…", "loading");
     const supabase = window.SmartLearningSupabase;
     if (!supabase || typeof supabase.getClient !== "function") {
       const message = "The existing Supabase client is unavailable on this page.";
       console.error(message);
       setStatus(message, true);
       setGridMessage(message, true);
+      setRecentMessage(message, "error");
       return;
     }
     try {
@@ -516,6 +703,7 @@
       console.error(message, error);
       setStatus(message, true);
       setGridMessage(message, true);
+      setRecentMessage(message, "error");
       return;
     }
     if (!state.client) {
@@ -528,6 +716,7 @@
       console.error(message);
       setStatus(message, true);
       setGridMessage(message, true);
+      setRecentMessage(message, "error");
       return;
     }
     let authData;
@@ -540,6 +729,7 @@
       console.error(message, error);
       setStatus(message, true);
       setGridMessage(message, true);
+      setRecentMessage(message, "error");
       return;
     }
     state.user = authData?.user || null;
@@ -547,6 +737,7 @@
       const message = "Sign in with your student account to view achievements.";
       setStatus(message, true);
       setGridMessage(message, true);
+      setRecentMessage(message, "error");
       return;
     }
 
@@ -582,6 +773,7 @@
             console.error("Could not refresh achievements after quiz progress changed.", refreshError);
             setStatus("Achievements could not be refreshed. Please reload the page.", true);
             setGridMessage("Achievements could not be refreshed. Please reload the page.", true);
+            setRecentMessage("Recent achievements could not be refreshed. Please reload the page.", "error");
           });
         })
         .on("postgres_changes", { event: "*", schema: "public", table: "study_sessions", filter: `student_id=eq.${state.studentId}` }, () => {
@@ -589,6 +781,7 @@
             console.error("Could not refresh achievements after study progress changed.", refreshError);
             setStatus("Achievements could not be refreshed. Please reload the page.", true);
             setGridMessage("Achievements could not be refreshed. Please reload the page.", true);
+            setRecentMessage("Recent achievements could not be refreshed. Please reload the page.", "error");
           });
         })
         .on("postgres_changes", { event: "*", schema: "public", table: "student_achievements", filter: `student_id=eq.${state.user.id}` }, () => {
@@ -596,6 +789,7 @@
             console.error("Could not refresh achievements after an unlock changed.", refreshError);
             setStatus("Achievements could not be refreshed. Please reload the page.", true);
             setGridMessage("Achievements could not be refreshed. Please reload the page.", true);
+            setRecentMessage("Recent achievements could not be refreshed. Please reload the page.", "error");
           });
         })
         .subscribe();
@@ -604,6 +798,7 @@
       const message = `Could not load achievements from Supabase: ${error.message || "Please try again."}`;
       setStatus(message, true);
       setGridMessage(message, true);
+      setRecentMessage(message, "error");
     }
   }
 

@@ -419,88 +419,471 @@
         color: #71839e;
       }
 
+      .progress-card {
+        overflow: hidden;
+        border-color: #e4e6f4;
+        background:
+          radial-gradient(circle at 0% 0%, rgba(116, 95, 235, 0.06), transparent 42%),
+          linear-gradient(145deg, #fff 0%, #fbfcff 100%);
+        box-shadow: 0 8px 24px rgba(62, 69, 130, 0.065);
+      }
+
+      .progress-content {
+        padding: 8px 22px 0;
+      }
+
+      .progress-main {
+        gap: 27px;
+      }
+
+      .achievement-circle {
+        position: relative;
+        display: grid;
+        width: 156px;
+        height: 156px;
+        flex: 0 0 156px;
+        place-items: center;
+        border-radius: 50%;
+        background: radial-gradient(circle, #fff 53%, #f7f5ff 54%, #f0edff 100%);
+        box-shadow: 0 8px 22px rgba(90, 69, 190, 0.1);
+      }
+
+      .achievement-circle::before {
+        display: none;
+      }
+
+      .achievement-circle > svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        transform: rotate(-90deg);
+      }
+
+      .achievement-circle-track,
+      .achievement-circle-progress {
+        fill: none;
+        stroke-width: 9;
+      }
+
+      .achievement-circle-track {
+        stroke: #e9e6f8;
+      }
+
+      .achievement-circle-progress {
+        stroke: url(#achievementProgressGradient);
+        stroke-linecap: round;
+        stroke-dasharray: 408.4;
+        stroke-dashoffset: 408.4;
+        filter: drop-shadow(0 2px 3px rgba(113, 79, 223, 0.32));
+        transition: stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1);
+      }
+
+      .achievement-circle.is-loading {
+        background: linear-gradient(110deg, #f3f1fb 20%, #faf9ff 38%, #f3f1fb 56%);
+        background-size: 220% 100%;
+        animation: progress-skeleton 1.4s ease infinite;
+      }
+
+      .achievement-circle.is-error {
+        box-shadow: 0 0 0 5px rgba(178, 61, 75, 0.06);
+      }
+
+      @keyframes progress-skeleton {
+        to { background-position-x: -220%; }
+      }
+
+      .circle-content {
+        z-index: 1;
+      }
+
+      .circle-content strong {
+        color: #252745;
+        font-size: 34px;
+        letter-spacing: -0.04em;
+      }
+
+      .circle-content span {
+        color: #77819c;
+        font-size: 12px;
+        font-weight: 650;
+      }
+
+      .progress-details {
+        min-width: 0;
+      }
+
+      .progress-details h3 {
+        color: #272a46;
+        font-size: 19px;
+        font-weight: 800;
+      }
+
+      .progress-details p {
+        color: #6d7892;
+        font-size: 13px;
+      }
+
+      .progress-milestones-wrap {
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 3px 2px 8px;
+        scrollbar-width: thin;
+        scrollbar-color: #d7d2ef transparent;
+      }
+
+      .progress-milestones {
+        display: flex;
+        width: max-content;
+        min-width: 100%;
+        align-items: center;
+        gap: 7px;
+      }
+
+      .progress-milestone {
+        display: grid;
+        width: 28px;
+        height: 15px;
+        flex: 0 0 28px;
+        place-items: center;
+        border: 1px solid #e3e5ee;
+        border-radius: 999px;
+        background: #f0f2f7;
+        color: #8590a5;
+        font-size: 8px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.35s ease;
+      }
+
+      .progress-milestone.is-earned {
+        border-color: #8263e6;
+        background: linear-gradient(110deg, #6d4ad8, #8164e9 62%, #32b9cb);
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(110, 75, 215, 0.25);
+        animation: milestone-arrive 0.45s ease both;
+      }
+
+      .progress-milestone:hover {
+        transform: translateY(-2px) scale(1.05);
+      }
+
+      .progress-milestone:focus-visible {
+        outline: 3px solid rgba(99, 70, 220, 0.28);
+        outline-offset: 3px;
+      }
+
+      @keyframes milestone-arrive {
+        from { transform: scale(0.82); opacity: 0.65; }
+        to { transform: scale(1); opacity: 1; }
+      }
+
+      .progress-label {
+        margin-top: 6px;
+        color: #68758e;
+        font-size: 12px;
+        font-weight: 650;
+      }
+
+      .progress-earned-stat,
+      .progress-remaining-stat {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .progress-earned-stat {
+        color: #7653d9;
+      }
+
+      .progress-earned-stat i {
+        color: #d29a31;
+      }
+
+      .progress-remaining-stat {
+        color: #7d8799;
+      }
+
+      .progress-details.is-loading .progress-milestones,
+      .progress-details.is-loading #progressHeading,
+      .progress-details.is-loading #progressDescription,
+      .progress-details.is-loading .progress-label {
+        opacity: 0.5;
+      }
+
+      .progress-empty {
+        display: none;
+        padding: 18px;
+        border: 1px dashed #d9d7ea;
+        border-radius: 14px;
+        color: #69758e;
+        font-size: 11px;
+        line-height: 1.55;
+        text-align: center;
+      }
+
+      .progress-empty.is-visible {
+        display: block;
+      }
+
+      #achievementProgressContent[hidden] {
+        display: none;
+      }
+
+      @media (max-width: 900px) {
+        .achievement-circle {
+          width: 132px;
+          height: 132px;
+          flex-basis: 132px;
+        }
+      }
+
+      @media (max-width: 700px) {
+        .progress-content {
+          padding: 8px 16px 0;
+        }
+
+        .progress-main {
+          flex-direction: column;
+          gap: 17px;
+        }
+
+        .achievement-circle {
+          width: 142px;
+          height: 142px;
+          flex-basis: 142px;
+        }
+
+        .progress-details {
+          width: 100%;
+        }
+
+        .progress-milestones {
+          gap: 6px;
+        }
+
+        .progress-milestone {
+          width: 25px;
+          flex-basis: 25px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .achievement-circle.is-loading {
+          animation: none;
+        }
+
+        .achievement-circle-progress,
+        .progress-milestone,
+        .progress-milestone:hover {
+          transition: none;
+          transform: none;
+        }
+
+        .progress-milestone.is-earned {
+          animation: none;
+        }
+      }
+
       /* ===============================
            NEXT ACHIEVEMENT
         =============================== */
 
       .next-achievement {
+        position: relative;
+        overflow: hidden;
         padding: 21px;
+        border-color: #f0dfb8;
+        background:
+          radial-gradient(circle at 96% 0%, rgba(255, 215, 126, 0.22), transparent 34%),
+          linear-gradient(145deg, #fff 0%, #fffdf8 100%);
+        box-shadow: 0 8px 24px rgba(149, 104, 29, 0.07);
       }
 
       .next-title {
         display: flex;
         align-items: center;
-        gap: 11px;
-
-        margin-bottom: 17px;
+        gap: 13px;
+        margin-bottom: 18px;
       }
 
       .next-title-icon {
-        width: 39px;
-        height: 39px;
+        display: grid;
+        width: 52px;
+        height: 52px;
+        flex: 0 0 52px;
+        place-items: center;
+        border: 1px solid #f3dfb2;
+        border-radius: 16px;
+        background: linear-gradient(145deg, #fff8df, #ffedc1);
+        box-shadow: inset 0 1px 0 #fff, 0 5px 12px rgba(191, 133, 34, 0.12);
+      }
 
-        border-radius: 10px;
-
-        background: #fff1d8;
-
-        color: #ed9200;
-
-        display: flex;
-        align-items: center;
-        justify-content: center;
+      .next-target-illustration {
+        width: 43px;
+        height: 43px;
+        filter: drop-shadow(0 3px 3px rgba(156, 105, 19, 0.18));
       }
 
       .next-title h2 {
-        font-size: 15px;
+        color: #30291c;
+        font-size: 17px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
       }
 
       .next-title p {
-        color: #7889a3;
-        font-size: 9px;
-        margin-top: 4px;
+        color: #8d7955;
+        font-size: 11px;
+        margin-top: 5px;
       }
 
       .next-badge {
+        position: relative;
+        display: flex;
+        min-height: 235px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
         text-align: center;
+        padding: 18px 17px 16px;
+        border: 1px solid #f1dfb8;
+        border-radius: 18px;
+        background:
+          radial-gradient(circle at 50% 24%, rgba(255, 216, 129, 0.4), transparent 34%),
+          linear-gradient(145deg, #fffaf0 0%, #fff4dc 100%);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 8px 18px rgba(161, 117, 41, 0.08);
+        transition: opacity 0.22s ease, transform 0.22s ease;
+      }
 
-        padding: 12px;
+      .next-badge.is-changing {
+        animation: next-achievement-enter 0.38s ease both;
+      }
 
-        border-radius: 12px;
-
-        background: linear-gradient(135deg, #fffaf0, #fff4dd);
-
-        border: 1px solid #f7e8c7;
+      @keyframes next-achievement-enter {
+        from { opacity: 0.72; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
       }
 
       .next-badge-icon {
-        width: 65px;
-        height: 65px;
+        display: grid;
+        width: 112px;
+        height: 112px;
+        place-items: center;
+        margin: 0 auto 8px;
+        border: 1px solid rgba(232, 183, 80, 0.42);
+        border-radius: 32px;
+        background: linear-gradient(145deg, rgba(255,255,255,.82), rgba(255,241,199,.72));
+        box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.35), 0 0 32px rgba(238, 183, 75, 0.25);
+        animation: next-badge-glow 3.2s ease-in-out infinite;
+      }
 
-        border-radius: 50%;
+      .next-badge-icon .achievement-illustration {
+        width: 102px;
+        height: 102px;
+      }
 
-        margin: 0 auto 10px;
-
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        font-size: 25px;
-
-        color: #e79600;
-
-        background: #ffe8af;
-
-        border: 5px solid #fff5d9;
+      @keyframes next-badge-glow {
+        0%, 100% { box-shadow: 0 0 0 7px rgba(255,255,255,.3), 0 0 25px rgba(238,183,75,.18); }
+        50% { box-shadow: 0 0 0 9px rgba(255,255,255,.48), 0 0 34px rgba(238,183,75,.34); }
       }
 
       .next-badge h3 {
-        font-size: 12px;
-        margin-bottom: 5px;
+        color: #332b1c;
+        font-size: 15px;
+        font-weight: 800;
+        margin: 3px 0 5px;
       }
 
       .next-badge p {
-        color: #7888a1;
-        font-size: 9px;
+        color: #806f50;
+        font-size: 10px;
+        line-height: 1.5;
+      }
+
+      .next-milestones {
+        display: grid;
+        width: 100%;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 7px;
+        margin-top: 17px;
+      }
+
+      .next-milestone {
+        position: relative;
+        height: 10px;
+        overflow: hidden;
+        border: 1px solid #f0dfbd;
+        border-radius: 999px;
+        background: #fff9eb;
+      }
+
+      .next-milestone:last-child {
+        border-color: #d6a33c;
+        background: #fffdf7;
+        box-shadow: inset 0 0 0 1px rgba(214, 163, 60, 0.12);
+      }
+
+      .next-milestone:nth-child(2) {
+        background: #fff4d8;
+      }
+
+      .next-milestone-fill {
+        width: 0;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #e1a332, #ffd36d);
+        transition: width 0.65s cubic-bezier(.2,.8,.2,1);
+      }
+
+      .next-milestone.complete {
+        border-color: #d9aa4d;
+        background: #f5d992;
+      }
+
+      .next-milestone.complete .next-milestone-fill {
+        width: 100%;
+      }
+
+      .next-progress-meta {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 9px;
+        color: #796844;
+        font-size: 10px;
+        font-weight: 700;
+      }
+
+      .next-progress-meta span:last-child {
+        color: #a07320;
+        font-weight: 600;
+        text-align: right;
+      }
+
+      .next-achievement-complete {
+        display: none;
+        width: 100%;
+        min-height: 235px;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 9px;
+        padding: 22px;
+        border: 1px solid #ccebd9;
+        border-radius: 18px;
+        background: linear-gradient(145deg, #f3fcf6, #e7f8ee);
+        color: #167451;
+        text-align: center;
+      }
+
+      .next-achievement-complete.is-visible {
+        display: flex;
+      }
+
+      .next-achievement-complete i {
+        font-size: 34px;
       }
 
       .next-progress {
@@ -538,40 +921,106 @@
         color: #7b6e56;
       }
 
+      @media (max-width: 700px) {
+        .next-achievement {
+          padding: 17px;
+        }
+
+        .next-title {
+          margin-bottom: 14px;
+        }
+
+        .next-badge {
+          min-height: 0;
+          padding: 17px 14px;
+        }
+
+        .next-progress-meta {
+          font-size: 9px;
+        }
+      }
+
       /* ===============================
            RECENT ACHIEVEMENTS
         =============================== */
 
       .recent-card {
-        padding-bottom: 8px;
+        overflow: hidden;
+        padding-bottom: 3px;
+        border: 1px solid #e8edf4;
+        border-radius: 16px;
+        box-shadow: 0 5px 18px rgba(35, 54, 82, 0.045);
       }
 
       .achievement-list {
-        padding: 0 22px;
+        padding: 0 20px 4px;
       }
 
       .achievement-item {
-        display: flex;
-
+        display: grid;
+        grid-template-columns: 64px minmax(0, 1fr) auto;
         align-items: center;
-
-        justify-content: space-between;
-
-        padding: 13px 0;
-
+        gap: 14px;
+        min-height: 88px;
+        padding: 12px 10px;
         border-bottom: 1px solid #edf1f5;
+        border-radius: 10px;
+        transition: background-color 0.18s ease, transform 0.18s ease;
       }
 
       .achievement-item:last-child {
         border-bottom: none;
       }
 
-      .achievement-left {
-        display: flex;
+      .achievement-item:hover {
+        transform: translateX(2px);
+        background: #fbfcfe;
+      }
 
-        align-items: center;
+      .achievement-art {
+        display: grid;
+        width: 62px;
+        height: 62px;
+        place-items: center;
+        border: 1px solid #edf0f5;
+        border-radius: 17px;
+        background: linear-gradient(145deg, #f8f9fc, #f1f3f8);
+      }
 
-        gap: 12px;
+      .achievement-item[data-tone="gold"] .achievement-art {
+        border-color: #f3e5c4;
+        background: linear-gradient(145deg, #fff8e4, #fff1cf);
+      }
+
+      .achievement-item[data-tone="blue"] .achievement-art {
+        border-color: #dcecff;
+        background: linear-gradient(145deg, #f0f8ff, #e8f1ff);
+      }
+
+      .achievement-item[data-tone="purple"] .achievement-art {
+        border-color: #e8e1ff;
+        background: linear-gradient(145deg, #f7f4ff, #eee9ff);
+      }
+
+      .achievement-item[data-tone="green"] .achievement-art {
+        border-color: #d7f0e2;
+        background: linear-gradient(145deg, #f1fbf5, #e7f7ed);
+      }
+
+      .achievement-item[data-tone="orange"] .achievement-art {
+        border-color: #f8e3d1;
+        background: linear-gradient(145deg, #fff7ef, #fff0e2);
+      }
+
+      .achievement-art .achievement-illustration {
+        display: block;
+        width: 58px;
+        height: 58px;
+        filter: drop-shadow(0 3px 3px rgba(39, 51, 83, 0.12));
+      }
+
+      .achievement-info {
+        min-width: 0;
       }
 
       .badge {
@@ -614,24 +1063,118 @@
 
       .achievement-info strong {
         display: block;
-
-        font-size: 11px;
-
         margin-bottom: 4px;
+        overflow: hidden;
+        color: #233149;
+        font-size: 13px;
+        font-weight: 750;
+        line-height: 1.35;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .achievement-info span {
-        color: #7b8ba4;
-
-        font-size: 9px;
+        color: #68778c;
+        font-size: 10px;
+        line-height: 1.45;
       }
 
-      .earned-date {
-        color: #8494aa;
+      .achievement-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 6px;
+      }
 
+      .achievement-meta .achievement-xp {
+        color: #16835f;
+        font-size: 10px;
+        font-weight: 750;
+      }
+
+      .achievement-meta .achievement-earned {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 7px;
+        border-radius: 999px;
+        background: #e8f7ef;
+        color: #17815b;
+        font-size: 9px;
+        font-weight: 750;
+      }
+
+      .achievement-meta .achievement-earned i {
         font-size: 8px;
+      }
 
+      .achievement-date {
+        min-width: 82px;
+        color: #65748a;
+        font-size: 10px;
+        font-weight: 650;
         text-align: right;
+        white-space: nowrap;
+      }
+
+      .recent-state {
+        display: flex;
+        min-height: 88px;
+        align-items: center;
+        justify-content: center;
+        gap: 11px;
+        padding: 18px;
+        color: #64748b;
+        font-size: 12px;
+        text-align: center;
+      }
+
+      .recent-state-icon {
+        display: grid;
+        width: 36px;
+        height: 36px;
+        flex: 0 0 36px;
+        place-items: center;
+        border-radius: 12px;
+        background: #f4f1ff;
+        color: #7054dc;
+      }
+
+      .recent-state-error .recent-state-icon {
+        background: #fff0ed;
+        color: #c94d3d;
+      }
+
+      @media (max-width: 560px) {
+        .achievement-list {
+          padding: 0 12px 4px;
+        }
+
+        .achievement-item {
+          grid-template-columns: 54px minmax(0, 1fr);
+          gap: 11px;
+          min-height: 82px;
+          padding: 11px 6px;
+        }
+
+        .achievement-art {
+          width: 54px;
+          height: 54px;
+          border-radius: 15px;
+        }
+
+        .achievement-art .achievement-illustration {
+          width: 50px;
+          height: 50px;
+        }
+
+        .achievement-date {
+          grid-column: 2;
+          min-width: 0;
+          margin-top: -6px;
+          text-align: left;
+          font-size: 9px;
+        }
       }
 
       /* ===============================
@@ -763,8 +1306,8 @@
 
       .badge-card h3 {
         width: 100%;
-        color: #1e2b40;
-        font-size: 13px;
+        color: #172338;
+        font-size: 14px;
         font-weight: 750;
         line-height: 1.35;
         margin: 0 0 5px;
@@ -773,8 +1316,8 @@
       .badge-card .badge-description {
         min-height: 32px;
         margin: 0;
-        color: #66758b;
-        font-size: 10px;
+        color: #48576d;
+        font-size: 11px;
         line-height: 1.55;
       }
 
@@ -837,16 +1380,16 @@
 
       .badge-card .next-progress-text {
         margin-top: 7px;
-        color: #64748b;
-        font-size: 9px;
-        font-weight: 600;
+        color: #46566d;
+        font-size: 10px;
+        font-weight: 650;
       }
 
       .badge-card .badge-check,
       .badge-card .badge-lock {
         margin-top: 11px;
         padding: 5px 9px;
-        font-size: 9px;
+        font-size: 10px;
       }
 
       .badge-card .badge-reward {
@@ -858,28 +1401,28 @@
         justify-content: center;
         gap: 3px;
         margin-top: 8px;
-        color: #52647d;
-        font-size: 9px;
+        color: #3f4f66;
+        font-size: 10px;
         font-weight: 700;
       }
 
       .badge-card .badge-reward span {
-        color: #7b8ba1;
-        font-size: 9px;
-        font-weight: 500;
+        color: #52637a;
+        font-size: 10px;
+        font-weight: 550;
       }
 
       .badge-card.earned .badge-reward {
-        color: #16835f;
+        color: #117451;
       }
 
       .badge-card.earned .badge-reward span {
-        color: #397c64;
+        color: #28634e;
       }
 
       .badge-card .badge-lock {
-        background: #f0f3f8;
-        color: #52647d;
+        background: #e9edf4;
+        color: #3c4d64;
       }
 
       .badge-card .badge-check {
@@ -935,86 +1478,6 @@
       }
 
       /* ===============================
-           CATEGORY PROGRESS
-        =============================== */
-
-      .category-card {
-        margin-top: 20px;
-
-        padding-bottom: 18px;
-      }
-
-      .category-grid {
-        display: grid;
-
-        grid-template-columns: repeat(3, 1fr);
-
-        gap: 16px;
-
-        padding: 5px 22px 0;
-      }
-
-      .category {
-        padding: 15px;
-
-        border: 1px solid #e7edf3;
-
-        border-radius: 11px;
-      }
-
-      .category-top {
-        display: flex;
-
-        align-items: center;
-
-        justify-content: space-between;
-
-        margin-bottom: 11px;
-      }
-
-      .category-name {
-        display: flex;
-
-        align-items: center;
-
-        gap: 8px;
-
-        font-size: 10px;
-
-        font-weight: 700;
-      }
-
-      .category-name i {
-        color: #6040df;
-      }
-
-      .category-percent {
-        color: #607491;
-
-        font-size: 9px;
-
-        font-weight: 700;
-      }
-
-      .category-bar {
-        height: 6px;
-
-        background: #edf1f5;
-
-        border-radius: 20px;
-
-        overflow: hidden;
-      }
-
-      .category-fill {
-        height: 100%;
-
-        border-radius: 20px;
-
-        background: linear-gradient(90deg, #6040df, #7b5bf1);
-      }
-
-      /* ===============================
            RESPONSIVE
         =============================== */
 
@@ -1031,9 +1494,6 @@
           grid-template-columns: repeat(3, minmax(0, 1fr));
         }
 
-        .category-grid {
-          grid-template-columns: repeat(2, 1fr);
-        }
       }
 
       @media (max-width: 700px) {
@@ -1082,10 +1542,6 @@
         .achievement-illustration {
           width: 74px;
           height: 74px;
-        }
-
-        .category-grid {
-          grid-template-columns: 1fr;
         }
 
         .card-header {
@@ -1260,32 +1716,46 @@
           </div>
 
           <div class="progress-content">
-            <div class="progress-main">
-              <div class="achievement-circle">
+            <div class="progress-main" id="achievementProgressContent">
+              <div class="achievement-circle is-loading" id="achievementProgressRing" role="img" aria-label="Achievement progress loading">
+                <svg viewBox="0 0 160 160" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="achievementProgressGradient" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stop-color="#6548d8" />
+                      <stop offset="58%" stop-color="#8a67eb" />
+                      <stop offset="100%" stop-color="#31b9ce" />
+                    </linearGradient>
+                  </defs>
+                  <circle class="achievement-circle-track" cx="80" cy="80" r="65" />
+                  <circle class="achievement-circle-progress" id="achievementProgressArc" cx="80" cy="80" r="65" />
+                </svg>
                 <div class="circle-content">
-                  <strong id="completionPercent">0%</strong>
-
-                  <span> completed </span>
+                  <strong id="completionPercent">—</strong>
+                  <span>completed</span>
                 </div>
               </div>
 
-              <div class="progress-details">
+              <div class="progress-details is-loading" id="achievementProgressDetails">
                 <h3 id="progressHeading">Keep going!</h3>
-
-                <p id="progressDescription">
-                  Your achievement progress will appear here.
-                </p>
-
-                <div class="progress-bar">
-                  <div class="progress-fill" id="progressFill"></div>
+                <p id="progressDescription">Loading your achievement progress…</p>
+                <div class="progress-milestones-wrap">
+                  <div class="progress-milestones" id="progressMilestones" aria-label="Achievement milestones loading">
+                    <span class="progress-milestone"></span>
+                    <span class="progress-milestone"></span>
+                    <span class="progress-milestone"></span>
+                    <span class="progress-milestone"></span>
+                    <span class="progress-milestone"></span>
+                    <span class="progress-milestone"></span>
+                  </div>
                 </div>
-
                 <div class="progress-label">
-                  <span id="earnedLabel">0 earned</span>
-
-                  <span id="remainingLabel">0 remaining</span>
+                  <span class="progress-earned-stat" id="earnedLabel"><i class="fa-solid fa-star" aria-hidden="true"></i> — earned</span>
+                  <span class="progress-remaining-stat" id="remainingLabel"><i class="fa-solid fa-lock" aria-hidden="true"></i> — remaining</span>
                 </div>
               </div>
+            </div>
+            <div class="progress-empty" id="achievementProgressEmpty" role="status">
+              No active achievements are available yet. Check back as new learning milestones are added.
             </div>
           </div>
         </div>
@@ -1295,7 +1765,13 @@
         <div class="card next-achievement">
           <div class="next-title">
             <div class="next-title-icon">
-              <i class="fa-solid fa-bullseye"></i>
+              <svg class="next-target-illustration" viewBox="0 0 64 64" role="img" aria-label="Golden target and arrow">
+                <circle cx="30" cy="35" r="22" fill="#fffdf7" stroke="#d99a25" stroke-width="4" />
+                <circle cx="30" cy="35" r="14" fill="#fff0c1" stroke="#e5b344" stroke-width="3" />
+                <circle cx="30" cy="35" r="6" fill="#e6a530" />
+                <path d="M25 40 51 12m-7 1 8-2-1 8M18 22l-5-5m25 31 5 5" fill="none" stroke="#9b681c" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="m49 14 4-5 5 5-5 5Z" fill="#f3c45a" stroke="#9b681c" stroke-width="1.5" />
+              </svg>
             </div>
 
             <div>
@@ -1305,28 +1781,24 @@
             </div>
           </div>
 
-          <div class="next-badge">
-            <div class="next-badge-icon">
-              <i class="fa-solid fa-book-open" id="nextAchievementIcon"></i>
+          <div class="next-badge" id="nextAchievementPanel">
+            <div class="next-badge-icon" id="nextAchievementIcon" aria-hidden="true"></div>
+            <h3 id="nextAchievementName">Finding your next milestone…</h3>
+            <p id="nextAchievementDescription">Your progress will appear here.</p>
+            <div class="next-milestones" id="nextMilestones" aria-hidden="true">
+              <span class="next-milestone"><span class="next-milestone-fill"></span></span>
+              <span class="next-milestone"><span class="next-milestone-fill"></span></span>
+              <span class="next-milestone"><span class="next-milestone-fill"></span></span>
             </div>
-
-            <h3 id="nextAchievementName">No locked achievements</h3>
-
-            <p id="nextAchievementDescription">
-              Complete activities to unlock achievements.
-            </p>
-
-            <div class="next-progress">
-              <div class="next-progress-bar">
-                <div class="next-progress-fill" id="nextProgressFill"></div>
-              </div>
-
-              <div class="next-progress-text">
-                <span id="nextProgressLabel">0 / 0</span>
-
-                <span id="nextRemainingLabel">0 more</span>
-              </div>
+            <div class="next-progress-meta">
+              <span id="nextProgressLabel">0 / 0</span>
+              <span id="nextRemainingLabel">Loading progress…</span>
             </div>
+          </div>
+          <div class="next-achievement-complete" id="nextAchievementComplete" role="status" aria-live="polite">
+            <i class="fa-solid fa-trophy" aria-hidden="true"></i>
+            <h3>Every achievement unlocked!</h3>
+            <p>Congratulations — you reached every learning milestone.</p>
           </div>
         </div>
       </section>
@@ -1344,85 +1816,10 @@
           </div>
         </div>
 
-        <div class="achievement-list" id="recentAchievements">
-          <div class="achievement-item">
-            <div class="achievement-left">
-              <div class="badge badge-purple">
-                <i class="fa-solid fa-bolt"></i>
-              </div>
-
-              <div class="achievement-info">
-                <strong> Quick Learner </strong>
-
-                <span> Completed 5 lessons in one day </span>
-              </div>
-            </div>
-
-            <div class="earned-date">Today</div>
-          </div>
-
-          <div class="achievement-item">
-            <div class="achievement-left">
-              <div class="badge badge-orange">
-                <i class="fa-solid fa-fire"></i>
-              </div>
-
-              <div class="achievement-info">
-                <strong> 7 Day Streak </strong>
-
-                <span> Studied for 7 consecutive days </span>
-              </div>
-            </div>
-
-            <div class="earned-date">Yesterday</div>
-          </div>
-
-          <div class="achievement-item">
-            <div class="achievement-left">
-              <div class="badge badge-green">
-                <i class="fa-solid fa-circle-check"></i>
-              </div>
-
-              <div class="achievement-info">
-                <strong> Quiz Master </strong>
-
-                <span> Scored 90% or higher in 5 quizzes </span>
-              </div>
-            </div>
-
-            <div class="earned-date">Sep 5</div>
-          </div>
-
-          <div class="achievement-item">
-            <div class="achievement-left">
-              <div class="badge badge-blue">
-                <i class="fa-solid fa-clock"></i>
-              </div>
-
-              <div class="achievement-info">
-                <strong> Time Champion </strong>
-
-                <span> Studied for more than 20 hours this week </span>
-              </div>
-            </div>
-
-            <div class="earned-date">Sep 3</div>
-          </div>
-
-          <div class="achievement-item">
-            <div class="achievement-left">
-              <div class="badge badge-pink">
-                <i class="fa-solid fa-graduation-cap"></i>
-              </div>
-
-              <div class="achievement-info">
-                <strong> First Step </strong>
-
-                <span> Completed your first learning lesson </span>
-              </div>
-            </div>
-
-            <div class="earned-date">Aug 29</div>
+        <div class="achievement-list" id="recentAchievements" aria-live="polite">
+          <div class="recent-state" role="status">
+            <span class="recent-state-icon"><i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i></span>
+            <span>Loading your recent achievements…</span>
           </div>
         </div>
       </section>
@@ -1453,117 +1850,6 @@
         </div>
       </section>
 
-      <!-- =====================================
-         CATEGORY PROGRESS
-    ====================================== -->
-
-      <section class="card category-card" id="categoryCard">
-        <div class="card-header">
-          <div>
-            <h2>Achievement Categories</h2>
-
-            <p>Your progress across different achievement types.</p>
-          </div>
-        </div>
-
-        <div class="category-grid" id="categoryGrid">
-          <div class="category">
-            <div class="category-top">
-              <div class="category-name">
-                <i class="fa-solid fa-book-open"></i>
-
-                Learning
-              </div>
-
-              <span class="category-percent"> 75% </span>
-            </div>
-
-            <div class="category-bar">
-              <div class="category-fill" style="width: 0"></div>
-            </div>
-          </div>
-
-          <div class="category">
-            <div class="category-top">
-              <div class="category-name">
-                <i class="fa-solid fa-circle-question"></i>
-
-                Quizzes
-              </div>
-
-              <span class="category-percent"> 68% </span>
-            </div>
-
-            <div class="category-bar">
-              <div class="category-fill" style="width: 0"></div>
-            </div>
-          </div>
-
-          <div class="category">
-            <div class="category-top">
-              <div class="category-name">
-                <i class="fa-solid fa-clock"></i>
-
-                Study Time
-              </div>
-
-              <span class="category-percent"> 60% </span>
-            </div>
-
-            <div class="category-bar">
-              <div class="category-fill" style="width: 0"></div>
-            </div>
-          </div>
-
-          <div class="category">
-            <div class="category-top">
-              <div class="category-name">
-                <i class="fa-solid fa-fire"></i>
-
-                Consistency
-              </div>
-
-              <span class="category-percent"> 82% </span>
-            </div>
-
-            <div class="category-bar">
-              <div class="category-fill" style="width: 0"></div>
-            </div>
-          </div>
-
-          <div class="category">
-            <div class="category-top">
-              <div class="category-name">
-                <i class="fa-solid fa-video"></i>
-
-                Classes
-              </div>
-
-              <span class="category-percent"> 55% </span>
-            </div>
-
-            <div class="category-bar">
-              <div class="category-fill" style="width: 0"></div>
-            </div>
-          </div>
-
-          <div class="category">
-            <div class="category-top">
-              <div class="category-name">
-                <i class="fa-solid fa-trophy"></i>
-
-                Challenges
-              </div>
-
-              <span class="category-percent"> 70% </span>
-            </div>
-
-            <div class="category-bar">
-              <div class="category-fill" style="width: 0"></div>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
