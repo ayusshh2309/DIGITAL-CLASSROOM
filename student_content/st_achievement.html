@@ -259,6 +259,77 @@
         margin-top: 5px;
       }
 
+      .xp-level-card .overview-top {
+        margin-bottom: 10px;
+      }
+
+      .xp-level-icon[data-level-color="green"] { background: linear-gradient(135deg, #24b879, #148d59); }
+      .xp-level-icon[data-level-color="blue"] { background: linear-gradient(135deg, #5395f0, #2867cc); }
+      .xp-level-icon[data-level-color="gold"] { background: linear-gradient(135deg, #f3bc45, #d58c1d); }
+      .xp-level-icon[data-level-color="purple"] { background: linear-gradient(135deg, #9064eb, #633bc5); }
+      .xp-level-icon[data-level-color="cyan"] { background: linear-gradient(135deg, #42bfd0, #198b9c); }
+      .xp-level-icon[data-level-color="orange"] { background: linear-gradient(135deg, #ff9a42, #dc6127); }
+
+      .xp-level-title {
+        color: #1d2b45;
+        font-size: 19px;
+        font-weight: 800;
+        line-height: 1.2;
+      }
+
+      .xp-level-number {
+        margin-top: 3px;
+        color: #687994;
+        font-size: 10px;
+        font-weight: 700;
+      }
+
+      .xp-level-balance {
+        margin-top: 7px;
+        color: #4a5870;
+        font-size: 11px;
+        font-weight: 750;
+      }
+
+      .xp-level-progress-copy {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: 11px;
+        color: #61728c;
+        font-size: 9px;
+        font-weight: 700;
+      }
+
+      .xp-level-track {
+        height: 7px;
+        margin-top: 5px;
+        overflow: hidden;
+        border-radius: 99px;
+        background: #e9edf5;
+      }
+
+      .xp-level-fill {
+        width: 0;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #7652e8, #35b8cc);
+        transition: width 0.65s ease;
+      }
+
+      .xp-level-remaining {
+        min-height: 12px;
+        margin-top: 5px;
+        color: #75839a;
+        font-size: 9px;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .xp-level-fill {
+          transition: none;
+        }
+      }
+
       /* ===============================
            MAIN GRID
         =============================== */
@@ -1682,20 +1753,25 @@
           </div>
         </div>
 
-        <div class="overview-card">
+        <div class="overview-card xp-level-card">
           <div class="overview-top">
-            <div class="overview-icon blue">
-              <i class="fa-solid fa-ranking-star"></i>
+            <div class="overview-icon xp-level-icon" id="xpLevelIcon" data-level-color="green">
+              <i class="fa-solid fa-seedling" aria-hidden="true"></i>
             </div>
           </div>
 
-          <div class="overview-label">Achievement Rank</div>
-
-          <div class="overview-value" id="achievementRank">Not ranked</div>
-
-          <div class="overview-small" id="rankDescription">
-            Ranking is not enabled
+          <div class="overview-label">XP Level</div>
+          <div class="xp-level-title" id="xpLevelTitle">Beginner</div>
+          <div class="xp-level-number" id="xpLevelNumber">Level 1</div>
+          <div class="xp-level-balance" id="xpLevelBalance">0 XP Coins</div>
+          <div class="xp-level-progress-copy">
+            <span id="xpLevelProgressLabel">0 / 100 XP</span>
+            <span id="xpLevelPercent">0%</span>
           </div>
+          <div class="xp-level-track" id="xpLevelProgressTrack" role="progressbar" aria-label="XP level progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div class="xp-level-fill" id="xpLevelProgressFill"></div>
+          </div>
+          <div class="xp-level-remaining" id="xpLevelRemaining">100 XP Coins to Learner</div>
         </div>
       </section>
 

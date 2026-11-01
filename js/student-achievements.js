@@ -575,20 +575,17 @@
     const completion = percent(earned, total);
     const metrics = state.metrics || {};
     const earnedAchievementXp = state.unlocked.reduce(
-      (sum, item) => {
-        return sum + Number(item.xp_earned || 0);
-      },
+      (sum, item) => sum + (Number(item.xp_earned) || 0),
       0,
     );
     $("totalPoints").textContent = `${earnedAchievementXp.toLocaleString()} XP`;
+    renderXpLevel(earnedAchievementXp);
     $("earnedCount").textContent = earned;
     $("availableCount").textContent = `Out of ${total} available`;
     $("currentStreak").textContent = `${metrics.studyStreak || 0} Days`;
     $("bestStreak").textContent = `Your best is ${metrics.bestStreak || 0} days`;
     $("challengesCompleted").textContent = metrics.challengesCompleted || 0;
     $("challengesPeriod").textContent = "Configured challenges";
-    $("achievementRank").textContent = "Not ranked";
-    $("rankDescription").textContent = "Ranking is not enabled";
     renderAchievementProgress(earnedIds, completion);
     renderNextAchievement();
     const recent = [...state.unlocked].sort((a, b) => new Date(b.unlocked_at) - new Date(a.unlocked_at)).slice(0, 5).map((item) => {
@@ -605,6 +602,66 @@
     $("recentAchievements").innerHTML = recent || "";
     if (!recent) setRecentMessage("Your unlocked badges will appear here as you reach each milestone.", "empty");
     renderBadges();
+  }
+
+  const XP_LEVELS = [
+    { number: 1, title: "Beginner", minXp: 0, icon: "fa-seedling", color: "green" },
+    { number: 2, title: "Learner", minXp: 100, icon: "fa-book-open", color: "blue" },
+    { number: 3, title: "Achiever", minXp: 300, icon: "fa-star", color: "gold" },
+    { number: 4, title: "Scholar", minXp: 600, icon: "fa-graduation-cap", color: "purple" },
+    { number: 5, title: "Expert", minXp: 1000, icon: "fa-gem", color: "cyan" },
+    { number: 6, title: "Champion", minXp: 1500, icon: "fa-trophy", color: "gold" },
+    { number: 7, title: "Master", minXp: 2500, icon: "fa-crown", color: "purple" },
+    { number: 8, title: "Legend", minXp: 5000, icon: "fa-fire", color: "orange" },
+  ];
+
+  function renderXpLevel(xp) {
+    const currentXp = Number.isFinite(xp) ? Math.max(0, xp) : 0;
+    let levelIndex = 0;
+    for (let index = 1; index < XP_LEVELS.length; index += 1) {
+      if (currentXp < XP_LEVELS[index].minXp) break;
+      levelIndex = index;
+    }
+    const currentLevel = XP_LEVELS[Math.max(0, levelIndex)];
+    const nextLevel = XP_LEVELS[currentLevel.number];
+    const icon = $("xpLevelIcon");
+    const progressTrack = $("xpLevelProgressTrack");
+    const progressFill = $("xpLevelProgressFill");
+    if (!icon || !progressTrack || !progressFill) return;
+
+    $("xpLevelTitle").textContent = currentLevel.title;
+    $("xpLevelNumber").textContent = `Level ${currentLevel.number}`;
+    $("xpLevelBalance").textContent = `${currentXp.toLocaleString()} XP Coins`;
+    icon.dataset.levelColor = currentLevel.color;
+    icon.innerHTML = `<i class="fa-solid ${currentLevel.icon}" aria-hidden="true"></i>`;
+
+    if (!nextLevel) {
+      $("xpLevelProgressLabel").textContent = "MAX LEVEL";
+      $("xpLevelPercent").textContent = "100%";
+      $("xpLevelRemaining").textContent = "You reached the highest XP level.";
+      progressFill.style.width = "100%";
+      progressTrack.setAttribute("aria-valuenow", "100");
+      progressTrack.setAttribute("aria-valuetext", "Maximum level reached");
+      return;
+    }
+
+    const progress = Math.max(0, Math.min(
+      100,
+      (currentXp - currentLevel.minXp) /
+        (nextLevel.minXp - currentLevel.minXp) * 100,
+    ));
+    const remaining = Math.max(0, nextLevel.minXp - currentXp);
+    $("xpLevelProgressLabel").textContent =
+      `${currentXp.toLocaleString()} / ${nextLevel.minXp.toLocaleString()} XP`;
+    $("xpLevelPercent").textContent = `${Math.round(progress)}%`;
+    $("xpLevelRemaining").textContent =
+      `${remaining.toLocaleString()} XP Coins to ${nextLevel.title}`;
+    progressFill.style.width = `${progress}%`;
+    progressTrack.setAttribute("aria-valuenow", String(Math.round(progress)));
+    progressTrack.setAttribute(
+      "aria-valuetext",
+      `${currentXp} XP Coins; ${remaining} needed for ${nextLevel.title}`,
+    );
   }
 
   function renderAchievementProgress(earnedIds, completion) {
@@ -772,7 +829,15 @@
       }
       setStatus(statusMessages.join(" "), Boolean(evaluationError));
 
-      state.client.channel(`achievements-${state.user.id}`)
+      const refreshAfterUnlock = () => {
+        void refreshAchievements().catch((refreshError) => {
+          console.error("Could not refresh achievements after an unlock changed.", refreshError);
+          setStatus("Achievements could not be refreshed. Please reload the page.", true);
+          setGridMessage("Achievements could not be refreshed. Please reload the page.", true);
+          setRecentMessage("Recent achievements could not be refreshed. Please reload the page.", "error");
+        });
+      };
+      let channel = state.client.channel(`achievements-${state.user.id}`)
         .on("postgres_changes", { event: "*", schema: "public", table: "quiz_attempts", filter: `student_id=eq.${state.studentId}` }, () => {
           void refreshAchievements().catch((refreshError) => {
             console.error("Could not refresh achievements after quiz progress changed.", refreshError);
@@ -789,15 +854,15 @@
             setRecentMessage("Recent achievements could not be refreshed. Please reload the page.", "error");
           });
         })
-        .on("postgres_changes", { event: "*", schema: "public", table: "student_achievements", filter: `student_id=eq.${state.user.id}` }, () => {
-          void refreshAchievements().catch((refreshError) => {
-            console.error("Could not refresh achievements after an unlock changed.", refreshError);
-            setStatus("Achievements could not be refreshed. Please reload the page.", true);
-            setGridMessage("Achievements could not be refreshed. Please reload the page.", true);
-            setRecentMessage("Recent achievements could not be refreshed. Please reload the page.", "error");
-          });
-        })
-        .subscribe();
+        .on("postgres_changes", { event: "*", schema: "public", table: "student_achievements", filter: `student_id=eq.${state.user.id}` }, refreshAfterUnlock);
+      if (String(state.studentId) !== String(state.user.id)) {
+        channel = channel.on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "student_achievements", filter: `student_id=eq.${state.studentId}` },
+          refreshAfterUnlock,
+        );
+      }
+      channel.subscribe();
     } catch (error) {
       console.error("Achievements are unavailable.", error);
       const message = `Could not load achievements from Supabase: ${error.message || "Please try again."}`;
