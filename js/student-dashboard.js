@@ -723,35 +723,29 @@
 
   async function openMaterial(materialId, action, button) {
     const helper = window.SmartLearningDownloads;
-    if (!helper?.getStudentMaterialUrl || (action === "download" && !helper.downloadMaterial)) {
-      setSyncStatus("Material preview is unavailable because the download service did not load.", true);
+    if (action !== "download") {
+      window.location.assign(`st_notes.html?material_id=${encodeURIComponent(materialId)}`);
       return;
     }
-    const newTab = window.open("about:blank", "_blank");
-    if (newTab) newTab.opener = null;
+    if (!helper?.downloadMaterial) {
+      setSyncStatus("Material download is unavailable because the download service did not load.", true);
+      return;
+    }
     if (button) {
       button.disabled = true;
-      button.textContent = "Opening…";
+      button.textContent = "Preparing…";
     }
     try {
-      if (action === "download") {
-        const material = state.materials.find((row) => String(row.id) === String(materialId));
-        if (!material) throw new Error("This material is no longer available.");
-        await helper.downloadMaterial(material);
-        if (newTab) newTab.close();
-      } else {
-        const url = await helper.getStudentMaterialUrl(materialId);
-        if (newTab) newTab.location.replace(url);
-        else window.location.assign(url);
-      }
+      const material = state.materials.find((row) => String(row.id) === String(materialId));
+      if (!material) throw new Error("This material is no longer available.");
+      await helper.downloadMaterial(material);
     } catch (error) {
-      if (newTab) newTab.close();
       console.error("Student dashboard could not open material.", error);
-      setSyncStatus(`Material could not be opened: ${displayError(error)}`, true);
+      setSyncStatus(`Material could not be downloaded: ${displayError(error)}`, true);
     } finally {
       if (button?.isConnected) {
         button.disabled = false;
-        button.textContent = "View";
+        button.textContent = "Download";
       }
     }
   }

@@ -21,6 +21,10 @@
     pdfTrackingQueue: Promise.resolve(),
     previewTracking: null,
     previewTrackingQueue: Promise.resolve(),
+    completedMaterialIds: new Set(),
+    completedStatusAvailable: false,
+    activeMaterialViewer: null,
+    currentViewerMaterial: null,
     pageClosing: false,
   };
   const $ = (id) => document.getElementById(id);
@@ -504,9 +508,17 @@
       showStatus("Loading your study materials...");
       await loadCurrentStudent();
       state.notes = await fetchAuthorizedMaterials();
+      let completionStatusError = null;
+      try {
+        await loadMaterialCompletions();
+      } catch (error) {
+        completionStatusError = error;
+        console.error("Could not load the student's material completion status.", error);
+        showStatus("Completion status could not be loaded. You can still mark materials completed.", "error");
+      }
       void checkTargetMaterialVisibility(state.notes);
       render();
-      showStatus("");
+      if (!completionStatusError) showStatus("");
     } finally {
       state.loading = false;
       if (state.refreshQueued) {
@@ -516,6 +528,28 @@
         }, 0);
       }
     }
+  }
+
+  async function loadMaterialCompletions() {
+    const studentId = state.student?.id;
+    if (!studentId) throw new Error("The registered student profile could not be verified.");
+    const data = [];
+    for (let offset = 0; ; offset += 1000) {
+      const { data: page, error } = await state.client
+        .from("student_material_completions")
+        .select("material_id")
+        .eq("student_id", studentId)
+        .order("completed_at", { ascending: true })
+        .range(offset, offset + 999);
+      if (error) throw error;
+      if (!Array.isArray(page)) {
+        throw new Error("The completion-status query returned an invalid response.");
+      }
+      data.push(...page);
+      if (page.length < 1000) break;
+    }
+    state.completedMaterialIds = new Set(data.map((row) => String(row.material_id)));
+    state.completedStatusAvailable = true;
   }
 
   function scheduleRefresh() {
@@ -884,23 +918,194 @@
     return `This file could not be opened. ${message || "Check Storage access and try again."}`;
   }
 
-  async function handleMaterialAction(event) {
-    const control = event.target.closest("[data-view]");
-    if (!control) return;
-    const noteId = control.dataset.view;
-    if (!noteId) return;
-    const action = control.dataset.materialAction || "preview";
-    const preview = action === "preview" ? window.open("about:blank", "_blank") : null;
-    if (preview) preview.opener = null;
+  function setMaterialViewerStatus(message, isError = false) {
+    const status = $("materialViewerStatus");
+    if (!status) return;
+    status.textContent = message;
+    status.dataset.state = isError ? "error" : "info";
+  }
+
+  function handleMaterialViewerClosed() {
+    const viewer = state.activeMaterialViewer;
+    if (!viewer) return;
+    viewer.closed = true;
+    state.activeMaterialViewer = null;
+    state.currentViewerMaterial = null;
+    $("materialViewerContent").replaceChildren();
+    void queuePdfTrackingOperation(() => viewer.kind === "pdf"
+      ? stopPdfTracking()
+      : stopPreviewTracking());
+  }
+
+  function showMaterialViewer(material, url) {
+    const dialog = $("materialViewer");
+    const content = $("materialViewerContent");
+    const completionButton = $("completeMaterialButton");
+    const kind = materialKind(material);
+    if (!dialog || typeof dialog.showModal !== "function" || !content || !completionButton) {
+      throw new Error("The secure material viewer is not available in this browser.");
+    }
+
+    const viewer = { closed: false, kind };
+    state.activeMaterialViewer = viewer;
+    state.currentViewerMaterial = material;
+    $("materialViewerTitle").textContent = material.title || material.file_name || "Study material";
+    completionButton.disabled = state.completedMaterialIds.has(String(material.id));
+    completionButton.textContent = completionButton.disabled ? "Completed" : "Mark as Completed";
+    setMaterialViewerStatus(completionButton.disabled
+      ? "This material is already included in your completed learning materials."
+      : "Previewing or downloading never counts automatically. Mark it complete when you finish studying.");
+
+    let preview;
+    if (kind === "image") {
+      preview = document.createElement("img");
+      preview.alt = material.title || material.file_name || "Study material";
+      preview.src = url;
+    } else {
+      preview = document.createElement("iframe");
+      preview.title = material.title || material.file_name || "Study material";
+      preview.referrerPolicy = "no-referrer";
+      preview.src = url;
+    }
+    content.replaceChildren(preview);
+    dialog.showModal();
+    return viewer;
+  }
+
+  async function readKnowledgeSeekerStatus() {
+    const { data: definitions, error: definitionError } = await state.client
+      .from("achievement_definitions")
+      .select("id,xp_reward")
+      .eq("title", "Knowledge Seeker")
+      .eq("is_active", true)
+      .limit(1);
+    if (definitionError) throw definitionError;
+    const definition = definitions?.[0];
+    if (!definition?.id) return null;
+
+    const studentIds = [...new Set([state.student?.user?.id, state.student?.id]
+      .filter(Boolean)
+      .map(String))];
+    for (const studentId of studentIds) {
+      const { data, error } = await state.client
+        .from("student_achievements")
+        .select("id")
+        .eq("student_id", studentId)
+        .eq("achievement_id", definition.id)
+        .limit(1);
+      if (error) throw error;
+      if (data?.length) return { definition, unlocked: true };
+    }
+    return { definition, unlocked: false };
+  }
+
+  function notifyAchievementDataChanged() {
     try {
-      if (action === "preview" && !preview) {
-        throw new Error("Allow pop-ups to preview this material.");
+      window.localStorage.setItem("student-achievement-data-refresh", String(Date.now()));
+    } catch (error) {
+      console.warn("Could not notify other open student pages to refresh achievements.", error);
+    }
+  }
+
+  async function completeCurrentMaterial() {
+    const material = state.currentViewerMaterial;
+    const button = $("completeMaterialButton");
+    if (!material || !button || button.disabled) return;
+    button.disabled = true;
+    button.textContent = "Saving…";
+    setMaterialViewerStatus("Recording this completion securely…");
+
+    let previousKnowledgeSeekerStatus = null;
+    try {
+      previousKnowledgeSeekerStatus = await readKnowledgeSeekerStatus();
+    } catch (error) {
+      console.error("Could not check the existing Knowledge Seeker unlock.", error);
+    }
+
+    try {
+      const { data, error } = await state.client.rpc(
+        "complete_student_material_v1",
+        { p_material_id: material.id },
+      );
+      if (error) {
+        const message = String(error.message || "");
+        if (/schema cache|could not find the function|function .* does not exist/i.test(message)) {
+          throw new Error(
+            "The completion RPC is not available in Supabase yet. Apply sql/sql_knowledge_seeker_completions.sql, then retry after the schema cache refreshes.",
+          );
+        }
+        throw error;
+      }
+      const result = Array.isArray(data) ? data[0] : data;
+      if (!result?.completed) {
+        throw new Error("The secure completion RPC did not confirm the completion.");
+      }
+
+      state.completedMaterialIds.add(String(material.id));
+      const completedCount = Number(result.completed_count);
+      setMaterialViewerStatus(Number.isFinite(completedCount)
+        ? `Completion saved. You have completed ${completedCount} unique learning materials.`
+        : "Completion saved. Checking Knowledge Seeker progress…");
+
+      const { error: evaluationError } = await state.client.rpc("evaluate_knowledge_seeker_v1");
+      if (evaluationError) throw evaluationError;
+
+      await loadMaterialCompletions();
+      let currentKnowledgeSeekerStatus = null;
+      try {
+        currentKnowledgeSeekerStatus = await readKnowledgeSeekerStatus();
+      } catch (error) {
+        console.error("Could not verify whether Knowledge Seeker was newly unlocked.", error);
+      }
+      if (
+        previousKnowledgeSeekerStatus?.unlocked === false &&
+        currentKnowledgeSeekerStatus?.unlocked
+      ) {
+        const reward = Number(currentKnowledgeSeekerStatus.definition.xp_reward) || 0;
+        const message = `Knowledge Seeker unlocked! You earned ${reward.toLocaleString()} XP.`;
+        setMaterialViewerStatus(message);
+        showStatus(message);
+      } else {
+        const completionStatus = result.newly_completed === false
+          ? "This material was already completed."
+          : "Material completed.";
+        const message = Number.isFinite(completedCount)
+          ? `${completionStatus} ${completedCount} unique learning materials recorded.`
+          : "Material completed. Knowledge Seeker progress updated.";
+        setMaterialViewerStatus(message);
+        showStatus(message);
+      }
+
+      notifyAchievementDataChanged();
+      button.textContent = "Completed";
+      button.disabled = true;
+    } catch (error) {
+      console.error("Material completion or Knowledge Seeker evaluation failed.", error);
+      button.disabled = false;
+      button.textContent = state.completedMaterialIds.has(String(material.id))
+        ? "Retry achievement check"
+        : "Try Again";
+      setMaterialViewerStatus(
+        state.completedMaterialIds.has(String(material.id))
+          ? `Completion was saved, but achievement progress could not be refreshed: ${error.message || "Try again."}`
+          : `Material was not marked completed: ${error.message || "Try again."}`,
+        true,
+      );
+    }
+  }
+
+  async function openMaterialAction(noteId, action, control) {
+    const preview = action === "preview";
+    try {
+      if (preview && !state.completedStatusAvailable) {
+        showStatus("Completion status is unavailable; the material can still be viewed, but its saved state may not display.", "error");
+      } else {
+        showStatus(action === "download" ? "Preparing your download..." : "Preparing preview...");
       }
       control.disabled = true;
-      showStatus(action === "download" ? "Preparing your download..." : "Preparing preview...");
       const material = await fetchSelectedMaterial(noteId);
       if (
-        action === "preview" &&
+        preview &&
         materialKind(material) === "document" &&
         !isPreviewableDocument(material)
       ) {
@@ -919,62 +1124,47 @@
         link.click();
         link.remove();
         showStatus("Your download has started.");
-      } else {
-        if (materialKind(material) === "pdf" && !preview.closed) {
-          await queuePdfTrackingOperation(async () => {
-            const previousPreviewStopped = await stopPreviewTracking();
-            if (!previousPreviewStopped) {
-              if (!preview.closed) preview.location.replace(url);
-              showStatus("PDF opened, but its study session could not be started because the previous preview session could not be stopped.", "error");
-              return;
-            }
-            const previousSessionStopped = await stopPdfTracking();
-            if (!previousSessionStopped) {
-              if (!preview.closed) preview.location.replace(url);
-              showStatus("PDF opened, but its study session could not be started because the previous session could not be stopped.", "error");
-              return;
-            }
-            if (preview.closed) return;
-            const trackingStarted = await startPdfTracking(material, preview);
-            if (preview.closed) return;
-            preview.location.replace(url);
-            showStatus(trackingStarted
-              ? "PDF opened. Tracked time reflects an open PDF tab and does not prove reading or attention."
-              : "PDF opened, but study-time tracking could not be started.");
-          });
-          return;
-        }
-        if (
-          (materialKind(material) === "image" ||
-            (materialKind(material) === "document" && isPreviewableDocument(material))) &&
-          !preview.closed
-        ) {
-          await queuePreviewTrackingOperation(async () => {
-            const previousPdfStopped = await stopPdfTracking();
-            const previousPreviewStopped = previousPdfStopped
-              ? await stopPreviewTracking()
-              : false;
-            if (!previousPreviewStopped) {
-              if (!preview.closed) preview.location.replace(url);
-              showStatus("Material opened, but tracking could not start because the previous session could not be stopped.", "error");
-              return;
-            }
-            if (preview.closed) return;
-            const trackingStarted = await startPreviewTracking(material, preview);
-            if (preview.closed) return;
-            preview.location.replace(url);
-            showStatus(trackingStarted
-              ? "Preview opened. Tracked time reflects an open preview tab and does not prove attention."
-              : "Preview opened, but study-time tracking could not be started.");
-          });
-          return;
-        }
-        preview.location.replace(url);
-        showStatus("");
+        return;
+      }
+
+      const viewer = showMaterialViewer(material, url);
+      if (materialKind(material) === "pdf") {
+        await queuePdfTrackingOperation(async () => {
+          const previousPreviewStopped = await stopPreviewTracking();
+          const previousSessionStopped = previousPreviewStopped
+            ? await stopPdfTracking()
+            : false;
+          if (!previousSessionStopped) {
+            setMaterialViewerStatus("PDF opened. Study-time tracking could not start because the previous session could not be stopped.", true);
+            return;
+          }
+          const trackingStarted = await startPdfTracking(material, viewer);
+          setMaterialViewerStatus(trackingStarted
+            ? "PDF opened. Tracked time indicates an open viewer, not proof of reading."
+            : "PDF opened. Study-time tracking could not be started.");
+        });
+        return;
+      }
+
+      if (materialKind(material) === "image" ||
+        (materialKind(material) === "document" && isPreviewableDocument(material))) {
+        await queuePreviewTrackingOperation(async () => {
+          const previousPdfStopped = await stopPdfTracking();
+          const previousPreviewStopped = previousPdfStopped
+            ? await stopPreviewTracking()
+            : false;
+          if (!previousPreviewStopped) {
+            setMaterialViewerStatus("Material opened. Study-time tracking could not start because the previous session could not be stopped.", true);
+            return;
+          }
+          const trackingStarted = await startPreviewTracking(material, viewer);
+          setMaterialViewerStatus(trackingStarted
+            ? "Preview opened. Tracked time indicates an open viewer, not proof of attention."
+            : "Preview opened. Study-time tracking could not be started.");
+        });
       }
     } catch (error) {
       console.error("Unable to access the selected study material.", error);
-      if (preview && !preview.closed) preview.close();
       if (error?.code === "AUTH_REQUIRED") {
         window.location.assign("../teacher_registration/login.html");
         return;
@@ -986,8 +1176,16 @@
         "error",
       );
     } finally {
-      control.disabled = false;
+      if (control.isConnected) control.disabled = false;
     }
+  }
+
+  async function handleMaterialAction(event) {
+    const control = event.target.closest("[data-view]");
+    if (!control) return;
+    const noteId = control.dataset.view;
+    if (!noteId) return;
+    await openMaterialAction(noteId, control.dataset.materialAction || "preview", control);
   }
 
   function selectSubject(subjectId) {
@@ -1010,10 +1208,18 @@
       .find((item) => item.dataset.noteId === materialId);
     card?.scrollIntoView({ behavior: "smooth", block: "center" });
     card?.focus({ preventScroll: true });
+    const previewButton = card?.querySelector('[data-material-action="preview"]');
+    if (previewButton) void openMaterialAction(materialId, "preview", previewButton);
   }
 
   function cleanup() {
     state.pageClosing = true;
+    if (state.activeMaterialViewer) {
+      state.activeMaterialViewer.closed = true;
+      state.activeMaterialViewer = null;
+      state.currentViewerMaterial = null;
+      if ($("materialViewer").open) $("materialViewer").close();
+    }
     window.clearTimeout(state.refreshTimer);
     window.clearInterval(state.refreshInterval);
     clearPdfTrackingTimers(state.pdfTracking || {});
@@ -1043,6 +1249,13 @@
         return;
       }
       void handleMaterialAction(event);
+    });
+    $("closeMaterialViewer").addEventListener("click", () => {
+      $("materialViewer").close();
+    });
+    $("materialViewer").addEventListener("close", handleMaterialViewerClosed);
+    $("completeMaterialButton").addEventListener("click", () => {
+      void completeCurrentMaterial();
     });
     $("recentNotesList").addEventListener("click", (event) => {
       void handleMaterialAction(event);

@@ -301,6 +301,137 @@
         background: #fff5f5;
       }
 
+      .material-viewer {
+        width: min(1120px, calc(100vw - 32px));
+        max-width: none;
+        height: min(820px, calc(100vh - 32px));
+        max-height: none;
+        padding: 0;
+        overflow: hidden;
+        border: 1px solid #dfe5ef;
+        border-radius: 18px;
+        background: #fff;
+        color: var(--notes-ink);
+        box-shadow: 0 24px 80px rgba(16, 29, 58, 0.3);
+      }
+
+      .material-viewer::backdrop {
+        background: rgba(15, 25, 45, 0.66);
+        backdrop-filter: blur(3px);
+      }
+
+      .material-viewer-shell {
+        display: flex;
+        width: 100%;
+        height: 100%;
+        flex-direction: column;
+      }
+
+      .material-viewer-header,
+      .material-viewer-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 15px 20px;
+      }
+
+      .material-viewer-header {
+        border-bottom: 1px solid #e9edf4;
+      }
+
+      .material-viewer-header h2 {
+        min-width: 0;
+        overflow: hidden;
+        color: #1c2943;
+        font-size: 15px;
+        font-weight: 800;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .material-viewer-close {
+        display: grid;
+        width: 36px;
+        height: 36px;
+        flex: 0 0 36px;
+        place-items: center;
+        border: 1px solid #e2e7f0;
+        border-radius: 10px;
+        background: #f7f8fb;
+        color: #40506a;
+        cursor: pointer;
+      }
+
+      .material-viewer-content {
+        display: grid;
+        min-height: 0;
+        flex: 1;
+        place-items: center;
+        overflow: auto;
+        background: #f2f4f8;
+      }
+
+      .material-viewer-content iframe {
+        width: 100%;
+        height: 100%;
+        min-height: 320px;
+        border: 0;
+        background: #fff;
+      }
+
+      .material-viewer-content img {
+        display: block;
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+
+      .material-viewer-footer {
+        flex-wrap: wrap;
+        border-top: 1px solid #e9edf4;
+      }
+
+      .material-viewer-status {
+        flex: 1 1 240px;
+        color: #687895;
+        font-size: 11px;
+        line-height: 1.5;
+      }
+
+      .material-viewer-status[data-state="error"] {
+        color: #a33142;
+      }
+
+      .material-complete-button {
+        min-height: 40px;
+        padding: 0 16px;
+        border: 0;
+        border-radius: 11px;
+        background: linear-gradient(135deg, #168c66, #0d7454);
+        color: #fff;
+        font: inherit;
+        font-size: 11px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .material-complete-button:hover:not(:disabled) {
+        background: #0c694d;
+      }
+
+      .material-complete-button:disabled {
+        background: #e7f6ef;
+        color: #18764f;
+        cursor: default;
+      }
+
+      .material-complete-button:focus-visible,
+      .material-viewer-close:focus-visible {
+        outline: 3px solid rgba(87, 57, 214, 0.25);
+        outline-offset: 2px;
+      }
+
       .notes-status button {
         margin-left: 8px;
         border: 0;
@@ -719,6 +850,24 @@
       }
 
       @media (max-width: 600px) {
+        .material-viewer {
+          width: 100vw;
+          height: 100dvh;
+          border: 0;
+          border-radius: 0;
+        }
+
+        .material-viewer-header,
+        .material-viewer-footer {
+          padding: 12px 14px;
+        }
+
+        .material-complete-button {
+          width: 100%;
+        }
+      }
+
+      @media (max-width: 600px) {
         .notes-page {
           padding: 23px 15px 32px;
         }
@@ -933,6 +1082,26 @@
         </div>
       </section>
     </main>
+
+    <dialog class="material-viewer" id="materialViewer" aria-labelledby="materialViewerTitle">
+      <div class="material-viewer-shell">
+        <header class="material-viewer-header">
+          <h2 id="materialViewerTitle">Study material</h2>
+          <button class="material-viewer-close" id="closeMaterialViewer" type="button" aria-label="Close material viewer">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </header>
+        <div class="material-viewer-content" id="materialViewerContent"></div>
+        <footer class="material-viewer-footer">
+          <p class="material-viewer-status" id="materialViewerStatus" role="status" aria-live="polite">
+            Opening material…
+          </p>
+          <button class="material-complete-button" id="completeMaterialButton" type="button">
+            Mark as Completed
+          </button>
+        </footer>
+      </div>
+    </dialog>
 
     <script>
       /* =====================================================

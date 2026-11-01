@@ -4,7 +4,7 @@
   const STREAK_THRESHOLD_SECONDS = 30 * 60;
   const $ = (id) => document.getElementById(id);
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
-  const state = { client: null, user: null, studentId: null, definitions: [], unlocked: [], metrics: null, progressErrors: [], loaded: false };
+  const state = { client: null, user: null, studentId: null, definitions: [], unlocked: [], metrics: null, materialCompletions: null, progressErrors: [], loaded: false };
 
   function setStatus(message, isError = false) {
     if (isError && !state.loaded) renderAchievementProgressError(message);
@@ -198,8 +198,10 @@
   function metricValue(definition) {
     const metrics = state.metrics || {};
     const title = String(definition.title || "").trim().toLowerCase();
-    if (title.includes("knowledge seeker") || title.includes("bookworm") ||
-      title.includes("material") || title.includes("resource")) return null;
+    if (title.includes("knowledge seeker")) {
+      return state.materialCompletions?.size ?? null;
+    }
+    if (title.includes("bookworm") || title.includes("material") || title.includes("resource")) return null;
     if (title.includes("subject explorer")) return metrics.distinctSubjects;
     if (title.includes("perfect score")) return metrics.perfectScoreQuizzes;
     if (title.includes("top performer")) return metrics.highScoreQuizzes;
@@ -228,7 +230,9 @@
     let current = rawCurrent;
     let target = requirement;
     let unit = "milestones";
-    if (title.includes("streak")) {
+    if (title.includes("knowledge seeker")) {
+      unit = "materials";
+    } else if (title.includes("streak")) {
       unit = "days";
     } else if (title.includes("first hour") || title.includes("dedicated learner") ||
       title.includes("study champion") || title.includes("time champion") ||
@@ -373,7 +377,7 @@
   }
 
   async function loadRows() {
-    const [quizAttempts, sessions, definitions, unlocked] = await Promise.all([
+    const [quizAttempts, sessions, definitions, unlocked, materialCompletions] = await Promise.all([
       loadOptionalRows("submitted quiz attempts", () => readAllRows(() => state.client.from("quiz_attempts")
         .select("id,quiz_id,percentage,submitted_at,quiz:quizzes(subject_id)")
         .eq("student_id", state.studentId)
@@ -388,6 +392,11 @@
         .eq("is_active", true)
         .order("created_at", { ascending: true })),
       loadUnlockedAchievements(),
+      loadOptionalRows("completed learning materials", () => readAllRows(() => state.client
+        .from("student_material_completions")
+        .select("material_id")
+        .eq("student_id", state.studentId)
+        .order("completed_at", { ascending: true }))),
     ]);
     let segments = null;
     if (sessions) {
@@ -411,10 +420,12 @@
       quizAttempts,
       definitions,
       unlocked,
+      materialCompletions,
       progressErrors: [
         ...(!quizAttempts ? ["submitted quiz attempts"] : []),
         ...(!sessions ? ["study sessions"] : []),
         ...(sessions && !segments ? ["study-session segments"] : []),
+        ...(!materialCompletions ? ["completed learning materials"] : []),
       ],
     };
   }
@@ -425,6 +436,9 @@
     state.metrics = metricsFrom(rows);
     state.progressErrors = rows.progressErrors;
     state.definitions = rows.definitions;
+    state.materialCompletions = rows.materialCompletions
+      ? new Set(rows.materialCompletions.map((completion) => String(completion.material_id)))
+      : null;
     state.unlocked = rows.unlocked.map((item) => ({
       ...item,
       definition: (Array.isArray(item.achievement_definition)
@@ -550,15 +564,15 @@
       const xp = Number(definition.xp_reward) || 0;
       const currentText = displayProgressNumber(current);
       const requirementText = displayProgressNumber(requirement);
+      const remaining = displayProgressNumber(Math.max(0, requirement - current));
+      const isKnowledgeSeeker = String(definition.title || "").toLowerCase().includes("knowledge seeker");
       const progressText = !available
-        ? (String(definition.title || "").toLowerCase().match(/knowledge seeker|bookworm|material|resource/)
-          ? "Completion tracking is not implemented yet."
-          : "Progress unavailable")
+        ? "Progress unavailable"
         : `${currentText} / ${requirementText}`;
       const unlockText = earned
         ? `Unlocked ${formatUnlockDate(unlock.unlocked_at)}`
         : available
-          ? `${displayProgressNumber(Math.max(0, requirement - current))} remaining`
+          ? `${remaining}${isKnowledgeSeeker ? " materials remaining" : " remaining"}`
           : progressText;
       const illustration = achievementIllustration(definition);
       return `<article class="badge-card ${earned ? "earned" : "locked"}" data-tone="${illustration.tone}" data-status="${earned ? "earned" : "locked"}" data-achievement-id="${escapeHtml(definition.id)}"><div class="badge-illustration">${illustration.svg}</div><h3>${escapeHtml(definition.title)}</h3><p class="badge-description">${escapeHtml(definition.description)}</p><div class="badge-progress"><div class="next-progress-bar"><div class="next-progress-fill" style="width:${earned ? 100 : progress}%"></div></div><div class="next-progress-text"><span>${earned ? `${requirementText} / ${requirementText}` : escapeHtml(available ? `${currentText} / ${requirementText}` : progressText)}</span><span>${available || earned ? `${earned ? 100 : progress}%` : "—"}</span></div></div><span class="${earned ? "badge-check" : "badge-lock"}"><i class="fa-solid fa-${earned ? "check" : "lock"}"></i> ${earned ? "Earned" : "Locked"}</span><p class="badge-reward">${earned ? `${Number(unlock.xp_earned || 0)} XP earned` : `${xp} XP reward`}<span>${escapeHtml(unlockText)}</span></p></article>`;
@@ -863,6 +877,14 @@
         );
       }
       channel.subscribe();
+
+      window.addEventListener("storage", (event) => {
+        if (event.key !== "student-achievement-data-refresh" || !state.client || !state.user) return;
+        void refreshAchievements().catch((refreshError) => {
+          console.error("Could not refresh achievements after a material was completed.", refreshError);
+          setStatus("Achievement progress could not be refreshed. Please reload the page.", true);
+        });
+      });
     } catch (error) {
       console.error("Achievements are unavailable.", error);
       const message = `Could not load achievements from Supabase: ${error.message || "Please try again."}`;
