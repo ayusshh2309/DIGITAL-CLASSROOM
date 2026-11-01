@@ -3,7 +3,7 @@
   const STUDY_SESSION_STATUSES = new Set(["active", "completed", "abandoned", "paused"]);
   const $ = (id) => document.getElementById(id);
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
-  const state = { client: null, user: null, studentId: null, definitions: [], unlocked: [], metrics: null };
+  const state = { client: null, user: null, studentId: null, definitions: [], unlocked: [], metrics: null, progressErrors: [] };
 
   function setStatus(message, isError = false) {
     const status = $("achievementStatus");
@@ -44,7 +44,15 @@
 
   function dateKey(value) {
     const date = new Date(value);
-    return Number.isNaN(date.valueOf()) ? "" : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    if (Number.isNaN(date.valueOf())) return "";
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(date);
+    const part = (type) => parts.find((item) => item.type === type)?.value || "";
+    return `${part("year")}-${part("month")}-${part("day")}`;
   }
 
   async function readAllRows(createQuery) {
@@ -60,8 +68,12 @@
     }
   }
 
-  function calculateStreak(sessions) {
-    const days = [...new Set(sessions.map((session) => dateKey(session.ended_at)).filter(Boolean))].sort().reverse();
+  function calculateStreak(dailyStudySeconds) {
+    const days = [...dailyStudySeconds.entries()]
+      .filter(([, seconds]) => seconds > 0)
+      .map(([day]) => day)
+      .sort()
+      .reverse();
     if (!days.length) return { current: 0, best: 0 };
     const dayNumber = (key) => Date.parse(`${key}T00:00:00`);
     let best = 1;
@@ -79,122 +91,148 @@
   }
 
   function metricsFrom(rows) {
-    const sessionsById = new Map(rows.sessions.map((session) => [String(session.id), session]));
-    const segmentsBySession = new Map();
-    for (const segment of rows.segments) {
-      const session = sessionsById.get(String(segment.session_id));
-      const duration = Number(segment.duration_seconds);
-      const end = new Date(segment.ended_at);
-      if (
-        !STUDY_SESSION_STATUSES.has(String(session?.status || "").toLowerCase()) ||
-        !Number.isFinite(duration) ||
-        duration <= 0 ||
-        !Number.isFinite(end.getTime())
-      ) continue;
-      const segments = segmentsBySession.get(String(session.id)) || [];
-      segments.push({ duration, end });
-      segmentsBySession.set(String(session.id), segments);
-    }
-    const completedSessions = rows.sessions
-      .filter((session) => session.status === "completed")
-      .map((session) => {
-        const segments = segmentsBySession.get(String(session.id)) || [];
-        return {
-          ...session,
-          ended_at: segments.reduce(
-            (latest, segment) => segment.end > latest ? segment.end : latest,
-            new Date(0),
-          ),
-        };
-      });
-    const currentWeek = Date.now() - 7 * 86400000;
-    const weeklyMinutes = rows.segments.reduce((total, segment) => {
-      const session = sessionsById.get(String(segment.session_id));
-      const end = new Date(segment.ended_at);
-      const duration = Number(segment.duration_seconds);
-      return STUDY_SESSION_STATUSES.has(String(session?.status || "").toLowerCase()) &&
-        Number.isFinite(end.getTime()) && end.getTime() >= currentWeek &&
-        Number.isFinite(duration) && duration > 0
-        ? total + duration / 60
-        : total;
-    }, 0);
-    const today = dateKey(new Date());
-    const sessionsToday = completedSessions.filter((session) => dateKey(session.ended_at) === today).length;
-    const highScoreQuizzes = rows.quizzes.filter((attempt) =>
-      attempt.attempt_status === "submitted" &&
-      attempt.result_released === true &&
-      Number(attempt.percentage) >= 90,
-    ).length;
-    const streak = calculateStreak(completedSessions);
-    return {
-      completedSessions: completedSessions.length,
-      sessionsToday,
-      completedResources: rows.videos.filter((row) => row.completed).length,
-      weeklyStudyMinutes: weeklyMinutes,
-      highScoreQuizzes,
-      studyStreak: streak.current,
-      bestStreak: streak.best,
+    const metrics = {
+      completedSessions: null,
+      sessionsToday: null,
+      weeklyStudyMinutes: null,
+      studyStreak: null,
+      bestStreak: null,
+      highScoreQuizzes: null,
+      submittedQuizzes: null,
+      distinctSubjects: null,
+      completedResources: null,
       challengesCompleted: 0,
       rankingPosition: null,
     };
+
+    if (rows.quizAttempts) {
+      const attempts = rows.quizAttempts;
+      metrics.submittedQuizzes = attempts.length;
+      metrics.highScoreQuizzes = attempts.filter((attempt) => Number(attempt.percentage) >= 90).length;
+      metrics.distinctSubjects = new Set(attempts
+        .map((attempt) => Array.isArray(attempt.quiz) ? attempt.quiz[0]?.subject_id : attempt.quiz?.subject_id)
+        .filter((subjectId) => subjectId != null)
+        .map(String)).size;
+    }
+
+    if (rows.sessions) {
+      metrics.completedSessions = rows.sessions.filter((session) => session.status === "completed").length;
+    }
+    if (!rows.sessions || !rows.segments) return metrics;
+
+    const sessionsById = new Map(rows.sessions.map((session) => [String(session.id), session]));
+    const completedStudySessions = new Set();
+    const sessionsByDay = new Map();
+    const dailyStudySeconds = new Map();
+    const currentWeek = Date.now() - 7 * 86400000;
+    let weeklyStudySeconds = 0;
+
+    for (const segment of rows.segments) {
+      const session = sessionsById.get(String(segment.session_id));
+      const duration = Number(segment.duration_seconds);
+      const endedAt = new Date(segment.ended_at || segment.started_at);
+      if (
+        !session ||
+        !STUDY_SESSION_STATUSES.has(String(session.status || "").toLowerCase()) ||
+        !Number.isFinite(duration) ||
+        duration <= 0 ||
+        !Number.isFinite(endedAt.getTime())
+      ) continue;
+
+      const sessionId = String(session.id);
+      const day = dateKey(endedAt);
+      if (!day) continue;
+      dailyStudySeconds.set(day, (dailyStudySeconds.get(day) || 0) + duration);
+      if (session.status === "completed") completedStudySessions.add(sessionId);
+      const daySessions = sessionsByDay.get(day) || new Set();
+      daySessions.add(sessionId);
+      sessionsByDay.set(day, daySessions);
+      if (endedAt.getTime() >= currentWeek) weeklyStudySeconds += duration;
+    }
+
+    const streak = calculateStreak(dailyStudySeconds);
+    metrics.completedSessions = Math.max(metrics.completedSessions || 0, completedStudySessions.size);
+    metrics.sessionsToday = sessionsByDay.get(dateKey(new Date()))?.size || 0;
+    metrics.weeklyStudyMinutes = weeklyStudySeconds / 60;
+    metrics.studyStreak = streak.current;
+    metrics.bestStreak = streak.best;
+    return metrics;
   }
 
   function metricValue(definition) {
     const metrics = state.metrics || {};
-    const metric = {
-      sessions_in_day: "sessionsToday",
-      study_streak: "studyStreak",
-      high_score_quizzes: "highScoreQuizzes",
-      weekly_study_minutes: "weeklyStudyMinutes",
-      completed_sessions: "completedSessions",
-      completed_resources: "completedResources",
-      ranking_position: "rankingPosition",
-    }[definition.requirement_type];
-    return Number(metrics[metric] || 0);
+    const title = String(definition.title || "").trim().toLowerCase();
+    if (title.includes("knowledge seeker") || title.includes("bookworm") ||
+      title.includes("material") || title.includes("resource")) return null;
+    if (title.includes("subject explorer")) return metrics.distinctSubjects;
+    if (title.includes("streak")) return metrics.studyStreak;
+    if (title.includes("quiz master") || title.includes("high score")) return metrics.highScoreQuizzes;
+    if (title.includes("quiz")) return metrics.submittedQuizzes;
+    if (title.includes("time champion") || title.includes("study time") || title.includes("weekly")) {
+      return metrics.weeklyStudyMinutes;
+    }
+    if (title.includes("quick learner")) return metrics.sessionsToday;
+    if (title.includes("session") || title.includes("first step")) return metrics.completedSessions;
+    return null;
+  }
+
+  async function loadOptionalRows(label, query) {
+    try {
+      return await query();
+    } catch (error) {
+      console.error(`Could not load ${label} for achievement progress.`, error);
+      return null;
+    }
   }
 
   async function loadRows() {
-    const [videos, quizAttempts, sessions, definitions, unlocked] = await Promise.all([
-      readAllRows(() => state.client.from("student_video_progress")
-        .select("video_id,completed")
-        .eq("student_id", state.user.id)
-        .order("video_id", { ascending: true })),
-      readAllRows(() => state.client.from("quiz_attempts")
-        .select("id,status,percentage,submitted_at")
+    const [quizAttempts, sessions, definitions, unlocked] = await Promise.all([
+      loadOptionalRows("submitted quiz attempts", () => readAllRows(() => state.client.from("quiz_attempts")
+        .select("id,quiz_id,percentage,submitted_at,quiz:quizzes(subject_id)")
         .eq("student_id", state.studentId)
         .eq("status", "submitted")
-        .order("submitted_at", { ascending: true })),
-      readAllRows(() => state.client.from("study_sessions")
+        .order("submitted_at", { ascending: true }))),
+      loadOptionalRows("study sessions", () => readAllRows(() => state.client.from("study_sessions")
         .select("id,status")
         .eq("student_id", state.studentId)
-        .order("id", { ascending: true })),
+        .order("id", { ascending: true }))),
       readAllRows(() => state.client.from("achievement_definitions")
-        .select("id,name,description,icon,color,category,requirement_type,requirement_value,xp_reward")
-        .eq("active", true)
+        .select("id,title,description,icon,category,requirement_value,xp_reward,is_active,created_at")
+        .eq("is_active", true)
         .order("created_at", { ascending: true })),
       readAllRows(() => state.client.from("student_achievements")
-        .select("achievement_id,unlocked_at,achievement_definition:achievement_definitions(id,name,description,icon,color,category,requirement_type,requirement_value,xp_reward)")
+        .select("achievement_id,unlocked_at,xp_earned,achievement_definition:achievement_definitions(id,title,description,icon,category,requirement_value,xp_reward,is_active)")
         .eq("student_id", state.user.id)
         .order("unlocked_at", { ascending: false })
         .order("achievement_id", { ascending: true })),
     ]);
-    const sessionIds = sessions.map((session) => String(session.id));
-    const segments = [];
-    for (let index = 0; index < sessionIds.length; index += 100) {
-      const batch = sessionIds.slice(index, index + 100);
-      segments.push(...await readAllRows(() => state.client
-        .from("study_session_segments")
-        .select("id,session_id,started_at,ended_at,duration_seconds")
-        .in("session_id", batch)
-        .order("id", { ascending: true })));
+    let segments = null;
+    if (sessions) {
+      segments = await loadOptionalRows("study-session segments", async () => {
+        const sessionIds = sessions.map((session) => String(session.id));
+        const rows = [];
+        for (let index = 0; index < sessionIds.length; index += 100) {
+          const batch = sessionIds.slice(index, index + 100);
+          rows.push(...await readAllRows(() => state.client
+            .from("study_session_segments")
+            .select("id,session_id,started_at,ended_at,duration_seconds")
+            .in("session_id", batch)
+            .order("id", { ascending: true })));
+        }
+        return rows;
+      });
     }
     return {
       sessions,
       segments,
-      videos,
-      quizzes: quizAttempts,
+      quizAttempts,
       definitions,
       unlocked,
+      progressErrors: [
+        ...(!quizAttempts ? ["submitted quiz attempts"] : []),
+        ...(!sessions ? ["study sessions"] : []),
+        ...(sessions && !segments ? ["study-session segments"] : []),
+      ],
     };
   }
 
@@ -202,6 +240,7 @@
     if (!state.client || !state.user) return;
     const rows = await loadRows();
     state.metrics = metricsFrom(rows);
+    state.progressErrors = rows.progressErrors;
     state.definitions = rows.definitions;
     state.unlocked = rows.unlocked.map((item) => ({
       ...item,
@@ -249,13 +288,22 @@
       const unlock = unlockedFor(definition);
       const earned = Boolean(unlock);
       const requirement = Number(definition.requirement_value) || 0;
-      const current = Math.min(metricValue(definition), requirement);
-      const progress = percent(current, requirement);
+      const metric = metricValue(definition);
+      const available = Number.isFinite(metric);
+      const current = available ? Math.min(metric, requirement) : 0;
+      const progress = available ? percent(current, requirement) : 0;
       const xp = Number(definition.xp_reward) || 0;
+      const progressText = !available
+        ? (String(definition.title || "").toLowerCase().match(/knowledge seeker|bookworm|material|resource/)
+          ? "Completion tracking is not implemented yet."
+          : "Progress unavailable")
+        : `${current} / ${requirement}`;
       const unlockText = earned
         ? `Unlocked ${formatUnlockDate(unlock.unlocked_at)}`
-        : `${Math.max(0, requirement - current)} remaining`;
-      return `<div class="badge-card ${earned ? "earned" : "locked"}" data-status="${earned ? "earned" : "locked"}" data-achievement-id="${escapeHtml(definition.id)}"><div class="badge-big ${earned ? `badge-${escapeHtml(definition.color)}` : ""}"><i class="fa-solid ${escapeHtml(definition.icon)}"></i></div><h3>${escapeHtml(definition.name)}</h3><p>${escapeHtml(definition.description)}</p><div class="next-progress"><div class="next-progress-bar"><div class="next-progress-fill" style="width:${earned ? 100 : progress}%"></div></div><div class="next-progress-text"><span>${current} / ${requirement}</span><span>${progress}%</span></div></div><span class="${earned ? "badge-check" : "badge-lock"}"><i class="fa-solid fa-${earned ? "check" : "lock"}"></i> ${earned ? "Earned" : "Locked"}</span><p>${xp} XP · ${escapeHtml(unlockText)}</p></div>`;
+        : available
+          ? `${Math.max(0, requirement - current)} remaining`
+          : progressText;
+      return `<div class="badge-card ${earned ? "earned" : "locked"}" data-status="${earned ? "earned" : "locked"}" data-achievement-id="${escapeHtml(definition.id)}"><div class="badge-big"><i class="fa-solid ${escapeHtml(definition.icon)}"></i></div><h3>${escapeHtml(definition.title)}</h3><p>${escapeHtml(definition.description)}</p><div class="next-progress"><div class="next-progress-bar"><div class="next-progress-fill" style="width:${earned ? 100 : progress}%"></div></div><div class="next-progress-text"><span>${earned ? `${requirement} / ${requirement}` : escapeHtml(progressText)}</span><span>${earned ? 100 : progress}%</span></div></div><span class="${earned ? "badge-check" : "badge-lock"}"><i class="fa-solid fa-${earned ? "check" : "lock"}"></i> ${earned ? "Earned" : "Locked"}</span><p>${xp} XP · ${escapeHtml(unlockText)}</p></div>`;
     }).join("");
   }
 
@@ -265,7 +313,9 @@
     const completion = percent(earned, total);
     const metrics = state.metrics || {};
     const earnedAchievementXp = state.unlocked.reduce(
-      (sum, item) => sum + Number(item.definition?.xp_reward || 0),
+      (sum, item) => {
+        return sum + Number(item.xp_earned || 0);
+      },
       0,
     );
     $("totalPoints").textContent = `${earnedAchievementXp.toLocaleString()} XP`;
@@ -283,24 +333,37 @@
     $("earnedLabel").textContent = `${earned} earned`;
     $("remainingLabel").textContent = `${Math.max(0, total - earned)} remaining`;
     $("categoryCard").style.display = total ? "" : "none";
-    const locked = state.definitions.filter((definition) => !unlockedFor(definition)).sort((a, b) => metricValue(b) / Number(b.requirement_value) - metricValue(a) / Number(a.requirement_value))[0];
+    const lockedDefinitions = state.definitions.filter((definition) => !unlockedFor(definition));
+    const locked = lockedDefinitions
+      .filter((definition) => Number.isFinite(metricValue(definition)))
+      .sort((a, b) => metricValue(b) / Number(b.requirement_value) - metricValue(a) / Number(a.requirement_value))[0]
+      || lockedDefinitions[0];
     if (locked) {
-      const current = Math.min(metricValue(locked), Number(locked.requirement_value));
-      $("nextAchievementName").textContent = locked.name;
-      $("nextAchievementDescription").textContent = locked.description;
+      const value = metricValue(locked);
+      const available = Number.isFinite(value);
+      const current = available ? Math.min(value, Number(locked.requirement_value)) : 0;
+      $("nextAchievementName").textContent = locked.title;
+      $("nextAchievementDescription").textContent = available
+        ? locked.description
+        : /knowledge seeker|bookworm|material|resource/i.test(locked.title)
+          ? "Completion tracking is not implemented yet."
+          : "Progress is currently unavailable.";
       $("nextAchievementIcon").className = `fa-solid ${locked.icon}`;
-      $("nextProgressFill").style.width = `${percent(current, Number(locked.requirement_value))}%`;
-      $("nextProgressLabel").textContent = `${current} / ${locked.requirement_value}`;
-      $("nextRemainingLabel").textContent = `${Math.max(0, Number(locked.requirement_value) - current)} more`;
+      $("nextProgressFill").style.width = `${available ? percent(current, Number(locked.requirement_value)) : 0}%`;
+      $("nextProgressLabel").textContent = available ? `${current} / ${locked.requirement_value}` : "Unavailable";
+      $("nextRemainingLabel").textContent = available
+        ? `${Math.max(0, Number(locked.requirement_value) - current)} more`
+        : "Progress unavailable";
     } else {
       $("nextProgressFill").style.width = "0%";
       $("nextProgressLabel").textContent = "0 / 0";
       $("nextRemainingLabel").textContent = "0 more";
     }
     const recent = [...state.unlocked].sort((a, b) => new Date(b.unlocked_at) - new Date(a.unlocked_at)).slice(0, 5).map((item) => {
-      const definition = state.definitions.find((entry) => entry.id === item.achievement_id);
+      const definition = item.achievement_definition ||
+        state.definitions.find((entry) => entry.id === item.achievement_id);
       if (!definition) return "";
-      return `<div class="achievement-item"><div class="achievement-left"><div class="badge badge-${escapeHtml(definition.color)}"><i class="fa-solid ${escapeHtml(definition.icon)}"></i></div><div class="achievement-info"><strong>${escapeHtml(definition.name)}</strong><span>${escapeHtml(definition.description)}</span></div></div><div class="earned-date">${relativeDate(item.unlocked_at)}</div></div>`;
+      return `<div class="achievement-item"><div class="achievement-left"><div class="badge"><i class="fa-solid ${escapeHtml(definition.icon)}"></i></div><div class="achievement-info"><strong>${escapeHtml(definition.title)}</strong><span>${escapeHtml(definition.description)}</span></div></div><div class="earned-date">${relativeDate(item.unlocked_at)}</div></div>`;
     }).join("");
     $("recentAchievements").innerHTML = recent || '<p class="empty-state">No achievements unlocked yet.</p>';
     renderBadges();
@@ -415,24 +478,24 @@
         evaluationError = error;
       }
       await refreshAchievements();
-      setStatus(
-        evaluationError
-          ? "Achievement evaluation failed; showing your latest saved achievements."
-          : "",
-        Boolean(evaluationError),
-      );
+      const statusMessages = [];
+      if (evaluationError) statusMessages.push("Achievement evaluation failed; showing your latest saved achievements.");
+      if (state.progressErrors.length) {
+        statusMessages.push("Some progress values are unavailable. Achievement records are still shown.");
+      }
+      setStatus(statusMessages.join(" "), Boolean(evaluationError));
 
       state.client.channel(`achievements-${state.user.id}`)
-        .on("postgres_changes", { event: "*", schema: "public", table: "student_video_progress", filter: `student_id=eq.${state.user.id}` }, () => {
+        .on("postgres_changes", { event: "*", schema: "public", table: "quiz_attempts", filter: `student_id=eq.${state.studentId}` }, () => {
           void refreshAchievements().catch((refreshError) => {
-            console.error("Could not refresh achievements after video progress changed.", refreshError);
+            console.error("Could not refresh achievements after quiz progress changed.", refreshError);
             setStatus("Achievements could not be refreshed. Please reload the page.", true);
             setGridMessage("Achievements could not be refreshed. Please reload the page.", true);
           });
         })
-        .on("postgres_changes", { event: "*", schema: "public", table: "quiz_attempts", filter: `student_id=eq.${state.studentId}` }, () => {
+        .on("postgres_changes", { event: "*", schema: "public", table: "study_sessions", filter: `student_id=eq.${state.studentId}` }, () => {
           void refreshAchievements().catch((refreshError) => {
-            console.error("Could not refresh achievements after quiz progress changed.", refreshError);
+            console.error("Could not refresh achievements after study progress changed.", refreshError);
             setStatus("Achievements could not be refreshed. Please reload the page.", true);
             setGridMessage("Achievements could not be refreshed. Please reload the page.", true);
           });
