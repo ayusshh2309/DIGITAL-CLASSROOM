@@ -1,4 +1,5 @@
 (() => {
+  const QUIZ_EDITOR_BUILD = "2026-11-02-schedule-persistence-1";
   const state = {
     client: null,
     user: null,
@@ -769,6 +770,8 @@
   function quizPayload(status) {
     const info = collectQuizInformation();
     const settings = info.settings;
+    const scheduledDate = String(settings.scheduledDate || "").trim();
+    const scheduledTime = String(settings.scheduledTime || "").trim();
     return {
       ...(state.quizId ? { id: state.quizId } : {}),
       title: info.title,
@@ -787,8 +790,8 @@
       show_answers: settings.showAnswers,
       show_explanations: settings.showExplanations,
       student_access: settings.studentAccess,
-      scheduled_date: settings.scheduledDate || null,
-      scheduled_time: settings.scheduledTime || null,
+      scheduled_date: scheduledDate || null,
+      scheduled_time: scheduledTime || null,
       builder_draft: status === "draft" && (state.editingIndex >= 0 || state.draft?.type || state.draft?.text.trim() || state.draft?.options.some((option) => option.trim()))
         ? { question: state.draft, editing_index: state.editingIndex }
         : null,
@@ -799,6 +802,16 @@
   function validateSettings() {
     collectSettings();
     const settings = state.settings;
+    if (settings.scheduledDate && !/^\d{4}-\d{2}-\d{2}$/.test(settings.scheduledDate)) {
+      showToast("Choose a valid scheduled date.", true);
+      $("scheduledDate").focus();
+      return false;
+    }
+    if (settings.scheduledTime && !/^\d{2}:\d{2}$/.test(settings.scheduledTime)) {
+      showToast("Choose a valid scheduled time.", true);
+      $("scheduledTime").focus();
+      return false;
+    }
     if (settings.scheduledTime && !settings.scheduledDate) {
       showToast("Choose a scheduled date before selecting a time.", true);
       return false;
@@ -819,17 +832,88 @@
       return;
     }
     if (!validateSettings()) return;
+    const formSchedule = {
+      scheduledDate: $("scheduledDate").value,
+      scheduledTime: $("scheduledTime").value,
+    };
+    const payload = quizPayload(status);
+    console.info(`[quiz-create:${QUIZ_EDITOR_BUILD}] Saving quiz schedule.`, {
+      input: formSchedule,
+      payload: {
+        scheduled_date: payload.scheduled_date,
+        scheduled_time: payload.scheduled_time,
+      },
+      quizId: payload.id || null,
+      authenticatedUserId: state.user.id,
+      teacherProfileId: state.teacher.id,
+    });
+    if (
+      formSchedule.scheduledDate !== (payload.scheduled_date || "") ||
+      formSchedule.scheduledTime !== (payload.scheduled_time || "")
+    ) {
+      showToast("The selected quiz schedule changed before saving. Please try again.", true);
+      return;
+    }
     const publishButton = $("publishModal").querySelector(".btn-success");
     setSaving(true, status === "published" ? "Publishing quiz..." : "Saving...");
     if (publishButton) publishButton.textContent = status === "published" ? "Publishing quiz..." : "Saving...";
     try {
-      const { data, error } = await state.client.rpc("save_teacher_question_quiz", {
-        p_quiz: quizPayload(status),
+      const rpcArguments = {
+        p_quiz: payload,
         p_questions: state.questions.map(toRpcQuestion),
+      };
+      console.info(`[quiz-create:${QUIZ_EDITOR_BUILD}] Calling save_teacher_question_quiz.`, {
+        p_quiz: {
+          id: payload.id || null,
+          scheduled_date: payload.scheduled_date,
+          scheduled_time: payload.scheduled_time,
+          status: payload.status,
+        },
+        questionCount: rpcArguments.p_questions.length,
       });
-      if (error) throw error;
+      const { data, error } = await state.client.rpc("save_teacher_question_quiz", rpcArguments);
+      if (error) {
+        console.error(`[quiz-create:${QUIZ_EDITOR_BUILD}] Quiz RPC failed.`, error);
+        throw error;
+      }
       const returnedId = typeof data === "string" ? data : data?.id;
-      if (returnedId) state.quizId = returnedId;
+      console.info(`[quiz-create:${QUIZ_EDITOR_BUILD}] Quiz RPC response.`, {
+        returnedId: returnedId || null,
+        response: data,
+      });
+      if (!returnedId) {
+        throw new Error("Supabase saved the quiz but did not return its quiz ID.");
+      }
+      state.quizId = returnedId;
+      const { data: savedSchedule, error: scheduleError } = await state.client
+        .from("quizzes")
+        .select("id, teacher_id, scheduled_date, scheduled_time")
+        .eq("id", returnedId)
+        .eq("teacher_id", state.teacher.id)
+        .maybeSingle();
+      console.info(`[quiz-create:${QUIZ_EDITOR_BUILD}] Schedule verification SELECT response.`, {
+        quizId: returnedId,
+        teacherProfileId: state.teacher.id,
+        row: savedSchedule,
+        error: scheduleError,
+      });
+      if (scheduleError) {
+        throw new Error(`The quiz was saved, but its schedule could not be verified. ${scheduleError.message}`);
+      }
+      if (!savedSchedule || String(savedSchedule.id) !== String(returnedId)) {
+        throw new Error("The quiz was saved, but its schedule could not be verified for this teacher account.");
+      }
+      const savedDate = savedSchedule.scheduled_date || null;
+      const savedTime = String(savedSchedule.scheduled_time || "").slice(0, 5) || null;
+      const requestedTime = String(payload.scheduled_time || "").slice(0, 5) || null;
+      if (savedDate !== payload.scheduled_date || savedTime !== requestedTime) {
+        throw new Error(`The quiz was saved, but Supabase returned a different schedule (date: ${savedDate || "none"}, time: ${savedTime || "none"}).`);
+      }
+      console.info(`[quiz-create:${QUIZ_EDITOR_BUILD}] Schedule confirmed by Supabase.`, {
+        quizId: returnedId,
+        scheduled_date: savedDate,
+        scheduled_time: savedTime,
+      });
       state.hasUnsavedChanges = false;
       if (status === "draft") {
         showToast("Draft saved to your teacher account.");
@@ -913,6 +997,7 @@
   }
 
   async function initialize() {
+    console.info(`[quiz-create:${QUIZ_EDITOR_BUILD}] Quiz editor loaded.`);
     try {
       const formRoot = document.querySelector(".main-content");
       ["input", "change"].forEach((eventName) => formRoot.addEventListener(eventName, (event) => {

@@ -136,7 +136,7 @@
 
       .stats-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         gap: 17px;
         margin-bottom: 20px;
       }
@@ -1434,21 +1434,6 @@
           </div>
         </div>
 
-        <!-- AVERAGE -->
-
-        <div class="stat-card">
-          <div class="stat-icon stat-blue">
-            <i class="fa-solid fa-chart-line"></i>
-          </div>
-
-          <div>
-            <div class="stat-number" id="averageScore">—</div>
-
-            <div class="stat-label">Average Score</div>
-
-            <div class="stat-change" id="averageScoreNote">Average of published results</div>
-          </div>
-        </div>
       </div>
 
       <!-- =================================================
@@ -1807,7 +1792,6 @@
           populateSubjectFilter();
           renderQuizzes();
           updateStatistics();
-          updatePerformance();
           const requestedQuizId = new URLSearchParams(
             window.location.search,
           ).get("quiz_id");
@@ -2207,41 +2191,6 @@
       }
 
       /* =====================================================
-         PERFORMANCE
-      ===================================================== */
-
-      function updatePerformance() {
-        const submitted = allAttempts.filter(
-          (attempt) =>
-            attempt.status === "submitted",
-        );
-        const values = submitted
-          .filter(
-            (attempt) =>
-              attempt.result_released === true &&
-              Number(attempt.total_marks) > 0 &&
-              Number.isFinite(Number(attempt.percentage)),
-          )
-          .map((attempt) => Number(attempt.percentage));
-        const hasResults = values.length > 0;
-        const averageScore = hasResults
-          ? Math.round(
-              values.reduce((sum, value) => sum + value, 0) / values.length,
-            )
-          : null;
-        document.getElementById("averageScore").textContent = hasResults
-          ? `${averageScore}%`
-          : submitted.length
-            ? "Pending"
-            : "—";
-        document.getElementById("averageScoreNote").textContent = hasResults
-          ? `Average of ${values.length} published ${values.length === 1 ? "result" : "results"}`
-          : submitted.length
-            ? "Waiting for your teacher to release results"
-            : "Attempt a quiz to see your average";
-      }
-
-      /* =====================================================
          ATTEMPT QUIZ
       ===================================================== */
 
@@ -2398,7 +2347,6 @@
             allAttempts.push(attemptView);
             renderQuizzes();
             updateStatistics();
-            updatePerformance();
             setQuizAttemptViewVisible(false);
             renderAttemptResult(attemptView, selectedQuiz);
             return;
@@ -2454,7 +2402,6 @@
             allAttempts.push(attemptView);
             renderQuizzes();
             updateStatistics();
-            updatePerformance();
             setQuizAttemptViewVisible(false);
             renderAttemptResult(attemptView, selectedQuiz);
             return;

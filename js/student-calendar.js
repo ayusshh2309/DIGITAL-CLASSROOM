@@ -38,8 +38,6 @@
     date: calendarToday(),
     selectedDate: calendarToday(),
     events: [],
-    publishedQuizzes: [],
-    publishedQuizError: false,
     profile: null,
     subjectIds: new Set(),
     subjectsById: new Map(),
@@ -48,6 +46,7 @@
     authSubscription: null,
     stopRealtime: () => {},
     refreshSequence: 0,
+    dayRolloverTimer: null,
   };
 
   const $ = (id) => document.getElementById(id);
@@ -409,12 +408,12 @@
       .filter(Boolean);
   }
 
-  async function loadQuizzes(client, ranges) {
+  async function loadQuizzes(client) {
     const quizzes = [];
     for (let offset = 0; ; offset += 1000) {
       const { data, error } = await client
         .from("quizzes")
-        .select("id, teacher_id, grade, stream, subject_id, title, description, status, scheduled_date, scheduled_time, duration_minutes, created_at")
+        .select("id, teacher_id, grade, stream, subject_id, title, description, status, scheduled_date, scheduled_time, duration_minutes")
         .eq("grade", Number(state.profile.grade))
         .eq("status", "published")
         .order("updated_at", { ascending: false })
@@ -433,15 +432,11 @@
       String(quiz.status).toLowerCase() === "published",
     );
     const scheduledEvents = [];
-    const publishedQuizzes = [];
     eligibleQuizzes.forEach((quiz) => {
-      if (!String(quiz.scheduled_date || "").trim()) {
-        publishedQuizzes.push(quiz);
-        return;
-      }
+      const scheduledDate = String(quiz.scheduled_date || "").trim();
+      if (!scheduledDate) return;
       const startAt = quizScheduledAt(quiz);
       if (!startAt) return;
-      if (!eventIsInRanges({ start_at: startAt }, ranges)) return;
       const endAt = quiz.scheduled_time
         ? new Date(startAt.getTime() + Number(quiz.duration_minutes || 0) * 60_000).toISOString()
         : null;
@@ -455,10 +450,7 @@
         all_day: !quiz.scheduled_time,
       }, "quizzes", "quiz"));
     });
-    return {
-      events: scheduledEvents.filter(Boolean),
-      publishedQuizzes,
-    };
+    return scheduledEvents.filter(Boolean);
   }
 
   async function loadEvents(date = state.date) {
@@ -468,7 +460,7 @@
       loadCalendarEvents(client, ranges),
       loadMaterials(client, ranges),
       loadLiveClasses(client, ranges),
-      loadQuizzes(client, ranges),
+      loadQuizzes(client),
       loadAnnouncements(client, ranges),
     ]);
     const sourceNames = [
@@ -479,23 +471,9 @@
       "Announcements",
     ];
     const sourceErrors = [];
-    let publishedQuizError = false;
-    let publishedQuizzes = [];
     const events = [];
     sources.forEach((result, index) => {
       if (result.status === "fulfilled") {
-        if (index === 3 && (!Array.isArray(result.value?.events) || !Array.isArray(result.value?.publishedQuizzes))) {
-          const error = new Error(`${sourceNames[index]} query returned an unexpected response; expected scheduled and unscheduled quiz lists.`);
-          console.error(`Student calendar ${sourceNames[index].toLowerCase()} query failed.`, error);
-          sourceErrors.push(`${sourceNames[index]}: ${error.message}`);
-          publishedQuizError = true;
-          return;
-        }
-        if (index === 3) {
-          publishedQuizzes = result.value.publishedQuizzes;
-          events.push(...result.value.events);
-          return;
-        }
         if (!Array.isArray(result.value)) {
           const error = new Error(`${sourceNames[index]} query returned an unexpected response; expected a row array.`);
           console.error(`Student calendar ${sourceNames[index].toLowerCase()} query failed.`, error);
@@ -507,7 +485,6 @@
       }
       console.error(`Student calendar ${sourceNames[index].toLowerCase()} query failed.`, result.reason);
       sourceErrors.push(`${sourceNames[index]}: ${result.reason?.message || "query failed"}`);
-      if (index === 3) publishedQuizError = true;
     });
     const uniqueEvents = new Map();
     events.forEach((event) => {
@@ -518,8 +495,6 @@
       events: [...uniqueEvents.values()].sort((left, right) =>
         new Date(left.start_at) - new Date(right.start_at),
       ),
-      publishedQuizzes,
-      publishedQuizError,
       sourceErrors,
     };
   }
@@ -660,32 +635,40 @@
   function renderCalendarStatus() {
     const status = $("calendarStatus");
     if (!status) return;
-    const countFor = (source) => state.events.filter((event) =>
-      event.source_table === source
-    ).length;
-    const categoryCount = (source, emptyLabel, singular, plural) => {
-      const count = countFor(source);
-      return count ? `${count} ${count === 1 ? singular : plural}` : emptyLabel;
+    const selectedKey = dayKey(state.selectedDate);
+    const dayEvents = state.events.filter((event) => dayKey(event.start_at) === selectedKey);
+    const categoryLabels = {
+      material: ["study material", "study materials"],
+      live_class: ["live class", "live classes"],
+      class: ["class", "classes"],
+      quiz: ["quiz", "quizzes"],
+      announcement: ["announcement", "announcements"],
+      assignment: ["assignment", "assignments"],
+      holiday: ["holiday", "holidays"],
+      rescheduled_class: ["rescheduled class", "rescheduled classes"],
+      exam: ["exam", "exams"],
     };
-    const scheduledQuizCount = state.events.filter((event) => event.type === "quiz").length;
-    const quizCounts = [];
-    if (scheduledQuizCount) {
-      quizCounts.push(`${scheduledQuizCount} scheduled ${scheduledQuizCount === 1 ? "quiz" : "quizzes"}`);
-    }
-    if (state.publishedQuizzes.length) {
-      quizCounts.push(`${state.publishedQuizzes.length} ${state.publishedQuizzes.length === 1 ? "quiz" : "quizzes"} published without a scheduled date`);
-    }
-    const counts = [
-      categoryCount("materials", "No materials uploaded", "material", "materials"),
-      categoryCount("live_classes", "No live classes scheduled", "live class", "live classes"),
-      quizCounts.join(" · ") || "No quizzes published",
-      categoryCount("announcements", "No announcements published", "announcement", "announcements"),
-    ].join(" · ");
+    const countsByType = new Map();
+    dayEvents.forEach((event) => {
+      const type = String(event.type || "event").toLowerCase();
+      countsByType.set(type, (countsByType.get(type) || 0) + 1);
+    });
+    const counts = [...countsByType].map(([type, count]) => {
+      const [singular, plural] = categoryLabels[type] || [
+        type.replace(/_/g, " "),
+        `${type.replace(/_/g, " ")}s`,
+      ];
+      return `${count} ${count === 1 ? singular : plural}`;
+    }).join(" · ");
+    const dayLabel = formatDate(state.selectedDate, {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
     status.textContent = state.sourceErrors.length
-      ? `${counts}. Some calendar sources could not be loaded: ${state.sourceErrors.join(" | ")}`
-      : state.events.length
-        ? counts
-        : `No activities scheduled. ${counts}.`;
+      ? `${dayLabel}: ${counts || "No events scheduled"}. Some calendar sources could not be loaded: ${state.sourceErrors.join(" | ")}`
+      : `${dayLabel}: ${counts || "No events scheduled for this day"}.`;
     status.dataset.state = state.sourceErrors.length ? "error" : "info";
     status.hidden = false;
   }
@@ -757,24 +740,6 @@
     }).join("") : '<div class="upcoming-event"><div class="upcoming-info"><h4>No upcoming events</h4><p>There are no future events for your profile.</p></div></div>');
   }
 
-  function renderPublishedQuizzes() {
-    const container = $("publishedQuizList");
-    if (!container) return;
-    container.innerHTML = state.publishedQuizzes.length
-      ? state.publishedQuizzes.map((quiz) => {
-        const subject = state.subjectsById.get(String(quiz.subject_id))?.name || "Subject";
-        const description = String(quiz.description || "").trim();
-        return `<a class="published-quiz-item" href="st_quizzes.html?quiz_id=${encodeURIComponent(quiz.id)}">
-          <strong>${escapeHtml(quiz.title || "Published quiz")}</strong>
-          <span>${escapeHtml(subject)} · Published without a scheduled date${quiz.created_at ? ` · Created ${escapeHtml(formatDate(quiz.created_at, { month: "short", day: "numeric", year: "numeric" }))}` : ""}</span>
-          ${description ? `<p>${escapeHtml(description)}</p>` : ""}
-        </a>`;
-      }).join("")
-      : `<p class="published-quiz-empty">${state.publishedQuizError
-        ? "Published quizzes could not be loaded."
-        : "No published quizzes are available for your registered curriculum."}</p>`;
-  }
-
   function renderCalendar() {
     const monthTitle = $("monthTitle");
     if (monthTitle) {
@@ -786,7 +751,6 @@
     renderMiniCalendar();
     renderCalendarStatus();
     renderUpcoming();
-    renderPublishedQuizzes();
   }
 
   function renderModal(event) {
@@ -893,26 +857,32 @@
       const result = await loadEvents(requestedDate);
       if (sequence !== state.refreshSequence) return;
       state.events = result.events;
-      state.publishedQuizzes = result.publishedQuizzes;
-      state.publishedQuizError = result.publishedQuizError;
       state.sourceErrors = result.sourceErrors;
       renderCalendar();
+      scheduleDayRolloverRefresh();
     } catch (error) {
       if (sequence !== state.refreshSequence) return;
       console.error("Unable to render student calendar.", error);
       state.events = [];
-      state.publishedQuizzes = [];
-      state.publishedQuizError = true;
       state.sourceErrors = [`Calendar: ${error.message || "Unable to load calendar data."}`];
       block(error.message || "Unable to load student calendar data.");
       renderCalendarStatus();
-      renderPublishedQuizzes();
       const message = escapeHtml(error.message || "Unable to load calendar data.");
       if ($("upcomingCard")) $("upcomingCard").innerHTML = `<div class="side-card-header"><h3>Upcoming</h3></div><div class="upcoming-event"><div class="upcoming-info"><h4>${message}</h4></div></div>`;
       if (error?.code === "AUTH_REQUIRED") {
         window.location.assign("../student_registration/login.html");
       }
     }
+  }
+
+  function scheduleDayRolloverRefresh() {
+    window.clearTimeout(state.dayRolloverTimer);
+    const { year, month, day } = calendarDateParts(new Date());
+    const nextDay = calendarBoundary(year, month - 1, day + 1);
+    state.dayRolloverTimer = window.setTimeout(
+      () => void refresh(),
+      Math.max(100, nextDay.getTime() - Date.now() + 100),
+    );
   }
 
   function bindUi() {
@@ -1038,9 +1008,6 @@
           void (async () => {
             await state.stopRealtime();
             state.events = [];
-            state.publishedQuizzes = [];
-            state.publishedQuizError = false;
-            renderPublishedQuizzes();
             state.profile = null;
             await refresh();
             state.stopRealtime = await subscribe();
@@ -1059,6 +1026,7 @@
 
   window.addEventListener("pagehide", () => {
     window.clearTimeout(refreshTimer);
+    window.clearTimeout(state.dayRolloverTimer);
     void state.stopRealtime();
     state.authSubscription?.unsubscribe();
   }, { once: true });

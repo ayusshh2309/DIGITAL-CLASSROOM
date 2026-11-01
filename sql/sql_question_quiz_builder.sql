@@ -419,6 +419,8 @@ declare
   quiz_attempts integer;
   quiz_scheduled_date date;
   quiz_scheduled_time time without time zone;
+  saved_scheduled_date date;
+  saved_scheduled_time time without time zone;
   question_item jsonb;
   question_index integer := 0;
   question_kind text;
@@ -594,6 +596,27 @@ begin
     if quiz_id is null then
       raise exception 'The selected subject no longer exists.';
     end if;
+  end if;
+
+  select quiz.scheduled_date, quiz.scheduled_time
+  into saved_scheduled_date, saved_scheduled_time
+  from public.quizzes quiz
+  where quiz.id = quiz_id
+    and quiz.teacher_id = teacher_record_id;
+  if not found then
+    raise exception 'Quiz schedule could not be verified for quiz %.', quiz_id
+      using errcode = 'P0002';
+  end if;
+  if saved_scheduled_date is distinct from quiz_scheduled_date
+    or saved_scheduled_time is distinct from quiz_scheduled_time then
+    raise exception
+      'Quiz schedule persistence failed for quiz %: requested date %, time %; stored date %, time %.',
+      quiz_id,
+      quiz_scheduled_date,
+      quiz_scheduled_time,
+      saved_scheduled_date,
+      saved_scheduled_time
+      using errcode = '23514';
   end if;
 
   question_index := 0;
