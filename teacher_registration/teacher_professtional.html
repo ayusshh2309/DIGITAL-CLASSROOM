@@ -1389,9 +1389,12 @@
         }
 
         function getSelectedStreams() {
-          return Array.from(
+          const normalizeStream =
+            window.SubjectService?.normalizeStream ||
+            ((value) => String(value ?? "").trim().toLowerCase());
+          return [...new Set(Array.from(
             document.querySelectorAll("#streamSelectPanel input[type='checkbox']:checked"),
-          ).map((checkbox) => checkbox.value);
+          ).map((checkbox) => normalizeStream(checkbox.value)).filter(Boolean))];
         }
 
         function getSelectedStreamsByGrade() {
@@ -1448,6 +1451,12 @@
           const grid = panel?.querySelector(".checkbox-grid");
           if (!grid) throw new Error("The teacher stream selection panel is missing.");
           grid.replaceChildren();
+          const normalizeStream =
+            window.SubjectService?.normalizeStream ||
+            ((value) => String(value ?? "").trim().toLowerCase());
+          const normalizedSelectedStreams = new Set(
+            selectedStreams.map((stream) => normalizeStream(stream)),
+          );
           streamOptions.forEach(([stream, label], index) => {
             const id = `teacher_stream_${index}`;
             const card = document.createElement("div");
@@ -1456,7 +1465,9 @@
             input.type = "checkbox";
             input.id = id;
             input.value = stream;
-            input.checked = selectedStreams.includes(stream);
+            input.checked = normalizedSelectedStreams.has(
+              normalizeStream(stream),
+            );
             const optionLabel = document.createElement("label");
             optionLabel.htmlFor = id;
             optionLabel.textContent = label;
@@ -1481,13 +1492,7 @@
           [...subjectOptions]
             .sort((left, right) => left.name.localeCompare(right.name))
             .forEach((subject, subjectIndex) => {
-              const offerings = subject.grades.flatMap((grade) => {
-                if (grade >= 5 && grade <= 10) return [{ grade, stream: null }];
-                if (grade >= 11 && grade <= 12) {
-                  return subject.streams.map((stream) => ({ grade, stream }));
-                }
-                return [];
-              });
+              const offerings = subject.offerings || [];
               const card = document.createElement("div");
               card.className = "subject-card";
               const heading = document.createElement("div");
@@ -1601,9 +1606,64 @@
           if (!client || !window.SubjectService) {
             throw new Error("Supabase subject services are unavailable.");
           }
-          const subjects = await window.SubjectService.getSubjectCatalog(client);
+          const offerings = [];
+          for (let grade = 5; grade <= 10; grade += 1) {
+            const eligibleSubjects =
+              await window.SubjectService.getEligibleSubjects(
+                grade,
+                null,
+                client,
+              );
+            offerings.push(
+              ...eligibleSubjects.map((subject) => ({
+                subject,
+                grade,
+                stream: null,
+              })),
+            );
+          }
+          for (let grade = 11; grade <= 12; grade += 1) {
+            const streams = await window.SubjectService.getAvailableStreams(
+              grade,
+              client,
+            );
+            for (const streamValue of streams) {
+              const stream = window.SubjectService.normalizeStream(streamValue);
+              const eligibleSubjects =
+                await window.SubjectService.getEligibleSubjects(
+                  grade,
+                  stream,
+                  client,
+                );
+              offerings.push(
+                ...eligibleSubjects.map((subject) => ({
+                  subject,
+                  grade,
+                  stream,
+                })),
+              );
+            }
+          }
           if (version !== subjectLoadVersion) return;
-          currentSubjectOptions = subjects;
+          const subjectsById = new Map();
+          offerings.forEach(({ subject, grade, stream }) => {
+            const subjectId = String(subject.id);
+            if (!subjectsById.has(subjectId)) {
+              subjectsById.set(subjectId, {
+                id: subject.id,
+                name: subject.name,
+                offerings: [],
+              });
+            }
+            const entry = subjectsById.get(subjectId);
+            const key = `${grade}|${stream || ""}`;
+            if (!entry.offerings.some(
+              (offering) => `${offering.grade}|${offering.stream || ""}` === key,
+            )) {
+              entry.offerings.push({ grade, stream });
+            }
+          });
+          currentSubjectOptions = [...subjectsById.values()];
           subjectOptionsReady = true;
           subjectLoadError = null;
           const status = document.getElementById("subjectCatalogStatus");
@@ -1658,8 +1718,9 @@
             (assignment.grades || []).forEach((gradeValue) => {
               const grade = Number(gradeValue);
               const streams = grade >= 11
-                ? assignment.streamsByGrade?.[grade] || []
-                : [null];
+              ? (assignment.streamsByGrade?.[grade] || [])
+                  .map((stream) => window.SubjectService.normalizeStream(stream))
+              : [null];
               streams.forEach((stream) => {
                 const scope = `${grade}|${stream || ""}`;
                 const key = `${subjectId}|${scope}`;
@@ -1736,7 +1797,7 @@
           const savedStreams = [
             ...(Array.isArray(step2.streams) ? step2.streams : []),
             ...Object.values(step2.streamsByGrade || {}).flat(),
-          ];
+          ].map((stream) => window.SubjectService.normalizeStream(stream));
           renderStreamOptions(savedStreams);
           const subjectAssignments = Array.isArray(step2.subjectAssignments)
             ? step2.subjectAssignments
