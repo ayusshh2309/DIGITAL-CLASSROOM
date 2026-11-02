@@ -12,6 +12,10 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
 
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -266,21 +270,6 @@
         font-size: 1rem;
       }
 
-      .btn-edit-header {
-        background: #7c3aed;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 12px;
-        font-weight: 700;
-        font-size: 0.92rem;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        box-shadow: var(--shadow-sm);
-      }
-
       /* Tabs Row */
       .profile-tabs {
         margin: 0 40px 24px 40px;
@@ -412,61 +401,6 @@
         font-size: 1.1rem;
         width: 20px;
         text-align: center;
-      }
-
-      .about-me-box {
-        border-top: 1px solid var(--surface-border);
-        padding: 20px;
-      }
-
-      .about-me-box h4 {
-        font-size: 0.95rem;
-        font-weight: 800;
-        color: var(--text-main);
-        margin-bottom: 6px;
-      }
-
-      .about-me-box p {
-        font-size: 0.88rem;
-        color: var(--text-muted);
-        line-height: 1.4;
-      }
-
-      .social-links-box {
-        border-top: 1px solid var(--surface-border);
-        padding: 20px;
-      }
-
-      .social-links-box h4 {
-        font-size: 0.95rem;
-        font-weight: 800;
-        color: var(--text-main);
-        margin-bottom: 10px;
-      }
-
-      .social-icons-row {
-        display: flex;
-        gap: 10px;
-      }
-
-      .social-icon-btn {
-        width: 38px;
-        height: 38px;
-        background: #f8fafc;
-        border: 1px solid var(--surface-border);
-        border-radius: 10px;
-        display: grid;
-        place-items: center;
-        color: #475569;
-        text-decoration: none;
-        font-size: 1rem;
-        font-weight: bold;
-      }
-
-      .social-icon-btn:hover {
-        background: #ede9fe;
-        color: #7c3aed;
-        border-color: #ddd6fe;
       }
 
       .profile-stats-footer {
@@ -697,148 +631,11 @@
         overflow-wrap: anywhere;
       }
 
-      .profile-page .btn-edit-header {
-        flex: 0 0 auto;
-        background: #2f7d5d;
-      }
-
-      .profile-edit-overlay {
-        position: fixed;
-        inset: 0;
-        z-index: 1000;
-        display: none;
-        place-items: center;
-        padding: 20px;
-        background: rgba(15, 31, 45, 0.48);
-      }
-
-      .profile-edit-overlay.open {
-        display: grid;
-      }
-
-      .profile-edit-dialog {
-        width: min(100%, 680px);
-        max-height: min(90vh, 800px);
-        overflow-y: auto;
-        padding: 24px;
-        border: 1px solid #dfece5;
-        border-radius: 16px;
-        background: #fff;
-        box-shadow: 0 20px 60px rgba(15, 31, 45, 0.2);
-      }
-
-      .profile-edit-heading {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16px;
-        margin-bottom: 18px;
-      }
-
-      .profile-edit-heading h2 {
-        color: #17392f;
-        font-size: 1.35rem;
-      }
-
-      .profile-edit-heading p {
-        margin-top: 4px;
-        color: #64748b;
-        font-size: 0.88rem;
-      }
-
-      .profile-edit-close {
-        width: 36px;
-        height: 36px;
-        border: 1px solid #dce7e1;
-        border-radius: 9px;
-        color: #315246;
-        background: #f6faf7;
-        font-size: 1.1rem;
-        cursor: pointer;
-      }
-
-      .profile-edit-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 14px;
-      }
-
-      .profile-edit-field {
-        display: grid;
-        gap: 6px;
-        color: #344b42;
-        font-size: 0.83rem;
-        font-weight: 700;
-      }
-
-      .profile-edit-field input,
-      .profile-edit-field select,
-      .profile-edit-field textarea {
-        width: 100%;
-        min-height: 42px;
-        padding: 9px 11px;
-        border: 1px solid #d7e3dc;
-        border-radius: 8px;
-        color: #172c25;
-        background: #fff;
-        font: inherit;
-        font-weight: 400;
-      }
-
-      .profile-edit-field input:focus,
-      .profile-edit-field select:focus,
-      .profile-edit-field textarea:focus {
-        outline: 3px solid rgba(47, 125, 93, 0.16);
-        border-color: #2f7d5d;
-      }
-
-      .profile-edit-field textarea {
-        min-height: 88px;
-        resize: vertical;
-      }
-
-      .profile-edit-error {
-        min-height: 14px;
-        color: #b42318;
-        font-size: 0.75rem;
-        font-weight: 500;
-      }
-
-      .profile-edit-status {
+      .profile-status {
         min-height: 22px;
-        margin-top: 14px;
+        margin: 0;
         color: #52645b;
         font-size: 0.84rem;
-      }
-
-      .profile-edit-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        margin-top: 14px;
-      }
-
-      .profile-edit-actions button {
-        min-height: 40px;
-        padding: 9px 15px;
-        border: 1px solid #d7e3dc;
-        border-radius: 8px;
-        color: #315246;
-        background: #fff;
-        font: inherit;
-        font-weight: 700;
-        cursor: pointer;
-      }
-
-      .profile-edit-actions .profile-edit-save {
-        border-color: #2f7d5d;
-        color: #fff;
-        background: #2f7d5d;
-      }
-
-      .profile-edit-actions button:disabled {
-        cursor: wait;
-        opacity: 0.65;
       }
 
       .profile-page .profile-content-grid {
@@ -852,7 +649,7 @@
         border: 1px solid #dfece5;
         border-radius: 16px;
         background: #edf5f0;
-        box-shadow: none;
+        box-shadow: 0 5px 18px rgba(15, 23, 42, 0.035);
       }
 
       .profile-page .profile-tabs {
@@ -901,7 +698,7 @@
       }
 
       .profile-page .profile-right-panels {
-        gap: 10px;
+        gap: 16px;
       }
 
       .profile-page .stats-grid {
@@ -913,13 +710,20 @@
       .profile-page .stat-card {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 14px;
         min-width: 0;
-        min-height: 82px;
-        padding: 14px 16px;
+        min-height: 88px;
+        padding: 16px 18px;
         border: 1px solid rgba(133, 156, 146, 0.22);
         border-radius: 14px;
         background: rgba(255, 255, 255, 0.55);
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.035);
+        transition: transform 160ms ease, box-shadow 160ms ease;
+      }
+
+      .profile-page .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
       }
 
       .profile-page .stat-icon {
@@ -955,13 +759,29 @@
       }
 
       .profile-page .detail-card {
-        padding: 18px;
-        border-radius: 14px;
+        padding: 22px;
+        border-radius: 16px;
+        box-shadow: 0 5px 18px rgba(15, 23, 42, 0.035);
       }
 
       .profile-page .detail-card-header {
-        margin-bottom: 14px;
-        padding-bottom: 10px;
+        margin-bottom: 18px;
+        padding-bottom: 14px;
+        font-size: 1.02rem;
+      }
+
+      .profile-page .details-grid-2 {
+        gap: 22px 34px;
+      }
+
+      .profile-page .detail-row-item {
+        min-width: 0;
+        gap: 3px;
+      }
+
+      .profile-page .detail-value {
+        overflow-wrap: anywhere;
+        line-height: 1.5;
       }
 
       .profile-page .detail-icon-title {
@@ -1003,15 +823,6 @@
       }
 
       @media (max-width: 600px) {
-        .profile-edit-dialog {
-          padding: 18px;
-        }
-
-        .profile-edit-grid {
-          grid-template-columns: minmax(0, 1fr);
-          gap: 12px;
-        }
-
         .profile-page .page-header {
           align-items: flex-start;
           flex-direction: column;
@@ -1033,11 +844,6 @@
           font-size: 1.5rem;
         }
 
-        .profile-page .btn-edit-header {
-          width: 100%;
-          justify-content: center;
-        }
-
         .profile-page .details-grid-2 {
           grid-template-columns: minmax(0, 1fr);
         }
@@ -1056,6 +862,604 @@
 
       .profile-content-grid {
         margin-bottom: 0;
+      }
+
+      .profile-page .page-header {
+        position: relative;
+        align-items: stretch;
+        min-height: 205px;
+        margin-bottom: 0;
+        padding: 26px 30px;
+        border-radius: 22px;
+        overflow: hidden;
+      }
+
+      .profile-page .page-header::after {
+        content: "";
+        position: absolute;
+        top: -135px;
+        right: -42px;
+        width: 220px;
+        height: 220px;
+        border: 1px solid rgba(42, 112, 74, 0.12);
+        border-radius: 50%;
+        box-shadow: 0 0 0 24px rgba(255, 255, 255, 0.12),
+          0 0 0 48px rgba(255, 255, 255, 0.1);
+        pointer-events: none;
+      }
+
+      .profile-page .header-left {
+        position: relative;
+        z-index: 1;
+        align-items: stretch;
+        gap: 18px;
+      }
+
+      .profile-page .header-profile-copy {
+        flex: 1;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .profile-page .profile-page-eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 1px;
+        color: #26765e;
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .profile-page .profile-page-eyebrow i {
+        color: #6246e5;
+      }
+
+      .profile-page .header-profile-copy h1 {
+        margin: 0;
+        font-size: clamp(1.75rem, 2vw, 2.3rem);
+        letter-spacing: -0.05em;
+      }
+
+      .profile-page .profile-header-subtitle {
+        color: #527367;
+        font-size: 0.82rem;
+      }
+
+      .profile-page .profile-grade-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 6px 12px;
+      }
+
+      .profile-page .header-meta-row {
+        align-items: center;
+        gap: 7px 9px;
+      }
+
+      .profile-page .header-meta-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        min-height: 30px;
+        padding: 5px 9px;
+        border: 1px solid rgba(42, 112, 74, 0.1);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.34);
+      }
+
+      .profile-page .header-meta-item i {
+        flex: 0 0 auto;
+        color: #2d7a5d;
+        font-size: 0.8rem;
+      }
+
+      .profile-page .header-profile-visual {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        width: 184px;
+        flex: 0 0 184px;
+        place-items: center;
+        align-self: stretch;
+      }
+
+      .profile-page .header-profile-visual::before {
+        position: absolute;
+        width: 180px;
+        height: 180px;
+        border: 1px solid rgba(42, 112, 74, 0.13);
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.16);
+        content: "";
+      }
+
+      .profile-page .header-profile-visual::after {
+        position: absolute;
+        top: 16px;
+        right: 18px;
+        width: 12px;
+        height: 12px;
+        border: 3px solid rgba(255, 255, 255, 0.8);
+        border-radius: 50%;
+        background: #6246e5;
+        box-shadow: 0 0 0 5px rgba(98, 70, 229, 0.1);
+        content: "";
+      }
+
+      .profile-page .header-profile-visual > img,
+      .profile-page .header-profile-visual > span {
+        position: relative;
+        z-index: 1;
+      }
+
+      .profile-page .header-avatar,
+      .profile-page .header-avatar-fallback {
+        width: 164px;
+        height: 164px;
+        flex: 0 0 164px;
+        border: 5px solid rgba(255, 255, 255, 0.92);
+        border-radius: 50%;
+        background: #d3e9dc;
+        box-shadow: 0 12px 28px rgba(35, 91, 67, 0.18);
+      }
+
+      .profile-page .header-avatar {
+        object-fit: cover;
+      }
+
+      .profile-page .header-avatar-fallback {
+        display: grid;
+        place-items: center;
+        color: #236a58;
+        font-size: 2.25rem;
+        font-weight: 800;
+      }
+
+      .profile-page .header-avatar-fallback[hidden],
+      .profile-page .header-avatar[hidden],
+      .profile-page .profile-side-avatar[hidden],
+      .profile-page .profile-side-initials[hidden] {
+        display: none;
+      }
+
+      .profile-page .profile-status:empty {
+        display: none;
+      }
+
+      .profile-page .profile-content-grid {
+        grid-template-columns: 270px minmax(0, 1fr);
+        gap: 20px;
+        align-items: start;
+      }
+
+      .profile-page .profile-card-left {
+        position: relative;
+        overflow: hidden;
+        padding: 18px;
+        border-radius: 18px;
+        background: #fff;
+        box-shadow: 0 10px 26px rgba(27, 66, 53, 0.07);
+      }
+
+      .profile-page .profile-banner-bg {
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+        height: 76px;
+        background: linear-gradient(120deg, #e1f1e8, #d6ebe0 68%, #e8f4ec);
+      }
+
+      .profile-page .profile-banner-bg::after {
+        position: absolute;
+        top: -58px;
+        right: 14px;
+        width: 115px;
+        height: 115px;
+        border: 1px solid rgba(42, 112, 74, 0.13);
+        border-radius: 50%;
+        content: "";
+      }
+
+      .profile-page .profile-side-identity {
+        position: relative;
+        display: flex;
+        align-items: flex-end;
+        gap: 12px;
+        min-height: 104px;
+        padding: 10px 0 15px;
+        border-bottom: 1px solid #edf2ef;
+      }
+
+      .profile-page .profile-side-avatar,
+      .profile-page .profile-side-initials {
+        width: 62px;
+        height: 62px;
+        flex: 0 0 62px;
+        border: 3px solid #fff;
+        border-radius: 17px;
+        box-shadow: 0 6px 15px rgba(32, 83, 61, 0.14);
+      }
+
+      .profile-page .profile-side-avatar {
+        object-fit: cover;
+        background: #e6f2eb;
+      }
+
+      .profile-page .profile-side-initials {
+        display: grid;
+        place-items: center;
+        color: #236a58;
+        background: #d5eade;
+        font-size: 1.1rem;
+        font-weight: 800;
+      }
+
+      .profile-page .profile-side-copy {
+        min-width: 0;
+        padding-bottom: 4px;
+      }
+
+      .profile-page .profile-side-name {
+        margin-bottom: 5px;
+        color: #1d332c;
+        font-size: 0.9rem;
+        font-weight: 800;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+      }
+
+      .profile-page .profile-side-role {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        color: #39745e;
+        font-size: 0.68rem;
+        font-weight: 700;
+      }
+
+      .profile-page .profile-tabs {
+        gap: 4px;
+        margin: 18px 0 14px;
+      }
+
+      .profile-page .profile-overview-heading .profile-tab {
+        min-height: 0;
+        margin: 0 0 8px;
+        padding: 12px;
+        border-color: rgba(107, 164, 136, 0.12);
+        background: rgba(122, 195, 161, 0.12);
+        box-shadow: inset 0 0 0 1px rgba(74, 136, 109, 0.03);
+        color: #1a2f2a;
+        cursor: default;
+        pointer-events: none;
+      }
+
+      .profile-page .profile-overview-heading .profile-tab i,
+      .profile-page .profile-tab i {
+        width: 18px;
+        color: #397c64;
+        text-align: center;
+      }
+
+      .profile-page .profile-tabs > .profile-tab {
+        width: 100%;
+        min-height: 42px;
+        margin: 0 0 5px;
+        padding: 11px 12px;
+        border-radius: 10px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        transition: 0.2s ease;
+      }
+
+      .profile-page .profile-tabs > .profile-tab:hover {
+        transform: translateY(-1px);
+        border-color: rgba(101, 158, 128, 0.28);
+        background: #f5faf7;
+      }
+
+      .profile-page .profile-tabs > .profile-tab:focus-visible {
+        outline: 3px solid rgba(47, 125, 93, 0.18);
+        outline-offset: 2px;
+      }
+
+      .profile-page .contact-info-list {
+        border-top: 0;
+        flex-direction: column;
+        gap: 0;
+        padding: 10px 2px 0;
+      }
+
+      .profile-page .contact-item {
+        display: flex;
+        gap: 10px;
+        padding: 8px 0;
+        color: #3d4b52;
+        font-size: 0.75rem;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+      }
+
+      .profile-page .header-meta-item > span {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+
+      .profile-page .contact-item i {
+        display: grid;
+        width: 28px;
+        height: 28px;
+        flex: 0 0 28px;
+        place-items: center;
+        border-radius: 8px;
+        color: #6246e5;
+        background: #f0edff;
+        font-size: 0.75rem;
+      }
+
+      .profile-page .profile-right-panels {
+        gap: 16px;
+      }
+
+      .profile-page .detail-card {
+        padding: 20px 21px 18px;
+        border: 1px solid #e1e9e5;
+        border-radius: 17px;
+        background: #fff;
+        box-shadow: 0 7px 20px rgba(30, 60, 44, 0.045);
+        scroll-margin-top: 92px;
+      }
+
+      .profile-page .detail-card-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 17px;
+        padding-bottom: 0;
+        border: 0;
+        color: #1d332c;
+        font-size: 1.08rem;
+        font-weight: 800;
+      }
+
+      .profile-page .detail-icon-title {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        flex: 0 0 34px;
+        place-items: center;
+        border-radius: 10px;
+        color: #32765c;
+        background: #e9f4ed;
+        font-size: 0.82rem;
+      }
+
+      .profile-page .details-grid-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .profile-page .detail-row-item {
+        min-width: 0;
+        gap: 0;
+        padding: 12px 13px;
+        border: 1px solid #edf1ef;
+        border-radius: 11px;
+        background: #fcfdfc;
+      }
+
+      .profile-page .detail-label {
+        margin-bottom: 7px;
+        color: #73847c;
+        font-size: 0.625rem;
+        font-weight: 700;
+        letter-spacing: 0.045em;
+        text-transform: uppercase;
+      }
+
+      .profile-page .detail-value {
+        display: block;
+        color: #263a32;
+        font-size: 0.8125rem;
+        font-weight: 650;
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+      }
+
+      .profile-page .academic-overview {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 13px;
+      }
+
+      .profile-page .academic-box {
+        min-width: 0;
+        padding: 16px;
+        border: 1px solid #e8efeb;
+        border-radius: 13px;
+        background: #fbfdfb;
+      }
+
+      .profile-page .academic-box h3 {
+        margin-bottom: 9px;
+        color: #28684f;
+        font-size: 0.8125rem;
+        font-weight: 800;
+      }
+
+      .profile-page .academic-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+        padding: 11px 0;
+        border-bottom: 1px solid #e9efec;
+      }
+
+      .profile-page .academic-row:last-child {
+        border-bottom: 0;
+      }
+
+      .profile-page .academic-row span:first-child {
+        color: #75867e;
+        font-size: 0.6875rem;
+      }
+
+      .profile-page .academic-row span:last-child {
+        color: #263a32;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-align: right;
+        overflow-wrap: anywhere;
+      }
+
+      .profile-page .subject-badge-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .profile-page .sub-badge {
+        padding: 8px 11px;
+        border: 1px solid #e2dcff;
+        border-radius: 9px;
+        background: #f2efff;
+        color: #533ac5;
+        font-size: 0.75rem;
+        font-weight: 700;
+      }
+
+      .profile-page .stats-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .profile-page .stat-card {
+        min-height: 76px;
+        padding: 12px;
+        gap: 9px;
+      }
+
+      .profile-page .stat-icon {
+        width: 36px;
+        height: 36px;
+        flex-basis: 36px;
+      }
+
+      .profile-page .stat-card strong {
+        font-size: 1.15rem;
+        line-height: 1.1;
+      }
+
+      .profile-page .stat-card span {
+        font-size: 0.7rem;
+      }
+
+      @media (max-width: 1100px) {
+        .profile-page .profile-content-grid {
+          grid-template-columns: 250px minmax(0, 1fr);
+        }
+
+        .profile-page .stats-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 850px) {
+        .profile-page {
+          padding: 20px 17px 28px !important;
+        }
+
+        .profile-page .profile-content-grid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .profile-page .profile-card-left {
+          width: 100%;
+        }
+      }
+
+      @media (max-width: 600px) {
+        .profile-page .page-header {
+          min-height: 0;
+          padding: 20px;
+        }
+
+        .profile-page .header-left {
+          align-items: flex-start;
+          gap: 12px;
+        }
+
+        .profile-page .header-profile-visual {
+          width: 86px;
+          flex-basis: 86px;
+          align-self: center;
+        }
+
+        .profile-page .header-avatar,
+        .profile-page .header-avatar-fallback {
+          width: 78px;
+          height: 78px;
+          flex-basis: 78px;
+          font-size: 1.25rem;
+        }
+
+        .profile-page .header-profile-visual::before {
+          width: 94px;
+          height: 94px;
+        }
+
+        .profile-page .header-profile-visual::after {
+          top: 4px;
+          right: 0;
+        }
+
+        .profile-page .header-meta-row {
+          gap: 6px;
+        }
+
+        .profile-page .header-meta-item {
+          font-size: 0.68rem;
+        }
+
+        .profile-page .details-grid-2,
+        .profile-page .academic-overview {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .profile-page .detail-card {
+          padding: 16px 14px;
+        }
+      }
+
+      @media (max-width: 420px) {
+        .profile-page .header-left {
+          flex-direction: column-reverse;
+        }
+
+        .profile-page .header-profile-visual {
+          width: 94px;
+          flex-basis: 94px;
+          align-self: flex-end;
+        }
+
+        .profile-page .header-avatar,
+        .profile-page .header-avatar-fallback {
+          width: 86px;
+          height: 86px;
+          flex-basis: 86px;
+        }
+
+        .profile-page .stats-grid {
+          gap: 8px;
+        }
+
+        .profile-page .stat-card {
+          padding: 10px;
+        }
       }
     </style>
     <link rel="stylesheet" href="../css/layout.css" />
@@ -1146,283 +1550,136 @@
       <main class="page-content main-box-container profile-page">
         <header class="page-header">
           <div class="header-left">
-            <img
-              class="header-avatar"
-              id="profileHeaderAvatar"
-              src=""
-              alt="Teacher profile"
-            />
             <div class="header-profile-copy">
+              <div class="profile-page-eyebrow">
+                <i class="fa-solid fa-id-card" aria-hidden="true"></i>
+                Teacher profile
+              </div>
               <h1 id="profileHeaderName">Loading profile...</h1>
+              <p class="profile-header-subtitle">
+                Your professional teaching profile
+              </p>
               <div class="profile-grade-badge" id="profileHeaderRole">
                 Teacher
               </div>
               <div class="header-meta-row">
-                <span class="header-meta-item" id="headerProfileEmail">-</span>
-                <span class="header-meta-item" id="headerProfilePhone">-</span>
-                <span class="header-meta-item" id="headerProfileLocation"
-                  >-</span
-                >
-                <span class="header-meta-item" id="headerProfileJoined"
-                  >Registration date unavailable</span
-                >
+                <span class="header-meta-item">
+                  <i class="fa-solid fa-envelope" aria-hidden="true"></i>
+                  <span id="headerProfileEmail">-</span>
+                </span>
+                <span class="header-meta-item">
+                  <i class="fa-solid fa-phone" aria-hidden="true"></i>
+                  <span id="headerProfilePhone">-</span>
+                </span>
+                <span class="header-meta-item">
+                  <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+                  <span id="headerProfileLocation">-</span>
+                </span>
+                <span class="header-meta-item">
+                  <i class="fa-solid fa-calendar" aria-hidden="true"></i>
+                  <span id="headerProfileJoined">Registration date unavailable</span>
+                </span>
               </div>
             </div>
+            <div class="header-profile-visual" aria-label="Teacher profile photo">
+              <img
+                class="header-avatar"
+                id="profileHeaderAvatar"
+                src=""
+                alt="Teacher profile"
+                hidden
+              />
+              <span
+                class="header-avatar-fallback"
+                id="profileHeaderInitials"
+                aria-hidden="true"
+                hidden
+              ></span>
+            </div>
           </div>
-          <button
-            class="btn-edit-header"
-            id="openProfileEditor"
-            type="button"
-            disabled
-          >
-            <span>✎</span> Edit Profile
-          </button>
         </header>
         <p
           id="profileLoadStatus"
-          class="profile-edit-status"
+          class="profile-status"
           role="status"
           aria-live="polite"
         ></p>
 
-        <div
-          class="profile-edit-overlay"
-          id="profileEditOverlay"
-          aria-hidden="true"
-        >
-          <section
-            class="profile-edit-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="profileEditTitle"
-          >
-            <div class="profile-edit-heading">
-              <div>
-                <h2 id="profileEditTitle">Edit Profile</h2>
-                <p>
-                  Changes sync to your teacher profile when Supabase is
-                  connected.
-                </p>
-              </div>
-              <button
-                class="profile-edit-close"
-                id="closeProfileEditor"
-                type="button"
-                aria-label="Close profile editor"
-              >
-                ×
-              </button>
-            </div>
-            <form id="profileEditForm">
-              <div class="profile-edit-grid">
-                <label class="profile-edit-field">
-                  Full name
-                  <input
-                    name="full_name"
-                    autocomplete="name"
-                    maxlength="100"
-                    required
-                  />
-                  <span
-                    class="profile-edit-error"
-                    data-error-for="full_name"
-                  ></span>
-                </label>
-                <label class="profile-edit-field">
-                  Phone
-                  <input name="phone_number" type="tel" autocomplete="tel" />
-                  <span
-                    class="profile-edit-error"
-                    data-error-for="phone_number"
-                  ></span>
-                </label>
-                <label class="profile-edit-field">
-                  Date of birth
-                  <input name="date_of_birth" type="date" />
-                  <span
-                    class="profile-edit-error"
-                    data-error-for="date_of_birth"
-                  ></span>
-                </label>
-                <label class="profile-edit-field">
-                  Gender
-                  <input name="gender" />
-                </label>
-                <label class="profile-edit-field">
-                  City
-                  <input name="city" autocomplete="address-level2" />
-                </label>
-                <label class="profile-edit-field">
-                  State
-                  <input name="state" autocomplete="address-level1" />
-                </label>
-                <label class="profile-edit-field">
-                  Country
-                  <input name="country" autocomplete="country-name" />
-                </label>
-                <label class="profile-edit-field">
-                  Address
-                  <input name="address" autocomplete="street-address" />
-                </label>
-                <label class="profile-edit-field">
-                  Institution
-                  <input name="institution_name" autocomplete="organization" />
-                </label>
-                <label class="profile-edit-field">
-                  Institution type
-                  <input name="institution_type" />
-                </label>
-                <label class="profile-edit-field">
-                  Years of experience
-                  <input
-                    name="years_experience"
-                    type="number"
-                    min="0"
-                    step="1"
-                  />
-                  <span
-                    class="profile-edit-error"
-                    data-error-for="years_experience"
-                  ></span>
-                </label>
-                <label class="profile-edit-field">
-                  Highest qualification
-                  <input name="highest_qualification" />
-                </label>
-                <label class="profile-edit-field">
-                  Teaching mode
-                  <input name="teaching_mode" />
-                </label>
-                <label class="profile-edit-field">
-                  Employment status
-                  <input name="employment_status" />
-                </label>
-                <label class="profile-edit-field">
-                  Languages
-                  <input name="languages" />
-                </label>
-                <label class="profile-edit-field">
-                  Profile photo
-                  <input
-                    name="profile_photo_file"
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                  />
-                  <span
-                    class="profile-edit-error"
-                    data-error-for="profile_photo_file"
-                  ></span>
-                </label>
-                <label class="profile-edit-field">
-                  About me
-                  <textarea name="bio" maxlength="1000"></textarea>
-                  <span class="profile-edit-error" data-error-for="bio"></span>
-                </label>
-              </div>
-              <p
-                class="profile-edit-status"
-                id="profileEditStatus"
-                role="status"
-                aria-live="polite"
-              ></p>
-              <div class="profile-edit-actions">
-                <button id="cancelProfileEditor" type="button">Cancel</button>
-                <button
-                  class="profile-edit-save"
-                  id="saveProfileButton"
-                  type="submit"
-                >
-                  Save changes
-                </button>
-              </div>
-            </form>
-          </section>
-        </div>
-
         <div class="profile-content-grid">
-          <div class="profile-card-left" id="overview">
+          <aside class="profile-card-left" id="overview">
+            <div class="profile-banner-bg"></div>
+            <div class="profile-side-identity">
+              <img
+                class="profile-side-avatar"
+                id="profileSideAvatar"
+                src=""
+                alt="Teacher profile"
+                hidden
+              />
+              <span
+                class="profile-side-initials"
+                id="profileSideInitials"
+                aria-hidden="true"
+                hidden
+              ></span>
+              <div class="profile-side-copy">
+                <h2 class="profile-side-name" id="profileSideName">
+                  Loading profile...
+                </h2>
+                <span class="profile-side-role">
+                  <i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i>
+                  <span id="profileSideRole">Teacher</span>
+                </span>
+              </div>
+            </div>
             <nav class="profile-tabs" aria-label="Profile sections">
               <h2 class="profile-overview-heading">
-                <a href="#overview" class="profile-tab active"
-                  >👤 Profile Overview</a
-                >
+                <span class="profile-tab profile-heading">
+                  <i class="fa-solid fa-user" aria-hidden="true"></i>
+                  <span>Profile Overview</span>
+                </span>
               </h2>
-              <a href="#personal" class="profile-tab">📋 Personal Details</a>
-              <a href="#professional" class="profile-tab"
-                >💼 Professional Details</a
-              >
-              <a href="#account" class="profile-tab">🔒 Account & Security</a>
+              <a href="#personal" class="profile-tab">
+                <i class="fa-regular fa-id-card" aria-hidden="true"></i>
+                <span>Personal Details</span>
+              </a>
+              <a href="#professional" class="profile-tab">
+                <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
+                <span>Professional Details</span>
+              </a>
+              <a href="#subjects" class="profile-tab">
+                <i class="fa-solid fa-book-open" aria-hidden="true"></i>
+                <span>Subjects Teaching</span>
+              </a>
             </nav>
 
             <div class="contact-info-list">
               <div class="contact-item">
-                <span>✉️</span>
+                <i class="fa-solid fa-envelope" aria-hidden="true"></i>
                 <span id="profileEmail">-</span>
               </div>
               <div class="contact-item">
-                <span>📞</span>
+                <i class="fa-solid fa-phone" aria-hidden="true"></i>
                 <span id="profilePhone">-</span>
               </div>
               <div class="contact-item">
-                <span>📍</span>
+                <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
                 <span id="profileLocation">-</span>
               </div>
               <div class="contact-item">
-                <span>📅</span>
+                <i class="fa-solid fa-calendar" aria-hidden="true"></i>
                 <span id="profileJoined">Registration date unavailable</span>
               </div>
             </div>
-
-            <div class="about-me-box">
-              <h4>About Me</h4>
-              <p id="profileAbout">Loading profile...</p>
-            </div>
-
-            <div class="social-links-box">
-              <h4>Social Links</h4>
-              <div class="social-icons-row">
-                <a href="#" class="social-icon-btn" title="LinkedIn">in</a>
-                <a href="#" class="social-icon-btn" title="Twitter">🐦</a>
-                <a href="#" class="social-icon-btn" title="Website">🌐</a>
-              </div>
-            </div>
-          </div>
+          </aside>
 
           <div class="profile-right-panels">
-            <div class="stats-grid">
-              <div class="stat-card">
-                <div class="stat-icon">📚</div>
-                <div>
-                  <strong id="profileClassCount">-</strong><span>Classes</span>
-                </div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-icon">👥</div>
-                <div>
-                  <strong id="profileStudentCount">-</strong
-                  ><span>Students</span>
-                </div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-icon">🎓</div>
-                <div>
-                  <strong id="profileSubjectCount">-</strong
-                  ><span>Subjects</span>
-                </div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-icon">★</div>
-                <div>
-                  <strong id="profileRating">-</strong><span>Rating</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Personal Details Card -->
             <div class="detail-card" id="personal">
               <div class="detail-card-header">
-                <div class="detail-icon-title">👤</div>
-                <span>Personal Details</span>
+                <div class="detail-icon-title">
+                  <i class="fa-solid fa-user" aria-hidden="true"></i>
+                </div>
+                <span>Personal Information</span>
               </div>
               <div class="details-grid-2">
                 <div class="detail-row-item">
@@ -1464,146 +1721,125 @@
               </div>
             </div>
 
-            <!-- Professional Details Card -->
             <div class="detail-card" id="professional">
               <div class="detail-card-header">
-                <div class="detail-icon-title">💼</div>
-                <span>Professional Details</span>
+                <div class="detail-icon-title">
+                  <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
+                </div>
+                <span>Professional Information</span>
               </div>
-              <div class="details-grid-2">
-                <div class="detail-row-item">
-                  <span class="detail-label">Employment Status</span>
-                  <span class="detail-value" id="detailEmploymentStatus">-</span>
-                </div>
-                <div class="detail-row-item">
-                  <span class="detail-label">Institution / School Name</span>
-                  <span class="detail-value" id="detailInstitution">-</span>
-                </div>
-                <div class="detail-row-item">
-                  <span class="detail-label">Institution Type</span>
-                  <span class="detail-value" id="detailInstitutionType">-</span>
-                </div>
-                <div class="detail-row-item">
-                  <span class="detail-label">Teaching Experience</span>
-                  <span class="detail-value" id="detailExperience">-</span>
-                </div>
-                <div class="detail-row-item">
-                  <span class="detail-label">Highest Qualification</span>
-                  <span class="detail-value" id="detailQualification">-</span>
-                </div>
-                <div class="detail-row-item">
-                  <span class="detail-label">Degree / Course</span>
-                  <span class="detail-value" id="detailDegree">-</span>
-                </div>
-                <div class="detail-row-item">
-                  <span class="detail-label">Specialization</span>
-                  <span class="detail-value" id="detailSpecialization">-</span>
-                </div>
-                <div class="detail-row-item">
-                  <span class="detail-label">University / College</span>
-                  <span class="detail-value" id="detailUniversity">-</span>
-                </div>
-                <div class="detail-row-item">
-                  <span class="detail-label">Graduation Year</span>
-                  <span class="detail-value" id="detailGraduationYear">-</span>
-                </div>
-                <div class="detail-row-item">
-                  <span class="detail-label">Teaching Mode</span>
-                  <span class="detail-value" id="detailTeachingMode">-</span>
-                </div>
-                <div class="detail-row-item">
-                  <span class="detail-label">Grades</span>
-                  <span class="detail-value" id="detailGrades">-</span>
-                </div>
-                <div class="detail-row-item">
-                  <span class="detail-label">Streams</span>
-                  <span class="detail-value" id="detailStreams">-</span>
-                </div>
-                <div class="detail-row-item">
-                  <span class="detail-label">Subjects Teaching</span>
-                  <div class="subject-badge-list" id="detailSubjects">
-                    <span class="sub-badge">-</span>
+              <div class="academic-overview">
+                <section class="academic-box">
+                  <h3>Teaching Assignment</h3>
+                  <div class="academic-row">
+                    <span>Employment Status</span>
+                    <span id="detailEmploymentStatus">-</span>
                   </div>
-                </div>
-                <div class="detail-row-item">
-                  <span class="detail-label">Languages Known</span>
-                  <span class="detail-value" id="detailLanguages">-</span>
-                </div>
+                  <div class="academic-row">
+                    <span>Institution / School</span>
+                    <span id="detailInstitution">-</span>
+                  </div>
+                  <div class="academic-row">
+                    <span>Institution Type</span>
+                    <span id="detailInstitutionType">-</span>
+                  </div>
+                  <div class="academic-row">
+                    <span>Teaching Experience</span>
+                    <span id="detailExperience">-</span>
+                  </div>
+                  <div class="academic-row">
+                    <span>Teaching Mode</span>
+                    <span id="detailTeachingMode">-</span>
+                  </div>
+                  <div class="academic-row">
+                    <span>Grades</span>
+                    <span id="detailGrades">-</span>
+                  </div>
+                  <div class="academic-row">
+                    <span>Streams</span>
+                    <span id="detailStreams">-</span>
+                  </div>
+                </section>
+
+                <section class="academic-box">
+                  <h3>Qualifications</h3>
+                  <div class="academic-row">
+                    <span>Highest Qualification</span>
+                    <span id="detailQualification">-</span>
+                  </div>
+                  <div class="academic-row">
+                    <span>Degree / Course</span>
+                    <span id="detailDegree">-</span>
+                  </div>
+                  <div class="academic-row">
+                    <span>Specialization</span>
+                    <span id="detailSpecialization">-</span>
+                  </div>
+                  <div class="academic-row">
+                    <span>University / College</span>
+                    <span id="detailUniversity">-</span>
+                  </div>
+                  <div class="academic-row">
+                    <span>Graduation Year</span>
+                    <span id="detailGraduationYear">-</span>
+                  </div>
+                  <div class="academic-row">
+                    <span>Languages Known</span>
+                    <span id="detailLanguages">-</span>
+                  </div>
+                </section>
               </div>
             </div>
 
-            <!-- Account & Security Card -->
-            <div class="detail-card" id="account">
+            <section class="detail-card" id="subjects">
               <div class="detail-card-header">
-                <div class="detail-icon-title">🔒</div>
-                <span>Account & Security</span>
+                <div class="detail-icon-title">
+                  <i class="fa-solid fa-book-open" aria-hidden="true"></i>
+                </div>
+                <span>Subjects Teaching</span>
               </div>
-              <div class="details-grid-2">
-                <div class="detail-row-item">
-                  <span class="detail-label">Account Type</span>
-                  <span class="detail-value">Teacher Account</span>
+              <div class="subject-badge-list" id="detailSubjects">
+                <span class="sub-badge">-</span>
+              </div>
+            </section>
+
+            <section class="detail-card" aria-labelledby="teachingOverviewTitle">
+              <div class="detail-card-header">
+                <div class="detail-icon-title">
+                  <i class="fa-solid fa-chart-simple" aria-hidden="true"></i>
                 </div>
-                <div class="detail-row-item">
-                  <span class="detail-label">Two-Factor Authentication</span>
+                <span id="teachingOverviewTitle">Teaching Overview</span>
+              </div>
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <div class="stat-icon"><i class="fa-solid fa-school" aria-hidden="true"></i></div>
                   <div>
-                    <span class="status-badge-green" id="mfaStatus"
-                      >Checking...</span
-                    >
+                    <strong id="profileClassCount">-</strong><span>Classes</span>
                   </div>
                 </div>
-                <div class="detail-row-item">
-                  <span class="detail-label">Password</span>
-                  <span class="detail-value">••••••••</span>
-                </div>
-                <div class="detail-row-item">
-                  <span class="detail-label">Last Login</span>
-                  <span class="detail-value" id="lastLoginValue">-</span>
-                </div>
-                <div class="detail-row-item" style="justify-content: center">
-                  <button
-                    class="btn-session-manage"
-                    id="changeProfilePassword"
-                    type="button"
-                    style="width: fit-content"
-                  >
-                    Change Password
-                  </button>
-                </div>
-                <div class="detail-row-item">
-                  <span class="detail-label">Login Email</span>
+                <div class="stat-card">
+                  <div class="stat-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></div>
                   <div>
-                    <span class="detail-value" id="authEmailValue">-</span>
-                    <button
-                      class="btn-session-manage"
-                      id="changeProfileEmail"
-                      type="button"
-                    >
-                      Change Email
-                    </button>
+                    <strong id="profileStudentCount">-</strong
+                    ><span>Students</span>
                   </div>
                 </div>
-                <div class="detail-row-item">
-                  <span class="detail-label">Active Sessions</span>
-                  <div
-                    style="
-                      display: flex;
-                      align-items: center;
-                      justify-content: space-between;
-                      margin-top: 4px;
-                    "
-                  >
-                    <span class="detail-value">Manage signed-in sessions</span>
-                    <button
-                      class="btn-session-manage"
-                      id="manageSessions"
-                      type="button"
-                    >
-                      Manage Sessions
-                    </button>
+                <div class="stat-card">
+                  <div class="stat-icon"><i class="fa-solid fa-book" aria-hidden="true"></i></div>
+                  <div>
+                    <strong id="profileSubjectCount">-</strong
+                    ><span>Subjects</span>
+                  </div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-icon"><i class="fa-solid fa-clock" aria-hidden="true"></i></div>
+                  <div>
+                    <strong id="profileExperience">-</strong
+                    ><span>Years of Experience</span>
                   </div>
                 </div>
               </div>
-            </div>
+            </section>
           </div>
         </div>
       </main>
@@ -1613,11 +1849,6 @@
     <script src="../js/teacher-data.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        const editor = document.getElementById("profileEditOverlay");
-        const form = document.getElementById("profileEditForm");
-        const status = document.getElementById("profileEditStatus");
-        const saveButton = document.getElementById("saveProfileButton");
-        const openButton = document.getElementById("openProfileEditor");
         const loadStatus = document.getElementById("profileLoadStatus");
         let profile = null;
         let client = null;
@@ -1625,12 +1856,10 @@
         let channel = null;
         let studentCountChannel = null;
         let stopAuthWatch = null;
-        let connectionMessage = "";
         let teacherSubjects = [];
         let registrationLanguages = [];
         let registeredGroups = [];
         let studentCountRequest = 0;
-        let savingProfile = false;
 
         const setText = (id, value) => {
           const element = document.getElementById(id);
@@ -1735,26 +1964,37 @@
           const subjects = teacherSubjects;
           const fullName = profile.full_name || "";
           const photoPath = profile.profile_photo_url || "";
+          const initials = fullName
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((part) => part[0])
+            .join("")
+            .toUpperCase() || "?";
 
           setText("profileNameEl", fullName);
           setText("profileHeaderName", fullName);
           setText("profileHeaderRole", role);
+          setText("profileSideName", fullName);
+          setText("profileSideRole", role);
           setText("detailFullName", fullName);
           setText("profileEmail", authUser.email);
           setText("detailEmail", authUser.email);
-          setText("authEmailValue", authUser.email);
           setText("profilePhone", profile.phone_number);
           setText("detailPhone", profile.phone_number);
           setText("profileLocation", location);
           setText("headerProfileEmail", authUser.email);
           setText("headerProfilePhone", profile.phone_number);
           setText("headerProfileLocation", location);
+          const joinedDate = profile.created_at
+            ? new Date(profile.created_at).toLocaleDateString()
+            : "-";
           setText(
             "headerProfileJoined",
-            profile.created_at
-              ? new Date(profile.created_at).toLocaleDateString()
-              : "-",
+            joinedDate,
           );
+          setText("profileJoined", joinedDate);
           setText("detailAddress", profile.address);
           setText("detailDob", profile.date_of_birth);
           setText("detailCountry", profile.country);
@@ -1777,6 +2017,12 @@
           setText("detailInstitution", profile.institution_name);
           setText("detailInstitutionType", formatRegistrationValue(profile.institution_type));
           setText("detailExperience", profile.years_experience);
+          setText(
+            "profileExperience",
+            profile.years_experience === null || profile.years_experience === undefined
+              ? "-"
+              : `${profile.years_experience} yrs`,
+          );
           setText("detailQualification", profile.highest_qualification);
           setText("detailDegree", profile.degree_course);
           setText("detailSpecialization", profile.specialization);
@@ -1784,15 +2030,6 @@
           setText("detailGraduationYear", profile.graduation_year);
           setText("detailTeachingMode", formatRegistrationValue(profile.teaching_mode));
           setText("profileRoleEl", role);
-          setText("profileRoleBadge", role);
-          setText("profileAbout", profile.bio);
-          setText(
-            "lastLoginValue",
-            authUser.last_sign_in_at
-              ? new Date(authUser.last_sign_in_at).toLocaleString()
-              : "-",
-          );
-
           const subjectContainer = document.getElementById("detailSubjects");
           if (subjectContainer) {
             subjectContainer.replaceChildren();
@@ -1811,152 +2048,38 @@
             }
           }
 
-          ["avatarImg", "profileHeaderAvatar"].forEach(async (id) => {
-            const image = document.getElementById(id);
+          [
+            { imageId: "avatarImg" },
+            { imageId: "profileHeaderAvatar", fallbackId: "profileHeaderInitials" },
+            { imageId: "profileSideAvatar", fallbackId: "profileSideInitials" },
+          ].forEach(async ({ imageId, fallbackId }) => {
+            const image = document.getElementById(imageId);
+            const fallback = fallbackId
+              ? document.getElementById(fallbackId)
+              : null;
             if (!image) return;
+            if (fallback) fallback.textContent = initials;
             if (!photoPath) {
               image.hidden = true;
+              if (fallback) fallback.hidden = false;
               return;
             }
             try {
               image.src =
                 await TeacherData.getTeacherProfilePhotoUrl(photoPath);
               image.hidden = false;
+              if (fallback) fallback.hidden = true;
             } catch {
               image.hidden = true;
+              if (fallback) fallback.hidden = false;
             }
           });
-          document.getElementById("openProfileEditor").disabled = false;
-        }
-
-        function getFormValues() {
-          const values = Object.fromEntries(new FormData(form).entries());
-          const numericExperience = values.years_experience.trim();
-          return {
-            full_name: values.full_name.trim(),
-            phone_number: values.phone_number.trim() || null,
-            date_of_birth: values.date_of_birth || null,
-            gender: values.gender.trim() || null,
-            city: values.city.trim() || null,
-            state: values.state.trim() || null,
-            country: values.country.trim() || null,
-            address: values.address.trim() || null,
-            institution_name: values.institution_name.trim() || null,
-            institution_type: values.institution_type.trim() || null,
-            years_experience: numericExperience
-              ? Number(numericExperience)
-              : null,
-            highest_qualification: values.highest_qualification.trim() || null,
-            teaching_mode: values.teaching_mode.trim() || null,
-            employment_status: values.employment_status.trim() || null,
-            languages: values.languages
-              .split(",")
-              .map((language) => language.trim())
-              .filter(Boolean),
-            bio: values.bio.trim() || null,
-          };
-        }
-
-        function validateForm() {
-          const errors = {
-            full_name: "",
-            phone_number: "",
-            date_of_birth: "",
-            years_experience: "",
-            profile_photo_file: "",
-            bio: "",
-          };
-          const values = getFormValues();
-          if (values.full_name.length < 2 || values.full_name.length > 100) {
-            errors.full_name = "Enter a name between 2 and 100 characters.";
-          }
-          if (
-            values.phone_number &&
-            !/^[+]?[0-9().\s-]{7,20}$/.test(values.phone_number)
-          ) {
-            errors.phone_number = "Enter a valid phone number.";
-          }
-          if (
-            values.date_of_birth &&
-            values.date_of_birth > new Date().toISOString().slice(0, 10)
-          ) {
-            errors.date_of_birth = "Date of birth cannot be in the future.";
-          }
-          if (
-            values.years_experience !== null &&
-            (!Number.isInteger(values.years_experience) ||
-              values.years_experience < 0)
-          ) {
-            errors.years_experience = "Enter a non-negative whole number.";
-          }
-          if (values.bio && values.bio.length > 1000) {
-            errors.bio = "About me must be 1,000 characters or fewer.";
-          }
-          const photo = form.elements.namedItem("profile_photo_file").files[0];
-          const allowedPhotoTypes = ["image/jpeg", "image/png", "image/webp"];
-          if (
-            photo &&
-            (!allowedPhotoTypes.includes(photo.type) ||
-              photo.size > 5 * 1024 * 1024)
-          ) {
-            errors.profile_photo_file =
-              "Choose a JPG, PNG, or WEBP image up to 5 MB.";
-          }
-          Object.entries(errors).forEach(([name, message]) => {
-            const element = document.querySelector(
-              `[data-error-for="${name}"]`,
-            );
-            if (element) element.textContent = message;
-          });
-          return !Object.values(errors).some(Boolean);
-        }
-
-        function openEditor() {
-          if (!profile) return;
-          const values = {
-            full_name: profile.full_name,
-            phone_number: profile.phone_number,
-            date_of_birth: profile.date_of_birth,
-            gender: profile.gender,
-            city: profile.city,
-            state: profile.state,
-            country: profile.country,
-            address: profile.address,
-            institution_name: profile.institution_name,
-            institution_type: profile.institution_type,
-            years_experience: profile.years_experience,
-            highest_qualification: profile.highest_qualification,
-            teaching_mode: profile.teaching_mode,
-            employment_status: profile.employment_status,
-            languages: (profile.languages || []).join(", "),
-            bio: profile.bio,
-          };
-          form.reset();
-          Object.entries(values).forEach(([name, value]) => {
-            form.elements.namedItem(name).value = value ?? "";
-          });
-          document
-            .querySelectorAll(".profile-edit-error")
-            .forEach((element) => {
-              element.textContent = "";
-            });
-          status.textContent = connectionMessage;
-          editor.classList.add("open");
-          editor.setAttribute("aria-hidden", "false");
-          form.elements.namedItem("full_name").focus();
-        }
-
-        function closeEditor() {
-          editor.classList.remove("open");
-          editor.setAttribute("aria-hidden", "true");
-          openButton.focus();
         }
 
         async function initializeSupabase() {
           const loaded = await TeacherData.loadCurrentTeacherProfile();
           ({ client, user: authUser, profile } = loaded);
           window.__currentTeacherProfile = profile;
-          connectionMessage = "Connected to Supabase.";
           loadStatus.textContent = "";
           renderProfile();
 
@@ -2014,19 +2137,6 @@
             (profileLanguages.length ? profileLanguages : registrationLanguages).join(", "),
           );
 
-          const { data: factors, error: mfaError } =
-            await client.auth.mfa.listFactors();
-          const hasVerifiedFactor = (factors?.all || []).some(
-            (factor) => factor.status === "verified",
-          );
-          setText(
-            "mfaStatus",
-            mfaError
-              ? "Unavailable"
-              : hasVerifiedFactor
-                ? "Enabled"
-                : "Not enabled",
-          );
           renderProfile();
           subscribeToStudentCount();
 
@@ -2048,153 +2158,6 @@
             window.location.assign("../teacher_registration/login.html");
           });
         }
-
-        openButton.addEventListener("click", openEditor);
-        document
-          .getElementById("closeProfileEditor")
-          .addEventListener("click", closeEditor);
-        document
-          .getElementById("cancelProfileEditor")
-          .addEventListener("click", closeEditor);
-        editor.addEventListener("click", (event) => {
-          if (event.target === editor) closeEditor();
-        });
-        document.addEventListener("keydown", (event) => {
-          if (event.key === "Escape" && editor.classList.contains("open"))
-            closeEditor();
-        });
-
-        form.addEventListener("submit", async (event) => {
-          event.preventDefault();
-          if (savingProfile) return;
-          if (!validateForm()) return;
-          if (!navigator.onLine) {
-            status.textContent =
-              "You are offline. Reconnect before saving profile changes.";
-            return;
-          }
-          const values = getFormValues();
-          const selectedPhoto =
-            form.elements.namedItem("profile_photo_file").files[0];
-          const previousPhotoPath = profile.profile_photo_url;
-          let uploadedPhotoPath = null;
-          let profileWriteSucceeded = false;
-          savingProfile = true;
-          saveButton.disabled = true;
-          saveButton.textContent = "Saving...";
-          status.textContent = "Saving profile changes...";
-
-          try {
-            if (selectedPhoto) {
-              uploadedPhotoPath =
-                await TeacherData.uploadTeacherProfilePhoto(selectedPhoto);
-              values.profile_photo_url = uploadedPhotoPath;
-            }
-            profile = await TeacherData.updateCurrentTeacherProfile(values);
-            profileWriteSucceeded = true;
-            window.__currentTeacherProfile = profile;
-            try {
-              const refreshed = await TeacherData.loadCurrentTeacherProfile();
-              profile = refreshed.profile;
-              authUser = refreshed.user;
-            } catch (refreshError) {
-              console.warn("Profile saved, but refresh failed.", refreshError);
-            }
-            renderProfile();
-
-            if (
-              previousPhotoPath &&
-              uploadedPhotoPath &&
-              previousPhotoPath !== uploadedPhotoPath
-            ) {
-              await TeacherData.deleteTeacherProfilePhoto(
-                previousPhotoPath,
-              ).catch((cleanupError) => {
-                console.warn(
-                  "The previous profile photo could not be removed.",
-                  cleanupError,
-                );
-              });
-            }
-            status.textContent = "Profile saved successfully.";
-            loadStatus.textContent = "Profile saved successfully.";
-            closeEditor();
-          } catch (error) {
-            if (uploadedPhotoPath && !profileWriteSucceeded) {
-              await TeacherData.deleteTeacherProfilePhoto(
-                uploadedPhotoPath,
-              ).catch(() => {});
-            }
-            console.error("Unable to save teacher profile.", error);
-            status.textContent = navigator.onLine
-              ? "Unable to save changes. Please check your connection and try again."
-              : "You are offline. Changes were not saved.";
-          } finally {
-            savingProfile = false;
-            saveButton.disabled = false;
-            saveButton.textContent = "Save changes";
-          }
-        });
-
-        document
-          .getElementById("changeProfileEmail")
-          .addEventListener("click", async () => {
-            const email = window.prompt("Enter your new login email:");
-            if (!email) return;
-            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-              loadStatus.textContent = "Enter a valid email address.";
-              return;
-            }
-            try {
-              await TeacherData.updateAuthEmail(email.trim());
-              loadStatus.textContent =
-                "Check your inbox to confirm the email change.";
-            } catch (error) {
-              console.error("Unable to update login email.", error);
-              loadStatus.textContent =
-                "Unable to request the email change. Please try again.";
-            }
-          });
-
-        document
-          .getElementById("changeProfilePassword")
-          .addEventListener("click", async () => {
-            const password = window.prompt(
-              "Enter a new password (at least 8 characters):",
-            );
-            if (!password) return;
-            if (password.length < 8) {
-              loadStatus.textContent =
-                "Use a password with at least 8 characters.";
-              return;
-            }
-            const confirmation = window.prompt("Confirm your new password:");
-            if (password !== confirmation) {
-              loadStatus.textContent = "The passwords do not match.";
-              return;
-            }
-            try {
-              await TeacherData.updateAuthPassword(password);
-              loadStatus.textContent = "Password updated successfully.";
-            } catch (error) {
-              console.error("Unable to update password.", error);
-              loadStatus.textContent =
-                "Unable to update your password. Please try again.";
-            }
-          });
-
-        document
-          .getElementById("manageSessions")
-          .addEventListener("click", async () => {
-            if (
-              !window.confirm("Sign out all other sessions for this account?")
-            )
-              return;
-            const { error } = await client.auth.signOut({ scope: "others" });
-            loadStatus.textContent = error
-              ? "Unable to manage other sessions."
-              : "Other sessions have been signed out.";
-          });
 
         window.addEventListener("beforeunload", () => {
           if (channel && client) client.removeChannel(channel);
@@ -2218,7 +2181,6 @@
           setText("profileHeaderName", "Unable to load profile");
           loadStatus.textContent =
             "Unable to load your profile. Please sign in again or try later.";
-          openButton.disabled = true;
         });
       });
     </script>
