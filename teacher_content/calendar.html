@@ -207,6 +207,367 @@
           font-size: 0.68rem;
         }
       }
+      .calendar-page .calendar-toolbar {
+        min-height: 70px;
+        align-items: center;
+        padding: 0 0 16px;
+      }
+      .calendar-page .calendar-nav {
+        flex-wrap: wrap;
+      }
+      .calendar-page .date-label {
+        min-width: 0;
+        margin-right: 6px;
+        color: #172638;
+        font-size: 1.25rem;
+        font-weight: 800;
+        text-align: left;
+      }
+      .calendar-page .calendar-nav .icon-button,
+      .calendar-page .mini-calendar-nav .icon-button {
+        width: 36px;
+        height: 36px;
+        color: #718196;
+        font-size: 0.8rem;
+      }
+      .calendar-page .calendar-grid {
+        border-top: 0;
+        border-left: 0;
+      }
+      .calendar-page .day-heading {
+        padding: 12px 10px;
+        background: #fff;
+        color: #8491a3;
+        text-align: center;
+      }
+      .calendar-page .day-cell {
+        min-height: 138px;
+        padding: 10px;
+        background: #fff;
+      }
+      .calendar-page .day-cell.selected {
+        background: #faf9ff;
+      }
+      .calendar-page .day-cell:hover {
+        background: #fbfcff;
+      }
+      .calendar-page .day-number {
+        display: grid;
+        width: 30px;
+        height: 30px;
+        place-items: center;
+        border-radius: 50%;
+        color: #34445a;
+        font-size: 0.78rem;
+        font-weight: 800;
+      }
+      .calendar-page .day-number.today {
+        background: #6848ed;
+        color: #fff;
+      }
+      .calendar-page .day-cell.selected .day-number:not(.today) {
+        background: #eeeaff;
+        color: #6548d8;
+      }
+      .calendar-page .event-pill {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 24px;
+        margin-top: 5px;
+        padding: 4px 7px;
+        border: 0;
+        border-radius: 6px;
+        background: #f0e9f8;
+        color: #7544a5;
+        font-size: 0.67rem;
+        font-weight: 700;
+        line-height: 1.2;
+        text-overflow: clip;
+      }
+      .calendar-page .event-pill i {
+        flex: 0 0 auto;
+        font-size: 0.62rem;
+      }
+      .calendar-page .event-pill span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .calendar-page .event-pill.material,
+      .calendar-page .event-pill.announcement {
+        background: #e8f3ff;
+        color: #2b80cf;
+      }
+      .calendar-page .event-pill.quiz,
+      .calendar-page .event-pill.exam {
+        background: #f1e8f8;
+        color: #7d4bb0;
+      }
+      .calendar-page .event-pill.live-class {
+        background: #e7f7ef;
+        color: #168451;
+      }
+      .calendar-page .event-pill.assignment {
+        background: #fff1df;
+        color: #ad7416;
+      }
+      .calendar-page .event-pill.holiday {
+        background: #fff0f2;
+        color: #c44c66;
+      }
+      .calendar-page .side-card-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .calendar-page .side-card-heading h3 {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #172638;
+      }
+      .calendar-page .side-card-heading h3 i {
+        color: #6848ed;
+        font-size: 0.9rem;
+      }
+      .calendar-page .side-card-heading p {
+        margin: 4px 0 0;
+        color: #8995a6;
+        font-size: 0.7rem;
+      }
+      .calendar-page .mini-calendar-nav {
+        display: flex;
+        gap: 5px;
+      }
+      .calendar-page .mini-calendar-nav .icon-button {
+        width: 32px;
+        height: 32px;
+      }
+      .calendar-page .mini-calendar {
+        display: block;
+        width: 100%;
+        margin-top: 14px;
+      }
+      .calendar-page .mini-calendar-grid {
+        display: grid;
+        width: 100%;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 6px 4px;
+      }
+      .calendar-page .mini-week {
+        display: grid;
+        min-width: 0;
+        height: 22px;
+        place-items: center;
+        padding-bottom: 4px;
+        color: #929eaf;
+        font-size: 0.62rem;
+        font-weight: 800;
+        text-align: center;
+      }
+      .calendar-page .mini-calendar-grid button {
+        position: relative;
+        display: grid;
+        width: 100%;
+        min-width: 0;
+        height: 36px;
+        margin: 0;
+        padding: 0;
+        place-items: center;
+        border-radius: 9px;
+        color: #526176;
+        font-size: 0.7rem;
+        font-weight: 600;
+        line-height: 1;
+      }
+      .calendar-page .mini-calendar-grid button.selected {
+        background: #6848ed;
+        color: #fff;
+      }
+      .calendar-page .mini-calendar-grid button.today:not(.selected) {
+        box-shadow: inset 0 0 0 1.5px #6848ed;
+        color: #6848ed;
+      }
+      .calendar-page .mini-event-dots {
+        position: absolute;
+        right: 0;
+        bottom: 3px;
+        left: 0;
+        display: flex;
+        justify-content: center;
+        gap: 2px;
+      }
+      .calendar-page .mini-event-dot {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: #6848ed;
+      }
+      .calendar-page .mini-event-dot.material,
+      .calendar-page .mini-event-dot.announcement {
+        background: #3284d2;
+      }
+      .calendar-page .mini-event-dot.quiz,
+      .calendar-page .mini-event-dot.exam {
+        background: #854eb4;
+      }
+      .calendar-page .mini-event-dot.live-class {
+        background: #24a36b;
+      }
+      .calendar-page .mini-event-dot.assignment {
+        background: #e29b2b;
+      }
+      .calendar-page .upcoming-list {
+        gap: 0;
+        margin-top: 12px;
+      }
+      .calendar-page .upcoming-item {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        gap: 12px;
+        border: 0;
+        border-bottom: 1px solid #edf1f5;
+        padding: 10px 0;
+        background: transparent;
+        color: inherit;
+        text-align: left;
+        font: inherit;
+        cursor: pointer;
+      }
+      .calendar-page .upcoming-item:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+      }
+      .calendar-page .upcoming-date {
+        display: grid;
+        width: 50px;
+        height: 52px;
+        flex: 0 0 auto;
+        align-content: center;
+        justify-items: center;
+        border-radius: 11px;
+        background: #f0edff;
+        color: #6848ed;
+      }
+      .calendar-page .upcoming-date strong {
+        font-size: 1.12rem;
+        line-height: 1;
+      }
+      .calendar-page .upcoming-date small {
+        margin-top: 3px;
+        font-size: 0.55rem;
+        font-weight: 800;
+      }
+      .calendar-page .upcoming-info {
+        display: grid;
+        min-width: 0;
+        gap: 5px;
+      }
+      .calendar-page .upcoming-info > strong {
+        overflow: hidden;
+        color: #26364a;
+        font-size: 0.78rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .calendar-page .upcoming-info small {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        overflow: hidden;
+        color: #8793a4;
+        font-size: 0.65rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .calendar-page .upcoming-info small i {
+        flex: 0 0 auto;
+        color: #9aa5b3;
+      }
+      .calendar-page .upcoming-item.material .upcoming-date,
+      .calendar-page .upcoming-item.announcement .upcoming-date {
+        background: #e8f3ff;
+        color: #2b80cf;
+      }
+      .calendar-page .upcoming-item.live-class .upcoming-date {
+        background: #e7f7ef;
+        color: #168451;
+      }
+      .calendar-page .upcoming-item.quiz .upcoming-date,
+      .calendar-page .upcoming-item.exam .upcoming-date {
+        background: #f1e8f8;
+        color: #7d4bb0;
+      }
+      @media (max-width: 700px) {
+        .calendar-page .day-cell {
+          min-height: 95px;
+          padding: 5px;
+        }
+        .calendar-page .event-pill {
+          padding: 4px;
+          font-size: 0.6rem;
+        }
+        .calendar-page .calendar-nav {
+          justify-content: space-between;
+        }
+        .calendar-page .date-label {
+          flex: 1;
+          font-size: 1.08rem;
+        }
+      }
+      .calendar-page .calendar-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 16px;
+        margin: 0;
+        padding: 14px 0;
+        border-bottom: 1px solid #edf1f5;
+      }
+      .calendar-page .calendar-legend span {
+        display: inline-flex;
+        align-items: center;
+        color: #78869a;
+        font-size: 0.68rem;
+        font-weight: 700;
+      }
+      .calendar-page .calendar-legend span::before {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #6848ed;
+      }
+      .calendar-page .calendar-legend .material::before {
+        background: #3284d2;
+      }
+      .calendar-page .calendar-legend .quiz::before,
+      .calendar-page .calendar-legend .exam::before {
+        background: #854eb4;
+      }
+      .calendar-page .calendar-legend .announcement::before {
+        background: #168b94;
+      }
+      .calendar-page .calendar-legend .assignment::before {
+        background: #e29b2b;
+      }
+      .calendar-page .calendar-legend .rescheduled::before {
+        background: #e34f69;
+      }
+      .calendar-page .calendar-legend .holiday::before {
+        background: #24a36b;
+      }
+      .calendar-page .mini-calendar-grid button.outside-month {
+        color: #c0c8d3;
+      }
+      .calendar-page .mini-calendar-grid button.outside-month .mini-event-dot {
+        opacity: 0.65;
+      }
+      @media (max-width: 600px) {
+        .calendar-page .calendar-legend {
+          gap: 9px 12px;
+        }
+      }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
@@ -300,6 +661,7 @@
           <div class="calendar-card">
             <div class="calendar-toolbar">
               <div class="calendar-nav">
+                <span class="date-label" id="calendarTitle"></span>
                 <button
                   class="icon-button"
                   id="prevDate"
@@ -311,14 +673,24 @@
                   id="nextDate"
                   aria-label="Next period"
                 >
-                  <i class="fa-solid fa-chevron-right"></i></button
-                ><span class="date-label" id="calendarTitle"></span>
+                  <i class="fa-solid fa-chevron-right"></i>
+                </button>
               </div>
               <div class="view-switch">
                 <button data-view="month" class="active">Month</button
                 ><button data-view="week">Week</button
                 ><button data-view="day">Day</button>
               </div>
+            </div>
+            <div class="legend calendar-legend" aria-label="Event types">
+              <span class="live-class">Classes</span>
+              <span class="material">Materials</span>
+              <span class="quiz">Quizzes</span>
+              <span class="announcement">Announcements</span>
+              <span class="assignment">Assignments</span>
+              <span class="rescheduled">Rescheduled</span>
+              <span class="holiday">Holidays</span>
+              <span class="exam">Exams</span>
             </div>
             <div class="calendar-filters" aria-label="Filter calendar events">
               <label>Class
@@ -340,21 +712,28 @@
             <div id="calendarView" aria-live="polite">
               <div class="empty">Loading calendar events...</div>
             </div>
-            <div class="legend">
-              <span>Live Class</span><span class="assessment">Assessment</span
-              ><span class="assignment">Assignment</span
-              ><span>Announcement</span><span>Material upload</span>
-            </div>
           </div>
           <aside>
             <article class="side-card">
-              <h3><i class="fa-solid fa-calendar-day"></i> Mini Calendar</h3>
-              <p>Jump to any date.</p>
+              <div class="side-card-heading">
+                <div>
+                  <h3><i class="fa-solid fa-calendar-day"></i> Mini Calendar</h3>
+                  <p id="miniCalendarTitle">Jump to any date.</p>
+                </div>
+                <div class="mini-calendar-nav">
+                  <button class="icon-button" type="button" data-mini-shift="-1" aria-label="Previous mini calendar month"><i class="fa-solid fa-chevron-left"></i></button>
+                  <button class="icon-button" type="button" data-mini-shift="1" aria-label="Next mini calendar month"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+              </div>
               <div class="mini-calendar" id="miniCalendar"></div>
             </article>
             <article class="side-card">
-              <h3><i class="fa-solid fa-clock"></i> Upcoming Events</h3>
-              <p>Next scheduled activities.</p>
+              <div class="side-card-heading">
+                <div>
+                  <h3><i class="fa-solid fa-clock"></i> Upcoming</h3>
+                  <p>Next 7 days</p>
+                </div>
+              </div>
               <div class="upcoming-list" id="upcomingEvents"></div>
             </article>
           </aside>

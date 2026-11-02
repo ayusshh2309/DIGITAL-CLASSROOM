@@ -24,7 +24,7 @@
     }
     if (view === "week") {
       const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+      start.setDate(start.getDate() - start.getDay());
       const end = new Date(start);
       end.setDate(end.getDate() + 7);
       return { start, end };
@@ -411,10 +411,7 @@
     };
   }
 
-  async function loadEvents(date = new Date(), view = "month") {
-    const { client, profile } = await requireTeacher();
-    const scope = await getTeacherScope(client, profile.id);
-    const range = buildDateRange(date, view);
+  async function loadEventsInRange(client, profile, scope, range) {
     const [calendarRows, materials, liveClasses, quizzes, announcements] = await Promise.all([
       fetchRows(
         () => client.from("calendar_events")
@@ -440,12 +437,34 @@
       ...quizzes,
       ...announcements,
     ];
-    const uniqueEvents = new Map();
-    events.forEach((event) => {
+    return events.filter((event) => {
       const start = new Date(event.start_at);
-      if (start >= range.start && start < range.end) {
-        uniqueEvents.set(`${event.source_table}:${event.source_id || event.id}`, event);
-      }
+      return start >= range.start && start < range.end;
+    });
+  }
+
+  async function loadEvents(date = new Date(), view = "month") {
+    const { client, profile } = await requireTeacher();
+    const scope = await getTeacherScope(client, profile.id);
+    const viewRange = buildDateRange(date, view);
+    const now = new Date();
+    const upcomingRange = {
+      start: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
+      end: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+    };
+    const ranges = [viewRange, upcomingRange].sort((left, right) => left.start - right.start);
+    const loadRanges = ranges[0].end >= ranges[1].start
+      ? [{
+        start: ranges[0].start,
+        end: new Date(Math.max(ranges[0].end.getTime(), ranges[1].end.getTime())),
+      }]
+      : ranges;
+    const results = await Promise.all(
+      loadRanges.map((range) => loadEventsInRange(client, profile, scope, range)),
+    );
+    const uniqueEvents = new Map();
+    results.flat().forEach((event) => {
+      uniqueEvents.set(`${event.source_table}:${event.source_id || event.id}`, event);
     });
     return [...uniqueEvents.values()]
       .sort((left, right) => new Date(left.start_at) - new Date(right.start_at));

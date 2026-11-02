@@ -29,6 +29,15 @@
   const esc = (value) => String(value ?? "").replace(/[&<>\"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[char]);
 
   const typeClass = (type) => String(type || "event").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const eventIcon = (type) => ({
+    live_class: "fa-solid fa-video",
+    material: "fa-solid fa-book-open",
+    quiz: "fa-solid fa-file-circle-question",
+    exam: "fa-solid fa-file-lines",
+    announcement: "fa-solid fa-bullhorn",
+    assignment: "fa-solid fa-list-check",
+    holiday: "fa-solid fa-umbrella-beach",
+  })[type] || "fa-solid fa-calendar-day";
   const visibleEvents = () => state.events.filter((event) =>
     (!state.filters.grade || String(event.grade ?? "") === state.filters.grade)
     && (!state.filters.stream || String(event.stream || "") === state.filters.stream)
@@ -70,9 +79,9 @@
     const year = state.date.getFullYear();
     const month = state.date.getMonth();
     const first = new Date(year, month, 1);
-    const offset = (first.getDay() + 6) % 7;
+    const offset = first.getDay();
     const days = new Date(year, month + 1, 0).getDate();
-    const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const labels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     let html = labels.map((label) => `<div class="day-heading">${label}</div>`).join("");
 
     for (let index = 0; index < offset; index += 1) {
@@ -84,7 +93,7 @@
       const key = dayKey(currentDate);
       const events = visibleEvents().filter((event) => dayKey(event.start_at) === key);
       const selectedClass = key === dayKey(state.selected) ? " selected" : "";
-      html += `<div class="day-cell${selectedClass}" data-date="${key}"><button type="button" class="day-number ${key === dayKey(new Date()) ? "today" : ""}" data-date="${key}" aria-label="Show events for ${esc(formatDate(currentDate, { weekday: "long", month: "long", day: "numeric", year: "numeric" }))}">${day}</button>${events.slice(0, 3).map((event) => `<button class="event-pill ${typeClass(event.type)}" data-event-id="${esc(event.id)}"><span>${esc(event.title || "Academic event")}</span><span class="event-time">${esc(eventTime(event))}</span></button>`).join("")}</div>`;
+      html += `<div class="day-cell${selectedClass}" data-date="${key}"><button type="button" class="day-number ${key === dayKey(new Date()) ? "today" : ""}" data-date="${key}" aria-label="Show events for ${esc(formatDate(currentDate, { weekday: "long", month: "long", day: "numeric", year: "numeric" }))}">${day}</button>${events.slice(0, 3).map((event) => `<button class="event-pill ${typeClass(event.type)}" data-event-id="${esc(event.id)}"><i class="${eventIcon(event.type)}" aria-hidden="true"></i><span>${esc(event.title || "Academic event")}</span></button>`).join("")}</div>`;
     }
 
     if ($("calendarView")) {
@@ -133,11 +142,11 @@
     const events = visibleEvents();
 
     if (state.view === "week") {
-      const monday = new Date(start);
-      monday.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+      const sunday = new Date(start);
+      sunday.setDate(start.getDate() - start.getDay());
       const dates = Array.from({ length: 7 }, (_, index) => {
-        const date = new Date(monday);
-        date.setDate(monday.getDate() + index);
+        const date = new Date(sunday);
+        date.setDate(sunday.getDate() + index);
         return date;
       });
       const rows = dates.map((date) => {
@@ -158,28 +167,44 @@
     const year = state.date.getFullYear();
     const month = state.date.getMonth();
     const first = new Date(year, month, 1);
-    const offset = (first.getDay() + 6) % 7;
-    const totalDays = new Date(year, month + 1, 0).getDate();
-    let html = ["M", "T", "W", "T", "F", "S", "S"].map((day) => `<span class="mini-week">${day}</span>`).join("");
+    const offset = first.getDay();
+    let html = ["S", "M", "T", "W", "T", "F", "S"].map((day) => `<span class="mini-week">${day}</span>`).join("");
 
-    for (let index = 0; index < offset; index += 1) html += "<span></span>";
-
-    for (let day = 1; day <= totalDays; day += 1) {
-      const currentDate = new Date(year, month, day);
+    for (let index = 0; index < 42; index += 1) {
+      const currentDate = new Date(year, month, index - offset + 1);
       const key = dayKey(currentDate);
       const selected = key === dayKey(state.selected) ? "selected" : "";
       const today = key === dayKey(new Date()) ? "today" : "";
-      html += `<button class="${selected} ${today}" data-mini-date="${key}">${day}</button>`;
+      const outsideMonth = currentDate.getMonth() === month ? "" : " outside-month";
+      const dayEvents = visibleEvents().filter((event) => dayKey(event.start_at) === key);
+      const dots = [...new Set(dayEvents.map((event) => typeClass(event.type)))].slice(0, 3);
+      html += `<button class="${selected} ${today}${outsideMonth}${dayEvents.length ? " has-events" : ""}" data-mini-date="${key}" aria-label="${esc(formatDate(currentDate, { weekday: "long", month: "long", day: "numeric", year: "numeric" }))}${dayEvents.length ? `, ${dayEvents.length} event${dayEvents.length === 1 ? "" : "s"}` : ""}">${currentDate.getDate()}${dots.length ? `<span class="mini-event-dots">${dots.map((type) => `<i class="mini-event-dot ${type}"></i>`).join("")}</span>` : ""}</button>`;
     }
 
-    if ($("miniCalendar")) $("miniCalendar").innerHTML = html;
+    if ($("miniCalendarTitle")) {
+      $("miniCalendarTitle").textContent = formatDate(state.date, { month: "long", year: "numeric" });
+    }
+    if ($("miniCalendar")) $("miniCalendar").innerHTML = `<div class="mini-calendar-grid">${html}</div>`;
   }
 
   function renderUpcoming() {
     const now = new Date();
-    const upcoming = visibleEvents().filter((event) => new Date(event.end_at || event.start_at) >= now).sort((left, right) => new Date(left.start_at) - new Date(right.start_at)).slice(0, 6);
+    const endOfWindow = new Date(now);
+    endOfWindow.setDate(endOfWindow.getDate() + 7);
+    const upcoming = visibleEvents()
+      .filter((event) => {
+        const start = new Date(event.start_at);
+        return start >= new Date(now.getFullYear(), now.getMonth(), now.getDate())
+          && start < endOfWindow;
+      })
+      .sort((left, right) => new Date(left.start_at) - new Date(right.start_at))
+      .slice(0, 6);
     if (!$("upcomingEvents")) return;
-    $("upcomingEvents").innerHTML = upcoming.length ? upcoming.map((event) => `<div class="upcoming-item" data-event-id="${esc(event.id)}"><i class="upcoming-dot"></i><span><strong>${esc(event.title || "Academic event")}</strong><small>${esc(eventTime(event))} · ${esc(formatDate(event.start_at, { month: "short", day: "numeric" }))}</small></span></div>`).join("") : '<div class="empty"><i class="fa-regular fa-calendar-xmark"></i>No upcoming events.</div>';
+    $("upcomingEvents").innerHTML = upcoming.length ? upcoming.map((event) => {
+      const date = new Date(event.start_at);
+      const details = [eventTime(event), event.subject].filter(Boolean).join(" · ");
+      return `<button type="button" class="upcoming-item ${typeClass(event.type)}" data-event-id="${esc(event.id)}"><span class="upcoming-date"><strong>${String(date.getDate()).padStart(2, "0")}</strong><small>${esc(formatDate(date, { month: "short" }).toUpperCase())}</small></span><span class="upcoming-info"><strong>${esc(event.title || "Academic event")}</strong><small><i class="${eventIcon(event.type)}" aria-hidden="true"></i>${esc(details)}</small></span></button>`;
+    }).join("") : '<div class="empty"><i class="fa-regular fa-calendar-xmark"></i>No events in the next 7 days.</div>';
   }
 
   function renderCalendar() {
@@ -190,8 +215,7 @@
         : state.view === "week"
           ? `Week of ${formatDate(state.date, { month: "short", day: "numeric", year: "numeric" })}`
           : formatDate(state.date, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
-      const today = formatDate(new Date(), { weekday: "short", month: "short", day: "numeric", year: "numeric" });
-      title.textContent = `${period} · Today: ${today}`;
+      title.textContent = period;
     }
 
     if (state.view === "month") renderMonth(); else renderPeriod();
@@ -442,6 +466,20 @@
     });
 
     document.addEventListener("click", (event) => {
+      const miniShift = event.target.closest("[data-mini-shift]");
+      if (miniShift) {
+        const direction = Number(miniShift.dataset.miniShift);
+        const targetMonth = new Date(state.date.getFullYear(), state.date.getMonth() + direction, 1);
+        const targetDay = Math.min(
+          state.selected.getDate(),
+          new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0).getDate(),
+        );
+        state.date = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), targetDay);
+        state.selected = new Date(state.date);
+        void refreshEvents();
+        return;
+      }
+
       const closeTarget = event.target.closest("[data-close]");
       if (closeTarget) {
         const modalRoot = $("calendarModalRoot");
