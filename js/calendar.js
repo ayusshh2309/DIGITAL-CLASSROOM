@@ -83,11 +83,47 @@
       const currentDate = new Date(year, month, day);
       const key = dayKey(currentDate);
       const events = visibleEvents().filter((event) => dayKey(event.start_at) === key);
-      html += `<div class="day-cell" data-date="${key}"><div class="day-number ${key === dayKey(new Date()) ? "today" : ""}">${day}<span>${events.length ? events.length : ""}</span></div>${events.slice(0, 3).map((event) => `<button class="event-pill ${typeClass(event.type)}" data-event-id="${esc(event.id)}"><span>${esc(event.title || "Academic event")}</span><span class="event-time">${esc(eventTime(event))}</span></button>`).join("")}${events.length > 3 ? `<small>+${events.length - 3} more</small>` : ""}</div>`;
+      const selectedClass = key === dayKey(state.selected) ? " selected" : "";
+      html += `<div class="day-cell${selectedClass}" data-date="${key}"><button type="button" class="day-number ${key === dayKey(new Date()) ? "today" : ""}" data-date="${key}" aria-label="Show events for ${esc(formatDate(currentDate, { weekday: "long", month: "long", day: "numeric", year: "numeric" }))}">${day}</button>${events.slice(0, 3).map((event) => `<button class="event-pill ${typeClass(event.type)}" data-event-id="${esc(event.id)}"><span>${esc(event.title || "Academic event")}</span><span class="event-time">${esc(eventTime(event))}</span></button>`).join("")}</div>`;
     }
 
     if ($("calendarView")) {
-      $("calendarView").innerHTML = `<div class="calendar-grid">${html}</div>`;
+      const selectedDate = dayKey(state.selected);
+      const selectedEvents = visibleEvents()
+        .filter((event) => dayKey(event.start_at) === selectedDate)
+        .sort((left, right) => new Date(left.start_at) - new Date(right.start_at));
+      const eventLabels = {
+        material: "study material",
+        live_class: "live class",
+        quiz: "quiz",
+        exam: "exam",
+        announcement: "announcement",
+        assignment: "assignment",
+      };
+      const eventPluralLabels = {
+        "study material": "study materials",
+        "live class": "live classes",
+        quiz: "quizzes",
+        exam: "exams",
+        announcement: "announcements",
+        assignment: "assignments",
+      };
+      const counts = new Map();
+      selectedEvents.forEach((event) => {
+        const label = eventLabels[event.type] || displayType(event.type).toLowerCase();
+        counts.set(label, (counts.get(label) || 0) + 1);
+      });
+      const summary = [...counts].map(([label, count]) =>
+        `${count} ${count === 1 ? label : eventPluralLabels[label] || `${label}s`}`,
+      ).join(" · ");
+      const selectedList = selectedEvents.length
+        ? `<div class="selected-events">${selectedEvents.map((event) => {
+          const label = eventLabels[event.type] || displayType(event.type);
+          const detail = [eventTime(event), event.subject].filter(Boolean).join(" · ");
+          return `<button type="button" class="selected-event ${typeClass(event.type)}" data-event-id="${esc(event.id)}"><span class="selected-event-type">${esc(label)}</span><strong class="selected-event-title">${esc(event.title || "Academic event")}</strong><span class="selected-event-meta">${esc(detail)}</span></button>`;
+        }).join("")}</div>`
+        : '<div class="selected-events-empty">No events scheduled for this date.</div>';
+      $("calendarView").innerHTML = `<div class="calendar-grid">${html}</div><div class="selected-date-agenda" aria-live="polite"><div class="selected-date-heading"><div><h3>${esc(formatDate(state.selected, { weekday: "long", month: "long", day: "numeric", year: "numeric" }))}</h3>${summary ? `<p>${esc(summary)}</p>` : ""}</div></div>${selectedList}</div>`;
     }
   }
 
@@ -206,18 +242,24 @@
         ? "Missed"
         : (event.status || "Scheduled")
       : eventEnd < new Date() ? "Completed" : (event.status || "Scheduled");
+    const statusLabel = String(status)
+      .replace(/[_-]+/g, " ")
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
     const editable = (!event.source_table && !event.source)
       || event.source_table === "calendar_events"
       || event.source === "calendar_events";
     const meetingUrl = event.meeting_url || "";
     const locationUrl = event.location || "";
     const meetingLink = meetingUrl
-      ? `<div class="field full"><label>Meeting link</label><div><a href="${esc(meetingUrl)}" target="_blank" rel="noopener noreferrer">Join meeting</a></div></div>`
+      ? `<div class="event-detail-item"><span class="event-detail-label">Meeting link</span><a class="event-detail-link" href="${esc(meetingUrl)}" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>Join meeting</a></div>`
       : "";
     const location = locationUrl && locationUrl !== meetingUrl
-      ? `<div class="field full"><label>Location</label><div>${esc(locationUrl)}</div></div>`
+      ? `<div class="event-detail-item"><span class="event-detail-label">Location</span><span class="event-detail-value">${esc(locationUrl)}</span></div>`
       : "";
-    root.innerHTML = `<div class="modal-backdrop"><div class="modal"><div class="modal-head"><div><span class="page-eyebrow"><i class="fa-solid fa-circle-info"></i> ${esc(displayType(event.type))}</span><h2 style="margin-top:7px">${esc(event.title || "Academic event")}</h2></div><button class="icon-button" data-close><i class="fa-solid fa-xmark"></i></button></div><div class="modal-grid"><div class="field"><label>Class</label><div>${esc(event.class_grade ? `Class ${event.class_grade}` : "All classes")}</div></div><div class="field"><label>Subject</label><div>${esc(event.subject || "All subjects")}</div></div><div class="field"><label>Date and time</label><div>${esc(event.all_day ? formatDate(event.start_at, { dateStyle: "medium" }) : formatDate(event.start_at, { dateStyle: "medium", timeStyle: "short" }))}</div></div><div class="field"><label>Status</label><div>${esc(status)}</div></div><div class="field full"><label>Description</label><div>${esc(event.description || "No additional details.")}</div></div>${meetingLink}${location}</div><p data-modal-error role="alert"></p><div class="modal-actions">${editable ? '<button class="cal-button" data-delete-event>Delete</button><button class="cal-button primary" data-edit-event>Edit</button>' : ""}<button class="cal-button" data-close>Close</button></div></div></div>`;
+    const dateTime = event.all_day
+      ? formatDate(event.start_at, { dateStyle: "medium" })
+      : `${formatDate(event.start_at, { dateStyle: "medium" })} · ${formatDate(event.start_at, { timeStyle: "short" })}${event.end_at ? ` – ${formatDate(event.end_at, { timeStyle: "short" })}` : ""}`;
+    root.innerHTML = `<div class="modal-backdrop"><section class="modal event-detail-modal" role="dialog" aria-modal="true" aria-labelledby="eventDetailTitle"><header class="event-detail-header"><div class="event-detail-heading"><span class="event-detail-kicker"><i class="fa-solid fa-circle-info" aria-hidden="true"></i>${esc(displayType(event.type))}</span><h2 id="eventDetailTitle">${esc(event.title || "Academic event")}</h2></div><button class="event-detail-close" type="button" data-close aria-label="Close event details"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></header><div class="event-detail-grid"><div class="event-detail-item"><span class="event-detail-label">Class</span><span class="event-detail-value">${esc(event.class_grade ? `Class ${event.class_grade}` : "All classes")}</span></div><div class="event-detail-item"><span class="event-detail-label">Subject</span><span class="event-detail-value">${esc(event.subject || "All subjects")}</span></div><div class="event-detail-item"><span class="event-detail-label">Date and time</span><span class="event-detail-value">${esc(dateTime)}</span></div><div class="event-detail-item"><span class="event-detail-label">Status</span><span class="event-detail-status">${esc(statusLabel)}</span></div><div class="event-detail-item event-detail-description"><span class="event-detail-label">Description</span><span class="event-detail-value">${esc(event.description || "No additional details.")}</span></div>${meetingLink}${location}</div><p class="event-detail-error" data-modal-error role="alert"></p><footer class="event-detail-actions">${editable ? '<button class="cal-button danger" type="button" data-delete-event><i class="fa-regular fa-trash-can" aria-hidden="true"></i>Delete</button><button class="cal-button primary" type="button" data-edit-event><i class="fa-regular fa-pen-to-square" aria-hidden="true"></i>Edit event</button>' : ""}<button class="cal-button" type="button" data-close>Close</button></footer></section></div>`;
     root.querySelector("[data-edit-event]")?.addEventListener("click", () => openEventForm(event));
     root.querySelector("[data-delete-event]")?.addEventListener("click", async () => {
       if (!window.confirm("Delete this calendar event? Its source activity, if any, will not be deleted.")) return;
@@ -410,6 +452,14 @@
       if (eventButton) {
         const targetEvent = state.events.find((entry) => entry.id === eventButton.getAttribute("data-event-id"));
         if (targetEvent) showDetails(targetEvent);
+        return;
+      }
+
+      const dayCell = event.target.closest(".day-cell[data-date]");
+      if (dayCell) {
+        const [year, month, day] = dayCell.dataset.date.split("-").map(Number);
+        state.selected = new Date(year, month - 1, day);
+        renderCalendar();
       }
 
       const miniDate = event.target.closest("[data-mini-date]");
