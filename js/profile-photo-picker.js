@@ -10,16 +10,37 @@
     const style = document.createElement("style");
     style.id = "profilePhotoPickerStyles";
     style.textContent = `
-      .profile-photo-picker { display: grid; gap: 12px; }
-      .profile-photo-preview { width: 112px; height: 112px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: #f1f5f9; border: 1px solid #dbe3ee; color: #64748b; font-size: 2rem; }
-      .profile-photo-preview img { width: 100%; height: 100%; object-fit: cover; }
-      .profile-photo-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-      .profile-photo-actions button { border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; color: #344054; padding: 9px 13px; font: inherit; font-size: .85rem; font-weight: 600; cursor: pointer; }
+      .profile-photo-picker { display: block; width: 100%; min-width: 0; min-height: 150px; box-sizing: border-box; padding: 18px; border: 1px solid #e2e8f0; border-radius: 14px; container-type: inline-size; }
+      .profile-photo-content { display: grid; grid-template-columns: 100px minmax(160px, 1fr) minmax(0, 340px); align-items: center; gap: 16px 20px; width: 100%; min-width: 0; box-sizing: border-box; }
+      .profile-photo-info { width: 100%; min-width: 0; writing-mode: horizontal-tb; word-break: normal; overflow-wrap: break-word; white-space: normal; }
+      .profile-photo-info h4, .profile-photo-info p { writing-mode: horizontal-tb; word-break: normal; overflow-wrap: break-word; white-space: normal; }
+      .profile-photo-info h4 { margin: 0 0 6px; color: #172554; font-size: 1rem; font-weight: 750; }
+      .profile-photo-preview { width: 100px; height: 100px; min-width: 100px; min-height: 100px; box-sizing: border-box; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: #f1f5f9; border: 1px solid #dbe3ee; color: #64748b; font-size: 2rem; }
+      .profile-photo-preview img { width: 100%; height: 100%; object-fit: contain; }
+      .profile-photo-preview:has(#profilePhotoPreview:not([hidden])) { border-radius: 14px; background: #fff; }
+      .profile-photo-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 10px; min-width: 0; max-width: 100%; }
+      .profile-photo-actions button { min-width: 140px; min-height: 56px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #6b55ff; border-radius: 12px; background: #fff; color: #5538ee; padding: 12px 14px; font: inherit; font-size: .95rem; font-weight: 700; white-space: nowrap; cursor: pointer; }
+      .profile-photo-actions button:first-of-type { border-color: #5538ee; background: #5538ee; color: #fff; }
       .profile-photo-actions button:hover { border-color: #5538ee; color: #5538ee; }
+      .profile-photo-actions button:first-of-type:hover { background: #4930dd; color: #fff; }
       .profile-photo-actions svg { width: 16px; height: 16px; margin-right: 6px; vertical-align: -3px; }
       .profile-photo-actions button[hidden], .profile-photo-preview img[hidden] { display: none; }
+      .profile-photo-actions-divider { width: 1px; height: 54px; flex: 0 0 1px; background: #d7d9ed; }
       .profile-photo-instruction, .profile-photo-status { color: #64748b; font-size: .82rem; line-height: 1.45; }
       .profile-photo-error { color: #b42318; font-size: .84rem; }
+      @container (max-width: 680px) {
+        .profile-photo-content { grid-template-columns: 100px minmax(0, 1fr); }
+        .profile-photo-actions { grid-column: 1 / -1; justify-content: flex-start; }
+      }
+      @container (max-width: 480px) {
+        .profile-photo-picker { padding: 14px; }
+        .profile-photo-content { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+        .profile-photo-preview { justify-self: center; }
+        .profile-photo-info { text-align: center; }
+        .profile-photo-actions { grid-column: 1; justify-content: center; }
+        .profile-photo-actions button { min-width: 140px; min-height: 48px; }
+        .profile-photo-actions-divider { display: none; }
+      }
       .profile-camera-backdrop { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; padding: 18px; background: rgba(15, 23, 42, .65); }
       .profile-camera-dialog { width: min(100%, 520px); padding: 20px; border-radius: 16px; background: white; box-shadow: 0 24px 70px rgba(0,0,0,.25); }
       .profile-camera-dialog h2 { margin: 0 0 14px; color: #0f172a; font-family: inherit; font-size: 1.1rem; line-height: 1.3; font-weight: 700; }
@@ -90,6 +111,7 @@
     const removeButton = document.getElementById("removeProfilePhotoButton");
     const preview = document.getElementById("profilePhotoPreview");
     const placeholder = document.getElementById("profilePhotoPlaceholder");
+    const selectionTitle = document.getElementById("profilePhotoSelectionTitle");
     const error = document.getElementById("profilePhotoError");
     const status = document.getElementById("uploadText");
 
@@ -153,13 +175,17 @@
         preview.src = dataUrl;
         preview.hidden = false;
         placeholder.hidden = true;
+        if (selectionTitle) selectionTitle.textContent = "Photo selected";
         status.textContent = name ? `${name} is selected.` : "Profile photo selected.";
         removeButton.hidden = false;
       } else {
         preview.removeAttribute("src");
         preview.hidden = true;
         placeholder.hidden = false;
-        status.textContent = "JPG, JPEG, PNG, or WEBP (max. 5 MB).";
+        if (selectionTitle) selectionTitle.textContent = "No photo selected";
+        status.textContent = options.showFormatHint === false
+          ? ""
+          : "JPG, JPEG, PNG, or WEBP (max. 5 MB).";
         removeButton.hidden = true;
       }
     }
