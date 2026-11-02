@@ -215,12 +215,17 @@
       }
 
       .summary-card {
+        min-width: 0;
+        align-self: start;
         overflow: hidden;
         display: flex;
         flex-direction: column;
         background: #ffffff;
-        border: 1px solid #e3e8f1;
-        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.045);
+        border: 1px solid #e1e7f2;
+        border-radius: 16px;
+        box-shadow:
+          0 14px 34px rgba(22, 34, 65, 0.055),
+          0 2px 6px rgba(22, 34, 65, 0.025);
         position: sticky;
         top: 16px;
       }
@@ -228,51 +233,58 @@
       .summary-header {
         display: flex;
         align-items: center;
-        gap: 11px;
-        padding: 18px 20px 15px;
-        border-bottom: 1px solid #e9edf4;
+        gap: 12px;
+        padding: 20px 22px 18px;
+        border-bottom: 1px solid #e9edf5;
+        background:
+          radial-gradient(circle at 100% 0, rgba(87, 53, 223, 0.07), transparent 42%),
+          linear-gradient(145deg, #fbfaff, #ffffff 76%);
         color: #172554;
       }
 
       .summary-header-icon {
-        width: 36px;
-        height: 36px;
+        width: 38px;
+        height: 38px;
+        flex: 0 0 38px;
         display: grid;
         place-items: center;
-        color: #5735df;
-        background: #f0edff;
-        border-radius: 10px;
+        border: 1px solid #e7e2ff;
+        border-radius: 11px;
+        background: #f2efff;
+        color: #5b46db;
+        font-size: 15px;
       }
 
       .summary-heading {
         display: block;
         font-size: 15px;
         font-weight: 800;
+        letter-spacing: -0.02em;
         line-height: 1.2;
       }
 
       .summary-subtitle {
         display: block;
-        margin-top: 4px;
-        color: #8793a5;
+        margin-top: 5px;
+        color: #77859b;
         font-size: 11px;
-        font-weight: 500;
+        font-weight: 550;
       }
 
       .summary-body {
-        padding: 7px 20px 16px;
+        padding: 8px 22px 18px;
         display: flex;
         flex-direction: column;
       }
 
       .summary-row {
         display: grid;
-        grid-template-columns: 36px minmax(0, 1fr);
+        grid-template-columns: 38px minmax(0, 1fr);
         align-items: center;
         column-gap: 12px;
-        min-height: 67px;
-        padding: 10px 0;
-        border-bottom: 1px solid #edf1f6;
+        min-height: 70px;
+        padding: 11px 0;
+        border-bottom: 1px solid #edf0f6;
       }
 
       .summary-row:last-child {
@@ -281,61 +293,71 @@
 
       .summary-label {
         display: block;
-        color: #7b8798;
+        grid-column: 1 / -1;
+        color: #7b8799;
         font-size: 10px;
         font-weight: 750;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.09em;
         text-transform: uppercase;
-        margin-bottom: 5px;
+        margin-bottom: 0;
       }
 
       .summary-content {
-        display: block;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 18px;
+        grid-template-rows: auto auto;
+        align-items: center;
+        column-gap: 6px;
+        row-gap: 5px;
         min-width: 0;
       }
 
       .summary-value {
-        display: inline-block;
+        display: block;
+        grid-column: 1;
         min-width: 0;
-        color: #172554;
-        max-width: 100%;
+        color: #1c2d50;
         font-size: 14px;
-        font-weight: 750;
+        font-weight: 700;
         word-break: normal;
         overflow-wrap: break-word;
-        line-height: 1.4;
-        vertical-align: middle;
+        line-height: 1.45;
       }
 
       .summary-value.is-empty {
+        grid-row: 2;
         color: #8b95a5;
         font-size: 13px;
         font-weight: 550;
       }
 
       .summary-row-icon {
-        width: 36px;
-        height: 36px;
+        justify-self: start;
+        width: 38px;
+        height: 38px;
         display: grid;
         place-items: center;
-        border-radius: 10px;
+        border: 1px solid #e7e2ff;
+        border-radius: 11px;
+        background: #f2efff;
         color: #5b46db;
-        background: #f3f1ff;
         font-size: 14px;
+        line-height: 1;
       }
 
       .summary-state {
         display: inline-flex;
+        grid-column: 2;
+        grid-row: 2;
         align-items: center;
         justify-content: center;
-        width: 17px;
-        height: 17px;
-        margin-left: 6px;
+        width: 18px;
+        height: 18px;
+        margin-left: 0;
         border-radius: 50%;
         color: #ffffff;
         background: #10b981;
         font-size: 9px;
-        vertical-align: middle;
       }
 
       .summary-value.is-empty + .summary-state {
@@ -344,9 +366,9 @@
       }
 
       .summary-footer {
-        margin: auto 20px 18px;
-        padding-top: 14px;
-        border-top: 1px solid #edf1f6;
+        margin: auto 22px 20px;
+        padding-top: 16px;
+        border-top: 1px solid #edf0f6;
       }
 
       .summary-progress-copy {
@@ -358,9 +380,9 @@
       }
 
       .summary-progress-step {
-        color: #172554;
+        color: #1d2c4d;
         font-size: 12px;
-        font-weight: 750;
+        font-weight: 800;
       }
 
       .summary-progress-title {
@@ -370,17 +392,17 @@
       }
 
       .summary-progress-track {
-        height: 5px;
+        height: 6px;
         overflow: hidden;
         border-radius: 999px;
-        background: #ece9fb;
+        background: #efedfb;
       }
 
       .summary-progress-fill {
         width: 33.333%;
         height: 100%;
         border-radius: inherit;
-        background: #5735df;
+        background: linear-gradient(90deg, #5735df, #8065f4);
         transition: width 0.2s ease;
       }
 
@@ -388,21 +410,21 @@
         display: flex;
         align-items: flex-start;
         gap: 9px;
-        background: #f0f7ff;
-        border: 1px solid #d8eaff;
-        border-radius: 10px;
-        padding: 12px 13px;
-        margin-top: 16px;
-        color: #48627e;
-        font-size: 12px;
-        line-height: 1.5;
+        background: #f2f7ff;
+        border: 1px solid #dce9ff;
+        border-radius: 11px;
+        padding: 13px 14px;
+        margin-top: 18px;
+        color: #4a6384;
+        font-size: 11.5px;
+        line-height: 1.6;
         font-weight: 550;
       }
 
       .info-box i {
         flex: 0 0 auto;
         color: #3478d4;
-        margin-top: 2px;
+        margin-top: 3px;
       }
 
       .schedule-section {
@@ -1387,7 +1409,7 @@
 
         <aside class="card summary-card">
           <div class="summary-header">
-            <span class="summary-header-icon"><i class="fa-regular fa-calendar" aria-hidden="true"></i></span>
+            <span class="summary-header-icon"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i></span>
             <span>
               <span class="summary-heading">Session Summary</span>
               <span class="summary-subtitle">Review your class details</span>
@@ -1405,12 +1427,12 @@
             </div>
 
             <div class="summary-row">
-              <i class="fa-regular fa-calendar-days summary-row-icon" aria-hidden="true"></i>
+              <i class="fa-solid fa-calendar-days summary-row-icon" aria-hidden="true"></i>
               <span class="summary-content"><span class="summary-label">Date</span><strong class="summary-value is-empty" id="summaryDate">Not selected</strong><span class="summary-state" id="summaryDateState" aria-label="Not selected"><i class="fa-solid fa-minus" aria-hidden="true"></i></span></span>
             </div>
 
             <div class="summary-row">
-              <i class="fa-regular fa-clock summary-row-icon" aria-hidden="true"></i>
+              <i class="fa-solid fa-clock summary-row-icon" aria-hidden="true"></i>
               <span class="summary-content"><span class="summary-label">Time</span><strong class="summary-value is-empty" id="summaryTime">Not selected</strong><span class="summary-state" id="summaryTimeState" aria-label="Not selected"><i class="fa-solid fa-minus" aria-hidden="true"></i></span></span>
             </div>
 
