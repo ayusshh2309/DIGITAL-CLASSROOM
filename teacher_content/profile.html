@@ -1305,7 +1305,7 @@
       }
 
       .profile-page .academic-row span:first-child {
-        color: #75867e;
+        color: #53665e;
         font-size: 0.6875rem;
       }
 
@@ -1687,6 +1687,10 @@
                   <span class="detail-value" id="detailFullName">-</span>
                 </div>
                 <div class="detail-row-item">
+                  <span class="detail-label">Teacher ID</span>
+                  <span class="detail-value" id="detailTeacherId">-</span>
+                </div>
+                <div class="detail-row-item">
                   <span class="detail-label">Country</span>
                   <span class="detail-value" id="detailCountry">-</span>
                 </div>
@@ -1979,6 +1983,7 @@
           setText("profileSideName", fullName);
           setText("profileSideRole", role);
           setText("detailFullName", fullName);
+          setText("detailTeacherId", profile.teacher_id);
           setText("profileEmail", authUser.email);
           setText("detailEmail", authUser.email);
           setText("profilePhone", profile.phone_number);
