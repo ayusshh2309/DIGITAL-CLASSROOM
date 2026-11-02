@@ -216,14 +216,14 @@
     state.settings = {
       scheduledDate: $("scheduledDate").value,
       scheduledTime: $("scheduledTime").value,
-      attemptsAllowed: $("attemptsAllowed").value,
-      shuffleQuestions: $("shuffleQuestions").checked,
-      shuffleOptions: $("shuffleOptions").checked,
-      showQuestionNumbers: $("showQuestionNumbers").checked,
-      showScore: $("showScore").checked,
+      attemptsAllowed: "1",
+      shuffleQuestions: false,
+      shuffleOptions: false,
+      showQuestionNumbers: true,
+      showScore: true,
       showAnswers: false,
-      showExplanations: $("showExplanations").checked,
-      studentAccess: $("studentAccess").value,
+      showExplanations: false,
+      studentAccess: "class",
     };
     return state.settings;
   }
