@@ -43,7 +43,10 @@
   }
 
   function draft() {
-    return window.StudentData?.getStudentDraft?.() || {};
+    return {
+      ...(window.StudentData?.getStudentDraft?.() || {}),
+      ...(window.RegistrationLifecycle?.getSecrets?.() || {}),
+    };
   }
 
   function saveDraft(values) {
@@ -115,6 +118,9 @@
     ].forEach((id) => {
       if ($(id) && current[id] !== undefined) $(id).value = current[id];
     });
+    const secrets = window.RegistrationLifecycle?.getSecrets?.() || {};
+    $("password").value = secrets.password || "";
+    $("confirmPassword").value = secrets.confirmPassword || "";
     const photoPicker = window.ProfilePhotoPicker.init({
       initialData: current.profilePhoto || "",
       initialName: "Selected profile photo",
@@ -134,6 +140,7 @@
         window.alert(validationError);
         return;
       }
+      window.RegistrationLifecycle?.navigate("academic.html", values);
       saveDraft(values);
       $("studentNextBtn").textContent = "Saved. Opening academic details...";
       window.location.assign("academic.html");
@@ -208,6 +215,7 @@
         rollNumber: normalized($("rollNumber").value),
         medium,
       });
+      window.RegistrationLifecycle?.navigate("st_review.html");
       window.location.assign("st_review.html");
     });
   }
@@ -468,6 +476,7 @@
 
     showMessage("Finalizing registration...", "status");
     window.StudentData.clearStudentRegistration();
+    window.RegistrationLifecycle?.clear();
     showMessage(`Account created successfully. Your Student ID is ${profile.student_id}.`, "success");
     window.setTimeout(() => window.location.assign("../student_content/st_dashboard.html"), 1800);
     return true;

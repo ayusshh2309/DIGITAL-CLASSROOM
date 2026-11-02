@@ -1687,6 +1687,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="../js/supabase.js"></script>
     <script src="../js/teacher-registration-storage.js"></script>
+    <script src="../js/registration-lifecycle.js"></script>
     <script src="../js/teacher-registration.js"></script>
     <script src="../js/subject-service.js?v=20261031-2"></script>
     <script src="../js/teacher-data.js"></script>
@@ -1697,7 +1698,10 @@
           step2: {},
           confirmed: false,
         };
-      const step1 = draft.step1 || {};
+      const step1 = {
+        ...(draft.step1 || {}),
+        ...(window.RegistrationLifecycle?.getSecrets?.() || {}),
+      };
       const step2 = draft.step2 || {};
       let registrationInProgress = false;
 
@@ -2039,14 +2043,17 @@
       if (teacherIdElement) teacherIdElement.textContent = generatedTeacherId;
 
       function editPersonalInfo() {
+        window.RegistrationLifecycle?.navigate("teacher_personal.html");
         window.location.href = "teacher_personal.html";
       }
 
       function editProfessionalInfo() {
+        window.RegistrationLifecycle?.navigate("teacher_professtional.html");
         window.location.href = "teacher_professtional.html";
       }
 
       function goBack() {
+        window.RegistrationLifecycle?.navigate("teacher_professtional.html");
         window.location.href = "teacher_professtional.html";
       }
 
@@ -2861,6 +2868,7 @@
           await createAcademicRecords(client, teacherDbId, authUserId);
 
           window.TeacherRegistrationStorage.clearRegistrationDraft();
+          window.RegistrationLifecycle?.clear();
           sessionStorage.removeItem("teacherId");
           sessionStorage.removeItem("teacherRegistrationNeedsLogin");
           alert("Teacher account created successfully.");

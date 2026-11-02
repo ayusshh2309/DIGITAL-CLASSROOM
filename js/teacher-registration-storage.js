@@ -11,8 +11,6 @@
     country: "",
     state: "",
     city: "",
-    password: "",
-    confirmPassword: "",
     address: "",
     profilePhoto: null,
     profilePhotoName: "",
@@ -39,8 +37,11 @@
 
   function normalizeDraft(input) {
     const source = input && typeof input === "object" ? input : {};
+    const step1 = { ...emptyStep1, ...(source.step1 || {}) };
+    delete step1.password;
+    delete step1.confirmPassword;
     return {
-      step1: { ...emptyStep1, ...(source.step1 || {}) },
+      step1,
       step2: { ...emptyStep2, ...(source.step2 || {}) },
       confirmed: Boolean(source.confirmed),
     };
@@ -48,24 +49,21 @@
 
   function getRegistrationDraft() {
     try {
-      const raw = localStorage.getItem(DRAFT_KEY);
+      localStorage.removeItem(DRAFT_KEY);
+      const raw = sessionStorage.getItem(DRAFT_KEY);
       if (!raw) {
-        const draft = normalizeDraft({});
-        localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-        return draft;
+        return normalizeDraft({});
       }
       return normalizeDraft(JSON.parse(raw));
     } catch (error) {
       console.warn("Registration draft could not be parsed.", error);
-      const draft = normalizeDraft({});
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-      return draft;
+      return normalizeDraft({});
     }
   }
 
   function saveRegistrationDraft(draft) {
     const normalized = normalizeDraft(draft);
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(normalized));
+    sessionStorage.setItem(DRAFT_KEY, JSON.stringify(normalized));
     return normalized;
   }
 
@@ -83,18 +81,19 @@
 
   function clearRegistrationDraft() {
     localStorage.removeItem(DRAFT_KEY);
+    sessionStorage.removeItem(DRAFT_KEY);
     [
       "teacherPersonalInfo",
       "teacherProfessionalInfo",
       "teacherProfilePhotoName",
+      "teacherId",
+      "teacherRegistrationNeedsLogin",
     ].forEach((key) => sessionStorage.removeItem(key));
     return true;
   }
 
   function clearPasswordFromDraft() {
     const draft = getRegistrationDraft();
-    draft.step1.password = "";
-    draft.step1.confirmPassword = "";
     saveRegistrationDraft(draft);
   }
 

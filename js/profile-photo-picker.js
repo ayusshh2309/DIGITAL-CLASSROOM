@@ -138,6 +138,14 @@
       useButton = null;
     }
 
+    function dispose() {
+      selectionRequest += 1;
+      closeCamera();
+      selectedProfilePhoto = null;
+      input.value = "";
+      displayPreview("", "");
+    }
+
     function displayPreview(dataUrl, name) {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
       previewUrl = "";
@@ -354,6 +362,7 @@
       displayPreview("", "");
       pendingSelection = Promise.resolve().then(() => options.onChange({ file: null, dataUrl: "", name: "" }));
     });
+    window.addEventListener("pagehide", dispose, { once: true });
 
     const initialData = options.initialData;
     const ready = initialData

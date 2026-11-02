@@ -24,6 +24,13 @@
     storage.setItem(key, JSON.stringify(value));
   }
 
+  function withoutPasswords(data) {
+    const sanitized = { ...data };
+    delete sanitized.password;
+    delete sanitized.confirmPassword;
+    return sanitized;
+  }
+
   function removeLegacyPasswords(storage, key) {
     const profile = readJson(storage, key, null);
     if (!profile || typeof profile !== "object") return;
@@ -44,7 +51,7 @@
       ...result,
       ...(readJson(localStorage, key, {}) || {}),
     }), {});
-    const draft = { ...legacyDraft, ...sessionDraft };
+    const draft = withoutPasswords({ ...legacyDraft, ...sessionDraft });
     if (Object.keys(draft).length) writeJson(sessionStorage, DRAFT_KEY, draft);
     LEGACY_DRAFT_KEYS.forEach((key) => localStorage.removeItem(key));
     return draft;
@@ -53,7 +60,7 @@
   function saveStudentDraft(data) {
     const nextDraft = {
       ...getStudentDraft(),
-      ...data,
+      ...withoutPasswords(data),
     };
 
     writeJson(sessionStorage, DRAFT_KEY, nextDraft);

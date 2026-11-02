@@ -1475,6 +1475,7 @@
   ========================================================== -->
 
   <script src="../js/teacher-registration-storage.js"></script>
+  <script src="../js/registration-lifecycle.js"></script>
   <script src="../js/teacher-registration.js"></script>
   <script src="../js/profile-photo-picker.js"></script>
   <script>
@@ -1503,8 +1504,9 @@
       setValue("country", step1.country);
       setValue("state", step1.state);
       setValue("city", step1.city);
-      setValue("password", step1.password || "");
-      setValue("confirmPassword", step1.confirmPassword || step1.password || "");
+      const secrets = window.RegistrationLifecycle?.getSecrets?.() || {};
+      setValue("password", secrets.password || "");
+      setValue("confirmPassword", secrets.confirmPassword || "");
       setValue("address", step1.address);
 
       const photoPicker = window.ProfilePhotoPicker.init({
@@ -1614,6 +1616,10 @@
           profilePhotoName: photoMeta ? photoMeta.name : "",
         });
 
+        window.RegistrationLifecycle?.navigate("teacher_professtional.html", {
+          password,
+          confirmPassword,
+        });
         window.location.href = "teacher_professtional.html";
       });
     });

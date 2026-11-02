@@ -1259,6 +1259,7 @@
     <script src="../js/supabase.js"></script>
     <script src="../js/subject-service.js?v=20261031-2"></script>
     <script src="../js/teacher-registration-storage.js"></script>
+    <script src="../js/registration-lifecycle.js"></script>
     <script src="../js/teacher-registration.js"></script>
     <script>
       (function () {
@@ -1927,6 +1928,7 @@
 
             const nextDraft = parseProfessionalForm();
             saveDraft(nextDraft);
+            window.RegistrationLifecycle?.navigate("review.html");
             window.location.href = "review.html";
           });
 
@@ -1963,6 +1965,7 @@
         }
 
         window.goToPersonalInfo = function () {
+          window.RegistrationLifecycle?.navigate("teacher_personal.html");
           window.location.href = "teacher_personal.html";
         };
         window.addLanguageTag = addLanguageTag;
