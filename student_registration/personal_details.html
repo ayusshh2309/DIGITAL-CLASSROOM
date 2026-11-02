@@ -411,6 +411,270 @@
         color: var(--dark-text);
       }
 
+      .profile-photo-field {
+        gap: 12px;
+      }
+
+      .profile-photo-heading {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 4px;
+      }
+
+      .profile-photo-heading-icon {
+        width: 48px;
+        height: 48px;
+        flex: 0 0 48px;
+        display: grid;
+        place-items: center;
+        border-radius: 15px;
+        background: linear-gradient(145deg, #7563ff, #5538ee);
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(85, 56, 238, 0.2);
+      }
+
+      .profile-photo-heading-icon svg {
+        width: 25px;
+        height: 25px;
+      }
+
+      .profile-photo-heading-copy {
+        flex: 0 0 auto;
+      }
+
+      .profile-photo-heading h3 {
+        margin: 0;
+        font-size: 1.15rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: var(--dark-text);
+      }
+
+      .profile-photo-heading p {
+        margin: 3px 0 0;
+        color: #64748b;
+        font-size: 0.9rem;
+        line-height: 1.45;
+      }
+
+      .profile-photo-heading-rule {
+        height: 1px;
+        flex: 1;
+        margin-left: 12px;
+        background: #e2e8f0;
+      }
+
+      .profile-photo-picker {
+        border: 1px dashed #aaa0ff;
+        border-radius: 16px;
+        background: linear-gradient(120deg, #f6f5ff 0%, #fbfcff 100%);
+      }
+
+      .input-field .profile-photo-preview {
+        border: 2px solid #beb6ff;
+        background: radial-gradient(circle at 35% 25%, #f8faff, #e8ebf4);
+        color: #64708f;
+        font-size: 0;
+        box-shadow: 0 4px 14px rgba(55, 65, 110, 0.08);
+      }
+
+      .profile-photo-placeholder-icon {
+        width: 78px;
+        height: 78px;
+        fill: currentColor;
+        stroke-width: 0;
+      }
+
+      .profile-photo-info h4 {
+        display: block;
+        margin-bottom: 6px;
+        color: #172554;
+        font-size: 1.12rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+
+      .input-field .profile-photo-instruction {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.92rem;
+        line-height: 1.55;
+        writing-mode: horizontal-tb;
+        word-break: normal;
+        overflow-wrap: break-word;
+        white-space: normal;
+      }
+
+      .input-field .profile-photo-status {
+        margin: 8px 0 0;
+        color: #15803d;
+        font-size: 0.82rem;
+        overflow-wrap: break-word;
+        writing-mode: horizontal-tb;
+        word-break: normal;
+        white-space: normal;
+      }
+
+      .input-field .profile-photo-status:empty {
+        display: none;
+      }
+
+      .profile-photo-actions {
+        gap: 12px;
+      }
+
+      .input-field .profile-photo-actions button {
+        min-height: 56px;
+        border: 1px solid #6b55ff;
+        border-radius: 13px;
+        padding: 12px 14px;
+        color: #5b43ef;
+        background: #fff;
+        font-size: 0.92rem;
+        font-weight: 750;
+        white-space: nowrap;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      }
+
+      .input-field .profile-photo-actions button:first-of-type {
+        border-color: transparent;
+        color: #fff;
+        background: linear-gradient(115deg, #6849f5, #4f35e9);
+        box-shadow: 0 8px 16px rgba(85, 56, 238, 0.2);
+      }
+
+      .input-field .profile-photo-actions button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(85, 56, 238, 0.17);
+      }
+
+      .input-field .profile-photo-actions button:first-of-type:hover {
+        background: linear-gradient(115deg, #5f40ed, #452bdc);
+      }
+
+      .input-field .profile-photo-actions button[hidden] {
+        display: none;
+      }
+
+      .input-field .profile-photo-actions svg {
+        width: 20px;
+        height: 20px;
+        margin-right: 8px;
+        vertical-align: -4px;
+      }
+
+      .profile-photo-actions-divider {
+        width: 1px;
+        height: 54px;
+        flex: 0 0 1px;
+        margin: 0 2px;
+        background: #d7d9ed;
+      }
+
+      .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) {
+        grid-template-columns: 100px minmax(0, 1fr);
+        column-gap: 18px;
+        row-gap: 14px;
+      }
+
+      .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) .profile-photo-actions {
+        grid-column: 2;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        justify-content: stretch;
+        gap: 8px;
+        width: 100%;
+      }
+
+      .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) .profile-photo-actions-divider {
+        display: none;
+      }
+
+      .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) .profile-photo-actions button {
+        width: 100%;
+        min-width: 0;
+        min-height: 48px;
+        padding: 9px 8px;
+        font-size: 0.82rem;
+      }
+
+      .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) .profile-photo-actions button svg {
+        width: 17px;
+        height: 17px;
+        margin-right: 5px;
+      }
+
+      .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) #removeProfilePhotoButton {
+        border-color: #e2e8f0;
+        color: #64748b;
+        background: #fff;
+        box-shadow: none;
+      }
+
+      .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) #removeProfilePhotoButton:hover {
+        border-color: #f0b4b4;
+        color: #b42318;
+        background: #fff8f8;
+      }
+
+      @container (max-width: 650px) {
+        .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) .profile-photo-actions {
+          grid-column: 1;
+          grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+        }
+      }
+
+      @container (min-width: 680px) {
+        .profile-photo-picker .profile-photo-content {
+          grid-template-columns: 100px minmax(0, 1fr) max-content;
+        }
+
+        .profile-photo-picker .profile-photo-actions {
+          grid-column: auto;
+          flex-wrap: nowrap;
+        }
+      }
+
+      .profile-photo-details {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 14px;
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid #e4e6f4;
+        color: #74809e;
+        font-size: 0.83rem;
+      }
+
+      .profile-photo-detail {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .profile-photo-detail svg {
+        width: 19px;
+        height: 19px;
+        color: #747ee0;
+      }
+
+      .profile-photo-detail-divider {
+        width: 1px;
+        align-self: stretch;
+        background: #d7d9ed;
+      }
+
+      .input-field .profile-photo-error {
+        grid-column: 1 / -1;
+        margin: 0;
+      }
+
       /* =========================================================
        INPUT
     ========================================================= */
@@ -650,6 +914,54 @@
 
         .sidebar-hero h2 {
           font-size: 1.8rem;
+        }
+
+        .profile-photo-heading {
+          gap: 10px;
+        }
+
+        .profile-photo-heading-icon {
+          width: 42px;
+          height: 42px;
+          flex-basis: 42px;
+        }
+
+        .profile-photo-heading h3 {
+          font-size: 1rem;
+        }
+
+        .profile-photo-heading-rule {
+          display: none;
+        }
+
+        .profile-photo-info h4 {
+          font-size: 0.98rem;
+        }
+
+        .input-field .profile-photo-instruction {
+          font-size: 0.84rem;
+        }
+
+        .profile-photo-actions {
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .input-field .profile-photo-actions button {
+          min-height: 48px;
+          padding: 10px 12px;
+          font-size: 0.87rem;
+        }
+
+        .profile-photo-actions-divider,
+        .profile-photo-detail-divider {
+          display: none;
+        }
+
+        .profile-photo-details {
+          justify-content: flex-start;
+          gap: 10px;
+          font-size: 0.76rem;
         }
       }
     </style>
@@ -1099,32 +1411,66 @@
 
             <!-- PROFILE PHOTO -->
 
-            <div class="input-field full-width">
-              <label> Profile Photo (Optional) </label>
-
+            <div class="input-field full-width profile-photo-field">
+              <div class="profile-photo-heading">
+                <span class="profile-photo-heading-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 8h3l2-3h6l2 3h3a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z" />
+                    <circle cx="12" cy="13" r="3.5" />
+                  </svg>
+                </span>
+                <div class="profile-photo-heading-copy">
+                  <h3>Profile Photo</h3>
+                  <p>Upload a photo or take a picture using your camera.</p>
+                </div>
+                <span class="profile-photo-heading-rule" aria-hidden="true"></span>
+              </div>
               <div class="profile-photo-picker">
                 <input type="file" id="profilePhotoInput" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" hidden />
                 <div class="profile-photo-content">
                   <div class="profile-photo-preview" aria-live="polite">
                     <img id="profilePhotoPreview" alt="Selected profile photo" hidden />
-                    <span id="profilePhotoPlaceholder" aria-hidden="true">👤</span>
+                    <svg id="profilePhotoPlaceholder" class="profile-photo-placeholder-icon" aria-hidden="true" viewBox="0 0 24 24">
+                      <circle cx="12" cy="7" r="3.2" />
+                      <path d="M3 21c0-5.2 3.7-8.6 9-8.6s9 3.4 9 8.6z" />
+                    </svg>
                   </div>
                   <div class="profile-photo-info">
                     <h4 id="profilePhotoSelectionTitle">No photo selected</h4>
-                    <p class="profile-photo-instruction">Upload a photo or take a picture using your camera.</p>
-                    <p id="uploadText" class="profile-photo-status">JPG, JPEG, PNG, or WEBP (max. 5 MB)</p>
+                    <p class="profile-photo-instruction">A clear photo helps with identification and personalizes your profile.</p>
+                    <p id="uploadText" class="profile-photo-status" aria-live="polite"></p>
                   </div>
                   <div class="profile-photo-actions">
                     <button type="button" id="uploadProfilePhotoButton">
-                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 0L7 9m5-5 5 5M5 15v4h14v-4" /></svg>
+                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L7 9m5-5 5 5M5 15v4h14v-4" /><circle cx="19" cy="6" r="4" fill="currentColor" stroke="none" /><path d="M19 4v4m-2-2h4" stroke="#fff" /></svg>
                       Upload Photo
                     </button>
+                    <span class="profile-photo-actions-divider" aria-hidden="true"></span>
                     <button type="button" id="takeProfilePhotoButton">
-                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h3l2-3h6l2 3h3v13H4z" /><circle cx="12" cy="13" r="4" /></svg>
+                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-3h6l2 3h3v13H4z" /><circle cx="12" cy="13" r="4" /></svg>
                       Take Photo
                     </button>
-                    <button type="button" id="removeProfilePhotoButton" hidden>Remove Photo</button>
+                    <button type="button" id="removeProfilePhotoButton" hidden>
+                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3" /></svg>
+                      Remove Photo
+                    </button>
                   </div>
+                </div>
+                <div class="profile-photo-details" aria-label="Photo upload information">
+                  <span class="profile-photo-detail">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></svg>
+                    JPG, JPEG, PNG, WEBP
+                  </span>
+                  <span class="profile-photo-detail-divider" aria-hidden="true"></span>
+                  <span class="profile-photo-detail">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" /></svg>
+                    Max Size: 5 MB
+                  </span>
+                  <span class="profile-photo-detail-divider" aria-hidden="true"></span>
+                  <span class="profile-photo-detail">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 22 1.7-.8C18.2 19 21 15.2 21 10V5l-9-3-9 3v5c0 5.2 2.8 9 7.3 11.2L12 22Z" /><path d="m9 12 2 2 4-4" /></svg>
+                    Your photo is secure with us
+                  </span>
                 </div>
                 <p id="profilePhotoError" class="profile-photo-error" role="alert" hidden></p>
               </div>

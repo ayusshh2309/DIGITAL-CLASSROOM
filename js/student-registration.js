@@ -124,6 +124,7 @@
     const photoPicker = window.ProfilePhotoPicker.init({
       initialData: current.profilePhoto || "",
       initialName: "Selected profile photo",
+      showFormatHint: false,
       onChange: ({ dataUrl }) => saveDraft({ profilePhoto: dataUrl || "" }),
     });
 
