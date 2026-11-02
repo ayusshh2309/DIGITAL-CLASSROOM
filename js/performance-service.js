@@ -42,6 +42,87 @@
     return group?.subjects || [];
   }
 
+  async function loadStudentAchievements(client, students) {
+    const achievementsByStudent = new Map(
+      students.map((student) => [
+        String(student.id),
+        { studentId: String(student.id), totalXp: 0, achievements: [] },
+      ]),
+    );
+    if (!students.length) {
+      return {
+        achievementsByStudent: Object.fromEntries(achievementsByStudent),
+        achievementSummary: {
+          totalXp: 0,
+          studentsWithAchievements: 0,
+          unlockedCount: 0,
+        },
+      };
+    }
+
+    const { data: unlockedRows, error: achievementsError } = await client
+      .from("student_achievements")
+      .select("student_id, achievement_id, unlocked_at, xp_earned")
+      .in("student_id", students.map((student) => student.id));
+    if (achievementsError) throw achievementsError;
+
+    const achievementRows = unlockedRows || [];
+    const achievementIds = [...new Set(
+      achievementRows
+        .map((row) => row.achievement_id)
+        .filter((id) => id !== null && id !== undefined)
+        .map(String),
+    )];
+    let definitionsById = new Map();
+    if (achievementIds.length) {
+      const { data: definitions, error: definitionsError } = await client
+        .from("achievement_definitions")
+        .select("id, title, description, category, icon")
+        .in("id", achievementIds);
+      if (definitionsError) throw definitionsError;
+      definitionsById = new Map(
+        (definitions || []).map((definition) => [
+          String(definition.id),
+          definition,
+        ]),
+      );
+    }
+
+    for (const row of achievementRows) {
+      const student = achievementsByStudent.get(String(row.student_id));
+      if (!student) continue;
+      const definition = definitionsById.get(String(row.achievement_id));
+      const xpEarned = Number(row.xp_earned) || 0;
+      student.totalXp += xpEarned;
+      student.achievements.push({
+        achievementId: String(row.achievement_id),
+        title: definition?.title || "Achievement details unavailable",
+        description: definition?.description || "",
+        category: definition?.category || "",
+        icon: definition?.icon || "fa-award",
+        unlockedAt: row.unlocked_at,
+        xpEarned,
+      });
+    }
+
+    const groups = [...achievementsByStudent.values()];
+    return {
+      achievementsByStudent: Object.fromEntries(
+        groups.map((group) => [group.studentId, group]),
+      ),
+      achievementSummary: {
+        totalXp: groups.reduce((total, group) => total + group.totalXp, 0),
+        studentsWithAchievements: groups.filter((group) =>
+          group.achievements.length > 0,
+        ).length,
+        unlockedCount: groups.reduce(
+          (total, group) => total + group.achievements.length,
+          0,
+        ),
+      },
+    };
+  }
+
   async function loadPerformanceData({ client, teacher, grade, stream, subjectId, groups }) {
     const group = registeredGroups(groups, grade).find((item) =>
       (item.stream || "") === (stream || ""),
@@ -54,17 +135,18 @@
       throw new Error("The selected subject is not assigned to this grade and stream.");
     }
     const subjectIds = authorizedSubjects.map((subject) => subject.id);
-    if (!subjectIds.length) return { students: [], records: [], subjects: authorizedSubjects };
 
-    let quizQuery = client
-      .from("quizzes")
-      .select("id, title, subject_id, results_released")
-      .eq("teacher_id", teacher.id)
-      .eq("grade", Number(grade))
-      .eq("status", "published")
-      .eq("results_released", true)
-      .in("subject_id", subjectIds);
-    quizQuery = stream ? quizQuery.eq("stream", stream) : quizQuery.is("stream", null);
+    let quizQuery = null;
+    if (subjectIds.length) {
+      quizQuery = client
+        .from("quizzes")
+        .select("id, title, subject_id, grade, stream")
+        .eq("teacher_id", teacher.id)
+        .eq("grade", Number(grade))
+        .eq("status", "published")
+        .in("subject_id", subjectIds);
+      quizQuery = stream ? quizQuery.eq("stream", stream) : quizQuery.is("stream", null);
+    }
 
     let studentQuery = client
       .from("students")
@@ -73,13 +155,36 @@
       .order("full_name", { ascending: true });
     studentQuery = stream ? studentQuery.eq("stream", stream) : studentQuery.is("stream", null);
 
-    const [quizResult, studentResult] = await Promise.all([quizQuery, studentQuery]);
-    if (quizResult.error) throw quizResult.error;
+    const [quizResult, studentResult] = await Promise.all([
+      quizQuery || Promise.resolve({ data: [], error: null }),
+      studentQuery,
+    ]);
     if (studentResult.error) throw studentResult.error;
 
-    const quizzes = quizResult.data || [];
     const students = studentResult.data || [];
-    if (!quizzes.length) return { students, records: [], subjects: authorizedSubjects };
+    if (quizResult.error) throw quizResult.error;
+    let achievementData;
+    try {
+      achievementData = await loadStudentAchievements(client, students);
+    } catch (error) {
+      console.error("Student achievement data could not be loaded.", error);
+      achievementData = {
+        achievementsByStudent: {},
+        achievementSummary: null,
+        achievementError:
+          error?.message || "Achievement data could not be loaded.",
+      };
+    }
+
+    const quizzes = quizResult.data || [];
+    if (!quizzes.length) {
+      return {
+        students,
+        records: [],
+        subjects: authorizedSubjects,
+        ...achievementData,
+      };
+    }
 
     const { data: attempts, error: attemptError } = await client
       .from("quiz_attempts")
@@ -117,7 +222,12 @@
         };
       });
 
-    return { students, records, subjects: authorizedSubjects };
+    return {
+      students,
+      records,
+      subjects: authorizedSubjects,
+      ...achievementData,
+    };
   }
 
   function categoryFor(average) {
@@ -221,6 +331,8 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "quiz_answers" }, onChange)
       .on("postgres_changes", { event: "*", schema: "public", table: "teacher_grade_groups", filter: `teacher_id=eq.${teacher.id}` }, onChange)
       .on("postgres_changes", { event: "*", schema: "public", table: "teacher_subject_assignments", filter: `teacher_id=eq.${teacher.id}` }, onChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "student_achievements" }, onChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "achievement_definitions" }, onChange)
       .subscribe((status) => {
         if (["CHANNEL_ERROR", "TIMED_OUT"].includes(status)) {
           console.error("Performance realtime subscription is unavailable.", status);

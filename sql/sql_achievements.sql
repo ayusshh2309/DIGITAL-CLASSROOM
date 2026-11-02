@@ -1,77 +1,96 @@
--- Smart Learning DC achievement definitions, unlocks, and auditable XP.
-create table if not exists public.achievement_definitions (
-  id uuid primary key default gen_random_uuid(),
-  achievement_key text unique not null,
-  name text not null,
-  description text not null,
-  icon text not null,
-  color text not null default 'purple',
-  category text not null,
-  requirement_type text not null,
-  requirement_value numeric not null check (requirement_value > 0),
-  xp_reward integer not null default 0 check (xp_reward >= 0),
-  active boolean not null default true,
-  created_at timestamptz not null default now()
-);
+-- Teacher and student read access for the existing achievement tables.
+-- This script does not create or alter tables or foreign keys.
 
-create table if not exists public.student_achievements (
-  id uuid primary key default gen_random_uuid(),
-  student_id uuid not null references auth.users(id) on delete cascade,
-  achievement_id uuid not null references public.achievement_definitions(id) on delete cascade,
-  unlocked_at timestamptz not null default now(),
-  unique (student_id, achievement_id)
-);
+drop policy if exists "Anyone can view active achievement definitions"
+  on public.achievement_definitions;
+drop policy if exists "Authenticated users view active achievement definitions"
+  on public.achievement_definitions;
+create policy "Authenticated users view active achievement definitions"
+  on public.achievement_definitions
+  for select to authenticated
+  using (is_active = true);
 
-create table if not exists public.student_xp_transactions (
-  id uuid primary key default gen_random_uuid(),
-  student_id uuid not null references auth.users(id) on delete cascade,
-  source_type text not null,
-  source_id text not null,
-  reason text not null,
-  xp integer not null check (xp > 0),
-  created_at timestamptz not null default now(),
-  unique (student_id, source_type, source_id, reason)
-);
+drop policy if exists "Students view their achievements"
+  on public.student_achievements;
+create policy "Students view their achievements"
+  on public.student_achievements
+  for select to authenticated
+  using (exists (
+    select 1
+    from public.students as student
+    where student.id = student_achievements.student_id
+      and student.user_id = (select auth.uid())
+  ));
 
-insert into public.achievement_definitions
-  (achievement_key, name, description, icon, color, category, requirement_type, requirement_value, xp_reward)
-values
-  ('quick_learner', 'Quick Learner', 'Complete 5 learning sessions in one day.', 'fa-bolt', 'purple', 'Learning', 'sessions_in_day', 5, 100),
-  ('streak_master', 'Streak Master', 'Maintain a 7-day study streak.', 'fa-fire', 'orange', 'Consistency', 'study_streak', 7, 150),
-  ('quiz_master', 'Quiz Master', 'Score 90% or higher in 5 quizzes.', 'fa-star', 'green', 'Quizzes', 'high_score_quizzes', 5, 200),
-  ('time_champion', 'Time Champion', 'Study for 20 or more hours in a week.', 'fa-clock', 'blue', 'Study Time', 'weekly_study_minutes', 1200, 250),
-  ('first_step', 'First Step', 'Complete your first learning session.', 'fa-graduation-cap', 'pink', 'Learning', 'completed_sessions', 1, 50),
-  ('bookworm', 'Bookworm', 'Complete 20 learning resources.', 'fa-book', 'purple', 'Learning', 'completed_resources', 20, 150),
-  ('knowledge_seeker', 'Knowledge Seeker', 'Complete 30 study sessions.', 'fa-gem', 'purple', 'Learning', 'completed_sessions', 30, 300),
-  ('top_scholar', 'Top Scholar', 'Reach a configured top-five ranking.', 'fa-crown', 'yellow', 'Challenges', 'ranking_position', 5, 500)
-on conflict (achievement_key) do update set
-  name = excluded.name, description = excluded.description, icon = excluded.icon,
-  color = excluded.color, category = excluded.category, requirement_type = excluded.requirement_type,
-  requirement_value = excluded.requirement_value, xp_reward = excluded.xp_reward;
+drop policy if exists "Teachers view achievements for registered students"
+  on public.student_achievements;
+create policy "Teachers view achievements for registered students"
+  on public.student_achievements
+  for select to authenticated
+  using (exists (
+    select 1
+    from public.students as student
+    where student.id = student_achievements.student_id
+      and public.teacher_can_access_student_scope(student.grade, student.stream)
+  ));
 
-alter table public.achievement_definitions enable row level security;
-alter table public.student_achievements enable row level security;
-alter table public.student_xp_transactions enable row level security;
+drop policy if exists "Teachers view definitions unlocked by registered students"
+  on public.achievement_definitions;
+create policy "Teachers view definitions unlocked by registered students"
+  on public.achievement_definitions
+  for select to authenticated
+  using (exists (
+    select 1
+    from public.student_achievements as achievement
+    join public.students as student
+      on student.id = achievement.student_id
+    where achievement.achievement_id = achievement_definitions.id
+      and public.teacher_can_access_student_scope(student.grade, student.stream)
+  ));
 
-drop policy if exists "Anyone can view active achievement definitions" on public.achievement_definitions;
-create policy "Anyone can view active achievement definitions" on public.achievement_definitions
-  for select using (active = true);
+drop policy if exists "Students unlock their achievements"
+  on public.student_achievements;
+do $$
+declare
+  policy_record record;
+begin
+  for policy_record in
+    select policyname
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'student_achievements'
+      and cmd in ('INSERT', 'ALL')
+  loop
+    execute format(
+      'drop policy %I on public.student_achievements',
+      policy_record.policyname
+    );
+  end loop;
+end;
+$$;
+revoke insert on public.student_achievements from public, anon, authenticated;
+grant select on public.achievement_definitions, public.student_achievements
+  to authenticated;
 
-drop policy if exists "Students view their achievements" on public.student_achievements;
-create policy "Students view their achievements" on public.student_achievements
-  for select using (auth.uid() = student_id);
-
-drop policy if exists "Students unlock their achievements" on public.student_achievements;
-create policy "Students unlock their achievements" on public.student_achievements
-  for insert with check (auth.uid() = student_id);
-
-drop policy if exists "Students view their XP" on public.student_xp_transactions;
-create policy "Students view their XP" on public.student_xp_transactions
-  for select using (auth.uid() = student_id);
-
-drop policy if exists "Students create their XP" on public.student_xp_transactions;
-create policy "Students create their XP" on public.student_xp_transactions
-  for insert with check (auth.uid() = student_id);
-
-create index if not exists student_achievements_student_unlock_idx on public.student_achievements(student_id, unlocked_at desc);
-create index if not exists student_xp_transactions_student_created_idx on public.student_xp_transactions(student_id, created_at desc);
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    if not exists (
+      select 1 from pg_publication_tables
+      where pubname = 'supabase_realtime'
+        and schemaname = 'public'
+        and tablename = 'student_achievements'
+    ) then
+      alter publication supabase_realtime add table public.student_achievements;
+    end if;
+    if not exists (
+      select 1 from pg_publication_tables
+      where pubname = 'supabase_realtime'
+        and schemaname = 'public'
+        and tablename = 'achievement_definitions'
+    ) then
+      alter publication supabase_realtime add table public.achievement_definitions;
+    end if;
+  end if;
+end;
+$$;

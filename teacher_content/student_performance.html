@@ -265,6 +265,78 @@
             </article>
           </aside>
         </section>
+        <section class="engagement-section" aria-labelledby="engagementHeading">
+          <div class="section-head">
+            <div>
+              <h2 id="engagementHeading">
+                <i class="fa-solid fa-award" aria-hidden="true"></i>
+                Learning Engagement
+              </h2>
+              <p>Achievement XP and badges for the selected class and stream.</p>
+            </div>
+          </div>
+          <div class="engagement-summary" aria-label="Achievement summary">
+            <article class="engagement-stat">
+              <span class="engagement-stat-icon xp"
+                ><i class="fa-solid fa-coins" aria-hidden="true"></i
+              ></span>
+              <div>
+                <strong id="achievementXpTotal">0</strong>
+                <span>Total achievement XP</span>
+              </div>
+            </article>
+            <article class="engagement-stat">
+              <span class="engagement-stat-icon students"
+                ><i class="fa-solid fa-user-check" aria-hidden="true"></i
+              ></span>
+              <div>
+                <strong id="achievementStudentCount">0</strong>
+                <span>Students with achievements</span>
+              </div>
+            </article>
+            <article class="engagement-stat">
+              <span class="engagement-stat-icon badges"
+                ><i class="fa-solid fa-medal" aria-hidden="true"></i
+              ></span>
+              <div>
+                <strong id="achievementUnlockedCount">0</strong>
+                <span>Unlocked achievements</span>
+              </div>
+            </article>
+          </div>
+          <article class="engagement-card">
+            <div class="card-head">
+              <div>
+                <h3>Achievement XP by student</h3>
+                <p>Includes students with zero earned achievement XP.</p>
+              </div>
+            </div>
+            <div class="table-scroll">
+              <table class="details-table engagement-table">
+                <thead>
+                  <tr>
+                    <th>Student</th>
+                    <th>Unlocked badges</th>
+                    <th>Achievement XP</th>
+                  </tr>
+                </thead>
+                <tbody id="studentAchievementXpBody"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+        <section class="achievements-section" aria-labelledby="achievementsHeading">
+          <div class="section-head">
+            <div>
+              <h2 id="achievementsHeading">
+                <i class="fa-solid fa-certificate" aria-hidden="true"></i>
+                Achievements
+              </h2>
+              <p>Badges unlocked by students in the selected class and stream.</p>
+            </div>
+          </div>
+          <div class="achievement-grid" id="achievementList" aria-live="polite"></div>
+        </section>
       </div>
     </main>
     <div id="performanceDrawer"></div>

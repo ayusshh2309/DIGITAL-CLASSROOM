@@ -8,6 +8,13 @@
     students: [],
     records: [],
     performance: null,
+    achievementsByStudent: {},
+    achievementSummary: {
+      totalXp: 0,
+      studentsWithAchievements: 0,
+      unlockedCount: 0,
+    },
+    achievementError: "",
     query: "",
     category: "All",
     sort: "average-desc",
@@ -25,11 +32,29 @@
     : `${Math.round(Number(value) * 10) / 10}%`;
   const showEmpty = (message, icon = "fa-chart-line") =>
     `<div class="empty"><i class="fa-solid ${icon}"></i>${esc(message)}</div>`;
+  const achievementIcon = (value) => {
+    const classes = String(value || "fa-award")
+      .split(/\s+/)
+      .filter((name) => /^fa-[a-z0-9-]+$/i.test(name));
+    return classes.length ? classes.join(" ") : "fa-award";
+  };
+  const formatUnlockDate = (value) => {
+    const date = new Date(value);
+    return Number.isNaN(date.valueOf())
+      ? "Date unavailable"
+      : date.toLocaleDateString();
+  };
 
   function renderError(message) {
     ["performanceBody", "overviewChart", "subjectBars", "topPerformers", "distribution", "insights"].forEach((id) => {
       if ($(id)) $(id).innerHTML = showEmpty(message, "fa-circle-exclamation");
     });
+    $("achievementXpTotal").textContent = "—";
+    $("achievementStudentCount").textContent = "—";
+    $("achievementUnlockedCount").textContent = "—";
+    $("studentAchievementXpBody").innerHTML =
+      `<tr><td colspan="3">${showEmpty(message, "fa-circle-exclamation")}</td></tr>`;
+    $("achievementList").innerHTML = showEmpty(message, "fa-circle-exclamation");
   }
 
   function renderClassOptions() {
@@ -73,6 +98,13 @@
     if (!state.grade || (Number(state.grade) >= 11 && !state.stream)) {
       state.students = [];
       state.records = [];
+      state.achievementsByStudent = {};
+      state.achievementSummary = {
+        totalXp: 0,
+        studentsWithAchievements: 0,
+        unlockedCount: 0,
+      };
+      state.achievementError = "";
       state.performance = PerformanceService.calculatePerformance([], [], []);
       renderAll();
       return;
@@ -87,6 +119,13 @@
     if (requestId !== state.requestId) return;
     state.students = result.students;
     state.records = result.records;
+    state.achievementsByStudent = result.achievementsByStudent || {};
+    state.achievementError = result.achievementError || "";
+    state.achievementSummary = result.achievementSummary || {
+      totalXp: 0,
+      studentsWithAchievements: 0,
+      unlockedCount: 0,
+    };
     state.performance = PerformanceService.calculatePerformance(result.records, result.students, result.subjects);
     renderAll();
     if (resubscribe) setupRealtime();
@@ -112,36 +151,63 @@
 
   function renderOverview() {
     const chart = $("overviewChart");
-    const records = [...state.records].sort((a, b) => new Date(a.assessment_date) - new Date(b.assessment_date));
-    if (!records.length) {
+    const points = state.records
+      .map((record) => ({
+        date: String(record.assessment_date || "").slice(0, 10),
+        timestamp: new Date(record.assessment_date).getTime(),
+        value: record.percentage === null || record.percentage === undefined ||
+          String(record.percentage).trim() === ""
+          ? Number.NaN
+          : Number(record.percentage),
+      }))
+      .filter((point) =>
+        point.date.length > 0 &&
+        Number.isFinite(point.timestamp) &&
+        Number.isFinite(point.value) &&
+        point.value >= 0 &&
+        point.value <= 100,
+      )
+      .sort((left, right) => left.timestamp - right.timestamp);
+    if (!points.length) {
       chart.innerHTML = showEmpty("No quiz results available yet.");
       return;
     }
-    const groups = new Map();
-    records.forEach((record) => {
-      const day = String(record.assessment_date).slice(0, 10);
-      if (!groups.has(day)) groups.set(day, []);
-      groups.get(day).push(record.percentage);
-    });
-    const points = [...groups].map(([date, values]) => ({
-      date,
-      value: values.reduce((sum, value) => sum + value, 0) / values.length,
-    }));
     const width = 700;
-    const height = 210;
-    const pointPosition = (point, index) => ({
-      x: points.length === 1 ? width / 2 : 20 + (index / (points.length - 1)) * (width - 40),
-      y: height - 24 - (point.value / 100) * (height - 45),
+    const height = 230;
+    const plotLeft = 58;
+    const plotRight = 682;
+    const plotTop = 36;
+    const plotBottom = 174;
+    const firstTimestamp = points[0].timestamp;
+    const lastTimestamp = points.at(-1).timestamp;
+    const pointPosition = (point) => ({
+      x: points.length === 1 || firstTimestamp === lastTimestamp
+        ? (plotLeft + plotRight) / 2
+        : plotLeft + (point.timestamp - firstTimestamp) /
+          (lastTimestamp - firstTimestamp) * (plotRight - plotLeft),
+      y: plotBottom - point.value / 100 * (plotBottom - plotTop),
     });
-    const path = points.map((point, index) => {
-      const position = pointPosition(point, index);
+    const gridlines = [0, 25, 50, 75, 100].map((value) => {
+      const y = plotBottom - value / 100 * (plotBottom - plotTop);
+      return `<g class="performance-chart-grid"><line x1="${plotLeft}" y1="${y}" x2="${plotRight}" y2="${y}"/><text x="${plotLeft - 10}" y="${y + 4}" text-anchor="end">${value}%</text></g>`;
+    }).join("");
+    const positions = points.map(pointPosition);
+    const path = positions.map((position, index) => {
       return `${index ? "L" : "M"} ${position.x.toFixed(1)} ${position.y.toFixed(1)}`;
     }).join(" ");
     const circles = points.map((point, index) => {
-      const position = pointPosition(point, index);
-      return `<circle cx="${position.x}" cy="${position.y}" r="4" fill="#29aeb8"><title>${esc(point.date)}: ${percent(point.value)}</title></circle>`;
+      const position = positions[index];
+      const radius = points.length === 1 ? 8 : 4.5;
+      return `<circle class="performance-chart-point${points.length === 1 ? " is-single" : ""}" cx="${position.x}" cy="${position.y}" r="${radius}"><title>${esc(point.date)}: ${percent(point.value)}</title></circle>`;
     }).join("");
-    chart.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Performance trend"><line x1="20" y1="186" x2="680" y2="186" stroke="#e5edf1"/><line x1="20" y1="92" x2="680" y2="92" stroke="#eef3f5" stroke-dasharray="4 5"/><line x1="20" y1="20" x2="680" y2="20" stroke="#eef3f5" stroke-dasharray="4 5"/><text x="20" y="205" fill="#8b9aaa" font-size="11">${esc(points[0].date)}</text><text x="680" y="205" text-anchor="end" fill="#8b9aaa" font-size="11">${esc(points.at(-1).date)}</text><path d="${path}" fill="none" stroke="#7257e8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>${circles}</svg>`;
+    const singlePointLabels = points.length === 1
+      ? `<text class="performance-chart-value" x="${positions[0].x}" y="${Math.max(plotTop - 12, positions[0].y - 14)}" text-anchor="middle">${percent(points[0].value)}</text><text class="performance-chart-date" x="${positions[0].x}" y="${plotBottom + 25}" text-anchor="middle">${esc(points[0].date)}</text>`
+      : `<text class="performance-chart-date" x="${plotLeft}" y="${plotBottom + 25}" text-anchor="start">${esc(points[0].date)}</text><text class="performance-chart-date" x="${plotRight}" y="${plotBottom + 25}" text-anchor="end">${esc(points.at(-1).date)}</text>`;
+    const status = points.length === 1 ? "1 quiz completed" : `${points.length} quizzes completed`;
+    const line = points.length > 1
+      ? `<path class="performance-chart-line" d="${path}"/>`
+      : "";
+    chart.innerHTML = `<svg class="performance-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Performance trend with ${esc(status)}"><text class="performance-chart-status" x="${plotLeft}" y="18">${esc(status)}</text>${gridlines}${line}${circles}${singlePointLabels}</svg>`;
   }
 
   function renderSubjects() {
@@ -197,6 +263,48 @@
     $("insights").innerHTML = PerformanceService.insights(state.performance).map((message) => `<div class="insight"><i class="fa-solid fa-lightbulb"></i><span>${esc(message)}</span></div>`).join("");
   }
 
+  function renderLearningEngagement() {
+    if (state.achievementError) {
+      const message = `Achievement data is unavailable: ${state.achievementError}`;
+      $("achievementXpTotal").textContent = "—";
+      $("achievementStudentCount").textContent = "—";
+      $("achievementUnlockedCount").textContent = "—";
+      $("studentAchievementXpBody").innerHTML =
+        `<tr><td colspan="3">${showEmpty(message, "fa-circle-exclamation")}</td></tr>`;
+      $("achievementList").innerHTML = showEmpty(message, "fa-circle-exclamation");
+      return;
+    }
+
+    const summary = state.achievementSummary;
+    $("achievementXpTotal").textContent = Number(summary.totalXp || 0).toLocaleString();
+    $("achievementStudentCount").textContent = String(summary.studentsWithAchievements || 0);
+    $("achievementUnlockedCount").textContent = String(summary.unlockedCount || 0);
+
+    const students = state.performance.students;
+    $("studentAchievementXpBody").innerHTML = students.length
+      ? students.map((student) => {
+          const progress = state.achievementsByStudent[student.id] || {
+            totalXp: 0,
+            achievements: [],
+          };
+          return `<tr><td>${esc(student.name)}</td><td>${progress.achievements.length}</td><td class="achievement-xp-value">${Number(progress.totalXp || 0).toLocaleString()} XP</td></tr>`;
+        }).join("")
+      : `<tr><td colspan="3">${showEmpty("No students found for this class and stream.", "fa-user-group")}</td></tr>`;
+  }
+
+  function renderAchievements() {
+    const unlocked = state.performance.students.flatMap((student) => {
+      const progress = state.achievementsByStudent[student.id];
+      return (progress?.achievements || []).map((achievement) => ({
+        studentName: student.name,
+        ...achievement,
+      }));
+    });
+    $("achievementList").innerHTML = unlocked.length
+      ? unlocked.map((achievement) => `<article class="achievement-card"><span class="achievement-icon"><i class="fa-solid ${esc(achievementIcon(achievement.icon))}" aria-hidden="true"></i></span><div class="achievement-content"><div class="achievement-title-row"><h3>${esc(achievement.title)}</h3><span class="achievement-xp-value">${Number(achievement.xpEarned || 0).toLocaleString()} XP</span></div><p>${esc(achievement.description || "Achievement details unavailable.")}</p><div class="achievement-meta"><strong>${esc(achievement.studentName)}</strong><span>${esc(achievement.category || "Achievement")}</span><time>${esc(formatUnlockDate(achievement.unlockedAt))}</time></div></div></article>`).join("")
+      : showEmpty("No achievements unlocked yet.", "fa-award");
+  }
+
   function renderAll() {
     renderSummary();
     renderOverview();
@@ -205,13 +313,41 @@
     renderTopPerformers();
     renderDistribution();
     renderInsights();
+    renderLearningEngagement();
+    renderAchievements();
   }
 
   function openDrawer(studentId) {
     const student = state.performance.students.find((item) => item.id === studentId);
     if (!student) return;
     const records = [...student.records].sort((a, b) => new Date(b.assessment_date) - new Date(a.assessment_date));
-    $("performanceDrawer").innerHTML = `<div class="performance-drawer-backdrop"><aside class="performance-drawer"><button class="performance-drawer-close" data-close aria-label="Close student details"><i class="fa-solid fa-xmark"></i></button><span class="page-eyebrow"><i class="fa-solid fa-user-graduate"></i> Student performance</span><h2 style="margin:8px 0 4px">${esc(student.name)}</h2><p class="drawer-meta">Class ${esc(state.grade)}${state.stream ? ` · ${esc(PerformanceService.streamLabels[state.stream] || state.stream)}` : ""} · ${esc(student.studentCode)}</p><div class="drawer-stats"><div class="drawer-stat"><strong>${percent(student.average)}</strong><small>Overall average</small></div><div class="drawer-stat"><strong>${esc(student.category)}</strong><small>Category</small></div><div class="drawer-stat"><strong>${student.trend.value === null ? "—" : percent(student.trend.value)}</strong><small>Recent trend</small></div><div class="drawer-stat"><strong>${records.length}</strong><small>Submitted quizzes</small></div></div><h3>Subject performance</h3>${Object.entries(student.subjectScores).map(([subject, value]) => `<div class="assessment-item"><span>${esc(subject)}</span><strong>${percent(value)}</strong></div>`).join("")}<h3 style="margin-top:22px">Quiz history</h3>${records.length ? records.map((record) => `<div class="assessment-item"><span>${esc(record.assessment_name)}<br><small style="color:#718196">${esc(String(record.assessment_date).slice(0, 10))} · ${esc(record.subject)}</small></span><strong>${percent(record.percentage)}</strong></div>`).join("") : `<p class="drawer-meta" style="margin-top:12px">No quiz results available yet.</p>`}</aside></div>`;
+    const engagement = state.achievementsByStudent[student.id] || {
+      totalXp: 0,
+      achievements: [],
+    };
+    const unlockedBadges = engagement.achievements;
+    const engagementXp = state.achievementError
+      ? "—"
+      : Number(engagement.totalXp || 0).toLocaleString();
+    const unlockedBadgeCount = state.achievementError
+      ? "—"
+      : String(unlockedBadges.length);
+    $("performanceDrawer").innerHTML = `<div class="performance-drawer-backdrop"><aside class="performance-drawer"><button class="performance-drawer-close" data-close aria-label="Close student details"><i class="fa-solid fa-xmark"></i></button><span class="page-eyebrow"><i class="fa-solid fa-user-graduate"></i> Student performance</span><h2 style="margin:8px 0 4px">${esc(student.name)}</h2><p class="drawer-meta">Class ${esc(state.grade)}${state.stream ? ` · ${esc(PerformanceService.streamLabels[state.stream] || state.stream)}` : ""} · ${esc(student.studentCode)}</p><div class="drawer-stats"><div class="drawer-stat"><strong>${percent(student.average)}</strong><small>Overall average</small></div><div class="drawer-stat"><strong>${esc(student.category)}</strong><small>Category</small></div><div class="drawer-stat"><strong>${student.trend.value === null ? "—" : percent(student.trend.value)}</strong><small>Recent trend</small></div><div class="drawer-stat"><strong>${records.length}</strong><small>Submitted quizzes</small></div></div><h3>Subject performance</h3>${Object.entries(student.subjectScores).map(([subject, value]) => `<div class="assessment-item"><span>${esc(subject)}</span><strong>${percent(value)}</strong></div>`).join("")}<h3 style="margin-top:22px">Quiz history</h3>${records.length ? records.map((record) => `<div class="assessment-item"><span>${esc(record.assessment_name)}<br><small style="color:#718196">${esc(String(record.assessment_date).slice(0, 10))} · ${esc(record.subject)}</small></span><strong>${percent(record.percentage)}</strong></div>`).join("") : `<p class="drawer-meta" style="margin-top:12px">No quiz results available yet.</p>`}<h3 style="margin-top:22px">Learning engagement</h3><div class="drawer-stats achievement-drawer-stats"><div class="drawer-stat"><strong>${Number(engagement.totalXp || 0).toLocaleString()}</strong><small>Total achievement XP</small></div><div class="drawer-stat"><strong>${unlockedBadges.length}</strong><small>Unlocked badges</small></div></div><h3 style="margin-top:18px">Unlocked badges</h3>${unlockedBadges.length ? unlockedBadges.map((achievement) => `<div class="drawer-achievement"><span class="achievement-icon"><i class="fa-solid ${esc(achievementIcon(achievement.icon))}" aria-hidden="true"></i></span><span><strong>${esc(achievement.title)}</strong><small>${esc(formatUnlockDate(achievement.unlockedAt))}</small></span><strong>${Number(achievement.xpEarned || 0).toLocaleString()} XP</strong></div>`).join("") : `<p class="drawer-meta" style="margin-top:12px">No achievements unlocked yet.</p>`}</aside></div>`;
+    const achievementStats = $("performanceDrawer").querySelectorAll(
+      ".achievement-drawer-stats .drawer-stat strong",
+    );
+    achievementStats[0].textContent = engagementXp;
+    achievementStats[1].textContent = unlockedBadgeCount;
+    if (state.achievementError) {
+      const badgeHeading = [...$("performanceDrawer").querySelectorAll("h3")]
+        .find((heading) => heading.textContent === "Unlocked badges");
+      badgeHeading.nextElementSibling?.remove();
+      const message = document.createElement("p");
+      message.className = "drawer-meta";
+      message.style.marginTop = "12px";
+      message.textContent = `Achievement data is unavailable: ${state.achievementError}`;
+      badgeHeading.after(message);
+    }
   }
 
   async function selectScope() {
