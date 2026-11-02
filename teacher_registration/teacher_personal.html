@@ -1418,39 +1418,26 @@
               Profile Photo (Optional)
             </label>
 
-            <div class="file-dropzone">
-
-              <input
-                type="file"
-                id="profilePhotoInput"
-                accept="image/*"
-              >
-
-              <span class="upload-icon">
-                ☁️
-              </span>
-
-              <p id="uploadText">
-
-                <strong>
-                  Click to upload
-                </strong>
-
-                or drag and drop
-
-                <br>
-
-                <span
-                  style="
-                    font-size: 0.78rem;
-                    color: #94a3b8;
-                  "
-                >
-                  JPG, PNG or GIF (max. 2MB)
-                </span>
-
-              </p>
-
+            <div class="profile-photo-picker">
+              <input type="file" id="profilePhotoInput" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" hidden>
+              <div class="profile-photo-preview" aria-live="polite">
+                <img id="profilePhotoPreview" alt="Selected profile photo" hidden>
+                <span id="profilePhotoPlaceholder" aria-hidden="true">👤</span>
+              </div>
+              <p class="profile-photo-instruction">Upload a photo or take a picture using your camera.</p>
+              <div class="profile-photo-actions">
+                <button type="button" id="uploadProfilePhotoButton">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 0L7 9m5-5 5 5M5 15v4h14v-4" /></svg>
+                  Upload Photo
+                </button>
+                <button type="button" id="takeProfilePhotoButton">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h3l2-3h6l2 3h3v13H4z" /><circle cx="12" cy="13" r="4" /></svg>
+                  Take Photo
+                </button>
+                <button type="button" id="removeProfilePhotoButton" hidden>Remove Photo</button>
+              </div>
+              <p id="uploadText" class="profile-photo-status">JPG, JPEG, PNG, or WEBP (max. 5 MB)</p>
+              <p id="profilePhotoError" class="profile-photo-error" role="alert" hidden></p>
             </div>
 
           </div>
@@ -1489,10 +1476,9 @@
 
   <script src="../js/teacher-registration-storage.js"></script>
   <script src="../js/teacher-registration.js"></script>
+  <script src="../js/profile-photo-picker.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const profilePhotoInput = document.getElementById("profilePhotoInput");
-      const uploadText = document.getElementById("uploadText");
       const dobInput = document.getElementById("dob");
       const form = document.getElementById("personalForm");
 
@@ -1521,66 +1507,29 @@
       setValue("confirmPassword", step1.confirmPassword || step1.password || "");
       setValue("address", step1.address);
 
-      if (step1.profilePhotoName) {
-        uploadText.innerHTML = `
-          <strong>${step1.profilePhotoName}</strong>
-          <br>
-          <span style="font-size: 0.78rem; color: #94a3b8;">Stored for final account creation</span>
-        `;
-      }
-
-      profilePhotoInput.addEventListener("change", async function () {
-        const file = this.files[0];
-        if (!file) return;
-
-        const allowed = ["image/jpeg", "image/png", "image/webp"];
-        if (!allowed.includes(file.type)) {
-          alert("Only JPG, PNG, and WEBP images are allowed.");
-          this.value = "";
-          return;
-        }
-
-        if (file.size > 2 * 1024 * 1024) {
-          alert("Profile photo must be smaller than 2 MB.");
-          this.value = "";
-          return;
-        }
-
-        window.__teacherRegistrationPhotoFile = file;
-        const profilePhotoData = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = () => reject(reader.error);
-          reader.readAsDataURL(file);
-        }).catch((error) => {
-          console.error("Profile photo could not be saved for review.", error);
-          alert("The profile photo could not be saved. Please choose it again.");
-          return null;
-        });
-        if (!profilePhotoData) {
-          this.value = "";
-          return;
-        }
-        window.TeacherRegistrationStorage.updateStep1({
-          profilePhotoName: file.name,
-          profilePhotoData,
-          profilePhoto: {
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            lastModified: file.lastModified,
-          },
-        });
-
-        uploadText.innerHTML = `
-          <strong>${file.name}</strong>
-          <br>
-          <span style="font-size: 0.78rem; color: #94a3b8;">${(file.size / 1024 / 1024).toFixed(2)} MB</span>
-        `;
+      const photoPicker = window.ProfilePhotoPicker.init({
+        initialData: step1.profilePhotoData || "",
+        initialName: step1.profilePhoto?.name || step1.profilePhotoName || "",
+        initialType: step1.profilePhoto?.type || "image/jpeg",
+        onChange: ({ file, dataUrl, name }) => {
+          window.__teacherRegistrationPhotoFile = file;
+          window.TeacherRegistrationStorage.updateStep1({
+            profilePhotoName: name,
+            profilePhotoData: dataUrl || "",
+            profilePhoto: file
+              ? { name: file.name, size: file.size, type: file.type, lastModified: file.lastModified }
+              : null,
+          });
+        },
       });
 
-      form.addEventListener("submit", function (event) {
+      form.addEventListener("submit", async function (event) {
         event.preventDefault();
+        try {
+          await photoPicker.whenReady();
+        } catch {
+          return;
+        }
 
         if (!this.checkValidity()) {
           this.reportValidity();
@@ -1637,14 +1586,16 @@
           return;
         }
 
-        const photoMeta = window.__teacherRegistrationPhotoFile
+        const latestStep1 = window.TeacherRegistrationStorage.getRegistrationDraft().step1;
+        const selectedPhoto = photoPicker.getSelectedFile();
+        const photoMeta = selectedPhoto
           ? {
-              name: window.__teacherRegistrationPhotoFile.name,
-              size: window.__teacherRegistrationPhotoFile.size,
-              type: window.__teacherRegistrationPhotoFile.type,
-              lastModified: window.__teacherRegistrationPhotoFile.lastModified,
+              name: selectedPhoto.name,
+              size: selectedPhoto.size,
+              type: selectedPhoto.type,
+              lastModified: selectedPhoto.lastModified,
             }
-          : (step1.profilePhoto || null);
+          : (latestStep1.profilePhoto || null);
 
         window.TeacherRegistration.updateStep1({
           fullName,

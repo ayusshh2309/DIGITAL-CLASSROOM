@@ -1102,22 +1102,26 @@
             <div class="input-field full-width">
               <label> Profile Photo (Optional) </label>
 
-              <div class="file-dropzone">
-                <input type="file" id="profilePhotoInput" accept="image/*" />
-
-                <span class="upload-icon"> ☁️ </span>
-
-                <p id="uploadText">
-                  <strong> Click to upload </strong>
-
-                  or drag and drop
-
-                  <br />
-
-                  <span style="font-size: 0.78rem; color: #94a3b8">
-                    JPG, PNG or GIF (max. 2MB)
-                  </span>
-                </p>
+              <div class="profile-photo-picker">
+                <input type="file" id="profilePhotoInput" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" hidden />
+                <div class="profile-photo-preview" aria-live="polite">
+                  <img id="profilePhotoPreview" alt="Selected profile photo" hidden />
+                  <span id="profilePhotoPlaceholder" aria-hidden="true">👤</span>
+                </div>
+                <p class="profile-photo-instruction">Upload a photo or take a picture using your camera.</p>
+                <div class="profile-photo-actions">
+                  <button type="button" id="uploadProfilePhotoButton">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 0L7 9m5-5 5 5M5 15v4h14v-4" /></svg>
+                    Upload Photo
+                  </button>
+                  <button type="button" id="takeProfilePhotoButton">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h3l2-3h6l2 3h3v13H4z" /><circle cx="12" cy="13" r="4" /></svg>
+                    Take Photo
+                  </button>
+                  <button type="button" id="removeProfilePhotoButton" hidden>Remove Photo</button>
+                </div>
+                <p id="uploadText" class="profile-photo-status">JPG, JPEG, PNG, or WEBP (max. 5 MB)</p>
+                <p id="profilePhotoError" class="profile-photo-error" role="alert" hidden></p>
               </div>
             </div>
 
@@ -1174,6 +1178,7 @@
     </main>
 
     <script src="../js/student-data.js"></script>
+    <script src="../js/profile-photo-picker.js"></script>
     <script src="../js/student-registration.js"></script>
   </body>
 </html>

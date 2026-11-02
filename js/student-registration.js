@@ -115,29 +115,19 @@
     ].forEach((id) => {
       if ($(id) && current[id] !== undefined) $(id).value = current[id];
     });
-    if (current.profilePhoto) {
-      $("uploadText").innerHTML = "<strong>Photo selected</strong><br />Your profile image is ready to review.";
-    }
-
-    $("profilePhotoInput").addEventListener("change", (event) => {
-      const file = event.target.files?.[0];
-      if (!file) return;
-      if (!["image/jpeg", "image/png", "image/gif"].includes(file.type) || file.size > 2 * 1024 * 1024) {
-        window.alert("Choose a JPG, PNG, or GIF image smaller than 2MB.");
-        event.target.value = "";
-        return;
-      }
-      const reader = new FileReader();
-      reader.addEventListener("load", () => {
-        saveDraft({ profilePhoto: String(reader.result || "") });
-        $("uploadText").innerHTML = "<strong>Photo selected</strong><br />Your profile image is ready to review.";
-      });
-      reader.addEventListener("error", () => window.alert("Could not read this profile photo. Please choose another file."));
-      reader.readAsDataURL(file);
+    const photoPicker = window.ProfilePhotoPicker.init({
+      initialData: current.profilePhoto || "",
+      initialName: "Selected profile photo",
+      onChange: ({ dataUrl }) => saveDraft({ profilePhoto: dataUrl || "" }),
     });
 
-    $("studentForm").addEventListener("submit", (event) => {
+    $("studentForm").addEventListener("submit", async (event) => {
       event.preventDefault();
+      try {
+        await photoPicker.whenReady();
+      } catch {
+        return;
+      }
       const values = collectPersonal();
       const validationError = validatePersonal(values);
       if (validationError) {
@@ -313,11 +303,11 @@
 
   async function uploadPhoto(client, userId, photoData) {
     const [metadata, encoded] = String(photoData).split(",");
-    const mime = metadata.match(/^data:(image\/(?:jpeg|png|gif));base64$/)?.[1];
-    if (!mime || !encoded) throw new Error("The selected profile photo is invalid. Choose a JPG, PNG, or GIF image.");
-    const extension = { "image/jpeg": "jpg", "image/png": "png", "image/gif": "gif" }[mime];
+    const mime = metadata.match(/^data:(image\/(?:jpeg|png|webp));base64$/)?.[1];
+    if (!mime || !encoded) throw new Error("The selected profile photo is invalid. Choose a JPG, PNG, or WEBP image.");
+    const extension = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[mime];
     const bytes = Uint8Array.from(atob(encoded), (character) => character.charCodeAt(0));
-    if (bytes.byteLength > 2 * 1024 * 1024) throw new Error("The selected profile photo exceeds the 2MB limit.");
+    if (bytes.byteLength > 5 * 1024 * 1024) throw new Error("The selected profile photo exceeds the 5 MB limit.");
     const path = `${userId}/profile-${crypto.randomUUID()}.${extension}`;
     const { error } = await client.storage.from("student-profile-images").upload(path, new Blob([bytes], { type: mime }), {
       contentType: mime,

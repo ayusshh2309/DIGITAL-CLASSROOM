@@ -2781,18 +2781,11 @@
 
           const finalTeacherId = generatedTeacherId;
 
-          let profilePhotoUrl = null;
-          let profilePhotoUploadFailed = false;
-          try {
-            profilePhotoUrl = await uploadProfilePhotoIfNeeded(
-              client,
-              authUserId,
-              step1.profilePhoto,
-            );
-          } catch (error) {
-            console.error("Profile photo upload failed.", error);
-            profilePhotoUploadFailed = true;
-          }
+          const profilePhotoUrl = await uploadProfilePhotoIfNeeded(
+            client,
+            authUserId,
+            step1.profilePhoto,
+          );
 
           const profilePayload = {
             teacherId: finalTeacherId,
@@ -2870,11 +2863,7 @@
           window.TeacherRegistrationStorage.clearRegistrationDraft();
           sessionStorage.removeItem("teacherId");
           sessionStorage.removeItem("teacherRegistrationNeedsLogin");
-          alert(
-            profilePhotoUploadFailed
-              ? "Your teacher account and profile details were saved, but the photo could not be uploaded. Apply sql/sql_teacher_profile_settings.sql in Supabase to configure the profile image bucket and policies, then upload the photo from your profile."
-              : "Teacher account created successfully.",
-          );
+          alert("Teacher account created successfully.");
           window.location.href = "../teacher_content/teacher_dashboard.html";
         } catch (error) {
           console.error("Teacher registration failed:", error);
