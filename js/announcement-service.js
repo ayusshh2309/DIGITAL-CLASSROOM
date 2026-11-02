@@ -266,6 +266,14 @@
     }
     const announcement = Array.isArray(data) ? data[0] : data;
     if (!announcement?.id) throw new Error("The announcement was not returned after saving.");
+    if (status === "published") {
+      try {
+        await createRecipients(context, announcement);
+      } catch (recipientError) {
+        console.error("Announcement was published but student notifications could not be assigned.", recipientError);
+        throw new Error(`Announcement was published, but student notifications could not be assigned: ${recipientError.message}`);
+      }
+    }
     return announcement;
   }
 
