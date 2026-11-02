@@ -114,59 +114,17 @@
 
   async function loadTeachingScope() {
     const context = await AnnouncementService.getTeacherContext();
-    const [groupsResult, assignmentsResult] = await Promise.all([
-      context.client
-        .from("teacher_grade_groups")
-        .select("grade, stream, teach_all_subjects")
-        .eq("teacher_id", context.teacher.id)
-        .order("grade", { ascending: true })
-        .order("stream", { ascending: true }),
-      context.client
-        .from("teacher_subject_assignments")
-        .select("grade, stream, subject_id")
-        .eq("teacher_id", context.teacher.id)
-        .order("grade", { ascending: true })
-        .order("stream", { ascending: true }),
-    ]);
-    if (groupsResult.error) throw groupsResult.error;
-    if (assignmentsResult.error) throw assignmentsResult.error;
-
-    const groups = (groupsResult.data || [])
+    const teachingScope = await AnnouncementService.loadScope(context);
+    const groups = teachingScope
       .map((item) => ({
         grade: Number(item.grade),
         stream: Number(item.grade) >= 11 ? String(item.stream || "").trim().toLowerCase() : null,
-        teachAllSubjects: Boolean(item.teach_all_subjects),
-        subjects: [],
+        teachAllSubjects: Boolean(item.teachAllSubjects),
+        subjects: Array.isArray(item.subjects) ? item.subjects : [],
       }))
       .filter((item) => item.grade >= 5 && item.grade <= 12)
       .filter((item, index, all) => all.findIndex((candidate) =>
         candidate.grade === item.grade && candidate.stream === item.stream) === index);
-
-    const assignments = (assignmentsResult.data || []).filter((assignment) => groups.some((group) =>
-      group.grade === Number(assignment.grade)
-      && group.stream === (group.grade >= 11 ? String(assignment.stream || "").trim().toLowerCase() : null),
-    ));
-    const subjectIds = [...new Set(assignments.map((assignment) => String(assignment.subject_id)).filter(Boolean))];
-    let subjectsById = new Map();
-    if (subjectIds.length) {
-      const { data, error } = await context.client
-        .from("subjects")
-        .select("id, name")
-        .in("id", subjectIds);
-      if (error) throw error;
-      subjectsById = new Map((data || []).map((subject) => [String(subject.id), subject]));
-    }
-
-    assignments.forEach((assignment) => {
-      const grade = Number(assignment.grade);
-      const stream = grade >= 11 ? String(assignment.stream || "").trim().toLowerCase() : null;
-      const group = groups.find((item) => item.grade === grade && item.stream === stream);
-      const subject = subjectsById.get(String(assignment.subject_id));
-      if (!group || !subject?.name) return;
-      if (!group.subjects.some((item) => String(item.id) === String(subject.id))) {
-        group.subjects.push({ id: subject.id, name: subject.name });
-      }
-    });
 
     state.context = context;
     state.groups = groups;
