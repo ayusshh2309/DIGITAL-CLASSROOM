@@ -259,10 +259,6 @@
               <span class="meta-item"><span class="status-dot-active"></span> Active</span>
             </div>
             <div class="subject-list">${subjectCards || '<p class="class-empty-subjects">No subjects assigned.</p>'}</div>
-            <div class="progress-section">
-              <div class="progress-labels"><span>Teaching assignment</span><span>Ready</span></div>
-            </div>
-            <button class="btn-view-class" type="button">View Class</button>
           </div>
         `;
       }).join("")
