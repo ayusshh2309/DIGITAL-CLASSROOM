@@ -44,6 +44,8 @@
         font-family: var(--font);
         background: #f8fafc;
         color: var(--dark-text);
+        height: 100vh;
+        overflow: hidden;
       }
 
       /* =========================================================
@@ -63,8 +65,15 @@
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        overflow-y: auto;
+        overflow: hidden;
         z-index: 1000;
+      }
+
+      .left-sidebar > div:first-child {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        min-height: 0;
       }
 
       .left-sidebar::-webkit-scrollbar {
@@ -83,7 +92,7 @@
       .brand-logo {
         display: flex;
         align-items: center;
-        gap: 14px;
+        gap: 12px;
         margin-bottom: 28px;
       }
 
@@ -95,17 +104,15 @@
       }
 
       .brand-text h3 {
-        font-size: 1.45rem;
+        font-size: 1.3rem;
         font-weight: 800;
         color: var(--dark-text);
-        letter-spacing: -0.3px;
       }
 
       .brand-text p {
-        font-size: 0.95rem;
+        font-size: 0.85rem;
         color: var(--muted-text);
         margin-top: 2px;
-        font-weight: 500;
       }
 
       /* =========================================================
@@ -113,22 +120,21 @@
     ========================================================= */
 
       .sidebar-hero {
-        margin-bottom: 24px;
+        margin-bottom: 22px;
       }
 
       .sidebar-hero h2 {
-        font-size: 2.45rem;
+        font-size: 2.3rem;
         font-weight: 800;
         color: var(--dark-text);
-        line-height: 1.15;
-        letter-spacing: -0.5px;
+        line-height: 1.18;
         margin-bottom: 12px;
       }
 
       .sidebar-hero p {
         color: var(--muted-text);
-        font-size: 1.02rem;
-        line-height: 1.5;
+        font-size: 1rem;
+        line-height: 1.55;
       }
 
       /* =========================================================
@@ -138,24 +144,24 @@
       .feature-list {
         display: flex;
         flex-direction: column;
-        gap: 18px;
-        margin: 22px 0;
+        gap: 16px;
+        margin: 24px 0;
       }
 
       .feature-item {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         gap: 14px;
       }
 
       .feature-icon {
-        width: 44px;
-        height: 44px;
-        border-radius: 12px;
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.25rem;
+        font-size: 1.2rem;
         color: white;
         flex-shrink: 0;
       }
@@ -186,7 +192,7 @@
       .feature-text p {
         font-size: 0.9rem;
         color: var(--muted-text);
-        line-height: 1.4;
+        line-height: 1.35;
       }
 
       /* =========================================================
@@ -194,16 +200,21 @@
     ========================================================= */
 
       .sidebar-illustration {
+        display: flex;
+        flex: 0 1 200px;
+        align-items: stretch;
         width: 100%;
-        margin: 18px 0;
-        text-align: center;
+        margin: 20px 0;
+        min-height: 120px;
       }
 
       .sidebar-illustration img {
         display: block;
         width: 100%;
         max-width: 100%;
-        height: 170px;
+        height: 100%;
+        min-height: 120px;
+        max-height: 200px;
         object-fit: cover;
         border-radius: 14px;
       }
@@ -213,25 +224,25 @@
     ========================================================= */
 
       .sidebar-quote {
-        width: 100%;
-        background: white;
-        padding: 18px 20px;
-        border-radius: 14px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-        margin-top: 12px;
+        background: rgba(255, 255, 255, 0.72);
+        border-left: 4px solid var(--primary-purple);
+        padding: 16px 18px;
+        border-radius: 0 12px 12px 0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+        margin-top: 20px;
       }
 
       .sidebar-quote p {
-        font-size: 0.9rem;
+        font-size: 0.88rem;
         font-style: italic;
         color: var(--dark-text);
-        line-height: 1.5;
+        line-height: 1.45;
       }
 
       .sidebar-quote span {
         display: block;
-        margin-top: 8px;
-        font-size: 0.82rem;
+        margin-top: 7px;
+        font-size: 0.8rem;
         font-style: normal;
         font-weight: 700;
         color: var(--muted-text);
@@ -243,7 +254,7 @@
 
       .right-content {
         margin-left: var(--sidebar-width);
-        min-height: 100vh;
+        height: 100vh;
         background: #f8fafc;
         padding: 44px 60px 50px;
         overflow-y: auto;
@@ -254,12 +265,11 @@
     ========================================================= */
 
       .top-bar {
-        position: absolute;
-        top: 46px;
-        right: 60px;
-        z-index: 10;
+        display: flex;
+        justify-content: flex-end;
         font-size: 0.95rem;
         color: var(--muted-text);
+        margin-bottom: 10px;
       }
 
       .top-bar a {
@@ -789,29 +799,158 @@
 
       @media (max-width: 1100px) {
         :root {
+          --sidebar-width: 340px;
+        }
+
+        .left-sidebar {
+          padding: 35px 28px;
+        }
+
+        .sidebar-hero h2 {
+          font-size: 1.9rem;
+        }
+
+        .right-content {
+          padding: 35px;
+        }
+
+      }
+
+      @media (max-width: 850px) {
+        :root {
           --sidebar-width: 0px;
+        }
+
+        body {
+          height: auto;
+          overflow-y: auto;
         }
 
         .left-sidebar {
           position: relative;
           width: 100%;
           height: auto;
+          min-height: auto;
           padding: 30px 25px;
+        }
+
+        .left-sidebar > div:first-child {
+          display: block;
+          flex: initial;
         }
 
         .right-content {
           margin-left: 0;
+          height: auto;
+          min-height: 100vh;
           padding: 30px 20px;
+          overflow: visible;
         }
 
         .sidebar-illustration {
-          display: none;
+          display: block;
+          min-height: 0;
+          margin: 18px 0;
         }
 
-        .top-bar {
-          position: static;
-          text-align: right;
-          margin-bottom: 20px;
+        .sidebar-illustration img {
+          height: 120px;
+          min-height: 120px;
+          max-height: 120px;
+        }
+
+        .feature-list {
+          margin-bottom: 10px;
+        }
+
+        .sidebar-quote {
+          margin-top: 20px;
+        }
+      }
+
+      @media (min-width: 851px) and (max-height: 1100px) {
+        .left-sidebar {
+          padding: 20px 28px;
+        }
+
+        .brand-logo {
+          margin-bottom: 12px;
+        }
+
+        .brand-full-logo {
+          width: 130px;
+        }
+
+        .sidebar-hero {
+          margin-bottom: 8px;
+        }
+
+        .sidebar-hero h2 {
+          font-size: 2rem;
+          line-height: 1.1;
+          margin-bottom: 8px;
+        }
+
+        .sidebar-hero p {
+          font-size: 0.96rem;
+          line-height: 1.4;
+        }
+
+        .feature-list {
+          flex: 0 0 auto;
+          justify-content: flex-start;
+          gap: 8px;
+          margin: 6px 0;
+        }
+
+        .feature-item {
+          gap: 9px;
+        }
+
+        .feature-icon {
+          width: 38px;
+          height: 38px;
+          flex-basis: 38px;
+          font-size: 1rem;
+        }
+
+        .feature-text h4 {
+          font-size: 0.96rem;
+        }
+
+        .feature-text p {
+          font-size: 0.84rem;
+          line-height: 1.28;
+        }
+
+        .sidebar-illustration {
+          flex: 1 1 140px;
+          margin: 8px 0 0;
+          min-height: 104px;
+        }
+
+        .sidebar-illustration img {
+          flex: none;
+          height: 100%;
+          min-height: 104px;
+          max-height: none;
+          border-radius: 16px;
+          box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+        }
+
+        .sidebar-quote {
+          margin-top: 8px;
+          padding: 9px 12px;
+        }
+
+        .sidebar-quote p {
+          font-size: 0.8rem;
+          line-height: 1.35;
+        }
+
+        .sidebar-quote span {
+          margin-top: 5px;
+          font-size: 0.74rem;
         }
       }
 
@@ -846,7 +985,53 @@
         }
 
         .sidebar-hero h2 {
-          font-size: 1.8rem;
+          font-size: 2.1rem;
+          line-height: 1.12;
+        }
+
+        .sidebar-hero p {
+          font-size: 1.05rem;
+          line-height: 1.45;
+        }
+
+        .feature-list {
+          gap: 14px;
+          margin: 18px 0 12px;
+        }
+
+        .feature-item {
+          align-items: flex-start;
+          gap: 12px;
+        }
+
+        .feature-icon {
+          width: 44px;
+          height: 44px;
+          flex-basis: 44px;
+          border-radius: 12px;
+          font-size: 1.2rem;
+        }
+
+        .feature-text h4 {
+          font-size: 1.1rem;
+          margin-bottom: 4px;
+        }
+
+        .feature-text p {
+          font-size: 1rem;
+          line-height: 1.4;
+        }
+
+        .sidebar-illustration {
+          flex: none;
+          margin: 14px 0;
+        }
+
+        .sidebar-illustration img {
+          height: 108px;
+          min-height: 108px;
+          max-height: 108px;
+          border-radius: 12px;
         }
 
         .profile-photo-heading {
