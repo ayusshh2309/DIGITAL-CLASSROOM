@@ -339,15 +339,38 @@
   async function updateAuthEmail(email) {
     const client = getSupabaseClient();
     if (!client) throw new Error("Supabase is not configured.");
-    await getAuthenticatedUser(client);
+    const user = await getAuthenticatedUser(client);
     const newEmail = typeof email === "string" ? email.trim() : "";
     if (!newEmail) {
       throw new Error("Enter a new email address.");
     }
+    const currentEmail = String(user.email || "").trim();
+    const differsFromAuthenticatedEmail =
+      newEmail.toLowerCase() !== currentEmail.toLowerCase();
+    console.info("[TeacherData] Auth email argument verification:", {
+      hasValue: Boolean(newEmail),
+      differsFromAuthenticatedEmail,
+    });
+    if (!differsFromAuthenticatedEmail) {
+      throw new Error("Enter a new email address different from your current email.");
+    }
 
-    const { data, error } = await client.auth.updateUser({ email: newEmail });
+    const payload = { email: newEmail };
+    console.info("[TeacherData] Sending Auth email update:", {
+      emailFieldPresent: Boolean(payload.email),
+      differsFromAuthenticatedEmail,
+    });
+    const { data, error } = await client.auth.updateUser(payload);
     if (error) {
-      logSupabaseFailure("Supabase Auth email update", error);
+      console.error("[TeacherData] Supabase Auth email update failed.", {
+        name: error?.name || "SupabaseError",
+        code: error?.code || null,
+        status: error?.status || null,
+        message: String(error?.message || "Unknown error").replace(
+          /[^\s"<>]+@[^\s"<>]+/g,
+          "[redacted email]",
+        ),
+      });
       throw error;
     }
     return data;

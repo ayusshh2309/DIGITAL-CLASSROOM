@@ -431,8 +431,49 @@
         font-weight: 500;
       }
 
-      .profile-field select[multiple] {
-        min-height: 120px;
+      .profile-language-picker {
+        display: grid;
+        gap: 12px;
+      }
+
+      .profile-language-picker select {
+        width: 100%;
+        border: 1px solid var(--surface-border);
+        border-radius: 10px;
+        padding: 11px 12px;
+        color: var(--text-main);
+        background: #fff;
+        font: inherit;
+        font-weight: 500;
+      }
+
+      .profile-language-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .profile-language-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 20px;
+        background: rgba(85, 56, 238, 0.1);
+        color: #5538ee;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .profile-language-remove {
+        border: 0;
+        padding: 0;
+        background: transparent;
+        color: #ef4444;
+        font: inherit;
+        font-weight: 800;
+        line-height: 1;
+        cursor: pointer;
       }
 
       .profile-field textarea {
@@ -858,25 +899,26 @@
                 </label>
                 <label class="profile-field profile-field-full">
                   Languages
-                  <select data-profile-field="languages" multiple size="5" aria-describedby="profileLanguagesHelp">
-                    <option value="English">English</option>
-                    <option value="Hindi">Hindi</option>
-                    <option value="Bengali">Bengali</option>
-                    <option value="Tamil">Tamil</option>
-                    <option value="Telugu">Telugu</option>
-                    <option value="Marathi">Marathi</option>
-                    <option value="Gujarati">Gujarati</option>
-                    <option value="Kannada">Kannada</option>
-                    <option value="Malayalam">Malayalam</option>
-                    <option value="Punjabi">Punjabi</option>
-                    <option value="Urdu">Urdu</option>
-                    <option value="Spanish">Spanish</option>
-                    <option value="French">French</option>
-                    <option value="German">German</option>
-                  </select>
-                  <span id="profileLanguagesHelp" class="profile-photo-help">
-                    Select all that apply. Use Ctrl (Windows) or Command (Mac) for multiple selections.
-                  </span>
+                  <div class="profile-language-picker">
+                    <select id="profileLanguageSelect" aria-label="Add a language">
+                      <option value="">Select a language to add...</option>
+                      <option value="English">English</option>
+                      <option value="Hindi">Hindi</option>
+                      <option value="Bengali">Bengali</option>
+                      <option value="Tamil">Tamil</option>
+                      <option value="Telugu">Telugu</option>
+                      <option value="Marathi">Marathi</option>
+                      <option value="Gujarati">Gujarati</option>
+                      <option value="Kannada">Kannada</option>
+                      <option value="Malayalam">Malayalam</option>
+                      <option value="Punjabi">Punjabi</option>
+                      <option value="Urdu">Urdu</option>
+                      <option value="Spanish">Spanish</option>
+                      <option value="French">French</option>
+                      <option value="German">German</option>
+                    </select>
+                    <div class="profile-language-tags" id="profileLanguageTags" aria-live="polite"></div>
+                  </div>
                 </label>
                 <label class="profile-field profile-field-full">
                   Address
@@ -969,12 +1011,21 @@
       </div>
     </main>
     <dialog class="account-dialog" id="emailChangeDialog" aria-labelledby="emailDialogTitle">
-      <form id="emailChangeForm">
+      <form id="emailChangeForm" autocomplete="off">
         <h2 id="emailDialogTitle">Change email</h2>
         <p id="emailDialogCurrent" class="account-current-email">Current email: -</p>
         <label class="profile-field" for="newEmailInput">
           New email address
-          <input id="newEmailInput" name="email" type="email" autocomplete="email" required />
+          <input
+            id="newEmailInput"
+            name="newEmailAddress"
+            type="email"
+            autocomplete="off"
+            autocapitalize="none"
+            spellcheck="false"
+            placeholder="Enter your new email address"
+            required
+          />
         </label>
         <p class="account-dialog-status" id="emailDialogStatus" role="status" aria-live="polite"></p>
         <div class="account-dialog-actions">

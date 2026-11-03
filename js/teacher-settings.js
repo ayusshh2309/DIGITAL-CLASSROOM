@@ -7,6 +7,8 @@
   const profileEditButton = document.getElementById("editProfileButton");
   const profileSummaryActions = document.getElementById("profileSummaryActions");
   const profilePhotoInput = document.getElementById("profilePhotoInput");
+  const profileLanguageSelect = document.getElementById("profileLanguageSelect");
+  const profileLanguageTags = document.getElementById("profileLanguageTags");
   const changeEmailButton = document.getElementById("changeEmailButton");
   const changePasswordButton = document.getElementById("changePasswordButton");
   const deleteAccountButton = document.getElementById("deleteAccountButton");
@@ -256,6 +258,46 @@
     select.value = selectedValue;
   }
 
+  function renderProfileLanguages(languages) {
+    if (!profileLanguageTags) return;
+    profileLanguageTags.replaceChildren();
+    const values = Array.isArray(languages)
+      ? languages.map((language) => String(language).trim()).filter(Boolean)
+      : [];
+    values.forEach((language) => {
+      const tag = document.createElement("span");
+      tag.className = "profile-language-tag";
+      tag.dataset.language = language;
+
+      const label = document.createElement("span");
+      label.textContent = language;
+
+      const removeButton = document.createElement("button");
+      removeButton.className = "profile-language-remove";
+      removeButton.type = "button";
+      removeButton.textContent = "×";
+      removeButton.setAttribute("aria-label", `Remove ${language}`);
+
+      tag.append(label, removeButton);
+      profileLanguageTags.appendChild(tag);
+    });
+  }
+
+  function addProfileLanguage() {
+    const language = profileLanguageSelect?.value;
+    if (!language || !profileLanguageTags) return;
+    const selected = Array.from(
+      profileLanguageTags.querySelectorAll("[data-language]"),
+      (tag) => tag.dataset.language,
+    );
+    if (!selected.includes(language)) {
+      renderProfileLanguages([...selected, language]);
+    }
+    profileLanguageSelect.value = "";
+    profileDirty = hasUnsavedProfileChanges();
+    setProfileStatus(profileDirty ? "Unsaved profile changes." : "");
+  }
+
   populateGraduationYears();
 
   const passwordValidator = window.RegistrationPasswordValidation;
@@ -342,11 +384,15 @@
   function readProfileValues() {
     return Object.fromEntries(
       PROFILE_FIELDS.map((field) => {
+        if (field === "languages") {
+          return [
+            field,
+            Array.from(profileLanguageTags?.querySelectorAll("[data-language]") || [],
+              (tag) => tag.dataset.language),
+          ];
+        }
         const input = document.querySelector(`[data-profile-field="${field}"]`);
         if (!input) return [field, null];
-        if (field === "languages") {
-          return [field, Array.from(input.selectedOptions, (option) => option.value)];
-        }
         if (field === "years_experience" || field === "graduation_year") {
           return [field, input.value === "" ? null : Number(input.value)];
         }
@@ -406,6 +452,10 @@
     );
 
     PROFILE_FIELDS.forEach((field) => {
+      if (field === "languages") {
+        renderProfileLanguages(profile[field]);
+        return;
+      }
       const input = document.querySelector(`[data-profile-field="${field}"]`);
       if (!input) return;
       const value = profile[field];
@@ -621,6 +671,13 @@
       return;
     }
     const newEmail = emailInput.value.trim();
+    console.info("[TeacherSettings] Email input verification:", {
+      inputId: emailInput.id,
+      hasValue: Boolean(newEmail),
+      differsFromCurrent:
+        newEmail.toLowerCase() !==
+        String(user?.email || "").trim().toLowerCase(),
+    });
     emailInput.value = newEmail;
     if (!emailInput.reportValidity()) return;
     if (newEmail.toLowerCase() === String(user.email || "").toLowerCase()) {
@@ -758,6 +815,14 @@
       setProfileStatus(profileDirty ? "Unsaved profile changes." : "");
     });
   });
+  profileLanguageSelect?.addEventListener("change", addProfileLanguage);
+  profileLanguageTags?.addEventListener("click", (event) => {
+    const removeButton = event.target.closest(".profile-language-remove");
+    if (!removeButton) return;
+    removeButton.closest("[data-language]")?.remove();
+    profileDirty = hasUnsavedProfileChanges();
+    setProfileStatus(profileDirty ? "Unsaved profile changes." : "");
+  });
   updateEmploymentRequirements();
 
   profilePhotoInput?.addEventListener("change", () => {
@@ -784,9 +849,10 @@
   saveButton.addEventListener("click", saveSettings);
   changeEmailButton.addEventListener("click", () => {
     console.info("[TeacherSettings] Change Email clicked.");
-    emailCurrent.textContent = `Current email: ${user?.email || "-"}`;
+    emailForm.reset();
     emailInput.value = "";
     emailStatus.textContent = "";
+    emailCurrent.textContent = `Current email: ${user?.email || "-"}`;
     emailDialog.showModal();
     emailInput.focus();
   });
