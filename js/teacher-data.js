@@ -451,11 +451,13 @@
     }
 
     const payload = { email: newEmail };
-    console.info("[TeacherData] Sending Auth email update:", {
-      emailFieldPresent: Boolean(payload.email),
-      differsFromAuthenticatedEmail,
+    const emailRedirectTo = new URL(
+      "../confirm-email-update.html",
+      window.location.href,
+    ).href;
+    const { data, error } = await client.auth.updateUser(payload, {
+      emailRedirectTo,
     });
-    const { data, error } = await client.auth.updateUser(payload);
     if (error) {
       console.error("[TeacherData] Supabase Auth email update failed.", {
         name: error?.name || "SupabaseError",
@@ -469,6 +471,92 @@
       throw error;
     }
     return data;
+  }
+
+  async function verifyAuthEmailUpdate(tokenHash) {
+    const client = getSupabaseClient();
+    if (!client) throw new Error("Supabase is not configured.");
+    if (typeof tokenHash !== "string" || !tokenHash.trim()) {
+      throw new Error("The email confirmation token is missing.");
+    }
+
+    const { data, error } = await client.auth.verifyOtp({
+      token_hash: tokenHash,
+      type: "email_change",
+    });
+    if (error) throw error;
+    if (!data?.user || !data?.session) {
+      throw new Error("Supabase did not return a confirmed user session.");
+    }
+    return data.user;
+  }
+
+  async function getAuthenticatedTeacherEmailSyncState() {
+    const client = getSupabaseClient();
+    if (!client) throw new Error("Supabase is not configured.");
+
+    const { data: authData, error: authError } = await client.auth.getUser();
+    if (authError) throw authError;
+    const user = authData?.user;
+    if (!user?.id || !user.email) {
+      throw new Error("The verified Auth user email could not be loaded.");
+    }
+    if (!user.email_confirmed_at && !user.confirmed_at) {
+      throw new Error("The Auth email has not been confirmed.");
+    }
+
+    const { data: teacher, error: lookupError } = await client
+      .from("teachers")
+      .select("email")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (lookupError) {
+      throw Object.assign(new Error(lookupError.message), {
+        code: "TEACHER_EMAIL_LOOKUP_FAILED",
+        cause: lookupError,
+      });
+    }
+    if (!teacher) {
+      throw Object.assign(
+        new Error("No teacher profile is associated with the authenticated user."),
+        { code: "TEACHER_EMAIL_LOOKUP_FAILED" },
+      );
+    }
+
+    return {
+      user,
+      needsSync:
+        String(teacher.email || "").trim().toLowerCase() !==
+        user.email.trim().toLowerCase(),
+    };
+  }
+
+  async function syncAuthenticatedTeacherEmail() {
+    const client = getSupabaseClient();
+    if (!client) throw new Error("Supabase is not configured.");
+
+    const { data: authData, error: authError } = await client.auth.getUser();
+    if (authError) throw authError;
+    const user = authData?.user;
+    if (!user?.id || !user.email) {
+      throw new Error("The verified Auth user email could not be loaded.");
+    }
+    if (!user.email_confirmed_at && !user.confirmed_at) {
+      throw new Error("The Auth email has not been confirmed.");
+    }
+
+    const { data, error } = await client
+      .from("teachers")
+      .update({ email: user.email })
+      .eq("user_id", user.id)
+      .select("user_id")
+      .maybeSingle();
+    if (error) throw error;
+    if (!data || data.user_id !== user.id) {
+      throw new Error("The teacher email record could not be synchronized.");
+    }
+
+    return user;
   }
 
   async function updateAuthPassword(password) {
@@ -746,6 +834,9 @@
     deleteTeacherProfilePhoto,
     getTeacherProfilePhotoUrl,
     updateAuthEmail,
+    verifyAuthEmailUpdate,
+    getAuthenticatedTeacherEmailSyncState,
+    syncAuthenticatedTeacherEmail,
     updateAuthPassword,
     watchAuthState,
     subscribeToTeacherProfile,

@@ -230,6 +230,15 @@ body {
   white-space: nowrap;
 }
 
+.user-email {
+  overflow: hidden;
+  color: #718292;
+  font-size: 0.58rem;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .profile-chevron {
   color: #738392;
   font-size: 0.62rem;

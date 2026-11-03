@@ -152,9 +152,11 @@
 
       const profileName = document.getElementById("profileNameEl");
       const teacherRole = document.getElementById("profileRoleEl");
+      const profileEmail = document.getElementById("profileEmailEl");
       const avatar = document.getElementById("avatarImg");
       const renderIdentity = async (profile, user) => {
         if (profileName) profileName.textContent = profile.full_name || "Teacher";
+        if (profileEmail) profileEmail.textContent = user.email || "";
         if (teacherRole) {
           teacherRole.textContent = profile.teaching_mode === "subject_specialist"
             ? "Teacher · Subject Specialist"

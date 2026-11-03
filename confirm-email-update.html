@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Confirm Your New Email — Smart Learning DC</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "DM Sans", sans-serif;
+        color: #172033;
+        background: #f1f5fb;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: linear-gradient(135deg, #e3f2fd, #e0f2f1 52%, #eef2ff);
+      }
+
+      main {
+        width: min(100%, 520px);
+        padding: clamp(28px, 7vw, 52px);
+        border: 1px solid #e1e8f0;
+        border-radius: 24px;
+        background: #fff;
+        box-shadow: 0 20px 60px rgb(15 23 42 / 10%);
+        text-align: center;
+      }
+
+      .mail-icon {
+        width: 72px;
+        height: 72px;
+        margin: 0 auto 24px;
+        display: grid;
+        place-items: center;
+        border-radius: 22px;
+        color: #fff;
+        background: linear-gradient(135deg, #0284c7, #6366f1);
+      }
+
+      .mail-icon svg { width: 34px; height: 34px; }
+      h1 { margin: 0; font-size: clamp(1.7rem, 6vw, 2rem); line-height: 1.2; }
+      .description { margin: 16px 0 0; color: #596579; line-height: 1.65; }
+
+      .email-display {
+        margin: 22px 0 0;
+        padding: 13px 16px;
+        overflow-wrap: anywhere;
+        border-radius: 12px;
+        background: #f5f7ff;
+        color: #3730a3;
+        font-weight: 700;
+      }
+
+      .email-display[hidden] { display: none; }
+
+      button {
+        width: 100%;
+        min-height: 52px;
+        margin-top: 28px;
+        padding: 13px 20px;
+        border: 0;
+        border-radius: 13px;
+        background: linear-gradient(135deg, #0284c7, #6366f1);
+        color: #fff;
+        font: inherit;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: filter 0.2s ease, opacity 0.2s ease;
+      }
+
+      button:hover:not(:disabled) { filter: brightness(1.06); }
+      button:focus-visible { outline: 3px solid #a5b4fc; outline-offset: 3px; }
+      button:disabled { cursor: wait; opacity: 0.68; }
+
+      #confirmationStatus {
+        min-height: 1.6em;
+        margin: 18px 0 0;
+        color: #475569;
+        line-height: 1.5;
+      }
+
+      #confirmationStatus[data-state="success"] { color: #047857; }
+      #confirmationStatus[data-state="error"] { color: #b91c1c; }
+
+      .brand {
+        margin: 26px 0 0;
+        color: #64748b;
+        font-size: 0.88rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }
+
+      @media (max-width: 420px) {
+        body { padding: 16px; }
+        main { border-radius: 20px; }
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="./js/supabase.js"></script>
+    <script src="./js/teacher-data.js"></script>
+    <script src="./js/email-update-confirmation.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <div class="mail-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" focusable="false">
+          <path d="M3.5 6.75A1.75 1.75 0 0 1 5.25 5h13.5a1.75 1.75 0 0 1 1.75 1.75v10.5A1.75 1.75 0 0 1 18.75 19H5.25a1.75 1.75 0 0 1-1.75-1.75V6.75Z" stroke="currentColor" stroke-width="1.7"/>
+          <path d="m4.5 6.5 7.5 6 7.5-6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h1>Confirm Your New Email</h1>
+      <p class="description">
+        Your email address is almost updated. Click the button below to confirm your new email address.
+      </p>
+      <p class="email-display" id="confirmationEmail" hidden></p>
+      <button id="confirmEmailButton" type="button" disabled>Confirm Email</button>
+      <p id="confirmationStatus" role="status" aria-live="polite"></p>
+      <p class="brand">Smart Learning DC</p>
+    </main>
+  </body>
+</html>
