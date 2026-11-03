@@ -419,7 +419,8 @@
       }
 
       .profile-field input,
-      .profile-field textarea {
+      .profile-field textarea,
+      .profile-field select {
         width: 100%;
         border: 1px solid var(--surface-border);
         border-radius: 10px;
@@ -428,6 +429,10 @@
         background: #fff;
         font: inherit;
         font-weight: 500;
+      }
+
+      .profile-field select[multiple] {
+        min-height: 120px;
       }
 
       .profile-field textarea {
@@ -529,6 +534,49 @@
         margin-top: 12px;
         color: var(--text-muted);
         font-size: 0.88rem;
+      }
+
+      .password-requirements {
+        display: grid;
+        gap: 5px;
+        margin: 10px 0 0;
+        padding: 0;
+        list-style: none;
+        color: var(--danger);
+        font-size: 0.82rem;
+        font-weight: 500;
+      }
+
+      .password-requirements li::before {
+        content: "○";
+        display: inline-block;
+        width: 1.4em;
+        font-weight: 700;
+      }
+
+      .password-requirements li.is-met {
+        color: #15803d;
+      }
+
+      .password-requirements li.is-met::before {
+        content: "✓";
+      }
+
+      .password-confirmation-status {
+        min-height: 1.2em;
+        margin: 8px 0 0 !important;
+        color: var(--danger) !important;
+        font-size: 0.82rem !important;
+        font-weight: 500;
+      }
+
+      .password-confirmation-status.is-matched {
+        color: #15803d !important;
+      }
+
+      .account-dialog button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
       }
 
       .account-status,
@@ -695,7 +743,21 @@
                 </label>
                 <label class="profile-field">
                   Country calling code
-                  <input type="text" data-profile-field="country_code" maxlength="8" />
+                  <select data-profile-field="country_code" aria-label="Country calling code">
+                    <option value="">Select country code</option>
+                    <option value="+91">IN (+91)</option>
+                    <option value="+1">US (+1)</option>
+                    <option value="+44">UK (+44)</option>
+                    <option value="+61">AU (+61)</option>
+                    <option value="+86">CN (+86)</option>
+                    <option value="+49">DE (+49)</option>
+                    <option value="+33">FR (+33)</option>
+                    <option value="+81">JP (+81)</option>
+                    <option value="+971">AE (+971)</option>
+                    <option value="+65">SG (+65)</option>
+                    <option value="+92">PK (+92)</option>
+                    <option value="+880">BD (+880)</option>
+                  </select>
                 </label>
                 <label class="profile-field">
                   Date of birth
@@ -703,11 +765,26 @@
                 </label>
                 <label class="profile-field">
                   Gender
-                  <input type="text" data-profile-field="gender" maxlength="80" required />
+                  <select data-profile-field="gender" required>
+                    <option value="">Select gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                    <option value="prefer_not_to_say">Prefer not to say</option>
+                  </select>
                 </label>
                 <label class="profile-field">
                   Country
-                  <input type="text" data-profile-field="country" maxlength="120" required />
+                  <select data-profile-field="country" required>
+                    <option value="">Select country</option>
+                    <option value="India">India</option>
+                    <option value="United States">United States</option>
+                    <option value="United Kingdom">United Kingdom</option>
+                    <option value="Australia">Australia</option>
+                    <option value="Canada">Canada</option>
+                    <option value="Germany">Germany</option>
+                    <option value="United Arab Emirates">United Arab Emirates</option>
+                  </select>
                 </label>
                 <label class="profile-field">
                   State
@@ -719,7 +796,13 @@
                 </label>
                 <label class="profile-field">
                   Highest qualification
-                  <input type="text" data-profile-field="highest_qualification" maxlength="160" required />
+                  <select data-profile-field="highest_qualification" required>
+                    <option value="">Select qualification level</option>
+                    <option value="bachelors">Bachelor's Degree</option>
+                    <option value="masters">Master's Degree</option>
+                    <option value="doctorate">Doctorate / Ph.D.</option>
+                    <option value="diploma">Professional Diploma</option>
+                  </select>
                 </label>
                 <label class="profile-field">
                   Degree or course
@@ -735,7 +818,9 @@
                 </label>
                 <label class="profile-field">
                   Graduation year
-                  <input type="number" data-profile-field="graduation_year" min="1900" max="2100" step="1" required />
+                  <select data-profile-field="graduation_year" required>
+                    <option value="">Select graduation year</option>
+                  </select>
                 </label>
                 <label class="profile-field profile-field-full">
                   Institution
@@ -743,19 +828,55 @@
                 </label>
                 <label class="profile-field">
                   Institution type
-                  <input type="text" data-profile-field="institution_type" maxlength="120" />
+                  <select data-profile-field="institution_type">
+                    <option value="">Select institution type</option>
+                    <option value="private">Private</option>
+                    <option value="government">Government</option>
+                    <option value="semi_government">Semi-Government</option>
+                    <option value="international">International / IB School</option>
+                    <option value="coaching">Coaching Institute / Academy</option>
+                  </select>
                 </label>
                 <label class="profile-field">
                   Employment status
-                  <input type="text" data-profile-field="employment_status" maxlength="120" />
+                  <select data-profile-field="employment_status">
+                    <option value="">Select employment status</option>
+                    <option value="fresher">Fresher</option>
+                    <option value="teaching">Currently Teaching</option>
+                  </select>
                 </label>
                 <label class="profile-field">
                   Years of experience
-                  <input type="number" data-profile-field="years_experience" min="0" max="80" step="1" />
+                  <select data-profile-field="years_experience">
+                    <option value="">Select teaching experience</option>
+                    <option value="0">Less than 1 Year</option>
+                    <option value="1">1 - 3 Years</option>
+                    <option value="3">3 - 5 Years</option>
+                    <option value="5">5 - 10 Years</option>
+                    <option value="10">10+ Years</option>
+                  </select>
                 </label>
                 <label class="profile-field profile-field-full">
                   Languages
-                  <textarea data-profile-field="languages" maxlength="1000"></textarea>
+                  <select data-profile-field="languages" multiple size="5" aria-describedby="profileLanguagesHelp">
+                    <option value="English">English</option>
+                    <option value="Hindi">Hindi</option>
+                    <option value="Bengali">Bengali</option>
+                    <option value="Tamil">Tamil</option>
+                    <option value="Telugu">Telugu</option>
+                    <option value="Marathi">Marathi</option>
+                    <option value="Gujarati">Gujarati</option>
+                    <option value="Kannada">Kannada</option>
+                    <option value="Malayalam">Malayalam</option>
+                    <option value="Punjabi">Punjabi</option>
+                    <option value="Urdu">Urdu</option>
+                    <option value="Spanish">Spanish</option>
+                    <option value="French">French</option>
+                    <option value="German">German</option>
+                  </select>
+                  <span id="profileLanguagesHelp" class="profile-photo-help">
+                    Select all that apply. Use Ctrl (Windows) or Command (Mac) for multiple selections.
+                  </span>
                 </label>
                 <label class="profile-field profile-field-full">
                   Address
@@ -863,7 +984,7 @@
       </form>
     </dialog>
     <dialog class="account-dialog" id="passwordChangeDialog" aria-labelledby="passwordDialogTitle">
-      <form id="passwordChangeForm">
+      <form id="passwordChangeForm" novalidate>
         <h2 id="passwordDialogTitle">Change password</h2>
         <label class="profile-field" for="newPasswordInput">
           New password
@@ -876,6 +997,7 @@
             required
           />
         </label>
+        <ul class="password-requirements" id="settingsPasswordRequirements" aria-live="polite"></ul>
         <label class="profile-field" for="confirmPasswordInput" style="margin-top: 14px">
           Confirm new password
           <input
@@ -887,6 +1009,11 @@
             required
           />
         </label>
+        <p
+          class="password-confirmation-status"
+          id="settingsPasswordConfirmationStatus"
+          aria-live="polite"
+        ></p>
         <p class="account-dialog-status" id="passwordDialogStatus" role="status" aria-live="polite"></p>
         <div class="account-dialog-actions">
           <button class="account-action-button" id="cancelPasswordButton" type="button">Cancel</button>
@@ -895,6 +1022,7 @@
       </form>
     </dialog>
     <script src="../js/subject-service.js"></script>
+    <script src="../js/registration-password-validation.js"></script>
     <script src="../js/teacher-data.js"></script>
     <script src="../js/teacher-settings.js"></script>
     <script src="../js/layout.js"></script>

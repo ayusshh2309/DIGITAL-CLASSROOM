@@ -61,8 +61,12 @@
 
   function logSupabaseFailure(operation, error) {
     console.error(`[TeacherData] ${operation} failed.`, {
-      code: error?.code || error?.status || "UNKNOWN",
+      name: error?.name || "SupabaseError",
+      code: error?.code || null,
+      status: error?.status || null,
       message: error?.message || "Unknown error",
+      details: error?.details || null,
+      hint: error?.hint || null,
     });
   }
 
@@ -334,9 +338,18 @@
 
   async function updateAuthEmail(email) {
     const client = getSupabaseClient();
+    if (!client) throw new Error("Supabase is not configured.");
     await getAuthenticatedUser(client);
-    const { data, error } = await client.auth.updateUser({ email });
-    if (error) throw error;
+    const newEmail = typeof email === "string" ? email.trim() : "";
+    if (!newEmail) {
+      throw new Error("Enter a new email address.");
+    }
+
+    const { data, error } = await client.auth.updateUser({ email: newEmail });
+    if (error) {
+      logSupabaseFailure("Supabase Auth email update", error);
+      throw error;
+    }
     return data;
   }
 
@@ -403,8 +416,15 @@
             console.warn("Teacher Realtime subscription status.", {
               topic,
               status,
-              code: error?.code || error?.status || "UNKNOWN",
-              message: error?.message || "No additional error details.",
+              errorName: error?.name || null,
+              errorCode: error?.code || null,
+              httpStatus: error?.status || null,
+              closeCode: error?.closeCode || error?.reason?.code || null,
+              closeReason: error?.reason?.message || error?.reason || null,
+              message: typeof error === "string"
+                ? error
+                : error?.message || "No additional error details.",
+              details: error?.details || null,
             });
           }
           for (const listener of [...listeners]) {

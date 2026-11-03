@@ -22,6 +22,10 @@
   const passwordForm = document.getElementById("passwordChangeForm");
   const passwordInput = document.getElementById("newPasswordInput");
   const passwordConfirmationInput = document.getElementById("confirmPasswordInput");
+  const passwordRequirementsList = document.getElementById("settingsPasswordRequirements");
+  const passwordConfirmationStatus = document.getElementById(
+    "settingsPasswordConfirmationStatus",
+  );
   const passwordStatus = document.getElementById("passwordDialogStatus");
   const passwordSubmitButton = document.getElementById("submitPasswordButton");
   const passwordCancelButton = document.getElementById("cancelPasswordButton");
@@ -31,7 +35,8 @@
     !changePasswordButton || !deleteAccountButton || !accountStatus ||
     !emailDialog || !emailForm || !emailInput || !emailStatus || !emailCurrent ||
     !emailSubmitButton || !emailCancelButton || !passwordDialog || !passwordForm ||
-    !passwordInput || !passwordConfirmationInput || !passwordStatus ||
+    !passwordInput || !passwordConfirmationInput || !passwordRequirementsList ||
+    !passwordConfirmationStatus || !passwordStatus ||
     !passwordSubmitButton || !passwordCancelButton
   ) {
     console.error("[TeacherSettings] Cannot initialize; required page elements are missing.", {
@@ -57,6 +62,8 @@
         ["passwordChangeForm", passwordForm],
         ["newPasswordInput", passwordInput],
         ["confirmPasswordInput", passwordConfirmationInput],
+        ["settingsPasswordRequirements", passwordRequirementsList],
+        ["settingsPasswordConfirmationStatus", passwordConfirmationStatus],
         ["passwordDialogStatus", passwordStatus],
         ["submitPasswordButton", passwordSubmitButton],
         ["cancelPasswordButton", passwordCancelButton],
@@ -65,6 +72,7 @@
     return;
   }
 
+  passwordSubmitButton.disabled = true;
   const accountActionButtons = [
     profileEditButton,
     changeEmailButton,
@@ -131,11 +139,21 @@
   };
 
   const realtimeWarnings = new Set();
+  const realtimeErrorMessage = (error, status) => {
+    if (typeof error === "string" && error) return error;
+    if (error?.message) return error.message;
+    if (error?.reason) {
+      return typeof error.reason === "string"
+        ? error.reason
+        : error.reason.message || status || "Unknown Realtime error";
+    }
+    return status || "Unknown Realtime error";
+  };
   const updateRealtimeWarning = (key, label, status, error) => {
     if (status === "SUBSCRIBED") {
       realtimeWarnings.delete(key);
     } else {
-      const details = errorMessage(error, status || "Unknown Realtime error");
+      const details = realtimeErrorMessage(error, status);
       realtimeWarnings.add(`${label} live updates are unavailable (${details}).`);
     }
     if (realtimeWarnings.size) {
@@ -151,10 +169,30 @@
     return fallback;
   };
 
+  const formatAuthError = (error) => {
+    const message = errorMessage(error, "Unknown Supabase Auth error");
+    const code = error?.code ? ` Code: ${error.code}.` : "";
+    const status = error?.status ? ` HTTP status: ${error.status}.` : "";
+    const details = error?.details ? ` Details: ${error.details}` : "";
+    const hint = error?.hint ? ` Hint: ${error.hint}` : "";
+    return `${message}${code}${status}${details}${hint}`;
+  };
+
+  const passwordErrorText = (value) => {
+    const text = typeof value === "string" ? value : "";
+    return passwordInput.value
+      ? text.split(passwordInput.value).join("[redacted]")
+      : text;
+  };
+
   const logSupabaseError = (stage, error) => {
-    console.error(`[TeacherSettings] ${stage} failed.`, {
-      code: error?.code || error?.status || "UNKNOWN",
+    console.error(`[TeacherSettings] ${stage} failed. Supabase error response:`, {
+      name: error?.name || "SupabaseError",
+      code: error?.code || null,
+      status: error?.status || null,
       message: errorMessage(error, "Unknown error"),
+      details: error?.details || null,
+      hint: error?.hint || null,
     });
   };
 
@@ -168,6 +206,118 @@
     const element = document.getElementById(id);
     if (element) element.textContent = value || "-";
   };
+
+  function populateGraduationYears() {
+    const select = document.querySelector('[data-profile-field="graduation_year"]');
+    if (!select || select.options.length > 1) return;
+    const currentYear = new Date().getFullYear();
+    for (let year = currentYear; year >= 1970; year -= 1) {
+      const option = document.createElement("option");
+      option.value = String(year);
+      option.textContent = String(year);
+      select.appendChild(option);
+    }
+  }
+
+  function setProfileSelectValue(select, value) {
+    Array.from(select.options)
+      .filter((option) => option.dataset.profileExistingValue === "true")
+      .forEach((option) => option.remove());
+
+    if (select.multiple) {
+      const values = Array.isArray(value)
+        ? value.map(String)
+        : String(value || "").split(",").map((item) => item.trim()).filter(Boolean);
+      values.forEach((item) => {
+        if (Array.from(select.options).some((option) => option.value === item)) return;
+        const option = document.createElement("option");
+        option.value = item;
+        option.textContent = item;
+        option.dataset.profileExistingValue = "true";
+        select.appendChild(option);
+      });
+      Array.from(select.options).forEach((option) => {
+        option.selected = values.includes(option.value);
+      });
+      return;
+    }
+
+    const selectedValue = value === null || value === undefined ? "" : String(value);
+    if (
+      selectedValue &&
+      !Array.from(select.options).some((option) => option.value === selectedValue)
+    ) {
+      const option = document.createElement("option");
+      option.value = selectedValue;
+      option.textContent = selectedValue;
+      option.dataset.profileExistingValue = "true";
+      select.appendChild(option);
+    }
+    select.value = selectedValue;
+  }
+
+  populateGraduationYears();
+
+  const passwordValidator = window.RegistrationPasswordValidation;
+  if (!passwordValidator?.check) {
+    console.error("[TeacherSettings] Shared registration password validation helper did not load.");
+  } else {
+    passwordValidator.check("").requirements.forEach((requirement) => {
+      const item = document.createElement("li");
+      item.dataset.passwordRequirement = requirement.key;
+      item.textContent = requirement.label;
+      passwordRequirementsList.appendChild(item);
+    });
+  }
+
+  function updatePasswordValidation() {
+    if (!passwordValidator?.check) {
+      passwordSubmitButton.disabled = true;
+      return false;
+    }
+
+    const result = passwordValidator.check(passwordInput.value);
+    result.requirements.forEach((requirement) => {
+      const item = passwordRequirementsList.querySelector(
+        `[data-password-requirement="${requirement.key}"]`,
+      );
+      if (!item) return;
+      item.classList.toggle("is-met", requirement.satisfied);
+      item.setAttribute(
+        "aria-label",
+        `${requirement.satisfied ? "Satisfied" : "Not satisfied"}: ${requirement.label}`,
+      );
+    });
+
+    const confirmation = passwordConfirmationInput.value;
+    const matches = Boolean(confirmation) && confirmation === passwordInput.value;
+    passwordConfirmationStatus.textContent = !confirmation
+      ? ""
+      : matches
+        ? "Passwords match."
+        : "Passwords do not match.";
+    passwordConfirmationStatus.classList.toggle("is-matched", matches);
+    passwordConfirmationInput.setAttribute("aria-invalid", confirmation && !matches ? "true" : "false");
+    passwordSubmitButton.disabled = changingPassword || !result.valid || !matches;
+    return result.valid && matches;
+  }
+
+  function showPasswordValidationMessage() {
+    if (!passwordValidator?.check) {
+      passwordStatus.textContent = "Password validation is unavailable. Reload the page and try again.";
+      return;
+    }
+    const result = passwordValidator.check(passwordInput.value);
+    if (!result.valid) {
+      passwordStatus.textContent = passwordInput.value
+        ? "Password must meet all four requirements."
+        : "";
+    } else if (passwordConfirmationInput.value && passwordConfirmationInput.value !== passwordInput.value) {
+      passwordStatus.textContent = "The passwords do not match.";
+    } else {
+      passwordStatus.textContent = "";
+    }
+  }
 
   function readSettings() {
     return {
@@ -195,10 +345,10 @@
         const input = document.querySelector(`[data-profile-field="${field}"]`);
         if (!input) return [field, null];
         if (field === "languages") {
-          return [field, input.value.split(",").map((language) => language.trim()).filter(Boolean)];
+          return [field, Array.from(input.selectedOptions, (option) => option.value)];
         }
-        if (input.type === "number") {
-          return [field, input.value === "" ? null : input.valueAsNumber];
+        if (field === "years_experience" || field === "graduation_year") {
+          return [field, input.value === "" ? null : Number(input.value)];
         }
         const value = input.value.trim();
         return [field, value || null];
@@ -261,8 +411,10 @@
       const value = profile[field];
       if (field === "date_of_birth" && value) {
         input.value = String(value).slice(0, 10);
+      } else if (input instanceof HTMLSelectElement) {
+        setProfileSelectValue(input, value);
       } else if (field === "languages") {
-        input.value = Array.isArray(value) ? value.join(", ") : "";
+        input.value = Array.isArray(value) ? value.join(", ") : value ?? "";
       } else {
         input.value = value ?? "";
       }
@@ -339,14 +491,15 @@
     });
     setStatus("Saving...");
     try {
-      settings = await TeacherData.updateCurrentTeacherSettings(values);
+      await TeacherData.updateCurrentTeacherSettings(values);
+      settings = await TeacherData.loadCurrentTeacherSettings();
       settingsDirty = false;
       renderSettings();
       setStatus("Settings saved successfully.");
     } catch (error) {
-      console.error("Unable to save teacher settings.", error);
+      logSupabaseError("Teacher settings save or refresh", error);
       setStatus(navigator.onLine
-        ? "Unable to save settings. Please try again."
+        ? `Unable to save or refresh settings: ${errorMessage(error, "Please try again.")}`
         : "You are offline. Settings were not saved.");
     } finally {
       savingSettings = false;
@@ -467,9 +620,10 @@
       emailStatus.textContent = "You are offline. The email change was not requested.";
       return;
     }
-    const normalizedEmail = emailInput.value.trim();
+    const newEmail = emailInput.value.trim();
+    emailInput.value = newEmail;
     if (!emailInput.reportValidity()) return;
-    if (normalizedEmail.toLowerCase() === String(user.email || "").toLowerCase()) {
+    if (newEmail.toLowerCase() === String(user.email || "").toLowerCase()) {
       emailStatus.textContent = "Enter an email address different from your current email.";
       emailInput.focus();
       return;
@@ -478,12 +632,13 @@
     emailSubmitButton.disabled = true;
     emailStatus.textContent = "Requesting email change...";
     try {
-      await TeacherData.updateAuthEmail(normalizedEmail);
+      console.info("[TeacherSettings] Sending trimmed email to Supabase Auth.");
+      await TeacherData.updateAuthEmail(newEmail);
       emailStatus.textContent =
         "Email change requested. Check your inbox and follow Supabase's confirmation steps. Your displayed email will update after confirmation.";
     } catch (error) {
       logSupabaseError("Email update", error);
-      emailStatus.textContent = `Unable to request the email change: ${errorMessage(error, "Please try again.")}`;
+      emailStatus.textContent = `Unable to request the email change: ${formatAuthError(error)}`;
     } finally {
       changingEmail = false;
       emailSubmitButton.disabled = false;
@@ -493,30 +648,51 @@
   async function changePassword() {
     if (changingPassword) return;
     console.info("[TeacherSettings] Password update requested.");
+    if (!passwordValidator?.check) {
+      passwordStatus.textContent = "Password validation is unavailable. Reload the page and try again.";
+      return;
+    }
+    const passwordResult = passwordValidator.check(passwordInput.value);
+    if (!passwordResult.valid) {
+      passwordStatus.textContent = "Password must meet all four requirements.";
+      passwordInput.focus();
+      updatePasswordValidation();
+      return;
+    }
+    if (!passwordConfirmationInput.value || passwordInput.value !== passwordConfirmationInput.value) {
+      passwordStatus.textContent = passwordConfirmationInput.value
+        ? "The passwords do not match."
+        : "Please confirm your password.";
+      passwordConfirmationInput.focus();
+      updatePasswordValidation();
+      return;
+    }
     if (!navigator.onLine) {
       passwordStatus.textContent = "You are offline. The password was not changed.";
       return;
     }
-    if (!passwordForm.reportValidity()) return;
-    if (passwordInput.value !== passwordConfirmationInput.value) {
-      passwordStatus.textContent = "The passwords do not match.";
-      passwordConfirmationInput.focus();
-      return;
-    }
     changingPassword = true;
-    passwordSubmitButton.disabled = true;
+    updatePasswordValidation();
     passwordStatus.textContent = "Updating password...";
     try {
       await TeacherData.updateAuthPassword(passwordInput.value);
       passwordInput.value = "";
       passwordConfirmationInput.value = "";
+      updatePasswordValidation();
       passwordStatus.textContent = "Password updated successfully.";
     } catch (error) {
-      logSupabaseError("Password update", error);
-      passwordStatus.textContent = `Unable to update your password: ${errorMessage(error, "Please try again.")}`;
+      console.error("[TeacherSettings] Password update failed.", {
+        code: error?.code || null,
+        status: error?.status || null,
+        message: passwordErrorText(errorMessage(error, "Please try again.")),
+        details: passwordErrorText(error?.details || ""),
+        hint: passwordErrorText(error?.hint || ""),
+      });
+      passwordStatus.textContent =
+        `Unable to update your password: ${passwordErrorText(errorMessage(error, "Please try again."))}`;
     } finally {
       changingPassword = false;
-      passwordSubmitButton.disabled = false;
+      updatePasswordValidation();
     }
   }
 
@@ -574,7 +750,7 @@
   });
 
   document.querySelectorAll("[data-profile-field]").forEach((control) => {
-    control.addEventListener("input", () => {
+    control.addEventListener(control instanceof HTMLSelectElement ? "change" : "input", () => {
       if (control.dataset.profileField === "employment_status") {
         updateEmploymentRequirements();
       }
@@ -629,10 +805,17 @@
   emailDialog.addEventListener("cancel", (event) => {
     if (changingEmail) event.preventDefault();
   });
+  const onPasswordInput = () => {
+    updatePasswordValidation();
+    showPasswordValidationMessage();
+  };
+  passwordInput.addEventListener("input", onPasswordInput);
+  passwordConfirmationInput.addEventListener("input", onPasswordInput);
   changePasswordButton.addEventListener("click", () => {
     console.info("[TeacherSettings] Change Password clicked.");
     passwordForm.reset();
     passwordStatus.textContent = "";
+    updatePasswordValidation();
     passwordDialog.showModal();
     passwordInput.focus();
   });
@@ -643,10 +826,14 @@
   passwordCancelButton.addEventListener("click", () => {
     passwordForm.reset();
     passwordStatus.textContent = "";
+    updatePasswordValidation();
     passwordDialog.close();
   });
   passwordDialog.addEventListener("close", () => {
-    if (!changingPassword) passwordForm.reset();
+    if (!changingPassword) {
+      passwordForm.reset();
+      updatePasswordValidation();
+    }
   });
   passwordDialog.addEventListener("cancel", (event) => {
     if (changingPassword) event.preventDefault();
@@ -678,6 +865,7 @@
     await renderAccount();
     profileSaveButton.disabled = false;
     enableAccountActions(true);
+    changePasswordButton.disabled = !passwordValidator?.check;
 
     console.info("[TeacherSettings] Loading teacher time-format settings.");
     let settingsLoaded = false;
