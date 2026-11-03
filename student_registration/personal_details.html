@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/registration-password-validation.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>Smart Learning DC - Student Registration</title>
@@ -570,74 +571,6 @@
         flex: 0 0 1px;
         margin: 0 2px;
         background: #d7d9ed;
-      }
-
-      .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) {
-        grid-template-columns: 100px minmax(0, 1fr);
-        column-gap: 18px;
-        row-gap: 14px;
-      }
-
-      .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) .profile-photo-actions {
-        grid-column: 2;
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        justify-content: stretch;
-        gap: 8px;
-        width: 100%;
-      }
-
-      .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) .profile-photo-actions-divider {
-        display: none;
-      }
-
-      .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) .profile-photo-actions button {
-        width: 100%;
-        min-width: 0;
-        min-height: 48px;
-        padding: 9px 8px;
-        font-size: 0.82rem;
-      }
-
-      .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) .profile-photo-actions button svg {
-        width: 17px;
-        height: 17px;
-        margin-right: 5px;
-      }
-
-      .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) #removeProfilePhotoButton {
-        border-color: #e2e8f0;
-        color: #64748b;
-        background: #fff;
-        box-shadow: none;
-      }
-
-      .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) #removeProfilePhotoButton:hover {
-        border-color: #f0b4b4;
-        color: #b42318;
-        background: #fff8f8;
-      }
-
-      @container (max-width: 650px) {
-        .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) {
-          grid-template-columns: minmax(0, 1fr);
-        }
-
-        .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) .profile-photo-actions {
-          grid-column: 1;
-          grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
-        }
-      }
-
-      @container (min-width: 680px) {
-        .profile-photo-picker .profile-photo-content {
-          grid-template-columns: 100px minmax(0, 1fr) max-content;
-        }
-
-        .profile-photo-picker .profile-photo-actions {
-          grid-column: auto;
-          flex-wrap: nowrap;
-        }
       }
 
       .profile-photo-details {
@@ -1478,11 +1411,18 @@
 
             <!-- PASSWORD -->
 
-            <div class="input-field">
-              <label for="password"> Password * </label>
+            <div class="input-field password-field">
+              <label for="password" class="password-field-label">
+                <span class="password-heading-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="2" /><path d="M8 10V7a4 4 0 1 1 8 0v3" /><path d="M12 14v3" /></svg>
+                </span>
+                <span>Password *</span>
+              </label>
 
-              <div class="input-control">
-                <span class="input-icon"> 🔒 </span>
+              <div class="input-control password-input-control">
+                <span class="input-icon password-input-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="2" /><path d="M8 10V7a4 4 0 1 1 8 0v3" /><path d="M12 14v3" /></svg>
+                </span>
 
                 <input
                   type="password"
@@ -1491,16 +1431,39 @@
                   minlength="8"
                   required
                 />
+                <button class="password-visibility-toggle" type="button" aria-label="Show password" aria-controls="password" aria-pressed="false">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /><path class="password-visibility-slash" d="m3 3 18 18" /></svg>
+                </button>
+              </div>
+              <div class="password-validation">
+                <ul id="passwordRequirements" class="password-requirements"></ul>
+                <div class="password-strength">
+                  <span class="password-strength-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 21 6v6c0 5-3.8 8.5-9 10-5.2-1.5-9-5-9-10V6l9-4Z" /><path d="m8.5 12 2.2 2.2 4.8-4.8" /></svg>
+                  </span>
+                  <span id="passwordStrengthText"><strong>Password strength:</strong> <span data-strength-value>Not rated</span></span>
+                  <span id="passwordStrengthMeter" class="password-strength-meter" role="meter" aria-label="Password strength" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0">
+                    <span></span><span></span><span></span><span></span>
+                  </span>
+                </div>
+                <p id="passwordValidationMessage" class="password-validation-message" aria-live="polite"></p>
               </div>
             </div>
 
             <!-- CONFIRM PASSWORD -->
 
-            <div class="input-field">
-              <label for="confirmPassword"> Confirm Password * </label>
+            <div class="input-field password-field">
+              <label for="confirmPassword" class="password-field-label">
+                <span class="password-heading-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="2" /><path d="M8 10V7a4 4 0 1 1 8 0v3" /><path d="M12 14v3" /></svg>
+                </span>
+                <span>Confirm Password *</span>
+              </label>
 
-              <div class="input-control">
-                <span class="input-icon"> 🔒 </span>
+              <div class="input-control password-input-control">
+                <span class="input-icon password-input-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="2" /><path d="M8 10V7a4 4 0 1 1 8 0v3" /><path d="M12 14v3" /></svg>
+                </span>
 
                 <input
                   type="password"
@@ -1509,7 +1472,11 @@
                   minlength="8"
                   required
                 />
+                <button class="password-visibility-toggle" type="button" aria-label="Show password" aria-controls="confirmPassword" aria-pressed="false">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /><path class="password-visibility-slash" d="m3 3 18 18" /></svg>
+                </button>
               </div>
+              <p id="confirmPasswordValidation" class="confirm-password-validation" aria-live="polite"></p>
             </div>
           </div>
 
@@ -1531,6 +1498,7 @@
     <script src="../js/student-data.js"></script>
     <script src="../js/registration-lifecycle.js"></script>
     <script src="../js/profile-photo-picker.js"></script>
+    <script src="../js/registration-password-validation.js"></script>
     <script src="../js/student-registration.js"></script>
   </body>
 </html>

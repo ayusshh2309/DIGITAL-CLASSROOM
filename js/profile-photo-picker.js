@@ -16,8 +16,10 @@
       .profile-photo-info h4, .profile-photo-info p { writing-mode: horizontal-tb; word-break: normal; overflow-wrap: break-word; white-space: normal; }
       .profile-photo-info h4 { margin: 0 0 6px; color: #172554; font-size: 1rem; font-weight: 750; }
       .profile-photo-preview { width: 100px; height: 100px; min-width: 100px; min-height: 100px; box-sizing: border-box; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: #f1f5f9; border: 1px solid #dbe3ee; color: #64748b; font-size: 2rem; }
-      .profile-photo-preview img { width: 100%; height: 100%; object-fit: contain; }
-      .profile-photo-preview:has(#profilePhotoPreview:not([hidden])) { border-radius: 14px; background: #fff; }
+      .profile-photo-preview img:not([hidden]) { display: block; width: 100%; height: 100%; object-fit: contain; object-position: center; }
+      .profile-photo-preview [hidden] { display: none !important; }
+      .profile-photo-preview.has-photo > :not(img) { display: none !important; }
+      .profile-photo-preview.has-photo { border-radius: 14px; background: #fff; }
       .profile-photo-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 10px; min-width: 0; max-width: 100%; }
       .profile-photo-actions button { min-width: 140px; min-height: 56px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #6b55ff; border-radius: 12px; background: #fff; color: #5538ee; padding: 12px 14px; font: inherit; font-size: .95rem; font-weight: 700; white-space: nowrap; cursor: pointer; }
       .profile-photo-actions button:first-of-type { border-color: #5538ee; background: #5538ee; color: #fff; }
@@ -28,9 +30,19 @@
       .profile-photo-actions-divider { width: 1px; height: 54px; flex: 0 0 1px; background: #d7d9ed; }
       .profile-photo-instruction, .profile-photo-status { color: #64748b; font-size: .82rem; line-height: 1.45; }
       .profile-photo-error { color: #b42318; font-size: .84rem; }
+      .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) { grid-template-columns: 100px minmax(160px, 1fr) minmax(0, 340px); column-gap: 18px; row-gap: 14px; }
+      .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) .profile-photo-actions { grid-column: 3; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); justify-content: stretch; gap: 8px; width: 100%; }
+      .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) .profile-photo-actions-divider { display: none; }
+      .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) .profile-photo-actions button { width: 100%; min-width: 0; min-height: 48px; padding: 9px 8px; font-size: .82rem; }
+      .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) .profile-photo-actions button svg { width: 17px; height: 17px; margin-right: 5px; }
+      .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) #removeProfilePhotoButton { grid-column: 1 / -1; border-color: #e2e8f0; color: #64748b; background: #fff; box-shadow: none; }
+      .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) #removeProfilePhotoButton:hover { border-color: #f0b4b4; color: #b42318; background: #fff8f8; }
       @container (max-width: 680px) {
         .profile-photo-content { grid-template-columns: 100px minmax(0, 1fr); }
         .profile-photo-actions { grid-column: 1 / -1; justify-content: flex-start; }
+        .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) { grid-template-columns: 100px minmax(0, 1fr); }
+        .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) .profile-photo-actions { grid-column: 1 / -1; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); }
+        .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) #removeProfilePhotoButton { grid-column: auto; }
       }
       @container (max-width: 480px) {
         .profile-photo-picker { padding: 14px; }
@@ -40,6 +52,8 @@
         .profile-photo-actions { grid-column: 1; justify-content: center; }
         .profile-photo-actions button { min-width: 140px; min-height: 48px; }
         .profile-photo-actions-divider { display: none; }
+        .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) { grid-template-columns: minmax(0, 1fr); }
+        .profile-photo-content:has(#removeProfilePhotoButton:not([hidden])) .profile-photo-actions { grid-column: 1; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); }
       }
       .profile-camera-backdrop { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; padding: 18px; background: rgba(15, 23, 42, .65); }
       .profile-camera-dialog { width: min(100%, 520px); padding: 20px; border-radius: 16px; background: white; box-shadow: 0 24px 70px rgba(0,0,0,.25); }
@@ -111,11 +125,12 @@
     const removeButton = document.getElementById("removeProfilePhotoButton");
     const preview = document.getElementById("profilePhotoPreview");
     const placeholder = document.getElementById("profilePhotoPlaceholder");
+    const previewFrame = preview?.closest(".profile-photo-preview");
     const selectionTitle = document.getElementById("profilePhotoSelectionTitle");
     const error = document.getElementById("profilePhotoError");
     const status = document.getElementById("uploadText");
 
-    if (![input, uploadButton, cameraButton, removeButton, preview, placeholder, error, status].every(Boolean)) {
+    if (![input, uploadButton, cameraButton, removeButton, preview, placeholder, previewFrame, error, status].every(Boolean)) {
       throw new Error("The profile photo picker elements are missing from this registration page.");
     }
 
@@ -175,6 +190,7 @@
         preview.src = dataUrl;
         preview.hidden = false;
         placeholder.hidden = true;
+        previewFrame.classList.add("has-photo");
         if (selectionTitle) selectionTitle.textContent = "Photo selected";
         status.textContent = name ? `${name} is selected.` : "Profile photo selected.";
         removeButton.hidden = false;
@@ -182,6 +198,7 @@
         preview.removeAttribute("src");
         preview.hidden = true;
         placeholder.hidden = false;
+        previewFrame.classList.remove("has-photo");
         if (selectionTitle) selectionTitle.textContent = "No photo selected";
         status.textContent = options.showFormatHint === false
           ? ""
@@ -213,6 +230,7 @@
       preview.src = objectUrl;
       preview.hidden = false;
       placeholder.hidden = true;
+      previewFrame.classList.add("has-photo");
       removeButton.hidden = false;
       status.textContent = `${file.name} is selected.`;
       selectedProfilePhoto = file;

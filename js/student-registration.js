@@ -92,7 +92,9 @@
       const number = normalized(data[field]).replace(/\D/g, "");
       if (number.length < 7 || number.length > 15) return "Enter a valid phone number.";
     }
-    if (data.password.length < 8) return "Password must contain at least 8 characters.";
+    if (!window.RegistrationPasswordValidation.check(data.password).valid) {
+      return "Password must satisfy all four requirements.";
+    }
     if (data.password !== data.confirmPassword) return "Passwords do not match.";
     return "";
   }
@@ -105,6 +107,8 @@
       "address", "password", "confirmPassword", "countryCode",
       "fatherCountryCode", "motherCountryCode",
     ].forEach((id) => { values[id] = normalized($(id)?.value); });
+    values.password = $("password")?.value || "";
+    values.confirmPassword = $("confirmPassword")?.value || "";
     return values;
   }
 
@@ -121,6 +125,7 @@
     const secrets = window.RegistrationLifecycle?.getSecrets?.() || {};
     $("password").value = secrets.password || "";
     $("confirmPassword").value = secrets.confirmPassword || "";
+    const passwordValidation = window.RegistrationPasswordValidation.init();
     const photoPicker = window.ProfilePhotoPicker.init({
       initialData: current.profilePhoto || "",
       initialName: "Selected profile photo",
@@ -133,6 +138,11 @@
       try {
         await photoPicker.whenReady();
       } catch {
+        return;
+      }
+      const passwordResult = passwordValidation.validate();
+      if (!passwordResult.valid) {
+        passwordResult.field.focus();
         return;
       }
       const values = collectPersonal();

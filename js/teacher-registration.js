@@ -31,7 +31,7 @@
   }
 
   function isPasswordValid(password) {
-    return typeof password === "string" && password.length >= 8;
+    return window.RegistrationPasswordValidation.check(password).valid;
   }
 
   function renderNotProvided(value, fallback = "Not provided") {
