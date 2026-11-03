@@ -282,66 +282,12 @@
       .settings-layout {
         margin: 0;
         display: grid;
-        grid-template-columns: 260px 1fr 320px;
+        grid-template-columns: minmax(0, 1fr);
         gap: 24px;
         align-items: start;
       }
 
-      /* Column 1: Settings Navigation Sub-Sidebar */
-      .settings-nav-card {
-        background: var(--surface);
-        border-radius: var(--radius);
-        padding: 14px;
-        box-shadow: var(--shadow-sm);
-        border: 1px solid var(--surface-border);
-      }
-
-      .settings-nav-title {
-        font-size: 1.1rem;
-        font-weight: 800;
-        padding: 10px 12px 14px 12px;
-        color: var(--text-main);
-      }
-
-      .settings-menu {
-        list-style: none;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-
-      .settings-menu-item a {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 12px;
-        color: var(--text-muted);
-        text-decoration: none;
-        font-size: 0.92rem;
-        font-weight: 600;
-        border-radius: 10px;
-        transition: all 0.2s ease;
-      }
-
-      .settings-menu-item a:hover {
-        background: #f8fafc;
-        color: var(--text-main);
-      }
-
-      .settings-menu-item.active a {
-        background: #ede9fe;
-        color: #6d28d9;
-        font-weight: 700;
-      }
-
-      .settings-menu-icon {
-        font-size: 1.1rem;
-        width: 20px;
-        display: inline-grid;
-        place-items: center;
-      }
-
-      /* Column 2: Main Settings Content Form */
+      /* Main Settings Content */
       .settings-main-card {
         background: var(--surface);
         border-radius: var(--radius);
@@ -407,24 +353,11 @@
         margin-top: 2px;
       }
 
-      .setting-control select {
-        padding: 10px 14px;
-        border: 1px solid var(--surface-border);
-        border-radius: 10px;
-        background: #fff;
-        font-family: inherit;
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: var(--text-main);
-        cursor: pointer;
-        min-width: 200px;
-      }
-
-      /* Radio Toggle Group */
       .radio-group-inline {
         display: flex;
         gap: 20px;
         align-items: center;
+        flex-wrap: wrap;
       }
 
       .radio-label {
@@ -434,52 +367,6 @@
         font-size: 0.9rem;
         font-weight: 600;
         cursor: pointer;
-      }
-
-      /* Toggle Switch */
-      .switch {
-        position: relative;
-        display: inline-block;
-        width: 46px;
-        height: 24px;
-      }
-
-      .switch input {
-        opacity: 0;
-        width: 0;
-        height: 0;
-      }
-
-      .slider {
-        position: absolute;
-        cursor: pointer;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: #cbd5e1;
-        transition: 0.3s;
-        border-radius: 24px;
-      }
-
-      .slider:before {
-        position: absolute;
-        content: "";
-        height: 18px;
-        width: 18px;
-        left: 3px;
-        bottom: 3px;
-        background-color: white;
-        transition: 0.3s;
-        border-radius: 50%;
-      }
-
-      input:checked + .slider {
-        background-color: #7c3aed;
-      }
-
-      input:checked + .slider:before {
-        transform: translateX(22px);
       }
 
       .divider-line {
@@ -506,19 +393,154 @@
         box-shadow: var(--shadow-sm);
       }
 
-      /* Column 3: Account Info & Quick Links */
-      .right-column {
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
+      .profile-form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
       }
 
-      .card-box {
-        background: var(--surface);
-        border-radius: var(--radius);
-        padding: 22px;
-        box-shadow: var(--shadow-sm);
+      .profile-form[hidden],
+      .profile-summary-edit[hidden] {
+        display: none;
+      }
+
+      .profile-summary-edit {
+        margin: 0 0 18px;
+        text-align: center;
+      }
+
+      .profile-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        color: var(--text-main);
+        font-size: 0.88rem;
+        font-weight: 700;
+      }
+
+      .profile-field input,
+      .profile-field textarea {
+        width: 100%;
         border: 1px solid var(--surface-border);
+        border-radius: 10px;
+        padding: 11px 12px;
+        color: var(--text-main);
+        background: #fff;
+        font: inherit;
+        font-weight: 500;
+      }
+
+      .profile-field textarea {
+        min-height: 88px;
+        resize: vertical;
+      }
+
+      .profile-field-full {
+        grid-column: 1 / -1;
+      }
+
+      .profile-photo-row,
+      .account-action-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .profile-photo-row {
+        padding: 16px 0;
+        border-bottom: 1px solid var(--surface-border);
+      }
+
+      .profile-photo-help,
+      .account-current-email {
+        color: var(--text-muted);
+        font-size: 0.88rem;
+      }
+
+      .profile-photo-input {
+        display: block;
+        margin-top: 8px;
+        max-width: 100%;
+        font: inherit;
+        font-size: 0.85rem;
+      }
+
+      .account-action-row {
+        justify-content: space-between;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--surface-border);
+      }
+
+      .account-action-row:last-child {
+        border-bottom: 0;
+      }
+
+      .account-action-button {
+        border: 1px solid var(--surface-border);
+        border-radius: 10px;
+        padding: 10px 14px;
+        background: #fff;
+        color: var(--text-main);
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .account-action-button-danger {
+        color: var(--danger);
+        border-color: #fecaca;
+      }
+
+      .account-dialog {
+        width: min(460px, calc(100vw - 32px));
+        max-width: none;
+        margin: auto;
+        padding: 26px;
+        border: 1px solid var(--surface-border);
+        border-radius: var(--radius);
+        color: var(--text-main);
+        box-shadow: var(--shadow-md);
+      }
+
+      .account-dialog::backdrop {
+        background: rgba(15, 23, 42, 0.48);
+      }
+
+      .account-dialog h2 {
+        margin-bottom: 8px;
+        font-size: 1.25rem;
+      }
+
+      .account-dialog p {
+        margin-bottom: 16px;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+      }
+
+      .account-dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 20px;
+      }
+
+      .account-dialog-status {
+        min-height: 1.3em;
+        margin-top: 12px;
+        color: var(--text-muted);
+        font-size: 0.88rem;
+      }
+
+      .account-status,
+      #settingsStatus {
+        min-height: 1.3em;
+        color: var(--text-muted);
+        font-size: 0.88rem;
+      }
+
+      #settingsStatus {
+        align-self: center;
+        margin-right: auto;
       }
 
       .account-mini-profile {
@@ -567,128 +589,9 @@
         border-radius: 20px;
       }
 
-      .btn-edit-profile {
-        display: block;
-        width: 100%;
-        margin-top: 16px;
-        background: #fff;
-        border: 1px solid var(--surface-border);
-        padding: 10px;
-        border-radius: 10px;
-        font-weight: 700;
-        font-size: 0.9rem;
-        color: var(--text-main);
-        text-align: center;
-        text-decoration: none;
-        cursor: pointer;
-      }
-
-      .storage-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 10px;
-        font-size: 0.9rem;
-        font-weight: 700;
-      }
-
-      .storage-link {
-        font-size: 0.8rem;
-        color: var(--primary);
-        text-decoration: none;
-      }
-
-      .progress-bar-bg {
-        width: 100%;
-        height: 8px;
-        background: #e2e8f0;
-        border-radius: 4px;
-        overflow: hidden;
-        margin-bottom: 8px;
-      }
-
-      .progress-bar-fill {
-        width: 98%;
-        height: 100%;
-        background: #7c3aed;
-        border-radius: 4px;
-      }
-
-      .storage-sub {
-        font-size: 0.8rem;
-        color: var(--text-muted);
-      }
-
-      .quick-links-title {
-        font-size: 0.95rem;
-        font-weight: 800;
-        margin-bottom: 12px;
-      }
-
-      .quick-link-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 10px 0;
-        border-bottom: 1px solid var(--surface-border);
-        text-decoration: none;
-        color: var(--text-main);
-        font-size: 0.9rem;
-        font-weight: 600;
-      }
-
-      .quick-link-item:last-child {
-        border-bottom: none;
-        padding-bottom: 0;
-        color: var(--danger);
-      }
-
-      .quick-link-left {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-
-      .tips-card {
-        background: #ede9fe;
-        border: 1px solid rgba(124, 58, 237, 0.2);
-        border-radius: var(--radius);
-        padding: 20px;
-      }
-
-      .tips-header {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 8px;
-        font-weight: 800;
-        color: #5b21b6;
-      }
-
-      .tips-card p {
-        font-size: 0.85rem;
-        color: #4c1d95;
-        line-height: 1.4;
-      }
-
-      .tips-link {
-        display: inline-block;
-        margin-top: 10px;
-        font-size: 0.85rem;
-        font-weight: 700;
-        color: #7c3aed;
-        text-decoration: none;
-      }
-
       @media (max-width: 1400px) {
         .settings-layout {
-          grid-template-columns: 240px 1fr;
-        }
-        .right-column {
-          grid-column: 1 / -1;
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 20px;
+          grid-template-columns: minmax(0, 1fr);
         }
       }
 
@@ -703,6 +606,11 @@
         .settings-layout {
           grid-template-columns: 1fr;
         }
+        .setting-item-row {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 12px;
+        }
         .main-box-container {
           margin: 0 16px 20px 16px;
           padding: 20px;
@@ -710,8 +618,15 @@
         .page-banner {
           margin: 0;
         }
-        .right-column {
+        .profile-form-grid {
           grid-template-columns: 1fr;
+        }
+        .profile-field-full {
+          grid-column: auto;
+        }
+        .account-action-row {
+          align-items: flex-start;
+          flex-direction: column;
         }
       }
     </style>
@@ -732,254 +647,13 @@
 
       <!-- SETTINGS LAYOUT CONTAINER -->
       <div class="settings-layout">
-        <!-- Col 1: Settings Navigation Sub-menu -->
-        <div class="settings-nav-card">
-          <div class="settings-nav-title">Settings</div>
-          <ul class="settings-menu">
-            <li class="settings-menu-item active">
-              <a href="#">
-                <span class="settings-menu-icon">⚙️</span> General
-              </a>
-            </li>
-            <li class="settings-menu-item">
-              <a href="#">
-                <span class="settings-menu-icon">👤</span> Account
-              </a>
-            </li>
-            <li class="settings-menu-item">
-              <a href="#">
-                <span class="settings-menu-icon">🎛️</span> Preferences
-              </a>
-            </li>
-            <li class="settings-menu-item">
-              <a href="#">
-                <span class="settings-menu-icon">🔔</span> Notifications
-              </a>
-            </li>
-            <li class="settings-menu-item">
-              <a href="#">
-                <span class="settings-menu-icon">🔒</span> Privacy
-              </a>
-            </li>
-            <li class="settings-menu-item">
-              <a href="#">
-                <span class="settings-menu-icon">🛡️</span> Security
-              </a>
-            </li>
-            <li class="settings-menu-item">
-              <a href="#">
-                <span class="settings-menu-icon">⏰</span> Study Reminders
-              </a>
-            </li>
-            <li class="settings-menu-item">
-              <a href="#">
-                <span class="settings-menu-icon">🎨</span> Appearance
-              </a>
-            </li>
-            <li class="settings-menu-item">
-              <a href="#">
-                <span class="settings-menu-icon">🔌</span> Integrations
-              </a>
-            </li>
-            <li class="settings-menu-item">
-              <a href="#">
-                <span class="settings-menu-icon">💾</span> Data & Storage
-              </a>
-            </li>
-          </ul>
-        </div>
-
-        <!-- Col 2: Main Settings Panel -->
         <div class="settings-main-card">
-          <div class="settings-section-title">
-            <h3>General Settings</h3>
-            <p>Manage your basic account and application settings.</p>
-          </div>
-
-          <div class="setting-item-row">
-            <div class="setting-label-group">
-              <div class="setting-icon-box">🌐</div>
-              <div class="setting-label-text">
-                <h4>Language</h4>
-                <p>Choose your preferred language</p>
-              </div>
+          <section aria-labelledby="accountManagementTitle">
+            <div class="settings-section-title">
+              <h3 id="accountManagementTitle">Account Management</h3>
+              <p>Keep your teacher profile and sign-in details up to date.</p>
             </div>
-            <div class="setting-control">
-              <select id="settingLanguage" data-setting="language">
-                <option value="English">English</option>
-                <option value="Spanish">Spanish</option>
-                <option value="French">French</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="setting-item-row">
-            <div class="setting-label-group">
-              <div class="setting-icon-box">🕒</div>
-              <div class="setting-label-text">
-                <h4>Time Zone</h4>
-                <p>Select your current time zone</p>
-              </div>
-            </div>
-            <div class="setting-control">
-              <select id="settingTimezone" data-setting="timezone">
-                <option value="Asia/Kolkata">(GMT+05:30) Asia/Kolkata</option>
-                <option value="UTC">(GMT+00:00) UTC</option>
-                <option value="Asia/Dubai">(GMT+04:00) Asia/Dubai</option>
-                <option value="Europe/London">Europe/London</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="setting-item-row">
-            <div class="setting-label-group">
-              <div class="setting-icon-box">📅</div>
-              <div class="setting-label-text">
-                <h4>Date Format</h4>
-                <p>Choose your preferred date format</p>
-              </div>
-            </div>
-            <div class="setting-control">
-              <select id="settingDateFormat" data-setting="date_format">
-                <option value="DD MMM YYYY">17 May 2026 (DD MMM YYYY)</option>
-                <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="setting-item-row">
-            <div class="setting-label-group">
-              <div class="setting-icon-box">🕒</div>
-              <div class="setting-label-text">
-                <h4>Time Format</h4>
-                <p>Choose your preferred time format</p>
-              </div>
-            </div>
-            <div class="setting-control">
-              <div class="radio-group-inline">
-                <label class="radio-label">
-                  <input type="radio" name="timeFormat" data-setting="time_format" value="12h" checked /> 12 Hours
-                </label>
-                <label class="radio-label">
-                  <input type="radio" name="timeFormat" data-setting="time_format" value="24h" /> 24 Hours
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <div class="setting-item-row">
-            <div class="setting-label-group">
-              <div class="setting-icon-box">📅</div>
-              <div class="setting-label-text">
-                <h4>Week Start Day</h4>
-                <p>Choose the first day of the week</p>
-              </div>
-            </div>
-            <div class="setting-control">
-              <select id="settingWeekStart" data-setting="week_start_day">
-                <option value="Monday">Monday</option>
-                <option value="Sunday">Sunday</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="divider-line"></div>
-
-          <div class="settings-section-title" style="margin-top: 10px">
-            <h3>Other Settings</h3>
-          </div>
-
-          <div class="setting-item-row">
-            <div class="setting-label-group">
-              <div class="setting-icon-box">☁️</div>
-              <div class="setting-label-text">
-                <h4>Auto Save</h4>
-                <p>Automatically save changes in forms and documents</p>
-              </div>
-            </div>
-            <div class="setting-control">
-              <label class="switch">
-                <input type="checkbox" data-setting="auto_save" checked />
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
-
-          <div class="setting-item-row">
-            <div class="setting-label-group">
-              <div class="setting-icon-box">✉️</div>
-              <div class="setting-label-text">
-                <h4>Email Notifications</h4>
-                <p>Receive important updates on your email</p>
-              </div>
-            </div>
-            <div class="setting-control">
-              <label class="switch">
-                <input type="checkbox" data-setting="email_notifications" checked />
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
-
-          <div class="setting-item-row">
-            <div class="setting-label-group">
-              <div class="setting-icon-box">🔊</div>
-              <div class="setting-label-text">
-                <h4>Sound Notifications</h4>
-                <p>Play sounds for notifications and alerts</p>
-              </div>
-            </div>
-            <div class="setting-control">
-              <label class="switch">
-                <input type="checkbox" data-setting="sound_notifications" checked />
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
-
-          <div class="setting-item-row">
-            <div class="setting-label-group">
-              <div class="setting-icon-box">🖥️</div>
-              <div class="setting-label-text">
-                <h4>Compact View</h4>
-                <p>Show more content in less space</p>
-              </div>
-            </div>
-            <div class="setting-control">
-              <label class="switch">
-                <input type="checkbox" data-setting="compact_view" />
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
-
-          <div class="setting-item-row">
-            <div class="setting-label-group">
-              <div class="setting-icon-box">💡</div>
-              <div class="setting-label-text">
-                <h4>Show Tips</h4>
-                <p>Show helpful tips and suggestions</p>
-              </div>
-            </div>
-            <div class="setting-control">
-              <label class="switch">
-                <input type="checkbox" data-setting="show_tips" checked />
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
-
-          <div class="btn-save-container">
-            <button class="btn-save" id="saveSettingsButton" type="button">Save Changes</button>
-            <p id="settingsStatus" role="status" aria-live="polite"></p>
-          </div>
-        </div>
-
-        <!-- Col 3: Right Profile, Storage & Quick Links Column -->
-        <div class="right-column">
-          <!-- Account Card -->
-          <div class="card-box">
-            <div class="account-mini-profile">
+            <div class="account-mini-profile" style="margin: 18px 0">
               <img
                 src=""
                 alt="Teacher profile"
@@ -992,63 +666,237 @@
               <div class="account-phone" id="settingsTeacherPhone">-</div>
               <span class="role-pill" id="settingsTeacherRole">Teacher</span>
             </div>
-            <a class="btn-edit-profile" href="profile.html">Edit Profile</a>
-          </div>
-
-          <!-- Storage Usage Card -->
-          <div class="card-box">
-            <div class="storage-header">
-              <span>Storage Usage</span>
-              <a href="#" class="storage-link">View Details</a>
+            <div class="profile-summary-edit" id="profileSummaryActions">
+              <button class="account-action-button" id="editProfileButton" type="button">
+                Edit Profile
+              </button>
             </div>
-            <div class="progress-bar-bg">
-              <div class="progress-bar-fill" id="storageBar" style="width: 0%"></div>
+            <form class="profile-form" id="profileForm" hidden>
+              <div class="profile-photo-row">
+                <div>
+                  <label class="profile-field" for="profilePhotoInput">Profile photo</label>
+                  <p class="profile-photo-help">Choose a JPG, PNG, or WEBP image up to 5 MB.</p>
+                  <input
+                    class="profile-photo-input"
+                    id="profilePhotoInput"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                  />
+                </div>
+              </div>
+              <div class="profile-form-grid" style="margin-top: 18px">
+                <label class="profile-field">
+                  Full name
+                  <input type="text" data-profile-field="full_name" required maxlength="160" />
+                </label>
+                <label class="profile-field">
+                  Phone number
+                  <input type="tel" data-profile-field="phone_number" maxlength="40" required />
+                </label>
+                <label class="profile-field">
+                  Country calling code
+                  <input type="text" data-profile-field="country_code" maxlength="8" />
+                </label>
+                <label class="profile-field">
+                  Date of birth
+                  <input type="date" data-profile-field="date_of_birth" required />
+                </label>
+                <label class="profile-field">
+                  Gender
+                  <input type="text" data-profile-field="gender" maxlength="80" required />
+                </label>
+                <label class="profile-field">
+                  Country
+                  <input type="text" data-profile-field="country" maxlength="120" required />
+                </label>
+                <label class="profile-field">
+                  State
+                  <input type="text" data-profile-field="state" maxlength="120" required />
+                </label>
+                <label class="profile-field">
+                  City
+                  <input type="text" data-profile-field="city" maxlength="120" required />
+                </label>
+                <label class="profile-field">
+                  Highest qualification
+                  <input type="text" data-profile-field="highest_qualification" maxlength="160" required />
+                </label>
+                <label class="profile-field">
+                  Degree or course
+                  <input type="text" data-profile-field="degree_course" maxlength="160" required />
+                </label>
+                <label class="profile-field">
+                  Specialization
+                  <input type="text" data-profile-field="specialization" maxlength="160" required />
+                </label>
+                <label class="profile-field">
+                  University or college
+                  <input type="text" data-profile-field="university_college" maxlength="200" required />
+                </label>
+                <label class="profile-field">
+                  Graduation year
+                  <input type="number" data-profile-field="graduation_year" min="1900" max="2100" step="1" required />
+                </label>
+                <label class="profile-field profile-field-full">
+                  Institution
+                  <input type="text" data-profile-field="institution_name" maxlength="200" />
+                </label>
+                <label class="profile-field">
+                  Institution type
+                  <input type="text" data-profile-field="institution_type" maxlength="120" />
+                </label>
+                <label class="profile-field">
+                  Employment status
+                  <input type="text" data-profile-field="employment_status" maxlength="120" />
+                </label>
+                <label class="profile-field">
+                  Years of experience
+                  <input type="number" data-profile-field="years_experience" min="0" max="80" step="1" />
+                </label>
+                <label class="profile-field profile-field-full">
+                  Languages
+                  <textarea data-profile-field="languages" maxlength="1000"></textarea>
+                </label>
+                <label class="profile-field profile-field-full">
+                  Address
+                  <textarea data-profile-field="address" maxlength="1000" required></textarea>
+                </label>
+                <label class="profile-field profile-field-full">
+                  Bio
+                  <textarea data-profile-field="bio" maxlength="2000"></textarea>
+                </label>
+              </div>
+              <div class="btn-save-container">
+                <button class="btn-save" id="saveProfileButton" type="submit">Save Profile</button>
+                <button class="account-action-button" id="cancelProfileButton" type="button">
+                  Cancel
+                </button>
+                <p class="account-status" id="profileStatus" role="status" aria-live="polite"></p>
+              </div>
+            </form>
+
+            <div class="account-action-row">
+              <div>
+                <strong>Change email</strong>
+                <p class="account-current-email" id="settingsEmailStatus">Current email: -</p>
+              </div>
+              <button class="account-action-button" id="changeEmailButton" type="button">
+                Change Email
+              </button>
             </div>
-            <div class="storage-sub" id="storageUsage">Storage report unavailable</div>
-          </div>
+            <div class="account-action-row">
+              <div>
+                <strong>Password</strong>
+                <p class="account-current-email">Update your sign-in password securely.</p>
+              </div>
+              <button class="account-action-button" id="changePasswordButton" type="button">
+                Change Password
+              </button>
+            </div>
+            <div class="account-action-row">
+              <div>
+                <strong>Delete account</strong>
+                <p class="account-current-email">Permanently remove your teacher account.</p>
+              </div>
+              <button
+                class="account-action-button account-action-button-danger"
+                id="deleteAccountButton"
+                type="button"
+              >
+                Delete Account
+              </button>
+            </div>
+            <p class="account-status" id="accountStatus" role="status" aria-live="polite"></p>
+          </section>
 
-          <!-- Quick Links Card -->
-          <div class="card-box">
-            <div class="quick-links-title">Quick Links</div>
-            <a href="#" class="quick-link-item" data-action="change-password">
-              <div class="quick-link-left">🔒 Change Password</div>
-              <span>›</span>
-            </a>
-            <a href="#" class="quick-link-item" data-action="download-data">
-              <div class="quick-link-left">📥 Download My Data</div>
-              <span>›</span>
-            </a>
-            <a href="#" class="quick-link-item" data-action="devices">
-              <div class="quick-link-left">💻 Connected Devices</div>
-              <span>›</span>
-            </a>
-            <a href="#" class="quick-link-item" data-action="delete-account">
-              <div class="quick-link-left">🗑️ Delete Account</div>
-              <span>›</span>
-            </a>
-            <a href="#" class="quick-link-item" data-action="change-email">
-              <div class="quick-link-left">✉️ Change Email</div>
-              <span>›</span>
-            </a>
-          </div>
+          <div class="divider-line"></div>
+          <section aria-labelledby="preferencesTitle">
+            <div class="settings-section-title">
+              <h3 id="preferencesTitle">Preferences</h3>
+              <p>Choose how times are displayed throughout your account.</p>
+            </div>
 
-          <!-- Tips Card -->
-          <div class="tips-card">
-            <div class="tips-header"><span>💡</span> Tips</div>
-            <p>
-              Keep your account secure by using a strong password and enabling
-              two-factor authentication.
-            </p>
-            <a href="#" class="tips-link">Learn more →</a>
-          </div>
+            <div class="setting-item-row">
+              <div class="setting-label-group">
+                <div class="setting-icon-box">🕒</div>
+                <div class="setting-label-text">
+                  <h4>Time Format</h4>
+                  <p>Choose your preferred time format.</p>
+                </div>
+              </div>
+              <div class="setting-control">
+                <div class="radio-group-inline">
+                  <label class="radio-label">
+                    <input type="radio" name="timeFormat" data-setting="time_format" value="12h" />
+                    12-hour format – 02:30 PM
+                  </label>
+                  <label class="radio-label">
+                    <input type="radio" name="timeFormat" data-setting="time_format" value="24h" />
+                    24-hour format – 14:30
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="btn-save-container">
+              <button class="btn-save" id="saveSettingsButton" type="button">Save Changes</button>
+              <p id="settingsStatus" role="status" aria-live="polite"></p>
+            </div>
+          </section>
         </div>
+
       </div>
-    </div>
     </main>
+    <dialog class="account-dialog" id="emailChangeDialog" aria-labelledby="emailDialogTitle">
+      <form id="emailChangeForm">
+        <h2 id="emailDialogTitle">Change email</h2>
+        <p id="emailDialogCurrent" class="account-current-email">Current email: -</p>
+        <label class="profile-field" for="newEmailInput">
+          New email address
+          <input id="newEmailInput" name="email" type="email" autocomplete="email" required />
+        </label>
+        <p class="account-dialog-status" id="emailDialogStatus" role="status" aria-live="polite"></p>
+        <div class="account-dialog-actions">
+          <button class="account-action-button" id="cancelEmailButton" type="button">Cancel</button>
+          <button class="btn-save" id="submitEmailButton" type="submit">Request Email Change</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog class="account-dialog" id="passwordChangeDialog" aria-labelledby="passwordDialogTitle">
+      <form id="passwordChangeForm">
+        <h2 id="passwordDialogTitle">Change password</h2>
+        <label class="profile-field" for="newPasswordInput">
+          New password
+          <input
+            id="newPasswordInput"
+            name="password"
+            type="password"
+            autocomplete="new-password"
+            minlength="8"
+            required
+          />
+        </label>
+        <label class="profile-field" for="confirmPasswordInput" style="margin-top: 14px">
+          Confirm new password
+          <input
+            id="confirmPasswordInput"
+            name="passwordConfirmation"
+            type="password"
+            autocomplete="new-password"
+            minlength="8"
+            required
+          />
+        </label>
+        <p class="account-dialog-status" id="passwordDialogStatus" role="status" aria-live="polite"></p>
+        <div class="account-dialog-actions">
+          <button class="account-action-button" id="cancelPasswordButton" type="button">Cancel</button>
+          <button class="btn-save" id="submitPasswordButton" type="submit">Update Password</button>
+        </div>
+      </form>
+    </dialog>
     <script src="../js/subject-service.js"></script>
     <script src="../js/teacher-data.js"></script>
     <script src="../js/teacher-settings.js"></script>
     <script src="../js/layout.js"></script>
   </body>
 </html>
-

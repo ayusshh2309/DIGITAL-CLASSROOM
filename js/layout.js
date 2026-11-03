@@ -161,18 +161,34 @@
         try {
           const { client, user, profile } = await window.TeacherData.loadCurrentTeacherProfile();
           await renderIdentity(profile, user);
-          profileChannel = window.TeacherData.subscribeToTeacherProfile(user.id, (event) => {
-            if (event.eventType === "DELETE") {
-              void window.TeacherData.handleUnavailableTeacher(client);
-              return;
-            }
-            if (event.new) renderIdentity(event.new, user);
-          });
+          try {
+            profileChannel = window.TeacherData.subscribeToTeacherProfile(
+              profile.id,
+              (event) => {
+                if (event.eventType === "DELETE") {
+                  void window.TeacherData.handleUnavailableTeacher(client);
+                  return;
+                }
+                if (event.new) renderIdentity(event.new, user);
+              },
+              (status, error) => {
+                if (status !== "SUBSCRIBED") {
+                  console.warn("Shared layout profile Realtime is unavailable.", {
+                    status,
+                    code: error?.code || error?.status || "UNKNOWN",
+                    message: error?.message || "No additional error details.",
+                  });
+                }
+              },
+            );
+          } catch (error) {
+            console.warn("Shared layout profile Realtime could not be started.", error);
+          }
           stopAuthWatch = window.TeacherData.watchAuthState(() => {
             window.location.assign("../teacher_registration/login.html");
           });
           window.addEventListener("beforeunload", () => {
-            if (profileChannel) client.removeChannel(profileChannel);
+            profileChannel?.unsubscribe();
             stopAuthWatch?.();
           });
         } catch (error) {

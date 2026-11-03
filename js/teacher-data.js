@@ -34,21 +34,9 @@
     return isConfigured() ? window.SmartLearningSupabase.getClient() : null;
   }
 
-  const DEFAULT_SETTINGS = {
-    language: "English",
-    timezone: "Asia/Kolkata",
-    date_format: "DD MMM YYYY",
-    time_format: "12h",
-    week_start_day: "Monday",
-    auto_save: true,
-    email_notifications: true,
-    sound_notifications: true,
-    compact_view: false,
-    show_tips: true,
-  };
-
   const PROFILE_FIELDS = new Set([
     "full_name",
+    "country_code",
     "phone_number",
     "date_of_birth",
     "gender",
@@ -59,6 +47,10 @@
     "profile_photo_url",
     "bio",
     "highest_qualification",
+    "degree_course",
+    "specialization",
+    "university_college",
+    "graduation_year",
     "languages",
     "employment_status",
     "institution_name",
@@ -67,9 +59,17 @@
     "teaching_mode",
   ]);
 
+  function logSupabaseFailure(operation, error) {
+    console.error(`[TeacherData] ${operation} failed.`, {
+      code: error?.code || error?.status || "UNKNOWN",
+      message: error?.message || "Unknown error",
+    });
+  }
+
   async function getAuthenticatedUser(client) {
     const { data, error } = await client.auth.getUser();
     if (error) {
+      logSupabaseFailure("Authentication lookup", error);
       if (error.name === "AuthSessionMissingError" || error.code === "session_not_found") {
         throw Object.assign(new Error("Your session has expired. Please sign in again."), {
           code: "AUTH_REQUIRED",
@@ -137,7 +137,10 @@
       .select("*")
       .eq("user_id", user.id)
       .maybeSingle();
-    if (error) throw error;
+    if (error) {
+      logSupabaseFailure("Authenticated teacher profile lookup", error);
+      throw error;
+    }
     if (!data) {
       await handleUnavailableTeacher(client);
       return null;
@@ -197,13 +200,17 @@
   }
 
   async function updateCurrentTeacherProfile(changes) {
-    const { client, user } = await loadCurrentTeacherProfile();
+    const { client, user, profile } = await loadCurrentTeacherProfile();
     const updates = Object.fromEntries(
       Object.entries(changes).filter(([key]) => PROFILE_FIELDS.has(key)),
     );
+    if (!profile?.id || !Object.keys(updates).length) {
+      throw new Error("No valid teacher profile changes were provided.");
+    }
     const { data, error } = await client
       .from("teachers")
       .update(updates)
+      .eq("id", profile.id)
       .eq("user_id", user.id)
       .select("*")
       .single();
@@ -219,37 +226,63 @@
       throw new Error("The teacher profile is unavailable.");
     }
 
+    return loadTeacherSettingsForProfile(client, profile);
+  }
+
+  async function loadTeacherSettingsForProfile(client, profile) {
     const { data, error } = await client
       .from("teacher_settings")
       .select("*")
       .eq("teacher_id", profile.id)
       .maybeSingle();
-    if (error) throw error;
+    if (error) {
+      logSupabaseFailure("Teacher settings SELECT", error);
+      throw error;
+    }
     if (data) return data;
 
     const { data: created, error: createError } = await client
       .from("teacher_settings")
-      .upsert(
-        { teacher_id: profile.id, ...DEFAULT_SETTINGS },
-        { onConflict: "teacher_id" },
-      )
+      .insert({ teacher_id: profile.id, time_format: "12h" })
       .select("*")
       .single();
-    if (createError) throw createError;
-    return created;
+    if (!createError) return created;
+    if (createError.code !== "23505") {
+      logSupabaseFailure("Teacher settings initialization INSERT", createError);
+      throw createError;
+    }
+
+    const { data: existing, error: lookupError } = await client
+      .from("teacher_settings")
+      .select("*")
+      .eq("teacher_id", profile.id)
+      .maybeSingle();
+    if (lookupError) {
+      logSupabaseFailure("Teacher settings duplicate recovery SELECT", lookupError);
+      throw lookupError;
+    }
+    if (!existing) throw createError;
+    return existing;
   }
 
   async function updateCurrentTeacherSettings(changes) {
     const { client, profile } = await loadCurrentTeacherProfile();
-    const updates = Object.fromEntries(
-      Object.entries(changes).filter(([key]) => key in DEFAULT_SETTINGS),
-    );
+    if (
+      !changes ||
+      typeof changes !== "object" ||
+      Array.isArray(changes) ||
+      Object.keys(changes).length !== 1 ||
+      !Object.prototype.hasOwnProperty.call(changes, "time_format") ||
+      !["12h", "24h"].includes(changes.time_format)
+    ) {
+      throw new Error("Only a valid time_format preference can be updated.");
+    }
+
+    await loadTeacherSettingsForProfile(client, profile);
     const { data, error } = await client
       .from("teacher_settings")
-      .upsert(
-        { teacher_id: profile.id, ...updates },
-        { onConflict: "teacher_id" },
-      )
+      .update({ time_format: changes.time_format })
+      .eq("teacher_id", profile.id)
       .select("*")
       .single();
     if (error) throw error;
@@ -327,26 +360,116 @@
     return () => data.subscription.unsubscribe();
   }
 
-  function subscribeToTeacherProfile(userId, callback) {
-    return getSupabaseClient()
-      .channel(`teacher-profile-${userId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "teachers", filter: `user_id=eq.${userId}` },
-        callback,
-      )
-      .subscribe();
+  const teacherRealtimeChannels = new Map();
+
+  function notifyTeacherRealtimeStatus(listener, status, error, topic) {
+    try {
+      listener.onStatus?.(status, error);
+    } catch (statusError) {
+      console.error("A teacher Realtime status callback failed.", {
+        topic,
+        message: statusError?.message || "Unknown callback error",
+      });
+    }
   }
 
-  function subscribeToTeacherSettings(teacherId, callback) {
-    return getSupabaseClient()
-      .channel(`teacher-settings-${teacherId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "teacher_settings", filter: `teacher_id=eq.${teacherId}` },
-        callback,
-      )
-      .subscribe();
+  function subscribeToTeacherRealtime(key, topic, filter, callback, onStatus) {
+    const client = getSupabaseClient();
+    if (!client) throw new Error("Supabase is not configured.");
+
+    let subscription = teacherRealtimeChannels.get(key);
+    if (!subscription) {
+      const listeners = new Set();
+      subscription = { channel: null, listeners, status: null, error: null };
+      const channel = client
+        .channel(topic)
+        .on(
+          "postgres_changes",
+          filter,
+          (payload) => {
+            for (const listener of [...listeners]) {
+              try {
+                listener.callback(payload);
+              } catch (error) {
+                console.error("A teacher Realtime callback failed.", error);
+              }
+            }
+          },
+        )
+        .subscribe((status, error) => {
+          subscription.status = status;
+          subscription.error = error || null;
+          if (status !== "SUBSCRIBED") {
+            console.warn("Teacher Realtime subscription status.", {
+              topic,
+              status,
+              code: error?.code || error?.status || "UNKNOWN",
+              message: error?.message || "No additional error details.",
+            });
+          }
+          for (const listener of [...listeners]) {
+            notifyTeacherRealtimeStatus(listener, status, error, topic);
+          }
+        });
+      subscription.channel = channel;
+      teacherRealtimeChannels.set(key, subscription);
+    }
+
+    const listener = { callback, onStatus };
+    subscription.listeners.add(listener);
+    if (subscription.status) {
+      notifyTeacherRealtimeStatus(
+        listener,
+        subscription.status,
+        subscription.error,
+        topic,
+      );
+    }
+    let active = true;
+    return {
+      unsubscribe() {
+        if (!active) return;
+        active = false;
+        subscription.listeners.delete(listener);
+        if (subscription.listeners.size) return;
+        if (teacherRealtimeChannels.get(key) === subscription) {
+          teacherRealtimeChannels.delete(key);
+        }
+        void client.removeChannel(subscription.channel).catch((error) => {
+          console.error("Unable to remove a teacher Realtime channel.", error);
+        });
+      },
+    };
+  }
+
+  function subscribeToTeacherProfile(teacherId, callback, onStatus) {
+    return subscribeToTeacherRealtime(
+      `teacher-profile-${teacherId}`,
+      `teacher-profile-${teacherId}`,
+      {
+        event: "*",
+        schema: "public",
+        table: "teachers",
+        filter: `id=eq.${teacherId}`,
+      },
+      callback,
+      onStatus,
+    );
+  }
+
+  function subscribeToTeacherSettings(teacherId, callback, onStatus) {
+    return subscribeToTeacherRealtime(
+      `teacher-settings-${teacherId}`,
+      `teacher-settings-${teacherId}`,
+      {
+        event: "*",
+        schema: "public",
+        table: "teacher_settings",
+        filter: `teacher_id=eq.${teacherId}`,
+      },
+      callback,
+      onStatus,
+    );
   }
 
   function getRegistrationAssignments(professional) {

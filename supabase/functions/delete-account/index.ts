@@ -56,9 +56,19 @@ Deno.serve(async (request) => {
   }
 
   const photoPath = teacher?.profile_photo_url;
-  if (photoPath && !photoPath.startsWith("http")) {
-    await adminClient.storage.from("teacher-profile-images").remove([photoPath]);
+  let profilePhotoCleanupFailed = false;
+  if (typeof photoPath === "string" && photoPath.startsWith(`${user.id}/`)) {
+    const { error: photoRemovalError } = await adminClient.storage
+      .from("teacher-profile-images")
+      .remove([photoPath]);
+    if (photoRemovalError) {
+      console.error("Unable to remove the deleted teacher's profile photo.", photoRemovalError);
+      profilePhotoCleanupFailed = true;
+    }
   }
 
-  return Response.json({ deleted: true }, { status: 200, headers: corsHeaders });
+  return Response.json(
+    { deleted: true, profilePhotoCleanupFailed },
+    { status: 200, headers: corsHeaders },
+  );
 });

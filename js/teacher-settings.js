@@ -1,7 +1,99 @@
 (() => {
   const statusElement = document.getElementById("settingsStatus");
   const saveButton = document.getElementById("saveSettingsButton");
-  if (!statusElement || !saveButton) return;
+  const profileForm = document.getElementById("profileForm");
+  const profileSaveButton = document.getElementById("saveProfileButton");
+  const profileCancelButton = document.getElementById("cancelProfileButton");
+  const profileEditButton = document.getElementById("editProfileButton");
+  const profileSummaryActions = document.getElementById("profileSummaryActions");
+  const profilePhotoInput = document.getElementById("profilePhotoInput");
+  const changeEmailButton = document.getElementById("changeEmailButton");
+  const changePasswordButton = document.getElementById("changePasswordButton");
+  const deleteAccountButton = document.getElementById("deleteAccountButton");
+  const accountStatus = document.getElementById("accountStatus");
+  const emailDialog = document.getElementById("emailChangeDialog");
+  const emailForm = document.getElementById("emailChangeForm");
+  const emailInput = document.getElementById("newEmailInput");
+  const emailStatus = document.getElementById("emailDialogStatus");
+  const emailCurrent = document.getElementById("emailDialogCurrent");
+  const emailSubmitButton = document.getElementById("submitEmailButton");
+  const emailCancelButton = document.getElementById("cancelEmailButton");
+  const passwordDialog = document.getElementById("passwordChangeDialog");
+  const passwordForm = document.getElementById("passwordChangeForm");
+  const passwordInput = document.getElementById("newPasswordInput");
+  const passwordConfirmationInput = document.getElementById("confirmPasswordInput");
+  const passwordStatus = document.getElementById("passwordDialogStatus");
+  const passwordSubmitButton = document.getElementById("submitPasswordButton");
+  const passwordCancelButton = document.getElementById("cancelPasswordButton");
+  if (
+    !statusElement || !saveButton || !profileForm || !profileSaveButton ||
+    !profileCancelButton || !profileEditButton || !changeEmailButton ||
+    !changePasswordButton || !deleteAccountButton || !accountStatus ||
+    !emailDialog || !emailForm || !emailInput || !emailStatus || !emailCurrent ||
+    !emailSubmitButton || !emailCancelButton || !passwordDialog || !passwordForm ||
+    !passwordInput || !passwordConfirmationInput || !passwordStatus ||
+    !passwordSubmitButton || !passwordCancelButton
+  ) {
+    console.error("[TeacherSettings] Cannot initialize; required page elements are missing.", {
+      missing: [
+        ["settingsStatus", statusElement],
+        ["saveSettingsButton", saveButton],
+        ["profileForm", profileForm],
+        ["saveProfileButton", profileSaveButton],
+        ["cancelProfileButton", profileCancelButton],
+        ["editProfileButton", profileEditButton],
+        ["changeEmailButton", changeEmailButton],
+        ["changePasswordButton", changePasswordButton],
+        ["deleteAccountButton", deleteAccountButton],
+        ["accountStatus", accountStatus],
+        ["emailChangeDialog", emailDialog],
+        ["emailChangeForm", emailForm],
+        ["newEmailInput", emailInput],
+        ["emailDialogStatus", emailStatus],
+        ["emailDialogCurrent", emailCurrent],
+        ["submitEmailButton", emailSubmitButton],
+        ["cancelEmailButton", emailCancelButton],
+        ["passwordChangeDialog", passwordDialog],
+        ["passwordChangeForm", passwordForm],
+        ["newPasswordInput", passwordInput],
+        ["confirmPasswordInput", passwordConfirmationInput],
+        ["passwordDialogStatus", passwordStatus],
+        ["submitPasswordButton", passwordSubmitButton],
+        ["cancelPasswordButton", passwordCancelButton],
+      ].filter(([, element]) => !element).map(([id]) => id),
+    });
+    return;
+  }
+
+  const accountActionButtons = [
+    profileEditButton,
+    changeEmailButton,
+    changePasswordButton,
+    deleteAccountButton,
+  ];
+
+  const PROFILE_FIELDS = [
+    "full_name",
+    "phone_number",
+    "country_code",
+    "date_of_birth",
+    "gender",
+    "country",
+    "state",
+    "city",
+    "highest_qualification",
+    "degree_course",
+    "specialization",
+    "university_college",
+    "graduation_year",
+    "institution_name",
+    "institution_type",
+    "employment_status",
+    "years_experience",
+    "languages",
+    "address",
+    "bio",
+  ];
 
   let client = null;
   let user = null;
@@ -10,12 +102,66 @@
   let settingsChannel = null;
   let profileChannel = null;
   let stopAuthWatch = null;
-  let dirty = false;
-  let saveTimer = null;
-  let saving = false;
+  let authSubscription = null;
+  let settingsDirty = false;
+  let savingSettings = false;
+  let savingProfile = false;
+  let profileDirty = false;
+  let previewUrl = null;
+  let changingEmail = false;
+  let changingPassword = false;
+  let deletingAccount = false;
+  saveButton.disabled = true;
+  profileSaveButton.disabled = true;
+  accountActionButtons.forEach((button) => {
+    if (button) button.disabled = true;
+  });
 
   const setStatus = (message) => {
     statusElement.textContent = message;
+  };
+
+  const setAccountStatus = (message) => {
+    accountStatus.textContent = message;
+  };
+
+  const setProfileStatus = (message) => {
+    const element = document.getElementById("profileStatus");
+    if (element) element.textContent = message;
+  };
+
+  const realtimeWarnings = new Set();
+  const updateRealtimeWarning = (key, label, status, error) => {
+    if (status === "SUBSCRIBED") {
+      realtimeWarnings.delete(key);
+    } else {
+      const details = errorMessage(error, status || "Unknown Realtime error");
+      realtimeWarnings.add(`${label} live updates are unavailable (${details}).`);
+    }
+    if (realtimeWarnings.size) {
+      setAccountStatus(`Warning: ${[...realtimeWarnings].join(" ")}`);
+    } else if (accountStatus.textContent.startsWith("Warning:")) {
+      setAccountStatus("");
+    }
+  };
+
+  const errorMessage = (error, fallback) => {
+    if (error instanceof Error && error.message) return error.message;
+    if (error && typeof error.message === "string" && error.message) return error.message;
+    return fallback;
+  };
+
+  const logSupabaseError = (stage, error) => {
+    console.error(`[TeacherSettings] ${stage} failed.`, {
+      code: error?.code || error?.status || "UNKNOWN",
+      message: errorMessage(error, "Unknown error"),
+    });
+  };
+
+  const enableAccountActions = (enabled) => {
+    accountActionButtons.forEach((button) => {
+      if (button) button.disabled = !enabled;
+    });
   };
 
   const setValue = (id, value) => {
@@ -23,22 +169,84 @@
     if (element) element.textContent = value || "-";
   };
 
+  function readSettings() {
+    return {
+      time_format:
+        document.querySelector('[data-setting="time_format"]:checked')?.value || "",
+    };
+  }
+
   function renderSettings() {
-    document.querySelectorAll("[data-setting]").forEach((control) => {
-      const key = control.dataset.setting;
-      if (control.type === "checkbox") {
-        control.checked = Boolean(settings[key]);
-      } else if (control.type === "radio") {
-        control.checked = control.value === settings[key];
-      } else {
-        control.value = settings[key] ?? "";
-      }
+    document.querySelectorAll('[data-setting="time_format"]').forEach((control) => {
+      control.checked = control.value === settings.time_format;
+      control.disabled = false;
     });
+    settingsDirty = false;
+    updateSettingsSaveButton();
+  }
+
+  function updateSettingsSaveButton() {
+    saveButton.disabled = savingSettings || !settingsDirty;
+  }
+
+  function readProfileValues() {
+    return Object.fromEntries(
+      PROFILE_FIELDS.map((field) => {
+        const input = document.querySelector(`[data-profile-field="${field}"]`);
+        if (!input) return [field, null];
+        if (field === "languages") {
+          return [field, input.value.split(",").map((language) => language.trim()).filter(Boolean)];
+        }
+        if (input.type === "number") {
+          return [field, input.value === "" ? null : input.valueAsNumber];
+        }
+        const value = input.value.trim();
+        return [field, value || null];
+      }),
+    );
+  }
+
+  function currentProfileValue(field) {
+    const value = profile?.[field];
+    if (field === "languages") return Array.isArray(value) ? value : [];
+    if (field === "date_of_birth" && value) return String(value).slice(0, 10);
+    if (field === "years_experience" || field === "graduation_year") {
+      return value === null || value === undefined || value === ""
+        ? null
+        : Number(value);
+    }
+    return value ?? null;
+  }
+
+  function profileValueMatches(field, left, right) {
+    if (field === "languages") return JSON.stringify(left) === JSON.stringify(right);
+    return left === right;
+  }
+
+  function updateEmploymentRequirements() {
+    const employmentStatus = document.querySelector(
+      '[data-profile-field="employment_status"]',
+    )?.value.trim().toLowerCase();
+    const teaching = employmentStatus === "teaching";
+    ["institution_name", "institution_type", "years_experience"].forEach((field) => {
+      const input = document.querySelector(`[data-profile-field="${field}"]`);
+      if (input) input.required = teaching;
+    });
+  }
+
+  function hasUnsavedProfileChanges() {
+    const values = readProfileValues();
+    const hasFieldChanges = PROFILE_FIELDS.some(
+      (field) => !profileValueMatches(field, values[field], currentProfileValue(field)),
+    );
+    return hasFieldChanges || Boolean(profilePhotoInput?.files?.length);
   }
 
   async function renderAccount() {
     setValue("settingsTeacherName", profile.full_name);
     setValue("settingsTeacherEmail", user.email);
+    setValue("settingsEmailStatus", `Current email: ${user.email || "-"}`);
+    emailCurrent.textContent = `Current email: ${user.email || "-"}`;
     setValue("settingsTeacherPhone", profile.phone_number);
     setValue(
       "settingsTeacherRole",
@@ -46,67 +254,94 @@
         ? "Teacher · Subject Specialist"
         : "Teacher · Educator",
     );
+
+    PROFILE_FIELDS.forEach((field) => {
+      const input = document.querySelector(`[data-profile-field="${field}"]`);
+      if (!input) return;
+      const value = profile[field];
+      if (field === "date_of_birth" && value) {
+        input.value = String(value).slice(0, 10);
+      } else if (field === "languages") {
+        input.value = Array.isArray(value) ? value.join(", ") : "";
+      } else {
+        input.value = value ?? "";
+      }
+    });
+    updateEmploymentRequirements();
+
     const avatar = document.getElementById("settingsAvatar");
+    if (!avatar) return;
     if (!profile.profile_photo_url) {
+      avatar.removeAttribute("src");
       avatar.hidden = true;
       return;
     }
     try {
       avatar.src = await TeacherData.getTeacherProfilePhotoUrl(profile.profile_photo_url);
+      avatar.alt = profile.full_name
+        ? `${profile.full_name}'s profile photo`
+        : "Teacher profile photo";
       avatar.hidden = false;
-    } catch {
+      return false;
+    } catch (error) {
+      console.error("Unable to load the teacher profile photo.", error);
       avatar.hidden = true;
+      setAccountStatus(
+        `Profile loaded, but the saved photo could not be displayed: ${errorMessage(error, "Please try again later.")}`,
+      );
+      return true;
     }
   }
 
-  function readSettings() {
-    const values = {};
-    document.querySelectorAll("[data-setting]").forEach((control) => {
-      const key = control.dataset.setting;
-      if (control.type === "checkbox") values[key] = control.checked;
-      if (control.type === "radio" && control.checked) values[key] = control.value;
-      if (control.tagName === "SELECT") values[key] = control.value;
-    });
-    return values;
+  function setProfileEditorOpen(isOpen) {
+    profileForm.hidden = !isOpen;
+    profileSummaryActions.hidden = isOpen;
+    profileEditButton.setAttribute("aria-expanded", String(isOpen));
+    if (isOpen) {
+      profileDirty = false;
+      setProfileStatus("");
+    }
   }
 
-  function validateSettings(values) {
-    if (!values.language || !values.timezone || !values.date_format) {
-      setStatus("Choose a language, time zone, and date format.");
-      return false;
+  function discardProfileChanges() {
+    if (profilePhotoInput) profilePhotoInput.value = "";
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      previewUrl = null;
     }
-    try {
-      new Intl.DateTimeFormat("en", { timeZone: values.timezone });
-    } catch {
-      setStatus("Choose a valid time zone.");
-      return false;
-    }
-    if (!["12h", "24h"].includes(values.time_format)) {
-      setStatus("Choose a valid time format.");
-      return false;
-    }
-    if (!["Monday", "Sunday"].includes(values.week_start_day)) {
-      setStatus("Choose Monday or Sunday as the week start.");
-      return false;
-    }
-    return true;
+    profileDirty = false;
+    void renderAccount();
+    setProfileStatus("");
+    setProfileEditorOpen(false);
   }
 
   async function saveSettings() {
-    if (saving) return;
+    if (savingSettings) return;
+    if (!settingsDirty) {
+      setStatus("No changes to save.");
+      return;
+    }
     if (!navigator.onLine) {
       setStatus("You are offline. Settings were not saved.");
       return;
     }
-    const values = readSettings();
-    if (!validateSettings(values)) return;
 
-    saving = true;
-    saveButton.disabled = true;
+    const values = readSettings();
+    if (!["12h", "24h"].includes(values.time_format)) {
+      setStatus("Choose a valid time format.");
+      return;
+    }
+
+    savingSettings = true;
+    updateSettingsSaveButton();
+    document.querySelectorAll('[data-setting="time_format"]').forEach((control) => {
+      control.disabled = true;
+    });
     setStatus("Saving...");
     try {
       settings = await TeacherData.updateCurrentTeacherSettings(values);
-      dirty = false;
+      settingsDirty = false;
+      renderSettings();
       setStatus("Settings saved successfully.");
     } catch (error) {
       console.error("Unable to save teacher settings.", error);
@@ -114,167 +349,435 @@
         ? "Unable to save settings. Please try again."
         : "You are offline. Settings were not saved.");
     } finally {
-      saving = false;
-      saveButton.disabled = false;
+      savingSettings = false;
+      document.querySelectorAll('[data-setting="time_format"]').forEach((control) => {
+        control.disabled = false;
+      });
+      updateSettingsSaveButton();
+    }
+  }
+
+  async function saveProfile(event) {
+    event.preventDefault();
+    if (savingProfile) return;
+    console.info("[TeacherSettings] Profile save requested.");
+    if (!navigator.onLine) {
+      setProfileStatus("You are offline. Profile changes were not saved.");
+      return;
+    }
+    if (!profileForm.reportValidity()) return;
+
+    const values = readProfileValues();
+    if (["years_experience", "graduation_year"].some(
+      (field) => values[field] !== null && !Number.isInteger(values[field]),
+    )) {
+      setProfileStatus("Experience and graduation year must be whole numbers.");
+      return;
+    }
+    const changes = Object.fromEntries(
+      PROFILE_FIELDS
+        .filter((field) => !profileValueMatches(
+          field,
+          values[field],
+          currentProfileValue(field),
+        ))
+        .map((field) => [field, values[field]]),
+    );
+    const selectedPhoto = profilePhotoInput?.files?.[0] || null;
+    if (!selectedPhoto && !Object.keys(changes).length) {
+      profileDirty = false;
+      setProfileStatus("No profile changes to save.");
+      return;
+    }
+
+    savingProfile = true;
+    profileSaveButton.disabled = true;
+    profileCancelButton.disabled = true;
+    setProfileStatus("Saving profile...");
+    let uploadedPhotoPath = null;
+    let profileSaved = false;
+    const warnings = [];
+    const previousPhotoPath = profile.profile_photo_url;
+    try {
+      if (selectedPhoto) {
+        uploadedPhotoPath = await TeacherData.uploadTeacherProfilePhoto(selectedPhoto);
+        changes.profile_photo_url = uploadedPhotoPath;
+      }
+
+      profile = await TeacherData.updateCurrentTeacherProfile(changes);
+      profileSaved = true;
+      try {
+        const loaded = await TeacherData.loadCurrentTeacherProfile();
+        profile = loaded.profile;
+        user = loaded.user;
+      } catch (error) {
+        console.error("Profile saved, but refreshing the teacher profile failed.", error);
+        warnings.push(
+          `the latest details could not be refreshed (${errorMessage(error, "Please reload the page.")})`,
+        );
+      }
+      profileDirty = false;
+      if (profilePhotoInput) profilePhotoInput.value = "";
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        previewUrl = null;
+      }
+      const photoUnavailable = await renderAccount();
+      if (photoUnavailable) warnings.push("the saved photo could not be displayed");
+      setProfileEditorOpen(false);
+
+      if (previousPhotoPath && previousPhotoPath !== profile.profile_photo_url) {
+        try {
+          await TeacherData.deleteTeacherProfilePhoto(previousPhotoPath);
+        } catch (error) {
+          console.error("Unable to remove the previous teacher profile photo.", error);
+          warnings.push(
+            `the previous photo could not be removed (${errorMessage(error, "Storage cleanup failed.")})`,
+          );
+        }
+      }
+      setAccountStatus(
+        warnings.length
+          ? `Profile saved, but ${warnings.join("; and ")}.`
+          : "Profile saved successfully.",
+      );
+    } catch (error) {
+      logSupabaseError("Profile save", error);
+      if (uploadedPhotoPath && !profileSaved) {
+        try {
+          await TeacherData.deleteTeacherProfilePhoto(uploadedPhotoPath);
+        } catch (cleanupError) {
+          console.error("Unable to remove an unlinked profile photo.", cleanupError);
+        }
+      }
+      setProfileStatus(navigator.onLine
+        ? `Unable to save your profile: ${errorMessage(error, "Please try again.")}`
+        : "You are offline. Profile changes were not saved.");
+    } finally {
+      savingProfile = false;
+      profileSaveButton.disabled = false;
+      profileCancelButton.disabled = false;
     }
   }
 
   async function changeEmail() {
-    const email = window.prompt("Enter your new login email:");
-    if (!email) return;
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setStatus("Enter a valid email address.");
+    if (changingEmail) return;
+    console.info("[TeacherSettings] Email update requested.");
+    if (!navigator.onLine) {
+      emailStatus.textContent = "You are offline. The email change was not requested.";
       return;
     }
+    const normalizedEmail = emailInput.value.trim();
+    if (!emailInput.reportValidity()) return;
+    if (normalizedEmail.toLowerCase() === String(user.email || "").toLowerCase()) {
+      emailStatus.textContent = "Enter an email address different from your current email.";
+      emailInput.focus();
+      return;
+    }
+    changingEmail = true;
+    emailSubmitButton.disabled = true;
+    emailStatus.textContent = "Requesting email change...";
     try {
-      await TeacherData.updateAuthEmail(email.trim());
-      setStatus("Check your inbox to confirm the email change.");
+      await TeacherData.updateAuthEmail(normalizedEmail);
+      emailStatus.textContent =
+        "Email change requested. Check your inbox and follow Supabase's confirmation steps. Your displayed email will update after confirmation.";
     } catch (error) {
-      console.error("Unable to request email change.", error);
-      setStatus("Unable to request the email change. Please try again.");
+      logSupabaseError("Email update", error);
+      emailStatus.textContent = `Unable to request the email change: ${errorMessage(error, "Please try again.")}`;
+    } finally {
+      changingEmail = false;
+      emailSubmitButton.disabled = false;
     }
   }
 
   async function changePassword() {
-    const password = window.prompt("Enter a new password (at least 8 characters):");
-    if (!password) return;
-    if (password.length < 8) {
-      setStatus("Use a password with at least 8 characters.");
+    if (changingPassword) return;
+    console.info("[TeacherSettings] Password update requested.");
+    if (!navigator.onLine) {
+      passwordStatus.textContent = "You are offline. The password was not changed.";
       return;
     }
-    const confirmation = window.prompt("Confirm your new password:");
-    if (password !== confirmation) {
-      setStatus("The passwords do not match.");
+    if (!passwordForm.reportValidity()) return;
+    if (passwordInput.value !== passwordConfirmationInput.value) {
+      passwordStatus.textContent = "The passwords do not match.";
+      passwordConfirmationInput.focus();
       return;
     }
+    changingPassword = true;
+    passwordSubmitButton.disabled = true;
+    passwordStatus.textContent = "Updating password...";
     try {
-      await TeacherData.updateAuthPassword(password);
-      setStatus("Password updated successfully.");
+      await TeacherData.updateAuthPassword(passwordInput.value);
+      passwordInput.value = "";
+      passwordConfirmationInput.value = "";
+      passwordStatus.textContent = "Password updated successfully.";
     } catch (error) {
-      console.error("Unable to update password.", error);
-      setStatus("Unable to update your password. Please try again.");
-    }
-  }
-
-  async function downloadTeacherData() {
-    try {
-      const current = await TeacherData.loadCurrentTeacherProfile();
-      const currentSettings = await TeacherData.loadCurrentTeacherSettings();
-      const exportData = {
-        profile: current.profile,
-        settings: currentSettings,
-        exported_at: new Date().toISOString(),
-      };
-      const url = URL.createObjectURL(new Blob([JSON.stringify(exportData, null, 2)], {
-        type: "application/json",
-      }));
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "smart-learning-teacher-data.json";
-      link.click();
-      URL.revokeObjectURL(url);
-      setStatus("Your profile and settings export has been downloaded.");
-    } catch (error) {
-      console.error("Unable to export teacher data.", error);
-      setStatus("Unable to export your data. Please try again.");
+      logSupabaseError("Password update", error);
+      passwordStatus.textContent = `Unable to update your password: ${errorMessage(error, "Please try again.")}`;
+    } finally {
+      changingPassword = false;
+      passwordSubmitButton.disabled = false;
     }
   }
 
   async function deleteAccount() {
+    if (deletingAccount) return;
+    if (!navigator.onLine) {
+      setAccountStatus("You are offline. Account deletion was not requested.");
+      return;
+    }
     if (!window.confirm("Delete your account and associated profile? This action is permanent.")) return;
     const confirmation = window.prompt('Type DELETE MY ACCOUNT to confirm:');
     if (confirmation !== "DELETE MY ACCOUNT") {
-      setStatus("Account deletion was cancelled.");
+      setAccountStatus("Account deletion was cancelled.");
       return;
     }
+
+    deletingAccount = true;
+    deleteAccountButton.disabled = true;
+    setAccountStatus("Deleting account...");
+    let deletionSucceeded = false;
     try {
-      const { error } = await client.functions.invoke("delete-account", {
+      const { data, error } = await client.functions.invoke("delete-account", {
         body: { confirmation },
       });
       if (error) throw error;
-      await client.auth.signOut();
+      if (data?.deleted !== true) {
+        throw new Error("The account deletion function did not confirm deletion.");
+      }
+      deletionSucceeded = true;
+      if (data.profilePhotoCleanupFailed) {
+        console.error("The account was deleted, but profile photo cleanup failed.");
+      }
+
+      const { error: signOutError } = await client.auth.signOut();
+      if (signOutError) throw signOutError;
       window.location.assign("../teacher_registration/login.html");
     } catch (error) {
-      console.error("Unable to delete teacher account.", error);
-      setStatus("Account deletion is unavailable until the secure delete-account function is deployed.");
+      console.error("Unable to delete or sign out of the teacher account.", error);
+      setAccountStatus(deletionSucceeded
+        ? `Your account was deleted, but sign-out failed: ${errorMessage(error, "close this page and sign in again if needed.")}`
+        : `Account deletion failed. Your account was not deleted: ${errorMessage(error, "please try again later.")}`);
+      if (!deletionSucceeded) {
+        deletingAccount = false;
+        deleteAccountButton.disabled = false;
+      }
     }
   }
 
-  document.querySelectorAll("[data-setting]").forEach((control) => {
+  document.querySelectorAll('[data-setting="time_format"]').forEach((control) => {
     control.addEventListener("change", () => {
-      dirty = true;
-      const values = readSettings();
-      if (control.dataset.setting === "auto_save" || values.auto_save) {
-        clearTimeout(saveTimer);
-        saveTimer = setTimeout(saveSettings, 500);
-      } else {
-        setStatus("Unsaved changes.");
-      }
+      settingsDirty = readSettings().time_format !== settings?.time_format;
+      updateSettingsSaveButton();
+      setStatus(settingsDirty ? "Unsaved changes." : "");
     });
   });
 
-  saveButton.addEventListener("click", saveSettings);
-  document.querySelectorAll("[data-action]").forEach((link) => {
-    link.addEventListener("click", (event) => {
-      event.preventDefault();
-      switch (link.dataset.action) {
-        case "change-email": changeEmail(); break;
-        case "change-password": changePassword(); break;
-        case "download-data": downloadTeacherData(); break;
-        case "devices": setStatus("Connected-device inventory is not available in this application."); break;
-        case "delete-account": deleteAccount(); break;
+  document.querySelectorAll("[data-profile-field]").forEach((control) => {
+    control.addEventListener("input", () => {
+      if (control.dataset.profileField === "employment_status") {
+        updateEmploymentRequirements();
       }
+      profileDirty = hasUnsavedProfileChanges();
+      setProfileStatus(profileDirty ? "Unsaved profile changes." : "");
     });
+  });
+  updateEmploymentRequirements();
+
+  profilePhotoInput?.addEventListener("change", () => {
+    const file = profilePhotoInput.files?.[0];
+    const avatar = document.getElementById("settingsAvatar");
+    if (!file || !avatar) return;
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = URL.createObjectURL(file);
+    avatar.src = previewUrl;
+    avatar.alt = "Selected teacher profile photo preview";
+    avatar.hidden = false;
+    profileDirty = hasUnsavedProfileChanges();
+    setProfileStatus("Selected photo will be uploaded when you save your profile.");
+  });
+
+  profileEditButton.addEventListener("click", () => {
+    console.info("[TeacherSettings] Edit Profile clicked.");
+    void renderAccount();
+    setProfileEditorOpen(true);
+    profileForm.querySelector('[data-profile-field="full_name"]')?.focus();
+  });
+  profileCancelButton.addEventListener("click", discardProfileChanges);
+  profileForm.addEventListener("submit", saveProfile);
+  saveButton.addEventListener("click", saveSettings);
+  changeEmailButton.addEventListener("click", () => {
+    console.info("[TeacherSettings] Change Email clicked.");
+    emailCurrent.textContent = `Current email: ${user?.email || "-"}`;
+    emailInput.value = "";
+    emailStatus.textContent = "";
+    emailDialog.showModal();
+    emailInput.focus();
+  });
+  emailForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    void changeEmail();
+  });
+  emailCancelButton.addEventListener("click", () => {
+    emailForm.reset();
+    emailStatus.textContent = "";
+    emailDialog.close();
+  });
+  emailDialog.addEventListener("close", () => {
+    if (!changingEmail) emailForm.reset();
+  });
+  emailDialog.addEventListener("cancel", (event) => {
+    if (changingEmail) event.preventDefault();
+  });
+  changePasswordButton.addEventListener("click", () => {
+    console.info("[TeacherSettings] Change Password clicked.");
+    passwordForm.reset();
+    passwordStatus.textContent = "";
+    passwordDialog.showModal();
+    passwordInput.focus();
+  });
+  passwordForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    void changePassword();
+  });
+  passwordCancelButton.addEventListener("click", () => {
+    passwordForm.reset();
+    passwordStatus.textContent = "";
+    passwordDialog.close();
+  });
+  passwordDialog.addEventListener("close", () => {
+    if (!changingPassword) passwordForm.reset();
+  });
+  passwordDialog.addEventListener("cancel", (event) => {
+    if (changingPassword) event.preventDefault();
+  });
+  deleteAccountButton.addEventListener("click", () => {
+    void deleteAccount();
   });
 
   window.addEventListener("beforeunload", () => {
-    clearTimeout(saveTimer);
-    if (client && settingsChannel) client.removeChannel(settingsChannel);
-    if (client && profileChannel) client.removeChannel(profileChannel);
+    profileChannel?.unsubscribe();
+    settingsChannel?.unsubscribe();
     stopAuthWatch?.();
+    authSubscription?.unsubscribe();
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
   });
 
   async function initialize() {
+    console.info("[TeacherSettings] Initialization started.");
     setStatus("Loading settings...");
+    console.info("[TeacherSettings] Loading authenticated teacher profile.");
     const loaded = await TeacherData.loadCurrentTeacherProfile();
     client = loaded.client;
     user = loaded.user;
     profile = loaded.profile;
-    settings = await TeacherData.loadCurrentTeacherSettings();
+    console.info("[TeacherSettings] Authenticated teacher profile loaded.", {
+      teacherId: profile.id,
+      authenticatedUserId: user.id,
+    });
     await renderAccount();
-    renderSettings();
-    setStatus("");
+    profileSaveButton.disabled = false;
+    enableAccountActions(true);
 
-    profileChannel = TeacherData.subscribeToTeacherProfile(user.id, (event) => {
-      if (event.eventType === "DELETE") {
-        void TeacherData.handleUnavailableTeacher(client);
-        return;
-      }
-      if (event.new) {
-        profile = event.new;
-        renderAccount();
-      }
-    });
-    settingsChannel = TeacherData.subscribeToTeacherSettings(profile.id, (event) => {
-      if (!event.new || dirty) {
-        if (dirty) setStatus("Settings changed on another device. Save to keep your edits.");
-        return;
-      }
-      settings = event.new;
+    console.info("[TeacherSettings] Loading teacher time-format settings.");
+    let settingsLoaded = false;
+    try {
+      settings = await TeacherData.loadCurrentTeacherSettings();
+      settingsLoaded = true;
+      console.info("[TeacherSettings] Teacher settings loaded.", {
+        teacherId: profile.id,
+        timeFormat: settings.time_format,
+      });
       renderSettings();
-      setStatus("Settings updated from another session.");
-    });
+      setStatus("");
+    } catch (error) {
+      logSupabaseError("Teacher settings load", error);
+      document.querySelectorAll('[data-setting="time_format"]').forEach((control) => {
+        control.disabled = true;
+      });
+      saveButton.disabled = true;
+      setStatus(
+        `Unable to load time-format settings: ${errorMessage(error, "Please try again.")}`,
+      );
+    }
+
+    try {
+      profileChannel = TeacherData.subscribeToTeacherProfile(
+        profile.id,
+        (event) => {
+          if (event.eventType === "DELETE") {
+            void TeacherData.handleUnavailableTeacher(client);
+            return;
+          }
+          if (event.new) {
+            if (profileDirty) {
+              setAccountStatus("Your profile changed on another session. Review your edits before saving.");
+              return;
+            }
+            profile = event.new;
+            void renderAccount();
+          }
+        },
+        (status, error) => {
+          updateRealtimeWarning("profile", "Profile", status, error);
+        },
+      );
+    } catch (error) {
+      logSupabaseError("Teacher profile Realtime subscription", error);
+      updateRealtimeWarning("profile", "Profile", "CHANNEL_ERROR", error);
+    }
+    try {
+      settingsChannel = TeacherData.subscribeToTeacherSettings(
+        profile.id,
+        (event) => {
+          if (!event.new) return;
+          if (settingsDirty || savingSettings) {
+            setStatus("Settings changed on another device. Save to keep your edits.");
+            return;
+          }
+          settings = event.new;
+          renderSettings();
+          setStatus("Settings updated from another session.");
+        },
+        (status, error) => {
+          updateRealtimeWarning("settings", "Settings", status, error);
+        },
+      );
+    } catch (error) {
+      logSupabaseError("Teacher settings Realtime subscription", error);
+      updateRealtimeWarning("settings", "Settings", "CHANNEL_ERROR", error);
+    }
     stopAuthWatch = TeacherData.watchAuthState(() => {
       window.location.assign("../teacher_registration/login.html");
     });
+    const { data } = client.auth.onAuthStateChange((event, session) => {
+      if (event === "USER_UPDATED" && session?.user) {
+        user = session.user;
+        setValue("settingsTeacherEmail", user.email);
+        setValue("settingsEmailStatus", `Current email: ${user.email || "-"}`);
+        emailCurrent.textContent = `Current email: ${user.email || "-"}`;
+      }
+    });
+    authSubscription = data.subscription;
+    if (!settingsLoaded) {
+      console.warn("[TeacherSettings] Account actions are available; time-format settings are not.");
+    }
+    console.info("[TeacherSettings] Initialization complete.");
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
+  const start = () => {
     initialize().catch((error) => {
-      console.error("Unable to load teacher settings.", error);
-      setStatus("Unable to load your settings. Please sign in again or try later.");
-      const saveControl = document.getElementById("saveSettingsButton");
-      if (saveControl) saveControl.disabled = true;
+      logSupabaseError("Teacher profile initialization", error);
+      setStatus(`Unable to load your teacher profile: ${errorMessage(error, "Please sign in again or try later.")}`);
+      saveButton.disabled = true;
+      profileSaveButton.disabled = true;
+      enableAccountActions(false);
     });
-  });
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start, { once: true });
+  } else {
+    start();
+  }
 })();
