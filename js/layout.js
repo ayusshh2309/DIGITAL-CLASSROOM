@@ -32,6 +32,22 @@
     });
   }
 
+  function ensureMfaAuth() {
+    if (window.SmartLearningMFA) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "../js/mfa-auth.js";
+      script.addEventListener("load", () => {
+        if (window.SmartLearningMFA) resolve();
+        else reject(new Error("MFA authentication helper loaded without its API."));
+      }, { once: true });
+      script.addEventListener("error", () => reject(new Error("MFA authentication helper could not be loaded.")), {
+        once: true,
+      });
+      document.head.appendChild(script);
+    });
+  }
+
   function ensureTimezoneManager() {
     if (window.TimezoneManager) return Promise.resolve(window.TimezoneManager);
     return new Promise((resolve, reject) => {
@@ -89,6 +105,9 @@
         const validateAndContinue = async () => {
           try {
             await ensureSupabaseSdk();
+            await ensureMfaAuth();
+            const authorized = await window.SmartLearningMFA.requireRole("teacher");
+            if (!authorized) return;
             const teacher = await window.TeacherData.requireTeacher();
             if (!teacher) return;
             document.getElementById("teacherValidationError")?.remove();

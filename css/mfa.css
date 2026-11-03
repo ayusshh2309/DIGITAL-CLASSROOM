@@ -1,0 +1,60 @@
+.mfa-settings-card {
+  margin: 24px 0;
+  padding: clamp(20px, 3vw, 30px);
+  border: 1px solid #e4e9f2;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #fff 0%, #f8faff 100%);
+  box-shadow: 0 12px 32px rgba(27, 44, 94, .07);
+  color: #17213a;
+}
+
+.mfa-settings-heading { display: flex; align-items: center; gap: 16px; }
+.mfa-settings-icon {
+  display: grid; flex: 0 0 50px; width: 50px; height: 50px; place-items: center;
+  border-radius: 15px; background: #eeedff; color: #6254d9;
+}
+.mfa-settings-icon svg { width: 26px; height: 26px; fill: currentColor; }
+.mfa-settings-heading h3 { margin: 0 0 5px; font-size: 19px; font-weight: 750; }
+.mfa-settings-heading p, .mfa-recovery-note { margin: 0; color: #69758b; font-size: 14px; line-height: 1.6; }
+.mfa-status-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 22px 0 14px; }
+.mfa-status-pill {
+  padding: 6px 12px; border-radius: 999px; background: #f0f2f6; color: #526075;
+  font-size: 12px; font-weight: 750; letter-spacing: .04em;
+}
+.mfa-status-pill[data-enabled="true"] { background: #e7f8ef; color: #167347; }
+.mfa-device-summary { color: #7a8497; font-size: 13px; }
+.mfa-factor-list { display: grid; gap: 10px; }
+.mfa-factor-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 14px;
+  padding: 13px 15px; border: 1px solid #e8ebf2; border-radius: 13px; background: #fff;
+}
+.mfa-factor-row div { display: grid; gap: 3px; }
+.mfa-factor-row strong { font-size: 14px; }
+.mfa-factor-row span { color: #788399; font-size: 12px; }
+.mfa-primary-button, .mfa-secondary-button {
+  min-height: 42px; padding: 10px 16px; border: 0; border-radius: 11px;
+  font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.mfa-primary-button { background: linear-gradient(120deg, #6658df, #4c63d2); color: #fff; box-shadow: 0 6px 14px rgba(84, 89, 205, .2); }
+.mfa-secondary-button { border: 1px solid #dfe4ed; background: #fff; color: #46536b; }
+.mfa-primary-button:disabled, .mfa-secondary-button:disabled { opacity: .58; cursor: wait; }
+.mfa-message { min-height: 20px; margin: 12px 0; color: #647086; font-size: 13px; line-height: 1.5; }
+.mfa-message[data-kind="error"] { color: #b42335; }
+.mfa-message[data-kind="success"] { color: #167347; }
+.mfa-enrollment { margin: 20px 0; padding: 20px; border: 1px solid #e1e6f4; border-radius: 15px; background: #fff; }
+.mfa-enrollment h4 { margin: 0 0 6px; font-size: 16px; }
+.mfa-enrollment > p { max-width: 650px; margin: 0 0 14px; color: #69758b; font-size: 13px; line-height: 1.6; }
+.mfa-qr { display: block; width: 180px; height: 180px; margin: 12px auto 18px; object-fit: contain; }
+.mfa-setup-key, .mfa-code-label { display: grid; gap: 7px; color: #36435b; font-size: 13px; font-weight: 650; }
+.mfa-setup-key input, .mfa-code-input {
+  width: 100%; min-height: 43px; padding: 10px 12px; border: 1px solid #dce2ed;
+  border-radius: 10px; background: #fbfcfe; color: #202b42; font: inherit;
+}
+.mfa-code-input { max-width: 230px; margin-top: 8px; text-align: center; letter-spacing: .35em; font-size: 18px; }
+.mfa-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 13px; }
+.mfa-recovery-note { margin-top: 16px; font-size: 12px; }
+@media (max-width: 560px) {
+  .mfa-factor-row { align-items: flex-start; }
+  .mfa-factor-row .mfa-secondary-button { min-height: 38px; padding: 8px 11px; }
+  .mfa-enrollment { padding: 15px; }
+}

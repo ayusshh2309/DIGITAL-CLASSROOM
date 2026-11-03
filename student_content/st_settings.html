@@ -13,6 +13,9 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
+    <link rel="stylesheet" href="../css/mfa.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase.js"></script>
 
     <style>
       /* =========================================================
@@ -1418,6 +1421,12 @@
             </div>
           </div>
 
+          <!-- ACCOUNT SECURITY -->
+
+          <section id="security" aria-label="Account security">
+            <div id="mfaSettingsMount"></div>
+          </section>
+
           <!-- SAVE -->
 
           <div class="btn-save-container">
@@ -1626,6 +1635,8 @@
         }, 2200);
       });
     </script>
+    <script src="../js/mfa-auth.js"></script>
+    <script src="../js/mfa-settings.js"></script>
     <script src="../js/student-layout.js"></script>
   </body>
 </html>

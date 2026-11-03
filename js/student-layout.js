@@ -23,6 +23,71 @@
     return client;
   }
 
+  function ensureMfaAuth() {
+    if (window.SmartLearningMFA) return Promise.resolve();
+    return loadScript(new URL("../js/mfa-auth.js", window.location.href).href).then(() => {
+      if (!window.SmartLearningMFA) throw new Error("MFA authentication helper loaded without its API.");
+    });
+  }
+
+  if (!window.__studentPageAuthGateInstalled) {
+    window.__studentPageAuthGateInstalled = true;
+    const originalVisibility = document.documentElement.style.visibility;
+    let replayingDOMContentLoaded = false;
+    document.documentElement.style.visibility = "hidden";
+
+    document.addEventListener("DOMContentLoaded", (event) => {
+      if (replayingDOMContentLoaded) return;
+      event.stopImmediatePropagation();
+
+      const showAuthError = (error) => {
+        let panel = document.getElementById("studentAuthValidationError");
+        if (!panel) {
+          panel = document.createElement("main");
+          panel.id = "studentAuthValidationError";
+          panel.setAttribute("role", "alert");
+          panel.style.cssText = "position:fixed;inset:0;z-index:2147483647;display:grid;place-content:center;gap:14px;padding:24px;background:#f8fafc;color:#172638;font:16px/1.5 sans-serif;visibility:visible;text-align:center";
+          const heading = document.createElement("h1");
+          heading.textContent = "Unable to verify your student account";
+          const message = document.createElement("p");
+          message.id = "studentAuthValidationErrorMessage";
+          const retry = document.createElement("button");
+          retry.type = "button";
+          retry.textContent = "Retry";
+          retry.style.cssText = "justify-self:center;padding:10px 18px;border:0;border-radius:6px;background:#5362d5;color:#fff;font:inherit;font-weight:700;cursor:pointer";
+          retry.addEventListener("click", () => {
+            panel.remove();
+            void validateAndContinue();
+          });
+          panel.append(heading, message, retry);
+          document.body.append(panel);
+        }
+        panel.querySelector("#studentAuthValidationErrorMessage").textContent =
+          `${error?.message || "A database or network error occurred."} You can retry without signing out.`;
+      };
+
+      const validateAndContinue = async () => {
+        try {
+          const client = await loadStudentSupabaseClient();
+          await ensureMfaAuth();
+          const authorized = await window.SmartLearningMFA.requireRole("student", client);
+          if (!authorized) return;
+          document.getElementById("studentAuthValidationError")?.remove();
+          if (originalVisibility) document.documentElement.style.visibility = originalVisibility;
+          else document.documentElement.style.removeProperty("visibility");
+          replayingDOMContentLoaded = true;
+          document.dispatchEvent(new Event("DOMContentLoaded", { bubbles: true }));
+          replayingDOMContentLoaded = false;
+        } catch (error) {
+          console.error("Student account validation failed.", error);
+          showAuthError(error);
+        }
+      };
+
+      void validateAndContinue();
+    }, { capture: true, once: true });
+  }
+
   function loadScript(src) {
     return new Promise((resolve, reject) => {
       const existing = [...document.scripts].find((script) => script.src === src);

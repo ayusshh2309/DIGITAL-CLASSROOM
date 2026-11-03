@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#111a3a" />
+    <title>Two-Factor Authentication | Smart Learning DC</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+      :root { color-scheme: light; font-family: "DM Sans", sans-serif; color: #17213a; background: #f3f5fc; }
+      * { box-sizing: border-box; }
+      body { display: grid; min-height: 100vh; margin: 0; place-items: center; padding: 24px; background: radial-gradient(circle at top left, #e8eaff, transparent 40%), #f5f7fc; }
+      .card { width: min(100%, 465px); padding: clamp(26px, 6vw, 42px); border: 1px solid #e6e9f2; border-radius: 24px; background: #fff; box-shadow: 0 24px 70px rgba(27, 38, 84, .12); }
+      .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 30px; color: #222c54; font-weight: 800; letter-spacing: -.03em; }
+      .brand-mark { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 13px; background: linear-gradient(135deg, #7163e8, #465bd1); color: white; font-size: 19px; }
+      .icon { display: grid; width: 58px; height: 58px; margin-bottom: 20px; place-items: center; border-radius: 18px; background: #eeedff; color: #5e55d6; }
+      .icon svg { width: 28px; height: 28px; fill: currentColor; }
+      h1 { margin: 0 0 9px; font-size: clamp(25px, 6vw, 31px); letter-spacing: -.04em; }
+      .description { margin: 0 0 25px; color: #69758b; font-size: 14px; line-height: 1.65; }
+      label { display: block; margin-bottom: 8px; color: #34415b; font-size: 13px; font-weight: 700; }
+      input { width: 100%; height: 55px; padding: 0 16px; border: 1px solid #dfe4ee; border-radius: 13px; outline: none; background: #fbfcff; color: #1d2841; font: inherit; font-size: clamp(20px, 4vw, 22px); font-weight: 700; letter-spacing: .2em; text-align: center; }
+      input::placeholder { color: #a5afc5; letter-spacing: 0; }
+      input:focus { border-color: #675ddd; box-shadow: 0 0 0 4px rgba(103, 93, 221, .12); }
+      select { width: 100%; height: 44px; margin: 0 0 16px; padding: 0 12px; border: 1px solid #dfe4ee; border-radius: 11px; background: #fbfcff; color: #34415b; font: inherit; }
+      button { width: 100%; min-height: 49px; margin-top: 16px; border: 0; border-radius: 12px; background: linear-gradient(120deg, #6658df, #4c63d2); color: #fff; font: inherit; font-weight: 750; cursor: pointer; }
+      button:disabled { opacity: .62; cursor: wait; }
+      .status { min-height: 22px; margin: 14px 0 0; color: #68748a; font-size: 13px; line-height: 1.5; }
+      .status[data-kind="error"] { color: #b42335; }
+      .status[data-kind="success"] { color: #167347; }
+      .back { display: block; margin-top: 20px; color: #5963bb; font-size: 13px; text-align: center; text-decoration: none; }
+      .back:hover { text-decoration: underline; }
+      .loading { display: none; width: 15px; height: 15px; margin-right: 8px; vertical-align: -2px; border: 2px solid rgba(255,255,255,.5); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+      button[aria-busy="true"] .loading { display: inline-block; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/mfa-auth.js"></script>
+  </head>
+  <body>
+    <main class="card">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">S</span><span>Smart Learning DC</span></div>
+      <div class="icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 1a5 5 0 0 0-5 5v3H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-2V6a5 5 0 0 0-5-5Zm-3 5a3 3 0 0 1 6 0v3H9V6Zm3 7a2 2 0 0 1 1 3.73V19h-2v-2.27A2 2 0 0 1 12 13Z"/></svg>
+      </div>
+      <h1>Two-Factor Authentication</h1>
+      <p class="description">Enter the 6-digit verification code from your authenticator app.</p>
+      <form id="verifyForm">
+        <label id="authenticatorLabel" for="authenticatorChoice" hidden>Choose an authenticator</label>
+        <select id="authenticatorChoice" hidden aria-label="Choose an authenticator"></select>
+        <label for="verificationCode">Authenticator code</label>
+        <input id="verificationCode" name="code" type="tel" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" maxlength="6" aria-label="Verification code" autofocus />
+        <button id="verifyButton" type="submit"><span class="loading" aria-hidden="true"></span><span id="buttonText">Verify and continue</span></button>
+      </form>
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+      <a class="back" href="teacher_registration/login.html">Back to login</a>
+    </main>
+    <script>
+      (() => {
+        const client = window.SmartLearningMFA.getClient();
+        const form = document.getElementById("verifyForm");
+        const codeInput = document.getElementById("verificationCode");
+        const button = document.getElementById("verifyButton");
+        const buttonText = document.getElementById("buttonText");
+        const status = document.getElementById("status");
+        const authenticatorChoice = document.getElementById("authenticatorChoice");
+        const authenticatorLabel = document.getElementById("authenticatorLabel");
+        let factorId = null;
+        let busy = false;
+
+        function showStatus(text, kind = "") {
+          status.textContent = text;
+          status.dataset.kind = kind;
+        }
+
+        function setBusy(value) {
+          busy = value;
+          button.disabled = value;
+          button.setAttribute("aria-busy", String(value));
+          buttonText.textContent = value ? "Verifying…" : "Verify and continue";
+          codeInput.disabled = value;
+        }
+
+        codeInput.addEventListener("input", () => {
+          codeInput.value = codeInput.value.replace(/\D/g, "").slice(0, 6);
+          if (status.dataset.kind === "error") {
+            status.textContent = "";
+            status.dataset.kind = "";
+          }
+        });
+
+        async function initialize() {
+          try {
+            const { data: userData, error: userError } = await client.auth.getUser();
+            if (userError) throw userError;
+            if (!userData?.user) {
+              window.location.replace("teacher_registration/login.html");
+              return;
+            }
+            const { assurance, factors } = await window.SmartLearningMFA.getMfaState(client);
+            if (!factors.length) {
+              window.location.replace(await window.SmartLearningMFA.resolveDashboard(client));
+              return;
+            }
+            if (assurance?.currentLevel === "aal2") {
+              window.location.replace(await window.SmartLearningMFA.resolveDashboard(client));
+              return;
+            }
+            if (assurance?.nextLevel !== "aal2") {
+              throw new Error("This sign-in session cannot complete two-factor verification. Sign in again.");
+            }
+            factors.forEach((factor, index) => {
+              const option = document.createElement("option");
+              option.value = factor.id;
+              option.textContent = factor.friendly_name || `Authenticator ${index + 1}`;
+              authenticatorChoice.append(option);
+            });
+            factorId = factors[0].id;
+            if (factors.length > 1) {
+              authenticatorChoice.hidden = false;
+              authenticatorLabel.hidden = false;
+              authenticatorChoice.addEventListener("change", () => {
+                factorId = authenticatorChoice.value;
+              });
+            }
+            codeInput.focus();
+          } catch (error) {
+            showStatus(error.message || "Unable to check your sign-in. Please try again.", "error");
+            form.hidden = true;
+          }
+        }
+
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          if (busy) return;
+          const code = codeInput.value.trim();
+          if (!/^\d{6}$/.test(code)) {
+            showStatus("Enter the 6-digit code from your authenticator app.", "error");
+            return;
+          }
+          setBusy(true);
+          showStatus("Verifying your code…");
+          try {
+            if (!factorId) throw new Error("No verified authenticator is available for this account.");
+            const { data: challenge, error: challengeError } = await client.auth.mfa.challenge({ factorId });
+            if (challengeError) throw challengeError;
+            const { error: verifyError } = await client.auth.mfa.verify({
+              factorId,
+              challengeId: challenge.id,
+              code,
+            });
+            if (verifyError) throw verifyError;
+            const { data: refreshedUser, error: userError } = await client.auth.getUser();
+            if (userError) throw userError;
+            if (!refreshedUser?.user) throw new Error("Your session expired. Please sign in again.");
+            const { data: assurance, error: assuranceError } =
+              await client.auth.mfa.getAuthenticatorAssuranceLevel();
+            if (assuranceError) throw assuranceError;
+            if (assurance?.currentLevel !== "aal2") {
+              throw new Error("Two-factor verification did not upgrade this session to AAL2.");
+            }
+            const dashboard = await window.SmartLearningMFA.resolveDashboard(client);
+            showStatus("Verification successful. Opening your dashboard…", "success");
+            window.location.replace(dashboard);
+          } catch (error) {
+            showStatus(error.message || "Invalid or expired code. Please try again.", "error");
+            codeInput.value = "";
+            codeInput.focus();
+          } finally {
+            setBusy(false);
+          }
+        });
+
+        void initialize();
+      })();
+    </script>
+  </body>
+</html>

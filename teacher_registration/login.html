@@ -18,6 +18,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="../js/supabase.js"></script>
     <script src="../js/teacher-data.js"></script>
+    <script src="../js/mfa-auth.js"></script>
 
     <style>
       :root {
@@ -717,6 +718,10 @@
           if (authError) throw authError;
 
           const user = authData.user;
+          if (await window.SmartLearningMFA.needsChallenge(supabaseClient)) {
+            window.location.replace("../verify-2fa.html");
+            return;
+          }
           let role = user?.user_metadata?.role;
 
           const { data: teacherProfile, error: teacherProfileError } =
