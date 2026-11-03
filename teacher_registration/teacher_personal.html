@@ -1815,6 +1815,11 @@
     document.addEventListener("DOMContentLoaded", function () {
       const dobInput = document.getElementById("dob");
       const form = document.getElementById("personalForm");
+      const profilePhotoField = form.querySelector(".profile-photo-field");
+      profilePhotoField.after(
+        form.querySelector("#password").closest(".input-field"),
+        form.querySelector("#confirmPassword").closest(".input-field"),
+      );
 
       if (dobInput) {
         dobInput.max = new Date().toISOString().split("T")[0];

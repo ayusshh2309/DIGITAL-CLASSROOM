@@ -15,8 +15,8 @@
       .profile-photo-info { width: 100%; min-width: 0; writing-mode: horizontal-tb; word-break: normal; overflow-wrap: break-word; white-space: normal; }
       .profile-photo-info h4, .profile-photo-info p { writing-mode: horizontal-tb; word-break: normal; overflow-wrap: break-word; white-space: normal; }
       .profile-photo-info h4 { margin: 0 0 6px; color: #172554; font-size: 1rem; font-weight: 750; }
-      .profile-photo-preview { width: 100px; height: 100px; min-width: 100px; min-height: 100px; box-sizing: border-box; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: #f1f5f9; border: 1px solid #dbe3ee; color: #64748b; font-size: 2rem; }
-      .profile-photo-preview img:not([hidden]) { display: block; width: 100%; height: 100%; object-fit: contain; object-position: center; }
+      .profile-photo-preview { position: relative; width: 100px; height: 100px; min-width: 100px; min-height: 100px; box-sizing: border-box; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: #f1f5f9; border: 1px solid #dbe3ee; color: #64748b; font-size: 2rem; }
+      .profile-photo-preview img:not([hidden]) { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
       .profile-photo-preview [hidden] { display: none !important; }
       .profile-photo-preview.has-photo > :not(img) { display: none !important; }
       .profile-photo-preview.has-photo { border-radius: 14px; background: #fff; }
