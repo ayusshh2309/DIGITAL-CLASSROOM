@@ -32,6 +32,22 @@
     });
   }
 
+  function ensureTimezoneManager() {
+    if (window.TimezoneManager) return Promise.resolve(window.TimezoneManager);
+    return new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "../js/timezone-manager.js";
+      script.addEventListener("load", () => {
+        if (window.TimezoneManager) resolve(window.TimezoneManager);
+        else reject(new Error("Timezone manager loaded without its API."));
+      }, { once: true });
+      script.addEventListener("error", () => reject(new Error("Timezone manager could not be loaded.")), {
+        once: true,
+      });
+      document.head.appendChild(script);
+    });
+  }
+
   if (!window.__teacherPageAuthGateInstalled) {
     window.__teacherPageAuthGateInstalled = true;
     const originalVisibility = document.documentElement.style.visibility;
@@ -160,6 +176,12 @@
       if (window.TeacherData?.loadCurrentTeacherProfile) {
         try {
           const { client, user, profile } = await window.TeacherData.loadCurrentTeacherProfile();
+          try {
+            const timezoneManager = await ensureTimezoneManager();
+            await timezoneManager.loadTeacherTimezone(client, profile.id);
+          } catch (error) {
+            console.warn("The teacher timezone could not be initialized.", error);
+          }
           await renderIdentity(profile, user);
           try {
             profileChannel = window.TeacherData.subscribeToTeacherProfile(

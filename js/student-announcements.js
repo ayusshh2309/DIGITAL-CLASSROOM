@@ -60,7 +60,7 @@
       ? records.map(({ recipient, announcement }) => `
         <button class="student-announcement-item${recipient.read_at ? "" : " unread"}" type="button" data-recipient-id="${escapeHtml(recipient.id)}">
           <strong>${escapeHtml(announcement.title)}</strong>
-          <span class="student-announcement-meta"><span class="student-announcement-type">${escapeHtml(announcement.type || "Notice")}</span><time class="student-announcement-date">${formatDate(announcement.published_at || recipient.created_at)}</time></span>
+          <span class="student-announcement-meta"><span class="student-announcement-type">${escapeHtml(announcement.type || "Notice")}</span><time class="student-announcement-date">${formatDate(announcement.published_at || recipient.created_at, announcement.timezone)}</time></span>
           <p>${escapeHtml(announcement.message)}</p>
         </button>`).join("")
       : '<p class="student-announcement-empty">No announcements yet.</p>';
@@ -72,12 +72,13 @@
     })[char]);
   }
 
-  function formatDate(value) {
+  function formatDate(value, timezone) {
     if (!value) return "";
-    const date = new Date(value);
-    return Number.isNaN(date.getTime())
-      ? ""
-      : new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(date);
+    return window.TimezoneManager?.formatWithOptions(
+      value,
+      { month: "short", day: "numeric" },
+      timezone || window.TimezoneManager.getCurrentTimezone(),
+    ) || "";
   }
 
   async function load() {
@@ -128,6 +129,25 @@
     records = (recipients || [])
       .filter((recipient) => byId.has(String(recipient.announcement_id)))
       .map((recipient) => ({ recipient, announcement: byId.get(String(recipient.announcement_id)) }));
+    if (records.length && window.TimezoneManager?.getVisibleTimezones) {
+      try {
+        const timezones = await window.TimezoneManager.getVisibleTimezones(
+          client,
+          "announcements",
+          records.map(({ announcement }) => announcement.id),
+        );
+        records = records.map(({ recipient, announcement }) => ({
+          recipient,
+          announcement: {
+            ...announcement,
+            timezone: timezones.get(String(announcement.id)) ||
+              window.TimezoneManager.getCurrentTimezone(),
+          },
+        }));
+      } catch (timezoneError) {
+        console.warn("Student announcement owner timezones could not be loaded.", timezoneError);
+      }
+    }
     render();
     subscribe();
   }

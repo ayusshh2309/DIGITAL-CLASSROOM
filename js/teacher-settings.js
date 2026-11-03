@@ -1,6 +1,7 @@
 (() => {
   const statusElement = document.getElementById("settingsStatus");
   const saveButton = document.getElementById("saveSettingsButton");
+  const timezoneSelect = document.getElementById("teacherTimezoneSelect");
   const profileForm = document.getElementById("profileForm");
   const profileSaveButton = document.getElementById("saveProfileButton");
   const profileCancelButton = document.getElementById("cancelProfileButton");
@@ -9,6 +10,7 @@
   const profilePhotoInput = document.getElementById("profilePhotoInput");
   const profileLanguageSelect = document.getElementById("profileLanguageSelect");
   const profileLanguageTags = document.getElementById("profileLanguageTags");
+  const profileLanguagesStatus = document.getElementById("profileLanguagesStatus");
   const changeEmailButton = document.getElementById("changeEmailButton");
   const changePasswordButton = document.getElementById("changePasswordButton");
   const deleteAccountButton = document.getElementById("deleteAccountButton");
@@ -39,7 +41,7 @@
     !emailSubmitButton || !emailCancelButton || !passwordDialog || !passwordForm ||
     !passwordInput || !passwordConfirmationInput || !passwordRequirementsList ||
     !passwordConfirmationStatus || !passwordStatus ||
-    !passwordSubmitButton || !passwordCancelButton
+    !passwordSubmitButton || !passwordCancelButton || !profileLanguagesStatus
   ) {
     console.error("[TeacherSettings] Cannot initialize; required page elements are missing.", {
       missing: [
@@ -68,6 +70,7 @@
         ["settingsPasswordConfirmationStatus", passwordConfirmationStatus],
         ["passwordDialogStatus", passwordStatus],
         ["submitPasswordButton", passwordSubmitButton],
+        ["profileLanguagesStatus", profileLanguagesStatus],
         ["cancelPasswordButton", passwordCancelButton],
       ].filter(([, element]) => !element).map(([id]) => id),
     });
@@ -117,6 +120,9 @@
   let savingSettings = false;
   let savingProfile = false;
   let profileDirty = false;
+  let languageCatalog = [];
+  let languageCatalogReady = false;
+  let languagesResolved = true;
   let previewUrl = null;
   let changingEmail = false;
   let changingPassword = false;
@@ -261,37 +267,55 @@
   function renderProfileLanguages(languages) {
     if (!profileLanguageTags) return;
     profileLanguageTags.replaceChildren();
-    const values = Array.isArray(languages)
-      ? languages.map((language) => String(language).trim()).filter(Boolean)
-      : [];
-    values.forEach((language) => {
+    const values = Array.isArray(languages) ? languages : [];
+    values.forEach((languageId) => {
+      const language = languageCatalog.find((item) => item.id === String(languageId));
+      if (!language) return;
       const tag = document.createElement("span");
       tag.className = "profile-language-tag";
-      tag.dataset.language = language;
+      tag.dataset.language = language.id;
 
       const label = document.createElement("span");
-      label.textContent = language;
+      label.textContent = language.name;
 
       const removeButton = document.createElement("button");
       removeButton.className = "profile-language-remove";
       removeButton.type = "button";
       removeButton.textContent = "×";
-      removeButton.setAttribute("aria-label", `Remove ${language}`);
+      removeButton.setAttribute("aria-label", `Remove ${language.name}`);
 
       tag.append(label, removeButton);
       profileLanguageTags.appendChild(tag);
     });
   }
 
+  function resolveLanguageIds(values) {
+    const requested = Array.isArray(values) ? values.map(String) : [];
+    const byId = new Map(languageCatalog.map((language) => [language.id, language.id]));
+    const byName = new Map(
+      languageCatalog.map((language) => [language.name.toLocaleLowerCase(), language.id]),
+    );
+    const unresolved = [];
+    const ids = requested.map((value) => {
+      const id = byId.get(value) || byName.get(value.toLocaleLowerCase());
+      if (!id) unresolved.push(value);
+      return id;
+    });
+    if (unresolved.length) {
+      throw new Error(`Unknown stored teacher language selection: ${unresolved.join(", ")}.`);
+    }
+    return [...new Set(ids)];
+  }
+
   function addProfileLanguage() {
-    const language = profileLanguageSelect?.value;
-    if (!language || !profileLanguageTags) return;
+    const languageId = profileLanguageSelect?.value;
+    if (!languageId || !profileLanguageTags) return;
     const selected = Array.from(
       profileLanguageTags.querySelectorAll("[data-language]"),
       (tag) => tag.dataset.language,
     );
-    if (!selected.includes(language)) {
-      renderProfileLanguages([...selected, language]);
+    if (!selected.includes(languageId)) {
+      renderProfileLanguages([...selected, languageId]);
     }
     profileLanguageSelect.value = "";
     profileDirty = hasUnsavedProfileChanges();
@@ -365,7 +389,27 @@
     return {
       time_format:
         document.querySelector('[data-setting="time_format"]:checked')?.value || "",
+      timezone: timezoneSelect?.value || "",
     };
+  }
+
+  function populateTimezoneOptions(selectedTimezone) {
+    if (!timezoneSelect) return;
+    const zones = typeof Intl.supportedValuesOf === "function"
+      ? Intl.supportedValuesOf("timeZone")
+      : [
+          "Africa/Cairo", "America/Chicago", "America/Denver", "America/Los_Angeles",
+          "America/New_York", "Asia/Dubai", "Asia/Kolkata", "Asia/Singapore",
+          "Asia/Tokyo", "Australia/Sydney", "Europe/London", "Europe/Paris", "UTC",
+        ];
+    const values = new Set([...zones, "UTC", selectedTimezone, TimezoneManager.getCurrentTimezone()]);
+    timezoneSelect.replaceChildren();
+    [...values].filter(Boolean).sort().forEach((timezone) => {
+      const option = document.createElement("option");
+      option.value = timezone;
+      option.textContent = timezone.replace(/_/g, " ");
+      timezoneSelect.appendChild(option);
+    });
   }
 
   function renderSettings() {
@@ -373,6 +417,10 @@
       control.checked = control.value === settings.time_format;
       control.disabled = false;
     });
+    const timezone = settings.timezone || TimezoneManager.getCurrentTimezone();
+    populateTimezoneOptions(timezone);
+    timezoneSelect.value = timezone;
+    timezoneSelect.disabled = false;
     settingsDirty = false;
     updateSettingsSaveButton();
   }
@@ -387,8 +435,10 @@
         if (field === "languages") {
           return [
             field,
-            Array.from(profileLanguageTags?.querySelectorAll("[data-language]") || [],
-              (tag) => tag.dataset.language),
+            languageCatalogReady && languagesResolved
+              ? Array.from(profileLanguageTags?.querySelectorAll("[data-language]") || [],
+                (tag) => tag.dataset.language)
+              : Array.isArray(profile?.languages) ? profile.languages : [],
           ];
         }
         const input = document.querySelector(`[data-profile-field="${field}"]`);
@@ -451,9 +501,27 @@
         : "Teacher · Educator",
     );
 
+    if (languageCatalogReady) {
+      try {
+        const languageIds = resolveLanguageIds(profile.languages);
+        languagesResolved = true;
+        profileLanguageSelect.disabled = false;
+        renderProfileLanguages(languageIds);
+        profileLanguagesStatus.textContent = "";
+      } catch (error) {
+        languagesResolved = false;
+        profileLanguageSelect.disabled = true;
+        console.error("[TeacherSettings] Unable to resolve saved teacher languages.", error);
+        renderProfileLanguages([]);
+        profileLanguagesStatus.textContent = "Saved languages could not be resolved. Other profile fields can still be edited.";
+      }
+    } else {
+      renderProfileLanguages([]);
+      profileLanguagesStatus.textContent = "Available languages could not be loaded. Language editing is unavailable.";
+    }
+
     PROFILE_FIELDS.forEach((field) => {
       if (field === "languages") {
-        renderProfileLanguages(profile[field]);
         return;
       }
       const input = document.querySelector(`[data-profile-field="${field}"]`);
@@ -533,15 +601,26 @@
       setStatus("Choose a valid time format.");
       return;
     }
+    if (!TimezoneManager.validateTimezone(values.timezone)) {
+      setStatus("Choose a valid timezone.");
+      return;
+    }
 
     savingSettings = true;
     updateSettingsSaveButton();
     document.querySelectorAll('[data-setting="time_format"]').forEach((control) => {
       control.disabled = true;
     });
+    timezoneSelect.disabled = true;
     setStatus("Saving...");
     try {
-      await TeacherData.updateCurrentTeacherSettings(values);
+      if (values.time_format !== settings.time_format) {
+        await TeacherData.updateCurrentTeacherSettings({ time_format: values.time_format });
+      }
+      if (values.timezone !== settings.timezone) {
+        await TeacherData.updateCurrentTeacherTimezone(values.timezone);
+        TimezoneManager.setCurrentTimezone(values.timezone, "teacher-settings");
+      }
       settings = await TeacherData.loadCurrentTeacherSettings();
       settingsDirty = false;
       renderSettings();
@@ -556,6 +635,7 @@
       document.querySelectorAll('[data-setting="time_format"]').forEach((control) => {
         control.disabled = false;
       });
+      timezoneSelect.disabled = false;
       updateSettingsSaveButton();
     }
   }
@@ -800,10 +880,21 @@
 
   document.querySelectorAll('[data-setting="time_format"]').forEach((control) => {
     control.addEventListener("change", () => {
-      settingsDirty = readSettings().time_format !== settings?.time_format;
+      const values = readSettings();
+      settingsDirty =
+        values.time_format !== settings?.time_format ||
+        values.timezone !== (settings?.timezone || TimezoneManager.getCurrentTimezone());
       updateSettingsSaveButton();
       setStatus(settingsDirty ? "Unsaved changes." : "");
     });
+  });
+  timezoneSelect?.addEventListener("change", () => {
+    const values = readSettings();
+    settingsDirty =
+      values.time_format !== settings?.time_format ||
+      values.timezone !== (settings?.timezone || TimezoneManager.getCurrentTimezone());
+    updateSettingsSaveButton();
+    setStatus(settingsDirty ? "Unsaved changes." : "");
   });
 
   document.querySelectorAll("[data-profile-field]").forEach((control) => {
@@ -924,6 +1015,19 @@
     client = loaded.client;
     user = loaded.user;
     profile = loaded.profile;
+    try {
+      languageCatalog = await TeacherData.loadTeacherLanguageCatalog(client);
+      languageCatalogReady = true;
+      profileLanguageSelect.replaceChildren(new Option("Select a language to add...", ""));
+      languageCatalog.forEach((language) => {
+        profileLanguageSelect.add(new Option(language.name, language.id));
+      });
+      profileLanguageSelect.disabled = false;
+    } catch (error) {
+      console.error("[TeacherSettings] Unable to load the language catalog.", error);
+      profileLanguageSelect.disabled = true;
+      profileLanguagesStatus.textContent = "Available languages could not be loaded. Language editing is unavailable.";
+    }
     console.info("[TeacherSettings] Authenticated teacher profile loaded.", {
       teacherId: profile.id,
       authenticatedUserId: user.id,
@@ -937,10 +1041,12 @@
     let settingsLoaded = false;
     try {
       settings = await TeacherData.loadCurrentTeacherSettings();
+      settings.timezone = await TimezoneManager.loadTeacherTimezone(client, profile.id);
       settingsLoaded = true;
       console.info("[TeacherSettings] Teacher settings loaded.", {
         teacherId: profile.id,
         timeFormat: settings.time_format,
+        timezone: settings.timezone,
       });
       renderSettings();
       setStatus("");
@@ -990,6 +1096,7 @@
             return;
           }
           settings = event.new;
+          TimezoneManager.setCurrentTimezone(settings.timezone, "teacher-settings-realtime");
           renderSettings();
           setStatus("Settings updated from another session.");
         },

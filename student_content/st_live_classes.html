@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script src="../js/timezone-manager.js"></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
@@ -1070,6 +1071,26 @@
           throw error;
         }
         currentLiveClasses = data || [];
+        if (currentLiveClasses.length && window.TimezoneManager?.getVisibleTimezones) {
+          try {
+            const timezones = await window.TimezoneManager.getVisibleTimezones(
+              client,
+              "live_classes",
+              currentLiveClasses.map((item) => item.id),
+            );
+            currentLiveClasses = currentLiveClasses.map((item) => ({
+              ...item,
+              timezone: timezones.get(String(item.id)) ||
+                window.TimezoneManager.getCurrentTimezone(),
+            }));
+          } catch (timezoneError) {
+            console.warn("Student live-class owner timezones could not be loaded.", timezoneError);
+            currentLiveClasses = currentLiveClasses.map((item) => ({
+              ...item,
+              timezone: window.TimezoneManager.getCurrentTimezone(),
+            }));
+          }
+        }
       }
 
       function getClassStartDate(item) {
@@ -1277,18 +1298,12 @@
           : status === "Scheduled" && startDate && Date.now() < startDate.getTime() - 10 * 60_000
             ? "Joining becomes available 10 minutes before the class starts."
             : "Joining is only available during the scheduled class window.";
+        const timezone = item.timezone || window.TimezoneManager.getCurrentTimezone();
         const dateText = startDate
-          ? startDate.toLocaleDateString("en-IN", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            })
+          ? window.TimezoneManager.formatDate(startDate, timezone)
           : "Date unavailable";
         const timeText = startDate
-          ? startDate.toLocaleTimeString("en-IN", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })
+          ? window.TimezoneManager.formatTime(startDate, timezone)
           : "Time unavailable";
         const grade = normalizeGrade(item.grade);
         const stream = String(item.stream || "").trim();

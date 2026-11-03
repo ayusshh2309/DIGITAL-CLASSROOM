@@ -4,9 +4,10 @@
   const MATERIAL_TYPES = ["pdf", "document", "photo", "image", "video"];
   const FALLBACK_REFRESH_MS = 60_000;
   const REFRESH_DEBOUNCE_MS = 500;
-  const CALENDAR_TIME_ZONE = "Asia/Kolkata";
-  const calendarFormatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: CALENDAR_TIME_ZONE,
+  const browserTimezone = () => window.TimezoneManager?.getCurrentTimezone()
+    || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  const calendarFormatter = () => new Intl.DateTimeFormat("en-US", {
+    timeZone: browserTimezone(),
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -69,25 +70,15 @@
     return `${rest}m`;
   }
 
-  function formatDate(value) {
-    const date = parseZonedTimestamp(value);
-    if (!date) return "Date unavailable";
-    return date.toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      timeZone: CALENDAR_TIME_ZONE,
-    });
+  function formatDate(value, timezone = browserTimezone()) {
+    if (!value) return "Date unavailable";
+    return window.TimezoneManager.formatDate(value, timezone || browserTimezone()) || "Date unavailable";
   }
 
-  function formatTime(value) {
+  function formatTime(value, timezone = browserTimezone()) {
     const date = parseZonedTimestamp(value);
     if (!date) return "";
-    return date.toLocaleTimeString("en-IN", {
-      hour: "numeric",
-      minute: "2-digit",
-      timeZone: CALENDAR_TIME_ZONE,
-    });
+    return window.TimezoneManager.formatTime(date, timezone || browserTimezone());
   }
 
   function parseZonedTimestamp(value) {
@@ -109,7 +100,7 @@
 
   function calendarDateParts(date) {
     const parts = Object.fromEntries(
-      calendarFormatter.formatToParts(new Date(date))
+      calendarFormatter().formatToParts(new Date(date))
         .filter((part) => part.type !== "literal")
         .map((part) => [part.type, Number(part.value)]),
     );
@@ -123,8 +114,18 @@
     };
   }
 
-  function dateKey(date) {
-    const parts = calendarDateParts(date);
+  function dateKey(date, timezone = browserTimezone()) {
+    timezone = timezone || browserTimezone();
+    const parts = timezone === browserTimezone()
+      ? calendarDateParts(date)
+      : Object.fromEntries(new Intl.DateTimeFormat("en-US", {
+        timeZone: timezone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).formatToParts(new Date(date))
+        .filter((part) => part.type !== "literal")
+        .map((part) => [part.type, Number(part.value)]));
     return `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
   }
 
@@ -345,7 +346,7 @@
         <div class="material-info">
           <strong>${escapeHtml(material.title || material.file_name || "Untitled material")}</strong>
           <span>${escapeHtml(subject)} · ${type.label}${teacher ? ` · ${teacher}` : ""}</span>
-          <small>${escapeHtml(formatDate(material.created_at))}</small>
+          <small>${escapeHtml(formatDate(material.created_at, material.timezone))}</small>
         </div>
         <button class="material-action" type="button" data-material-open="${escapeHtml(material.id)}" data-material-action="${actionLabel.toLowerCase()}">${actionLabel}</button>
       </div>`;
@@ -392,11 +393,10 @@
       container.innerHTML = `<div class="dashboard-error">Classes could not be loaded: ${escapeHtml(displayError(state.errors.classes))}</div>`;
       return;
     }
-    const todayKey = dateKey(now);
     const today = state.classes.filter((item) => {
       if (!isClassRelevant(item)) return false;
       const start = classDateTime(item, "start_at");
-      return start && dateKey(start) === todayKey;
+      return start && dateKey(start, item.timezone) === dateKey(now, item.timezone);
     }).sort((left, right) =>
       (classDateTime(left, "start_at")?.getTime() || 0) -
       (classDateTime(right, "start_at")?.getTime() || 0),
@@ -413,7 +413,7 @@
         ? `<button class="class-join-button" type="button" data-class-join="${escapeHtml(item.id)}">Join Class</button>`
         : "";
       return `<div class="schedule-item">
-        <div class="schedule-time">${escapeHtml(start ? formatTime(start) : "")}${end ? ` – ${escapeHtml(formatTime(end))}` : ""}</div>
+        <div class="schedule-time">${escapeHtml(start ? formatTime(start, item.timezone) : "")}${end ? ` – ${escapeHtml(formatTime(end, item.timezone))}` : ""}</div>
         <div class="schedule-info">
           <strong>${escapeHtml(item.title || item.topic || "Live class")}</strong>
           <span>${escapeHtml(item.subject_name || "Subject")}${item.teacher_name ? ` · ${escapeHtml(item.teacher_name)}` : ""}</span>
@@ -558,7 +558,7 @@
         weekday: "long",
         month: "long",
         day: "numeric",
-        timeZone: CALENDAR_TIME_ZONE,
+        timeZone: browserTimezone(),
       });
     }
     const clockElement = $("currentTime");
@@ -566,7 +566,7 @@
       clockElement.textContent = now.toLocaleTimeString(undefined, {
         hour: "numeric",
         minute: "2-digit",
-        timeZone: CALENDAR_TIME_ZONE,
+        timeZone: browserTimezone(),
       });
     }
   }
@@ -598,6 +598,21 @@
     if (sequence !== state.loadSequence) return;
     if (error) throw error;
     state.materials = responseRows(data, "Student materials");
+    if (state.materials.length && window.TimezoneManager?.getVisibleTimezones) {
+      try {
+        const timezones = await window.TimezoneManager.getVisibleTimezones(
+          state.client,
+          "materials",
+          state.materials.map((material) => material.id),
+        );
+        state.materials = state.materials.map((material) => ({
+          ...material,
+          timezone: timezones.get(String(material.id)) || browserTimezone(),
+        }));
+      } catch (timezoneError) {
+        console.warn("Student dashboard could not load material owner timezones.", timezoneError);
+      }
+    }
     state.materialCount = count ?? state.materials.length;
     delete state.errors.materials;
     const teacherIds = [...new Set(state.materials.map((row) => row.teacher_id).filter(Boolean))];
@@ -624,6 +639,21 @@
       .range(from, to));
     if (sequence !== state.loadSequence) return;
     state.classes = data.filter(isClassRelevant);
+    if (state.classes.length && window.TimezoneManager?.getVisibleTimezones) {
+      try {
+        const timezones = await window.TimezoneManager.getVisibleTimezones(
+          state.client,
+          "live_classes",
+          state.classes.map((item) => item.id),
+        );
+        state.classes = state.classes.map((item) => ({
+          ...item,
+          timezone: timezones.get(String(item.id)) || browserTimezone(),
+        }));
+      } catch (timezoneError) {
+        console.warn("Student dashboard could not load live-class owner timezones.", timezoneError);
+      }
+    }
     state.joinableClassIds = new Set();
     delete state.errors.join;
     const now = new Date();

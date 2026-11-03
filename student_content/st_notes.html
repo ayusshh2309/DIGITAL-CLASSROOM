@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script src="../js/timezone-manager.js"></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Smart Learning DC - Notes</title>
@@ -1573,10 +1574,7 @@
         function formatDate(date) {
           if (!date) return "";
 
-          return new Date(date).toLocaleDateString("en-IN", {
-            day: "numeric",
-            month: "short",
-          });
+          return window.TimezoneManager.formatDate(date, window.TimezoneManager.getCurrentTimezone());
         }
 
         /* =====================================================

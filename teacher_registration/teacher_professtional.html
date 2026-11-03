@@ -1186,48 +1186,10 @@
                     <option value="" disabled selected>
                       Select a language to add...
                     </option>
-
-                    <option value="English">English</option>
-
-                    <option value="Hindi">Hindi</option>
-
-                    <option value="Bengali">Bengali</option>
-
-                    <option value="Tamil">Tamil</option>
-
-                    <option value="Telugu">Telugu</option>
-
-                    <option value="Marathi">Marathi</option>
-
-                    <option value="Gujarati">Gujarati</option>
-
-                    <option value="Kannada">Kannada</option>
-
-                    <option value="Malayalam">Malayalam</option>
-
-                    <option value="Punjabi">Punjabi</option>
-
-                    <option value="Urdu">Urdu</option>
-
-                    <option value="Spanish">Spanish</option>
-
-                    <option value="French">French</option>
-
-                    <option value="German">German</option>
                   </select>
                 </div>
-
-                <div class="tags-container" id="languageTags">
-                  <div class="tag">
-                    English
-                    <span onclick="removeTag(this)"> × </span>
-                  </div>
-
-                  <div class="tag">
-                    Hindi
-                    <span onclick="removeTag(this)"> × </span>
-                  </div>
-                </div>
+                <p id="languageCatalogStatus" role="status" aria-live="polite"></p>
+                <div class="tags-container" id="languageTags"></div>
               </div>
             </div>
 
@@ -1257,6 +1219,7 @@
     here is the html or css
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="../js/supabase.js"></script>
+    <script src="../js/teacher-data.js"></script>
     <script src="../js/subject-service.js?v=20261031-2"></script>
     <script src="../js/teacher-registration-storage.js"></script>
     <script src="../js/registration-lifecycle.js"></script>
@@ -1269,6 +1232,8 @@
         let subjectOptionsReady = false;
         let subjectLoadError = null;
         let subjectLoadVersion = 0;
+        let languageCatalog = [];
+        let languageCatalogReady = false;
         const specialistSelections = new Map();
         const streamOptions = [
           ["science_pcm", "Science PCM"],
@@ -1349,38 +1314,81 @@
         }
 
         function addLanguageTag(select) {
-          const language = select.value;
-          if (!language) return;
+          const languageId = select.value;
+          if (!languageId) return;
 
           const tagsContainer = document.getElementById("languageTags");
           if (!tagsContainer) return;
 
-          const existing = Array.from(
-            tagsContainer.querySelectorAll(".tag"),
-          ).map(
-            (tag) =>
-              tag.dataset.language || tag.textContent.replace("×", "").trim(),
-          );
-          if (existing.includes(language)) {
+          if (Array.from(tagsContainer.querySelectorAll(".tag"))
+            .some((tag) => tag.dataset.language === languageId)) {
             select.value = "";
             return;
           }
 
+          const language = languageCatalog.find((item) => item.id === languageId);
+          if (!language) return;
           const tag = document.createElement("div");
           tag.className = "tag";
-          tag.dataset.language = language;
-          tag.innerHTML = `${language}<span onclick="this.parentElement.remove()"> × </span>`;
+          tag.dataset.language = language.id;
+          const label = document.createElement("span");
+          label.textContent = language.name;
+          const remove = document.createElement("span");
+          remove.textContent = " × ";
+          remove.setAttribute("role", "button");
+          remove.setAttribute("tabindex", "0");
+          remove.setAttribute("aria-label", `Remove ${language.name}`);
+          remove.addEventListener("click", () => tag.remove());
+          tag.append(label, remove);
           tagsContainer.appendChild(tag);
           select.value = "";
         }
 
         function getSelectedLanguages() {
           return Array.from(document.querySelectorAll("#languageTags .tag"))
-            .map(
-              (tag) =>
-                tag.dataset.language || tag.textContent.replace("×", "").trim(),
-            )
+            .map((tag) => tag.dataset.language)
             .filter(Boolean);
+        }
+
+        async function loadLanguageOptions() {
+          const select = document.getElementById("languageSelect");
+          const status = document.getElementById("languageCatalogStatus");
+          const client = window.SmartLearningSupabase?.getClient?.();
+          if (!select || !client) {
+            throw new Error("The language list is unavailable because Supabase is not configured.");
+          }
+          languageCatalog = await window.TeacherData.loadTeacherLanguageCatalog(client);
+          select.replaceChildren(new Option("Select a language to add...", ""));
+          languageCatalog.forEach((language) => {
+            select.add(new Option(language.name, language.id));
+          });
+          languageCatalogReady = true;
+          if (status) status.textContent = "";
+        }
+
+        function renderSelectedLanguageIds(values) {
+          const tagsContainer = document.getElementById("languageTags");
+          if (!tagsContainer) return;
+          tagsContainer.replaceChildren();
+          const ids = [...new Set((Array.isArray(values) ? values : []).map(String))];
+          ids.forEach((id) => {
+            const language = languageCatalog.find((item) => item.id === id)
+              || languageCatalog.find((item) => item.name.toLocaleLowerCase() === id.toLocaleLowerCase());
+            if (!language) return;
+            const tag = document.createElement("div");
+            tag.className = "tag";
+            tag.dataset.language = language.id;
+            const label = document.createElement("span");
+            label.textContent = language.name;
+            const remove = document.createElement("span");
+            remove.textContent = " × ";
+            remove.setAttribute("role", "button");
+            remove.setAttribute("tabindex", "0");
+            remove.setAttribute("aria-label", `Remove ${language.name}`);
+            remove.addEventListener("click", () => tag.remove());
+            tag.append(label, remove);
+            tagsContainer.appendChild(tag);
+          });
         }
 
         function getSelectedGradeGroups() {
@@ -1806,20 +1814,7 @@
             : [];
           restoreSpecialistSelections(subjectAssignments);
 
-          const languages = Array.isArray(step2.languages)
-            ? step2.languages
-            : [];
-          const tagsContainer = document.getElementById("languageTags");
-          if (tagsContainer && languages.length) {
-            tagsContainer.innerHTML = "";
-            languages.forEach((language) => {
-              const tag = document.createElement("div");
-              tag.className = "tag";
-              tag.dataset.language = language;
-              tag.innerHTML = `${language}<span onclick="this.parentElement.remove()"> × </span>`;
-              tagsContainer.appendChild(tag);
-            });
-          }
+          renderSelectedLanguageIds(step2.languages);
         }
 
         function parseProfessionalForm() {
@@ -1854,6 +1849,11 @@
         }
 
         function validateProfessionalForm() {
+          if (!languageCatalogReady) {
+            const status = document.getElementById("languageCatalogStatus");
+            if (status) status.textContent = "The available languages have not loaded. Please reload this page and try again.";
+            return false;
+          }
           if (teachingMode === "subject_specialist" && !subjectOptionsReady) {
             if (subjectLoadError) {
               const status = document.getElementById("subjectCatalogStatus");
@@ -1933,10 +1933,19 @@
             window.location.href = "review.html";
           });
 
-        document.addEventListener("DOMContentLoaded", function () {
+        document.addEventListener("DOMContentLoaded", async function () {
           populateGraduationYears();
           renderStreamOptions();
           initializeSubjectOptions();
+          try {
+            await loadLanguageOptions();
+          } catch (error) {
+            console.error("Unable to load the language catalog.", error);
+            const status = document.getElementById("languageCatalogStatus");
+            if (status) status.textContent = "Unable to load available languages. Please reload the page and try again.";
+            const select = document.getElementById("languageSelect");
+            if (select) select.disabled = true;
+          }
           loadDraftIntoForm();
           document
             .querySelectorAll("#teachAllPanel input[id^='grades']")

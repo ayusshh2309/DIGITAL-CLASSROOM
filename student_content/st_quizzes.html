@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script src="../js/timezone-manager.js"></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
@@ -1606,51 +1607,49 @@
          FORMAT DATE
       ===================================================== */
 
-      function formatDate(dateValue) {
+      function formatDate(dateValue, timezone = window.TimezoneManager.getCurrentTimezone()) {
         if (!dateValue) {
           return "Date not available";
         }
-
-        const date = new Date(dateValue);
-
-        if (isNaN(date.getTime())) {
-          return "Date not available";
-        }
-
-        return date.toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        });
+        return window.TimezoneManager.formatDate(dateValue, timezone) || "Date not available";
       }
 
       /* =====================================================
          FORMAT DATE + TIME
       ===================================================== */
 
-      function formatDateTime(dateValue) {
+      function formatDateTime(dateValue, timezone = window.TimezoneManager.getCurrentTimezone()) {
         if (!dateValue) {
           return "Date not available";
         }
+        return window.TimezoneManager.formatDateTime(dateValue, timezone) || "Date not available";
+      }
 
-        const date = new Date(dateValue);
-
-        if (isNaN(date.getTime())) {
-          return "Date not available";
-        }
-
-        return (
-          date.toLocaleDateString("en-IN", {
+      function zonedQuizStart(date, time, timezone) {
+        const [year, month, day] = date.split("-").map(Number);
+        const [hour, minute, second = 0] = time.split(":").map(Number);
+        const desiredUtc = Date.UTC(year, month - 1, day, hour, minute, second);
+        let instant = desiredUtc;
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", {
+            timeZone: timezone,
+            year: "numeric",
+            month: "2-digit",
             day: "2-digit",
-            month: "short",
-          }) +
-          ", " +
-          date.toLocaleTimeString("en-IN", {
             hour: "2-digit",
             minute: "2-digit",
-            hour12: true,
-          })
-        );
+            second: "2-digit",
+            hourCycle: "h23",
+          }).formatToParts(new Date(instant))
+            .filter((part) => part.type !== "literal")
+            .map((part) => [part.type, Number(part.value)]));
+          const displayedUtc = Date.UTC(
+            parts.year, parts.month - 1, parts.day,
+            parts.hour, parts.minute, parts.second,
+          );
+          instant = desiredUtc - (displayedUtc - instant);
+        }
+        return new Date(instant);
       }
 
       function getQuizSchedule(quiz) {
@@ -1689,30 +1688,23 @@
           return { configured: true, valid: false, startsAt: null, label: "" };
         }
 
-        const dateForDisplay = new Date(Date.UTC(year, month - 1, day, 12));
-        const dateLabel = new Intl.DateTimeFormat("en-IN", {
-          timeZone: "Asia/Kolkata",
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        }).format(dateForDisplay);
+        const timezone = window.TimezoneManager.validateTimezone(quiz.timezone)
+          ? quiz.timezone
+          : window.TimezoneManager.getCurrentTimezone();
+        const startsAt = zonedQuizStart(
+          scheduledDate,
+          `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`,
+          timezone,
+        );
+        const dateLabel = window.TimezoneManager.formatDate(scheduledDate, timezone);
         const timeLabel = timeMatch
-          ? new Intl.DateTimeFormat("en-US", {
-              timeZone: "Asia/Kolkata",
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-            }).format(new Date(
-              `${scheduledDate}T${timeMatch[1]}:${timeMatch[2]}:${String(seconds).padStart(2, "0")}+05:30`,
-            ))
+          ? window.TimezoneManager.formatTime(startsAt, timezone)
           : "";
 
         return {
           configured: true,
           valid: true,
-          startsAt: new Date(
-            `${scheduledDate}T${timeMatch ? `${timeMatch[1]}:${timeMatch[2]}:${String(seconds).padStart(2, "0")}` : "00:00:00"}+05:30`,
-          ),
+          startsAt,
           label: timeLabel ? `${dateLabel} at ${timeLabel}` : dateLabel,
         };
       }
@@ -1851,6 +1843,26 @@
                 ]),
             ).values(),
           ];
+          if (allQuizzes.length && window.TimezoneManager?.getVisibleTimezones) {
+            try {
+              const timezones = await window.TimezoneManager.getVisibleTimezones(
+                supabaseClient,
+                "quizzes",
+                allQuizzes.map((quiz) => quiz.id),
+              );
+              allQuizzes = allQuizzes.map((quiz) => ({
+                ...quiz,
+                timezone: timezones.get(String(quiz.id)) ||
+                  window.TimezoneManager.getCurrentTimezone(),
+              }));
+            } catch (timezoneError) {
+              console.warn("Student quiz owner timezones could not be loaded.", timezoneError);
+              allQuizzes = allQuizzes.map((quiz) => ({
+                ...quiz,
+                timezone: window.TimezoneManager.getCurrentTimezone(),
+              }));
+            }
+          }
           const attemptsResult = allQuizzes.length
             ? await supabaseClient
                 .from("quiz_attempts")

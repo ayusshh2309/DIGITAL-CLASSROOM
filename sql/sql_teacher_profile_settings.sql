@@ -219,15 +219,6 @@ create table if not exists public.teacher_subject_assignments (
     unique nulls not distinct (teacher_id, grade, subject_id, stream)
 );
 
-create table if not exists public.teacher_languages (
-  id uuid primary key default gen_random_uuid(),
-  teacher_id uuid not null references public.teachers(id) on delete cascade,
-  language text not null,
-  language_id uuid,
-  created_at timestamptz not null default now(),
-  constraint teacher_languages_unique unique (teacher_id, language)
-);
-
 do $$
 begin
   if to_regclass('public.subjects') is not null
@@ -243,23 +234,7 @@ begin
     ) then
     alter table public.teacher_subject_assignments
       add constraint teacher_subject_assignments_subject_id_fkey
-      foreign key (subject_id) references public.subjects(id) on delete set null;
-  end if;
-
-  if to_regclass('public.languages') is not null
-    and exists (
-      select 1 from information_schema.columns
-      where table_schema = 'public' and table_name = 'languages'
-        and column_name = 'id' and data_type = 'uuid'
-    )
-    and not exists (
-      select 1 from pg_constraint
-      where conrelid = 'public.teacher_languages'::regclass
-        and conname = 'teacher_languages_language_id_fkey'
-    ) then
-    alter table public.teacher_languages
-      add constraint teacher_languages_language_id_fkey
-      foreign key (language_id) references public.languages(id) on delete set null;
+      foreign key (subject_id)       references public.subjects(id) on delete set null;
   end if;
 end;
 $$;
@@ -289,7 +264,6 @@ alter table public.teacher_settings enable row level security;
 alter table public.teacher_subjects enable row level security;
 alter table public.teacher_grade_groups enable row level security;
 alter table public.teacher_subject_assignments enable row level security;
-alter table public.teacher_languages enable row level security;
 
 do $$
 declare
@@ -404,32 +378,6 @@ for update to authenticated using (exists (
     and teachers.user_id = (select auth.uid())
 ));
 
-drop policy if exists teacher_languages_select_own on public.teacher_languages;
-create policy teacher_languages_select_own on public.teacher_languages
-for select to authenticated using (exists (
-  select 1 from public.teachers
-  where teachers.id = teacher_languages.teacher_id
-    and teachers.user_id = (select auth.uid())
-));
-drop policy if exists teacher_languages_insert_own on public.teacher_languages;
-create policy teacher_languages_insert_own on public.teacher_languages
-for insert to authenticated with check (exists (
-  select 1 from public.teachers
-  where teachers.id = teacher_languages.teacher_id
-    and teachers.user_id = (select auth.uid())
-));
-drop policy if exists teacher_languages_update_own on public.teacher_languages;
-create policy teacher_languages_update_own on public.teacher_languages
-for update to authenticated using (exists (
-  select 1 from public.teachers
-  where teachers.id = teacher_languages.teacher_id
-    and teachers.user_id = (select auth.uid())
-)) with check (exists (
-  select 1 from public.teachers
-  where teachers.id = teacher_languages.teacher_id
-    and teachers.user_id = (select auth.uid())
-));
-
 create policy teacher_settings_select_own on public.teacher_settings
 for select to authenticated
 using (
@@ -476,8 +424,6 @@ revoke all on public.teacher_grade_groups from anon;
 grant select, insert, update on public.teacher_grade_groups to authenticated;
 revoke all on public.teacher_subject_assignments from anon;
 grant select, insert, update on public.teacher_subject_assignments to authenticated;
-revoke all on public.teacher_languages from anon;
-grant select, insert, update on public.teacher_languages to authenticated;
 revoke update on public.teachers from authenticated;
 grant update (
   user_id,

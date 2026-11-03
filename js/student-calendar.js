@@ -1,33 +1,54 @@
 ﻿(() => {
-  const CALENDAR_TIME_ZONE = "Asia/Kolkata";
-  const calendarFormatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: CALENDAR_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-  const calendarDateParts = (value) => Object.fromEntries(
-    calendarFormatter.formatToParts(new Date(value))
+  const browserTimezone = () => window.TimezoneManager?.getCurrentTimezone()
+    || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  const calendarDateParts = (value, timezone = browserTimezone()) => Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date(value))
       .filter((part) => part.type !== "literal")
       .map((part) => [part.type, Number(part.value)]),
   );
   const calendarDate = (year, monthIndex, day) =>
-    new Date(Date.UTC(year, monthIndex, day, 12));
+    new Date(year, monthIndex, day, 12);
   const calendarDateKey = (year, monthIndex, day) =>
     `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-  const calendarBoundary = (year, monthIndex, day) => {
-    const normalized = new Date(Date.UTC(year, monthIndex, day));
-    return new Date(`${calendarDateKey(
-      normalized.getUTCFullYear(),
-      normalized.getUTCMonth(),
-      normalized.getUTCDate(),
-    )}T00:00:00+05:30`);
+  const calendarBoundary = (year, monthIndex, day) => new Date(year, monthIndex, day);
+  const zonedLocalDateTime = (date, time, timezone) => {
+    const [year, month, day] = date.split("-").map(Number);
+    const [hour, minute, second = 0] = time.split(":").map(Number);
+    const desiredUtc = Date.UTC(year, month - 1, day, hour, minute, second);
+    let instant = desiredUtc;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const parts = Object.fromEntries(
+        new Intl.DateTimeFormat("en-US", {
+          timeZone: timezone,
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hourCycle: "h23",
+        }).formatToParts(new Date(instant))
+          .filter((part) => part.type !== "literal")
+          .map((part) => [part.type, Number(part.value)]),
+      );
+      const displayedAsUtc = Date.UTC(
+        parts.year, parts.month - 1, parts.day,
+        parts.hour, parts.minute, parts.second,
+      );
+      instant = desiredUtc - (displayedAsUtc - instant);
+    }
+    return new Date(instant);
   };
-  const quizScheduledAt = (quiz) => {
+  const quizScheduledAt = (quiz, timezone = browserTimezone()) => {
     const date = String(quiz.scheduled_date || "").trim();
     if (!date) return null;
     const time = String(quiz.scheduled_time || "").trim().slice(0, 8) || "00:00:00";
-    const scheduledAt = new Date(`${date}T${time}+05:30`);
+    const scheduledAt = zonedLocalDateTime(date, time, timezone);
     return Number.isFinite(scheduledAt.getTime()) ? scheduledAt : null;
   };
   const calendarToday = () => {
@@ -57,14 +78,12 @@
     '"': "&quot;",
     "'": "&#39;",
   })[character]);
-  const dayKey = (value) => {
-    const { year, month, day } = calendarDateParts(value);
+  const dayKey = (value, timezone = browserTimezone()) => {
+    const { year, month, day } = calendarDateParts(value, timezone || browserTimezone());
     return calendarDateKey(year, month - 1, day);
   };
-  const formatDate = (value, options = {}) => new Intl.DateTimeFormat("en-US", {
-    ...options,
-    timeZone: CALENDAR_TIME_ZONE,
-  }).format(new Date(value));
+  const formatDate = (value, options = {}, timezone = browserTimezone()) =>
+    window.TimezoneManager.formatWithOptions(value, options, timezone || browserTimezone());
   const monthRange = (date) => {
     const { year, month } = calendarDateParts(date);
     return {
@@ -170,6 +189,7 @@
       material_type: row.material_type || "",
       file_name: row.file_name || "",
       announcement_type: row.announcement_type || "",
+      timezone: row.timezone || null,
     };
   }
 
@@ -431,17 +451,32 @@
       state.subjectIds.has(String(quiz.subject_id)) &&
       String(quiz.status).toLowerCase() === "published",
     );
+    const timezoneByQuiz = new Map();
+    if (eligibleQuizzes.length && window.TimezoneManager?.getVisibleTimezones) {
+      try {
+        const timezones = await window.TimezoneManager.getVisibleTimezones(
+          client,
+          "quizzes",
+          eligibleQuizzes.map((quiz) => quiz.id),
+        );
+        timezones.forEach((timezone, id) => timezoneByQuiz.set(String(id), timezone));
+      } catch (error) {
+        console.warn("Student calendar could not load quiz owner timezones.", error);
+      }
+    }
     const scheduledEvents = [];
     eligibleQuizzes.forEach((quiz) => {
       const scheduledDate = String(quiz.scheduled_date || "").trim();
       if (!scheduledDate) return;
-      const startAt = quizScheduledAt(quiz);
+      const timezone = timezoneByQuiz.get(String(quiz.id)) || browserTimezone();
+      const startAt = quizScheduledAt(quiz, timezone);
       if (!startAt) return;
       const endAt = quiz.scheduled_time
         ? new Date(startAt.getTime() + Number(quiz.duration_minutes || 0) * 60_000).toISOString()
         : null;
       scheduledEvents.push(normalizeRow({
         ...quiz,
+        timezone,
         subject_name: state.subjectsById.get(String(quiz.subject_id))?.name || "",
         start_at: startAt.toISOString(),
         end_at: endAt,
@@ -491,8 +526,47 @@
       const key = `${event.source_table || event.source}:${event.source_id || event.id}`;
       uniqueEvents.set(key, event);
     });
+    const visibleEvents = [...uniqueEvents.values()];
+    if (window.TimezoneManager?.getVisibleTimezones) {
+      const groups = new Map();
+      visibleEvents.forEach((event) => {
+        const resourceType = event.source === "calendar_events"
+          ? "calendar_events"
+          : event.source_table || event.source;
+        const resourceId = event.source === "calendar_events"
+          ? event.calendar_id
+          : event.source_id;
+        if (!resourceId || ![
+          "calendar_events", "live_classes", "materials", "quizzes", "announcements",
+        ].includes(resourceType)) return;
+        if (!groups.has(resourceType)) groups.set(resourceType, []);
+        groups.get(resourceType).push(String(resourceId));
+      });
+      await Promise.all([...groups].map(async ([resourceType, resourceIds]) => {
+        try {
+          const timezones = await window.TimezoneManager.getVisibleTimezones(
+            client,
+            resourceType,
+            [...new Set(resourceIds)],
+          );
+          visibleEvents.forEach((event) => {
+            const eventType = event.source === "calendar_events"
+              ? "calendar_events"
+              : event.source_table || event.source;
+            const eventId = event.source === "calendar_events"
+              ? event.calendar_id
+              : event.source_id;
+            if (eventType === resourceType && timezones.has(String(eventId))) {
+              event.timezone = timezones.get(String(eventId));
+            }
+          });
+        } catch (error) {
+          console.warn(`Student calendar could not load ${resourceType} owner timezones.`, error);
+        }
+      }));
+    }
     return {
-      events: [...uniqueEvents.values()].sort((left, right) =>
+      events: visibleEvents.sort((left, right) =>
         new Date(left.start_at) - new Date(right.start_at),
       ),
       sourceErrors,
@@ -578,7 +652,7 @@
     for (let day = 1; day <= daysInMonth; day += 1) {
       const currentDate = calendarDate(year, month - 1, day);
       const currentKey = dayKey(currentDate);
-      const entries = state.events.filter((event) => dayKey(event.start_at) === currentKey);
+      const entries = state.events.filter((event) => dayKey(event.start_at, event.timezone) === currentKey);
       const content = entries.map((entry) => {
         const cssClass = eventTypeClass(entry.type);
         const icon = entry.type === "material"
@@ -616,7 +690,7 @@
     if (!container) return;
     const selectedKey = dayKey(state.selectedDate);
     const events = state.events
-      .filter((event) => dayKey(event.start_at) === selectedKey)
+      .filter((event) => dayKey(event.start_at, event.timezone) === selectedKey)
       .sort((left, right) => new Date(left.start_at) - new Date(right.start_at));
     container.innerHTML = `<h3>${formatDate(state.selectedDate, {
       weekday: "long",
@@ -627,7 +701,7 @@
       ? `<div class="selected-day-events">${events.map((event) => `<button type="button" class="selected-day-event ${eventTypeClass(event.type)}" data-calendar-event-id="${escapeHtml(event.id)}">
           <span class="selected-day-event-type">${escapeHtml(eventTypeLabel(event.type))}</span>
           <strong>${escapeHtml(event.title)}</strong>
-          <span>${event.all_day ? "All day" : formatDate(event.start_at, { hour: "numeric", minute: "2-digit" })}${event.subject ? ` · ${escapeHtml(event.subject)}` : ""}</span>
+          <span>${event.all_day ? "All day" : formatDate(event.start_at, { hour: "numeric", minute: "2-digit" }, event.timezone)}${event.subject ? ` · ${escapeHtml(event.subject)}` : ""}</span>
         </button>`).join("")}</div>`
       : '<p>No activities scheduled for this day.</p>');
   }
@@ -636,7 +710,7 @@
     const status = $("calendarStatus");
     if (!status) return;
     const selectedKey = dayKey(state.selectedDate);
-    const dayEvents = state.events.filter((event) => dayKey(event.start_at) === selectedKey);
+    const dayEvents = state.events.filter((event) => dayKey(event.start_at, event.timezone) === selectedKey);
     const categoryLabels = {
       material: ["study material", "study materials"],
       live_class: ["live class", "live classes"],
@@ -684,7 +758,7 @@
     const startOffset = new Date(Date.UTC(year, month, 1)).getUTCDay();
     const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
     const cells = [];
-    const eventDays = new Set(state.events.map((event) => dayKey(event.start_at)));
+    const eventDays = new Set(state.events.map((event) => dayKey(event.start_at, event.timezone)));
     for (let index = 0; index < 42; index += 1) {
       const dayNumber = index - startOffset + 1;
       const date = calendarDate(year, month, dayNumber);
@@ -734,9 +808,9 @@
     if (!container) return;
     container.innerHTML = '<div class="side-card-header"><h3>Upcoming</h3><span>Next 7 days</span></div>' + (upcoming.length ? upcoming.map((event) => {
       const date = new Date(event.start_at);
-      const { day } = calendarDateParts(date);
-      const timeLabel = event.all_day ? "All day" : formatDate(event.start_at, { hour: "numeric", minute: "2-digit" });
-      return `<div class="upcoming-event" data-calendar-event-id="${escapeHtml(event.id)}" role="button" tabindex="0"><div class="event-date"><strong>${String(day).padStart(2, "0")}</strong><span>${formatDate(date, { month: "short" }).slice(0, 3)}</span></div><div class="upcoming-info"><h4>${escapeHtml(event.title)}</h4><p><i class="fa-regular fa-clock"></i>${timeLabel}${event.subject ? ` · ${escapeHtml(event.subject)}` : ""}</p></div></div>`;
+      const { day } = calendarDateParts(date, event.timezone || browserTimezone());
+      const timeLabel = event.all_day ? "All day" : formatDate(event.start_at, { hour: "numeric", minute: "2-digit" }, event.timezone);
+      return `<div class="upcoming-event" data-calendar-event-id="${escapeHtml(event.id)}" role="button" tabindex="0"><div class="event-date"><strong>${String(day).padStart(2, "0")}</strong><span>${formatDate(date, { month: "short" }, event.timezone).slice(0, 3)}</span></div><div class="upcoming-info"><h4>${escapeHtml(event.title)}</h4><p><i class="fa-regular fa-clock"></i>${timeLabel}${event.subject ? ` · ${escapeHtml(event.subject)}` : ""}</p></div></div>`;
     }).join("") : '<div class="upcoming-event"><div class="upcoming-info"><h4>No upcoming events</h4><p>There are no future events for your profile.</p></div></div>');
   }
 
@@ -757,12 +831,12 @@
     const modal = $("eventModal");
     if (!modal) return;
     $("modalTitle").textContent = event.title;
-    $("modalDate").textContent = formatDate(event.start_at, { month: "long", day: "numeric", year: "numeric" });
+    $("modalDate").textContent = formatDate(event.start_at, { month: "long", day: "numeric", year: "numeric" }, event.timezone);
     $("modalTime").textContent = event.all_day
       ? "All day"
       : event.end_at
-        ? `${formatDate(event.start_at, { hour: "numeric", minute: "2-digit" })} - ${formatDate(event.end_at, { hour: "numeric", minute: "2-digit" })}`
-        : formatDate(event.start_at, { hour: "numeric", minute: "2-digit" });
+        ? `${formatDate(event.start_at, { hour: "numeric", minute: "2-digit" }, event.timezone)} - ${formatDate(event.end_at, { hour: "numeric", minute: "2-digit" }, event.timezone)}`
+        : formatDate(event.start_at, { hour: "numeric", minute: "2-digit" }, event.timezone);
     $("modalSubject").textContent = event.subject || "General";
     const details = [
       event.type === "announcement" && event.announcement_type

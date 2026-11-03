@@ -900,24 +900,11 @@
                 <label class="profile-field profile-field-full">
                   Languages
                   <div class="profile-language-picker">
-                    <select id="profileLanguageSelect" aria-label="Add a language">
+                    <select id="profileLanguageSelect" aria-label="Add a language" disabled>
                       <option value="">Select a language to add...</option>
-                      <option value="English">English</option>
-                      <option value="Hindi">Hindi</option>
-                      <option value="Bengali">Bengali</option>
-                      <option value="Tamil">Tamil</option>
-                      <option value="Telugu">Telugu</option>
-                      <option value="Marathi">Marathi</option>
-                      <option value="Gujarati">Gujarati</option>
-                      <option value="Kannada">Kannada</option>
-                      <option value="Malayalam">Malayalam</option>
-                      <option value="Punjabi">Punjabi</option>
-                      <option value="Urdu">Urdu</option>
-                      <option value="Spanish">Spanish</option>
-                      <option value="French">French</option>
-                      <option value="German">German</option>
                     </select>
                     <div class="profile-language-tags" id="profileLanguageTags" aria-live="polite"></div>
+                    <p class="account-status" id="profileLanguagesStatus" role="status" aria-live="polite"></p>
                   </div>
                 </label>
                 <label class="profile-field profile-field-full">
@@ -1000,6 +987,20 @@
                 </div>
               </div>
             </div>
+            <div class="setting-item-row">
+              <div class="setting-label-group">
+                <div class="setting-icon-box">🌐</div>
+                <div class="setting-label-text">
+                  <h4>Timezone</h4>
+                  <p>Choose the timezone used for teacher dates and times.</p>
+                </div>
+              </div>
+              <div class="setting-control">
+                <select id="teacherTimezoneSelect" data-setting="timezone" aria-label="Timezone">
+                  <option value="UTC">UTC</option>
+                </select>
+              </div>
+            </div>
 
             <div class="btn-save-container">
               <button class="btn-save" id="saveSettingsButton" type="button">Save Changes</button>
@@ -1075,6 +1076,7 @@
     <script src="../js/subject-service.js"></script>
     <script src="../js/registration-password-validation.js"></script>
     <script src="../js/teacher-data.js"></script>
+    <script src="../js/timezone-manager.js"></script>
     <script src="../js/teacher-settings.js"></script>
     <script src="../js/layout.js"></script>
   </body>

@@ -1916,17 +1916,23 @@
         );
         renderTags("subjectsReview", [...new Set(reviewAssignments)]);
       }
-      renderTags(
-        "languagesReview",
-        [
-          ...new Map(
-            (Array.isArray(step2.languages) ? step2.languages : [])
-              .map((language) => String(language || "").trim())
-              .filter(Boolean)
-              .map((language) => [language.toLowerCase(), language]),
-          ).values(),
-        ],
-      );
+      const languagesReview = document.getElementById("languagesReview");
+      if (languagesReview) languagesReview.textContent = "Loading languages...";
+      async function renderLanguageReview() {
+        try {
+          renderTags(
+            "languagesReview",
+            await window.TeacherData.resolveTeacherLanguageNames(
+              window.SmartLearningSupabase.getClient(),
+              step2.languages,
+            ),
+          );
+        } catch (error) {
+          console.error("Unable to resolve registration language names.", error);
+          if (languagesReview) languagesReview.textContent = "Unable to load language names.";
+        }
+      }
+      void renderLanguageReview();
 
       async function loadTeachAllReviewSubjects() {
         const groupGrades = {
@@ -2229,6 +2235,10 @@
           university_college: profilePayload.universityCollege,
           graduation_year: profilePayload.graduationYear || null,
           teaching_mode: profilePayload.teachingMode,
+          languages: await window.TeacherData.resolveTeacherLanguageIds(
+            client,
+            profilePayload.languages,
+          ),
         };
 
         for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -2319,42 +2329,6 @@
           ) {
             ids.set(normalizedName, id);
           }
-        }
-        return ids;
-      }
-
-      async function resolveLanguageIds(client, names) {
-        const ids = new Map();
-        const uniqueNames = [
-          ...new Map(
-            names
-              .map((name) => String(name || "").trim())
-              .filter(Boolean)
-              .map((name) => [name.toLowerCase(), name]),
-          ).values(),
-        ];
-        if (!uniqueNames.length) return ids;
-
-        const { data, error } = await client
-          .from("languages")
-          .select("id, name");
-        if (error)
-          throw createRegistrationOperationError("languages select", error);
-
-        for (const name of uniqueNames) {
-          const normalizedName = String(name).trim().toLowerCase();
-          const match = (data || []).find(
-            (row) =>
-              String(row.name || "")
-                .trim()
-                .toLowerCase() === normalizedName,
-          );
-          if (match?.id === undefined || match?.id === null) {
-            throw new Error(
-              `Unable to save languages: '${name}' was not found in public.languages.`,
-            );
-          }
-          ids.set(normalizedName, match.id);
         }
         return ids;
       }
@@ -2525,30 +2499,6 @@
         const gradeRows = [...gradeRowsByKey.values()];
         const teacherSubjectRows = [...teacherSubjects.values()];
         const specialistRows = [...specialistAssignments.values()];
-        const selectedLanguages = [
-          ...new Map(
-            (step2.languages || [])
-              .map((language) => String(language || "").trim())
-              .filter(Boolean)
-              .map((language) => [language.toLowerCase(), language]),
-          ).values(),
-        ];
-        const languageIds = await resolveLanguageIds(client, selectedLanguages);
-        const languageRowsById = new Map();
-        selectedLanguages.forEach((language) => {
-          const languageId = languageIds.get(language.toLowerCase());
-          if (languageId === undefined) {
-            throw new Error(
-              `Unable to save languages: '${language}' was not found in public.languages.`,
-            );
-          }
-          languageRowsById.set(String(languageId), {
-            teacher_id: teacherDbId,
-            language_id: languageId,
-          });
-        });
-        const languageRows = [...languageRowsById.values()];
-
         if (teacherSubjectRows.length) {
           const grades = [...new Set(teacherSubjectRows.map((row) => row.grade))];
           const { data: existingRows, error } = await client
@@ -2618,43 +2568,6 @@
               "teacher_subject_assignments upsert",
               error,
             );
-          }
-        }
-        if (languageRows.length) {
-          const { data: existingLanguageRows, error: existingLanguagesError } =
-            await client
-              .from("teacher_languages")
-              .select("language_id")
-              .eq("teacher_id", teacherDbId)
-              .in(
-                "language_id",
-                languageRows.map((row) => row.language_id),
-              );
-          if (existingLanguagesError) {
-            throw createRegistrationOperationError(
-              "teacher_languages select",
-              existingLanguagesError,
-            );
-          }
-          const existingLanguageIds = new Set(
-            (existingLanguageRows || [])
-              .map((row) => row.language_id)
-              .filter((languageId) => languageId !== null && languageId !== undefined)
-              .map(String),
-          );
-          const newLanguageRows = languageRows.filter(
-            (row) => !existingLanguageIds.has(String(row.language_id)),
-          );
-          if (newLanguageRows.length) {
-            const { error } = await client
-              .from("teacher_languages")
-              .insert(newLanguageRows);
-            if (error) {
-              throw createRegistrationOperationError(
-                "teacher_languages insert",
-                error,
-              );
-            }
           }
         }
       }
@@ -2818,7 +2731,14 @@
             universityCollege: step2.universityCollege || "",
             graduationYear: step2.graduationYear || null,
             teachingMode: step2.teachingMode || "teach_all",
-            languages: Array.isArray(step2.languages) ? step2.languages : [],
+            languages: [
+              ...new Map(
+                (Array.isArray(step2.languages) ? step2.languages : [])
+                  .map((language) => String(language || "").trim())
+                  .filter(Boolean)
+                  .map((language) => [language.toLocaleLowerCase(), language]),
+              ).values(),
+            ],
             subjects: step2.teachingMode === "subject_specialist" &&
               Array.isArray(step2.subjects)
               ? step2.subjects

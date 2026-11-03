@@ -35,7 +35,10 @@
     return `${size.toFixed(size >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
   }
 
-  function formatDate(value) {
+  function formatDate(value, timezone = window.TimezoneManager?.getCurrentTimezone()) {
+    if (window.TimezoneManager) {
+      return window.TimezoneManager.formatDate(value, timezone) || "—";
+    }
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "—";
     return date.toLocaleDateString("en-GB", {
@@ -45,7 +48,10 @@
     });
   }
 
-  function formatDateTime(value) {
+  function formatDateTime(value, timezone = window.TimezoneManager?.getCurrentTimezone()) {
+    if (window.TimezoneManager) {
+      return window.TimezoneManager.formatDateTime(value, timezone) || "—";
+    }
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "—";
     return `${date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })} · ${date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
@@ -266,7 +272,23 @@
       .select("*, subjects(name)")
       .order("created_at", { ascending: false });
     if (error) throw error;
-    return (data || []).map((item, index) => normalizeRecord(item, index));
+    let timezones = new Map();
+    if (data?.length && window.TimezoneManager?.getVisibleTimezones) {
+      try {
+        timezones = await window.TimezoneManager.getVisibleTimezones(
+          client,
+          "materials",
+          data.map((item) => item.id),
+        );
+      } catch (timezoneError) {
+        console.warn("Student material owner timezones could not be loaded.", timezoneError);
+      }
+    }
+    return (data || []).map((item, index) => normalizeRecord({
+      ...item,
+      timezone: timezones.get(String(item.id)) ||
+        window.TimezoneManager?.getCurrentTimezone(),
+    }, index));
   }
 
   async function getStudentRegistration() {

@@ -1888,6 +1888,29 @@
           "arts_humanities",
         ]);
 
+        async function loadProfileLanguages() {
+          const requestId = ++languageRequestId;
+          languagesLoading = true;
+          renderProfile();
+          try {
+            profileLanguageNames = await TeacherData.resolveTeacherLanguageNames(
+              client,
+              profile.languages,
+            );
+            if (requestId !== languageRequestId) return;
+            languagesLoading = false;
+            renderProfile();
+          } catch (error) {
+            if (requestId !== languageRequestId) return;
+            console.error("Unable to resolve teacher profile language names.", error);
+            profileLanguageNames = [];
+            languagesLoading = false;
+            renderProfile();
+            loadStatus.textContent =
+              "Your profile loaded, but saved language names could not be resolved.";
+          }
+        }
+
         async function refreshStudentCount() {
           const request = ++studentCountRequest;
           const groups = registeredGroups.filter((group) =>
@@ -1961,51 +1984,6 @@
             });
         }
 
-        async function loadProfileLanguages() {
-          const requestId = ++languageRequestId;
-          const languageIds = [
-            ...new Set(
-              (Array.isArray(profile.languages) ? profile.languages : [])
-                .map((language) => Number(String(language).trim()))
-                .filter((languageId) => Number.isInteger(languageId) && languageId > 0),
-            ),
-          ];
-          profileLanguageNames = [];
-          languagesLoading = true;
-          renderProfile();
-
-          if (!languageIds.length) {
-            languagesLoading = false;
-            renderProfile();
-            return;
-          }
-
-          try {
-            const { data: languageRows, error } = await client
-              .from("languages")
-              .select("id, name")
-              .in("id", languageIds);
-            if (error) throw error;
-            if (requestId !== languageRequestId) return;
-
-            const namesById = new Map(
-              (languageRows || []).map((row) => [String(Number(row.id)), row.name]),
-            );
-            profileLanguageNames = languageIds
-              .map((languageId) => namesById.get(String(languageId)))
-              .filter((name) => typeof name === "string" && name.trim());
-            languagesLoading = false;
-            renderProfile();
-          } catch (error) {
-            if (requestId !== languageRequestId) return;
-            languagesLoading = false;
-            console.error("Unable to load teacher profile language names.", error);
-            loadStatus.textContent =
-              "Your profile loaded, but language names could not be loaded.";
-            renderProfile();
-          }
-        }
-
         function renderProfile() {
           if (!profile || !authUser) return;
           const location = [profile.city, profile.state, profile.country]
@@ -2053,9 +2031,12 @@
           setText("detailState", profile.state);
           setText("detailCity", profile.city);
           setText("detailGender", profile.gender);
-          setText("detailLanguages", languagesLoading
-            ? "Loading..."
-            : profileLanguageNames.join(", ") || "—");
+          setText(
+            "detailLanguages",
+            languagesLoading
+              ? "Loading..."
+              : profileLanguageNames.join(", ") || "—",
+          );
           setText(
             "detailEmploymentStatus",
             profile.employment_status === "teaching"
@@ -2130,6 +2111,7 @@
           window.__currentTeacherProfile = profile;
           loadStatus.textContent = "";
           renderProfile();
+          await loadProfileLanguages();
 
           registeredGroups = await TeacherData.loadRegisteredTeachingScope(
             client,
@@ -2170,7 +2152,6 @@
             subjectContainer.append(badge);
           });
 
-          await loadProfileLanguages();
           subscribeToStudentCount();
 
           channel = TeacherData.subscribeToTeacherProfile(
@@ -2181,16 +2162,10 @@
                 return;
               }
               if (event.new) {
-                const languagesChanged =
-                  JSON.stringify(profile.languages || []) !==
-                  JSON.stringify(event.new.languages || []);
                 profile = event.new;
                 window.__currentTeacherProfile = profile;
-                if (languagesChanged) {
-                  void loadProfileLanguages();
-                } else {
-                  renderProfile();
-                }
+                renderProfile();
+                void loadProfileLanguages();
               }
             },
           );

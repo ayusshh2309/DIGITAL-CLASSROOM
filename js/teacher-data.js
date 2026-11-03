@@ -59,6 +59,74 @@
     "teaching_mode",
   ]);
 
+  function normalizeLanguageNames(languages) {
+    if (!Array.isArray(languages)) return [];
+    return [
+      ...new Map(
+        languages
+          .map((language) => String(language || "").trim())
+          .filter(Boolean)
+          .map((language) => [language.toLocaleLowerCase(), language]),
+      ).values(),
+    ];
+  }
+
+  async function loadTeacherLanguageCatalog(client = getSupabaseClient()) {
+    if (!client) throw new Error("Supabase is not configured.");
+    const { data, error } = await client
+      .from("languages")
+      .select("id, name")
+      .order("name", { ascending: true });
+    if (error) throw error;
+    return (data || [])
+      .filter((language) => language.id !== null && language.id !== undefined && String(language.name || "").trim())
+      .map((language) => ({
+        id: String(language.id),
+        name: String(language.name).trim(),
+      }));
+  }
+
+  async function resolveTeacherLanguageIds(client, values) {
+    const requested = normalizeLanguageNames(values);
+    if (!requested.length) return [];
+    const catalog = await loadTeacherLanguageCatalog(client);
+    const byId = new Map(catalog.map((language) => [language.id, language.id]));
+    const byName = new Map(
+      catalog.map((language) => [language.name.toLocaleLowerCase(), language.id]),
+    );
+    const unresolved = [];
+    const ids = requested.map((value) => {
+      const id = byId.get(value);
+      const languageId = id || byName.get(value.toLocaleLowerCase());
+      if (!languageId) unresolved.push(value);
+      return languageId;
+    });
+    if (unresolved.length) {
+      throw new Error(`Unknown teacher language selection: ${unresolved.join(", ")}.`);
+    }
+    return [...new Set(ids)];
+  }
+
+  async function resolveTeacherLanguageNames(client, values) {
+    const requested = normalizeLanguageNames(values);
+    if (!requested.length) return [];
+    const catalog = await loadTeacherLanguageCatalog(client);
+    const byId = new Map(catalog.map((language) => [language.id, language]));
+    const byName = new Map(
+      catalog.map((language) => [language.name.toLocaleLowerCase(), language]),
+    );
+    const unresolved = [];
+    const names = requested.map((value) => {
+      const language = byId.get(value) || byName.get(value.toLocaleLowerCase());
+      if (!language) unresolved.push(value);
+      return language?.name;
+    });
+    if (unresolved.length) {
+      throw new Error(`Unknown stored teacher language selection: ${unresolved.join(", ")}.`);
+    }
+    return [...new Set(names)];
+  }
+
   function logSupabaseFailure(operation, error) {
     console.error(`[TeacherData] ${operation} failed.`, {
       name: error?.name || "SupabaseError",
@@ -208,6 +276,9 @@
     const updates = Object.fromEntries(
       Object.entries(changes).filter(([key]) => PROFILE_FIELDS.has(key)),
     );
+    if (Object.prototype.hasOwnProperty.call(updates, "languages")) {
+      updates.languages = await resolveTeacherLanguageIds(client, updates.languages);
+    }
     if (!profile?.id || !Object.keys(updates).length) {
       throw new Error("No valid teacher profile changes were provided.");
     }
@@ -288,6 +359,30 @@
       .update({ time_format: changes.time_format })
       .eq("teacher_id", profile.id)
       .select("*")
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  async function updateCurrentTeacherTimezone(timezone) {
+    const { client, profile } = await loadCurrentTeacherProfile();
+    let validTimezone = false;
+    if (typeof timezone === "string" && timezone.trim()) {
+      try {
+        new Intl.DateTimeFormat("en-US", { timeZone: timezone }).format(0);
+        validTimezone = true;
+      } catch {
+        validTimezone = false;
+      }
+    }
+    if (!validTimezone) throw new Error("Choose a valid IANA timezone.");
+
+    await loadTeacherSettingsForProfile(client, profile);
+    const { data, error } = await client
+      .from("teacher_settings")
+      .update({ timezone })
+      .eq("teacher_id", profile.id)
+      .select("timezone")
       .single();
     if (error) throw error;
     return data;
@@ -567,7 +662,7 @@
       institution_type: data.professional.institutionType,
       years_experience: data.professional.experienceYears || null,
       highest_qualification: data.professional.highestQualification,
-      languages: data.professional.languages || [],
+      languages: await resolveTeacherLanguageIds(client, data.professional.languages),
       teaching_mode: data.professional.teachingMode,
       grades: data.professional.grades || [],
       streams: data.professional.streams || [],
@@ -590,6 +685,7 @@
       ? client
           .from("teachers")
           .update(teacherUpdate)
+          .eq("id", existingTeacher.id)
           .eq("user_id", authData.user.id)
       : client
           .from("teachers")
@@ -639,9 +735,13 @@
     handleUnavailableTeacher,
     loadCurrentTeacherProfile,
     loadRegisteredTeachingScope,
+    loadTeacherLanguageCatalog,
+    resolveTeacherLanguageIds,
+    resolveTeacherLanguageNames,
     updateCurrentTeacherProfile,
     loadCurrentTeacherSettings,
     updateCurrentTeacherSettings,
+    updateCurrentTeacherTimezone,
     uploadTeacherProfilePhoto,
     deleteTeacherProfilePhoto,
     getTeacherProfilePhotoUrl,
