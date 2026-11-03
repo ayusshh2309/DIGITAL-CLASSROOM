@@ -1,14 +1,17 @@
 -- Conditional AAL2 checks for high-impact teacher/student writes.
 --
 -- This deliberately does not add policies to every public table, rewrite
--- SECURITY DEFINER RPCs, or alter Supabase Auth or Storage policies.
+-- SECURITY DEFINER RPCs, change Supabase Auth settings, or replace existing
+-- Storage policies.
 -- Protected operations:
 --   * Attendance session and record mutations.
 --   * Quiz configuration, answer-key, attempt, and answer mutations.
+--   * Quiz question reads and authenticated teacher-resource bucket reads.
 --
 -- Existing row-ownership policies remain authoritative. These triggers add
 -- an authentication-assurance check after normal authorization has allowed a
--- write; they do not grant access to any row.
+-- write; restrictive read policies add an assurance check without granting
+-- access to rows or changing existing permissive policies.
 
 begin;
 
@@ -22,6 +25,11 @@ declare
   existing_search_path text[];
   existing_return_type oid;
   existing_language text;
+  policy_permissive text;
+  policy_roles name[];
+  policy_command text;
+  policy_qual text;
+  policy_check text;
 begin
   if to_regclass('auth.mfa_factors') is null
     or not exists (
@@ -78,6 +86,30 @@ begin
         expected_table;
     end if;
   end loop;
+
+  if to_regclass('storage.objects') is null
+    or not exists (
+      select 1
+      from pg_class
+      where oid = to_regclass('storage.objects')
+        and relrowsecurity
+    )
+  then
+    raise exception
+      'Supabase Storage RLS is unavailable or disabled on storage.objects; refusing to install partial AAL2 read guards.';
+  end if;
+
+  if to_regclass('storage.buckets') is null
+    or not exists (
+      select 1
+      from storage.buckets
+      where id = 'teacher_resources'
+        and not public
+    )
+  then
+    raise exception
+      'The teacher_resources Storage bucket is missing or public; make it private before installing AAL2 read guards because public URLs bypass Storage RLS.';
+  end if;
 
   foreach expected_table in array array[
     'public.mfa_aal2_is_satisfied()',
@@ -148,6 +180,43 @@ begin
     raise exception
       'A trigger named mfa_aal2_guard_sensitive_writes already exists with an incompatible definition; review it before applying this script.';
   end if;
+
+  select permissive, roles, cmd, qual, with_check
+  into policy_permissive, policy_roles, policy_command, policy_qual, policy_check
+  from pg_policies
+  where schemaname = 'public'
+    and tablename = 'quiz_questions'
+    and policyname = 'mfa_aal2_guard_quiz_question_reads';
+
+  if found and (
+    policy_permissive is distinct from 'RESTRICTIVE'
+    or policy_roles is distinct from array['authenticated'::name]
+    or policy_command is distinct from 'SELECT'
+    or policy_qual is distinct from 'mfa_aal2_is_satisfied()'
+    or policy_check is not null
+  ) then
+    raise exception
+      'Policy public.quiz_questions.mfa_aal2_guard_quiz_question_reads exists with an incompatible definition; review it before applying this script.';
+  end if;
+
+  select permissive, roles, cmd, qual, with_check
+  into policy_permissive, policy_roles, policy_command, policy_qual, policy_check
+  from pg_policies
+  where schemaname = 'storage'
+    and tablename = 'objects'
+    and policyname = 'mfa_aal2_guard_teacher_resource_reads';
+
+  if found and (
+    policy_permissive is distinct from 'RESTRICTIVE'
+    or policy_roles is distinct from array['authenticated'::name]
+    or policy_command is distinct from 'SELECT'
+    or policy_qual is distinct from
+      '((bucket_id <> ''teacher_resources''::text) OR mfa_aal2_is_satisfied())'
+    or policy_check is not null
+  ) then
+    raise exception
+      'Policy storage.objects.mfa_aal2_guard_teacher_resource_reads exists with an incompatible definition; review it before applying this script.';
+  end if;
 end
 $preflight$;
 
@@ -181,6 +250,44 @@ $function$;
 alter function public.mfa_aal2_is_satisfied() owner to postgres;
 revoke all on function public.mfa_aal2_is_satisfied()
   from public, anon, authenticated, service_role;
+grant execute on function public.mfa_aal2_is_satisfied() to authenticated;
+
+do $install_read_policies$
+begin
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'quiz_questions'
+      and policyname = 'mfa_aal2_guard_quiz_question_reads'
+  ) then
+    create policy mfa_aal2_guard_quiz_question_reads
+      on public.quiz_questions
+      as restrictive
+      for select
+      to authenticated
+      using (mfa_aal2_is_satisfied());
+  end if;
+
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and policyname = 'mfa_aal2_guard_teacher_resource_reads'
+  ) then
+    create policy mfa_aal2_guard_teacher_resource_reads
+      on storage.objects
+      as restrictive
+      for select
+      to authenticated
+      using (
+        bucket_id <> 'teacher_resources'
+        or mfa_aal2_is_satisfied()
+      );
+  end if;
+end
+$install_read_policies$;
 
 create or replace function public.enforce_mfa_aal2_for_sensitive_write()
 returns trigger
