@@ -36,7 +36,24 @@
         </form>
       </div>
       <button type="button" class="mfa-primary-button" id="mfaAddFactor" hidden>Enable Two-Factor Authentication</button>
-      <p class="mfa-recovery-note">Supabase does not provide recovery codes. Consider adding a second authenticator device and keep your authenticator app available.</p>
+      <section class="mfa-recovery-section" aria-labelledby="recoveryCodesTitle">
+        <h4 id="recoveryCodesTitle">Backup Recovery Codes</h4>
+        <p>Each code can be used once if you lose access to your authenticator. Store them somewhere safe and private.</p>
+        <p class="mfa-recovery-count" id="recoveryCodeCount" role="status" aria-live="polite">Checking recovery codes…</p>
+        <div class="mfa-actions">
+          <button type="button" class="mfa-primary-button" id="generateRecoveryCodes" disabled>Generate Recovery Codes</button>
+          <button type="button" class="mfa-secondary-button" id="regenerateRecoveryCodes" hidden disabled>Regenerate Codes</button>
+        </div>
+        <div class="mfa-recovery-display" id="recoveryCodesDisplay" hidden>
+          <p>These codes are shown only once. Save or download them now; they cannot be viewed again.</p>
+          <ol id="recoveryCodesList"></ol>
+          <div class="mfa-actions">
+            <button type="button" class="mfa-secondary-button" id="copyRecoveryCodes">Copy all codes</button>
+            <button type="button" class="mfa-secondary-button" id="downloadRecoveryCodes">Download codes</button>
+          </div>
+        </div>
+        <p class="mfa-recovery-note">Regenerating codes immediately invalidates every previous unused code.</p>
+      </section>
     </section>
   `;
 
@@ -47,6 +64,13 @@
   const enrollment = mount.querySelector("#mfaEnrollment");
   const addButton = mount.querySelector("#mfaAddFactor");
   const codeInput = mount.querySelector("#mfaEnrollCode");
+  const recoveryCount = mount.querySelector("#recoveryCodeCount");
+  const generateRecoveryButton = mount.querySelector("#generateRecoveryCodes");
+  const regenerateRecoveryButton = mount.querySelector("#regenerateRecoveryCodes");
+  const recoveryDisplay = mount.querySelector("#recoveryCodesDisplay");
+  let visibleRecoveryCodes = [];
+  let recoveryManagementAllowed = false;
+  let recoveryStatusAvailable = false;
   let pendingFactorId = null;
   let busy = false;
 
@@ -60,6 +84,72 @@
     mount.querySelectorAll("button, input").forEach((control) => {
       if (control !== mount.querySelector("#mfaSetupKey")) control.disabled = value;
     });
+    if (!value) {
+      const disabled = !recoveryManagementAllowed || !recoveryStatusAvailable;
+      generateRecoveryButton.disabled = disabled;
+      regenerateRecoveryButton.disabled = disabled;
+    }
+  }
+
+  function showRecoveryCodes(codes) {
+    visibleRecoveryCodes = codes;
+    const codeList = mount.querySelector("#recoveryCodesList");
+    codeList.replaceChildren();
+    codes.forEach((code) => {
+      const item = document.createElement("li");
+      item.textContent = code;
+      codeList.append(item);
+    });
+    recoveryDisplay.hidden = false;
+  }
+
+  async function loadRecoveryCodeCount() {
+    const client = window.SmartLearningMFA.getClient();
+    const { data, error } = await client.functions.invoke("get-recovery-code-count", { body: {} });
+    if (error) {
+      throw new Error(await window.SmartLearningMFA.getFunctionErrorMessage(error, "get-recovery-code-count"));
+    }
+    if (!data || !Number.isInteger(data.remaining) || typeof data.hasCodes !== "boolean") {
+      throw new Error("Could not load recovery-code status.");
+    }
+    recoveryStatusAvailable = true;
+    recoveryCount.textContent = `${data.remaining} unused recovery code${data.remaining === 1 ? "" : "s"} remaining.`;
+    generateRecoveryButton.hidden = data.hasCodes;
+    regenerateRecoveryButton.hidden = !data.hasCodes;
+    const disabled = !recoveryManagementAllowed;
+    generateRecoveryButton.disabled = disabled;
+    regenerateRecoveryButton.disabled = disabled;
+    if (disabled) recoveryCount.textContent += " Enable an authenticator to manage recovery codes.";
+  }
+
+  async function createRecoveryCodes(regenerate) {
+    if (busy) return;
+    if (regenerate && !window.confirm(
+      "Regenerate backup recovery codes? All previous unused codes will immediately stop working.",
+    )) return;
+    setBusy(true);
+    recoveryDisplay.hidden = true;
+    visibleRecoveryCodes = [];
+    setMessage(regenerate ? "Regenerating recovery codes…" : "Generating recovery codes…");
+    try {
+      const client = window.SmartLearningMFA.getClient();
+      const functionName = regenerate ? "regenerate-recovery-codes" : "generate-recovery-codes";
+      const { data, error } = await client.functions.invoke(functionName, { body: {} });
+      if (error) {
+        throw new Error(await window.SmartLearningMFA.getFunctionErrorMessage(error, functionName));
+      }
+      if (!Array.isArray(data?.codes) || data.codes.length !== 10 ||
+        data.codes.some((code) => typeof code !== "string")) {
+        throw new Error("The server returned an invalid recovery-code response.");
+      }
+      showRecoveryCodes(data.codes);
+      setMessage("Recovery codes generated. Save them now; they will not be shown again.", "success");
+      await loadRecoveryCodeCount();
+    } catch (error) {
+      setMessage(error.message || "Could not generate recovery codes.", "error");
+    } finally {
+      setBusy(false);
+    }
   }
 
   function clearEnrollment() {
@@ -75,6 +165,10 @@
     if (!client) throw new Error("Supabase is not configured.");
     const factors = await window.SmartLearningMFA.getTotpFactors(client);
     const verifiedFactors = factors.filter((factor) => factor.status === "verified");
+    recoveryManagementAllowed = verifiedFactors.length > 0;
+    const recoveryControlsDisabled = !recoveryManagementAllowed || !recoveryStatusAvailable;
+    generateRecoveryButton.disabled = recoveryControlsDisabled;
+    regenerateRecoveryButton.disabled = recoveryControlsDisabled;
     status.textContent = verifiedFactors.length ? "Enabled" : "Disabled";
     status.dataset.enabled = String(verifiedFactors.length > 0);
     summary.textContent = verifiedFactors.length
@@ -252,9 +346,38 @@
       setBusy(false);
     }
   });
+  generateRecoveryButton.addEventListener("click", () => void createRecoveryCodes(false));
+  regenerateRecoveryButton.addEventListener("click", () => void createRecoveryCodes(true));
+  mount.querySelector("#copyRecoveryCodes").addEventListener("click", async () => {
+    if (!visibleRecoveryCodes.length) return;
+    try {
+      await navigator.clipboard.writeText(visibleRecoveryCodes.join("\n"));
+      setMessage("Recovery codes copied to the clipboard.", "success");
+    } catch (error) {
+      setMessage(error.message || "Could not copy recovery codes. Select and copy them manually.", "error");
+    }
+  });
+  mount.querySelector("#downloadRecoveryCodes").addEventListener("click", () => {
+    if (!visibleRecoveryCodes.length) return;
+    const blob = new Blob([`${visibleRecoveryCodes.join("\r\n")}\r\n`], { type: "text/plain;charset=utf-8" });
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = "smart-learning-recovery-codes.txt";
+    link.click();
+    URL.revokeObjectURL(downloadUrl);
+    setMessage("Recovery codes downloaded. Keep the file somewhere private.", "success");
+  });
   refresh().catch((error) => {
     status.textContent = "Unavailable";
     setMessage(error.message || "Could not load authenticator status.", "error");
     addButton.hidden = true;
+  });
+  loadRecoveryCodeCount().catch((error) => {
+    recoveryCount.textContent = "Recovery-code status unavailable.";
+    setMessage(error.message || "Could not load recovery-code status.", "error");
+    recoveryStatusAvailable = false;
+    generateRecoveryButton.disabled = true;
+    regenerateRecoveryButton.disabled = true;
   });
 })();

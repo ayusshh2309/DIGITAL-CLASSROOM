@@ -19,6 +19,58 @@
     return client;
   }
 
+  async function getFunctionErrorMessage(error, functionName) {
+    if (error?.context instanceof Response && error.context.status === 404) {
+      return `The ${functionName} Edge Function is not deployed to this Supabase project.`;
+    }
+    if (error?.context instanceof Response) {
+      try {
+        const body = await error.context.clone().json();
+        if (typeof body?.error === "string" && body.error.trim()) return body.error;
+      } catch {
+        // Fall back to the SDK error when the response is not JSON.
+      }
+    }
+    if (
+      error?.name === "FunctionsFetchError" ||
+      /failed to send a request to the edge function/i.test(error?.message || "")
+    ) {
+      return `The ${functionName} Edge Function could not be reached. Deploy it to your linked Supabase project and try again.`;
+    }
+    return error?.message || `The ${functionName} Edge Function failed.`;
+  }
+
+  async function invokeRecoveryFunction(functionName, body) {
+    const { data, error } = await getClient().functions.invoke(functionName, { body });
+    if (error) {
+      throw new Error(await getFunctionErrorMessage(error, functionName));
+    }
+    return data;
+  }
+
+  async function beginRecovery(code) {
+    const data = await invokeRecoveryFunction("verify-recovery-code", { code });
+    if (data?.valid !== true || typeof data.transactionToken !== "string") {
+      throw new Error(data?.error || "That recovery code is invalid, already used, or has an active recovery attempt.");
+    }
+    return data;
+  }
+
+  async function completeRecovery(transactionToken, replacementFactorId) {
+    const data = await invokeRecoveryFunction("complete-recovery", {
+      transactionToken,
+      replacementFactorId,
+    });
+    if (data?.completed !== true) {
+      throw new Error("Could not complete authenticator recovery.");
+    }
+    return data;
+  }
+
+  async function cancelRecovery(transactionToken) {
+    return invokeRecoveryFunction("cancel-recovery", { transactionToken });
+  }
+
   async function getTotpFactors(client = getClient()) {
     const { data, error } = await client.auth.mfa.listFactors();
     if (error) throw error;
@@ -113,6 +165,10 @@
 
   window.SmartLearningMFA = Object.freeze({
     getClient,
+    getFunctionErrorMessage,
+    beginRecovery,
+    completeRecovery,
+    cancelRecovery,
     getTotpFactors,
     getVerifiedTotpFactors,
     getMfaState,

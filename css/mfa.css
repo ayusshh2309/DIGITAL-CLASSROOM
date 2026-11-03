@@ -52,7 +52,16 @@
 }
 .mfa-code-input { max-width: 230px; margin-top: 8px; text-align: center; letter-spacing: .35em; font-size: 18px; }
 .mfa-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 13px; }
-.mfa-recovery-note { margin-top: 16px; font-size: 12px; }
+.mfa-recovery-section { margin-top: 24px; padding-top: 20px; border-top: 1px solid #e8ebf2; }
+.mfa-recovery-section h4 { margin: 0 0 7px; font-size: 16px; }
+.mfa-recovery-section > p, .mfa-recovery-display > p {
+  margin: 0 0 12px; color: #69758b; font-size: 13px; line-height: 1.6;
+}
+.mfa-recovery-count { color: #36435b !important; font-weight: 700; }
+.mfa-recovery-display { margin-top: 16px; padding: 16px; border: 1px solid #e1e6f4; border-radius: 13px; background: #fff; }
+.mfa-recovery-display ol { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px 20px; padding-left: 24px; }
+.mfa-recovery-display li { padding: 5px 8px; border-radius: 7px; background: #f5f6fb; font-family: ui-monospace, monospace; font-weight: 700; letter-spacing: .04em; }
+.mfa-recovery-note { margin-top: 12px !important; font-size: 12px !important; }
 @media (max-width: 560px) {
   .mfa-factor-row { align-items: flex-start; }
   .mfa-factor-row .mfa-secondary-button { min-height: 38px; padding: 8px 11px; }

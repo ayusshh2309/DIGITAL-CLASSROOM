@@ -54,6 +54,30 @@
         <input id="verificationCode" name="code" type="tel" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" maxlength="6" aria-label="Verification code" autofocus />
         <button id="verifyButton" type="submit"><span class="loading" aria-hidden="true"></span><span id="buttonText">Verify and continue</span></button>
       </form>
+      <button id="recoveryModeButton" class="back" type="button" style="width:auto;min-height:0;margin:18px auto 0;padding:0;background:none;color:#5963bb;font:inherit;font-size:13px;font-weight:600">
+        Can't access your authenticator?
+      </button>
+      <section id="recoverySection" hidden>
+        <p class="description">Enter one unused backup recovery code. You will then need to set up and verify a new authenticator before continuing.</p>
+        <form id="recoveryForm">
+          <label for="recoveryCode">Backup recovery code</label>
+          <input id="recoveryCode" name="recoveryCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" aria-label="Backup recovery code" />
+          <button id="recoveryButton" type="submit"><span class="loading" aria-hidden="true"></span><span id="recoveryButtonText">Verify recovery code</span></button>
+        </form>
+        <div id="replacementEnrollment" hidden>
+          <p class="description" id="replacementInstructions">Scan this QR code using a new authenticator app, then verify a 6-digit code. Your old authenticator remains in place until the new one is verified.</p>
+          <button id="startReplacementEnrollment" type="button"><span class="loading" aria-hidden="true"></span><span id="startReplacementText">Set up a new authenticator</span></button>
+          <img id="replacementQrCode" alt="New authenticator setup QR code" style="display:block;width:180px;height:180px;margin:12px auto;object-fit:contain" />
+          <label for="replacementSetupKey">Manual setup key</label>
+          <input id="replacementSetupKey" type="text" readonly autocomplete="off" style="font-size:14px;letter-spacing:.08em" />
+          <form id="replacementForm" hidden>
+            <label for="replacementCode">New authenticator code</label>
+            <input id="replacementCode" type="tel" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" />
+            <button id="replacementButton" type="submit"><span class="loading" aria-hidden="true"></span><span id="replacementButtonText">Verify new authenticator</span></button>
+          </form>
+          <button id="cancelRecoveryButton" class="back" type="button" style="width:auto;min-height:0;margin:18px auto 0;padding:0;background:none;color:#5963bb;font:inherit;font-size:13px;font-weight:600">Cancel recovery and keep this code</button>
+        </div>
+      </section>
       <p class="status" id="status" role="status" aria-live="polite"></p>
       <a class="back" href="teacher_registration/login.html">Back to login</a>
     </main>
@@ -67,8 +91,67 @@
         const status = document.getElementById("status");
         const authenticatorChoice = document.getElementById("authenticatorChoice");
         const authenticatorLabel = document.getElementById("authenticatorLabel");
+        const recoveryModeButton = document.getElementById("recoveryModeButton");
+        const recoverySection = document.getElementById("recoverySection");
+        const recoveryForm = document.getElementById("recoveryForm");
+        const recoveryCode = document.getElementById("recoveryCode");
+        const recoveryButton = document.getElementById("recoveryButton");
+        const recoveryButtonText = document.getElementById("recoveryButtonText");
+        const replacementEnrollment = document.getElementById("replacementEnrollment");
+        const startReplacementButton = document.getElementById("startReplacementEnrollment");
+        const startReplacementText = document.getElementById("startReplacementText");
+        const replacementForm = document.getElementById("replacementForm");
+        const replacementCode = document.getElementById("replacementCode");
+        const replacementQrCode = document.getElementById("replacementQrCode");
+        const replacementSetupKey = document.getElementById("replacementSetupKey");
+        const replacementSetupKeyLabel = document.querySelector('label[for="replacementSetupKey"]');
+        const replacementInstructions = document.getElementById("replacementInstructions");
+        const replacementButton = document.getElementById("replacementButton");
+        const replacementButtonText = document.getElementById("replacementButtonText");
+        const cancelRecoveryButton = document.getElementById("cancelRecoveryButton");
         let factorId = null;
+        let replacementFactorId = null;
+        let recoveryTransactionToken = null;
+        let recoveryTransactionExpiresAt = null;
+        let replacementFactorVerified = false;
+        let recoveryMode = false;
         let busy = false;
+        let authenticatedUserId = null;
+        const recoverySessionKey = "smart-learning-pending-mfa-recovery";
+
+        function saveRecoverySession(userId) {
+          sessionStorage.setItem(recoverySessionKey, JSON.stringify({
+            userId,
+            transactionToken: recoveryTransactionToken,
+            replacementFactorId,
+            expiresAt: recoveryTransactionExpiresAt,
+          }));
+        }
+
+        function clearRecoverySession() {
+          sessionStorage.removeItem(recoverySessionKey);
+        }
+
+        function loadRecoverySession(userId) {
+          const value = sessionStorage.getItem(recoverySessionKey);
+          if (!value) return null;
+          try {
+            const pending = JSON.parse(value);
+            if (
+              pending?.userId === userId &&
+              typeof pending.transactionToken === "string" &&
+              typeof pending.replacementFactorId === "string" &&
+              Number.isFinite(pending.expiresAt) &&
+              Date.now() <= pending.expiresAt + 15 * 60 * 1000
+            ) {
+              return pending;
+            }
+          } catch {
+            // Discard malformed tab-local recovery state.
+          }
+          clearRecoverySession();
+          return null;
+        }
 
         function showStatus(text, kind = "") {
           status.textContent = text;
@@ -77,10 +160,17 @@
 
         function setBusy(value) {
           busy = value;
-          button.disabled = value;
-          button.setAttribute("aria-busy", String(value));
+          [button, recoveryButton, replacementButton, startReplacementButton, cancelRecoveryButton].forEach((control) => {
+            control.disabled = value;
+            control.setAttribute("aria-busy", String(value));
+          });
           buttonText.textContent = value ? "Verifying…" : "Verify and continue";
+          recoveryButtonText.textContent = value ? "Verifying…" : "Verify recovery code";
+          replacementButtonText.textContent = value ? "Verifying…" : "Verify new authenticator";
+          startReplacementText.textContent = value ? "Starting…" : "Set up a new authenticator";
           codeInput.disabled = value;
+          recoveryCode.disabled = value;
+          replacementCode.disabled = value;
         }
 
         codeInput.addEventListener("input", () => {
@@ -91,6 +181,17 @@
           }
         });
 
+        recoveryModeButton.addEventListener("click", () => {
+          recoveryMode = !recoveryMode;
+          form.hidden = recoveryMode;
+          recoverySection.hidden = !recoveryMode;
+          recoveryModeButton.textContent = recoveryMode
+            ? "Use your authenticator instead"
+            : "Can't access your authenticator?";
+          showStatus("");
+          (recoveryMode ? recoveryCode : codeInput).focus();
+        });
+
         async function initialize() {
           try {
             const { data: userData, error: userError } = await client.auth.getUser();
@@ -99,9 +200,58 @@
               window.location.replace("teacher_registration/login.html");
               return;
             }
+            authenticatedUserId = userData.user.id;
+            const pendingRecovery = loadRecoverySession(userData.user.id);
             const { assurance, factors } = await window.SmartLearningMFA.getMfaState(client);
+            recoveryModeButton.hidden = !factors.length;
+            const pendingFactor = pendingRecovery &&
+              factors.find((factor) => factor.id === pendingRecovery.replacementFactorId);
+            if (pendingRecovery && !pendingFactor) {
+              recoveryMode = true;
+              form.hidden = true;
+              recoverySection.hidden = true;
+              showStatus("The replacement authenticator is unavailable. The reserved recovery transaction will expire within 15 minutes; retry with the same unused recovery code afterwards.", "error");
+              return;
+            }
+            if (pendingRecovery && pendingFactor?.status === "verified") {
+              recoveryTransactionToken = pendingRecovery.transactionToken;
+              recoveryTransactionExpiresAt = pendingRecovery.expiresAt;
+              replacementFactorId = pendingRecovery.replacementFactorId;
+              replacementFactorVerified = assurance?.currentLevel === "aal2";
+              recoveryMode = true;
+              form.hidden = true;
+              recoveryModeButton.hidden = true;
+              recoverySection.hidden = false;
+              recoveryForm.hidden = true;
+              replacementEnrollment.hidden = false;
+              startReplacementButton.hidden = true;
+              replacementForm.hidden = false;
+              replacementQrCode.hidden = true;
+              replacementSetupKey.hidden = true;
+              replacementSetupKeyLabel.hidden = true;
+              replacementInstructions.textContent = "Your replacement authenticator is already enrolled. Enter its code if this session needs to restore AAL2, or finish recovery.";
+              replacementButtonText.textContent = replacementFactorVerified
+                ? "Retry recovery completion"
+                : "Verify new authenticator";
+              showStatus(
+                replacementFactorVerified
+                  ? "Your new authenticator is verified. Retry recovery completion."
+                  : "Enter a code from your verified replacement authenticator to resume recovery.",
+                "success",
+              );
+              if (!replacementFactorVerified) replacementCode.focus();
+              return;
+            }
+            if (pendingRecovery) {
+              throw new Error("The replacement authenticator is not verified. Contact support to finish account recovery.");
+            }
             if (!factors.length) {
-              window.location.replace(await window.SmartLearningMFA.resolveDashboard(client));
+              recoveryMode = true;
+              form.hidden = true;
+              recoverySection.hidden = false;
+              recoveryModeButton.hidden = true;
+              showStatus("No authenticator is currently enrolled. Use an unused backup recovery code to set up a replacement authenticator.");
+              recoveryCode.focus();
               return;
             }
             if (assurance?.currentLevel === "aal2") {
@@ -168,6 +318,178 @@
             showStatus(error.message || "Invalid or expired code. Please try again.", "error");
             codeInput.value = "";
             codeInput.focus();
+          } finally {
+            setBusy(false);
+          }
+        });
+
+        recoveryForm.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          if (busy || recoveryTransactionToken) return;
+          const code = recoveryCode.value.trim();
+          if (!code) {
+            showStatus("Enter a backup recovery code.", "error");
+            return;
+          }
+          setBusy(true);
+          showStatus("Verifying your recovery code…");
+          try {
+            const transaction = await window.SmartLearningMFA.beginRecovery(code);
+            recoveryTransactionToken = transaction.transactionToken;
+            recoveryTransactionExpiresAt = new Date(transaction.expiresAt).getTime();
+            recoveryForm.hidden = true;
+            replacementEnrollment.hidden = false;
+            showStatus(
+              "Recovery code accepted and reserved for 15 minutes. It will only be consumed after your new authenticator is verified.",
+              "success",
+            );
+          } catch (error) {
+            showStatus(error.message || "Could not verify the recovery code.", "error");
+            recoveryCode.value = "";
+            recoveryCode.focus();
+          } finally {
+            setBusy(false);
+          }
+        });
+
+        startReplacementButton.addEventListener("click", async () => {
+          if (busy || !recoveryTransactionToken || replacementFactorId) return;
+          setBusy(true);
+          showStatus("Setting up your replacement authenticator…");
+          try {
+            const { data: enrollment, error: enrollmentError } = await client.auth.mfa.enroll({
+              factorType: "totp",
+              friendlyName: "Replacement authenticator",
+            });
+            if (enrollmentError) throw enrollmentError;
+            replacementFactorId = enrollment.id;
+            document.getElementById("replacementQrCode").src = enrollment.totp.qr_code;
+            document.getElementById("replacementSetupKey").value = enrollment.totp.secret;
+            replacementForm.hidden = false;
+            startReplacementButton.hidden = true;
+            replacementCode.focus();
+          } catch (error) {
+            showStatus(error.message || "Could not start replacement authenticator setup. Your recovery code is still reserved temporarily.", "error");
+          } finally {
+            setBusy(false);
+          }
+        });
+
+        replacementForm.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          if (busy || !replacementFactorId) return;
+          if (replacementFactorVerified) {
+            await finishRecovery();
+            return;
+          }
+          const code = replacementCode.value.trim();
+          if (!/^\d{6}$/.test(code)) {
+            showStatus("Enter the 6-digit code from your new authenticator.", "error");
+            return;
+          }
+          setBusy(true);
+          showStatus("Verifying your new authenticator…");
+          try {
+            const { data: challenge, error: challengeError } = await client.auth.mfa.challenge({
+              factorId: replacementFactorId,
+            });
+            if (challengeError) throw challengeError;
+            const { error: verifyError } = await client.auth.mfa.verify({
+              factorId: replacementFactorId,
+              challengeId: challenge.id,
+              code,
+            });
+            if (verifyError) throw verifyError;
+
+            const { data: assurance, error: assuranceError } =
+              await client.auth.mfa.getAuthenticatorAssuranceLevel();
+            if (assuranceError) throw assuranceError;
+            if (assurance?.currentLevel !== "aal2") {
+              throw new Error("The new authenticator was verified, but this session did not reach AAL2.");
+            }
+            replacementFactorVerified = true;
+            if (!authenticatedUserId) throw new Error("Your sign-in session expired. Sign in again to finish recovery.");
+            saveRecoverySession(authenticatedUserId);
+            replacementButtonText.textContent = "Finish recovery";
+            showStatus("New authenticator verified at AAL2. Completing recovery…", "success");
+            await finishRecovery();
+          } catch (error) {
+            showStatus(error.message || "Could not complete authenticator recovery.", "error");
+            replacementCode.value = "";
+            replacementCode.focus();
+          } finally {
+            setBusy(false);
+          }
+        });
+
+        async function finishRecovery() {
+          if (!recoveryTransactionToken || !replacementFactorId || !replacementFactorVerified) return;
+          setBusy(true);
+          showStatus("Completing authenticator recovery…");
+          try {
+            await window.SmartLearningMFA.completeRecovery(
+              recoveryTransactionToken,
+              replacementFactorId,
+            );
+            clearRecoverySession();
+            const { data: assurance, error: assuranceError } =
+              await client.auth.mfa.getAuthenticatorAssuranceLevel();
+            if (assuranceError) throw assuranceError;
+            if (assurance?.currentLevel !== "aal2") {
+              throw new Error("Recovery completed, but this session no longer has AAL2.");
+            }
+
+            const dashboard = await window.SmartLearningMFA.resolveDashboard(client);
+            showStatus("Authenticator recovery complete. Opening your dashboard…", "success");
+            window.location.replace(dashboard);
+          } catch (error) {
+            showStatus(error.message || "Could not complete authenticator recovery. Your recovery code remains reserved until the transaction expires.", "error");
+            replacementButtonText.textContent = "Retry recovery completion";
+          } finally {
+            setBusy(false);
+          }
+        }
+
+        cancelRecoveryButton.addEventListener("click", async () => {
+          if (busy || !recoveryTransactionToken) return;
+          if (replacementFactorVerified) {
+            showStatus("The replacement authenticator has been verified. Finish recovery instead of canceling.", "error");
+            return;
+          }
+          setBusy(true);
+          try {
+            const result = await window.SmartLearningMFA.cancelRecovery(recoveryTransactionToken);
+            if (result?.cancelled !== true) {
+              throw new Error("Recovery completion has started or the transaction expired. Keep the replacement authenticator and finish recovery.");
+            }
+            if (replacementFactorId) {
+              const { error } = await client.auth.mfa.unenroll({ factorId: replacementFactorId });
+              if (error) {
+                recoveryTransactionToken = null;
+                recoveryTransactionExpiresAt = null;
+                replacementFactorId = null;
+                clearRecoverySession();
+                recoveryCode.value = "";
+                replacementEnrollment.hidden = true;
+                recoveryForm.hidden = false;
+                showStatus("Recovery was canceled and your recovery code remains unused, but the unfinished authenticator could not be removed. Remove it later in Security settings.", "error");
+                return;
+              }
+            }
+            recoveryTransactionToken = null;
+            recoveryTransactionExpiresAt = null;
+            replacementFactorId = null;
+            clearRecoverySession();
+            recoveryCode.value = "";
+            replacementEnrollment.hidden = true;
+            recoveryForm.hidden = false;
+            startReplacementButton.hidden = false;
+            replacementForm.hidden = true;
+            document.getElementById("replacementQrCode").removeAttribute("src");
+            document.getElementById("replacementSetupKey").value = "";
+            showStatus("Recovery canceled. Your recovery code is still unused.", "success");
+          } catch (error) {
+            showStatus(error.message || "Could not cancel authenticator recovery.", "error");
           } finally {
             setBusy(false);
           }
