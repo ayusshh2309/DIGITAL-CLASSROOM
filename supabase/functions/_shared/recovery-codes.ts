@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getSupabaseFunctionConfig } from "./supabase-config.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -143,18 +144,14 @@ export async function handleRecoveryRequest(request: Request, operation: Recover
   if (request.method !== "POST") return response({ error: "Method not allowed." }, 405);
 
   const authorization = request.headers.get("Authorization");
-  const url = Deno.env.get("SUPABASE_URL");
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const supabaseConfig = getSupabaseFunctionConfig();
   const hmacSecret = Deno.env.get("RECOVERY_CODE_HMAC_SECRET");
-  if (!authorization?.startsWith("Bearer ") || !url || !anonKey || !serviceRoleKey) {
-    const missing = [
-      ["SUPABASE_URL", url],
-      ["SUPABASE_ANON_KEY", anonKey],
-      ["SUPABASE_SERVICE_ROLE_KEY", serviceRoleKey],
-    ].filter(([, value]) => !value).map(([name]) => name);
+  if (!authorization?.startsWith("Bearer ")) {
+    return response({ error: "Your session is invalid or expired." }, 401);
+  }
+  if (!supabaseConfig) {
     return response({
-      error: `Recovery-code service is not configured. Missing server setting${missing.length === 1 ? "" : "s"}: ${missing.join(", ")}.`,
+      error: "Recovery-code service is not configured. Required Supabase URL and default API keys are unavailable.",
     }, 500);
   }
   const secretRequired = operation !== "count";
@@ -168,7 +165,7 @@ export async function handleRecoveryRequest(request: Request, operation: Recover
   if (!body) return response({ error: "Invalid request." }, 400);
 
   const token = authorization.slice("Bearer ".length);
-  const authClient = createClient(url, anonKey, {
+  const authClient = createClient(supabaseConfig.url, supabaseConfig.publishableKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const { data: { user }, error: authError } = await authClient.auth.getUser(token);
@@ -178,10 +175,10 @@ export async function handleRecoveryRequest(request: Request, operation: Recover
     return response({ error: "Verify your authenticator before managing recovery codes." }, 403);
   }
 
-  const adminClient = createClient(url, serviceRoleKey, {
+  const adminClient = createClient(supabaseConfig.url, supabaseConfig.secretKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const userClient = createClient(url, anonKey, {
+  const userClient = createClient(supabaseConfig.url, supabaseConfig.publishableKey, {
     global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { persistSession: false, autoRefreshToken: false },
   });
