@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Signing in - Smart Learning DC</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/mfa-auth.js"></script>
+    <style>
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        box-sizing: border-box;
+        background: #e8f3f1;
+        color: #0f172a;
+        font: 16px/1.5 "Plus Jakarta Sans", Arial, sans-serif;
+      }
+
+      main {
+        width: min(100%, 440px);
+        padding: 32px;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 16px 48px rgb(15 23 42 / 10%);
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: 1.4rem;
+      }
+
+      p {
+        margin: 0;
+        color: #475569;
+      }
+
+      a {
+        display: inline-block;
+        margin-top: 20px;
+        color: #5538ee;
+        font-weight: 700;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1 id="heading">Completing sign-in</h1>
+      <p id="message" role="status" aria-live="polite">
+        Restoring your secure session...
+      </p>
+      <a id="loginLink" href="teacher_registration/login.html" hidden>
+        Return to login
+      </a>
+    </main>
+    <script src="js/oauth-callback.js"></script>
+  </body>
+</html>
