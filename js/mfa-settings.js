@@ -38,7 +38,8 @@
       <button type="button" class="mfa-primary-button" id="mfaAddFactor" hidden>Enable Two-Factor Authentication</button>
       <section class="mfa-recovery-section" aria-labelledby="recoveryCodesTitle">
         <h4 id="recoveryCodesTitle">Backup Recovery Codes</h4>
-        <p>Each code can be used once if you lose access to your authenticator. Store them somewhere safe and private.</p>
+        <p>Generate Supabase recovery codes while your authenticator is available and your session is at AAL2. A native recovery code is consumed as soon as it is verified, even if you later cancel replacement setup.</p>
+        <p class="mfa-recovery-note">Older Smart Learning DC backup codes are not Supabase recovery codes and cannot be used for native MFA recovery. Keep your current authenticator enabled until you have safely stored the new codes.</p>
         <p class="mfa-recovery-count" id="recoveryCodeCount" role="status" aria-live="polite">Checking recovery codes…</p>
         <div class="mfa-actions">
           <button type="button" class="mfa-primary-button" id="generateRecoveryCodes" disabled>Generate Recovery Codes</button>
@@ -52,7 +53,7 @@
             <button type="button" class="mfa-secondary-button" id="downloadRecoveryCodes">Download codes</button>
           </div>
         </div>
-        <p class="mfa-recovery-note">Regenerating codes immediately invalidates every previous unused code.</p>
+        <p class="mfa-recovery-note">Regenerating native codes immediately invalidates every previous unused native code.</p>
       </section>
     </section>
   `;
@@ -71,6 +72,7 @@
   let visibleRecoveryCodes = [];
   let recoveryManagementAllowed = false;
   let recoveryStatusAvailable = false;
+  let currentUserId = null;
   let pendingFactorId = null;
   let busy = false;
 
@@ -103,23 +105,30 @@
     recoveryDisplay.hidden = false;
   }
 
-  async function loadRecoveryCodeCount() {
+  async function loadRecoveryCodeStatus() {
     const client = window.SmartLearningMFA.getClient();
-    const { data, error } = await client.functions.invoke("get-recovery-code-count", { body: {} });
-    if (error) {
-      throw new Error(await window.SmartLearningMFA.getFunctionErrorMessage(error, "get-recovery-code-count"));
+    const { data, error } = await client.auth.mfa.recoveryCodes.getStatus();
+    if (error?.code === "mfa_factor_not_found") {
+      recoveryStatusAvailable = true;
+      recoveryCount.textContent = "No Supabase recovery codes are enrolled.";
+      generateRecoveryButton.hidden = false;
+      regenerateRecoveryButton.hidden = true;
+      generateRecoveryButton.disabled = !recoveryManagementAllowed;
+      regenerateRecoveryButton.disabled = true;
+      return;
     }
-    if (!data || !Number.isInteger(data.remaining) || typeof data.hasCodes !== "boolean") {
-      throw new Error("Could not load recovery-code status.");
+    if (error) throw error;
+    if (!data || !Number.isInteger(data.remaining) || !Number.isInteger(data.total)) {
+      throw new Error("Supabase returned an invalid recovery-code status.");
     }
     recoveryStatusAvailable = true;
-    recoveryCount.textContent = `${data.remaining} unused recovery code${data.remaining === 1 ? "" : "s"} remaining.`;
-    generateRecoveryButton.hidden = data.hasCodes;
-    regenerateRecoveryButton.hidden = !data.hasCodes;
+    recoveryCount.textContent = `${data.remaining} unused native recovery code${data.remaining === 1 ? "" : "s"} remaining.`;
+    generateRecoveryButton.hidden = true;
+    regenerateRecoveryButton.hidden = false;
     const disabled = !recoveryManagementAllowed;
     generateRecoveryButton.disabled = disabled;
     regenerateRecoveryButton.disabled = disabled;
-    if (disabled) recoveryCount.textContent += " Enable an authenticator to manage recovery codes.";
+    if (disabled) recoveryCount.textContent += " Verify your authenticator and reach AAL2 to manage codes.";
   }
 
   async function createRecoveryCodes(regenerate) {
@@ -130,21 +139,37 @@
     setBusy(true);
     recoveryDisplay.hidden = true;
     visibleRecoveryCodes = [];
-    setMessage(regenerate ? "Regenerating recovery codes…" : "Generating recovery codes…");
+    setMessage(regenerate ? "Regenerating native recovery codes…" : "Generating native recovery codes…");
     try {
       const client = window.SmartLearningMFA.getClient();
-      const functionName = regenerate ? "regenerate-recovery-codes" : "generate-recovery-codes";
-      const { data, error } = await client.functions.invoke(functionName, { body: {} });
-      if (error) {
-        throw new Error(await window.SmartLearningMFA.getFunctionErrorMessage(error, functionName));
+      const { data: userData, error: userError } = await client.auth.getUser();
+      if (userError) throw userError;
+      if (!userData?.user || userData.user.id !== currentUserId) {
+        throw new Error("Your signed-in account changed. Reload settings before managing recovery codes.");
       }
-      if (!Array.isArray(data?.codes) || data.codes.length !== 10 ||
+      const { data: assurance, error: assuranceError } =
+        await client.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (assuranceError) throw assuranceError;
+      if (assurance?.currentLevel !== "aal2") {
+        throw new Error("Verify your existing authenticator to AAL2 before managing native recovery codes.");
+      }
+      await window.SmartLearningMFA.authorizeNativeRecoveryCodeManagement(regenerate);
+      const { data, error } = regenerate
+        ? await client.auth.mfa.recoveryCodes.regenerate()
+        : await client.auth.mfa.recoveryCodes.generate({ friendlyName: "Smart Learning backup codes" });
+      if (error) throw error;
+      if (!Array.isArray(data?.codes) || !data.codes.length ||
         data.codes.some((code) => typeof code !== "string")) {
-        throw new Error("The server returned an invalid recovery-code response.");
+        throw new Error("Supabase returned an invalid native recovery-code response.");
       }
       showRecoveryCodes(data.codes);
-      setMessage("Recovery codes generated. Save them now; they will not be shown again.", "success");
-      await loadRecoveryCodeCount();
+      setMessage("Native recovery codes generated. Save them now; they are shown only once and a code is consumed immediately when verified.", "success");
+      try {
+        await loadRecoveryCodeStatus();
+      } catch {
+        recoveryStatusAvailable = false;
+        recoveryCount.textContent = "Recovery-code status unavailable. The generated codes are still shown above; save them now.";
+      }
     } catch (error) {
       setMessage(error.message || "Could not generate recovery codes.", "error");
     } finally {
@@ -163,9 +188,17 @@
   async function refresh() {
     const client = window.SmartLearningMFA?.getClient();
     if (!client) throw new Error("Supabase is not configured.");
+    const { data: userData, error: userError } = await client.auth.getUser();
+    if (userError) throw userError;
+    if (!userData?.user) throw new Error("Please sign in again.");
+    currentUserId = userData.user.id;
     const factors = await window.SmartLearningMFA.getTotpFactors(client);
     const verifiedFactors = factors.filter((factor) => factor.status === "verified");
-    recoveryManagementAllowed = verifiedFactors.length > 0;
+    const { data: assurance, error: assuranceError } =
+      await client.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (assuranceError) throw assuranceError;
+    recoveryManagementAllowed = verifiedFactors.length > 0 &&
+      assurance?.currentLevel === "aal2";
     const recoveryControlsDisabled = !recoveryManagementAllowed || !recoveryStatusAvailable;
     generateRecoveryButton.disabled = recoveryControlsDisabled;
     regenerateRecoveryButton.disabled = recoveryControlsDisabled;
@@ -373,8 +406,8 @@
     setMessage(error.message || "Could not load authenticator status.", "error");
     addButton.hidden = true;
   });
-  loadRecoveryCodeCount().catch((error) => {
-    recoveryCount.textContent = "Recovery-code status unavailable.";
+  loadRecoveryCodeStatus().catch((error) => {
+    recoveryCount.textContent = "Native recovery-code status unavailable.";
     setMessage(error.message || "Could not load recovery-code status.", "error");
     recoveryStatusAvailable = false;
     generateRecoveryButton.disabled = true;

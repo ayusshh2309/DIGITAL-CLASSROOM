@@ -40,35 +40,79 @@
     return error?.message || `The ${functionName} Edge Function failed.`;
   }
 
+  function recoveryError(message, state) {
+    const error = new Error(message);
+    if (typeof state === "string") error.state = state;
+    return error;
+  }
+
   async function invokeRecoveryFunction(functionName, body) {
     const { data, error } = await getClient().functions.invoke(functionName, { body });
     if (error) {
-      throw new Error(await getFunctionErrorMessage(error, functionName));
+      let responseData = null;
+      if (error?.context instanceof Response) {
+        try {
+          responseData = await error.context.clone().json();
+        } catch {
+          responseData = null;
+        }
+      }
+      throw recoveryError(
+        await getFunctionErrorMessage(error, functionName),
+        responseData?.state,
+      );
     }
     return data;
   }
 
-  async function beginRecovery(code) {
-    const data = await invokeRecoveryFunction("verify-recovery-code", { code });
-    if (data?.valid !== true || typeof data.transactionToken !== "string") {
-      throw new Error(data?.error || "That recovery code is invalid, already used, or has an active recovery attempt.");
+  async function beginNativeRecovery() {
+    const data = await invokeRecoveryFunction("begin-native-recovery", {});
+    if (data?.started !== true || typeof data.transactionToken !== "string" ||
+      typeof data.expiresAt !== "string") {
+      throw recoveryError(data?.error || "Could not start authenticator recovery.", data?.state);
     }
     return data;
   }
 
-  async function completeRecovery(transactionToken, replacementFactorId) {
-    const data = await invokeRecoveryFunction("complete-recovery", {
+  async function recordNativeRecoveryAttempt(transactionToken) {
+    const data = await invokeRecoveryFunction("record-native-recovery-attempt", {
+      transactionToken,
+    });
+    if (data?.allowed !== true) {
+      throw recoveryError(data?.error || "Too many recovery attempts. Try again later.", data?.state);
+    }
+    return data;
+  }
+
+  async function completeNativeRecovery(transactionToken, replacementFactorId) {
+    const data = await invokeRecoveryFunction("complete-native-recovery", {
       transactionToken,
       replacementFactorId,
     });
     if (data?.completed !== true) {
-      throw new Error("Could not complete authenticator recovery.");
+      throw recoveryError(data?.error || "Could not complete authenticator recovery.", data?.state);
     }
     return data;
   }
 
-  async function cancelRecovery(transactionToken) {
-    return invokeRecoveryFunction("cancel-recovery", { transactionToken });
+  async function cancelNativeRecovery(transactionToken) {
+    const data = await invokeRecoveryFunction("cancel-native-recovery", {
+      transactionToken,
+    });
+    if (data?.cancelled !== true) {
+      throw recoveryError(data?.error || "Could not cancel authenticator recovery.", data?.state);
+    }
+    return data;
+  }
+
+  async function authorizeNativeRecoveryCodeManagement(regenerate) {
+    const data = await invokeRecoveryFunction("authorize-native-recovery-codes", {
+      action: regenerate ? "regenerate" : "generate",
+    });
+    if (data?.allowed !== true) {
+      throw recoveryError(data?.error || "Could not manage native recovery codes.", data?.state);
+    }
+    return data;
   }
 
   async function getTotpFactors(client = getClient()) {
@@ -166,9 +210,11 @@
   window.SmartLearningMFA = Object.freeze({
     getClient,
     getFunctionErrorMessage,
-    beginRecovery,
-    completeRecovery,
-    cancelRecovery,
+    beginNativeRecovery,
+    recordNativeRecoveryAttempt,
+    completeNativeRecovery,
+    cancelNativeRecovery,
+    authorizeNativeRecoveryCodeManagement,
     getTotpFactors,
     getVerifiedTotpFactors,
     getMfaState,

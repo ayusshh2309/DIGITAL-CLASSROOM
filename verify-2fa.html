@@ -33,9 +33,11 @@
       .back:hover { text-decoration: underline; }
       .loading { display: none; width: 15px; height: 15px; margin-right: 8px; vertical-align: -2px; border: 2px solid rgba(255,255,255,.5); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
       button[aria-busy="true"] .loading { display: inline-block; }
+      .replacement-qr { display: block; width: 180px; height: 180px; margin: 12px auto; object-fit: contain; }
+      .replacement-qr[hidden] { display: none; }
       @keyframes spin { to { transform: rotate(360deg); } }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js"></script>
     <script src="js/supabase.js"></script>
     <script src="js/mfa-auth.js"></script>
   </head>
@@ -58,24 +60,24 @@
         Can't access your authenticator?
       </button>
       <section id="recoverySection" hidden>
-        <p class="description">Enter one unused backup recovery code. You will then need to set up and verify a new authenticator before continuing.</p>
+        <p class="description">Enter one unused Supabase recovery code. Supabase consumes it immediately after successful verification, even if you later cancel. Older Smart Learning DC custom codes are not accepted here.</p>
         <form id="recoveryForm">
-          <label for="recoveryCode">Backup recovery code</label>
+          <label for="recoveryCode">Supabase recovery code</label>
           <input id="recoveryCode" name="recoveryCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" aria-label="Backup recovery code" />
-          <button id="recoveryButton" type="submit"><span class="loading" aria-hidden="true"></span><span id="recoveryButtonText">Verify recovery code</span></button>
+          <button id="recoveryButton" type="submit"><span class="loading" aria-hidden="true"></span><span id="recoveryButtonText">Verify Supabase recovery code</span></button>
         </form>
+        <button id="cancelRecoveryButton" class="back" type="button" hidden style="width:auto;min-height:0;margin:18px auto 0;padding:0;background:none;color:#5963bb;font:inherit;font-size:13px;font-weight:600">Cancel recovery (the native code remains consumed if already verified)</button>
         <div id="replacementEnrollment" hidden>
           <p class="description" id="replacementInstructions">Scan this QR code using a new authenticator app, then verify a 6-digit code. Your old authenticator remains in place until the new one is verified.</p>
           <button id="startReplacementEnrollment" type="button"><span class="loading" aria-hidden="true"></span><span id="startReplacementText">Set up a new authenticator</span></button>
-          <img id="replacementQrCode" alt="New authenticator setup QR code" style="display:block;width:180px;height:180px;margin:12px auto;object-fit:contain" />
-          <label for="replacementSetupKey">Manual setup key</label>
-          <input id="replacementSetupKey" type="text" readonly autocomplete="off" style="font-size:14px;letter-spacing:.08em" />
+          <img id="replacementQrCode" class="replacement-qr" alt="New authenticator setup QR code" hidden />
+          <label id="replacementSetupKeyLabel" for="replacementSetupKey" hidden>Manual setup key</label>
+          <input id="replacementSetupKey" type="text" readonly autocomplete="off" hidden style="font-size:14px;letter-spacing:.08em" />
           <form id="replacementForm" hidden>
             <label for="replacementCode">New authenticator code</label>
             <input id="replacementCode" type="tel" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" />
             <button id="replacementButton" type="submit"><span class="loading" aria-hidden="true"></span><span id="replacementButtonText">Verify new authenticator</span></button>
           </form>
-          <button id="cancelRecoveryButton" class="back" type="button" style="width:auto;min-height:0;margin:18px auto 0;padding:0;background:none;color:#5963bb;font:inherit;font-size:13px;font-weight:600">Cancel recovery and keep this code</button>
         </div>
       </section>
       <p class="status" id="status" role="status" aria-live="polite"></p>
@@ -104,7 +106,7 @@
         const replacementCode = document.getElementById("replacementCode");
         const replacementQrCode = document.getElementById("replacementQrCode");
         const replacementSetupKey = document.getElementById("replacementSetupKey");
-        const replacementSetupKeyLabel = document.querySelector('label[for="replacementSetupKey"]');
+        const replacementSetupKeyLabel = document.getElementById("replacementSetupKeyLabel");
         const replacementInstructions = document.getElementById("replacementInstructions");
         const replacementButton = document.getElementById("replacementButton");
         const replacementButtonText = document.getElementById("replacementButtonText");
@@ -113,44 +115,84 @@
         let replacementFactorId = null;
         let recoveryTransactionToken = null;
         let recoveryTransactionExpiresAt = null;
+        let nativeRecoveryCodeVerified = false;
+        let recoveryNeedsReauthorization = false;
         let replacementFactorVerified = false;
         let recoveryMode = false;
         let busy = false;
+        let replacementSetupAttempted = false;
         let authenticatedUserId = null;
-        const recoverySessionKey = "smart-learning-pending-mfa-recovery";
+        let recoveryAccountChanged = false;
+        let authStateSubscription = null;
+        const recoverySessionKey = "smart-learning-pending-native-mfa-recovery";
 
-        function saveRecoverySession(userId) {
-          sessionStorage.setItem(recoverySessionKey, JSON.stringify({
-            userId,
+        function getRecoverySessionKey(userId) {
+          return `${recoverySessionKey}:${userId}`;
+        }
+
+        function saveRecoverySession() {
+          if (!authenticatedUserId || !nativeRecoveryCodeVerified) return;
+          sessionStorage.setItem(getRecoverySessionKey(authenticatedUserId), JSON.stringify({
+            userId: authenticatedUserId,
             transactionToken: recoveryTransactionToken,
             replacementFactorId,
             expiresAt: recoveryTransactionExpiresAt,
+            nativeRecoveryCodeVerified,
           }));
         }
 
         function clearRecoverySession() {
-          sessionStorage.removeItem(recoverySessionKey);
+          if (authenticatedUserId) {
+            sessionStorage.removeItem(getRecoverySessionKey(authenticatedUserId));
+          }
         }
 
         function loadRecoverySession(userId) {
-          const value = sessionStorage.getItem(recoverySessionKey);
+          const value = sessionStorage.getItem(getRecoverySessionKey(userId));
           if (!value) return null;
           try {
             const pending = JSON.parse(value);
-            if (
-              pending?.userId === userId &&
-              typeof pending.transactionToken === "string" &&
-              typeof pending.replacementFactorId === "string" &&
+            const transactionIsValid = (
+              pending?.transactionToken === null &&
+              pending.expiresAt === null
+            ) || (
+              typeof pending?.transactionToken === "string" &&
               Number.isFinite(pending.expiresAt) &&
               Date.now() <= pending.expiresAt + 15 * 60 * 1000
+            );
+            if (
+              pending?.userId === userId &&
+              (pending.transactionToken === null ||
+                typeof pending.transactionToken === "string") &&
+              (pending.replacementFactorId === null ||
+                typeof pending.replacementFactorId === "string") &&
+              typeof pending.nativeRecoveryCodeVerified === "boolean" &&
+              transactionIsValid
             ) {
               return pending;
             }
           } catch {
             // Discard malformed tab-local recovery state.
           }
-          clearRecoverySession();
+          sessionStorage.removeItem(getRecoverySessionKey(userId));
           return null;
+        }
+
+        function assertRecoveryAccount(expectedUserId = authenticatedUserId) {
+          if (recoveryAccountChanged || !expectedUserId || expectedUserId !== authenticatedUserId) {
+            throw new Error("The signed-in account changed during recovery. Sign in to the original account to continue.");
+          }
+        }
+
+        async function requireRecoveryUser(expectedUserId = authenticatedUserId) {
+          assertRecoveryAccount(expectedUserId);
+          const { data: userData, error: userError } = await client.auth.getUser();
+          if (userError) throw userError;
+          if (!userData?.user || userData.user.id !== expectedUserId) {
+            recoveryAccountChanged = true;
+            throw new Error("The signed-in account changed during recovery. Sign in to the original account to continue.");
+          }
+          return userData.user;
         }
 
         function showStatus(text, kind = "") {
@@ -161,23 +203,38 @@
         function setBusy(value) {
           busy = value;
           [button, recoveryButton, replacementButton, startReplacementButton, cancelRecoveryButton].forEach((control) => {
-            control.disabled = value;
+            control.disabled = value || recoveryAccountChanged;
             control.setAttribute("aria-busy", String(value));
           });
           buttonText.textContent = value ? "Verifying…" : "Verify and continue";
-          recoveryButtonText.textContent = value ? "Verifying…" : "Verify recovery code";
-          replacementButtonText.textContent = value ? "Verifying…" : "Verify new authenticator";
-          startReplacementText.textContent = value ? "Starting…" : "Set up a new authenticator";
-          codeInput.disabled = value;
-          recoveryCode.disabled = value;
-          replacementCode.disabled = value;
+          recoveryButtonText.textContent = value ? "Verifying…" : "Verify Supabase recovery code";
+          replacementButtonText.textContent = value
+            ? "Verifying…"
+            : replacementFactorVerified ? "Retry recovery completion" : "Verify new authenticator";
+          startReplacementText.textContent = value
+            ? "Starting…"
+            : replacementSetupAttempted ? "Retry setup" : "Set up a new authenticator";
+          codeInput.disabled = value || recoveryAccountChanged;
+          recoveryCode.disabled = value || recoveryAccountChanged;
+          replacementCode.disabled = value || recoveryAccountChanged;
         }
 
-        codeInput.addEventListener("input", () => {
-          codeInput.value = codeInput.value.replace(/\D/g, "").slice(0, 6);
-          if (status.dataset.kind === "error") {
-            status.textContent = "";
-            status.dataset.kind = "";
+        function getReplacementQrImageSource(qrCode) {
+          if (typeof qrCode !== "string" || !qrCode.trim()) {
+            throw new Error("Supabase did not return a QR code for the replacement authenticator.");
+          }
+          const value = qrCode.trim();
+          if (/^data:image\/svg\+xml(?:;[^,]*)?,/i.test(value)) return value;
+          if (/^(?:<\?xml[^>]*>\s*)?<svg(?:\s|>)/i.test(value) && /<\/svg>\s*$/i.test(value)) {
+            return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(value)}`;
+          }
+          throw new Error("Supabase returned an unsupported QR code format. Retry authenticator setup.");
+        }
+
+        replacementQrCode.addEventListener("error", () => {
+          if (!replacementQrCode.hidden) {
+            replacementQrCode.hidden = true;
+            showStatus("The QR image could not be displayed. Use the manual setup key below, or retry setup.", "error");
           }
         });
 
@@ -201,56 +258,89 @@
               return;
             }
             authenticatedUserId = userData.user.id;
+            const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
+              if (!session?.user || session.user.id !== authenticatedUserId) {
+                recoveryAccountChanged = true;
+                setBusy(false);
+                showStatus("The signed-in account changed during recovery. Sign in to the original account to continue.", "error");
+              }
+            });
+            authStateSubscription = subscription;
             const pendingRecovery = loadRecoverySession(userData.user.id);
             const { assurance, factors } = await window.SmartLearningMFA.getMfaState(client);
             recoveryModeButton.hidden = !factors.length;
-            const pendingFactor = pendingRecovery &&
-              factors.find((factor) => factor.id === pendingRecovery.replacementFactorId);
-            if (pendingRecovery && !pendingFactor) {
-              recoveryMode = true;
-              form.hidden = true;
-              recoverySection.hidden = true;
-              showStatus("The replacement authenticator is unavailable. The reserved recovery transaction will expire within 15 minutes; retry with the same unused recovery code afterwards.", "error");
-              return;
-            }
-            if (pendingRecovery && pendingFactor?.status === "verified") {
+            if (pendingRecovery) {
               recoveryTransactionToken = pendingRecovery.transactionToken;
               recoveryTransactionExpiresAt = pendingRecovery.expiresAt;
               replacementFactorId = pendingRecovery.replacementFactorId;
-              replacementFactorVerified = assurance?.currentLevel === "aal2";
+              nativeRecoveryCodeVerified = pendingRecovery.nativeRecoveryCodeVerified ||
+                assurance?.currentLevel === "aal2";
+
+              const { data: allFactorData, error: allFactorsError } =
+                await client.auth.mfa.listFactors();
+              if (allFactorsError) throw allFactorsError;
+              const allFactors = allFactorData?.all || allFactorData?.totp || [];
+              const pendingFactor = replacementFactorId &&
+                allFactors.find((factor) => factor.id === replacementFactorId);
+              recoveryNeedsReauthorization = nativeRecoveryCodeVerified &&
+                assurance?.currentLevel !== "aal2" &&
+                pendingFactor?.status !== "verified";
+
               recoveryMode = true;
               form.hidden = true;
               recoveryModeButton.hidden = true;
               recoverySection.hidden = false;
-              recoveryForm.hidden = true;
-              replacementEnrollment.hidden = false;
-              startReplacementButton.hidden = true;
-              replacementForm.hidden = false;
-              replacementQrCode.hidden = true;
-              replacementSetupKey.hidden = true;
-              replacementSetupKeyLabel.hidden = true;
-              replacementInstructions.textContent = "Your replacement authenticator is already enrolled. Enter its code if this session needs to restore AAL2, or finish recovery.";
-              replacementButtonText.textContent = replacementFactorVerified
-                ? "Retry recovery completion"
-                : "Verify new authenticator";
-              showStatus(
-                replacementFactorVerified
-                  ? "Your new authenticator is verified. Retry recovery completion."
-                  : "Enter a code from your verified replacement authenticator to resume recovery.",
-                "success",
-              );
-              if (!replacementFactorVerified) replacementCode.focus();
+              cancelRecoveryButton.hidden = !recoveryTransactionToken;
+              replacementEnrollment.hidden = !nativeRecoveryCodeVerified ||
+                recoveryNeedsReauthorization;
+              recoveryForm.hidden = nativeRecoveryCodeVerified &&
+                !recoveryNeedsReauthorization;
+              if (recoveryNeedsReauthorization) {
+                showStatus("Your previous native recovery code was consumed, but this session is no longer at AAL2. Enter another unused native recovery code to resume; your old authenticator remains enabled.", "error");
+              } else if (nativeRecoveryCodeVerified && pendingFactor?.status === "verified") {
+                replacementFactorVerified = assurance?.currentLevel === "aal2";
+                replacementForm.hidden = false;
+                startReplacementButton.hidden = true;
+                replacementQrCode.hidden = true;
+                replacementSetupKey.hidden = true;
+                replacementSetupKeyLabel.hidden = true;
+                replacementInstructions.textContent = "Your replacement authenticator is already verified. Retry recovery completion, or enter its code to restore AAL2.";
+                replacementButtonText.textContent = replacementFactorVerified
+                  ? "Retry recovery completion"
+                  : "Verify new authenticator";
+                showStatus(
+                  replacementFactorVerified
+                    ? "The native recovery code was already consumed. Retry completion to remove the old authenticator."
+                    : "Enter a code from your verified replacement authenticator to restore AAL2.",
+                  "success",
+                );
+              } else if (nativeRecoveryCodeVerified && pendingFactor?.status === "unverified") {
+                replacementForm.hidden = true;
+                startReplacementButton.hidden = false;
+                replacementSetupAttempted = true;
+                replacementInstructions.textContent = "Setup details are only shown once. Restart setup to remove this unfinished factor and create a fresh QR code.";
+                startReplacementText.textContent = "Restart authenticator setup";
+                showStatus("Your native recovery code has been consumed. You can restart setup without using another code.");
+              } else if (nativeRecoveryCodeVerified) {
+                replacementForm.hidden = true;
+                startReplacementButton.hidden = false;
+                cancelRecoveryButton.hidden = !recoveryTransactionToken;
+                showStatus("Your native recovery code is verified and consumed. Set up a replacement authenticator.");
+              } else {
+                recoveryForm.hidden = false;
+                showStatus("Recovery is ready. Enter an unused Supabase native recovery code; your existing custom codes are not accepted.", "success");
+              }
+              saveRecoverySession();
+              if (!nativeRecoveryCodeVerified) recoveryCode.focus();
+              else if (pendingFactor?.status === "verified" && !replacementFactorVerified) replacementCode.focus();
               return;
-            }
-            if (pendingRecovery) {
-              throw new Error("The replacement authenticator is not verified. Contact support to finish account recovery.");
             }
             if (!factors.length) {
               recoveryMode = true;
               form.hidden = true;
               recoverySection.hidden = false;
               recoveryModeButton.hidden = true;
-              showStatus("No authenticator is currently enrolled. Use an unused backup recovery code to set up a replacement authenticator.");
+              showStatus("No verified authenticator is currently enrolled. Native recovery codes must have been set up before losing your authenticator.", "error");
               recoveryCode.focus();
               return;
             }
@@ -294,6 +384,7 @@
           showStatus("Verifying your code…");
           try {
             if (!factorId) throw new Error("No verified authenticator is available for this account.");
+            await requireRecoveryUser();
             const { data: challenge, error: challengeError } = await client.auth.mfa.challenge({ factorId });
             if (challengeError) throw challengeError;
             const { error: verifyError } = await client.auth.mfa.verify({
@@ -302,8 +393,8 @@
               code,
             });
             if (verifyError) throw verifyError;
-            const { data: refreshedUser, error: userError } = await client.auth.getUser();
-            if (userError) throw userError;
+            const { data: refreshedUser, error: refreshedUserError } = await client.auth.getUser();
+            if (refreshedUserError) throw refreshedUserError;
             if (!refreshedUser?.user) throw new Error("Your session expired. Please sign in again.");
             const { data: assurance, error: assuranceError } =
               await client.auth.mfa.getAuthenticatorAssuranceLevel();
@@ -325,26 +416,78 @@
 
         recoveryForm.addEventListener("submit", async (event) => {
           event.preventDefault();
-          if (busy || recoveryTransactionToken) return;
+          if (busy) return;
+          if (nativeRecoveryCodeVerified && !recoveryNeedsReauthorization) {
+            setBusy(true);
+            showStatus("Starting replacement authenticator setup…");
+            try {
+              await requireRecoveryUser();
+              const transaction = await window.SmartLearningMFA.beginNativeRecovery();
+              recoveryTransactionToken = transaction.transactionToken;
+              recoveryTransactionExpiresAt = new Date(transaction.expiresAt).getTime();
+              saveRecoverySession();
+              recoveryForm.hidden = true;
+              replacementEnrollment.hidden = false;
+              cancelRecoveryButton.hidden = false;
+              showStatus("The native recovery code was already consumed. Continue to set up your replacement authenticator.", "success");
+            } catch (error) {
+              showStatus(error.message || "Could not start authenticator recovery.", "error");
+            } finally {
+              setBusy(false);
+            }
+            return;
+          }
           const code = recoveryCode.value.trim();
           if (!code) {
-            showStatus("Enter a backup recovery code.", "error");
+            showStatus("Enter one unused Supabase native recovery code.", "error");
             return;
           }
           setBusy(true);
-          showStatus("Verifying your recovery code…");
+          showStatus("Verifying your Supabase recovery code…");
           try {
-            const transaction = await window.SmartLearningMFA.beginRecovery(code);
-            recoveryTransactionToken = transaction.transactionToken;
-            recoveryTransactionExpiresAt = new Date(transaction.expiresAt).getTime();
+            await requireRecoveryUser();
+            await window.SmartLearningMFA.recordNativeRecoveryAttempt();
+            await requireRecoveryUser();
+            const { error: verifyError } = await client.auth.mfa.recoveryCodes.verify({ code });
+            if (verifyError) throw verifyError;
+
+            const { data: verifiedUser, error: verifiedUserError } = await client.auth.getUser();
+            if (verifiedUserError) throw verifiedUserError;
+            if (!verifiedUser?.user || verifiedUser.user.id !== authenticatedUserId) {
+              recoveryAccountChanged = true;
+              throw new Error("The signed-in account changed during recovery. The recovery code was consumed by Supabase; sign in to the original account to continue.");
+            }
+            nativeRecoveryCodeVerified = true;
+            recoveryNeedsReauthorization = true;
+            saveRecoverySession();
+            const { data: assurance, error: assuranceError } =
+              await client.auth.mfa.getAuthenticatorAssuranceLevel();
+            if (assuranceError) throw assuranceError;
+            if (assurance?.currentLevel !== "aal2") {
+              recoveryForm.hidden = false;
+              replacementEnrollment.hidden = true;
+              showStatus("Supabase accepted and consumed that code, but this session did not reach AAL2. Enter another unused native recovery code to resume.", "error");
+              recoveryCode.value = "";
+              recoveryCode.focus();
+              return;
+            }
+            recoveryNeedsReauthorization = false;
+            saveRecoverySession();
             recoveryForm.hidden = true;
             replacementEnrollment.hidden = false;
-            showStatus(
-              "Recovery code accepted and reserved for 15 minutes. It will only be consumed after your new authenticator is verified.",
-              "success",
-            );
+            startReplacementButton.hidden = false;
+            cancelRecoveryButton.hidden = true;
+            replacementInstructions.textContent = "Scan this QR code or enter the manual key. Your native recovery code is already consumed; your old authenticator remains in place until the replacement is verified.";
+            recoveryCode.value = "";
+            showStatus("Native recovery code verified at AAL2 and consumed. Set up and verify your replacement authenticator; the old factor stays enrolled until then.", "success");
           } catch (error) {
-            showStatus(error.message || "Could not verify the recovery code.", "error");
+            const message = error.message || "Could not verify the native recovery code.";
+            showStatus(
+              nativeRecoveryCodeVerified && recoveryNeedsReauthorization
+                ? `${message} The code may already be consumed; enter another unused native recovery code to resume.`
+                : message,
+              "error",
+            );
             recoveryCode.value = "";
             recoveryCode.focus();
           } finally {
@@ -353,23 +496,88 @@
         });
 
         startReplacementButton.addEventListener("click", async () => {
-          if (busy || !recoveryTransactionToken || replacementFactorId) return;
+          if (busy || !nativeRecoveryCodeVerified || recoveryNeedsReauthorization) return;
           setBusy(true);
           showStatus("Setting up your replacement authenticator…");
+          replacementQrCode.hidden = true;
+          replacementQrCode.removeAttribute("src");
+          replacementSetupKeyLabel.hidden = true;
+          replacementSetupKey.hidden = true;
+          replacementSetupKey.value = "";
+          replacementForm.hidden = true;
+          let createdFactorId = null;
           try {
+            await requireRecoveryUser();
+            const { data: assurance, error: assuranceError } =
+              await client.auth.mfa.getAuthenticatorAssuranceLevel();
+            if (assuranceError) throw assuranceError;
+            if (assurance?.currentLevel !== "aal2") {
+              recoveryNeedsReauthorization = true;
+              recoveryForm.hidden = false;
+              replacementEnrollment.hidden = true;
+              recoveryCode.focus();
+              throw new Error("This session is no longer at AAL2. Enter another unused native recovery code to resume setup.");
+            }
+            if (!recoveryTransactionToken) {
+              const transaction = await window.SmartLearningMFA.beginNativeRecovery();
+              recoveryTransactionToken = transaction.transactionToken;
+              recoveryTransactionExpiresAt = new Date(transaction.expiresAt).getTime();
+              saveRecoverySession();
+              cancelRecoveryButton.hidden = false;
+            }
+            if (replacementFactorId) {
+              const factors = await window.SmartLearningMFA.getTotpFactors(client);
+              const unfinishedFactor = factors.find((factor) =>
+                factor.id === replacementFactorId && factor.status !== "verified"
+              );
+              if (!unfinishedFactor) {
+                throw new Error("The unfinished replacement authenticator could not be confirmed. Cancel recovery or contact support.");
+              }
+              const { error: removeError } = await client.auth.mfa.unenroll({
+                factorId: replacementFactorId,
+              });
+              if (removeError) throw removeError;
+              replacementFactorId = null;
+              saveRecoverySession();
+            }
             const { data: enrollment, error: enrollmentError } = await client.auth.mfa.enroll({
               factorType: "totp",
               friendlyName: "Replacement authenticator",
             });
             if (enrollmentError) throw enrollmentError;
-            replacementFactorId = enrollment.id;
-            document.getElementById("replacementQrCode").src = enrollment.totp.qr_code;
-            document.getElementById("replacementSetupKey").value = enrollment.totp.secret;
+            createdFactorId = typeof enrollment?.id === "string" ? enrollment.id : null;
+            if (!createdFactorId || typeof enrollment?.totp?.secret !== "string" ||
+              !enrollment.totp.secret.trim()) {
+              throw new Error("Supabase returned incomplete replacement authenticator setup details. Retry setup.");
+            }
+            const qrImageSource = getReplacementQrImageSource(enrollment.totp.qr_code);
+            const setupKey = enrollment.totp.secret;
+            replacementFactorId = createdFactorId;
+            replacementQrCode.src = qrImageSource;
+            replacementSetupKey.value = setupKey;
+            replacementQrCode.hidden = false;
+            replacementSetupKeyLabel.hidden = false;
+            replacementSetupKey.hidden = false;
             replacementForm.hidden = false;
             startReplacementButton.hidden = true;
+            replacementSetupAttempted = false;
+            saveRecoverySession();
+            showStatus("Scan the QR code or enter the manual setup key, then verify a code from this authenticator.");
             replacementCode.focus();
           } catch (error) {
-            showStatus(error.message || "Could not start replacement authenticator setup. Your recovery code is still reserved temporarily.", "error");
+            let message = error.message || "Could not start replacement authenticator setup.";
+            if (createdFactorId && !replacementFactorId) {
+              try {
+                const { error: cleanupError } = await client.auth.mfa.unenroll({ factorId: createdFactorId });
+                if (cleanupError) {
+                  message += " The incomplete authenticator could not be removed; cancel recovery or remove it later in Security settings.";
+                }
+              } catch {
+                message += " The incomplete authenticator could not be removed; cancel recovery or remove it later in Security settings.";
+              }
+            }
+            replacementSetupAttempted = true;
+            showStatus(`${message} Your native recovery code remains consumed.`, "error");
           } finally {
             setBusy(false);
           }
@@ -390,6 +598,7 @@
           setBusy(true);
           showStatus("Verifying your new authenticator…");
           try {
+            await requireRecoveryUser();
             const { data: challenge, error: challengeError } = await client.auth.mfa.challenge({
               factorId: replacementFactorId,
             });
@@ -400,6 +609,7 @@
               code,
             });
             if (verifyError) throw verifyError;
+            await requireRecoveryUser();
 
             const { data: assurance, error: assuranceError } =
               await client.auth.mfa.getAuthenticatorAssuranceLevel();
@@ -407,11 +617,14 @@
             if (assurance?.currentLevel !== "aal2") {
               throw new Error("The new authenticator was verified, but this session did not reach AAL2.");
             }
+            const verifiedFactors = await window.SmartLearningMFA.getVerifiedTotpFactors(client);
+            if (!verifiedFactors.some((factor) => factor.id === replacementFactorId)) {
+              throw new Error("The replacement authenticator was not marked verified. Retry verification.");
+            }
             replacementFactorVerified = true;
-            if (!authenticatedUserId) throw new Error("Your sign-in session expired. Sign in again to finish recovery.");
-            saveRecoverySession(authenticatedUserId);
+            saveRecoverySession();
             replacementButtonText.textContent = "Finish recovery";
-            showStatus("New authenticator verified at AAL2. Completing recovery…", "success");
+            showStatus("Replacement authenticator verified at AAL2. Completing recovery…", "success");
             await finishRecovery();
           } catch (error) {
             showStatus(error.message || "Could not complete authenticator recovery.", "error");
@@ -422,28 +635,55 @@
           }
         });
 
-        async function finishRecovery() {
-          if (!recoveryTransactionToken || !replacementFactorId || !replacementFactorVerified) return;
+        async function finishRecovery(renewExpiredTransaction = true) {
+          if (!replacementFactorId || !replacementFactorVerified) return;
           setBusy(true);
           showStatus("Completing authenticator recovery…");
           try {
-            await window.SmartLearningMFA.completeRecovery(
-              recoveryTransactionToken,
-              replacementFactorId,
-            );
-            clearRecoverySession();
+            await requireRecoveryUser();
             const { data: assurance, error: assuranceError } =
               await client.auth.mfa.getAuthenticatorAssuranceLevel();
             if (assuranceError) throw assuranceError;
             if (assurance?.currentLevel !== "aal2") {
+              throw new Error("Verify the replacement authenticator to restore AAL2 before completing recovery.");
+            }
+            if (!recoveryTransactionToken) {
+              const transaction = await window.SmartLearningMFA.beginNativeRecovery();
+              recoveryTransactionToken = transaction.transactionToken;
+              recoveryTransactionExpiresAt = new Date(transaction.expiresAt).getTime();
+              saveRecoverySession();
+            }
+            await window.SmartLearningMFA.completeNativeRecovery(
+              recoveryTransactionToken,
+              replacementFactorId,
+            );
+            clearRecoverySession();
+            const { data: refreshedAssurance, error: refreshedAssuranceError } =
+              await client.auth.mfa.getAuthenticatorAssuranceLevel();
+            if (refreshedAssuranceError) throw refreshedAssuranceError;
+            if (refreshedAssurance?.currentLevel !== "aal2") {
               throw new Error("Recovery completed, but this session no longer has AAL2.");
             }
-
             const dashboard = await window.SmartLearningMFA.resolveDashboard(client);
             showStatus("Authenticator recovery complete. Opening your dashboard…", "success");
             window.location.replace(dashboard);
           } catch (error) {
-            showStatus(error.message || "Could not complete authenticator recovery. Your recovery code remains reserved until the transaction expires.", "error");
+            if (error.state === "expired" && renewExpiredTransaction) {
+              try {
+                const transaction = await window.SmartLearningMFA.beginNativeRecovery();
+                recoveryTransactionToken = transaction.transactionToken;
+                recoveryTransactionExpiresAt = new Date(transaction.expiresAt).getTime();
+                saveRecoverySession();
+                showStatus("The setup transaction expired before completion was claimed. Continuing with the already verified authenticator; the recovery code remains consumed.", "success");
+                await finishRecovery(false);
+                return;
+              } catch (renewError) {
+                showStatus(renewError.message || "The recovery transaction expired. Start a new transaction; the native recovery code remains consumed.", "error");
+                replacementButtonText.textContent = "Retry recovery completion";
+                return;
+              }
+            }
+            showStatus(error.message || "Could not complete authenticator recovery. Your native recovery code remains consumed.", "error");
             replacementButtonText.textContent = "Retry recovery completion";
           } finally {
             setBusy(false);
@@ -458,38 +698,120 @@
           }
           setBusy(true);
           try {
-            const result = await window.SmartLearningMFA.cancelRecovery(recoveryTransactionToken);
-            if (result?.cancelled !== true) {
-              throw new Error("Recovery completion has started or the transaction expired. Keep the replacement authenticator and finish recovery.");
-            }
+            await requireRecoveryUser();
+            const wasCodeConsumed = nativeRecoveryCodeVerified;
+            await window.SmartLearningMFA.cancelNativeRecovery(recoveryTransactionToken);
             if (replacementFactorId) {
               const { error } = await client.auth.mfa.unenroll({ factorId: replacementFactorId });
               if (error) {
                 recoveryTransactionToken = null;
                 recoveryTransactionExpiresAt = null;
                 replacementFactorId = null;
+                nativeRecoveryCodeVerified = false;
                 clearRecoverySession();
                 recoveryCode.value = "";
                 replacementEnrollment.hidden = true;
                 recoveryForm.hidden = false;
-                showStatus("Recovery was canceled and your recovery code remains unused, but the unfinished authenticator could not be removed. Remove it later in Security settings.", "error");
+                cancelRecoveryButton.hidden = true;
+                showStatus("Recovery was canceled and the unfinished authenticator could not be removed. Remove it later in Security settings. The native recovery code remains consumed.", "error");
                 return;
               }
             }
             recoveryTransactionToken = null;
             recoveryTransactionExpiresAt = null;
             replacementFactorId = null;
+            nativeRecoveryCodeVerified = false;
             clearRecoverySession();
             recoveryCode.value = "";
             replacementEnrollment.hidden = true;
             recoveryForm.hidden = false;
+            cancelRecoveryButton.hidden = true;
             startReplacementButton.hidden = false;
             replacementForm.hidden = true;
-            document.getElementById("replacementQrCode").removeAttribute("src");
-            document.getElementById("replacementSetupKey").value = "";
-            showStatus("Recovery canceled. Your recovery code is still unused.", "success");
+            replacementQrCode.hidden = true;
+            replacementQrCode.removeAttribute("src");
+            replacementSetupKeyLabel.hidden = true;
+            replacementSetupKey.hidden = true;
+            replacementSetupKey.value = "";
+            replacementSetupAttempted = false;
+            showStatus(
+              wasCodeConsumed
+                ? "Recovery canceled. Your old authenticator remains enabled, but the verified native recovery code remains consumed."
+                : "Recovery canceled. Your unused native recovery code remains valid.",
+              "success",
+            );
           } catch (error) {
-            showStatus(error.message || "Could not cancel authenticator recovery.", "error");
+            showStatus(
+              error.state === "claimed"
+                ? "Recovery completion has started and cannot be canceled. Retry completing recovery."
+                : error.message || "Could not cancel authenticator recovery.",
+              "error",
+            );
+            if (error.state === "expired") {
+              try {
+                const factors = await window.SmartLearningMFA.getTotpFactors(client);
+                const replacement = factors.find((factor) => factor.id === replacementFactorId);
+                if (replacement?.status === "unverified") {
+                  const { error: unenrollError } = await client.auth.mfa.unenroll({
+                    factorId: replacementFactorId,
+                  });
+                  if (unenrollError) throw unenrollError;
+                  replacementFactorId = null;
+                  replacementForm.hidden = true;
+                  replacementQrCode.hidden = true;
+                  replacementQrCode.removeAttribute("src");
+                  replacementSetupKeyLabel.hidden = true;
+                  replacementSetupKey.hidden = true;
+                  replacementSetupKey.value = "";
+                  startReplacementButton.hidden = false;
+                }
+                recoveryTransactionToken = null;
+                recoveryTransactionExpiresAt = null;
+                cancelRecoveryButton.hidden = true;
+                saveRecoverySession();
+                showStatus(
+                  "The recovery transaction expired before completion was claimed. Start or finish setup again; the native recovery code remains consumed.",
+                  "error",
+                );
+              } catch (cleanupError) {
+                showStatus(
+                  `${error.message || "The recovery transaction expired."} The unfinished authenticator could not be cleaned up: ${cleanupError.message || "retry from Security settings."}`,
+                  "error",
+                );
+              }
+            }
+            if (error.state === "cancelled") {
+              try {
+                const factors = await window.SmartLearningMFA.getTotpFactors(client);
+                const replacement = factors.find((factor) => factor.id === replacementFactorId);
+                if (replacement?.status === "unverified") {
+                  const { error: unenrollError } = await client.auth.mfa.unenroll({
+                    factorId: replacementFactorId,
+                  });
+                  if (unenrollError) throw unenrollError;
+                  replacementFactorId = null;
+                }
+                recoveryTransactionToken = null;
+                recoveryTransactionExpiresAt = null;
+                cancelRecoveryButton.hidden = true;
+                nativeRecoveryCodeVerified = false;
+                clearRecoverySession();
+                recoveryCode.value = "";
+                replacementEnrollment.hidden = true;
+                recoveryForm.hidden = false;
+                showStatus(
+                  replacement?.status === "verified"
+                    ? "Recovery was already canceled. The verified replacement and old authenticator remain enrolled; no factor was removed."
+                    : "Recovery was already canceled. No old authenticator was removed; the native recovery code remains consumed if it was previously verified.",
+                  "success",
+                );
+              } catch (cleanupError) {
+                showStatus(
+                  `Recovery was already canceled, but the unfinished authenticator could not be cleaned up: ${cleanupError.message || "retry from Security settings."}`,
+                  "error",
+                );
+              }
+            }
           } finally {
             setBusy(false);
           }
