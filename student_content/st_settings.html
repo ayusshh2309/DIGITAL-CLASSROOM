@@ -3,10 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
     <title>Smart Learning DC — Student Settings</title>
 
-    <!-- Font -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -14,22 +13,26 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="../css/mfa.css" />
+
+    <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js"></script>
     <script src="../js/supabase.js"></script>
 
     <style>
-      /* =========================================================
-       DESIGN SYSTEM
-    ========================================================= */
-
+      /* ── DESIGN SYSTEM & TOKENS ── */
       :root {
+        --sidebar-bg: #031b2e;
+        --sidebar-text: #a0aec0;
+        --sidebar-text-active: #ffffff;
+        --sidebar-active-bg: #6366f1; /* Matching active menu tone */
+        --sidebar-hover-bg: #0a2540;
+
         --main-bg: linear-gradient(
           135deg,
           #e3f2fd 0%,
           #e0f2f1 50%,
           #e8f5e9 100%
         );
-
         --surface: #ffffff;
         --surface-border: #e2e8f0;
 
@@ -38,24 +41,18 @@
 
         --primary: #0284c7;
         --primary-teal: #00818a;
-        --primary-purple: #7c3aed;
+        --primary-indigo: #6366f1;
 
         --danger: #ef4444;
-
         --radius: 18px;
-
         --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
-
         --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.08);
-
         --font: "DM Sans", sans-serif;
       }
 
-      /* =========================================================
-       RESET
-    ========================================================= */
-
-      * {
+      *,
+      *::before,
+      *::after {
         box-sizing: border-box;
         margin: 0;
         padding: 0;
@@ -65,1576 +62,1473 @@
         font-family: var(--font);
         background: var(--main-bg);
         background-attachment: fixed;
-
         color: var(--text-main);
-
+        display: flex;
         min-height: 100vh;
-
         overflow-x: hidden;
-
         font-size: 15px;
       }
 
-      /* =========================================================
-       MAIN PAGE
-    ========================================================= */
-
-      .page {
-        width: 100%;
-        min-height: 100vh;
-
-        padding: 34px 40px 50px;
+      /* ── FIXED SIDEBAR (Strictly 280px) ── */
+      .sidebar {
+        width: 280px;
+        height: 100vh;
+        background-color: var(--sidebar-bg);
+        color: var(--sidebar-text);
+        position: fixed;
+        top: 0;
+        left: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 24px 18px;
+        z-index: 100;
+        overflow-y: auto;
       }
 
-      /* =========================================================
-       PAGE HEADER
-    ========================================================= */
-
-      .page-header {
+      .sidebar-brand {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-
-        margin-bottom: 25px;
-      }
-
-      .page-title h1 {
-        font-size: 1.85rem;
+        gap: 14px;
+        color: #ffffff;
         font-weight: 800;
-
-        margin-bottom: 5px;
+        font-size: 1.35rem;
+        padding: 6px 8px 24px 8px;
       }
 
-      .page-title p {
-        color: var(--text-muted);
-        font-size: 0.98rem;
-      }
-
-      .student-badge {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-
-        background: #ffffff;
-
-        padding: 9px 16px;
-
-        border-radius: 30px;
-
-        box-shadow: var(--shadow-sm);
-
-        font-weight: 700;
-        color: #6d28d9;
-      }
-
-      .student-badge-icon {
-        width: 32px;
-        height: 32px;
-
+      .brand-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #00818a, #6366f1);
+        border-radius: 12px;
         display: grid;
         place-items: center;
-
-        border-radius: 50%;
-
-        background: #ede9fe;
+        color: #fff;
+        font-weight: bold;
+        font-size: 1.2rem;
       }
 
-      /* =========================================================
-       SETTINGS LAYOUT
-    ========================================================= */
+      .nav-menu {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
 
-      .settings-layout {
+      .nav-item a,
+      .nav-item button {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 11px 16px;
+        color: var(--sidebar-text);
+        text-decoration: none;
+        font-size: 0.98rem;
+        font-weight: 600;
+        border-radius: 12px;
+        transition: all 0.2s ease;
+        width: 100%;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .nav-item a:hover,
+      .nav-item button:hover {
+        background: var(--sidebar-hover-bg);
+        color: var(--sidebar-text-active);
+      }
+
+      .nav-item.active a {
+        background: var(--sidebar-active-bg);
+        color: var(--sidebar-text-active);
+        font-weight: 700;
+      }
+
+      .nav-icon {
+        font-size: 1.2rem;
+        width: 24px;
+        display: inline-grid;
+        place-items: center;
+      }
+
+      .nav-divider {
+        height: 1px;
+        background: rgba(255, 255, 255, 0.15);
+        margin: 10px 0;
+      }
+
+      .btn-logout-sidebar {
+        color: #f87171 !important;
+      }
+
+      .btn-logout-sidebar:hover {
+        background: rgba(239, 68, 68, 0.18) !important;
+      }
+
+      /* ── MAIN CONTENT WRAPPER ── */
+      .main-wrapper {
+        margin-left: 280px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        width: calc(100% - 280px);
+      }
+
+      /* Header */
+      .header {
+        height: 76px;
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 0 40px;
+        gap: 20px;
+      }
+
+      .notif-bell {
+        position: relative;
+        background: #fff;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
         display: grid;
+        place-items: center;
+        box-shadow: var(--shadow-sm);
+        cursor: pointer;
+        font-size: 1.2rem;
+      }
 
-        grid-template-columns:
-          260px
-          minmax(450px, 1fr)
-          320px;
+      .notif-badge {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: var(--danger);
+        color: white;
+        font-size: 0.7rem;
+        font-weight: 800;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+      }
 
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: #fff;
+        padding: 6px 18px 6px 8px;
+        border-radius: 30px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .user-info {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .user-name {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .user-role {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+      }
+
+      /* Main Container Card */
+      .main-box-container {
+        margin: 0 40px 32px 40px;
+        padding: 32px;
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        border-radius: 24px;
+        border: 1px solid var(--surface-border);
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
         gap: 24px;
+      }
 
+      /* Page Banner */
+      .page-banner {
+        margin: 0;
+      }
+
+      .page-banner h1 {
+        font-size: 1.85rem;
+        font-weight: 800;
+        margin-bottom: 4px;
+        color: var(--text-main);
+      }
+
+      .page-banner p {
+        color: var(--text-muted);
+        font-size: 1rem;
+      }
+
+      /* Settings Layout Grid */
+      .settings-layout {
+        margin: 0;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 24px;
         align-items: start;
       }
 
-      /* =========================================================
-       SETTINGS NAVIGATION
-    ========================================================= */
-
-      .settings-nav-card {
-        background: var(--surface);
-
-        border-radius: var(--radius);
-
-        padding: 14px;
-
-        box-shadow: var(--shadow-sm);
-
-        border: 1px solid var(--surface-border);
-      }
-
-      .settings-nav-title {
-        font-size: 1.1rem;
-
-        font-weight: 800;
-
-        padding: 10px 12px 14px;
-
-        color: var(--text-main);
-      }
-
-      .settings-menu {
-        list-style: none;
-
-        display: flex;
-        flex-direction: column;
-
-        gap: 4px;
-      }
-
-      .settings-menu-item a {
-        display: flex;
-        align-items: center;
-
-        gap: 12px;
-
-        padding: 11px 12px;
-
-        color: var(--text-muted);
-
-        text-decoration: none;
-
-        font-size: 0.92rem;
-
-        font-weight: 600;
-
-        border-radius: 10px;
-
-        transition: all 0.2s ease;
-      }
-
-      .settings-menu-item a:hover {
-        background: #f8fafc;
-
-        color: var(--text-main);
-
-        transform: translateX(2px);
-      }
-
-      .settings-menu-item.active a {
-        background: #ede9fe;
-
-        color: #6d28d9;
-
-        font-weight: 700;
-      }
-
-      .settings-menu-icon {
-        width: 22px;
-
-        display: inline-grid;
-
-        place-items: center;
-
-        font-size: 1.05rem;
-      }
-
-      /* =========================================================
-       MAIN SETTINGS CARD
-    ========================================================= */
-
+      /* Main Settings Content */
       .settings-main-card {
         background: var(--surface);
-
         border-radius: var(--radius);
-
         padding: 28px;
-
         box-shadow: var(--shadow-sm);
-
         border: 1px solid var(--surface-border);
-
         display: flex;
-
         flex-direction: column;
-
-        gap: 22px;
+        gap: 24px;
       }
 
       .settings-section-title h3 {
         font-size: 1.2rem;
-
         font-weight: 800;
-
+        color: var(--text-main);
         margin-bottom: 4px;
       }
 
       .settings-section-title p {
         font-size: 0.9rem;
-
         color: var(--text-muted);
       }
 
-      /* =========================================================
-       SETTING ROW
-    ========================================================= */
-
       .setting-item-row {
         display: flex;
-
         align-items: center;
-
         justify-content: space-between;
-
         padding: 16px 0;
-
         border-bottom: 1px solid var(--surface-border);
-
-        gap: 20px;
       }
 
       .setting-item-row:last-child {
         border-bottom: none;
-
         padding-bottom: 0;
       }
 
       .setting-label-group {
         display: flex;
-
         align-items: center;
-
         gap: 14px;
       }
 
       .setting-icon-box {
-        width: 40px;
-        height: 40px;
-
-        flex-shrink: 0;
-
+        width: 38px;
+        height: 38px;
         background: #f1f5f9;
-
         border-radius: 10px;
-
         display: grid;
-
         place-items: center;
-
+        color: var(--text-main);
         font-size: 1.1rem;
       }
 
       .setting-label-text h4 {
         font-size: 0.95rem;
-
         font-weight: 700;
-
-        margin-bottom: 2px;
+        color: var(--text-main);
       }
 
       .setting-label-text p {
         font-size: 0.82rem;
-
         color: var(--text-muted);
-
-        line-height: 1.4;
+        margin-top: 2px;
       }
-
-      /* =========================================================
-       SELECT
-    ========================================================= */
-
-      .setting-control select {
-        padding: 10px 14px;
-
-        border: 1px solid var(--surface-border);
-
-        border-radius: 10px;
-
-        background: #ffffff;
-
-        font-family: inherit;
-
-        font-size: 0.88rem;
-
-        font-weight: 600;
-
-        color: var(--text-main);
-
-        cursor: pointer;
-
-        min-width: 190px;
-
-        outline: none;
-      }
-
-      .setting-control select:focus {
-        border-color: #a78bfa;
-
-        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.08);
-      }
-
-      /* =========================================================
-       RADIO BUTTONS
-    ========================================================= */
 
       .radio-group-inline {
         display: flex;
-
-        gap: 18px;
-
+        gap: 20px;
         align-items: center;
+        flex-wrap: wrap;
       }
 
       .radio-label {
         display: flex;
-
         align-items: center;
-
-        gap: 7px;
-
-        font-size: 0.88rem;
-
+        gap: 8px;
+        font-size: 0.9rem;
         font-weight: 600;
-
         cursor: pointer;
-
-        white-space: nowrap;
       }
-
-      .radio-label input {
-        accent-color: #7c3aed;
-      }
-
-      /* =========================================================
-       TOGGLE SWITCH
-    ========================================================= */
-
-      .switch {
-        position: relative;
-
-        display: inline-block;
-
-        width: 46px;
-
-        height: 24px;
-
-        flex-shrink: 0;
-      }
-
-      .switch input {
-        opacity: 0;
-
-        width: 0;
-        height: 0;
-      }
-
-      .slider {
-        position: absolute;
-
-        cursor: pointer;
-
-        inset: 0;
-
-        background-color: #cbd5e1;
-
-        transition: 0.3s;
-
-        border-radius: 24px;
-      }
-
-      .slider:before {
-        position: absolute;
-
-        content: "";
-
-        height: 18px;
-        width: 18px;
-
-        left: 3px;
-        bottom: 3px;
-
-        background-color: white;
-
-        transition: 0.3s;
-
-        border-radius: 50%;
-
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-      }
-
-      .switch input:checked + .slider {
-        background-color: #7c3aed;
-      }
-
-      .switch input:checked + .slider:before {
-        transform: translateX(22px);
-      }
-
-      /* =========================================================
-       DIVIDER
-    ========================================================= */
 
       .divider-line {
         height: 1px;
-
         background: var(--surface-border);
-
-        margin: 5px 0;
+        margin: 8px 0;
       }
-
-      /* =========================================================
-       SAVE BUTTON
-    ========================================================= */
 
       .btn-save-container {
         display: flex;
-
         justify-content: flex-end;
-
-        margin-top: 5px;
+        margin-top: 10px;
       }
 
       .btn-save {
         background: #7c3aed;
-
-        color: #ffffff;
-
+        color: white;
         border: none;
-
         padding: 12px 28px;
-
         border-radius: 12px;
-
-        font-family: inherit;
-
         font-weight: 700;
-
         font-size: 0.95rem;
-
         cursor: pointer;
-
         box-shadow: var(--shadow-sm);
-
-        transition: all 0.2s ease;
       }
 
-      .btn-save:hover {
-        background: #6d28d9;
+      .profile-form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
 
-        transform: translateY(-1px);
+      .profile-form[hidden],
+      .profile-summary-edit[hidden] {
+        display: none;
+      }
 
+      .profile-summary-edit {
+        margin: 0 0 18px;
+        text-align: center;
+      }
+
+      .profile-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        color: var(--text-main);
+        font-size: 0.88rem;
+        font-weight: 700;
+      }
+
+      .profile-field input,
+      .profile-field textarea,
+      .profile-field select {
+        width: 100%;
+        border: 1px solid var(--surface-border);
+        border-radius: 10px;
+        padding: 11px 12px;
+        color: var(--text-main);
+        background: #fff;
+        font: inherit;
+        font-weight: 500;
+      }
+
+      .profile-language-picker {
+        display: grid;
+        gap: 12px;
+      }
+
+      .profile-language-picker select {
+        width: 100%;
+        border: 1px solid var(--surface-border);
+        border-radius: 10px;
+        padding: 11px 12px;
+        color: var(--text-main);
+        background: #fff;
+        font: inherit;
+        font-weight: 500;
+      }
+
+      .profile-language-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .profile-language-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 20px;
+        background: rgba(85, 56, 238, 0.1);
+        color: #5538ee;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .profile-language-remove {
+        border: 0;
+        padding: 0;
+        background: transparent;
+        color: #ef4444;
+        font: inherit;
+        font-weight: 800;
+        line-height: 1;
+        cursor: pointer;
+      }
+
+      .profile-field textarea {
+        min-height: 88px;
+        resize: vertical;
+      }
+
+      .profile-field-full {
+        grid-column: 1 / -1;
+      }
+
+      .profile-photo-row,
+      .account-action-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .profile-photo-row {
+        padding: 16px 0;
+        border-bottom: 1px solid var(--surface-border);
+      }
+
+      .profile-photo-help,
+      .account-current-email {
+        color: var(--text-muted);
+        font-size: 0.88rem;
+      }
+
+      .profile-photo-input {
+        display: block;
+        margin-top: 8px;
+        max-width: 100%;
+        font: inherit;
+        font-size: 0.85rem;
+      }
+
+      .account-action-row {
+        justify-content: space-between;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--surface-border);
+      }
+
+      .account-action-row:last-child {
+        border-bottom: 0;
+      }
+
+      .account-action-button {
+        border: 1px solid var(--surface-border);
+        border-radius: 10px;
+        padding: 10px 14px;
+        background: #fff;
+        color: var(--text-main);
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .account-action-button-danger {
+        color: var(--danger);
+        border-color: #fecaca;
+      }
+
+      .account-dialog {
+        width: min(460px, calc(100vw - 32px));
+        max-width: none;
+        margin: auto;
+        padding: 26px;
+        border: 1px solid var(--surface-border);
+        border-radius: var(--radius);
+        color: var(--text-main);
         box-shadow: var(--shadow-md);
       }
 
-      /* =========================================================
-       RIGHT COLUMN
-    ========================================================= */
+      .account-dialog::backdrop {
+        background: rgba(15, 23, 42, 0.48);
+      }
 
-      .right-column {
+      .account-dialog h2 {
+        margin-bottom: 8px;
+        font-size: 1.25rem;
+      }
+
+      .account-dialog p {
+        margin-bottom: 16px;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+      }
+
+      .account-dialog-actions {
         display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 20px;
+      }
 
+      .account-dialog-status {
+        min-height: 1.3em;
+        margin-top: 12px;
+        color: var(--text-muted);
+        font-size: 0.88rem;
+      }
+
+      .password-requirements {
+        display: grid;
+        gap: 5px;
+        margin: 10px 0 0;
+        padding: 0;
+        list-style: none;
+        color: var(--danger);
+        font-size: 0.82rem;
+        font-weight: 500;
+      }
+
+      .password-requirements li::before {
+        content: "○";
+        display: inline-block;
+        width: 1.4em;
+        font-weight: 700;
+      }
+
+      .password-requirements li.is-met {
+        color: #15803d;
+      }
+
+      .password-requirements li.is-met::before {
+        content: "✓";
+      }
+
+      .password-confirmation-status {
+        min-height: 1.2em;
+        margin: 8px 0 0 !important;
+        color: var(--danger) !important;
+        font-size: 0.82rem !important;
+        font-weight: 500;
+      }
+
+      .password-confirmation-status.is-matched {
+        color: #15803d !important;
+      }
+
+      .account-dialog button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+      }
+
+      .settings-page {
+        --settings-ink: #172033;
+        --settings-muted: #68758a;
+        --settings-border: #e5e9f2;
+        --settings-purple: #6548e8;
+        --settings-purple-dark: #5235ce;
+        background: #f5f6fb;
+        color: var(--settings-ink);
+      }
+
+      .settings-page .page-content.main-box-container {
+        width: auto;
+        max-width: 1440px;
+        margin: 0 auto 32px !important;
+        padding: 28px 34px 40px !important;
+        align-items: stretch;
+        gap: 24px !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        backdrop-filter: none;
+      }
+
+      .settings-page .page-banner {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+        display: flex;
+        min-height: 190px;
         flex-direction: column;
+        justify-content: center;
+        padding: clamp(26px, 4vw, 42px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 24px;
+        background: linear-gradient(118deg, #24214d 0%, #4f3ab1 58%, #765de8 100%);
+        box-shadow: 0 16px 36px rgba(58, 46, 130, 0.18);
+      }
 
+      .settings-page .page-banner::after {
+        position: absolute;
+        z-index: -1;
+        top: -110px;
+        right: -40px;
+        width: 310px;
+        height: 310px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.13), transparent 68%);
+        content: "";
+      }
+
+      .settings-page .page-eyebrow {
+        display: inline-block;
+        margin-bottom: 10px;
+        color: #d7d0ff;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .settings-page .page-banner h1 {
+        margin-bottom: 8px;
+        color: #fff !important;
+        font-size: clamp(1.9rem, 3vw, 2.45rem);
+        letter-spacing: -0.035em;
+      }
+
+      .settings-page .page-banner p {
+        max-width: 560px;
+        color: #e1def7;
+        font-size: 0.98rem;
+        line-height: 1.65;
+      }
+
+      .settings-page .settings-main-card {
         gap: 20px;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
       }
 
-      .card-box {
-        background: var(--surface);
-
-        border-radius: var(--radius);
-
-        padding: 22px;
-
-        box-shadow: var(--shadow-sm);
-
-        border: 1px solid var(--surface-border);
+      .settings-page .settings-main-card > section {
+        padding: clamp(22px, 3vw, 32px);
+        border: 1px solid var(--settings-border);
+        border-radius: 20px;
+        background: #fff;
+        box-shadow: 0 8px 26px rgba(23, 32, 51, 0.045);
       }
 
-      /* =========================================================
-       STUDENT PROFILE CARD
-    ========================================================= */
+      .settings-page .settings-section-title {
+        margin-bottom: 20px;
+      }
+
+      .settings-page .settings-section-title h3 {
+        margin-bottom: 6px;
+        color: var(--settings-ink);
+        font-size: 1.18rem;
+        letter-spacing: -0.02em;
+      }
+
+      .settings-page .settings-section-title p {
+        color: var(--settings-muted);
+        line-height: 1.55;
+      }
+
+      .settings-page .account-mini-profile {
+        display: grid;
+        min-height: 112px;
+        grid-template-columns: 72px minmax(0, 1fr);
+        grid-template-rows: repeat(4, auto);
+        align-items: center;
+        justify-items: start;
+        column-gap: 18px;
+        row-gap: 3px;
+        margin: 0 0 10px !important;
+        padding: 18px 22px;
+        border: 1px solid #e8e5fb;
+        border-radius: 16px;
+        background:
+          radial-gradient(circle at 100% 0, rgba(117, 94, 232, 0.07), transparent 34%),
+          linear-gradient(115deg, #fbfaff, #f8f9ff);
+      }
+
+      .settings-page .account-avatar {
+        grid-column: 1;
+        grid-row: 1 / 5;
+        width: 72px;
+        height: 72px;
+        margin: 0;
+        padding: 3px;
+        border: 2px solid #ddd6fe;
+        background: #fff;
+        box-shadow: 0 4px 12px rgba(80, 57, 177, 0.12);
+      }
+
+      .settings-page .account-name {
+        grid-column: 2;
+        grid-row: 1;
+        color: var(--settings-ink);
+        font-size: 1.12rem;
+        letter-spacing: -0.02em;
+      }
+
+      .settings-page .account-email {
+        grid-column: 2;
+        grid-row: 2;
+        margin-top: 0;
+        color: var(--settings-muted);
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+      }
+
+      .settings-page .account-phone {
+        grid-column: 2;
+        grid-row: 3;
+        margin-top: 0;
+        color: var(--settings-muted);
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+      }
+
+      .settings-page .role-pill {
+        grid-column: 2;
+        grid-row: 4;
+        margin-top: 5px;
+        padding: 4px 10px;
+        color: #583dcc;
+        background: #eeebff;
+        font-size: 0.72rem;
+        letter-spacing: 0.01em;
+      }
+
+      .settings-page .profile-summary-edit {
+        margin: 0 0 16px;
+        text-align: right;
+      }
+
+      .settings-page .account-action-row {
+        min-height: 82px;
+        padding: 18px 4px;
+        border-bottom-color: #edf0f5;
+      }
+
+      .settings-page .account-action-row strong {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--settings-ink);
+        font-size: 0.94rem;
+      }
+
+      .settings-page .account-action-row p {
+        max-width: 620px;
+        line-height: 1.5;
+      }
+
+      .settings-page .account-action-button {
+        min-height: 42px;
+        padding: 10px 16px;
+        border-color: #dfe3ed;
+        border-radius: 11px;
+        background: #fff;
+        color: #39445a;
+        font-size: 0.87rem;
+        transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
+      }
+
+      .settings-page .account-action-button:hover:not(:disabled) {
+        transform: translateY(-1px);
+        border-color: #c9c0ff;
+        background: #f8f6ff;
+        color: var(--settings-purple-dark);
+      }
+
+      .settings-page .account-action-button-danger {
+        border-color: #fecaca;
+        color: #c2414b;
+      }
+
+      .settings-page .account-action-button-danger:hover:not(:disabled) {
+        border-color: #fda4af;
+        background: #fff5f5;
+        color: #b42332;
+      }
+
+      .settings-page .profile-form {
+        margin: 18px 0 22px;
+        padding: clamp(16px, 2.6vw, 26px);
+        border: 1px solid #e9eaf2;
+        border-radius: 16px;
+        background: #fbfcff;
+      }
+
+      .settings-page .profile-form-grid {
+        gap: 18px;
+      }
+
+      .settings-page .profile-field {
+        gap: 8px;
+        color: #3b465b;
+        font-size: 0.84rem;
+        font-weight: 700;
+      }
+
+      .settings-page .profile-field input,
+      .settings-page .profile-field textarea,
+      .settings-page .profile-field select,
+      .settings-page .profile-language-picker select,
+      .settings-page #studentTimezoneSelect {
+        min-height: 46px;
+        padding: 11px 13px;
+        border: 1px solid #dfe4ee;
+        border-radius: 10px;
+        background-color: #fff;
+        color: var(--settings-ink);
+        transition: border-color 150ms ease, box-shadow 150ms ease;
+      }
+
+      .settings-page .profile-field input:focus,
+      .settings-page .profile-field textarea:focus,
+      .settings-page .profile-field select:focus,
+      .settings-page .profile-language-picker select:focus,
+      .settings-page #studentTimezoneSelect:focus {
+        border-color: #8d7af1;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(101, 72, 232, 0.13);
+      }
+
+      .settings-page .profile-field textarea {
+        min-height: 100px;
+      }
+
+      .settings-page .profile-photo-row {
+        padding: 0 0 18px;
+        border-bottom-color: #e8ebf2;
+      }
+
+      .settings-page .profile-photo-help,
+      .settings-page .account-current-email,
+      .settings-page .account-status {
+        line-height: 1.5;
+      }
+
+      .settings-page .profile-language-tag {
+        border: 1px solid #e6e1ff;
+        background: #f3f0ff;
+        color: #583dcc;
+      }
+
+      .settings-page .divider-line {
+        height: 1px;
+        margin: 28px 0;
+        background: #eceef4;
+      }
+
+      .settings-page .setting-item-row {
+        min-height: 92px;
+        padding: 18px 4px;
+        border-bottom-color: #edf0f5;
+      }
+
+      .settings-page .setting-label-group {
+        gap: 14px;
+      }
+
+      .settings-page .setting-icon-box {
+        width: 44px;
+        height: 44px;
+        flex: 0 0 44px;
+        border: 1px solid #e7e3ff;
+        border-radius: 13px;
+        background: #f4f1ff;
+        color: #5b43d2;
+        font-size: 1.05rem;
+      }
+
+      .settings-page .setting-icon-box svg {
+        width: 21px;
+        height: 21px;
+      }
+
+      .settings-page .setting-label-text h4 {
+        margin-bottom: 4px;
+        color: var(--settings-ink);
+        font-size: 0.93rem;
+      }
+
+      .settings-page .setting-label-text p {
+        max-width: 420px;
+        color: var(--settings-muted);
+        line-height: 1.5;
+      }
+
+      .settings-page .radio-group-inline {
+        gap: 10px;
+      }
+
+      .settings-page .radio-label {
+        min-height: 42px;
+        padding: 9px 12px;
+        border: 1px solid #e4e7ef;
+        border-radius: 10px;
+        background: #fff;
+        color: #465168;
+        font-size: 0.82rem;
+        transition: border-color 150ms ease, background 150ms ease;
+      }
+
+      .settings-page .radio-label:has(input:checked) {
+        border-color: #c9c0ff;
+        background: #f6f4ff;
+        color: #5038c2;
+      }
+
+      .settings-page .radio-label input {
+        accent-color: var(--settings-purple);
+      }
+
+      .settings-page .setting-control {
+        min-width: min(100%, 290px);
+      }
+
+      .settings-page #studentTimezoneSelect {
+        width: 100%;
+        font: inherit;
+        font-size: 0.88rem;
+      }
+
+      .settings-page .btn-save-container {
+        align-items: center;
+        gap: 14px;
+        margin-top: 20px;
+      }
+
+      .settings-page .btn-save {
+        min-height: 46px;
+        padding: 12px 22px;
+        border-radius: 11px;
+        background: linear-gradient(135deg, #7157ed, #563bd4);
+        box-shadow: 0 7px 16px rgba(90, 62, 207, 0.2);
+        transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+      }
+
+      .settings-page .btn-save:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 20px rgba(90, 62, 207, 0.26);
+      }
+
+      .settings-page .btn-save:disabled {
+        cursor: not-allowed;
+        opacity: 0.58;
+      }
+
+      .settings-page button:focus-visible {
+        outline: 3px solid rgba(101, 72, 232, 0.32);
+        outline-offset: 3px;
+      }
+
+      .settings-page .account-dialog {
+        padding: 30px;
+        border: 1px solid #e5e7ef;
+        border-radius: 20px;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.2);
+      }
+
+      .settings-page .account-dialog h2 {
+        color: var(--settings-ink);
+        letter-spacing: -0.02em;
+      }
+
+      @media (max-width: 900px) {
+        .settings-page .page-content.main-box-container {
+          margin: 0 16px 20px !important;
+          padding: 24px 0 30px !important;
+          gap: 18px !important;
+        }
+
+        .settings-page .page-banner {
+          border-radius: 20px;
+        }
+
+        .settings-page .settings-main-card > section {
+          border-radius: 18px;
+        }
+
+        .settings-page .setting-item-row {
+          gap: 18px;
+        }
+      }
+
+      @media (max-width: 600px) {
+        .settings-page .page-content.main-box-container {
+          margin-right: 12px !important;
+          margin-left: 12px !important;
+          padding-top: 16px !important;
+        }
+
+        .settings-page .page-banner {
+          min-height: 168px;
+          padding: 25px 22px;
+          border-radius: 18px;
+        }
+
+        .settings-page .settings-main-card > section {
+          padding: 22px 18px;
+          border-radius: 16px;
+        }
+
+        .settings-page .account-mini-profile {
+          grid-template-columns: 58px minmax(0, 1fr);
+          column-gap: 13px;
+          padding: 16px 13px;
+        }
+
+        .settings-page .account-avatar {
+          width: 58px;
+          height: 58px;
+        }
+
+        .settings-page .account-action-row {
+          align-items: stretch;
+          gap: 12px;
+        }
+
+        .settings-page .account-action-row .account-action-button {
+          width: 100%;
+        }
+
+        .settings-page .setting-item-row {
+          align-items: stretch;
+          flex-direction: column;
+          gap: 14px;
+          padding: 18px 0;
+        }
+
+        .settings-page .setting-label-group {
+          align-items: flex-start;
+        }
+
+        .settings-page .setting-control {
+          width: 100%;
+          min-width: 0;
+        }
+
+        .settings-page .radio-group-inline {
+          display: grid;
+          grid-template-columns: 1fr;
+        }
+
+        .settings-page .btn-save-container {
+          align-items: stretch;
+          flex-direction: column-reverse;
+        }
+
+        .settings-page .btn-save-container .btn-save,
+        .settings-page .btn-save-container .account-action-button {
+          width: 100%;
+        }
+
+        .settings-page #settingsStatus {
+          margin: 0;
+        }
+
+        .settings-page .account-dialog {
+          padding: 24px 20px;
+        }
+      }
+
+      .account-status,
+      #settingsStatus {
+        min-height: 1.3em;
+        color: var(--text-muted);
+        font-size: 0.88rem;
+      }
+
+      #settingsStatus {
+        align-self: center;
+        margin-right: auto;
+      }
 
       .account-mini-profile {
         display: flex;
-
         flex-direction: column;
-
         align-items: center;
-
         text-align: center;
-
-        padding-bottom: 17px;
-
+        padding-bottom: 16px;
         border-bottom: 1px solid var(--surface-border);
       }
 
       .account-avatar {
-        width: 76px;
-
-        height: 76px;
-
+        width: 72px;
+        height: 72px;
         border-radius: 50%;
-
         object-fit: cover;
-
         margin-bottom: 12px;
-
-        border: 4px solid #ede9fe;
       }
 
       .account-name {
         font-size: 1.05rem;
-
         font-weight: 800;
+        color: var(--text-main);
       }
 
       .account-email {
-        font-size: 0.84rem;
-
+        font-size: 0.85rem;
         color: var(--text-muted);
-
-        margin-top: 3px;
+        margin-top: 2px;
       }
 
       .account-phone {
-        font-size: 0.84rem;
-
+        font-size: 0.85rem;
         color: var(--text-muted);
-
         margin-top: 2px;
       }
 
       .role-pill {
         margin-top: 10px;
-
         display: inline-block;
-
         background: #ede9fe;
-
         color: #6d28d9;
-
         font-size: 0.78rem;
-
         font-weight: 700;
-
-        padding: 5px 13px;
-
+        padding: 4px 12px;
         border-radius: 20px;
       }
 
-      .btn-edit-profile {
-        width: 100%;
-
-        margin-top: 16px;
-
-        background: #ffffff;
-
-        border: 1px solid var(--surface-border);
-
-        padding: 10px;
-
-        border-radius: 10px;
-
-        font-family: inherit;
-
-        font-weight: 700;
-
-        font-size: 0.9rem;
-
-        color: var(--text-main);
-
-        cursor: pointer;
-
-        transition: 0.2s;
-      }
-
-      .btn-edit-profile:hover {
-        background: #f8fafc;
-
-        border-color: #cbd5e1;
-      }
-
-      /* =========================================================
-       STUDY STORAGE
-    ========================================================= */
-
-      .storage-header {
-        display: flex;
-
-        justify-content: space-between;
-
-        align-items: center;
-
-        margin-bottom: 10px;
-
-        font-size: 0.9rem;
-
-        font-weight: 700;
-      }
-
-      .storage-link {
-        font-size: 0.8rem;
-
-        color: var(--primary);
-
-        text-decoration: none;
-      }
-
-      .progress-bar-bg {
-        width: 100%;
-
-        height: 8px;
-
-        background: #e2e8f0;
-
-        border-radius: 4px;
-
-        overflow: hidden;
-
-        margin-bottom: 8px;
-      }
-
-      .progress-bar-fill {
-        width: 36%;
-
-        height: 100%;
-
-        background: #7c3aed;
-
-        border-radius: 4px;
-      }
-
-      .storage-sub {
-        font-size: 0.8rem;
-
-        color: var(--text-muted);
-      }
-
-      /* =========================================================
-       QUICK LINKS
-    ========================================================= */
-
-      .quick-links-title {
-        font-size: 0.95rem;
-
-        font-weight: 800;
-
-        margin-bottom: 12px;
-      }
-
-      .quick-link-item {
-        display: flex;
-
-        align-items: center;
-
-        justify-content: space-between;
-
-        padding: 11px 0;
-
-        border-bottom: 1px solid var(--surface-border);
-
-        text-decoration: none;
-
-        color: var(--text-main);
-
-        font-size: 0.88rem;
-
-        font-weight: 600;
-
-        transition: 0.2s;
-      }
-
-      .quick-link-item:hover {
-        color: #7c3aed;
-
-        padding-left: 3px;
-      }
-
-      .quick-link-item:last-child {
-        border-bottom: none;
-
-        padding-bottom: 0;
-
-        color: var(--danger);
-      }
-
-      .quick-link-left {
-        display: flex;
-
-        align-items: center;
-
-        gap: 10px;
-      }
-
-      /* =========================================================
-       STUDENT TIP
-    ========================================================= */
-
-      .tips-card {
-        background: #ede9fe;
-
-        border: 1px solid rgba(124, 58, 237, 0.2);
-
-        border-radius: var(--radius);
-
-        padding: 20px;
-      }
-
-      .tips-header {
-        display: flex;
-
-        align-items: center;
-
-        gap: 10px;
-
-        margin-bottom: 8px;
-
-        font-weight: 800;
-
-        color: #5b21b6;
-      }
-
-      .tips-card p {
-        font-size: 0.85rem;
-
-        color: #4c1d95;
-
-        line-height: 1.5;
-      }
-
-      .tips-link {
-        display: inline-block;
-
-        margin-top: 10px;
-
-        font-size: 0.85rem;
-
-        font-weight: 700;
-
-        color: #7c3aed;
-
-        text-decoration: none;
-      }
-
-      /* =========================================================
-       TOAST
-    ========================================================= */
-
-      .toast {
-        position: fixed;
-
-        right: 25px;
-        bottom: 25px;
-
-        background: #0f172a;
-
-        color: #ffffff;
-
-        padding: 13px 18px;
-
-        border-radius: 12px;
-
-        font-size: 0.88rem;
-
-        font-weight: 600;
-
-        box-shadow: var(--shadow-md);
-
-        transform: translateY(100px);
-
-        opacity: 0;
-
-        pointer-events: none;
-
-        transition: 0.3s;
-
-        z-index: 999;
-      }
-
-      .toast.show {
-        transform: translateY(0);
-
-        opacity: 1;
-      }
-
-      /* =========================================================
-       RESPONSIVE
-    ========================================================= */
-
       @media (max-width: 1400px) {
         .settings-layout {
-          grid-template-columns:
-            240px
-            1fr;
-        }
-
-        .right-column {
-          grid-column: 1 / -1;
-
-          display: grid;
-
-          grid-template-columns: repeat(2, 1fr);
-
-          gap: 20px;
+          grid-template-columns: minmax(0, 1fr);
         }
       }
 
       @media (max-width: 900px) {
-        .page {
-          padding: 25px 16px 40px;
+        .sidebar {
+          display: none;
         }
-
+        .main-wrapper {
+          margin-left: 0;
+          width: 100%;
+        }
         .settings-layout {
           grid-template-columns: 1fr;
         }
-
-        .right-column {
-          grid-template-columns: 1fr;
-        }
-
-        .page-header {
-          align-items: flex-start;
-
-          gap: 15px;
-
-          flex-direction: column;
-        }
-      }
-
-      @media (max-width: 600px) {
-        .settings-main-card {
-          padding: 20px;
-        }
-
         .setting-item-row {
           align-items: flex-start;
-
           flex-direction: column;
+          gap: 12px;
         }
-
-        .setting-control {
-          width: 100%;
+        .main-box-container {
+          margin: 0 16px 20px 16px;
+          padding: 20px;
         }
-
-        .setting-control select {
-          width: 100%;
+        .page-banner {
+          margin: 0;
         }
-
-        .radio-group-inline {
-          flex-wrap: wrap;
+        .profile-form-grid {
+          grid-template-columns: 1fr;
         }
-
-        .btn-save-container {
-          width: 100%;
+        .profile-field-full {
+          grid-column: auto;
         }
-
-        .btn-save {
-          width: 100%;
+        .account-action-row {
+          align-items: flex-start;
+          flex-direction: column;
         }
       }
     </style>
-    <link rel="stylesheet" href="../css/student-layout.css" />
+      <link rel="stylesheet" href="../css/student-layout.css" />
   </head>
-
-  <body>
+  <body class="settings-page">
     <div id="studentLayout"></div>
-    <main class="page">
-      <!-- =====================================================
-         PAGE HEADER
-    ====================================================== -->
 
-      <div class="page-header">
-        <div class="page-title">
-          <h1>Good morning, Ayush! 👋</h1>
+    <main class="page-content main-box-container">
 
-          <p>Manage your account settings and learning preferences.</p>
-        </div>
-
-        <div class="student-badge">
-          <div class="student-badge-icon">🎓</div>
-
-          <span>Student Account</span>
-        </div>
+      <!-- PAGE BANNER -->
+      <div class="page-banner">
+        <span class="page-eyebrow">Student workspace</span>
+        <h1>Settings</h1>
+        <p>Manage your student profile, account security and learning preferences.</p>
       </div>
 
-      <!-- =====================================================
-         SETTINGS LAYOUT
-    ====================================================== -->
-
+      <!-- SETTINGS LAYOUT CONTAINER -->
       <div class="settings-layout">
-        <!-- ===================================================
-           SETTINGS NAVIGATION
-      ==================================================== -->
-
-        <div class="settings-nav-card">
-          <div class="settings-nav-title">Settings</div>
-
-          <ul class="settings-menu">
-            <li class="settings-menu-item active">
-              <a href="#general">
-                <span class="settings-menu-icon">⚙️</span>
-                General
-              </a>
-            </li>
-
-            <li class="settings-menu-item">
-              <a href="#account">
-                <span class="settings-menu-icon">👤</span>
-                Account
-              </a>
-            </li>
-
-            <li class="settings-menu-item">
-              <a href="#preferences">
-                <span class="settings-menu-icon">🎛️</span>
-                Learning Preferences
-              </a>
-            </li>
-
-            <li class="settings-menu-item">
-              <a href="#notifications">
-                <span class="settings-menu-icon">🔔</span>
-                Notifications
-              </a>
-            </li>
-
-            <li class="settings-menu-item">
-              <a href="#privacy">
-                <span class="settings-menu-icon">🔒</span>
-                Privacy
-              </a>
-            </li>
-
-            <li class="settings-menu-item">
-              <a href="#security">
-                <span class="settings-menu-icon">🛡️</span>
-                Security
-              </a>
-            </li>
-
-            <li class="settings-menu-item">
-              <a href="#reminders">
-                <span class="settings-menu-icon">⏰</span>
-                Study Reminders
-              </a>
-            </li>
-
-            <li class="settings-menu-item">
-              <a href="#appearance">
-                <span class="settings-menu-icon">🎨</span>
-                Appearance
-              </a>
-            </li>
-
-            <li class="settings-menu-item">
-              <a href="#devices">
-                <span class="settings-menu-icon">💻</span>
-                Connected Devices
-              </a>
-            </li>
-
-            <li class="settings-menu-item">
-              <a href="#data">
-                <span class="settings-menu-icon">💾</span>
-                Data & Storage
-              </a>
-            </li>
-          </ul>
-        </div>
-
-        <!-- ===================================================
-           MAIN SETTINGS
-      ==================================================== -->
-
         <div class="settings-main-card">
-          <!-- GENERAL -->
-
-          <div class="settings-section-title" id="general">
-            <h3>General Settings</h3>
-
-            <p>Manage your basic account and learning application settings.</p>
-          </div>
-
-          <!-- LANGUAGE -->
-
-          <div class="setting-item-row">
-            <div class="setting-label-group">
-              <div class="setting-icon-box">🌐</div>
-
-              <div class="setting-label-text">
-                <h4>Language</h4>
-
-                <p>Choose your preferred language for the dashboard.</p>
+          <section aria-labelledby="accountManagementTitle">
+            <div class="settings-section-title">
+              <h3 id="accountManagementTitle">Account Management</h3>
+              <p>Keep your student profile and sign-in details up to date.</p>
+            </div>
+            <div class="account-mini-profile" style="margin: 18px 0">
+              <img
+                src=""
+                alt="Student profile"
+                class="account-avatar"
+                id="settingsAvatar"
+                hidden
+              />
+              <div class="account-name" id="settingsStudentName">Loading profile...</div>
+              <div class="account-email" id="settingsStudentEmail">-</div>
+              <div class="account-phone" id="settingsStudentPhone">-</div>
+              <span class="role-pill" id="settingsStudentRole">Student</span>
+              <p class="account-current-email" id="settingsStudentDetails">Loading student details...</p>
+            </div>
+            <div class="profile-summary-edit" id="profileSummaryActions">
+              <button class="account-action-button" id="editProfileButton" type="button">
+                Edit Profile
+              </button>
+            </div>
+            <form class="profile-form" id="profileForm" hidden>
+              <div class="profile-photo-row">
+                <div>
+                  <label class="profile-field" for="profilePhotoInput">Profile photo</label>
+                  <p class="profile-photo-help">Choose a JPG, PNG, or GIF image up to 2 MB.</p>
+                  <input
+                    class="profile-photo-input"
+                    id="profilePhotoInput"
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif"
+                  />
+                </div>
               </div>
-            </div>
-
-            <div class="setting-control">
-              <select id="language">
-                <option selected>English</option>
-
-                <option>Hindi</option>
-
-                <option>Spanish</option>
-
-                <option>French</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- TIME ZONE -->
-
-          <div class="setting-item-row">
-            <div class="setting-label-group">
-              <div class="setting-icon-box">🕒</div>
-
-              <div class="setting-label-text">
-                <h4>Time Zone</h4>
-
-                <p>Used for classes, reminders and calendar events.</p>
-              </div>
-            </div>
-
-            <div class="setting-control">
-              <select>
-                <option selected>(GMT+05:30) Asia/Kolkata</option>
-
-                <option>(GMT+00:00) UTC</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- DATE FORMAT -->
-
-          <div class="setting-item-row">
-            <div class="setting-label-group">
-              <div class="setting-icon-box">📅</div>
-
-              <div class="setting-label-text">
-                <h4>Date Format</h4>
-
-                <p>Choose how dates appear throughout the dashboard.</p>
-              </div>
-            </div>
-
-            <div class="setting-control">
-              <select>
-                <option selected>17 May 2026 (DD MMM YYYY)</option>
-
-                <option>17/05/2026</option>
-
-                <option>YYYY-MM-DD</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- TIME FORMAT -->
-
-          <div class="setting-item-row">
-            <div class="setting-label-group">
-              <div class="setting-icon-box">🕒</div>
-
-              <div class="setting-label-text">
-                <h4>Time Format</h4>
-
-                <p>Choose how class and study times are displayed.</p>
-              </div>
-            </div>
-
-            <div class="setting-control">
-              <div class="radio-group-inline">
-                <label class="radio-label">
-                  <input type="radio" name="timeFormat" checked />
-
-                  12 Hours
+              <div class="profile-form-grid" style="margin-top: 18px">
+                <label class="profile-field">
+                  Full name
+                  <input type="text" data-student-field="full_name" required maxlength="160" />
                 </label>
-
-                <label class="radio-label">
-                  <input type="radio" name="timeFormat" />
-
-                  24 Hours
+                <label class="profile-field">
+                  Phone number
+                  <input type="tel" data-student-field="phone" maxlength="40" required />
+                </label>
+                <label class="profile-field">
+                  Date of birth
+                  <input type="date" data-student-field="date_of_birth" required />
+                </label>
+                <label class="profile-field">
+                  Gender
+                  <select data-student-field="gender" required>
+                    <option value="">Select gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                    <option value="prefer_not_to_say">Prefer not to say</option>
+                  </select>
+                </label>
+                <label class="profile-field">
+                  Country
+                  <input type="text" data-student-field="country" maxlength="120" required />
+                </label>
+                <label class="profile-field">
+                  State
+                  <input type="text" data-student-field="state" maxlength="120" required />
+                </label>
+                <label class="profile-field">
+                  City
+                  <input type="text" data-student-field="city" maxlength="120" required />
+                </label>
+                <label class="profile-field">
+                  Father's name
+                  <input type="text" data-student-field="father_name" maxlength="160" required />
+                </label>
+                <label class="profile-field">
+                  Father's phone
+                  <input type="tel" data-student-field="father_phone" maxlength="40" required />
+                </label>
+                <label class="profile-field">
+                  Mother's name
+                  <input type="text" data-student-field="mother_name" maxlength="160" required />
+                </label>
+                <label class="profile-field">
+                  Mother's phone
+                  <input type="tel" data-student-field="mother_phone" maxlength="40" required />
+                </label>
+                <label class="profile-field profile-field-full">
+                  Address
+                  <textarea data-student-field="address" maxlength="1000" required></textarea>
                 </label>
               </div>
-            </div>
-          </div>
-
-          <!-- WEEK START -->
-
-          <div class="setting-item-row">
-            <div class="setting-label-group">
-              <div class="setting-icon-box">📅</div>
-
-              <div class="setting-label-text">
-                <h4>Week Start Day</h4>
-
-                <p>Choose the first day shown in your calendar.</p>
+              <div class="btn-save-container">
+                <button class="btn-save" id="saveProfileButton" type="submit">Save Profile</button>
+                <button class="account-action-button" id="cancelProfileButton" type="button">
+                  Cancel
+                </button>
+                <p class="account-status" id="profileStatus" role="status" aria-live="polite"></p>
               </div>
-            </div>
+            </form>
 
-            <div class="setting-control">
-              <select>
-                <option selected>Monday</option>
-
-                <option>Sunday</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="divider-line"></div>
-
-          <!-- LEARNING SETTINGS -->
-
-          <div class="settings-section-title" id="preferences">
-            <h3>Learning Settings</h3>
-
-            <p>Customize your study experience.</p>
-          </div>
-
-          <!-- AUTO SAVE -->
-
-          <div class="setting-item-row">
-            <div class="setting-label-group">
-              <div class="setting-icon-box">☁️</div>
-
-              <div class="setting-label-text">
-                <h4>Auto Save</h4>
-
-                <p>Automatically save progress while studying.</p>
+            <div class="account-action-row">
+              <div>
+                <strong>Change email</strong>
+                <p class="account-current-email" id="settingsEmailStatus">Current email: -</p>
               </div>
+              <button class="account-action-button" id="changeEmailButton" type="button">
+                Change Email
+              </button>
             </div>
-
-            <div class="setting-control">
-              <label class="switch">
-                <input type="checkbox" checked />
-
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
-
-          <!-- CLASS REMINDERS -->
-
-          <div class="setting-item-row" id="reminders">
-            <div class="setting-label-group">
-              <div class="setting-icon-box">⏰</div>
-
-              <div class="setting-label-text">
-                <h4>Class Reminders</h4>
-
-                <p>Get reminders before your upcoming live classes.</p>
+            <div class="account-action-row">
+              <div>
+                <strong>Password</strong>
+                <p class="account-current-email">Update your sign-in password securely.</p>
               </div>
+              <button class="account-action-button" id="changePasswordButton" type="button">
+                Change Password
+              </button>
             </div>
-
-            <div class="setting-control">
-              <label class="switch">
-                <input type="checkbox" checked />
-
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
-
-          <!-- ASSIGNMENT REMINDERS -->
-
-          <div class="setting-item-row">
-            <div class="setting-label-group">
-              <div class="setting-icon-box">📝</div>
-
-              <div class="setting-label-text">
-                <h4>Assignment Reminders</h4>
-
-                <p>Receive reminders about upcoming assignments.</p>
+            <div class="account-action-row">
+              <div>
+                <strong>Delete account</strong>
+                <p class="account-current-email">Permanently remove your student account and associated profile.</p>
               </div>
+              <button
+                class="account-action-button account-action-button-danger"
+                id="deleteAccountButton"
+                type="button"
+              >
+                Delete Account
+              </button>
             </div>
-
-            <div class="setting-control">
-              <label class="switch">
-                <input type="checkbox" checked />
-
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
-
-          <!-- QUIZ REMINDERS -->
-
-          <div class="setting-item-row">
-            <div class="setting-label-group">
-              <div class="setting-icon-box">🧠</div>
-
-              <div class="setting-label-text">
-                <h4>Quiz Reminders</h4>
-
-                <p>Get notified when a quiz is available or approaching.</p>
-              </div>
-            </div>
-
-            <div class="setting-control">
-              <label class="switch">
-                <input type="checkbox" checked />
-
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
-
-          <!-- PROGRESS -->
-
-          <div class="setting-item-row">
-            <div class="setting-label-group">
-              <div class="setting-icon-box">📈</div>
-
-              <div class="setting-label-text">
-                <h4>Weekly Progress Summary</h4>
-
-                <p>Receive a summary of your weekly learning progress.</p>
-              </div>
-            </div>
-
-            <div class="setting-control">
-              <label class="switch">
-                <input type="checkbox" checked />
-
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
-
-          <!-- NOTIFICATIONS -->
-
-          <div class="divider-line" id="notifications"></div>
-
-          <div class="settings-section-title">
-            <h3>Notifications</h3>
-
-            <p>Control how Smart Learning DC keeps you updated.</p>
-          </div>
-
-          <!-- EMAIL -->
-
-          <div class="setting-item-row">
-            <div class="setting-label-group">
-              <div class="setting-icon-box">✉️</div>
-
-              <div class="setting-label-text">
-                <h4>Email Notifications</h4>
-
-                <p>Receive important learning updates by email.</p>
-              </div>
-            </div>
-
-            <div class="setting-control">
-              <label class="switch">
-                <input type="checkbox" checked />
-
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
-
-          <!-- SOUND -->
-
-          <div class="setting-item-row">
-            <div class="setting-label-group">
-              <div class="setting-icon-box">🔊</div>
-
-              <div class="setting-label-text">
-                <h4>Sound Notifications</h4>
-
-                <p>Play sounds for notifications and important alerts.</p>
-              </div>
-            </div>
-
-            <div class="setting-control">
-              <label class="switch">
-                <input type="checkbox" checked />
-
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
-
-          <!-- STUDY TIPS -->
-
-          <div class="setting-item-row">
-            <div class="setting-label-group">
-              <div class="setting-icon-box">💡</div>
-
-              <div class="setting-label-text">
-                <h4>Study Tips</h4>
-
-                <p>Show helpful learning tips and suggestions.</p>
-              </div>
-            </div>
-
-            <div class="setting-control">
-              <label class="switch">
-                <input type="checkbox" checked />
-
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
-
-          <!-- APPEARANCE -->
-
-          <div class="setting-item-row">
-            <div class="setting-label-group">
-              <div class="setting-icon-box">🎨</div>
-
-              <div class="setting-label-text">
-                <h4>Appearance</h4>
-
-                <p>Choose how the learning dashboard looks.</p>
-              </div>
-            </div>
-
-            <div class="setting-control">
-              <select id="appearance">
-                <option selected>Light</option>
-
-                <option>Dark</option>
-
-                <option>System Default</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- COMPACT VIEW -->
-
-          <div class="setting-item-row">
-            <div class="setting-label-group">
-              <div class="setting-icon-box">🖥️</div>
-
-              <div class="setting-label-text">
-                <h4>Compact View</h4>
-
-                <p>Show more learning content in less space.</p>
-              </div>
-            </div>
-
-            <div class="setting-control">
-              <label class="switch">
-                <input type="checkbox" />
-
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
-
-          <!-- ACCOUNT SECURITY -->
-
-          <section id="security" aria-label="Account security">
-            <div id="mfaSettingsMount"></div>
+            <p class="account-status" id="accountStatus" role="status" aria-live="polite"></p>
           </section>
 
-          <!-- SAVE -->
+          <div class="divider-line"></div>
+          <section aria-labelledby="preferencesTitle">
+            <div class="settings-section-title">
+              <h3 id="preferencesTitle">Preferences</h3>
+              <p>Choose how times are displayed throughout your student account.</p>
+            </div>
 
-          <div class="btn-save-container">
-            <button class="btn-save" id="saveBtn">Save Changes</button>
-          </div>
+            <div class="setting-item-row">
+              <div class="setting-label-group">
+                <div class="setting-icon-box" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="8.25" stroke="currentColor" stroke-width="1.7" />
+                    <path d="M12 7.5v4.8l3.2 1.9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </div>
+                <div class="setting-label-text">
+                  <h4>Time Format</h4>
+                  <p>Choose your preferred time format.</p>
+                </div>
+              </div>
+              <div class="setting-control">
+                <div class="radio-group-inline">
+                  <label class="radio-label">
+                    <input type="radio" name="timeFormat" data-student-setting="time_format" value="12h" />
+                    12-hour format – 02:30 PM
+                  </label>
+                  <label class="radio-label">
+                    <input type="radio" name="timeFormat" data-student-setting="time_format" value="24h" />
+                    24-hour format – 14:30
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="setting-item-row">
+              <div class="setting-label-group">
+                <div class="setting-icon-box" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="8.25" stroke="currentColor" stroke-width="1.7" />
+                    <path d="M3.9 12h16.2M12 3.75c2.05 2.25 3.1 5 3.1 8.25s-1.05 6-3.1 8.25c-2.05-2.25-3.1-5-3.1-8.25s1.05-6 3.1-8.25Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div class="setting-label-text">
+                  <h4>Timezone</h4>
+                  <p>Choose the timezone used for your learning dates and times.</p>
+                </div>
+              </div>
+              <div class="setting-control">
+                <select id="studentTimezoneSelect" data-student-setting="timezone" aria-label="Timezone">
+                </select>
+              </div>
+            </div>
+            <div class="setting-item-row">
+              <div class="setting-label-group">
+                <div class="setting-icon-box" aria-hidden="true">🌐</div>
+                <div class="setting-label-text">
+                  <h4>Language</h4>
+                  <p>Choose your preferred dashboard language.</p>
+                </div>
+              </div>
+              <div class="setting-control">
+                <select data-student-setting="language" aria-label="Language">
+                  <option>English</option>
+                  <option>Hindi</option>
+                  <option>Spanish</option>
+                  <option>French</option>
+                </select>
+              </div>
+            </div>
+            <div class="btn-save-container">
+              <button class="btn-save" id="saveSettingsButton" type="button">Save Changes</button>
+              <p id="settingsStatus" role="status" aria-live="polite">Preferences are saved in this browser for this student account.</p>
+            </div>
+          </section>
+          <section aria-label="Account security">
+            <div id="mfaSettingsMount"></div>
+          </section>
         </div>
 
-        <!-- ===================================================
-           RIGHT COLUMN
-      ==================================================== -->
-
-        <div class="right-column">
-          <!-- STUDENT ACCOUNT -->
-
-          <div class="card-box">
-            <div class="account-mini-profile">
-              <img
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80"
-                alt="Student Avatar"
-                class="account-avatar"
-              />
-
-              <div class="account-name">Ayush Kumar</div>
-
-              <div class="account-email">ayush.kumar@smartdc.com</div>
-
-              <div class="account-phone">+91 98765 43210</div>
-
-              <span class="role-pill"> Student • Grade 12 </span>
-            </div>
-
-            <button class="btn-edit-profile">Edit Profile</button>
-          </div>
-
-          <!-- STORAGE -->
-
-          <div class="card-box">
-            <div class="storage-header">
-              <span> Learning Storage </span>
-
-              <a href="#" class="storage-link"> View Details </a>
-            </div>
-
-            <div class="progress-bar-bg">
-              <div class="progress-bar-fill"></div>
-            </div>
-
-            <div class="storage-sub">1.8 GB of 5 GB used (36%)</div>
-          </div>
-
-          <!-- QUICK LINKS -->
-
-          <div class="card-box">
-            <div class="quick-links-title">Quick Links</div>
-
-            <a href="#" class="quick-link-item">
-              <div class="quick-link-left">🔒 Change Password</div>
-
-              <span>›</span>
-            </a>
-
-            <a href="#" class="quick-link-item">
-              <div class="quick-link-left">📥 Download My Data</div>
-
-              <span>›</span>
-            </a>
-
-            <a href="#" class="quick-link-item">
-              <div class="quick-link-left">💻 Connected Devices</div>
-
-              <span>›</span>
-            </a>
-
-            <a href="#" class="quick-link-item" id="deleteAccount">
-              <div class="quick-link-left">🗑️ Delete Account</div>
-
-              <span>›</span>
-            </a>
-          </div>
-
-          <!-- STUDY TIP -->
-
-          <div class="tips-card">
-            <div class="tips-header">
-              <span>💡</span>
-
-              Study Tip
-            </div>
-
-            <p>
-              Keep your study reminders enabled so you never miss an upcoming
-              class, quiz or assignment deadline.
-            </p>
-
-            <a href="#" class="tips-link"> Manage Reminders → </a>
-          </div>
-        </div>
       </div>
     </main>
-
-    <!-- =======================================================
-       TOAST
-  ======================================================== -->
-
-    <div class="toast" id="toast">Settings saved successfully!</div>
-
-    <!-- =======================================================
-       JAVASCRIPT
-  ======================================================== -->
-
-    <script>
-      /* -------------------------------------------------------
-       SETTINGS NAVIGATION
-    ------------------------------------------------------- */
-
-      const menuItems = document.querySelectorAll(".settings-menu-item");
-
-      menuItems.forEach((item) => {
-        item.addEventListener("click", function () {
-          menuItems.forEach((i) => i.classList.remove("active"));
-
-          this.classList.add("active");
-        });
-      });
-
-      /* -------------------------------------------------------
-       SAVE SETTINGS
-    ------------------------------------------------------- */
-
-      const saveBtn = document.getElementById("saveBtn");
-
-      const toast = document.getElementById("toast");
-
-      saveBtn.addEventListener("click", function () {
-        saveBtn.textContent = "Saving...";
-
-        saveBtn.disabled = true;
-
-        setTimeout(() => {
-          saveBtn.textContent = "Save Changes";
-
-          saveBtn.disabled = false;
-
-          toast.classList.add("show");
-
-          setTimeout(() => {
-            toast.classList.remove("show");
-          }, 2500);
-        }, 700);
-      });
-
-      /* -------------------------------------------------------
-       EDIT PROFILE
-    ------------------------------------------------------- */
-
-      const editProfile = document.querySelector(".btn-edit-profile");
-
-      editProfile.addEventListener("click", () => {
-        toast.textContent = "Opening profile editor...";
-
-        toast.classList.add("show");
-
-        setTimeout(() => {
-          toast.classList.remove("show");
-        }, 2000);
-      });
-
-      /* -------------------------------------------------------
-       DELETE ACCOUNT
-    ------------------------------------------------------- */
-
-      const deleteAccount = document.getElementById("deleteAccount");
-
-      deleteAccount.addEventListener("click", function (event) {
-        event.preventDefault();
-
-        const confirmed = confirm(
-          "Are you sure you want to delete your student account? This action cannot be undone.",
-        );
-
-        if (confirmed) {
-          alert(
-            "Account deletion should be handled securely through your backend/Supabase server process.",
-          );
-        }
-      });
-
-      /* -------------------------------------------------------
-       APPEARANCE
-    ------------------------------------------------------- */
-
-      const appearance = document.getElementById("appearance");
-
-      appearance.addEventListener("change", function () {
-        if (this.value === "Dark") {
-          toast.textContent =
-            "Dark mode preference selected. Connect this to your theme system.";
-        } else {
-          toast.textContent = "Appearance preference updated.";
-        }
-
-        toast.classList.add("show");
-
-        setTimeout(() => {
-          toast.classList.remove("show");
-        }, 2200);
-      });
-    </script>
+    <dialog class="account-dialog" id="emailChangeDialog" aria-labelledby="emailDialogTitle">
+      <form id="emailChangeForm" autocomplete="off">
+        <h2 id="emailDialogTitle">Change email</h2>
+        <p id="emailDialogCurrent" class="account-current-email">Current email: -</p>
+        <label class="profile-field" for="newEmailInput">
+          New email address
+          <input
+            id="newEmailInput"
+            name="newEmailAddress"
+            type="email"
+            autocomplete="off"
+            autocapitalize="none"
+            spellcheck="false"
+            placeholder="Enter your new email address"
+            required
+          />
+        </label>
+        <p class="account-dialog-status" id="emailDialogStatus" role="status" aria-live="polite"></p>
+        <div class="account-dialog-actions">
+          <button class="account-action-button" id="cancelEmailButton" type="button">Cancel</button>
+          <button class="btn-save" id="submitEmailButton" type="submit">Request Email Change</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog class="account-dialog" id="passwordChangeDialog" aria-labelledby="passwordDialogTitle">
+      <form id="passwordChangeForm" novalidate>
+        <h2 id="passwordDialogTitle">Change password</h2>
+        <label class="profile-field" for="newPasswordInput">
+          New password
+          <input
+            id="newPasswordInput"
+            name="password"
+            type="password"
+            autocomplete="new-password"
+            minlength="8"
+            required
+          />
+        </label>
+        <ul class="password-requirements" id="settingsPasswordRequirements" aria-live="polite"></ul>
+        <label class="profile-field" for="confirmPasswordInput" style="margin-top: 14px">
+          Confirm new password
+          <input
+            id="confirmPasswordInput"
+            name="passwordConfirmation"
+            type="password"
+            autocomplete="new-password"
+            minlength="8"
+            required
+          />
+        </label>
+        <p
+          class="password-confirmation-status"
+          id="settingsPasswordConfirmationStatus"
+          aria-live="polite"
+        ></p>
+        <p class="account-dialog-status" id="passwordDialogStatus" role="status" aria-live="polite"></p>
+        <div class="account-dialog-actions">
+          <button class="account-action-button" id="cancelPasswordButton" type="button">Cancel</button>
+          <button class="btn-save" id="submitPasswordButton" type="submit">Update Password</button>
+        </div>
+      </form>
+    </dialog>
+    <script src="../js/registration-password-validation.js"></script>
+    <script src="../js/timezone-manager.js"></script>
+    <script src="../js/student-settings.js"></script>
     <script src="../js/mfa-auth.js"></script>
     <script src="../js/mfa-settings.js"></script>
     <script src="../js/student-layout.js"></script>

@@ -44,31 +44,61 @@ Deno.serve(async (request) => {
   const adminClient = createClient(url, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const { data: teacher } = await adminClient
-    .from("teachers")
-    .select("profile_photo_url")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const [{ data: teacher, error: teacherError }, { data: student, error: studentError }] =
+    await Promise.all([
+      adminClient
+        .from("teachers")
+        .select("profile_photo_url")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      adminClient
+        .from("students")
+        .select("profile_photo_url")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+    ]);
+  if (teacherError || studentError) {
+    console.error("Could not load profile photos before account deletion.", {
+      teacherError,
+      studentError,
+    });
+    return Response.json(
+      { error: "The account could not be safely prepared for deletion." },
+      { status: 500, headers: corsHeaders },
+    );
+  }
 
   const { error: deleteError } = await adminClient.auth.admin.deleteUser(user.id);
   if (deleteError) {
     return Response.json({ error: "The account could not be deleted. Related records may require cleanup." }, { status: 409, headers: corsHeaders });
   }
 
-  const photoPath = teacher?.profile_photo_url;
+  const teacherPhotoPath = teacher?.profile_photo_url;
   let profilePhotoCleanupFailed = false;
-  if (typeof photoPath === "string" && photoPath.startsWith(`${user.id}/`)) {
+  if (typeof teacherPhotoPath === "string" && teacherPhotoPath.startsWith(`${user.id}/`)) {
     const { error: photoRemovalError } = await adminClient.storage
       .from("teacher-profile-images")
-      .remove([photoPath]);
+      .remove([teacherPhotoPath]);
     if (photoRemovalError) {
       console.error("Unable to remove the deleted teacher's profile photo.", photoRemovalError);
       profilePhotoCleanupFailed = true;
     }
   }
 
+  const studentPhotoPath = student?.profile_photo_url;
+  let studentProfilePhotoCleanupFailed = false;
+  if (typeof studentPhotoPath === "string" && studentPhotoPath.startsWith(`${user.id}/`)) {
+    const { error: photoRemovalError } = await adminClient.storage
+      .from("student-profile-images")
+      .remove([studentPhotoPath]);
+    if (photoRemovalError) {
+      console.error("Unable to remove the deleted student's profile photo.", photoRemovalError);
+      studentProfilePhotoCleanupFailed = true;
+    }
+  }
+
   return Response.json(
-    { deleted: true, profilePhotoCleanupFailed },
+    { deleted: true, profilePhotoCleanupFailed, studentProfilePhotoCleanupFailed },
     { status: 200, headers: corsHeaders },
   );
 });
