@@ -16,6 +16,9 @@
     hasUnsavedChanges: false,
     readOnly: false,
     settings: {},
+    originalQuizStatus: null,
+    originalScheduleDate: null,
+    originalScheduleTime: null,
     aiGeneratedQuestions: [],
   };
 
@@ -212,6 +215,35 @@
     return true;
   }
 
+  function validateStoredQuestionMarks() {
+    const questionsToValidate = [...state.questions];
+    const draftHasContent = state.draft && (
+      state.editingIndex >= 0 ||
+      state.draft.type ||
+      state.draft.text.trim() ||
+      state.draft.options.some((option) => option.trim())
+    );
+    if (draftHasContent) questionsToValidate.push(state.draft);
+    const invalidIndex = questionsToValidate.findIndex((question) => {
+      const marks = Number(question.marks);
+      return !Number.isSafeInteger(marks) || marks <= 0 || marks > 2147483647;
+    });
+    if (invalidIndex < 0) return true;
+    const message = `Question ${invalidIndex + 1} marks must be a whole number from 1 to 2,147,483,647.`;
+    showQuestionMessage(message);
+    showToast(message, true);
+    return false;
+  }
+
+  function validateTotalMarks() {
+    const marks = totalMarks();
+    if (Number.isSafeInteger(marks) && marks <= 2147483647) return true;
+    const message = "The total marks must be a whole number within the supported range.";
+    showQuestionMessage(message);
+    showToast(message, true);
+    return false;
+  }
+
   function collectSettings() {
     state.settings = {
       scheduledDate: $("scheduledDate").value,
@@ -321,8 +353,8 @@
       $("aiCustomQuestionCount").focus();
       return false;
     }
-    if (!Number.isFinite(form.marksPerQuestion) || form.marksPerQuestion < 1) {
-      showToast("Marks per question must be a positive number.", true);
+    if (!Number.isInteger(form.marksPerQuestion) || form.marksPerQuestion < 1) {
+      showToast("Marks per question must be a whole number greater than zero.", true);
       $("aiMarksPerQuestion").focus();
       return false;
     }
@@ -351,7 +383,7 @@
     if (!text) return null;
 
     const marks = Number(rawQuestion?.marks ?? rawQuestion?.points ?? 1);
-    if (!Number.isFinite(marks) || marks <= 0) return null;
+    if (!Number.isSafeInteger(marks) || marks <= 0 || marks > 2147483647) return null;
 
     if (normalizedType === "multiple_choice") {
       const optionValues = Array.isArray(rawQuestion?.options) ? rawQuestion.options : Array.isArray(rawQuestion?.choices) ? rawQuestion.choices : [];
@@ -575,7 +607,7 @@
     } else if (question.type === "true_false") {
       specificFields = `<div class="form-group"><label>Correct Answer <span class="required">*</span></label><select onchange="updateQuestion('correctAnswer', this.value)"><option value="">Select correct answer</option><option value="0" ${String(question.correctAnswer) === "0" ? "selected" : ""}>True</option><option value="1" ${String(question.correctAnswer) === "1" ? "selected" : ""}>False</option></select><small class="quiz-field-error" data-question-error="answer"></small></div>`;
     }
-    return `<article class="question-card editor-question"><div class="question-top"><div class="question-number">${state.editingIndex >= 0 ? "Edit Question" : `Question ${questionNumber}`}</div>${state.editingIndex >= 0 ? `<button type="button" class="btn btn-light" onclick="cancelEditQuestion()">Cancel Edit</button>` : ""}</div><div class="form-group"><label>Question <span class="required">*</span></label><textarea maxlength="3000" placeholder="Enter your question here..." oninput="updateQuestion('text', this.value)">${escapeHTML(question.text)}</textarea><small class="quiz-field-error" data-question-error="text"></small></div><div class="form-grid"><div class="form-group"><label>Question Type <span class="required">*</span></label><select onchange="changeQuestionType(this.value)">${typeOptions}</select><small class="quiz-field-error" data-question-error="type"></small></div><div class="form-group"><label>Marks <span class="required">*</span></label><input type="number" min="0.1" step="0.1" value="${escapeHTML(question.marks)}" oninput="updateQuestion('marks', this.value)"><small class="quiz-field-error" data-question-error="marks"></small></div></div>${specificFields}<div class="form-group"><label>Explanation <span>(optional)</span></label><textarea maxlength="2000" placeholder="Add a teacher explanation" oninput="updateQuestion('explanation', this.value)">${escapeHTML(question.explanation || "")}</textarea></div>${state.editingIndex >= 0 ? `<div class="question-editor-actions"><button type="button" class="btn btn-primary" onclick="commitQuestion()">Save Changes</button></div>` : ""}</article>`;
+    return `<article class="question-card editor-question"><div class="question-top"><div class="question-number">${state.editingIndex >= 0 ? "Edit Question" : `Question ${questionNumber}`}</div>${state.editingIndex >= 0 ? `<button type="button" class="btn btn-light" onclick="cancelEditQuestion()">Cancel Edit</button>` : ""}</div><div class="form-group"><label>Question <span class="required">*</span></label><textarea maxlength="3000" placeholder="Enter your question here..." oninput="updateQuestion('text', this.value)">${escapeHTML(question.text)}</textarea><small class="quiz-field-error" data-question-error="text"></small></div><div class="form-grid"><div class="form-group"><label>Question Type <span class="required">*</span></label><select onchange="changeQuestionType(this.value)">${typeOptions}</select><small class="quiz-field-error" data-question-error="type"></small></div><div class="form-group"><label>Marks <span class="required">*</span></label><input type="number" min="1" step="1" value="${escapeHTML(question.marks)}" oninput="updateQuestion('marks', this.value)"><small class="quiz-field-error" data-question-error="marks"></small></div></div>${specificFields}<div class="form-group"><label>Explanation <span>(optional)</span></label><textarea maxlength="2000" placeholder="Add a teacher explanation" oninput="updateQuestion('explanation', this.value)">${escapeHTML(question.explanation || "")}</textarea></div>${state.editingIndex >= 0 ? `<div class="question-editor-actions"><button type="button" class="btn btn-primary" onclick="commitQuestion()">Save Changes</button></div>` : ""}</article>`;
   }
 
   function renderQuestions() {
@@ -617,7 +649,8 @@
     const errors = {};
     if (!question.type) errors.type = "Select a question type.";
     if (!question.text.trim()) errors.text = "Enter the question text.";
-    if (!Number.isFinite(Number(question.marks)) || Number(question.marks) <= 0) errors.marks = "Marks must be greater than zero.";
+    const marks = Number(question.marks);
+    if (!Number.isSafeInteger(marks) || marks <= 0 || marks > 2147483647) errors.marks = "Marks must be a whole number from 1 to 2,147,483,647.";
     if (question.type === "multiple_choice") {
       if (question.options.slice(0, 4).some((option) => !String(option).trim())) errors.options = "Enter all four option values.";
       if (![0, 1, 2, 3].includes(Number(question.correctAnswer)) || question.correctAnswer === "") errors.answer = "Choose one correct option.";
@@ -761,10 +794,14 @@
   }
 
   function toRpcQuestion(question) {
+    const marks = Number(question.marks);
+    if (!Number.isSafeInteger(marks) || marks <= 0 || marks > 2147483647) {
+      throw new Error("Question marks must be a whole number from 1 to 2,147,483,647.");
+    }
     const questionType = { multiple_choice: "mcq", true_false: "true_false" }[question.type];
     const options = question.type === "multiple_choice" ? question.options.map((text, index) => ({ id: String.fromCharCode(65 + index), text: text.trim() })) : null;
     const answer = question.type === "multiple_choice" ? String.fromCharCode(65 + Number(question.correctAnswer)) : (Number(question.correctAnswer) === 0 ? "true" : "false");
-    return { question_type: questionType, question_text: question.text.trim(), options, correct_answer: answer, marks: Number(question.marks), explanation: question.explanation || null };
+    return { question_type: questionType, question_text: question.text.trim(), options, correct_answer: answer, marks, explanation: question.explanation || null };
   }
 
   function quizPayload(status) {
@@ -816,6 +853,10 @@
       showToast("Choose a scheduled date before selecting a time.", true);
       return false;
     }
+    if (settings.scheduledDate && !settings.scheduledTime) {
+      showToast("Choose a scheduled time for the selected date.", true);
+      return false;
+    }
     return true;
   }
 
@@ -825,6 +866,7 @@
       return;
     }
     if (state.saving) return;
+    if (!validateStoredQuestionMarks()) return;
     if (!validateStep1()) return;
     if (status === "published" && !validateQuestions()) return;
     if (status === "published" && state.draft && (state.draft.type || state.draft.text.trim() || state.draft.options.some((option) => option.trim()))) {
@@ -832,6 +874,23 @@
       return;
     }
     if (!validateSettings()) return;
+    if (!validateTotalMarks()) return;
+    const hasCompleteSchedule =
+      Boolean(state.settings.scheduledDate) &&
+      Boolean(state.settings.scheduledTime);
+    const isLegacyPublishedWithoutSchedule =
+      state.originalQuizStatus === "published" &&
+      !state.originalScheduleDate &&
+      !state.originalScheduleTime;
+    if (
+      status === "published" &&
+      !hasCompleteSchedule &&
+      !isLegacyPublishedWithoutSchedule
+    ) {
+      showToast("Choose both a scheduled date and time before publishing.", true);
+      $("scheduledDate").focus();
+      return;
+    }
     const formSchedule = {
       scheduledDate: $("scheduledDate").value,
       scheduledTime: $("scheduledTime").value,
@@ -964,6 +1023,9 @@
     const { data: quiz, error } = await state.client.from("quizzes").select("id, teacher_id, title, grade, stream, subject_id, description, instructions, duration_minutes, status, scheduled_date, scheduled_time").eq("id", state.quizId).eq("teacher_id", state.teacher.id).maybeSingle();
     if (error) throw new Error(`Could not load quiz draft. ${error.message}`);
     if (!quiz) throw new Error("This quiz could not be found under your teacher account.");
+    state.originalQuizStatus = quiz.status;
+    state.originalScheduleDate = quiz.scheduled_date || null;
+    state.originalScheduleTime = String(quiz.scheduled_time || "").slice(0, 5) || null;
     $("quizTitle").value = quiz.title || "";
     $("quizDescription").value = quiz.description || "";
     $("quizInstructions").value = quiz.instructions || "";
@@ -974,7 +1036,7 @@
     if (gradeHasStreams(selectedGrade())) $("quizStream").value = stream;
     updateQuizSubjects(false);
     $("quizSubject").value = String(quiz.subject_id || "");
-    const { data: rows, error: questionsError } = await state.client.from("quiz_questions").select("question_number, question_type, question_text, options, correct_answer, marks").eq("quiz_id", quiz.id).order("question_number", { ascending: true });
+    const { data: rows, error: questionsError } = await state.client.from("quiz_questions").select("question_number, question_type, question_text, options, correct_answer, marks, explanation").eq("quiz_id", quiz.id).order("question_number", { ascending: true });
     if (questionsError) throw new Error(`Could not load quiz questions. ${questionsError.message}`);
     state.questions = (rows || []).map((row) => {
       if (!["mcq", "true_false"].includes(row.question_type)) {
@@ -988,7 +1050,7 @@
       if (options.length && typeof options[0] === "object") options = ["A", "B", "C", "D"].map((letter) => options.find((option) => option.id === letter)?.text || "");
       let answer = row.correct_answer;
       if (typeof answer === "string") { try { answer = JSON.parse(answer); } catch {} }
-      return { id: crypto.randomUUID(), type, text: row.question_text || "", options: type === "true_false" ? ["", "", "", ""] : options.concat(["", "", "", ""]).slice(0, 4), correctAnswer: type === "mcq" ? (typeof answer === "number" ? answer : Math.max(0, ["A", "B", "C", "D"].indexOf(String(answer)))) : (String(answer).toLowerCase() === "false" || String(answer) === "1" ? "1" : "0"), marks: Number(row.marks || 1), explanation: "" };
+      return { id: crypto.randomUUID(), type, text: row.question_text || "", options: type === "true_false" ? ["", "", "", ""] : options.concat(["", "", "", ""]).slice(0, 4), correctAnswer: type === "mcq" ? (typeof answer === "number" ? answer : Math.max(0, ["A", "B", "C", "D"].indexOf(String(answer)))) : (String(answer).toLowerCase() === "false" || String(answer) === "1" ? "1" : "0"), marks: Number(row.marks || 1), explanation: row.explanation || "" };
     });
     state.draft = makeQuestion();
     state.editingIndex = -1;

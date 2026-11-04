@@ -1505,6 +1505,8 @@
 
       let allQuizzes = [];
       let allAttempts = [];
+      let quizServerNowMs = null;
+      let quizServerPerfAnchor = null;
       let studentData = null;
       let studentSubjectIds = new Set();
       let loadingQuizzes = false;
@@ -1664,7 +1666,7 @@
         const timeMatch = scheduledTime
           ? scheduledTime.match(/^(\d{2}):(\d{2})(?::(\d{2}))?$/)
           : null;
-        if (!dateMatch || (scheduledTime && !timeMatch)) {
+        if (!dateMatch || !timeMatch) {
           return { configured: true, valid: false, startsAt: null, label: "" };
         }
 
@@ -1688,64 +1690,102 @@
           return { configured: true, valid: false, startsAt: null, label: "" };
         }
 
-        const timezone = window.TimezoneManager.validateTimezone(quiz.timezone)
-          ? quiz.timezone
-          : window.TimezoneManager.getCurrentTimezone();
-        const startsAt = zonedQuizStart(
+        const catalogStart = Date.parse(quiz.scheduled_start_at || "");
+        const catalogDeadline = Date.parse(quiz.global_deadline || "");
+        const startsAt = Number.isFinite(catalogStart)
+          ? new Date(catalogStart)
+          : zonedQuizStart(
+              scheduledDate,
+              `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`,
+              "Asia/Kolkata",
+            );
+        const dateLabel = window.TimezoneManager.formatDate(
           scheduledDate,
-          `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`,
-          timezone,
+          "Asia/Kolkata",
         );
-        const dateLabel = window.TimezoneManager.formatDate(scheduledDate, timezone);
         const timeLabel = timeMatch
-          ? window.TimezoneManager.formatTime(startsAt, timezone)
+          ? window.TimezoneManager.formatTime(startsAt, "Asia/Kolkata")
           : "";
 
         return {
           configured: true,
           valid: true,
           startsAt,
+          deadline: Number.isFinite(catalogDeadline)
+            ? new Date(catalogDeadline)
+            : new Date(
+                startsAt.getTime() +
+                  Number(quiz.duration_minutes || 0) * 60 * 1000,
+              ),
           label: timeLabel ? `${dateLabel} at ${timeLabel}` : dateLabel,
         };
+      }
+
+      function getQuizServerNowMs() {
+        return Number.isFinite(quizServerNowMs) &&
+          Number.isFinite(quizServerPerfAnchor)
+          ? quizServerNowMs + (performance.now() - quizServerPerfAnchor)
+          : Date.now();
       }
 
       function quizScheduleAvailability(quiz) {
         const schedule = getQuizSchedule(quiz);
         if (!schedule.configured) {
-          return { ...schedule, available: true, message: "" };
+          return {
+            ...schedule,
+            available: true,
+            expired: false,
+            upcoming: false,
+            message: "",
+          };
         }
         if (!schedule.valid) {
           return {
             ...schedule,
             available: false,
+            expired: false,
+            upcoming: false,
             message: "Schedule unavailable. Contact your teacher.",
           };
         }
-        const available = Date.now() >= schedule.startsAt.getTime();
+        const now = getQuizServerNowMs();
+        const upcoming = now < schedule.startsAt.getTime();
+        const expired = now >= schedule.deadline.getTime();
+        const available = !upcoming && !expired;
         return {
           ...schedule,
           available,
-          message: available ? "" : `Available on ${schedule.label}`,
+          expired,
+          upcoming,
+          message: upcoming
+            ? `Available on ${schedule.label}`
+            : expired
+              ? "Quiz deadline has passed"
+              : "",
         };
       }
 
       function scheduleQuizAvailabilityRefresh() {
         window.clearTimeout(quizAvailabilityTimer);
-        const now = Date.now();
-        const nextStart = allQuizzes
-          .filter((quiz) => getAttemptForQuiz(quiz.id)?.status !== "in_progress")
-          .map((quiz) => getQuizSchedule(quiz))
-          .filter((schedule) =>
-            schedule.configured &&
-            schedule.valid &&
-            schedule.startsAt.getTime() > now,
-          )
-          .reduce((earliest, schedule) =>
-            Math.min(earliest, schedule.startsAt.getTime()), Infinity);
-        if (Number.isFinite(nextStart)) {
+        const now = getQuizServerNowMs();
+        const nextTransition = allQuizzes
+          .flatMap((quiz) => {
+            const attempt = getAttemptForQuiz(quiz.id);
+            const schedule = getQuizSchedule(quiz);
+            if (!schedule.configured || !schedule.valid) return [];
+            if (attempt?.status === "in_progress") {
+              return schedule.deadline.getTime() > now
+                ? [schedule.deadline.getTime()]
+                : [];
+            }
+            return [schedule.startsAt.getTime(), schedule.deadline.getTime()]
+              .filter((timestamp) => timestamp > now);
+          })
+          .reduce((earliest, timestamp) => Math.min(earliest, timestamp), Infinity);
+        if (Number.isFinite(nextTransition)) {
           quizAvailabilityTimer = window.setTimeout(
             () => renderQuizzes(),
-            Math.min(nextStart - now + 50, 2147483647),
+            Math.min(nextTransition - now + 50, 2147483647),
           );
         }
       }
@@ -1760,10 +1800,25 @@
             ? { type: "completed", label: "Result Published" }
             : { type: "result_pending", label: "Result Pending" };
         }
-
-        return attempt?.status === "in_progress"
-          ? { type: "in_progress", label: "In progress" }
-          : { type: "pending", label: "Available" };
+        if (attempt?.status === "abandoned") {
+          return { type: "expired", label: "Expired" };
+        }
+        const availability = quizScheduleAvailability(quiz);
+        if (availability.configured && !availability.valid) {
+          return { type: "unavailable", label: "Schedule Unavailable" };
+        }
+        if (attempt?.status === "in_progress") {
+          return availability.expired
+            ? { type: "expired", label: "Expired" }
+            : { type: "in_progress", label: "In Progress" };
+        }
+        if (availability.upcoming) {
+          return { type: "upcoming", label: "Upcoming" };
+        }
+        if (availability.expired) {
+          return { type: "missed", label: "Quiz Missed" };
+        }
+        return { type: "available", label: "Available" };
       }
 
       /* =====================================================
@@ -1824,6 +1879,13 @@
             "get_student_quiz_catalog",
           );
           if (quizResult.error) throw quizResult.error;
+          const serverNowValue = Date.parse(
+            quizResult.data?.[0]?.server_now || "",
+          );
+          if (Number.isFinite(serverNowValue)) {
+            quizServerNowMs = serverNowValue;
+            quizServerPerfAnchor = performance.now();
+          }
           allQuizzes = [
             ...new Map(
               (quizResult.data || [])
@@ -2156,16 +2218,25 @@
             ? "completed"
             : status.type === "result_pending"
               ? "overdue"
+              : status.type === "expired" || status.type === "missed"
+                ? "overdue"
               : "";
         let actionHTML;
         if (status.type === "completed") {
           actionHTML = `<button class="attempt-btn result-btn" onclick="viewResult('${escapeHTML(quiz.id)}')">View Result</button>`;
         } else if (status.type === "result_pending") {
           actionHTML = `<span class="status status-pending">Your teacher will publish the result</span>`;
+        } else if (
+          status.type === "expired" ||
+          status.type === "missed" ||
+          status.type === "unavailable"
+        ) {
+          actionHTML = `<button class="attempt-btn" disabled>${escapeHTML(status.label)}</button>`;
         } else {
           const buttonLabel =
             status.type === "in_progress" ? "Continue Quiz" : "Start Quiz";
-          const canStart = status.type === "in_progress" || availability.available;
+          const canStart =
+            status.type === "in_progress" || availability.available;
           actionHTML = `<button class="attempt-btn" onclick="attemptQuiz('${escapeHTML(quiz.id)}')"${canStart ? "" : " disabled"}>${buttonLabel}</button>`;
         }
         const streamLabel = quiz.stream
@@ -2237,12 +2308,7 @@
                       class="quiz-date ${dateClass}">
 
                       ${
-                        status.type === "pending" &&
-                        availability.configured &&
-                        availability.valid &&
-                        !availability.available
-                          ? ""
-                          : `<div>${escapeHTML(status.label)}</div>`
+                        `<div>${escapeHTML(status.label)}</div>`
                       }
                       <div class="due">${
                         attempt?.submitted_at
@@ -2250,7 +2316,7 @@
                           : availability.configured
                             ? availability.valid
                               ? escapeHTML(
-                                  status.type === "pending" && !availability.available
+                                  status.type === "upcoming"
                                     ? availability.message
                                     : availability.label,
                                 )
@@ -2553,8 +2619,22 @@
             return;
           }
           if (attemptRecord.status !== "in_progress") {
+            if (attemptRecord.status === "abandoned") {
+              const expiredAttempt = createStudentAttemptView(
+                attemptRecord,
+                eligibleQuiz,
+              );
+              allAttempts = allAttempts.filter(
+                (item) => String(item.quiz_id) !== String(selectedQuiz.id),
+              );
+              allAttempts.push(expiredAttempt);
+              renderQuizzes();
+              updateStatistics();
+            }
             throw new Error(
-              `The attempt is not available to resume (status: ${attemptRecord.status || "unknown"}).`,
+              attemptRecord.status === "abandoned"
+                ? "This quiz attempt has expired and cannot be resumed."
+                : `The attempt is not available to resume (status: ${attemptRecord.status || "unknown"}).`,
             );
           }
           if (!attemptRecord.started_at) {
@@ -2671,6 +2751,8 @@
         let submissionInFlight = false;
         let lastSubmissionConfirmed = false;
         let autoSubmitAttempted = false;
+        let expiryCheckInFlight = false;
+        let expiryConfirmed = false;
         async function evaluateAchievementsAfterQuizSubmission() {
           const attemptId = String(attempt.attempt_id);
           if (achievementEvaluationsStarted.has(attemptId)) return;
@@ -2697,9 +2779,11 @@
           }
         }
 
-        const expiresAt =
-          new Date(attempt.started_at).getTime() +
-          Number(quiz.duration_minutes) * 60 * 1000;
+        const schedule = getQuizSchedule(quiz);
+        const expiresAt = schedule.configured && schedule.valid
+          ? schedule.deadline.getTime()
+          : new Date(attempt.started_at).getTime() +
+            Number(quiz.duration_minutes) * 60 * 1000;
         if (!Number.isFinite(expiresAt)) {
           throw new Error(
             "The quiz timer could not be initialized from the server's attempt start time.",
@@ -2707,6 +2791,7 @@
         }
 
         const saveAnswer = (question, answer) => {
+          if (expiryConfirmed || getQuizServerNowMs() >= expiresAt) return;
           answers.set(String(question.id), answer);
           const status = view.querySelector("#answerSaveStatus");
           if (status) status.textContent = "Answer selected";
@@ -2716,11 +2801,29 @@
         const formatRemainingTime = () => {
           const seconds = Math.max(
             0,
-            Math.ceil((expiresAt - Date.now()) / 1000),
+            Math.ceil((expiresAt - getQuizServerNowMs()) / 1000),
           );
-          return `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(
-            seconds % 60,
-          ).padStart(2, "0")}`;
+          const hours = Math.floor(seconds / 3600);
+          const minutes = Math.floor((seconds % 3600) / 60);
+          const remainingSeconds = seconds % 60;
+          return hours
+            ? `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`
+            : `${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
+        };
+
+        const showAttemptExpired = () => {
+          expiryConfirmed = true;
+          window.clearInterval(activeQuizTimer);
+          view.querySelectorAll("input, textarea, #attemptNavigation button, .attempt-question-actions button, #confirmSubmitButton, #cancelSubmitButton").forEach((control) => {
+            control.disabled = true;
+          });
+          const errorElement = view.querySelector("#quizWorkflowError, #submitError");
+          if (errorElement) {
+            errorElement.textContent =
+              "The global quiz deadline has passed. This attempt is expired and can no longer be changed or submitted.";
+          }
+          const timer = view.querySelector("#quizTimer");
+          if (timer) timer.textContent = "Expired";
         };
 
         const answeredCount = () =>
@@ -2936,6 +3039,7 @@
         };
 
         const saveCurrentAnswer = async () => {
+          if (expiryConfirmed || getQuizServerNowMs() >= expiresAt) return;
           const question = questions[currentIndex];
           const selectedAnswer = view.querySelector(
             'input[name="quiz-answer"]:checked',
@@ -3135,6 +3239,25 @@
               },
             );
             if (error) throw error;
+            if (data?.status === "abandoned") {
+              lastSubmissionConfirmed = true;
+              const expiredAttempt = await readCurrentAttemptState();
+              if (expiredAttempt?.status !== "abandoned") {
+                throw new Error(
+                  "The server reported expiration, but the attempt status could not be confirmed. Refresh before continuing.",
+                );
+              }
+              allAttempts = allAttempts.filter(
+                (item) => String(item.quiz_id) !== String(quiz.id),
+              );
+              allAttempts.push(
+                createStudentAttemptView(expiredAttempt, quiz),
+              );
+              renderQuizzes();
+              updateStatistics();
+              showAttemptExpired();
+              return;
+            }
             if (!data || data.status !== "submitted") {
               throw new Error(
                 `The server did not confirm submission (status: ${data?.status || "missing response"}).`,
@@ -3226,13 +3349,48 @@
         const updateCountdown = () => {
           const timer = view.querySelector("#quizTimer");
           if (timer) timer.textContent = formatRemainingTime();
-          if (
-            Date.now() >= expiresAt &&
-            !submissionInFlight &&
-            !autoSubmitAttempted
-          ) {
-            autoSubmitAttempted = true;
-            void submitAttempt();
+          if (getQuizServerNowMs() >= expiresAt && !expiryCheckInFlight && !expiryConfirmed) {
+            const isScheduled = schedule.configured && schedule.valid;
+            if (!isScheduled && !autoSubmitAttempted && !submissionInFlight) {
+              autoSubmitAttempted = true;
+              void submitAttempt();
+              return;
+            }
+            if (isScheduled) {
+              expiryCheckInFlight = true;
+              view.querySelectorAll("input, textarea, #attemptNavigation button, .attempt-question-actions button, #confirmSubmitButton, #cancelSubmitButton").forEach((control) => {
+                control.disabled = true;
+              });
+              void (async () => {
+                try {
+                  const { error } = await supabaseClient.rpc(
+                    "start_quiz_attempt",
+                    { p_quiz_id: quiz.id },
+                  );
+                  if (error) throw error;
+                  const currentAttempt = await readCurrentAttemptState();
+                  if (currentAttempt?.status === "abandoned") {
+                    showAttemptExpired();
+                  } else {
+                    const errorElement =
+                      view.querySelector("#quizWorkflowError");
+                    if (errorElement) {
+                      errorElement.textContent =
+                        "The server has not confirmed expiration. The attempt remains protected by server validation; refresh to synchronize its timer.";
+                    }
+                    window.clearInterval(activeQuizTimer);
+                  }
+                } catch (error) {
+                  console.error("Could not verify quiz expiry with the server.", error);
+                  const errorElement = view.querySelector("#quizWorkflowError");
+                  if (errorElement) {
+                    errorElement.textContent =
+                      `The deadline could not be verified with the server: ${error.message}`;
+                  }
+                  window.clearInterval(activeQuizTimer);
+                }
+              })();
+            }
           }
         };
         const startCountdown = () => {

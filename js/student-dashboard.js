@@ -679,15 +679,24 @@
     delete state.errors.classes;
   }
 
-  function quizIsAvailable(quiz, now) {
-    if (String(quiz.status || "").toLowerCase() !== "published") return false;
-    if (!quiz.scheduled_date) return true;
-    const time = String(quiz.scheduled_time || "").slice(0, 8) || "00:00:00";
-    const startsAt = new Date(`${quiz.scheduled_date}T${time}+05:30`);
-    return Number.isFinite(startsAt.getTime()) && startsAt <= now;
+  function quizIsAvailable(quiz) {
+    if (String(quiz.quiz_status || "").toLowerCase() !== "published") {
+      return false;
+    }
+    if (!quiz.scheduled_date && !quiz.scheduled_time) return true;
+    const startsAt = Date.parse(quiz.scheduled_start_at || "");
+    const deadline = Date.parse(quiz.global_deadline || "");
+    const serverNow = Date.parse(quiz.server_now || "");
+    return (
+      Number.isFinite(startsAt) &&
+      Number.isFinite(deadline) &&
+      Number.isFinite(serverNow) &&
+      startsAt <= serverNow &&
+      serverNow < deadline
+    );
   }
 
-  async function loadQuizzes(now, sequence) {
+  async function loadQuizzes(_now, sequence) {
     const catalog = await readAll((from, to) => state.client
       .rpc("get_student_quiz_catalog")
       .range(from, to));
@@ -706,15 +715,8 @@
       delete state.errors.quizzes;
       return;
     }
-    const ids = [...new Set(eligible.map((quiz) => quiz.id))];
-    const { data, error } = await state.client
-      .from("quizzes")
-      .select("id, status, scheduled_date, scheduled_time")
-      .in("id", ids);
-    if (sequence !== state.loadSequence) return;
-    if (error) throw error;
-    const availableIds = new Set((data || [])
-      .filter((quiz) => quizIsAvailable(quiz, now))
+    const availableIds = new Set(eligible
+      .filter(quizIsAvailable)
       .map((quiz) => String(quiz.id)));
     state.quizCount = availableIds.size;
     delete state.errors.quizzes;
