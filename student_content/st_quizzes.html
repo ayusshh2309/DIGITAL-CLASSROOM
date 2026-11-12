@@ -1796,9 +1796,7 @@
 
       function getQuizStatus(quiz, attempt) {
         if (attempt?.status === "submitted") {
-          return attempt.result_released
-            ? { type: "completed", label: "Result Published" }
-            : { type: "result_pending", label: "Result Pending" };
+          return { type: "completed", label: "Completed" };
         }
         if (attempt?.status === "abandoned") {
           return { type: "expired", label: "Expired" };
@@ -1900,7 +1898,6 @@
                     ...quiz,
                     subject: quiz.subject_name || "Subject",
                     question_count: Number(quiz.question_count || 0),
-                    result_released: quiz.result_released === true,
                   },
                 ]),
             ).values(),
@@ -1929,7 +1926,7 @@
             ? await supabaseClient
                 .from("quiz_attempts")
                 .select(
-                  "id, quiz_id, student_id, started_at, submitted_at, status",
+                  "id, quiz_id, student_id, started_at, submitted_at, status, score, total_marks, percentage, correct_answers, wrong_answers, unanswered",
                 )
                 .eq("student_id", student.id)
                 .in(
@@ -1962,10 +1959,7 @@
             latestAttemptByQuizId.set(String(row.quiz_id), row);
           }
           allAttempts = [...latestAttemptByQuizId.values()].map((row) =>
-            createStudentAttemptView(
-              row,
-              catalogByQuizId.get(String(row.quiz_id)),
-            ),
+            createStudentAttemptView(row),
           );
 
           populateSubjectFilter();
@@ -2038,10 +2032,28 @@
         );
       }
 
-      function createStudentAttemptView(attemptRecord, quizRecord) {
-        const publishedResult =
-          quizRecord?.result_released === true &&
-          String(quizRecord.attempt_id) === String(attemptRecord.id);
+      function isValidResultValue(value) {
+        return (
+          (typeof value === "number" ||
+            (typeof value === "string" && value.trim() !== "")) &&
+          Number.isFinite(Number(value))
+        );
+      }
+
+      function hasValidAttemptResult(attemptRecord) {
+        return [
+          "score",
+          "total_marks",
+          "percentage",
+          "correct_answers",
+          "wrong_answers",
+          "unanswered",
+        ].every((field) => isValidResultValue(attemptRecord?.[field]));
+      }
+
+      function createStudentAttemptView(attemptRecord) {
+        const hasResult = attemptRecord.status === "submitted" &&
+          hasValidAttemptResult(attemptRecord);
         const attempt = {
           id: attemptRecord.id,
           quiz_id: attemptRecord.quiz_id,
@@ -2049,13 +2061,13 @@
           status: attemptRecord.status,
           started_at: attemptRecord.started_at,
           submitted_at: attemptRecord.submitted_at,
-          result_released: publishedResult,
-          score: publishedResult ? quizRecord.score : null,
-          total_marks: publishedResult ? quizRecord.result_total_marks : null,
-          percentage: publishedResult ? quizRecord.percentage : null,
-          correct_answers: publishedResult ? quizRecord.correct_answers : null,
-          wrong_answers: publishedResult ? quizRecord.wrong_answers : null,
-          unanswered: publishedResult ? quizRecord.unanswered : null,
+          result_released: hasResult,
+          score: hasResult ? attemptRecord.score : null,
+          total_marks: hasResult ? attemptRecord.total_marks : null,
+          percentage: hasResult ? attemptRecord.percentage : null,
+          correct_answers: hasResult ? attemptRecord.correct_answers : null,
+          wrong_answers: hasResult ? attemptRecord.wrong_answers : null,
+          unanswered: hasResult ? attemptRecord.unanswered : null,
         };
         return attempt;
       }
@@ -2082,7 +2094,9 @@
         }
         let query = supabaseClient
           .from("quiz_attempts")
-          .select("id, quiz_id, student_id, started_at, submitted_at, status")
+          .select(
+            "id, quiz_id, student_id, started_at, submitted_at, status, score, total_marks, percentage, correct_answers, wrong_answers, unanswered",
+          )
           .eq("quiz_id", quizId)
           .eq("student_id", studentData.id);
         if (attemptId) query = query.eq("id", attemptId);
@@ -2216,16 +2230,12 @@
         const dateClass =
           status.type === "completed"
             ? "completed"
-            : status.type === "result_pending"
-              ? "overdue"
-              : status.type === "expired" || status.type === "missed"
+            : status.type === "expired" || status.type === "missed"
                 ? "overdue"
               : "";
         let actionHTML;
         if (status.type === "completed") {
           actionHTML = `<button class="attempt-btn result-btn" onclick="viewResult('${escapeHTML(quiz.id)}')">View Result</button>`;
-        } else if (status.type === "result_pending") {
-          actionHTML = `<span class="status status-pending">Your teacher will publish the result</span>`;
         } else if (
           status.type === "expired" ||
           status.type === "missed" ||
@@ -2439,15 +2449,13 @@
 
       function renderAttemptResult(attempt, quiz) {
         const dialog = getQuizDialog();
-        const hasReleasedResult =
-          attempt?.result_released === true &&
-          attempt.score !== null &&
-          attempt.score !== undefined;
+        const hasResult = attempt?.status === "submitted" &&
+          hasValidAttemptResult(attempt);
         dialog.innerHTML = `<section style="padding:28px;font-family:Inter,sans-serif;color:#101a3b"><button type="button" data-close style="float:right;border:0;background:none;font-size:24px;cursor:pointer" aria-label="Close">×</button><span style="color:#008b95;font-size:12px;font-weight:800;text-transform:uppercase">Quiz result</span><h2 style="margin:10px 0">${escapeHTML(quiz.title)}</h2>${
-          hasReleasedResult
+          hasResult
             ? `<p style="font-size:24px;font-weight:800">${Number(attempt.score)} / ${Number(attempt.total_marks)} marks</p><p style="font-size:20px;font-weight:700;color:#5935df">${Number(attempt.percentage)}%</p><div style="display:flex;gap:18px;flex-wrap:wrap;margin:16px 0"><span>Correct: <strong>${Number(attempt.correct_answers)}</strong></span><span>Incorrect: <strong>${Number(attempt.wrong_answers)}</strong></span><span>Unanswered: <strong>${Number(attempt.unanswered)}</strong></span></div>`
-            : `<p>Your quiz has been submitted successfully. Your teacher will publish the result when it is ready.</p>`
-        }<button type="button" data-close class="attempt-btn">Back to Quizzes</button></section>`;
+            : `<p>Your quiz has been submitted. The result is not available yet.</p>`
+        }<p><strong>Status:</strong> ${attempt?.status === "submitted" ? "Submitted" : escapeHTML(attempt?.status || "Unknown")}</p><button type="button" data-close class="attempt-btn">Back to Quizzes</button></section>`;
         bindDialogClose(dialog);
         if (!dialog.open) dialog.showModal();
       }
@@ -2543,10 +2551,7 @@
           };
           const existingAttempt = await getStudentQuizAttempt(selectedQuiz.id);
           if (existingAttempt?.status === "submitted") {
-            const attemptView = createStudentAttemptView(
-              existingAttempt,
-              eligibleQuiz,
-            );
+            const attemptView = createStudentAttemptView(existingAttempt);
             allAttempts = allAttempts.filter(
               (item) => String(item.quiz_id) !== String(selectedQuiz.id),
             );
@@ -2604,10 +2609,7 @@
             );
           }
           if (attemptRecord.status === "submitted") {
-            const attemptView = createStudentAttemptView(
-              attemptRecord,
-              eligibleQuiz,
-            );
+            const attemptView = createStudentAttemptView(attemptRecord);
             allAttempts = allAttempts.filter(
               (item) => String(item.quiz_id) !== String(selectedQuiz.id),
             );
@@ -2620,10 +2622,7 @@
           }
           if (attemptRecord.status !== "in_progress") {
             if (attemptRecord.status === "abandoned") {
-              const expiredAttempt = createStudentAttemptView(
-                attemptRecord,
-                eligibleQuiz,
-              );
+              const expiredAttempt = createStudentAttemptView(attemptRecord);
               allAttempts = allAttempts.filter(
                 (item) => String(item.quiz_id) !== String(selectedQuiz.id),
               );
@@ -3107,7 +3106,7 @@
             await supabaseClient
               .from("quiz_attempts")
               .select(
-                "id, quiz_id, student_id, started_at, submitted_at, status",
+                "id, quiz_id, student_id, started_at, submitted_at, status, score, total_marks, percentage, correct_answers, wrong_answers, unanswered",
               )
               .eq("id", attempt.attempt_id)
               .eq("quiz_id", quiz.id)
@@ -3150,24 +3149,12 @@
           return attemptRecord;
         };
 
-        const showConfirmedSubmission = (
-          attemptRecord,
-          releasedQuizRow = null,
-        ) => {
+        const showConfirmedSubmission = (attemptRecord) => {
           lastSubmissionConfirmed = true;
           submissionInFlight = true;
           void evaluateAchievementsAfterQuizSubmission();
           window.clearInterval(activeQuizTimer);
-          const submittedAttempt = createStudentAttemptView(
-            attemptRecord || {
-              id: attempt.attempt_id,
-              quiz_id: quiz.id,
-              student_id: studentData.id,
-              status: "submitted",
-              started_at: attempt.started_at,
-            },
-            releasedQuizRow,
-          );
+          const submittedAttempt = createStudentAttemptView(attemptRecord);
           allAttempts = allAttempts.filter(
             (existing) => String(existing.quiz_id) !== String(quiz.id),
           );
@@ -3176,28 +3163,6 @@
           updateStatistics();
           setQuizAttemptViewVisible(false);
           renderAttemptResult(submittedAttempt, quiz);
-        };
-
-        const getReleasedQuizRow = async (attemptRecord) => {
-          const { data: catalogRows, error } = await supabaseClient.rpc(
-            "get_student_quiz_catalog",
-          );
-          if (error) {
-            console.error("Could not refresh release-gated quiz result data.", {
-              attemptId: attemptRecord.id,
-              quizId: quiz.id,
-              error,
-            });
-            return null;
-          }
-          return (
-            (catalogRows || []).find(
-              (row) =>
-                String(row.id) === String(quiz.id) &&
-                String(row.attempt_id) === String(attemptRecord.id) &&
-                row.result_released === true,
-            ) || null
-          );
         };
 
         const submitAttempt = async () => {
@@ -3217,10 +3182,7 @@
               );
             }
             if (currentAttempt.status === "submitted") {
-              showConfirmedSubmission(
-                currentAttempt,
-                await getReleasedQuizRow(currentAttempt),
-              );
+              showConfirmedSubmission(currentAttempt);
               return;
             }
             if (currentAttempt.status !== "in_progress") {
@@ -3251,7 +3213,7 @@
                 (item) => String(item.quiz_id) !== String(quiz.id),
               );
               allAttempts.push(
-                createStudentAttemptView(expiredAttempt, quiz),
+                createStudentAttemptView(expiredAttempt),
               );
               renderQuizzes();
               updateStatistics();
@@ -3269,36 +3231,26 @@
               );
             }
             lastSubmissionConfirmed = true;
-            let submittedRow = null;
-            let statusError = null;
-            try {
-              submittedRow = await readCurrentAttemptState();
-              if (submittedRow?.status === "submitted") {
-                showConfirmedSubmission(
-                  submittedRow,
-                  await getReleasedQuizRow(submittedRow),
-                );
-                return;
-              }
-            } catch (error) {
-              statusError = error;
-              console.error(
-                "Submission succeeded, but the saved attempt row could not be refreshed.",
-                error,
+            if (!hasValidAttemptResult(data)) {
+              throw new Error(
+                "The server confirmed submission but returned incomplete result data. Refresh to recover the saved result before retrying.",
               );
             }
-            if (!submittedRow || submittedRow.status !== "submitted") {
-              console.error(
-                "Submission RPC confirmed success but the attempt row is not yet submitted.",
-                {
-                  attemptId: attempt.attempt_id,
-                  quizId: quiz.id,
-                  attemptStatus: submittedRow?.status || "unavailable",
-                  statusError,
-                },
-              );
-              showConfirmedSubmission(null);
-            }
+            const submittedRow = {
+              id: data.attempt_id,
+              quiz_id: quiz.id,
+              student_id: studentData.id,
+              started_at: attempt.started_at,
+              submitted_at: new Date().toISOString(),
+              status: "submitted",
+              score: Number(data.score),
+              total_marks: Number(data.total_marks),
+              percentage: Number(data.percentage),
+              correct_answers: Number(data.correct_answers),
+              wrong_answers: Number(data.wrong_answers),
+              unanswered: Number(data.unanswered),
+            };
+            showConfirmedSubmission(submittedRow);
           } catch (error) {
             console.error("Quiz submission failed:", error);
             let currentAttempt = null;
@@ -3309,10 +3261,7 @@
               verificationError = stateError;
             }
             if (currentAttempt?.status === "submitted") {
-              showConfirmedSubmission(
-                currentAttempt,
-                await getReleasedQuizRow(currentAttempt),
-              );
+              showConfirmedSubmission(currentAttempt);
               return;
             }
             const errorElement = view.querySelector("#submitError");
