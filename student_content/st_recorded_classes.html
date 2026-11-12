@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f7f8fc" />
+    <title>Recorded Classes - Smart Learning DC</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../css/recorded-classes.css" />
+    <script src="../js/subject-service.js"></script>
+    <script src="../js/recorded-classes.js" defer></script>
+    <script src="../js/student-layout.js" defer></script>
+  </head>
+  <body>
+    <div id="studentLayout"></div>
+    <main class="recorded-page" aria-labelledby="recordedPageTitle">
+      <header class="recorded-header">
+        <div>
+          <div class="recorded-eyebrow">
+            <span class="eyebrow-icon"><i class="fa-solid fa-circle-play" aria-hidden="true"></i></span>
+            Your learning library
+          </div>
+          <h1 id="recordedPageTitle">Recorded Classes</h1>
+          <p>Revisit your previous live classes and continue learning anytime.</p>
+          <div class="recorded-curriculum" id="registrationContext" hidden>
+            <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
+            <span id="registrationContextText"></span>
+          </div>
+        </div>
+        <button class="recorded-refresh" id="refreshRecordings" type="button">
+          <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+          <span>Refresh</span>
+        </button>
+      </header>
+
+      <section class="recorded-stats" aria-label="Recording summary">
+        <article class="recorded-stat">
+          <span class="stat-icon stat-icon-purple"><i class="fa-solid fa-clapperboard" aria-hidden="true"></i></span>
+          <div><p>Total Recordings</p><strong id="totalRecordings">—</strong></div>
+        </article>
+        <article class="recorded-stat">
+          <span class="stat-icon stat-icon-green"><i class="fa-solid fa-circle-play" aria-hidden="true"></i></span>
+          <div><p>Available Recordings</p><strong id="availableRecordings">—</strong></div>
+        </article>
+        <article class="recorded-stat">
+          <span class="stat-icon stat-icon-amber"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i></span>
+          <div><p>Processing Recordings</p><strong id="processingRecordings">—</strong></div>
+        </article>
+      </section>
+
+      <section class="recorded-toolbar" aria-label="Search and filter recordings">
+        <label class="recorded-search" for="recordingSearch">
+          <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+          <input
+            id="recordingSearch"
+            type="search"
+            placeholder="Search lectures by title, chapter or teacher..."
+            autocomplete="off"
+          />
+        </label>
+        <div class="recorded-filters">
+          <label class="filter-control">
+            <span>Subject</span>
+            <select id="subjectFilter" aria-label="Filter by subject">
+              <option value="all">All Subjects</option>
+            </select>
+          </label>
+          <label class="filter-control">
+            <span>Grade</span>
+            <select id="gradeFilter" aria-label="Filter by grade">
+              <option value="all">All grades</option>
+            </select>
+          </label>
+          <label class="filter-control" id="streamFilterGroup" hidden>
+            <span>Stream</span>
+            <select id="streamFilter" aria-label="Filter by stream">
+              <option value="all">All streams</option>
+            </select>
+          </label>
+          <label class="filter-control">
+            <span>Status</span>
+            <select id="statusFilter" aria-label="Filter by recording status">
+              <option value="all">All statuses</option>
+              <option value="available">Available</option>
+              <option value="processing">Processing</option>
+              <option value="failed">Failed</option>
+              <option value="unavailable">Unavailable</option>
+            </select>
+          </label>
+          <label class="filter-control">
+            <span>Sort by</span>
+            <select id="sortFilter" aria-label="Sort recordings">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+          </label>
+          <button class="clear-filters" id="clearFilters" type="button">Clear filters</button>
+        </div>
+      </section>
+
+      <div class="recorded-list-heading">
+        <div>
+          <h2>Your recordings</h2>
+          <p id="resultsDescription" aria-live="polite">Loading your learning library…</p>
+        </div>
+        <span class="library-source" id="librarySource" hidden>
+          <i class="fa-solid fa-flask" aria-hidden="true"></i> Preview data
+        </span>
+      </div>
+
+      <div class="recorded-message" id="recordingMessage" role="status" hidden></div>
+      <section class="recording-grid" id="recordingGrid" aria-live="polite" aria-busy="true"></section>
+
+      <dialog class="lecture-dialog" id="lectureDialog" aria-labelledby="detailTitle">
+        <div id="lectureDialogContent"></div>
+      </dialog>
+    </main>
+  </body>
+</html>
