@@ -11,6 +11,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
+    <link rel="stylesheet" href="../css/student-layout.css" />
     <link rel="stylesheet" href="../css/recorded-classes.css" />
     <script src="../js/subject-service.js"></script>
     <script src="../js/recorded-classes.js" defer></script>
@@ -22,14 +23,17 @@
       <header class="recorded-header">
         <div>
           <div class="recorded-eyebrow">
-            <span class="eyebrow-icon"><i class="fa-solid fa-circle-play" aria-hidden="true"></i></span>
-            Your learning library
+            <i class="fa-solid fa-circle-play" aria-hidden="true"></i>
+            Student workspace
           </div>
           <h1 id="recordedPageTitle">Recorded Classes</h1>
           <p>Revisit your previous live classes and continue learning anytime.</p>
           <div class="recorded-curriculum" id="registrationContext" hidden>
-            <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
-            <span id="registrationContextText"></span>
+            <span class="recorded-curriculum-label">Your registered curriculum</span>
+            <span class="recorded-curriculum-value">
+              <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
+              <span id="registrationContextText"></span>
+            </span>
           </div>
         </div>
         <button class="recorded-refresh" id="refreshRecordings" type="button">
@@ -108,12 +112,8 @@
           <h2>Your recordings</h2>
           <p id="resultsDescription" aria-live="polite">Loading your learning library…</p>
         </div>
-        <span class="library-source" id="librarySource" hidden>
-          <i class="fa-solid fa-flask" aria-hidden="true"></i> Preview data
-        </span>
       </div>
 
-      <div class="recorded-message" id="recordingMessage" role="status" hidden></div>
       <section class="recording-grid" id="recordingGrid" aria-live="polite" aria-busy="true"></section>
 
       <dialog class="lecture-dialog" id="lectureDialog" aria-labelledby="detailTitle">

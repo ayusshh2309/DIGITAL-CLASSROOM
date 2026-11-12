@@ -1,7 +1,6 @@
 (() => {
   "use strict";
 
-  const SUPABASE_RECORDINGS_ENABLED = false;
   const RECORDING_STATUSES = new Set([
     "processing",
     "available",
@@ -135,16 +134,16 @@
       : "unavailable";
     return {
       id: String(row.id),
-      title: String(row.title || "Untitled live class"),
+      title: String(row.title || "Title not provided"),
       description: String(row.description || ""),
       grade,
       stream: String(row.stream || ""),
       subjectId: String(row.subject_id),
       subject: subject.name,
-      chapter: String(row.chapter || "Chapter not provided"),
-      topic: String(row.topic || "Topic not provided"),
-      teacher: String(row.teacher_name || row.teacher?.full_name || "Class teacher"),
-      provider: String(row.provider || "Recording platform"),
+      chapter: String(row.chapter || "Not provided"),
+      topic: String(row.topic || "Not provided"),
+      teacher: String(row.teacher_name || row.teacher?.full_name || "Not provided"),
+      provider: String(row.provider || "Not provided"),
       providerRecordingId: String(row.provider_recording_id || ""),
       playbackUrl: safeHttpUrl(row.playback_url),
       thumbnailUrl: safeHttpUrl(row.thumbnail_url),
@@ -153,124 +152,6 @@
       startedAt: row.started_at || row.created_at || null,
       durationSeconds: Number(row.duration_seconds) || 0,
     };
-  }
-
-  function findSubject(subjects, keywords, fallbackIndex) {
-    return subjects.find((subject) =>
-      keywords.some((keyword) => normalize(subject.name).includes(keyword))
-    ) || subjects[fallbackIndex % Math.max(subjects.length, 1)] || null;
-  }
-
-  function createMockRecordings(student, subjects) {
-    if (!subjects.length) return [];
-    const templates = [
-      {
-        key: ["physics"],
-        title: "Building strong foundations: core concepts",
-        chapter: "Foundations and key principles",
-        topic: "Understanding the big ideas",
-        teacher: "Aarav Sharma",
-        provider: "Google Meet",
-        status: "available",
-        daysAgo: 2,
-        duration: 52 * 60 + 18,
-        description: "A guided recap of the main ideas, with worked examples and time for student questions.",
-        resources: [{ title: "Class notes.pdf", file_type: "PDF" }],
-      },
-      {
-        key: ["chemistry"],
-        title: "From theory to practice: a worked lesson",
-        chapter: "Concepts in practice",
-        topic: "Applying the chapter methods",
-        teacher: "Meera Iyer",
-        provider: "Zoom",
-        status: "processing",
-        daysAgo: 4,
-        duration: 47 * 60 + 6,
-        description: "A step-by-step lesson connecting chapter theory with practice questions.",
-        resources: [],
-      },
-      {
-        key: ["math"],
-        title: "Problem-solving workshop and Q&A",
-        chapter: "Practice and revision",
-        topic: "Strategies for multi-step questions",
-        teacher: "Rohan Mehta",
-        provider: "Google Meet",
-        status: "available",
-        daysAgo: 7,
-        duration: 61 * 60 + 42,
-        description: "Review common approaches to multi-step problems and revisit the questions students found challenging.",
-        resources: [
-          { title: "Practice worksheet.pdf", file_type: "PDF" },
-          { title: "Lesson summary notes", file_type: "Notes" },
-        ],
-      },
-      {
-        key: ["biology"],
-        title: "Revision class: essential ideas and examples",
-        chapter: "Revision session",
-        topic: "Key terms and examples",
-        teacher: "Nisha Rao",
-        provider: "Zoom",
-        status: "failed",
-        daysAgo: 10,
-        duration: 49 * 60 + 31,
-        description: "A focused revision session with examples and a short question period.",
-        resources: [],
-      },
-      {
-        key: ["english", "language"],
-        title: "Reading, discussion and class recap",
-        chapter: "Reading and response",
-        topic: "Close reading techniques",
-        teacher: "Ananya Das",
-        provider: "Google Meet",
-        status: "unavailable",
-        daysAgo: 14,
-        duration: 43 * 60 + 55,
-        description: "A class discussion and recap of the assigned reading.",
-        resources: [],
-      },
-      {
-        key: ["computer", "informatics"],
-        title: "Live demonstration and guided practice",
-        chapter: "Core skills",
-        topic: "A guided practical walkthrough",
-        teacher: "Kabir Patel",
-        provider: "Zoom",
-        status: "available",
-        daysAgo: 18,
-        duration: 56 * 60 + 3,
-        description: "A recorded walkthrough of the lesson with a guided practice section.",
-        resources: [{ title: "Session handout.pdf", file_type: "PDF" }],
-      },
-    ];
-
-    return templates.map((template, index) => {
-      const subject = findSubject(subjects, template.key, index);
-      const startedAt = new Date(Date.now() - template.daysAgo * 86_400_000);
-      startedAt.setHours(15 + (index % 3), 30, 0, 0);
-      return mapRecording({
-        id: `preview-${index + 1}`,
-        title: template.title,
-        description: template.description,
-        grade: student.grade,
-        stream: student.stream || "",
-        subject_id: subject.id,
-        chapter: template.chapter,
-        topic: template.topic,
-        teacher_name: template.teacher,
-        provider: template.provider,
-        playback_url: null,
-        thumbnail_url: null,
-        resource_urls: template.resources,
-        recording_status: template.status,
-        started_at: startedAt.toISOString(),
-        duration_seconds: template.duration,
-        ready_at: template.status === "available" ? startedAt.toISOString() : null,
-      }, subjects);
-    }).filter(Boolean);
   }
 
   async function loadRecordedClassesFromSupabase(client, student, subjects) {
@@ -299,20 +180,7 @@
   }
 
   async function loadRecordedClasses(client, student, subjects) {
-    if (SUPABASE_RECORDINGS_ENABLED) {
-      return {
-        recordings: await loadRecordedClassesFromSupabase(
-          client,
-          student,
-          subjects,
-        ),
-        source: "supabase",
-      };
-    }
-    return {
-      recordings: createMockRecordings(student, subjects),
-      source: "preview",
-    };
+    return loadRecordedClassesFromSupabase(client, student, subjects);
   }
 
   async function loadStudentContext() {
@@ -328,12 +196,16 @@
       stream: Number(curriculum.grade) >= 11 ? curriculum.stream : "",
     };
     state.subjects = curriculum.subjects || [];
-    const streamLabel = String(state.student.stream || "")
-      .replace(/[_-]+/g, " ")
-      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    const streamLabels = {
+      science_pcm: "Science (PCM)",
+      science_pcb: "Science (PCB)",
+      commerce: "Commerce",
+      arts_humanities: "Arts / Humanities",
+    };
+    const stream = normalize(state.student.stream).replace(/[\s-]+/g, "_");
     $("registrationContextText").textContent =
       Number(state.student.grade) >= 11
-        ? `Grade ${state.student.grade} · ${streamLabel}`
+        ? `Grade ${state.student.grade} - ${streamLabels[stream] || stream.replace(/_/g, " ")}`
         : `Grade ${state.student.grade}`;
     $("registrationContext").hidden = false;
   }
@@ -471,11 +343,11 @@
   function renderRecordings() {
     const grid = $("recordingGrid");
     const recordings = filteredRecordings();
-    $("recordingMessage").hidden = true;
     $("resultsDescription").textContent =
       `${recordings.length} ${recordings.length === 1 ? "recording" : "recordings"} found`;
     if (!recordings.length) {
-      grid.innerHTML = `<div class="recorded-empty"><div><i class="fa-solid fa-video-slash" aria-hidden="true"></i><h3>No recordings match your filters</h3><p>Try a different search or clear the selected filters to see your class recordings.</p><button class="clear-filters" type="button" data-action="clear">Clear filters</button></div></div>`;
+      const hasRecordings = state.recordings.length > 0;
+      grid.innerHTML = `<div class="recorded-empty"><div><i class="fa-solid fa-video-slash" aria-hidden="true"></i><h3>${hasRecordings ? "No recordings match your filters" : "No recorded classes yet"}</h3><p>${hasRecordings ? "Try a different search or clear the selected filters to see your class recordings." : "Your recorded classes will appear here when they are available."}</p>${hasRecordings ? '<button class="clear-filters" type="button" data-action="clear">Clear filters</button>' : ""}</div></div>`;
       return;
     }
     grid.innerHTML = recordings.map(renderRecordingCard).join("");
@@ -495,21 +367,13 @@
     setLoading(true);
     try {
       await loadStudentContext();
-      const result = await loadRecordedClasses(
+      state.recordings = await loadRecordedClasses(
         state.client,
         state.student,
         state.subjects,
       );
-      state.recordings = result.recordings;
       updateSummary();
       populateFilters();
-      const isPreview = result.source === "preview";
-      $("librarySource").hidden = !isPreview;
-      $("recordingMessage").hidden = !isPreview;
-      $("recordingMessage").dataset.state = "info";
-      $("recordingMessage").textContent = isPreview
-        ? "Preview mode: sample class details are shown. Recording playback and resource files require the future authorized recording integration."
-        : "";
       renderRecordings();
     } catch (error) {
       showError(error);
@@ -583,7 +447,7 @@
           : "fa-paperclip";
       const action = resource.url
         ? `<a class="resource-action" href="${escapeHTML(resource.url)}" target="_blank" rel="noopener noreferrer">View</a>`
-        : `<button class="resource-action" type="button" disabled title="Preview data has no linked file">Preview</button>`;
+        : `<button class="resource-action" type="button" disabled title="No linked file is available">Unavailable</button>`;
       return `<div class="resource-item"><i class="fa-solid ${icon} resource-type-icon" aria-hidden="true"></i><div class="resource-copy"><strong>${escapeHTML(resource.title)}</strong><small>${escapeHTML(resource.fileType)}</small></div>${action}</div>`;
     }).join("")}</div>`;
   }
@@ -601,7 +465,7 @@
     } else if (source.type === "unsupported") {
       player = `<div class="player-placeholder"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><strong>Open with ${escapeHTML(recording.provider)}</strong><p>This provider controls playback access. It cannot be treated as a direct video stream.</p><a href="${escapeHTML(source.url)}" target="_blank" rel="noopener noreferrer">Open authorized recording <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a></div>`;
     } else {
-      player = `<div class="player-placeholder"><i class="fa-solid fa-film" aria-hidden="true"></i><strong>Playback will appear here</strong><p>This is preview data without a recording URL. Secure playback will be enabled when the recording integration is connected.</p></div>`;
+      player = `<div class="player-placeholder"><i class="fa-solid fa-film" aria-hidden="true"></i><strong>Playback is unavailable</strong><p>No playable recording URL is available for this class.</p></div>`;
     }
 
     $("lectureDialogContent").innerHTML = `<div class="lecture-detail-header"><div><div class="recorded-eyebrow"><span class="recording-status" data-status="${recording.status}">${escapeHTML(statusLabel(recording.status))}</span></div><h2 id="detailTitle">${escapeHTML(recording.title)}</h2><p>${escapeHTML(recording.subject)} · ${escapeHTML(recording.chapter)}</p></div><button class="dialog-close" type="button" data-close-dialog aria-label="Close lecture details"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
