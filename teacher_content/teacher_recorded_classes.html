@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f3f7fb" />
+    <title>Recorded Classes | Smart Learning DC</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+    <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/teacher-recorded-classes.css" />
+    <link rel="stylesheet" href="../css/teacher-recording-upload.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  </head>
+  <body>
+    <div id="layout"></div>
+    <main class="page-content main-box-container teacher-recorded-page">
+      <header class="recorded-page-header">
+        <div>
+          <span class="recorded-eyebrow">
+            <i class="fa-solid fa-clapperboard" aria-hidden="true"></i>
+            Teacher workspace
+          </span>
+          <h1>Recorded Classes</h1>
+          <p>Upload verified recordings for completed classes and preview your class library.</p>
+        </div>
+        <button class="recorded-refresh" id="refreshRecordings" type="button">
+          <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+          Refresh
+        </button>
+      </header>
+
+      <section class="recorded-upload-panel" aria-labelledby="uploadSectionTitle">
+        <div class="recorded-section-heading">
+          <div>
+            <h2 id="uploadSectionTitle">Upload a class recording</h2>
+            <p>Select a completed class you own. Uploads are verified before becoming available.</p>
+          </div>
+          <span class="recorded-section-icon" aria-hidden="true">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+          </span>
+        </div>
+        <div class="recorded-class-picker">
+          <label for="completedClassSelect">Completed live class</label>
+          <select id="completedClassSelect" disabled>
+            <option value="">Loading your eligible classes…</option>
+          </select>
+        </div>
+        <div class="selected-class-details" id="selectedClassDetails" aria-live="polite">
+          <p>Select a class to review its details before uploading.</p>
+        </div>
+        <div class="recorded-upload-actions">
+          <p id="eligibleClassStatus" role="status" aria-live="polite"></p>
+          <button class="recorded-primary-button" id="openRecordingUpload" type="button" disabled>
+            <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
+            Upload Recording
+          </button>
+        </div>
+      </section>
+
+      <section class="recorded-library-section" aria-labelledby="libraryTitle">
+        <div class="recorded-section-heading library-heading">
+          <div>
+            <h2 id="libraryTitle">Your uploaded recordings</h2>
+            <p>Only verified recordings attached to your teacher account are shown.</p>
+          </div>
+          <label class="recorded-search" for="recordingSearch">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <input id="recordingSearch" type="search" placeholder="Search recordings…" autocomplete="off" />
+          </label>
+        </div>
+        <div class="recorded-library-state" id="recordingsState" role="status" aria-live="polite">
+          Loading your recordings…
+        </div>
+        <div class="teacher-recording-grid" id="teacherRecordingGrid" aria-live="polite" aria-busy="true"></div>
+      </section>
+
+      <footer class="recorded-page-footer">
+        <span class="recorded-footer-icon"><i class="fa-solid fa-book-open" aria-hidden="true"></i></span>
+        <div>
+          <strong>Smart Learning DC</strong>
+          <p>Learn. Grow. Succeed. Keep your teaching resources ready for every learner.</p>
+        </div>
+      </footer>
+    </main>
+
+    <dialog class="recording-upload-dialog" id="recordingUploadDialog" aria-labelledby="recordingUploadTitle">
+      <form id="recordingUploadForm" novalidate>
+        <div class="recording-upload-heading">
+          <div>
+            <p class="recording-upload-eyebrow">Class library</p>
+            <h2 id="recordingUploadTitle">Upload a recording</h2>
+            <p>Share a video recording with students authorized for this class.</p>
+          </div>
+          <button class="recording-upload-close" id="closeRecordingUpload" type="button" aria-label="Close upload form">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </div>
+        <div class="recording-upload-class" id="recordingUploadClass"></div>
+        <div class="recording-upload-fields">
+          <label for="recordingTitleInput">Lecture title
+            <input id="recordingTitleInput" name="title" type="text" maxlength="180" required />
+          </label>
+          <label for="recordingChapterInput">Chapter
+            <input id="recordingChapterInput" name="chapter" type="text" maxlength="180" />
+          </label>
+          <label for="recordingTopicInput">Topic
+            <input id="recordingTopicInput" name="topic" type="text" maxlength="180" />
+          </label>
+          <label class="recording-upload-wide" for="recordingDescriptionInput">Description
+            <textarea id="recordingDescriptionInput" name="description" rows="3" maxlength="2000"></textarea>
+          </label>
+          <label for="recordingProviderInput">Scheduled platform
+            <input id="recordingProviderInput" name="provider" type="text" readonly />
+          </label>
+          <label for="recordingStartedInput">Actual recording start (optional)
+            <input id="recordingStartedInput" name="recording_started_at" type="datetime-local" />
+          </label>
+          <label class="recording-upload-wide recording-file-picker" for="recordingFileInput">
+            Video file
+            <input id="recordingFileInput" name="video" type="file" accept=".mp4,.webm,.mov,video/mp4,video/webm,video/quicktime" required />
+            <small>MP4, WebM, or MOV / QuickTime. Maximum size: 50 MiB.</small>
+          </label>
+        </div>
+        <div class="recording-upload-status" id="recordingUploadStatus" role="status" aria-live="polite"></div>
+        <div class="recording-upload-progress" id="recordingUploadProgress" hidden>
+          <progress id="recordingUploadProgressBar" max="100" value="0"></progress>
+          <span id="recordingUploadProgressText">0%</span>
+        </div>
+        <div class="recording-upload-actions">
+          <button class="btn-join btn-recording" id="cancelRecordingUpload" type="button">Cancel</button>
+          <button class="btn-join" id="submitRecordingUpload" type="submit">Upload recording</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="recording-preview-dialog" id="recordingPreviewDialog" aria-labelledby="previewTitle">
+      <div class="preview-dialog-content">
+        <div class="preview-dialog-heading">
+          <div>
+            <span class="recorded-eyebrow">Secure preview</span>
+            <h2 id="previewTitle">Recording preview</h2>
+          </div>
+          <button class="preview-close" id="closeRecordingPreview" type="button" aria-label="Close preview">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </div>
+        <p class="preview-status" id="previewStatus" role="status" aria-live="polite"></p>
+        <video id="recordingPreviewPlayer" controls playsinline preload="metadata" hidden></video>
+      </div>
+    </dialog>
+
+    <script src="../js/supabase.js"></script>
+    <script src="../js/subject-service.js"></script>
+    <script src="../js/teacher-data.js"></script>
+    <script src="../js/attendance-service.js"></script>
+    <script src="../js/live-class-service.js"></script>
+    <script src="../js/teacher-recording-upload.js"></script>
+    <script src="../js/teacher-recorded-classes.js"></script>
+    <script src="../js/layout.js"></script>
+  </body>
+</html>

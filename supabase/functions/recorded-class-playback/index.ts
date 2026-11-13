@@ -50,25 +50,40 @@ Deno.serve(async (request) => {
   const adminClient = createClient(url, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const { data: student, error: studentError } = await adminClient
-    .from("students")
-    .select("user_id")
+  const { data: teacher, error: teacherError } = await adminClient
+    .from("teachers")
+    .select("id")
     .eq("user_id", user.id)
     .maybeSingle();
-  if (studentError) {
-    console.error("Could not verify student identity for recording playback.", studentError);
-    return jsonResponse({ error: "Your student profile could not be verified." }, 500);
+  if (teacherError) {
+    console.error("Could not verify teacher identity for recording playback.", teacherError);
+    return jsonResponse({ error: "Your teacher profile could not be verified." }, 500);
   }
-  if (!student) return jsonResponse({ error: "Student access is required for recorded classes." }, 403);
+  if (!teacher) {
+    const { data: student, error: studentError } = await adminClient
+      .from("students")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (studentError) {
+      console.error("Could not verify student identity for recording playback.", studentError);
+      return jsonResponse({ error: "Your student profile could not be verified." }, 500);
+    }
+    if (!student) {
+      return jsonResponse({ error: "Student or teacher access is required for recorded classes." }, 403);
+    }
+  }
 
   const { data: recording, error: recordingError } = await userClient
     .from("recorded_classes")
     .select("id, live_class_id, teacher_id, grade, stream, subject_id, storage_path, recording_status")
     .eq("id", recordingId)
     .eq("recording_status", "available")
+    .not("recording_verified_at", "is", null)
+    .not("storage_path", "is", null)
     .maybeSingle();
   if (recordingError) {
-    console.error("Could not read the student-authorized recording row.", recordingError);
+    console.error("Could not read the user-authorized recording row.", recordingError);
     return jsonResponse({ error: "The recording could not be authorized for playback." }, 500);
   }
   if (!recording) return jsonResponse({ error: "This recording is unavailable or you are not authorized to view it." }, 404);
