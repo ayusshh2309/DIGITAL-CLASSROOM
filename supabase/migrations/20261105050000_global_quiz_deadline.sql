@@ -22,6 +22,26 @@ revoke all on function public.get_student_quiz_questions_before_global_deadline(
 revoke all on function public.get_student_quiz_catalog_before_global_deadline()
   from public, anon, authenticated, service_role;
 
+do $schedule_preflight$
+begin
+  if exists (
+    select 1
+    from public.quizzes
+    where scheduled_date is null
+      and scheduled_time is not null
+  ) then
+    raise exception
+      'Quizzes with a scheduled time but no scheduled date must be reconciled before applying global quiz deadlines.';
+  end if;
+end
+$schedule_preflight$;
+
+-- Existing quiz RPCs treated a date-only schedule as midnight in Asia/Kolkata.
+update public.quizzes
+set scheduled_time = time '00:00'
+where scheduled_date is not null
+  and scheduled_time is null;
+
 do $migration$
 declare
   output_columns text;
@@ -84,9 +104,8 @@ begin
             and attempt.student_id = student_record_id
             and attempt.status = 'in_progress'
             and quiz.scheduled_date is not null
-            and quiz.scheduled_time is not null
             and server_now_value >=
-              ((quiz.scheduled_date + quiz.scheduled_time)
+              ((quiz.scheduled_date + coalesce(quiz.scheduled_time, time '00:00'))
                 at time zone 'Asia/Kolkata')
               + make_interval(mins => quiz.duration_minutes);
         end if;
@@ -96,14 +115,14 @@ begin
       select catalog_row.*,
              case
                when catalog_row.scheduled_date is not null
-                 and catalog_row.scheduled_time is not null
-               then (catalog_row.scheduled_date + catalog_row.scheduled_time)
+               then (catalog_row.scheduled_date
+                 + coalesce(catalog_row.scheduled_time, time '00:00'))
                  at time zone 'Asia/Kolkata'
              end,
              case
                when catalog_row.scheduled_date is not null
-                 and catalog_row.scheduled_time is not null
-               then ((catalog_row.scheduled_date + catalog_row.scheduled_time)
+               then ((catalog_row.scheduled_date
+                 + coalesce(catalog_row.scheduled_time, time '00:00'))
                  at time zone 'Asia/Kolkata')
                  + make_interval(mins => catalog_row.duration_minutes)
              end,
@@ -119,7 +138,7 @@ alter function public.get_student_quiz_catalog() owner to postgres;
 revoke all on function public.get_student_quiz_catalog()
   from public, anon, authenticated, service_role;
 grant execute on function public.get_student_quiz_catalog()
-  to public, anon, authenticated, service_role;
+  to authenticated;
 
 create function public.reject_quiz_schedule_change_after_attempt()
 returns trigger
@@ -128,8 +147,8 @@ security definer
 set search_path = ''
 as $$
 begin
-  if (new.scheduled_date is null) <> (new.scheduled_time is null) then
-    raise exception 'A schedule must include both a date and time.';
+  if new.scheduled_date is null and new.scheduled_time is not null then
+    raise exception 'A scheduled time requires a scheduled date.';
   end if;
   if new.status = 'published'
     and old.status is distinct from 'published'
@@ -162,8 +181,8 @@ for each row
 execute function public.reject_quiz_schedule_change_after_attempt();
 
 create function public.save_teacher_question_quiz(
-  p_questions jsonb,
-  p_quiz jsonb
+  p_quiz jsonb,
+  p_questions jsonb
 )
 returns uuid
 language plpgsql
@@ -233,8 +252,8 @@ begin
   if quiz_duration < 1 or quiz_attempts < 1 then
     raise exception 'Duration and attempts must be positive.';
   end if;
-  if (quiz_scheduled_date is null) <> (quiz_scheduled_time is null) then
-    raise exception 'A schedule must include both a date and time.';
+  if quiz_scheduled_date is null and quiz_scheduled_time is not null then
+    raise exception 'A scheduled time requires a scheduled date.';
   end if;
   if quiz_status = 'published'
     and (quiz_scheduled_date is null or quiz_scheduled_time is null)
@@ -272,7 +291,7 @@ begin
       and coalesce(jsonb_array_length(p_questions), 0) = 0 then
       raise exception 'A published quiz must contain at least one complete question.';
     end if;
-    return public.save_teacher_question_quiz_insert_legacy(p_questions, p_quiz);
+    return public.save_teacher_question_quiz_insert_legacy(p_quiz, p_questions);
   end if;
 
   quiz_id := (p_quiz->>'id')::uuid;
@@ -291,20 +310,14 @@ begin
     where attempt.quiz_id = quiz_id
   ) into has_attempts;
 
-  if existing_quiz.status = 'draft' and quiz_status = 'published'
-    and (quiz_scheduled_date is null or quiz_scheduled_time is null) then
-    raise exception 'Publishing a quiz requires a scheduled date and time.';
-  end if;
   if existing_quiz.status = 'published'
-    and existing_quiz.scheduled_date is null
-    and existing_quiz.scheduled_time is null
     and quiz_status = 'published'
-    and quiz_scheduled_date is null
-    and quiz_scheduled_time is null then
+    and quiz_scheduled_date is not distinct from existing_quiz.scheduled_date
+    and quiz_scheduled_time is not distinct from existing_quiz.scheduled_time then
     null;
   elsif quiz_status = 'published'
     and (quiz_scheduled_date is null or quiz_scheduled_time is null) then
-    raise exception 'A published quiz requires a scheduled date and time.';
+    raise exception 'Publishing a quiz requires a scheduled date and time.';
   end if;
 
   if has_attempts and (
@@ -517,11 +530,10 @@ begin
       using errcode = '42501';
   end if;
 
-  if (quiz_record.scheduled_date is null) <> (quiz_record.scheduled_time is null) then
-    raise exception 'This quiz has an incomplete schedule and cannot be started.';
-  end if;
   if quiz_record.scheduled_date is not null then
-    start_time_value := (quiz_record.scheduled_date + quiz_record.scheduled_time)
+    start_time_value := (
+      quiz_record.scheduled_date + coalesce(quiz_record.scheduled_time, time '00:00')
+    )
       at time zone 'Asia/Kolkata';
     deadline_value := start_time_value + make_interval(mins => quiz_record.duration_minutes);
   end if;
@@ -534,9 +546,6 @@ begin
   has_attempt := found;
   current_time_value := clock_timestamp();
 
-  if has_attempt and attempt_record.status = 'submitted' then
-    return public.start_quiz_attempt_before_global_deadline(p_quiz_id);
-  end if;
   if has_attempt and attempt_record.status = 'abandoned' then
     raise exception 'This quiz attempt has expired and cannot be restarted.' using errcode = '22023';
   end if;
@@ -554,6 +563,9 @@ begin
       end if;
       raise exception 'The quiz deadline has passed.' using errcode = '22023';
     end if;
+  end if;
+  if has_attempt and attempt_record.status = 'submitted' then
+    return public.start_quiz_attempt_before_global_deadline(p_quiz_id);
   end if;
   if has_attempt and attempt_record.status = 'in_progress' then
     return attempt_record.id;
@@ -584,6 +596,7 @@ declare
   student_record_id uuid;
   quiz_record public.quizzes%rowtype;
   attempt_record public.quiz_attempts%rowtype;
+  start_time_value timestamptz;
   deadline_value timestamptz;
 begin
   if auth.uid() is null then
@@ -610,19 +623,23 @@ begin
   where attempt.quiz_id = p_quiz_id
     and attempt.student_id = student_record_id
   for update;
-  if found
-    and attempt_record.status = 'in_progress'
-    and ((quiz_record.scheduled_date is null) <> (quiz_record.scheduled_time is null)) then
-    raise exception 'This quiz has an incomplete schedule and cannot be resumed.';
+  if not found or attempt_record.status <> 'in_progress' then
+    return;
   end if;
-  if found
-    and attempt_record.status = 'in_progress'
-    and quiz_record.scheduled_date is not null
-    and quiz_record.scheduled_time is not null then
+
+  if not public.quiz_student_is_eligible(p_quiz_id) then
+    return;
+  end if;
+
+  if quiz_record.scheduled_date is not null then
+    start_time_value := (
+      quiz_record.scheduled_date + coalesce(quiz_record.scheduled_time, time '00:00')
+    ) at time zone 'Asia/Kolkata';
     deadline_value :=
-      ((quiz_record.scheduled_date + quiz_record.scheduled_time)
-        at time zone 'Asia/Kolkata')
-      + make_interval(mins => quiz_record.duration_minutes);
+      start_time_value + make_interval(mins => quiz_record.duration_minutes);
+    if clock_timestamp() < start_time_value then
+      return;
+    end if;
     if clock_timestamp() >= deadline_value then
       update public.quiz_attempts
       set status = 'abandoned'
@@ -630,13 +647,6 @@ begin
         and status = 'in_progress';
       return;
     end if;
-  end if;
-
-  if not public.quiz_student_is_eligible(p_quiz_id) then
-    return query
-    select question.*
-    from public.get_student_quiz_questions_before_global_deadline(p_quiz_id) question;
-    return;
   end if;
 
   return query
@@ -699,15 +709,10 @@ begin
   if not found then
     return public.submit_quiz_attempt_before_global_deadline(p_quiz_id, p_answers);
   end if;
-  if attempt_record.status = 'in_progress'
-    and ((quiz_record.scheduled_date is null) <> (quiz_record.scheduled_time is null)) then
-    raise exception 'This quiz has an incomplete schedule and cannot be submitted.';
-  end if;
   if quiz_record.scheduled_date is not null
-    and quiz_record.scheduled_time is not null
     and attempt_record.status = 'in_progress' then
     deadline_value :=
-      ((quiz_record.scheduled_date + quiz_record.scheduled_time)
+      ((quiz_record.scheduled_date + coalesce(quiz_record.scheduled_time, time '00:00'))
         at time zone 'Asia/Kolkata')
       + make_interval(mins => quiz_record.duration_minutes);
     if clock_timestamp() >= deadline_value then
