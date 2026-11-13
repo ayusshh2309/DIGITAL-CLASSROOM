@@ -1,12 +1,6 @@
 (() => {
   "use strict";
 
-  const RECORDING_STATUSES = new Set([
-    "processing",
-    "available",
-    "failed",
-    "unavailable",
-  ]);
   const state = {
     client: null,
     student: null,
@@ -15,6 +9,7 @@
     watchProgress: new Map(),
     completed: new Set(),
     loading: false,
+    playbackRequest: 0,
   };
   const $ = (id) => document.getElementById(id);
 
@@ -43,6 +38,7 @@
   }
 
   function formatDuration(seconds) {
+    if (seconds === null || seconds === undefined || seconds === "") return "—";
     const total = Number(seconds);
     if (!Number.isFinite(total) || total < 0) return "—";
     const hours = Math.floor(total / 3600);
@@ -123,15 +119,14 @@
     }).filter(Boolean);
   }
 
-  function mapRecording(row, subjects) {
+  function mapRecording(row, subjects, teacherNames) {
     const subject = subjects.find(
       (item) => String(item.id) === String(row.subject_id),
     );
-    if (!subject) return null;
+    if (!subject || row.recording_status !== "available" ||
+      !row.recording_verified_at || !row.storage_path) return null;
     const grade = Number(row.grade);
-    const status = RECORDING_STATUSES.has(normalize(row.recording_status))
-      ? normalize(row.recording_status)
-      : "unavailable";
+    const status = "available";
     return {
       id: String(row.id),
       title: String(row.title || "Title not provided"),
@@ -142,15 +137,17 @@
       subject: subject.name,
       chapter: String(row.chapter || "Not provided"),
       topic: String(row.topic || "Not provided"),
-      teacher: String(row.teacher_name || row.teacher?.full_name || "Not provided"),
+      teacher: String(row.teacher_name || row.teacher?.full_name || teacherNames.get(String(row.teacher_id)) || "Not provided"),
       provider: String(row.provider || "Not provided"),
       providerRecordingId: String(row.provider_recording_id || ""),
-      playbackUrl: safeHttpUrl(row.playback_url),
       thumbnailUrl: safeHttpUrl(row.thumbnail_url),
       resources: readResources(row.resource_urls),
       status,
-      startedAt: row.started_at || row.created_at || null,
-      durationSeconds: Number(row.duration_seconds) || 0,
+      startedAt: row.started_at || null,
+      recordingStartedAt: row.recording_started_at || null,
+      durationSeconds: Number.isFinite(Number(row.duration_seconds)) && Number(row.duration_seconds) > 0
+        ? Number(row.duration_seconds)
+        : null,
     };
   }
 
@@ -159,9 +156,12 @@
     let query = client
       .from("recorded_classes")
       .select(
-        "id, live_class_id, teacher_id, title, description, grade, stream, subject_id, chapter, topic, provider, provider_recording_id, playback_url, thumbnail_url, resource_urls, recording_status, started_at, duration_seconds, ready_at, created_at, updated_at",
+        "id, live_class_id, teacher_id, title, description, grade, stream, subject_id, chapter, topic, provider, provider_recording_id, thumbnail_url, resource_urls, recording_status, recording_verified_at, recording_started_at, storage_path, started_at, duration_seconds, ready_at, created_at, updated_at",
       )
       .eq("grade", student.grade)
+      .eq("recording_status", "available")
+      .not("recording_verified_at", "is", null)
+      .not("storage_path", "is", null)
       .in("subject_id", subjects.map((subject) => subject.id))
       .order("started_at", { ascending: false });
     if (Number(student.grade) >= 11) {
@@ -169,8 +169,20 @@
     }
     const { data, error } = await query;
     if (error) throw error;
+    const teacherIds = [...new Set((data || []).map((row) => String(row.teacher_id)).filter(Boolean))];
+    const teacherNames = new Map();
+    if (teacherIds.length) {
+      const { data: teachers, error: teacherError } = await client
+        .from("teachers")
+        .select("id, full_name")
+        .in("id", teacherIds);
+      if (teacherError) throw teacherError;
+      (teachers || []).forEach((teacher) => {
+        teacherNames.set(String(teacher.id), String(teacher.full_name || ""));
+      });
+    }
     return (data || [])
-      .map((row) => mapRecording(row, subjects))
+      .map((row) => mapRecording(row, subjects, teacherNames))
       .filter((recording) =>
         recording &&
         recording.grade === Number(student.grade) &&
@@ -323,7 +335,7 @@
           <span title="Teacher"><i class="fa-solid fa-user-tie" aria-hidden="true"></i><span>${escapeHTML(recording.teacher)}</span></span>
           <span title="Grade and stream"><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i><span>Grade ${recording.grade}${streamText}</span></span>
           <span title="Class date"><i class="fa-regular fa-calendar" aria-hidden="true"></i><span>${escapeHTML(date)}</span></span>
-          <span title="Start time"><i class="fa-regular fa-clock" aria-hidden="true"></i><span>${escapeHTML(recording.startedAt ? formatTime(recording.startedAt) : "Time not provided")}</span></span>
+          <span title="Recording start"><i class="fa-regular fa-clock" aria-hidden="true"></i><span>${escapeHTML(recording.recordingStartedAt ? formatTime(recording.recordingStartedAt) : "Recording time not provided")}</span></span>
           <span title="Duration"><i class="fa-solid fa-stopwatch" aria-hidden="true"></i><span>${formatDuration(recording.durationSeconds)}</span></span>
           <span title="Recording platform"><i class="fa-solid fa-display" aria-hidden="true"></i><span>${escapeHTML(recording.provider)}</span></span>
         </div>
@@ -384,37 +396,38 @@
     }
   }
 
-  function playbackSource(recording) {
-    const url = recording.playbackUrl;
-    if (!url) return { type: "none", url: null };
-    const host = new URL(url).hostname.toLowerCase();
-    const provider = normalize(recording.provider);
-    if (provider.includes("youtube") || host === "youtube.com" ||
-      host === "www.youtube.com" || host === "youtu.be") {
-      let videoId = recording.providerRecordingId;
-      if (!videoId) {
-        const parsed = new URL(url);
-        videoId = parsed.hostname === "youtu.be"
-          ? parsed.pathname.slice(1)
-          : parsed.searchParams.get("v") ||
-            parsed.pathname.match(/\/embed\/([^/]+)/)?.[1];
+  function playbackSource(url) {
+    const safeUrl = safeHttpUrl(url);
+    if (!safeUrl) return null;
+    try {
+      const parsed = new URL(safeUrl);
+      const projectUrl = new URL(window.SmartLearningSupabase.SUPABASE_URL);
+      if (parsed.origin !== projectUrl.origin ||
+        !parsed.pathname.includes("/storage/v1/object/sign/recorded-class-videos/") ||
+        !/\.(mp4|webm|mov)$/i.test(parsed.pathname)) return null;
+      return safeUrl;
+    } catch {
+      return null;
+    }
+  }
+
+  async function getPlaybackUrl(recording) {
+    const { data, error } = await state.client.functions.invoke("recorded-class-playback", {
+      body: { recording_id: recording.id },
+    });
+    if (error) {
+      let message = error.message || "A secure playback link could not be created.";
+      try {
+        const response = await error.context?.json?.();
+        if (response?.error) message = response.error;
+      } catch {
+        // The function response may already have been consumed.
       }
-      return videoId && /^[\w-]{6,20}$/.test(videoId)
-        ? { type: "embed", url: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}` }
-        : { type: "unsupported", url };
+      throw new Error(message);
     }
-    if (provider.includes("vimeo") || host === "vimeo.com" ||
-      host === "www.vimeo.com" || host === "player.vimeo.com") {
-      const videoId = recording.providerRecordingId ||
-        new URL(url).pathname.match(/\d{6,}/)?.[0];
-      return videoId && /^\d+$/.test(videoId)
-        ? { type: "embed", url: `https://player.vimeo.com/video/${videoId}` }
-        : { type: "unsupported", url };
-    }
-    if (/\.(mp4|webm|ogg)(?:$|[?#])/i.test(url)) {
-      return { type: "direct", url };
-    }
-    return { type: "unsupported", url };
+    const url = playbackSource(data?.playback_url);
+    if (!url) throw new Error("The playback service returned an invalid or non-private video URL.");
+    return url;
   }
 
   function detailInfo(recording) {
@@ -426,7 +439,8 @@
       ["Chapter", recording.chapter],
       ["Topic", recording.topic],
       ["Class date", recording.startedAt ? formatDate(recording.startedAt) : "Not provided"],
-      ["Start time", recording.startedAt ? formatTime(recording.startedAt) : "Not provided"],
+      ["Scheduled class start", recording.startedAt ? formatTime(recording.startedAt) : "Not provided"],
+      ["Actual recording start", recording.recordingStartedAt ? `${formatDate(recording.recordingStartedAt)} · ${formatTime(recording.recordingStartedAt)}` : "Not provided"],
       ["Duration", formatDuration(recording.durationSeconds)],
       ["Platform", recording.provider],
     ];
@@ -452,42 +466,36 @@
     }).join("")}</div>`;
   }
 
-  function renderLectureDetails(recording) {
-    const source = playbackSource(recording);
+  async function renderLectureDetails(recording) {
+    const requestId = ++state.playbackRequest;
     const progress = progressFor(recording.id);
-    let player;
-    if (recording.status !== "available") {
-      player = `<div class="player-placeholder"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><strong>${escapeHTML(statusLabel(recording.status))}</strong><p>${escapeHTML(statusMessage(recording.status))}</p></div>`;
-    } else if (source.type === "direct") {
-      player = `<video id="lectureVideo" controls playsinline preload="metadata" aria-label="${escapeHTML(recording.title)}"><source src="${escapeHTML(source.url)}"></video>`;
-    } else if (source.type === "embed") {
-      player = `<iframe src="${escapeHTML(source.url)}" title="${escapeHTML(recording.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
-    } else if (source.type === "unsupported") {
-      player = `<div class="player-placeholder"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><strong>Open with ${escapeHTML(recording.provider)}</strong><p>This provider controls playback access. It cannot be treated as a direct video stream.</p><a href="${escapeHTML(source.url)}" target="_blank" rel="noopener noreferrer">Open authorized recording <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a></div>`;
-    } else {
-      player = `<div class="player-placeholder"><i class="fa-solid fa-film" aria-hidden="true"></i><strong>Playback is unavailable</strong><p>No playable recording URL is available for this class.</p></div>`;
-    }
-
     $("lectureDialogContent").innerHTML = `<div class="lecture-detail-header"><div><div class="recorded-eyebrow"><span class="recording-status" data-status="${recording.status}">${escapeHTML(statusLabel(recording.status))}</span></div><h2 id="detailTitle">${escapeHTML(recording.title)}</h2><p>${escapeHTML(recording.subject)} · ${escapeHTML(recording.chapter)}</p></div><button class="dialog-close" type="button" data-close-dialog aria-label="Close lecture details"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
-      <div class="lecture-player">${player}</div>
-      ${source.type === "direct" ? `<div class="player-extra-controls"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Use the video controls to play, pause, adjust volume, seek, or enter fullscreen.</span><label for="playbackSpeed">Speed<select id="playbackSpeed"><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label></div>` : ""}
+      <div class="lecture-player"><div class="player-placeholder" id="lecturePlayerStatus"><i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i><strong>Preparing secure playback</strong><p>A temporary link is being created after checking your access.</p></div></div>
       <div class="lecture-detail-content"><section><h3>About this class</h3><p class="lecture-description">${escapeHTML(recording.description || "No class description has been provided.")}</p><div class="lecture-info-grid">${detailInfo(recording)}</div></section><aside class="lecture-resources"><h3>Study resources</h3><p>Notes and attachments shared with this lecture.</p>${renderResources(recording)}</aside></div>
       <div class="detail-progress"><div class="detail-progress-head"><span>${state.completed.has(recording.id) ? "Lecture completed" : "Watch progress (this session only)"}</span><strong id="detailProgressValue">${progress}%</strong></div><div class="recording-progress-track"><span id="detailProgressBar" style="width:${progress}%"></span></div></div>`;
 
     const dialog = $("lectureDialog");
+    dialog.dataset.recordingId = recording.id;
     if (!dialog.open) dialog.showModal();
     dialog.querySelector("[data-close-dialog]")?.addEventListener("click", () => dialog.close());
-    dialog.querySelector("#playbackSpeed")?.addEventListener("change", (event) => {
+    try {
+      const url = await getPlaybackUrl(recording);
+      if (requestId !== state.playbackRequest || !dialog.open) return;
+      dialog.querySelector(".lecture-player").innerHTML =
+        `<video id="lectureVideo" controls playsinline preload="metadata" aria-label="${escapeHTML(recording.title)}" src="${escapeHTML(url)}"></video>`;
+      dialog.querySelector(".player-extra-controls")?.remove();
+      const extraControls = document.createElement("div");
+      extraControls.className = "player-extra-controls";
+      extraControls.innerHTML = '<i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Use the video controls to play, pause, adjust volume, seek, or enter fullscreen.</span><label for="playbackSpeed">Speed<select id="playbackSpeed"><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label>';
+      dialog.querySelector(".lecture-player").after(extraControls);
+      dialog.querySelector("#playbackSpeed")?.addEventListener("change", (event) => {
+        const video = dialog.querySelector("#lectureVideo");
+        if (video) video.playbackRate = Number(event.currentTarget.value);
+      });
       const video = dialog.querySelector("#lectureVideo");
-      if (video) video.playbackRate = Number(event.currentTarget.value);
-    });
-    const video = dialog.querySelector("#lectureVideo");
-    if (video) {
       video.addEventListener("loadedmetadata", () => {
         const savedPosition = state.watchProgress.get(recording.id)?.position || 0;
-        if (savedPosition > 0 && savedPosition < video.duration) {
-          video.currentTime = savedPosition;
-        }
+        if (savedPosition > 0 && savedPosition < video.duration) video.currentTime = savedPosition;
       }, { once: true });
       video.addEventListener("timeupdate", () => updateWatchProgress(recording, video));
       video.addEventListener("ended", () => {
@@ -495,11 +503,18 @@
         updateWatchProgress(recording, video);
       });
       video.addEventListener("error", () => {
-        const player = $("lectureDialog").querySelector(".lecture-player");
+        const player = dialog.querySelector(".lecture-player");
         if (player) {
-          player.innerHTML = `<div class="player-placeholder"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i><strong>Playback is unavailable</strong><p>The recording source could not be played here. If your teacher provided a platform link, use its authorized playback page.</p></div>`;
+          player.innerHTML = `<div class="player-placeholder" role="alert"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i><strong>Playback is unavailable</strong><p>The temporary playback link may have expired. Request a fresh link and try again.</p><button class="lecture-button lecture-button-primary" type="button" data-action="retry-playback">Retry playback</button></div>`;
         }
       }, { once: true });
+    } catch (error) {
+      if (requestId !== state.playbackRequest || !dialog.open) return;
+      console.error("Secure recording playback could not be prepared.", error);
+      const player = dialog.querySelector(".lecture-player");
+      if (player) {
+        player.innerHTML = `<div class="player-placeholder" role="alert"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i><strong>Playback could not be prepared</strong><p>${escapeHTML(error?.message || "Please retry.")}</p><button class="lecture-button lecture-button-primary" type="button" data-action="retry-playback">Retry playback</button></div>`;
+      }
     }
   }
 
@@ -587,7 +602,16 @@
       if (recording) renderLectureDetails(recording);
     });
     $("lectureDialog").addEventListener("click", (event) => {
+      const retry = event.target.closest('[data-action="retry-playback"]');
+      if (retry) {
+        const recording = findRecording($("lectureDialog").dataset.recordingId);
+        if (recording) void renderLectureDetails(recording);
+        return;
+      }
       if (event.target === $("lectureDialog")) $("lectureDialog").close();
+    });
+    $("lectureDialog").addEventListener("close", () => {
+      state.playbackRequest += 1;
     });
   }
 

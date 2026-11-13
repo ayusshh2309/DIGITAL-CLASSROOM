@@ -14,6 +14,7 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
     />
+    <link rel="stylesheet" href="../css/teacher-recording-upload.css" />
 
     <!-- Supabase JS CDN Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1188,12 +1189,62 @@
         </div>
       </form>
     </dialog>
+    <dialog class="recording-upload-dialog" id="recordingUploadDialog" aria-labelledby="recordingUploadTitle">
+      <form id="recordingUploadForm" novalidate>
+        <div class="recording-upload-heading">
+          <div>
+            <p class="recording-upload-eyebrow">Class library</p>
+            <h2 id="recordingUploadTitle">Upload a recording</h2>
+            <p>Share a video recording with students authorized for this class.</p>
+          </div>
+          <button class="recording-upload-close" id="closeRecordingUpload" type="button" aria-label="Close upload form">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </div>
+        <div class="recording-upload-class" id="recordingUploadClass"></div>
+        <div class="recording-upload-fields">
+          <label for="recordingTitleInput">Lecture title
+            <input id="recordingTitleInput" name="title" type="text" maxlength="180" required />
+          </label>
+          <label for="recordingChapterInput">Chapter
+            <input id="recordingChapterInput" name="chapter" type="text" maxlength="180" />
+          </label>
+          <label for="recordingTopicInput">Topic
+            <input id="recordingTopicInput" name="topic" type="text" maxlength="180" />
+          </label>
+          <label class="recording-upload-wide" for="recordingDescriptionInput">Description
+            <textarea id="recordingDescriptionInput" name="description" rows="3" maxlength="2000"></textarea>
+          </label>
+          <label for="recordingProviderInput">Scheduled platform
+            <input id="recordingProviderInput" name="provider" type="text" readonly />
+          </label>
+          <label for="recordingStartedInput">Actual recording start (optional)
+            <input id="recordingStartedInput" name="recording_started_at" type="datetime-local" />
+          </label>
+          <label class="recording-upload-wide recording-file-picker" for="recordingFileInput">
+            Video file
+            <input id="recordingFileInput" name="video" type="file" accept=".mp4,.webm,.mov,video/mp4,video/webm,video/quicktime" required />
+            <small>MP4, WebM, or MOV / QuickTime. Maximum size: 50 MiB.</small>
+          </label>
+        </div>
+        <div class="recording-upload-status" id="recordingUploadStatus" role="status" aria-live="polite"></div>
+        <div class="recording-upload-progress" id="recordingUploadProgress" hidden>
+          <progress id="recordingUploadProgressBar" max="100" value="0"></progress>
+          <span id="recordingUploadProgressText">0%</span>
+        </div>
+        <div class="recording-upload-actions">
+          <button class="btn-join btn-recording" id="cancelRecordingUpload" type="button">Cancel</button>
+          <button class="btn-join" id="submitRecordingUpload" type="submit">Upload recording</button>
+        </div>
+      </form>
+    </dialog>
 
     <script src="../js/supabase.js"></script>
     <script src="../js/subject-service.js"></script>
     <script src="../js/teacher-data.js"></script>
     <script src="../js/attendance-service.js"></script>
     <script src="../js/live-class-service.js"></script>
+    <script src="../js/teacher-recording-upload.js"></script>
     <script>
       let currentClasses = [];
       let currentFilterTab = "Upcoming";
@@ -1415,6 +1466,15 @@
           detailsButton.textContent = "View Details";
           detailsButton.addEventListener("click", () => showLiveClassDetails(item, statusValue));
           actionButtons.appendChild(detailsButton);
+        }
+
+        if (!isDraft && (isDone || (isPrevious(item) && !isCancelled))) {
+          const uploadButton = document.createElement("button");
+          uploadButton.type = "button";
+          uploadButton.className = "btn-join btn-recording";
+          uploadButton.innerHTML = '<i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i> Upload Recording';
+          uploadButton.addEventListener("click", () => window.TeacherRecordingUpload.open(item));
+          actionButtons.appendChild(uploadButton);
         }
 
         if (!isDraft && isScheduled) {
