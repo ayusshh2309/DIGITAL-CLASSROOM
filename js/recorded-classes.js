@@ -119,12 +119,20 @@
     }).filter(Boolean);
   }
 
+  function hasValidPrivateStoragePath(row) {
+    const path = String(row.storage_path || "");
+    const prefix = `manual/${row.teacher_id}/${row.live_class_id}/`;
+    return path.startsWith(prefix) &&
+      new RegExp(`^${String(row.id).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\.(?:mp4|webm|mov)$`, "i")
+        .test(path.slice(prefix.length));
+  }
+
   function mapRecording(row, subjects, teacherNames) {
     const subject = subjects.find(
       (item) => String(item.id) === String(row.subject_id),
     );
     if (!subject || row.recording_status !== "available" ||
-      !row.recording_verified_at || !row.storage_path) return null;
+      !row.recording_verified_at || !hasValidPrivateStoragePath(row)) return null;
     const grade = Number(row.grade);
     const status = "available";
     return {
@@ -137,7 +145,7 @@
       subject: subject.name,
       chapter: String(row.chapter || "Not provided"),
       topic: String(row.topic || "Not provided"),
-      teacher: String(row.teacher_name || row.teacher?.full_name || teacherNames.get(String(row.teacher_id)) || "Not provided"),
+      teacher: String(row.teacher_name || row.teacher?.full_name || teacherNames.get(String(row.teacher_id)) || "Your teacher"),
       provider: String(row.provider || "Not provided"),
       providerRecordingId: String(row.provider_recording_id || ""),
       thumbnailUrl: safeHttpUrl(row.thumbnail_url),
@@ -153,21 +161,28 @@
 
   async function loadRecordedClassesFromSupabase(client, student, subjects) {
     if (!subjects.length) return [];
-    let query = client
-      .from("recorded_classes")
-      .select(
-        "id, live_class_id, teacher_id, title, description, grade, stream, subject_id, chapter, topic, provider, provider_recording_id, thumbnail_url, resource_urls, recording_status, recording_verified_at, recording_started_at, storage_path, started_at, duration_seconds, ready_at, created_at, updated_at",
-      )
-      .eq("grade", student.grade)
-      .eq("recording_status", "available")
-      .not("recording_verified_at", "is", null)
-      .not("storage_path", "is", null)
-      .in("subject_id", subjects.map((subject) => subject.id))
-      .order("started_at", { ascending: false });
-    if (Number(student.grade) >= 11) {
-      query = query.eq("stream", student.stream);
+    const coreFields =
+      "id, live_class_id, teacher_id, title, description, grade, stream, subject_id, chapter, topic, provider, recording_status, recording_verified_at, recording_started_at, storage_path, started_at, duration_seconds";
+    const queryRecordings = async (fields) => {
+      let query = client
+        .from("recorded_classes")
+        .select(fields)
+        .eq("grade", student.grade)
+        .eq("recording_status", "available")
+        .not("recording_verified_at", "is", null)
+        .not("storage_path", "is", null)
+        .in("subject_id", subjects.map((subject) => subject.id))
+        .order("started_at", { ascending: false });
+      if (Number(student.grade) >= 11) {
+        query = query.eq("stream", student.stream);
+      }
+      return query;
+    };
+    let { data, error } = await queryRecordings(`${coreFields}, thumbnail_url, resource_urls`);
+    if (error && /(?:column|schema cache).*(?:thumbnail_url|resource_urls)|(?:thumbnail_url|resource_urls).*(?:column|schema cache)/i.test(error.message || "")) {
+      console.warn("Optional recording artwork/resources columns are unavailable; loading core recording details.", error);
+      ({ data, error } = await queryRecordings(coreFields));
     }
-    const { data, error } = await query;
     if (error) throw error;
     const teacherIds = [...new Set((data || []).map((row) => String(row.teacher_id)).filter(Boolean))];
     const teacherNames = new Map();
@@ -176,10 +191,13 @@
         .from("teachers")
         .select("id, full_name")
         .in("id", teacherIds);
-      if (teacherError) throw teacherError;
-      (teachers || []).forEach((teacher) => {
-        teacherNames.set(String(teacher.id), String(teacher.full_name || ""));
-      });
+      if (teacherError) {
+        console.warn("Teacher names are unavailable for recorded classes.", teacherError);
+      } else {
+        (teachers || []).forEach((teacher) => {
+          teacherNames.set(String(teacher.id), String(teacher.full_name || ""));
+        });
+      }
     }
     return (data || [])
       .map((row) => mapRecording(row, subjects, teacherNames))

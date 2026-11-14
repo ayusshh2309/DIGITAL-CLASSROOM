@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.118.0";
+import { parseScheduledEnd, parseScheduledStart } from "../_shared/live-class-schedule.ts";
 
 const BUCKET = "recorded-class-videos";
 const PROJECT_FILE_LIMIT = 50 * 1024 * 1024;
@@ -158,14 +159,25 @@ Deno.serve(async (request) => {
   if (["cancelled", "canceled"].includes(status)) {
     return jsonResponse({ error: "Cancelled live classes cannot receive recordings." }, 400);
   }
-  const start = liveClass.start_at ? new Date(liveClass.start_at).getTime() : NaN;
-  const end = liveClass.end_at
-    ? new Date(liveClass.end_at).getTime()
-    : Number.isFinite(start)
-      ? start + (Number(liveClass.duration_minutes) || 60) * 60_000
-      : NaN;
-  if (!["completed", "done", "finished", "attended"].includes(status) &&
-    (!Number.isFinite(end) || end > Date.now())) {
+  let scheduleTimeZone = "Asia/Kolkata";
+  if (liveClass.start_at === null && liveClass.class_date && liveClass.start_time) {
+    const { data: teacherSettings, error: settingsError } = await adminClient
+      .from("teacher_settings")
+      .select("timezone")
+      .eq("teacher_id", teacher.id)
+      .maybeSingle();
+    if (settingsError) {
+      if (!["42P01", "42703", "PGRST204", "PGRST205"].includes(settingsError.code || "")) {
+        console.error("Could not load the teacher timezone for recording finalization.", settingsError);
+        return jsonResponse({ error: "The class schedule timezone could not be verified." }, 500);
+      }
+    } else if (teacherSettings?.timezone) {
+      scheduleTimeZone = String(teacherSettings.timezone);
+    }
+  }
+  const start = parseScheduledStart(liveClass, scheduleTimeZone);
+  const end = parseScheduledEnd(liveClass, start);
+  if (start === null || end === null || start > Date.now() || end < start || end > Date.now()) {
     return jsonResponse({ error: "A recording can only be finalized after the live class has ended." }, 400);
   }
   const provider = providerFor(liveClass.meeting_platform);
@@ -272,7 +284,7 @@ Deno.serve(async (request) => {
     playback_url: null,
     storage_path: objectPath,
     recording_started_at: recordingStartedAt,
-    started_at: liveClass.start_at || null,
+    started_at: new Date(start).toISOString(),
     duration_seconds: typeof durationSeconds === "number" ? Math.round(durationSeconds) : null,
     recording_status: "available",
     recording_verified_at: verifiedAt,

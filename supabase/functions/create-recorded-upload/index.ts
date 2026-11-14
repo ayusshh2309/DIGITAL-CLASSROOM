@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.118.0";
+import { parseScheduledEnd, parseScheduledStart } from "../_shared/live-class-schedule.ts";
 
 const BUCKET = "recorded-class-videos";
 const PROJECT_FILE_LIMIT = 50 * 1024 * 1024;
@@ -22,74 +23,6 @@ function providerFor(value: unknown): string | null {
   const platform = String(value || "").trim().toLowerCase();
   if (platform.includes("zoom")) return "Zoom";
   if (platform.includes("google") || platform.includes("meet")) return "Google Meet";
-  return null;
-}
-
-function parseScheduledStart(liveClass: {
-  start_at: string | null;
-  class_date: string | null;
-  start_time: string | null;
-}, timeZone: string): number | null {
-  if (liveClass.start_at !== null) {
-    const timestamp = Date.parse(liveClass.start_at);
-    return Number.isFinite(timestamp) ? timestamp : null;
-  }
-  if (!liveClass.class_date || !liveClass.start_time ||
-    !/^\d{4}-\d{2}-\d{2}$/.test(liveClass.class_date) ||
-    !/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,6})?)?$/.test(liveClass.start_time)) {
-    return null;
-  }
-  const [year, month, day] = liveClass.class_date.split("-").map(Number);
-  const [hour, minute, second = "0"] = liveClass.start_time.split(":");
-  const [wholeSecond, fractionalSecond = ""] = second.split(".");
-  const milliseconds = Number(`0.${fractionalSecond || "0"}`) * 1000;
-  const targetTimestamp = Date.UTC(
-    year,
-    month - 1,
-    day,
-    Number(hour),
-    Number(minute),
-    Number(wholeSecond),
-    milliseconds,
-  );
-  if (!Number.isFinite(targetTimestamp) ||
-    new Date(targetTimestamp).toISOString().slice(0, 10) !== liveClass.class_date) return null;
-
-  let timestamp = targetTimestamp;
-  let formatter: Intl.DateTimeFormat;
-  try {
-    formatter = new Intl.DateTimeFormat("en-US", {
-      timeZone,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hourCycle: "h23",
-    });
-  } catch {
-    return null;
-  }
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    const parts = Object.fromEntries(
-      formatter.formatToParts(timestamp)
-        .filter((part) => part.type !== "literal")
-        .map((part) => [part.type, Number(part.value)]),
-    );
-    const representedTimestamp = Date.UTC(
-      parts.year,
-      parts.month - 1,
-      parts.day,
-      parts.hour,
-      parts.minute,
-      parts.second,
-      milliseconds,
-    );
-    const difference = representedTimestamp - targetTimestamp;
-    if (difference === 0) return timestamp;
-    timestamp -= difference;
-  }
   return null;
 }
 
@@ -167,8 +100,6 @@ Deno.serve(async (request) => {
   if (["cancelled", "canceled"].includes(status)) {
     return jsonResponse({ error: "Cancelled live classes cannot receive recordings." }, 400);
   }
-  const completedStatuses = ["completed", "done", "finished", "attended"];
-  const isCompleted = completedStatuses.includes(status);
   let scheduleTimeZone = "Asia/Kolkata";
   if (liveClass.start_at === null && liveClass.class_date && liveClass.start_time) {
     const { data: teacherSettings, error: settingsError } = await adminClient
@@ -190,26 +121,14 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: "The live class has an invalid scheduled start time." }, 400);
   }
   const now = Date.now();
-  if (start !== null && start > now) {
+  if (start > now) {
     return jsonResponse({ error: "Recordings cannot be uploaded for a future class." }, 400);
   }
-  let end: number | null = null;
-  if (liveClass.end_at !== null) {
-    const parsedEnd = Date.parse(liveClass.end_at);
-    if (!Number.isFinite(parsedEnd)) {
-      return jsonResponse({ error: "The live class has an invalid scheduled end time." }, 400);
-    }
-    end = parsedEnd;
-  } else if (start !== null && liveClass.duration_minutes !== null) {
-    const durationMinutes = Number(liveClass.duration_minutes);
-    if (Number.isFinite(durationMinutes) && durationMinutes > 0) {
-      end = start + durationMinutes * 60_000;
-    }
-  }
-  if (start !== null && end !== null && end <= start) {
+  const end = parseScheduledEnd(liveClass, start);
+  if (end === null || end < start) {
     return jsonResponse({ error: "The live class has an invalid scheduled end time." }, 400);
   }
-  if (!isCompleted && (start === null || end === null || end > now)) {
+  if (end > now) {
     return jsonResponse({ error: "A recording can only be uploaded after the live class has ended." }, 400);
   }
   if (!providerFor(liveClass.meeting_platform)) {
