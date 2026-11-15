@@ -8,7 +8,8 @@ const FILE_TYPES: Record<string, { extension: string; mimeType: string }> = {
   "video/webm": { extension: ".webm", mimeType: "video/webm" },
   "video/quicktime": { extension: ".mov", mimeType: "video/quicktime" },
 };
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_PATTERN = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
+const COMPLETED_STATUSES = new Set(["attended", "completed", "done", "finished"]);
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -24,6 +25,14 @@ function providerFor(value: unknown): string | null {
   if (platform.includes("zoom")) return "Zoom";
   if (platform.includes("google") || platform.includes("meet")) return "Google Meet";
   return null;
+}
+
+function validClassRecordingPath(path: unknown, teacherId: string, liveClassId: string): boolean {
+  const prefix = `manual/${teacherId}/${liveClassId}/`;
+  const value = String(path || "");
+  return value.startsWith(prefix) &&
+    /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\.(?:mp4|webm|mov)$/i
+      .test(value.slice(prefix.length));
 }
 
 Deno.serve(async (request) => {
@@ -49,13 +58,22 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: "Invalid request body." }, 400);
   }
 
-  const liveClassId = String(body.live_class_id || "");
-  const contentType = String(body.content_type || "");
-  const fileSize = body.file_size;
-  const fileType = FILE_TYPES[contentType];
+  if (body.recording_mode !== "live_class") {
+    return jsonResponse({ error: "Recordings must be attached to a completed live class." }, 400);
+  }
+  const liveClassId = typeof body.live_class_id === "string" ? body.live_class_id : "";
+  const replaceRecordingId = body.replace_recording_id === undefined || body.replace_recording_id === null
+    ? null
+    : String(body.replace_recording_id);
   if (!UUID_PATTERN.test(liveClassId)) {
     return jsonResponse({ error: "Choose a valid live class." }, 400);
   }
+  if (replaceRecordingId !== null && !UUID_PATTERN.test(replaceRecordingId)) {
+    return jsonResponse({ error: "The recording to replace is invalid." }, 400);
+  }
+  const contentType = String(body.content_type || "");
+  const fileSize = body.file_size;
+  const fileType = FILE_TYPES[contentType];
   if (!fileType || body.file_extension !== fileType.extension) {
     return jsonResponse({ error: "Only MP4, WebM, and MOV / QuickTime videos are accepted." }, 400);
   }
@@ -64,10 +82,11 @@ Deno.serve(async (request) => {
   }
 
   const token = authorization.slice("Bearer ".length);
-  const authClient = createClient(url, anonKey, {
+  const userClient = createClient(url, anonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const { data: { user }, error: authError } = await authClient.auth.getUser(token);
+  const { data: { user }, error: authError } = await userClient.auth.getUser(token);
   if (authError || !user) return jsonResponse({ error: "Your session is invalid or expired." }, 401);
 
   const adminClient = createClient(url, serviceRoleKey, {
@@ -84,6 +103,7 @@ Deno.serve(async (request) => {
   }
   if (!teacher?.id) return jsonResponse({ error: "A teacher account is required to upload recordings." }, 403);
 
+  const recordingId = crypto.randomUUID();
   const { data: liveClass, error: classError } = await adminClient
     .from("live_classes")
     .select("id, teacher_id, title, grade, class_grade, stream, subject_id, subject, chapter, topic, description, meeting_platform, status, start_at, end_at, class_date, start_time, duration_minutes")
@@ -99,6 +119,9 @@ Deno.serve(async (request) => {
   const status = String(liveClass.status || "").trim().toLowerCase();
   if (["cancelled", "canceled"].includes(status)) {
     return jsonResponse({ error: "Cancelled live classes cannot receive recordings." }, 400);
+  }
+  if (!COMPLETED_STATUSES.has(status)) {
+    return jsonResponse({ error: "Only live classes marked completed can receive recordings." }, 400);
   }
   let scheduleTimeZone = "Asia/Kolkata";
   if (liveClass.start_at === null && liveClass.class_date && liveClass.start_time) {
@@ -117,13 +140,9 @@ Deno.serve(async (request) => {
     }
   }
   const start = parseScheduledStart(liveClass, scheduleTimeZone);
-  if (start === null) {
-    return jsonResponse({ error: "The live class has an invalid scheduled start time." }, 400);
-  }
+  if (start === null) return jsonResponse({ error: "The live class has an invalid scheduled start time." }, 400);
   const now = Date.now();
-  if (start > now) {
-    return jsonResponse({ error: "Recordings cannot be uploaded for a future class." }, 400);
-  }
+  if (start > now) return jsonResponse({ error: "Recordings cannot be uploaded for a future class." }, 400);
   const end = parseScheduledEnd(liveClass, start);
   if (end === null || end < start) {
     return jsonResponse({ error: "The live class has an invalid scheduled end time." }, 400);
@@ -134,6 +153,33 @@ Deno.serve(async (request) => {
   if (!providerFor(liveClass.meeting_platform)) {
     return jsonResponse({ error: "The scheduled class must use Zoom or Google Meet before a recording can be uploaded." }, 400);
   }
+
+  const { data: existingRecordings, error: existingError } = await adminClient
+    .from("recorded_classes")
+    .select("id, teacher_id, storage_path, recording_status, recording_verified_at")
+    .eq("live_class_id", liveClass.id)
+    .limit(2);
+  if (existingError) {
+    console.error("Could not check for an existing recording before upload.", existingError);
+    return jsonResponse({ error: "Existing recording status could not be checked. Please retry." }, 500);
+  }
+  if ((existingRecordings || []).length > 1) {
+    return jsonResponse({ error: "More than one recording is attached to this class. Ask an administrator to resolve the duplicate records." }, 409);
+  }
+  const existingRecording = existingRecordings?.[0] || null;
+  if (existingRecording && String(existingRecording.teacher_id) !== String(teacher.id)) {
+    return jsonResponse({ error: "This class already has a recording that requires administrator review." }, 409);
+  }
+  if (replaceRecordingId) {
+    if (!existingRecording || String(existingRecording.id) !== replaceRecordingId ||
+      existingRecording.recording_status !== "available" || !existingRecording.recording_verified_at ||
+      !validClassRecordingPath(existingRecording.storage_path, String(teacher.id), String(liveClass.id))) {
+      return jsonResponse({ error: "The verified recording to replace was not found for this class." }, 409);
+    }
+  } else if (existingRecording) {
+    return jsonResponse({ error: "This class already has a recording. Use Replace Recording from the class card." }, 409);
+  }
+  const objectPath = `manual/${teacher.id}/${liveClass.id}/${recordingId}${fileType.extension}`;
 
   const { data: bucket, error: bucketError } = await adminClient.storage.getBucket(BUCKET);
   if (bucketError || !bucket) {
@@ -153,8 +199,6 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: `The video exceeds the ${Math.floor(maxFileSizeBytes / 1024 / 1024)} MiB storage limit.` }, 413);
   }
 
-  const recordingId = crypto.randomUUID();
-  const objectPath = `manual/${teacher.id}/${liveClass.id}/${recordingId}${fileType.extension}`;
   const { data: signedUpload, error: signedUploadError } = await adminClient.storage
     .from(BUCKET)
     .createSignedUploadUrl(objectPath, { upsert: false });
@@ -165,6 +209,9 @@ Deno.serve(async (request) => {
 
   return jsonResponse({
     recording_id: recordingId,
+    recording_mode: "live_class",
+    live_class_id: liveClassId,
+    replace_recording_id: replaceRecordingId,
     upload_url: signedUpload.signedUrl,
     max_file_size_bytes: maxFileSizeBytes,
   });

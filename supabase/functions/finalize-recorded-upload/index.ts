@@ -8,7 +8,8 @@ const FILE_TYPES: Record<string, { extension: string; mimeType: string }> = {
   "video/webm": { extension: ".webm", mimeType: "video/webm" },
   "video/quicktime": { extension: ".mov", mimeType: "video/quicktime" },
 };
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_PATTERN = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
+const COMPLETED_STATUSES = new Set(["attended", "completed", "done", "finished"]);
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -24,6 +25,14 @@ function providerFor(value: unknown): string | null {
   if (platform.includes("zoom")) return "Zoom";
   if (platform.includes("google") || platform.includes("meet")) return "Google Meet";
   return null;
+}
+
+function validClassRecordingPath(path: unknown, teacherId: string, liveClassId: string): boolean {
+  const prefix = `manual/${teacherId}/${liveClassId}/`;
+  const value = String(path || "");
+  return value.startsWith(prefix) &&
+    /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\.(?:mp4|webm|mov)$/i
+      .test(value.slice(prefix.length));
 }
 
 function readText(value: unknown, field: string, maximum: number, required = false): string | null {
@@ -78,27 +87,33 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: "Invalid request body." }, 400);
   }
 
-  let title: string | null;
-  let chapter: string | null;
-  let topic: string | null;
   let description: string | null;
   try {
-    title = readText(body.title, "Lecture title", 180, true);
-    chapter = readText(body.chapter, "Chapter", 180);
-    topic = readText(body.topic, "Topic", 180);
     description = readText(body.description, "Description", 2000);
   } catch (error) {
     return jsonResponse({ error: error instanceof Error ? error.message : "Invalid lecture details." }, 400);
   }
 
   const recordingId = String(body.recording_id || "");
-  const liveClassId = String(body.live_class_id || "");
+  const liveClassId = typeof body.live_class_id === "string" ? body.live_class_id : "";
+  const replaceRecordingId = body.replace_recording_id === undefined || body.replace_recording_id === null
+    ? null
+    : String(body.replace_recording_id);
+  if (body.recording_mode !== "live_class") {
+    return jsonResponse({ error: "Recordings must be attached to a completed live class." }, 400);
+  }
+  if (!UUID_PATTERN.test(liveClassId)) {
+    return jsonResponse({ error: "The upload session or live class identifier is invalid." }, 400);
+  }
+  if (replaceRecordingId !== null && !UUID_PATTERN.test(replaceRecordingId)) {
+    return jsonResponse({ error: "The recording to replace is invalid." }, 400);
+  }
   const contentType = String(body.content_type || "");
   const fileSize = body.file_size;
   const durationSeconds = body.duration_seconds;
   const fileType = FILE_TYPES[contentType];
-  if (!UUID_PATTERN.test(recordingId) || !UUID_PATTERN.test(liveClassId)) {
-    return jsonResponse({ error: "The upload session or live class identifier is invalid." }, 400);
+  if (!UUID_PATTERN.test(recordingId)) {
+    return jsonResponse({ error: "The upload session identifier is invalid." }, 400);
   }
   if (!fileType) return jsonResponse({ error: "The uploaded file type is not supported." }, 400);
   if (typeof fileSize !== "number" || !Number.isSafeInteger(fileSize) || fileSize <= 0) {
@@ -110,23 +125,12 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: "The video duration is invalid." }, 400);
   }
 
-  let recordingStartedAt: string | null = null;
-  if (body.recording_started_at !== null && body.recording_started_at !== undefined && body.recording_started_at !== "") {
-    if (typeof body.recording_started_at !== "string") {
-      return jsonResponse({ error: "The recording start time is invalid." }, 400);
-    }
-    const timestamp = new Date(body.recording_started_at);
-    if (!Number.isFinite(timestamp.getTime()) || timestamp.getTime() > Date.now()) {
-      return jsonResponse({ error: "The recording start time must be a valid time in the past." }, 400);
-    }
-    recordingStartedAt = timestamp.toISOString();
-  }
-
   const token = authorization.slice("Bearer ".length);
-  const authClient = createClient(url, anonKey, {
+  const userClient = createClient(url, anonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const { data: { user }, error: authError } = await authClient.auth.getUser(token);
+  const { data: { user }, error: authError } = await userClient.auth.getUser(token);
   if (authError || !user) return jsonResponse({ error: "Your session is invalid or expired." }, 401);
 
   const adminClient = createClient(url, serviceRoleKey, {
@@ -145,7 +149,7 @@ Deno.serve(async (request) => {
 
   const { data: liveClass, error: classError } = await adminClient
     .from("live_classes")
-    .select("id, teacher_id, title, grade, class_grade, stream, subject_id, subject, chapter, topic, description, meeting_platform, status, start_at, end_at, class_date, start_time, duration_minutes")
+    .select("id, teacher_id, title, grade, class_grade, stream, subject_id, subject, chapter, topic, meeting_platform, status, start_at, end_at, class_date, start_time, duration_minutes")
     .eq("id", liveClassId)
     .eq("teacher_id", teacher.id)
     .maybeSingle();
@@ -158,6 +162,9 @@ Deno.serve(async (request) => {
   const status = String(liveClass.status || "").trim().toLowerCase();
   if (["cancelled", "canceled"].includes(status)) {
     return jsonResponse({ error: "Cancelled live classes cannot receive recordings." }, 400);
+  }
+  if (!COMPLETED_STATUSES.has(status)) {
+    return jsonResponse({ error: "Only live classes marked completed can receive recordings." }, 400);
   }
   let scheduleTimeZone = "Asia/Kolkata";
   if (liveClass.start_at === null && liveClass.class_date && liveClass.start_time) {
@@ -184,11 +191,24 @@ Deno.serve(async (request) => {
   if (!provider) {
     return jsonResponse({ error: "The scheduled class must use Zoom or Google Meet before a recording can be finalized." }, 400);
   }
+  const grade = Number(liveClass.grade ?? String(liveClass.class_grade || "").replace(/\D/g, ""));
+  if (!Number.isInteger(grade) || grade < 1 || !liveClass.subject_id) {
+    console.error("The owned live class is missing a usable grade or subject.", { liveClassId });
+    return jsonResponse({ error: "The live class is missing required curriculum details." }, 422);
+  }
+  const stream = liveClass.stream || null;
+  const subjectId = liveClass.subject_id;
+  const startedAt = new Date(start).toISOString();
+  const title = String(liveClass.title || liveClass.subject || "Live class recording").trim().slice(0, 180) ||
+    "Live class recording";
+  const chapter = typeof liveClass.chapter === "string" ? liveClass.chapter.trim().slice(0, 180) || null : null;
+  const topic = typeof liveClass.topic === "string" ? liveClass.topic.trim().slice(0, 180) || null : null;
+  const folder = `manual/${teacher.id}/${liveClass.id}`;
+  const objectPath = `${folder}/${recordingId}${fileType.extension}`;
 
-  const objectPath = `manual/${teacher.id}/${liveClass.id}/${recordingId}${fileType.extension}`;
   const { data: existing, error: existingError } = await adminClient
     .from("recorded_classes")
-    .select("id, storage_path")
+    .select("id, live_class_id, teacher_id, storage_path")
     .eq("id", recordingId)
     .maybeSingle();
   if (existingError) {
@@ -196,10 +216,60 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: "The recording could not be safely finalized." }, 500);
   }
   if (existing) {
-    if (existing.storage_path !== objectPath) {
+    if (existing.storage_path !== objectPath ||
+      String(existing.live_class_id) !== liveClassId ||
+      String(existing.teacher_id) !== String(teacher.id)) {
       return jsonResponse({ error: "This recording identifier is already associated with another upload." }, 409);
     }
-    return jsonResponse({ recording_id: recordingId, status: "available", already_finalized: true });
+    return jsonResponse({
+      recording_id: recordingId,
+      upload_session_id: recordingId,
+      live_class_id: liveClassId,
+      status: "available",
+      already_finalized: true,
+    });
+  }
+
+  let replacedRecording: { id: string; storage_path: string } | null = null;
+  if (replaceRecordingId) {
+    const { data: prior, error: priorError } = await adminClient
+      .from("recorded_classes")
+      .select("id, live_class_id, teacher_id, storage_path, recording_status, recording_verified_at")
+      .eq("id", replaceRecordingId)
+      .eq("live_class_id", liveClassId)
+      .eq("teacher_id", teacher.id)
+      .maybeSingle();
+    if (priorError) {
+      console.error("Could not verify the recording selected for replacement.", priorError);
+      return jsonResponse({ error: "The existing recording could not be verified for replacement." }, 500);
+    }
+    if (!prior || prior.recording_status !== "available" || !prior.recording_verified_at ||
+      !validClassRecordingPath(prior.storage_path, String(teacher.id), liveClassId)) {
+      return jsonResponse({ error: "The verified recording to replace was not found for this class." }, 409);
+    }
+    if (prior.storage_path === objectPath) {
+      return jsonResponse({
+        recording_id: replaceRecordingId,
+        upload_session_id: recordingId,
+        live_class_id: liveClassId,
+        status: "available",
+        already_finalized: true,
+      });
+    }
+    replacedRecording = { id: String(prior.id), storage_path: String(prior.storage_path) };
+  } else {
+    const { data: existingForClass, error: classRecordingError } = await adminClient
+      .from("recorded_classes")
+      .select("id")
+      .eq("live_class_id", liveClassId)
+      .limit(1);
+    if (classRecordingError) {
+      console.error("Could not confirm the class has no existing recording.", classRecordingError);
+      return jsonResponse({ error: "Existing recording status could not be checked. Please retry." }, 500);
+    }
+    if (existingForClass?.length) {
+      return jsonResponse({ error: "This class already has a recording. Refresh and use Replace Recording." }, 409);
+    }
   }
 
   const { data: bucket, error: bucketError } = await adminClient.storage.getBucket(BUCKET);
@@ -216,7 +286,6 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: "The uploaded file exceeds the configured storage limit." }, 413);
   }
 
-  const folder = `manual/${teacher.id}/${liveClass.id}`;
   const fileName = `${recordingId}${fileType.extension}`;
   const { data: objects, error: listError } = await adminClient.storage
     .from(BUCKET)
@@ -262,49 +331,101 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: "The uploaded file content does not match the selected video format." }, 422);
   }
 
-  const grade = Number(liveClass.grade ?? String(liveClass.class_grade || "").replace(/\D/g, ""));
-  if (!Number.isInteger(grade) || grade < 1 || !liveClass.subject_id) {
-    console.error("The owned live class is missing a usable grade or subject.", { liveClassId });
-    return jsonResponse({ error: "The live class is missing required curriculum details." }, 422);
-  }
   const verifiedAt = new Date().toISOString();
   const row = {
-    id: recordingId,
-    live_class_id: liveClass.id,
+    id: replacedRecording?.id || recordingId,
+    live_class_id: liveClassId,
     teacher_id: teacher.id,
     title,
     description,
     grade,
-    stream: liveClass.stream || null,
-    subject_id: liveClass.subject_id,
+    stream,
+    subject_id: subjectId,
     chapter,
     topic,
     provider,
     provider_recording_id: null,
     playback_url: null,
     storage_path: objectPath,
-    recording_started_at: recordingStartedAt,
-    started_at: new Date(start).toISOString(),
+    recording_started_at: null,
+    started_at: startedAt,
     duration_seconds: typeof durationSeconds === "number" ? Math.round(durationSeconds) : null,
     recording_status: "available",
     recording_verified_at: verifiedAt,
     ready_at: verifiedAt,
   };
-  const { error: insertError } = await adminClient.from("recorded_classes").insert(row);
-  if (insertError) {
-    if (insertError.code === "23505") {
-      const { data: duplicate, error: duplicateError } = await adminClient
-        .from("recorded_classes")
-        .select("id, storage_path")
-        .eq("id", recordingId)
-        .maybeSingle();
-      if (!duplicateError && duplicate?.storage_path === objectPath) {
-        return jsonResponse({ recording_id: recordingId, status: "available", already_finalized: true });
+  if (replacedRecording) {
+    const { data: updated, error: updateError } = await adminClient
+      .from("recorded_classes")
+      .update(row)
+      .eq("id", replacedRecording.id)
+      .eq("teacher_id", teacher.id)
+      .eq("live_class_id", liveClassId)
+      .eq("storage_path", replacedRecording.storage_path)
+      .select("id")
+      .maybeSingle();
+    if (updateError || !updated) {
+      const { error: cleanupError } = await adminClient.storage.from(BUCKET).remove([objectPath]);
+      if (cleanupError) {
+        console.error("Could not remove a verified replacement after its database update failed.", cleanupError);
+      }
+      if (updateError) console.error("Could not replace the verified class recording.", updateError);
+      return jsonResponse({ error: "The existing recording could not be safely replaced. Please retry." }, 500);
+    }
+    if (replacedRecording.storage_path !== objectPath) {
+      const { error: oldObjectError } = await adminClient.storage
+        .from(BUCKET)
+        .remove([replacedRecording.storage_path]);
+      if (oldObjectError) {
+        console.error("The replacement is available, but its previous private video could not be removed.", oldObjectError);
+        return jsonResponse({
+          recording_id: replacedRecording.id,
+          upload_session_id: recordingId,
+          live_class_id: liveClassId,
+          status: "available",
+          cleanup_warning: "The replacement is available, but the previous private video needs administrator cleanup.",
+        });
       }
     }
-    console.error("Could not insert the verified recorded class.", insertError);
-    return jsonResponse({ error: "The verified recording could not be saved. Please retry." }, 500);
+  } else {
+    const { error: insertError } = await adminClient.from("recorded_classes").insert(row);
+    if (insertError) {
+      if (insertError.code === "23505") {
+        const { data: duplicate, error: duplicateError } = await adminClient
+          .from("recorded_classes")
+          .select("id, live_class_id, teacher_id, storage_path")
+          .eq("id", recordingId)
+          .maybeSingle();
+        if (!duplicateError && duplicate?.storage_path === objectPath &&
+          String(duplicate.live_class_id) === liveClassId &&
+          String(duplicate.teacher_id) === String(teacher.id)) {
+          return jsonResponse({
+            recording_id: recordingId,
+            upload_session_id: recordingId,
+            live_class_id: liveClassId,
+            status: "available",
+            already_finalized: true,
+          });
+        }
+      }
+      const { error: cleanupError } = await adminClient.storage.from(BUCKET).remove([objectPath]);
+      if (cleanupError) {
+        console.error("Could not remove an uploaded video after its recording row failed to save.", cleanupError);
+      }
+      console.error("Could not insert the verified recorded class.", insertError);
+      return jsonResponse({
+        error: insertError.code === "23505"
+          ? "This class already has a recording. Refresh and use Replace Recording."
+          : "The verified recording could not be saved. Please retry.",
+      }, insertError.code === "23505" ? 409 : 500);
+    }
   }
 
-  return jsonResponse({ recording_id: recordingId, status: "available", already_finalized: false });
+  return jsonResponse({
+    recording_id: replacedRecording?.id || recordingId,
+    upload_session_id: recordingId,
+    live_class_id: liveClassId,
+    status: "available",
+    already_finalized: false,
+  });
 });

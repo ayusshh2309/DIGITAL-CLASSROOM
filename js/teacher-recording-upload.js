@@ -11,12 +11,8 @@
     dialog: document.getElementById("recordingUploadDialog"),
     form: document.getElementById("recordingUploadForm"),
     classInfo: document.getElementById("recordingUploadClass"),
-    title: document.getElementById("recordingTitleInput"),
-    chapter: document.getElementById("recordingChapterInput"),
-    topic: document.getElementById("recordingTopicInput"),
+    dialogTitle: document.getElementById("recordingUploadTitle"),
     description: document.getElementById("recordingDescriptionInput"),
-    provider: document.getElementById("recordingProviderInput"),
-    startedAt: document.getElementById("recordingStartedInput"),
     file: document.getElementById("recordingFileInput"),
     status: document.getElementById("recordingUploadStatus"),
     progress: document.getElementById("recordingUploadProgress"),
@@ -26,23 +22,12 @@
     cancel: document.getElementById("cancelRecordingUpload"),
     close: document.getElementById("closeRecordingUpload"),
   };
-  let liveClass = null;
+  let selectedLiveClass = null;
+  let replacementRecording = null;
   let currentSession = null;
   let activeRequest = null;
   let operationSequence = 0;
   let finalizing = false;
-
-  function subjectName(item) {
-    const relation = Array.isArray(item.subjects) ? item.subjects[0] : item.subjects;
-    return relation?.name || item.subject_name || item.subject || "";
-  }
-
-  function platformName(value) {
-    const platform = String(value || "").trim().toLowerCase();
-    if (platform.includes("zoom")) return "Zoom";
-    if (platform.includes("google") || platform.includes("meet")) return "Google Meet";
-    return "";
-  }
 
   function setStatus(message, state = "") {
     elements.status.textContent = message;
@@ -53,11 +38,7 @@
   function setBusy(busy) {
     elements.submit.disabled = busy;
     elements.cancel.disabled = busy;
-    elements.title.disabled = busy;
-    elements.chapter.disabled = busy;
-    elements.topic.disabled = busy;
     elements.description.disabled = busy;
-    elements.startedAt.disabled = busy;
     elements.file.disabled = busy;
   }
 
@@ -75,39 +56,55 @@
     setStatus("");
   }
 
-  function open(item) {
-    if (!item || !item.id) return;
-    liveClass = item;
-    currentSession = null;
-    const grade = item.grade || item.class_grade || "Not provided";
-    const stream = String(item.stream || "").replaceAll("_", " ").trim();
-    const subject = subjectName(item) || "Not provided";
-    const provider = platformName(item.meeting_platform);
+  function displayClassDetails(liveClass) {
+    const relation = Array.isArray(liveClass.subjects) ? liveClass.subjects[0] : liveClass.subjects;
+    const subjectName = relation?.name || liveClass.subject_name || liveClass.subject || "Subject not provided";
+    const grade = liveClass.grade ?? liveClass.class_grade ?? "Not provided";
+    const scheduledStart = liveClass.start_at ? new Date(liveClass.start_at) : null;
+    const classDate = scheduledStart && Number.isFinite(scheduledStart.getTime())
+      ? new Intl.DateTimeFormat(undefined, { year: "numeric", month: "short", day: "numeric" }).format(scheduledStart)
+      : liveClass.class_date || "Date not provided";
+    const startTime = scheduledStart && Number.isFinite(scheduledStart.getTime())
+      ? new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(scheduledStart)
+      : liveClass.start_time || "Time not provided";
+    const details = [
+      liveClass.title || "Live class",
+      `Grade ${grade}${liveClass.stream ? ` · ${String(liveClass.stream).replaceAll("_", " ")}` : ""} · ${subjectName}`,
+      liveClass.chapter ? `Chapter: ${liveClass.chapter}` : "",
+      liveClass.topic ? `Topic: ${liveClass.topic}` : "",
+      `Date: ${classDate}`,
+      `Start time: ${startTime}`,
+      `Duration: ${Number(liveClass.duration_minutes) || 60} minutes`,
+      liveClass.meeting_platform ? `Platform: ${liveClass.meeting_platform}` : "",
+    ].filter(Boolean);
     elements.classInfo.replaceChildren();
-    const title = document.createElement("strong");
-    title.textContent = item.title || subject || "Live class";
-    const scope = document.createElement("span");
-    scope.textContent = `Grade ${grade}${stream ? ` · ${stream}` : ""} · ${subject}`;
-    elements.classInfo.append(title, scope);
-    elements.title.value = item.title || subject || "";
-    elements.chapter.value = item.chapter || "";
-    elements.topic.value = item.topic || "";
-    elements.description.value = item.description || "";
-    elements.provider.value = provider || "Unsupported scheduled platform";
-    elements.startedAt.value = "";
+    details.forEach((value, index) => {
+      const line = document.createElement(index === 0 ? "strong" : "span");
+      line.textContent = value;
+      elements.classInfo.appendChild(line);
+    });
+  }
+
+  function open(liveClass, recordingToReplace = null) {
+    if (!liveClass || typeof liveClass.id !== "string" ||
+      !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(liveClass.id)) return;
+    if (recordingToReplace && (String(recordingToReplace.live_class_id) !== liveClass.id ||
+      typeof recordingToReplace.id !== "string" ||
+      !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(recordingToReplace.id))) return;
+    selectedLiveClass = liveClass;
+    replacementRecording = recordingToReplace;
+    currentSession = null;
+    displayClassDetails(liveClass);
+    elements.description.value = recordingToReplace?.description || "";
     elements.file.value = "";
     elements.progress.hidden = true;
     elements.progressBar.value = 0;
     elements.progressText.textContent = "0%";
-    elements.submit.textContent = "Upload recording";
+    elements.dialogTitle.textContent = recordingToReplace ? "Replace class recording" : "Upload a recording";
+    elements.submit.textContent = recordingToReplace ? "Replace recording" : "Upload recording";
     elements.cancel.textContent = "Cancel";
-    setStatus(
-      provider
-        ? ""
-        : "This class does not have a supported Zoom or Google Meet platform. Contact support if its schedule is incorrect.",
-      provider ? "" : "error",
-    );
-    elements.submit.disabled = !provider;
+    setStatus("");
+    elements.submit.disabled = false;
     if (!elements.dialog.open) elements.dialog.showModal();
   }
 
@@ -180,7 +177,7 @@
 
   function uploadWithProgress(uploadUrl, file, contentType, maxFileSize) {
     if (file.size > maxFileSize) {
-      return Promise.reject(new Error("This file exceeds the selected class's storage limit."));
+      return Promise.reject(new Error("This file exceeds the configured storage limit."));
     }
     const client = window.SmartLearningSupabase?.getClient?.();
     const sessionPromise = client?.auth.getSession();
@@ -232,28 +229,24 @@
   }
 
   function payloadFor(file, contentType, durationSeconds) {
-    const title = elements.title.value.trim();
-    if (!title) throw new Error("Enter a lecture title.");
-    const startedAt = elements.startedAt.value
-      ? new Date(elements.startedAt.value).toISOString()
-      : null;
+    if (!selectedLiveClass || !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(selectedLiveClass.id)) {
+      throw new Error("Choose a valid live class.");
+    }
     return {
+      recording_mode: "live_class",
+      live_class_id: selectedLiveClass.id,
       recording_id: currentSession.recording_id,
-      live_class_id: liveClass.id,
       content_type: contentType,
       file_size: file.size,
       duration_seconds: durationSeconds,
-      title,
-      chapter: elements.chapter.value.trim(),
-      topic: elements.topic.value.trim(),
       description: elements.description.value.trim(),
-      recording_started_at: startedAt,
+      ...(replacementRecording ? { replace_recording_id: replacementRecording.id } : {}),
     };
   }
 
   async function submit(event) {
     event.preventDefault();
-    if (!liveClass || elements.submit.disabled) return;
+    if (!selectedLiveClass || elements.submit.disabled) return;
     const operationId = ++operationSequence;
     let file;
     let type;
@@ -270,7 +263,9 @@
       if (!currentSession || currentSession.file !== file || !currentSession.uploaded) {
         setStatus("Preparing a secure upload…");
         const data = await invokeFunction("create-recorded-upload", {
-          live_class_id: liveClass.id,
+          recording_mode: "live_class",
+          live_class_id: selectedLiveClass.id,
+          ...(replacementRecording ? { replace_recording_id: replacementRecording.id } : {}),
           content_type: type.contentType,
           file_size: file.size,
           file_extension: type.extension,
@@ -278,6 +273,12 @@
         if (operationId !== operationSequence) return;
         if (!data.upload_url || !data.recording_id || !Number.isFinite(Number(data.max_file_size_bytes))) {
           throw new Error("The upload service returned incomplete upload information.");
+        }
+        if (data.recording_mode !== "live_class" || data.live_class_id !== selectedLiveClass.id) {
+          throw new Error("The upload service did not confirm the selected live class. Refresh the page and retry.");
+        }
+        if ((data.replace_recording_id || null) !== (replacementRecording?.id || null)) {
+          throw new Error("The upload service did not confirm the recording being replaced. Refresh and retry.");
         }
         currentSession = {
           recording_id: data.recording_id,
@@ -306,12 +307,21 @@
       elements.cancel.disabled = true;
       elements.cancel.textContent = "Finalizing…";
       elements.close.disabled = true;
-      await invokeFunction(
+      const finalized = await invokeFunction(
         "finalize-recorded-upload",
         payloadFor(file, type.contentType, currentSession.duration_seconds),
       );
       if (operationId !== operationSequence) return;
-      setStatus("Recording uploaded and verified.", "success");
+      if (finalized.live_class_id !== selectedLiveClass.id) {
+        throw new Error("The recording service did not confirm the selected live class during finalization.");
+      }
+      const successMessage = replacementRecording
+        ? "Recording replaced and verified."
+        : "Recording uploaded and verified.";
+      setStatus(
+        finalized.cleanup_warning ? `${successMessage} ${finalized.cleanup_warning}` : successMessage,
+        "success",
+      );
       elements.submit.disabled = true;
       elements.submit.textContent = "Uploaded";
       elements.cancel.disabled = false;
@@ -319,9 +329,13 @@
       window.dispatchEvent(new CustomEvent("smart-learning-live-classes-updated"));
     } catch (error) {
       if (error?.message === "Upload cancelled.") return;
-      console.error("Manual recording upload failed.", error);
+      console.error("Live-class recording upload failed.", error);
       setStatus(
-        `${error?.message || "The recording could not be uploaded."} You can retry without creating a visible recording until verification succeeds.`,
+        `${error?.message || "The recording could not be uploaded."} ${
+          replacementRecording
+            ? "The existing recording remains unchanged until verification succeeds."
+            : "No new recording is visible until verification succeeds."
+        }`,
         "error",
       );
       if (!currentSession?.uploaded) currentSession = null;
@@ -341,7 +355,8 @@
     if (finalizing) return;
     operationSequence += 1;
     if (activeRequest) activeRequest.abort();
-    liveClass = null;
+    selectedLiveClass = null;
+    replacementRecording = null;
     resetForm();
     if (elements.dialog.open) elements.dialog.close();
   }

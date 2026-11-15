@@ -121,10 +121,15 @@
 
   function hasValidPrivateStoragePath(row) {
     const path = String(row.storage_path || "");
-    const prefix = `manual/${row.teacher_id}/${row.live_class_id}/`;
-    return path.startsWith(prefix) &&
-      new RegExp(`^${String(row.id).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\.(?:mp4|webm|mov)$`, "i")
-        .test(path.slice(prefix.length));
+    const prefix = row.live_class_id
+      ? `manual/${row.teacher_id}/${row.live_class_id}/`
+      : `manual/${row.teacher_id}/subject-based/`;
+    if (!path.startsWith(prefix)) return false;
+    const file = path.slice(prefix.length);
+    return row.live_class_id
+      ? /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\.(?:mp4|webm|mov)$/i.test(file)
+      : new RegExp(`^${String(row.id).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\.(?:mp4|webm|mov)$`, "i")
+        .test(file);
   }
 
   function mapRecording(row, subjects, teacherNames) {
@@ -137,6 +142,8 @@
     const status = "available";
     return {
       id: String(row.id),
+      liveClassId: row.live_class_id ? String(row.live_class_id) : null,
+      isManual: !row.live_class_id,
       title: String(row.title || "Title not provided"),
       description: String(row.description || ""),
       grade,
@@ -151,7 +158,8 @@
       thumbnailUrl: safeHttpUrl(row.thumbnail_url),
       resources: readResources(row.resource_urls),
       status,
-      startedAt: row.started_at || null,
+      startedAt: row.started_at || row.ready_at || row.recording_verified_at || null,
+      uploadedAt: row.ready_at || row.recording_verified_at || null,
       recordingStartedAt: row.recording_started_at || null,
       durationSeconds: Number.isFinite(Number(row.duration_seconds)) && Number(row.duration_seconds) > 0
         ? Number(row.duration_seconds)
@@ -162,7 +170,7 @@
   async function loadRecordedClassesFromSupabase(client, student, subjects) {
     if (!subjects.length) return [];
     const coreFields =
-      "id, live_class_id, teacher_id, title, description, grade, stream, subject_id, chapter, topic, provider, recording_status, recording_verified_at, recording_started_at, storage_path, started_at, duration_seconds";
+      "id, live_class_id, teacher_id, title, description, grade, stream, subject_id, chapter, topic, provider, recording_status, recording_verified_at, recording_started_at, storage_path, started_at, ready_at, duration_seconds";
     const queryRecordings = async (fields) => {
       let query = client
         .from("recorded_classes")
@@ -331,7 +339,9 @@
       : "";
     const canWatch = recording.status === "available";
     const tone = ["purple", "blue", "green", "orange", "pink", "teal"][index % 6];
-    const date = recording.startedAt ? formatDate(recording.startedAt) : "Date not provided";
+    const dateValue = recording.isManual ? recording.uploadedAt : recording.startedAt;
+    const date = dateValue ? formatDate(dateValue) : "Date not provided";
+    const dateLabel = recording.isManual ? "Upload date" : "Class date";
     return `<article class="recording-card" data-recording-card="${escapeHTML(recording.id)}">
       <div class="recording-art art-${tone}">
         ${recording.thumbnailUrl
@@ -352,7 +362,7 @@
         <div class="recording-meta">
           <span title="Teacher"><i class="fa-solid fa-user-tie" aria-hidden="true"></i><span>${escapeHTML(recording.teacher)}</span></span>
           <span title="Grade and stream"><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i><span>Grade ${recording.grade}${streamText}</span></span>
-          <span title="Class date"><i class="fa-regular fa-calendar" aria-hidden="true"></i><span>${escapeHTML(date)}</span></span>
+          <span title="${dateLabel}"><i class="fa-regular fa-calendar" aria-hidden="true"></i><span>${escapeHTML(date)}</span></span>
           <span title="Recording start"><i class="fa-regular fa-clock" aria-hidden="true"></i><span>${escapeHTML(recording.recordingStartedAt ? formatTime(recording.recordingStartedAt) : "Recording time not provided")}</span></span>
           <span title="Duration"><i class="fa-solid fa-stopwatch" aria-hidden="true"></i><span>${formatDuration(recording.durationSeconds)}</span></span>
           <span title="Recording platform"><i class="fa-solid fa-display" aria-hidden="true"></i><span>${escapeHTML(recording.provider)}</span></span>
@@ -456,8 +466,12 @@
       ["Subject", recording.subject],
       ["Chapter", recording.chapter],
       ["Topic", recording.topic],
-      ["Class date", recording.startedAt ? formatDate(recording.startedAt) : "Not provided"],
-      ["Scheduled class start", recording.startedAt ? formatTime(recording.startedAt) : "Not provided"],
+      [recording.isManual ? "Upload date" : "Class date", recording.isManual
+        ? recording.uploadedAt ? formatDate(recording.uploadedAt) : "Not provided"
+        : recording.startedAt ? formatDate(recording.startedAt) : "Not provided"],
+      ...(!recording.isManual
+        ? [["Scheduled class start", recording.startedAt ? formatTime(recording.startedAt) : "Not provided"]]
+        : []),
       ["Actual recording start", recording.recordingStartedAt ? `${formatDate(recording.recordingStartedAt)} · ${formatTime(recording.recordingStartedAt)}` : "Not provided"],
       ["Duration", formatDuration(recording.durationSeconds)],
       ["Platform", recording.provider],

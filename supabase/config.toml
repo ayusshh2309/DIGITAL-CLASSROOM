@@ -444,6 +444,10 @@ verify_jwt = true
 [functions.recorded-class-playback]
 verify_jwt = true
 import_map = "./functions/generate-quiz/deno.json"
+
+[functions.manage-recorded-class]
+verify_jwt = true
+
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
 entrypoint = "./functions/generate-quiz/index.ts"

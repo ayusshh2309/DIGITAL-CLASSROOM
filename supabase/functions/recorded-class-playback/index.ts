@@ -88,12 +88,18 @@ Deno.serve(async (request) => {
   }
   if (!recording) return jsonResponse({ error: "This recording is unavailable or you are not authorized to view it." }, 404);
 
-  const expectedPrefix = `manual/${recording.teacher_id}/${recording.live_class_id}/`;
   const storagePath = String(recording.storage_path || "");
-  const expectedName = `${recording.id}.`;
+  const expectedPrefix = recording.live_class_id
+    ? `manual/${recording.teacher_id}/${recording.live_class_id}/`
+    : `manual/${recording.teacher_id}/subject-based/`;
+  const expectedFileName = recording.live_class_id
+    ? /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\.(?:mp4|webm|mov)$/i
+    : new RegExp(
+      `^${String(recording.id).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\.(?:mp4|webm|mov)$`,
+      "i",
+    );
   if (!storagePath.startsWith(expectedPrefix) ||
-    !storagePath.slice(expectedPrefix.length).startsWith(expectedName) ||
-    !/\.(?:mp4|webm|mov)$/i.test(storagePath)) {
+    !expectedFileName.test(storagePath.slice(expectedPrefix.length))) {
     console.error("The authorized recording contains an invalid private Storage path.", { recordingId });
     return jsonResponse({ error: "The recording has an invalid storage reference." }, 500);
   }

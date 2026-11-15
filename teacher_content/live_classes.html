@@ -747,8 +747,16 @@
 
       .class-actions {
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
         gap: 8px;
+      }
+
+      .recording-sync-message {
+        max-width: 240px;
+        color: #9d6b0c;
+        font-size: 0.75rem;
+        line-height: 1.4;
       }
 
       .empty-state {
@@ -1203,23 +1211,8 @@
         </div>
         <div class="recording-upload-class" id="recordingUploadClass"></div>
         <div class="recording-upload-fields">
-          <label for="recordingTitleInput">Lecture title
-            <input id="recordingTitleInput" name="title" type="text" maxlength="180" required />
-          </label>
-          <label for="recordingChapterInput">Chapter
-            <input id="recordingChapterInput" name="chapter" type="text" maxlength="180" />
-          </label>
-          <label for="recordingTopicInput">Topic
-            <input id="recordingTopicInput" name="topic" type="text" maxlength="180" />
-          </label>
           <label class="recording-upload-wide" for="recordingDescriptionInput">Description
             <textarea id="recordingDescriptionInput" name="description" rows="3" maxlength="2000"></textarea>
-          </label>
-          <label for="recordingProviderInput">Scheduled platform
-            <input id="recordingProviderInput" name="provider" type="text" readonly />
-          </label>
-          <label for="recordingStartedInput">Actual recording start (optional)
-            <input id="recordingStartedInput" name="recording_started_at" type="datetime-local" />
           </label>
           <label class="recording-upload-wide recording-file-picker" for="recordingFileInput">
             Video file
@@ -1238,6 +1231,14 @@
         </div>
       </form>
     </dialog>
+    <dialog class="delete-confirm-dialog recording-preview-dialog" id="recordingPreviewDialog" aria-labelledby="recordingPreviewTitle">
+      <h2 id="recordingPreviewTitle">Class recording</h2>
+      <p id="recordingPreviewStatus" role="status" aria-live="polite"></p>
+      <video id="recordingPreviewPlayer" controls playsinline preload="metadata" hidden></video>
+      <div class="delete-confirm-actions">
+        <button class="btn-join btn-recording" id="closeRecordingPreview" type="button">Close</button>
+      </div>
+    </dialog>
 
     <script src="../js/supabase.js"></script>
     <script src="../js/subject-service.js"></script>
@@ -1250,6 +1251,9 @@
       let currentFilterTab = "Upcoming";
       let stopLiveClassRealtime = null;
       let statusExpiryTimer = null;
+      let currentTeacher = null;
+      let recordingsByLiveClassId = new Map();
+      let recordingLookupError = null;
 
       const streamLabels = {
         science_pcm: "Science – PCM",
@@ -1367,6 +1371,14 @@
         return relation?.name || item.subject_name || "";
       }
 
+      function hasValidRecordingPath(recording, liveClass) {
+        const prefix = `manual/${recording.teacher_id}/${liveClass.id}/`;
+        const path = String(recording.storage_path || "");
+        return path.startsWith(prefix) &&
+          /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\.(?:mp4|webm|mov)$/i
+            .test(path.slice(prefix.length));
+      }
+
       function renderClassCard(item) {
         const statusValue = statusForDisplay(item);
         const isDone = statusValue === "Completed";
@@ -1468,13 +1480,45 @@
           actionButtons.appendChild(detailsButton);
         }
 
-        if (!isDraft && (isDone || (isPrevious(item) && !isCancelled))) {
+        const recording = recordingsByLiveClassId.get(String(item.id));
+        if (!isDraft && isDone && recording?.recording_status === "available" &&
+          recording.recording_verified_at && hasValidRecordingPath(recording, item)) {
+          const viewButton = document.createElement("button");
+          viewButton.type = "button";
+          viewButton.className = "btn-join";
+          viewButton.innerHTML = '<i class="fa-solid fa-play" aria-hidden="true"></i> View Recording';
+          viewButton.addEventListener("click", () => void previewRecording(recording));
+          actionButtons.appendChild(viewButton);
+
+          const replaceButton = document.createElement("button");
+          replaceButton.type = "button";
+          replaceButton.className = "btn-join btn-recording";
+          replaceButton.innerHTML = '<i class="fa-solid fa-arrow-rotate-right" aria-hidden="true"></i> Replace Recording';
+          replaceButton.addEventListener("click", () => window.TeacherRecordingUpload.open(item, recording));
+          actionButtons.appendChild(replaceButton);
+        } else if (!isDraft && isDone && !recording && !recordingLookupError) {
           const uploadButton = document.createElement("button");
           uploadButton.type = "button";
           uploadButton.className = "btn-join btn-recording";
           uploadButton.innerHTML = '<i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i> Upload Recording';
           uploadButton.addEventListener("click", () => window.TeacherRecordingUpload.open(item));
           actionButtons.appendChild(uploadButton);
+        } else if (!isDraft && isDone && recordingLookupError) {
+          const warning = document.createElement("span");
+          warning.className = "recording-sync-message";
+          warning.textContent = "Existing recording status could not be checked. Refresh before uploading.";
+          actionButtons.appendChild(warning);
+        } else if (!isDraft && isDone && recording) {
+          const warning = document.createElement("span");
+          warning.className = "recording-sync-message";
+          warning.textContent = "An existing recording needs administrator review.";
+          actionButtons.appendChild(warning);
+        }
+        if (!isDraft && isDone && String(item.publication_status || "").trim().toLowerCase() !== "published") {
+          const publicationNote = document.createElement("span");
+          publicationNote.className = "recording-sync-message";
+          publicationNote.textContent = "Students can view this recording only after the class is published.";
+          actionButtons.appendChild(publicationNote);
         }
 
         if (!isDraft && isScheduled) {
@@ -1510,10 +1554,83 @@
         return card;
       }
 
+      async function loadRecordingIndex() {
+        recordingsByLiveClassId = new Map();
+        recordingLookupError = null;
+        const client = window.SmartLearningSupabase?.getClient?.();
+        if (!client || !currentTeacher?.profile?.id) {
+          recordingLookupError = new Error("The teacher recording library could not be initialized.");
+          console.error("Could not initialize the teacher recording lookup.", recordingLookupError);
+          return;
+        }
+        const { data, error } = await client
+          .from("recorded_classes")
+          .select("id, live_class_id, teacher_id, title, description, recording_status, recording_verified_at, storage_path, ready_at")
+          .eq("teacher_id", currentTeacher.profile.id)
+          .not("live_class_id", "is", null)
+          .order("ready_at", { ascending: false });
+        if (error) {
+          recordingLookupError = error;
+          console.error("Could not load existing recordings for Live Classes.", error);
+          return;
+        }
+        (data || []).forEach((recording) => {
+          if (String(recording.teacher_id) === String(currentTeacher.profile.id) &&
+            recording.live_class_id && !recordingsByLiveClassId.has(String(recording.live_class_id))) {
+            recordingsByLiveClassId.set(String(recording.live_class_id), recording);
+          }
+        });
+      }
+
+      async function previewRecording(recording) {
+        const dialog = document.getElementById("recordingPreviewDialog");
+        const status = document.getElementById("recordingPreviewStatus");
+        const player = document.getElementById("recordingPreviewPlayer");
+        status.textContent = "Requesting an authorized playback link...";
+        player.hidden = true;
+        player.removeAttribute("src");
+        if (!dialog.open) dialog.showModal();
+        try {
+          const client = window.SmartLearningSupabase?.getClient?.();
+          if (!client) throw new Error("Supabase is not configured.");
+          const { data, error } = await client.functions.invoke("recorded-class-playback", {
+            body: { recording_id: recording.id },
+          });
+          if (error) throw error;
+          if (!data || typeof data.playback_url !== "string") {
+            throw new Error(data?.error || "The playback service returned no secure video link.");
+          }
+          const playback = new URL(data.playback_url);
+          const project = new URL(window.SmartLearningSupabase.SUPABASE_URL);
+          if (playback.protocol !== "https:" || playback.origin !== project.origin ||
+            !playback.pathname.includes("/storage/v1/object/sign/recorded-class-videos/")) {
+            throw new Error("The playback service returned an invalid private video link.");
+          }
+          player.src = playback.href;
+          player.hidden = false;
+          player.load();
+          status.textContent = "";
+        } catch (error) {
+          console.error("Could not prepare the teacher's live-class recording.", error);
+          status.textContent = error?.message || "The recording could not be played.";
+        }
+      }
+
+      function closeRecordingPreview() {
+        const dialog = document.getElementById("recordingPreviewDialog");
+        const player = document.getElementById("recordingPreviewPlayer");
+        player.pause();
+        player.removeAttribute("src");
+        player.load();
+        player.hidden = true;
+        if (dialog.open) dialog.close();
+      }
+
       async function loadClasses() {
         const container = document.getElementById("classesList");
         try {
           currentClasses = await LiveClassService.load();
+          await loadRecordingIndex();
           renderClasses();
           updateMetrics();
           scheduleStatusExpiryRefresh();
@@ -1830,6 +1947,14 @@
           return;
         }
         if (!teacher) return;
+        currentTeacher = teacher;
+        document.getElementById("closeRecordingPreview")
+          .addEventListener("click", closeRecordingPreview);
+        document.getElementById("recordingPreviewDialog")
+          .addEventListener("cancel", (event) => {
+            event.preventDefault();
+            closeRecordingPreview();
+          });
 
         await loadClasses();
         stopLiveClassRealtime = LiveClassService.subscribe(

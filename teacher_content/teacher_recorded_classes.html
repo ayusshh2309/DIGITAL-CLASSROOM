@@ -17,7 +17,6 @@
     />
     <link rel="stylesheet" href="../css/layout.css" />
     <link rel="stylesheet" href="../css/teacher-recorded-classes.css" />
-    <link rel="stylesheet" href="../css/teacher-recording-upload.css" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body>
@@ -30,41 +29,19 @@
             Teacher workspace
           </span>
           <h1>Recorded Classes</h1>
-          <p>Upload verified recordings for completed classes and preview your class library.</p>
+          <p>View and manage recordings uploaded from your completed classes in Live Classes.</p>
         </div>
-        <button class="recorded-refresh" id="refreshRecordings" type="button">
-          <i class="fa-solid fa-rotate" aria-hidden="true"></i>
-          Refresh
-        </button>
-      </header>
-
-      <section class="recorded-upload-panel" aria-labelledby="uploadSectionTitle">
-        <div class="recorded-section-heading">
-          <div>
-            <h2 id="uploadSectionTitle">Upload a class recording</h2>
-            <p>Choose a completed session under one of your registered classes. Uploads are verified before becoming available.</p>
-          </div>
-          <span class="recorded-section-icon" aria-hidden="true">
-            <i class="fa-solid fa-cloud-arrow-up"></i>
-          </span>
-        </div>
-        <div class="recorded-class-picker">
-          <label for="completedClassSelect">Your registered classes</label>
-          <select id="completedClassSelect" disabled>
-            <option value="">Loading your registered classes…</option>
-          </select>
-        </div>
-        <div class="selected-class-details" id="selectedClassDetails" aria-live="polite">
-          <p>Loading classes…</p>
-        </div>
-        <div class="recorded-upload-actions">
-          <p id="eligibleClassStatus" role="status" aria-live="polite"></p>
-          <button class="recorded-primary-button" id="openRecordingUpload" type="button" disabled>
-            <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
-            Upload Recording
+        <div class="recorded-page-actions">
+          <a class="recorded-primary-button" href="live_classes.html">
+            <i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i>
+            Open Live Classes
+          </a>
+          <button class="recorded-refresh" id="refreshRecordings" type="button">
+            <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+            Refresh
           </button>
         </div>
-      </section>
+      </header>
 
       <section class="recorded-library-section" aria-labelledby="libraryTitle">
         <div class="recorded-section-heading library-heading">
@@ -92,56 +69,6 @@
       </footer>
     </main>
 
-    <dialog class="recording-upload-dialog" id="recordingUploadDialog" aria-labelledby="recordingUploadTitle">
-      <form id="recordingUploadForm" novalidate>
-        <div class="recording-upload-heading">
-          <div>
-            <p class="recording-upload-eyebrow">Class library</p>
-            <h2 id="recordingUploadTitle">Upload a recording</h2>
-            <p>Share a video recording with students authorized for this class.</p>
-          </div>
-          <button class="recording-upload-close" id="closeRecordingUpload" type="button" aria-label="Close upload form">
-            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-          </button>
-        </div>
-        <div class="recording-upload-class" id="recordingUploadClass"></div>
-        <div class="recording-upload-fields">
-          <label for="recordingTitleInput">Lecture title
-            <input id="recordingTitleInput" name="title" type="text" maxlength="180" required />
-          </label>
-          <label for="recordingChapterInput">Chapter
-            <input id="recordingChapterInput" name="chapter" type="text" maxlength="180" />
-          </label>
-          <label for="recordingTopicInput">Topic
-            <input id="recordingTopicInput" name="topic" type="text" maxlength="180" />
-          </label>
-          <label class="recording-upload-wide" for="recordingDescriptionInput">Description
-            <textarea id="recordingDescriptionInput" name="description" rows="3" maxlength="2000"></textarea>
-          </label>
-          <label for="recordingProviderInput">Scheduled platform
-            <input id="recordingProviderInput" name="provider" type="text" readonly />
-          </label>
-          <label for="recordingStartedInput">Actual recording start (optional)
-            <input id="recordingStartedInput" name="recording_started_at" type="datetime-local" />
-          </label>
-          <label class="recording-upload-wide recording-file-picker" for="recordingFileInput">
-            Video file
-            <input id="recordingFileInput" name="video" type="file" accept=".mp4,.webm,.mov,video/mp4,video/webm,video/quicktime" required />
-            <small>MP4, WebM, or MOV / QuickTime. Maximum size: 50 MiB.</small>
-          </label>
-        </div>
-        <div class="recording-upload-status" id="recordingUploadStatus" role="status" aria-live="polite"></div>
-        <div class="recording-upload-progress" id="recordingUploadProgress" hidden>
-          <progress id="recordingUploadProgressBar" max="100" value="0"></progress>
-          <span id="recordingUploadProgressText">0%</span>
-        </div>
-        <div class="recording-upload-actions">
-          <button class="btn-join btn-recording" id="cancelRecordingUpload" type="button">Cancel</button>
-          <button class="btn-join" id="submitRecordingUpload" type="submit">Upload recording</button>
-        </div>
-      </form>
-    </dialog>
-
     <dialog class="recording-preview-dialog" id="recordingPreviewDialog" aria-labelledby="previewTitle">
       <div class="preview-dialog-content">
         <div class="preview-dialog-heading">
@@ -157,13 +84,21 @@
         <video id="recordingPreviewPlayer" controls playsinline preload="metadata" hidden></video>
       </div>
     </dialog>
+    <dialog class="recording-manage-dialog" id="recordingDescriptionDialog" aria-labelledby="recordingDescriptionTitle">
+      <form id="recordingDescriptionForm">
+        <h2 id="recordingDescriptionTitle">Edit recording description</h2>
+        <label for="recordingDescriptionEditor">Description</label>
+        <textarea id="recordingDescriptionEditor" rows="5" maxlength="2000"></textarea>
+        <p id="recordingManageStatus" role="status" aria-live="polite"></p>
+        <div class="recording-manage-actions">
+          <button class="recorded-refresh" id="cancelRecordingDescription" type="button">Cancel</button>
+          <button class="recorded-primary-button" id="saveRecordingDescription" type="submit">Save description</button>
+        </div>
+      </form>
+    </dialog>
 
     <script src="../js/supabase.js"></script>
-    <script src="../js/subject-service.js"></script>
     <script src="../js/teacher-data.js"></script>
-    <script src="../js/attendance-service.js"></script>
-    <script src="../js/live-class-service.js"></script>
-    <script src="../js/teacher-recording-upload.js"></script>
     <script src="../js/teacher-recorded-classes.js"></script>
     <script src="../js/layout.js"></script>
   </body>

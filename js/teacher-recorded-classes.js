@@ -1,27 +1,17 @@
 (() => {
   "use strict";
 
-  const cancelledStatuses = new Set(["cancelled", "canceled"]);
+  const UUID_PATTERN = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
   const state = {
     client: null,
     teacher: null,
-    classes: [],
-    registeredClassGroups: [],
-    classesByScope: new Map(),
-    liveClassCount: 0,
-    classLoadState: "loading",
-    classLoadError: "",
-    scheduleTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Kolkata",
     recordings: [],
     liveClassesById: new Map(),
-    loadingRecordings: false,
-    recordingsError: "",
+    loading: false,
+    error: "",
+    manageRecording: null,
   };
   const elements = {
-    classSelect: document.getElementById("completedClassSelect"),
-    classDetails: document.getElementById("selectedClassDetails"),
-    classStatus: document.getElementById("eligibleClassStatus"),
-    uploadButton: document.getElementById("openRecordingUpload"),
     refresh: document.getElementById("refreshRecordings"),
     search: document.getElementById("recordingSearch"),
     recordingState: document.getElementById("recordingsState"),
@@ -30,167 +20,14 @@
     previewTitle: document.getElementById("previewTitle"),
     previewStatus: document.getElementById("previewStatus"),
     previewPlayer: document.getElementById("recordingPreviewPlayer"),
+    descriptionDialog: document.getElementById("recordingDescriptionDialog"),
+    descriptionForm: document.getElementById("recordingDescriptionForm"),
+    descriptionEditor: document.getElementById("recordingDescriptionEditor"),
+    manageStatus: document.getElementById("recordingManageStatus"),
+    saveDescription: document.getElementById("saveRecordingDescription"),
   };
 
-  function subjectName(item) {
-    const relation = Array.isArray(item.subjects) ? item.subjects[0] : item.subjects;
-    return String(relation?.name || item.subject_name || item.subject || "Not provided");
-  }
-
-  function streamName(value) {
-    const labels = {
-      science_pcm: "Science (PCM)",
-      science_pcb: "Science (PCB)",
-      commerce: "Commerce",
-      arts_humanities: "Arts / Humanities",
-    };
-    const key = String(value || "").trim().toLowerCase();
-    return labels[key] || key.replaceAll("_", " ") || "Not provided";
-  }
-
-  function normalizeStream(value) {
-    return String(value || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
-  }
-
-  function scopeKey(grade, stream, subjectId) {
-    const normalizedGrade = Number(grade);
-    const normalizedStream = normalizedGrade >= 11 ? normalizeStream(stream) : "";
-    return `${normalizedGrade}|${normalizedStream}|${String(subjectId ?? "")}`;
-  }
-
-  function classGrade(item) {
-    const grade = Number(item.grade ?? String(item.class_grade || "").replace(/\D/g, ""));
-    return Number.isInteger(grade) ? grade : null;
-  }
-
-  function parseScheduledDateTime(dateValue, timeValue, timezone) {
-    const dateMatch = String(dateValue || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    const timeMatch = String(timeValue || "").match(/^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d)(?:\.(\d{1,6}))?)?$/);
-    if (!dateMatch || !timeMatch) return null;
-
-    const [, yearText, monthText, dayText] = dateMatch;
-    const [, hourText, minuteText, secondText = "0", fractionText = ""] = timeMatch;
-    const year = Number(yearText);
-    const month = Number(monthText);
-    const day = Number(dayText);
-    const milliseconds = Number(`0.${fractionText || "0"}`) * 1000;
-    const target = Date.UTC(
-      year,
-      month - 1,
-      day,
-      Number(hourText),
-      Number(minuteText),
-      Number(secondText),
-      milliseconds,
-    );
-    if (!Number.isFinite(target) || new Date(target).toISOString().slice(0, 10) !== `${yearText}-${monthText}-${dayText}`) {
-      return null;
-    }
-
-    let formatter;
-    try {
-      formatter = new Intl.DateTimeFormat("en-US", {
-        timeZone: timezone,
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hourCycle: "h23",
-      });
-    } catch {
-      return null;
-    }
-
-    let timestamp = target;
-    for (let attempt = 0; attempt < 4; attempt += 1) {
-      const parts = Object.fromEntries(
-        formatter.formatToParts(timestamp)
-          .filter((part) => part.type !== "literal")
-          .map((part) => [part.type, Number(part.value)]),
-      );
-      const represented = Date.UTC(
-        parts.year,
-        parts.month - 1,
-        parts.day,
-        parts.hour,
-        parts.minute,
-        parts.second,
-        milliseconds,
-      );
-      const difference = represented - target;
-      if (difference === 0) return new Date(timestamp);
-      timestamp -= difference;
-    }
-    return null;
-  }
-
-  function classStart(item) {
-    if (item.start_at) {
-      const start = new Date(item.start_at);
-      return Number.isFinite(start.getTime())
-        ? start
-        : null;
-    }
-    return parseScheduledDateTime(item.class_date, item.start_time, state.scheduleTimezone);
-  }
-
-  function classEnd(item, start) {
-    if (item.end_at) {
-      const end = new Date(item.end_at);
-      if (Number.isFinite(end.getTime())) return end;
-      return null;
-    }
-    if (start && item.duration_minutes !== null && item.duration_minutes !== undefined) {
-      const minutes = Number(item.duration_minutes);
-      if (Number.isFinite(minutes) && minutes > 0) {
-        return new Date(start.getTime() + minutes * 60_000);
-      }
-    }
-    return null;
-  }
-
-  function isEligibleClass(item) {
-    const status = String(item.status || "").trim().toLowerCase();
-    if (cancelledStatuses.has(status)) return false;
-    const start = classStart(item);
-    const end = classEnd(item, start);
-    const now = Date.now();
-    const platform = String(item.meeting_platform || "").toLowerCase();
-    return Boolean(
-      start &&
-      end &&
-      start.getTime() <= now &&
-      end.getTime() >= start.getTime() &&
-      end.getTime() <= now &&
-      (platform.includes("zoom") || platform.includes("google") || platform.includes("meet"))
-    );
-  }
-
-  async function loadScheduleTimezone() {
-    const { data, error } = await state.client
-      .from("teacher_settings")
-      .select("timezone")
-      .eq("teacher_id", state.teacher.id)
-      .maybeSingle();
-    if (error) {
-      if (["42P01", "42703", "PGRST204", "PGRST205"].includes(error.code)) {
-        console.warn("Teacher schedule timezone is unavailable; using the live-class service default.", error);
-        return "Asia/Kolkata";
-      }
-      throw error;
-    }
-    const timezone = String(data?.timezone || "Asia/Kolkata");
-    try {
-      new Intl.DateTimeFormat("en-US", { timeZone: timezone }).format(0);
-      return timezone;
-    } catch {
-      throw new Error("The teacher's saved timezone is invalid. Update it in Settings before uploading a recording.");
-    }
-  }
-
-  function formatDate(value, timezone = state.scheduleTimezone) {
+  function formatDate(value) {
     if (!value) return "Not provided";
     const date = new Date(value);
     if (!Number.isFinite(date.getTime())) return "Not provided";
@@ -198,18 +35,6 @@
       year: "numeric",
       month: "short",
       day: "numeric",
-      timeZone: timezone,
-    }).format(date);
-  }
-
-  function formatTime(value) {
-    if (!value) return "Not provided";
-    const date = new Date(value);
-    if (!Number.isFinite(date.getTime())) return "Not provided";
-    return new Intl.DateTimeFormat(undefined, {
-      hour: "numeric",
-      minute: "2-digit",
-      timeZone: state.scheduleTimezone,
     }).format(date);
   }
 
@@ -225,8 +50,45 @@
     return `${remaining}s`;
   }
 
-  function selectedClass() {
-    return state.classes.find((item) => String(item.id) === elements.classSelect.value) || null;
+  function streamName(value) {
+    const labels = {
+      science_pcm: "Science (PCM)",
+      science_pcb: "Science (PCB)",
+      commerce: "Commerce",
+      arts_humanities: "Arts / Humanities",
+    };
+    const key = String(value || "").trim().toLowerCase();
+    return labels[key] || key.replaceAll("_", " ") || "Not provided";
+  }
+
+  function platformName(value) {
+    const platform = String(value || "").trim().toLowerCase();
+    if (platform.includes("zoom")) return "Zoom";
+    if (platform.includes("google") || platform.includes("meet")) return "Google Meet";
+    return platform.includes("manual") ? "Legacy manual upload" : "Not provided";
+  }
+
+  function subjectName(liveClass, recording) {
+    const relation = Array.isArray(liveClass?.subjects) ? liveClass.subjects[0] : liveClass?.subjects;
+    return String(relation?.name || liveClass?.subject_name || liveClass?.subject || recording.subject_id || "Not provided");
+  }
+
+  function hasValidPrivateStoragePath(recording) {
+    const path = String(recording.storage_path || "");
+    const prefix = recording.live_class_id
+      ? `manual/${recording.teacher_id}/${recording.live_class_id}/`
+      : `manual/${recording.teacher_id}/subject-based/`;
+    const file = path.startsWith(prefix) ? path.slice(prefix.length) : "";
+    if (recording.live_class_id) {
+      return new RegExp(
+        "^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\\.(?:mp4|webm|mov)$",
+        "i",
+      ).test(file);
+    }
+    return new RegExp(
+      `^${String(recording.id).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\.(?:mp4|webm|mov)$`,
+      "i",
+    ).test(file);
   }
 
   function detailItem(label, value) {
@@ -239,114 +101,13 @@
     return wrapper;
   }
 
-  function renderSelectedClass() {
-    const item = selectedClass();
-    elements.classDetails.replaceChildren();
-    elements.uploadButton.disabled = !item;
-    if (!item) {
-      const message = document.createElement("p");
-      message.textContent = state.classes.length
-        ? "Select a completed session under one of your registered classes."
-        : state.classLoadState === "loading"
-          ? "Loading classes…"
-          : state.classLoadError
-            ? "Unable to load classes. Please refresh or try again."
-            : state.registeredClassGroups.length === 0
-              ? "No registered classes found."
-              : "Your registered classes are listed above. A completed live session is required before you can upload a recording.";
-      elements.classDetails.appendChild(message);
-      return;
-    }
-    const date = classStart(item);
-    elements.classDetails.append(
-      detailItem("Class title", item.title || "Live class"),
-      detailItem("Grade", item.grade || item.class_grade || "Not provided"),
-      detailItem("Stream", streamName(item.stream)),
-      detailItem("Subject", subjectName(item)),
-      detailItem("Chapter", item.chapter),
-      detailItem("Topic", item.topic),
-      detailItem("Class date", date ? formatDate(date) : item.class_date || "Not provided"),
-      detailItem("Start time", date ? formatTime(date) : item.start_time || "Not provided"),
-      detailItem("Duration", item.duration_minutes ? `${item.duration_minutes} minutes` : "Not provided"),
-      detailItem("Meeting platform", platformName(item.meeting_platform) || "Not provided"),
-      detailItem(
-        "Student availability",
-        String(item.publication_status || "").toLowerCase() === "published"
-          ? "Available to authorized students after upload verification"
-          : "This session must be published before students can view its recording",
-      ),
-    );
-  }
-
-  function platformName(value) {
-    const platform = String(value || "").trim().toLowerCase();
-    if (platform.includes("zoom")) return "Zoom";
-    if (platform.includes("google") || platform.includes("meet")) return "Google Meet";
-    return "Not provided";
-  }
-
-  function renderClasses() {
-    elements.classSelect.replaceChildren();
-    const prompt = document.createElement("option");
-    prompt.value = "";
-    prompt.textContent = state.classes.length
-      ? "Choose a registered class session"
-      : state.classLoadState === "loading"
-        ? "Loading your registered classes…"
-        : state.classLoadError
-          ? "Unable to load classes. Please refresh or try again."
-          : state.registeredClassGroups.length === 0
-            ? "No registered classes found."
-            : "Registered classes (no completed sessions available)";
-    elements.classSelect.appendChild(prompt);
-    state.registeredClassGroups.forEach((group) => {
-      const groupLabel = `Class ${group.grade}${group.stream ? ` · ${streamName(group.stream)}` : ""}`;
-      if (!group.subjects.length) {
-        const optgroup = document.createElement("optgroup");
-        optgroup.label = groupLabel;
-        const option = document.createElement("option");
-        option.disabled = true;
-        option.textContent = "No registered subjects";
-        optgroup.appendChild(option);
-        elements.classSelect.appendChild(optgroup);
-        return;
-      }
-
-      group.subjects.forEach((subject) => {
-        const optgroup = document.createElement("optgroup");
-        optgroup.label = `${groupLabel} · ${subject.name}`;
-        const matchingClasses = state.classesByScope.get(
-          scopeKey(group.grade, group.stream, subject.id),
-        ) || [];
-        if (!matchingClasses.length) {
-          const option = document.createElement("option");
-          option.disabled = true;
-          option.textContent = "No completed live session available";
-          optgroup.appendChild(option);
-        } else {
-          matchingClasses.forEach((item) => {
-            const option = document.createElement("option");
-            option.value = String(item.id);
-            const date = classStart(item);
-            option.textContent = `${item.title || subjectName(item)} · ${platformName(item.meeting_platform)} · ${date ? formatDate(date) : "Date not provided"}`;
-            optgroup.appendChild(option);
-          });
-        }
-        elements.classSelect.appendChild(optgroup);
-      });
-    });
-    elements.classSelect.disabled =
-      state.classLoadState === "loading" || state.classLoadState === "error";
-    elements.classStatus.textContent = state.classLoadState === "loading"
-      ? "Loading your registered classes…"
-      : state.classLoadError
-        ? "Unable to load classes. Please refresh or try again."
-        : state.registeredClassGroups.length === 0
-          ? "No registered classes found."
-          : state.classes.length === 0
-            ? `${state.registeredClassGroups.length} registered class${state.registeredClassGroups.length === 1 ? "" : "es"} found. A completed live session is required before recording.`
-            : `${state.registeredClassGroups.length} registered classes · ${state.classes.length} completed session${state.classes.length === 1 ? "" : "s"} eligible for upload`;
-    renderSelectedClass();
+  function createAction(label, className, handler) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = className;
+    button.textContent = label;
+    button.addEventListener("click", handler);
+    return button;
   }
 
   function makeRecordingCard(recording) {
@@ -366,7 +127,7 @@
     title.textContent = recording.title || "Recording";
     const className = document.createElement("p");
     className.className = "teacher-recording-class-name";
-    className.textContent = liveClass?.title || "Live class";
+    className.textContent = liveClass?.title || (recording.live_class_id ? "Live class" : "Legacy manual lecture");
     titleWrap.append(title, className);
     const status = document.createElement("span");
     status.className = "recording-status-badge";
@@ -376,34 +137,56 @@
     const meta = document.createElement("div");
     meta.className = "teacher-recording-meta";
     meta.append(
-      detailItem("Grade and stream", `Grade ${liveClass?.grade || liveClass?.class_grade || recording.grade || "Not provided"}${(liveClass?.stream || recording.stream) ? ` · ${streamName(liveClass?.stream || recording.stream)}` : ""}`),
-      detailItem("Subject", liveClass ? subjectName(liveClass) : recording.subject_id || "Not provided"),
+      detailItem(
+        "Grade and stream",
+        `Grade ${liveClass?.grade || liveClass?.class_grade || recording.grade || "Not provided"}${(liveClass?.stream || recording.stream) ? ` · ${streamName(liveClass?.stream || recording.stream)}` : ""}`,
+      ),
+      detailItem("Subject", subjectName(liveClass, recording)),
       detailItem("Chapter", recording.chapter),
       detailItem("Topic", recording.topic),
       detailItem("Platform", platformName(liveClass?.meeting_platform || recording.provider)),
       detailItem("Duration", formatDuration(recording.duration_seconds)),
-      detailItem("Class date", formatDate(liveClass ? classStart(liveClass) : recording.started_at)),
-      detailItem("Verified", formatDate(recording.recording_verified_at)),
-      detailItem("Uploaded", formatDate(recording.ready_at || recording.recording_verified_at)),
+      detailItem("Class date", formatDate(recording.started_at)),
+      detailItem("Verified / uploaded", formatDate(recording.recording_verified_at || recording.ready_at)),
     );
-    const preview = document.createElement("button");
-    preview.type = "button";
-    preview.className = "recording-preview-button";
-    preview.dataset.recordingId = String(recording.id);
+
+    const actions = document.createElement("div");
+    actions.className = "teacher-recording-card-actions";
+    const preview = createAction(
+      "Preview recording",
+      "recording-preview-button",
+      () => void openPreview(String(recording.id)),
+    );
     preview.innerHTML = '<i class="fa-solid fa-play" aria-hidden="true"></i> Preview recording';
-    card.append(header, meta, preview);
+    const edit = createAction(
+      "Edit description",
+      "recording-manage-button",
+      () => openDescriptionEditor(recording),
+    );
+    const remove = createAction(
+      "Delete",
+      "recording-manage-button recording-delete-button",
+      () => void deleteRecording(recording),
+    );
+    actions.append(preview, edit, remove);
+    card.append(header, meta);
+    if (recording.description) {
+      const description = document.createElement("p");
+      description.className = "teacher-recording-description";
+      description.textContent = recording.description;
+      card.appendChild(description);
+    }
+    card.appendChild(actions);
     return card;
   }
 
   function renderRecordings() {
-    if (state.recordingsError) {
+    if (state.error) {
       elements.grid.replaceChildren();
       elements.grid.setAttribute("aria-busy", "false");
       elements.recordingState.hidden = false;
       elements.recordingState.className = "recorded-library-state is-error";
-      elements.recordingState.replaceChildren(
-        document.createTextNode(state.recordingsError),
-      );
+      elements.recordingState.textContent = state.error;
       const retry = document.createElement("button");
       retry.type = "button";
       retry.textContent = "Retry";
@@ -411,31 +194,31 @@
       elements.recordingState.appendChild(retry);
       return;
     }
+
     const query = elements.search.value.trim().toLocaleLowerCase();
     const filtered = state.recordings.filter((recording) => {
       const liveClass = state.liveClassesById.get(String(recording.live_class_id));
       const content = [
         recording.title,
+        recording.description,
         recording.chapter,
         recording.topic,
         liveClass?.title,
-        liveClass ? subjectName(liveClass) : "",
+        subjectName(liveClass, recording),
       ].join(" ").toLocaleLowerCase();
       return content.includes(query);
     });
     elements.grid.replaceChildren(...filtered.map(makeRecordingCard));
-    elements.grid.setAttribute("aria-busy", state.loadingRecordings ? "true" : "false");
-    if (state.loadingRecordings) {
+    elements.grid.setAttribute("aria-busy", state.loading ? "true" : "false");
+    elements.recordingState.className = "recorded-library-state";
+    if (state.loading) {
       elements.recordingState.hidden = false;
-      elements.recordingState.className = "recorded-library-state";
       elements.recordingState.textContent = "Loading your recordings…";
     } else if (state.recordings.length === 0) {
       elements.recordingState.hidden = false;
-      elements.recordingState.className = "recorded-library-state";
-      elements.recordingState.textContent = "No verified recordings have been uploaded yet.";
+      elements.recordingState.textContent = "No verified recordings have been uploaded yet. Upload one from Live Classes after the class ends.";
     } else if (filtered.length === 0) {
       elements.recordingState.hidden = false;
-      elements.recordingState.className = "recorded-library-state";
       elements.recordingState.textContent = "No recordings match your search.";
     } else {
       elements.recordingState.hidden = true;
@@ -444,34 +227,117 @@
   }
 
   async function loadRecordings() {
-    state.recordingsError = "";
-    state.loadingRecordings = true;
-    renderRecordings();
+    state.error = "";
+    state.loading = true;
     elements.refresh.disabled = true;
+    renderRecordings();
     try {
       const { data, error } = await state.client
         .from("recorded_classes")
-        .select("id, live_class_id, teacher_id, title, grade, stream, subject_id, chapter, topic, provider, recording_status, recording_verified_at, storage_path, started_at, duration_seconds, ready_at")
+        .select("id, live_class_id, teacher_id, title, description, grade, stream, subject_id, chapter, topic, provider, recording_status, recording_verified_at, storage_path, started_at, duration_seconds, ready_at")
         .eq("teacher_id", state.teacher.id)
         .eq("recording_status", "available")
         .not("recording_verified_at", "is", null)
         .not("storage_path", "is", null)
         .order("ready_at", { ascending: false });
       if (error) throw error;
-      state.recordingsError = "";
+
       state.recordings = (data || []).filter((row) =>
         String(row.teacher_id) === String(state.teacher.id) &&
         row.recording_status === "available" &&
         Boolean(row.recording_verified_at) &&
-        Boolean(row.storage_path)
+        hasValidPrivateStoragePath(row)
       );
+      state.liveClassesById = new Map();
+      const liveClassIds = [...new Set(
+        state.recordings.map((recording) => recording.live_class_id).filter(Boolean).map(String),
+      )];
+      if (liveClassIds.length) {
+        const { data: liveClasses, error: liveClassError } = await state.client
+          .from("live_classes")
+          .select("id, title, grade, class_grade, stream, subject_id, subject, chapter, topic, meeting_platform, subjects(id, name)")
+          .eq("teacher_id", state.teacher.id)
+          .in("id", liveClassIds);
+        if (liveClassError) {
+          console.warn("Original live-class details are unavailable for some recordings.", liveClassError);
+        } else {
+          state.liveClassesById = new Map(
+            (liveClasses || []).map((liveClass) => [String(liveClass.id), liveClass]),
+          );
+        }
+      }
     } catch (error) {
       console.error("Could not load the current teacher's recordings.", error);
-      state.recordingsError = error?.message || "Your recordings could not be loaded.";
+      state.error = error?.message || "Your recordings could not be loaded.";
+      state.recordings = [];
+      state.liveClassesById = new Map();
     } finally {
-      state.loadingRecordings = false;
+      state.loading = false;
       elements.refresh.disabled = false;
       renderRecordings();
+    }
+  }
+
+  async function invokeManagement(body) {
+    const { data, error } = await state.client.functions.invoke("manage-recorded-class", { body });
+    if (error) {
+      let message = error.message || "The recording management service returned an error.";
+      try {
+        const response = await error.context?.json?.();
+        if (response?.error) message = response.error;
+      } catch {
+        // Keep the function error when its response body is unavailable.
+      }
+      throw new Error(message);
+    }
+    if (!data || data.success === false) {
+      throw new Error(data?.error || "The recording management service returned an invalid response.");
+    }
+    return data;
+  }
+
+  function openDescriptionEditor(recording) {
+    state.manageRecording = recording;
+    elements.descriptionEditor.value = recording.description || "";
+    elements.manageStatus.textContent = "";
+    elements.saveDescription.disabled = false;
+    elements.descriptionDialog.showModal();
+  }
+
+  async function saveDescription(event) {
+    event.preventDefault();
+    const recording = state.manageRecording;
+    if (!recording || elements.saveDescription.disabled) return;
+    elements.saveDescription.disabled = true;
+    elements.manageStatus.textContent = "Saving description…";
+    try {
+      await invokeManagement({
+        action: "update_description",
+        recording_id: recording.id,
+        description: elements.descriptionEditor.value,
+      });
+      elements.descriptionDialog.close();
+      await loadRecordings();
+    } catch (error) {
+      console.error("Could not update the recording description.", error);
+      elements.manageStatus.textContent = error?.message || "The description could not be saved.";
+    } finally {
+      elements.saveDescription.disabled = false;
+    }
+  }
+
+  async function deleteRecording(recording) {
+    const title = recording.title || "this recording";
+    if (!window.confirm(`Delete "${title}"? Students will no longer be able to play it.`)) return;
+    try {
+      await invokeManagement({
+        action: "delete",
+        recording_id: recording.id,
+      });
+      await loadRecordings();
+    } catch (error) {
+      console.error("Could not delete the teacher's recording.", error);
+      window.alert(error?.message || "The recording could not be deleted.");
     }
   }
 
@@ -492,11 +358,13 @@
       if (!data || data.success === false || typeof data.playback_url !== "string") {
         throw new Error(data?.error || "The playback service did not return a temporary video link.");
       }
-      const playbackUrl = new URL(data.playback_url);
-      if (playbackUrl.protocol !== "https:") {
-        throw new Error("The playback service returned an invalid secure video link.");
+      const playback = new URL(data.playback_url);
+      const project = new URL(window.SmartLearningSupabase.SUPABASE_URL);
+      if (playback.protocol !== "https:" || playback.origin !== project.origin ||
+        !playback.pathname.includes("/storage/v1/object/sign/recorded-class-videos/")) {
+        throw new Error("The playback service returned an invalid private video link.");
       }
-      elements.previewPlayer.src = playbackUrl.href;
+      elements.previewPlayer.src = playback.href;
       elements.previewPlayer.hidden = false;
       elements.previewPlayer.load();
       elements.previewStatus.textContent = "";
@@ -520,141 +388,33 @@
     try {
       const teacherContext = await window.TeacherData.requireTeacher();
       if (!teacherContext) {
-        state.classLoadState = "error";
-        state.classLoadError = "Unable to load classes. Please refresh or try again.";
-        renderClasses();
+        state.error = "Unable to verify your teacher account. Please sign in again.";
+        renderRecordings();
         return;
       }
       state.client = teacherContext.client;
       state.teacher = teacherContext.profile;
-      console.info("Teacher recorded-classes page authenticated.", {
+      console.info("Teacher recording library authenticated.", {
         userId: teacherContext.user?.id || null,
         teacherId: state.teacher?.id || null,
       });
-      await loadClasses();
       await loadRecordings();
     } catch (error) {
-      console.error("Could not initialize the teacher recorded-classes page.", error);
-      state.classLoadState = "error";
-      state.classLoadError = error?.message || "Unable to load classes. Please refresh or try again.";
-      renderClasses();
-      elements.recordingState.className = "recorded-library-state is-error";
-      elements.recordingState.textContent = error?.message || "The page could not be initialized.";
+      console.error("Could not initialize the teacher recording library.", error);
+      state.error = error?.message || "The page could not be initialized.";
+      renderRecordings();
     }
   }
 
-  async function loadClasses() {
-    state.classLoadState = "loading";
-    state.classLoadError = "";
-    renderClasses();
-    try {
-      const { data: authData, error: authError } = await state.client.auth.getUser();
-      if (authError) throw authError;
-      const userId = authData?.user?.id;
-      if (!userId) throw new Error("Your session has expired. Please sign in again.");
-      console.info("Loading live classes for authenticated user.", { userId });
-
-      const { data: teacher, error: teacherError } = await state.client
-        .from("teachers")
-        .select("id")
-        .eq("user_id", userId)
-        .maybeSingle();
-      if (teacherError) throw teacherError;
-      if (!teacher?.id || String(teacher.id) !== String(state.teacher.id)) {
-        throw new Error("The authenticated teacher profile could not be verified.");
-      }
-      console.info("Resolved recorded-classes teacher identity.", { teacherId: teacher.id });
-
-      const registeredGroups = await window.TeacherData.loadRegisteredTeachingScope(
-        state.client,
-        teacher.id,
-      );
-      state.registeredClassGroups = (registeredGroups || [])
-        .map((group) => {
-          const grade = Number(group.grade);
-          return {
-            grade,
-            stream: grade >= 11 ? normalizeStream(group.stream) : "",
-            subjects: (group.subjects || [])
-              .filter((subject) => subject.id !== null && subject.id !== undefined)
-              .map((subject) => ({
-                id: subject.id,
-                name: String(subject.name || subject.subject || "Subject"),
-              })),
-          };
-        })
-        .filter((group) => Number.isInteger(group.grade) && group.grade >= 5 && group.grade <= 12);
-      console.info("Resolved the teacher's registered class scopes.", {
-        registeredClassCount: state.registeredClassGroups.length,
-      });
-
-      const { data: liveClasses, error: classesError } = await state.client
-        .from("live_classes")
-        .select("id, teacher_id, title, class_grade, subject, grade, stream, subject_id, description, chapter, topic, class_date, start_time, end_time, start_at, end_at, duration_minutes, meeting_platform, status, publication_status")
-        .eq("teacher_id", teacher.id)
-        .order("class_date", { ascending: true })
-        .order("start_time", { ascending: true });
-      if (classesError) throw classesError;
-      state.liveClassCount = (liveClasses || []).length;
-      state.liveClassesById = new Map((liveClasses || []).map((item) => [String(item.id), item]));
-      if ((liveClasses || []).some((item) => !item.start_at && item.class_date && item.start_time)) {
-        state.scheduleTimezone = await loadScheduleTimezone();
-      }
-      const registeredScopes = new Set();
-      state.registeredClassGroups.forEach((group) => {
-        group.subjects.forEach((subject) => {
-          registeredScopes.add(scopeKey(group.grade, group.stream, subject.id));
-        });
-      });
-      state.classesByScope = new Map();
-      const eligibleClasses = (liveClasses || []).filter(isEligibleClass);
-      state.classes = eligibleClasses.filter((item) => {
-        const grade = classGrade(item);
-        const key = scopeKey(grade, item.stream, item.subject_id);
-        if (grade === null || !registeredScopes.has(key)) return false;
-        if (!state.classesByScope.has(key)) state.classesByScope.set(key, []);
-        state.classesByScope.get(key).push(item);
-        return true;
-      });
-      state.classLoadState = "loaded";
-      console.info("Teacher live classes loaded for recordings.", {
-        registeredClassCount: state.registeredClassGroups.length,
-        fetchedCount: state.liveClassCount,
-        eligibleCompletedCount: eligibleClasses.length,
-        registeredScopeSessionCount: state.classes.length,
-      });
-      renderClasses();
-    } catch (error) {
-      console.error("Could not load the teacher's live classes for recordings.", {
-        userId: state.teacher?.user_id || null,
-        teacherId: state.teacher?.id || null,
-        error,
-      });
-      state.classLoadState = "error";
-      state.classLoadError = error?.message || "Unable to load classes. Please refresh or try again.";
-      state.liveClassCount = 0;
-      state.classes = [];
-      state.classesByScope = new Map();
-      state.liveClassesById = new Map();
-      renderClasses();
-    }
-  }
-
-  elements.classSelect.addEventListener("change", renderSelectedClass);
-  elements.uploadButton.addEventListener("click", () => {
-    const item = selectedClass();
-    if (item && window.TeacherRecordingUpload?.open) {
-      window.TeacherRecordingUpload.open(item);
-    }
-  });
-  elements.refresh.addEventListener("click", async () => {
-    await loadClasses();
-    await loadRecordings();
-  });
+  elements.refresh.addEventListener("click", () => void loadRecordings());
   elements.search.addEventListener("input", renderRecordings);
-  elements.grid.addEventListener("click", (event) => {
-    const button = event.target.closest(".recording-preview-button");
-    if (button) void openPreview(button.dataset.recordingId);
+  elements.descriptionForm.addEventListener("submit", (event) => void saveDescription(event));
+  document.getElementById("cancelRecordingDescription").addEventListener("click", () => {
+    elements.descriptionDialog.close();
+  });
+  elements.descriptionDialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    elements.descriptionDialog.close();
   });
   document.getElementById("closeRecordingPreview").addEventListener("click", closePreview);
   elements.previewDialog.addEventListener("cancel", (event) => {
@@ -664,8 +424,6 @@
   elements.previewDialog.addEventListener("click", (event) => {
     if (event.target === elements.previewDialog) closePreview();
   });
-  window.addEventListener("smart-learning-live-classes-updated", () => {
-    void loadRecordings();
-  });
+  window.addEventListener("smart-learning-live-classes-updated", () => void loadRecordings());
   document.addEventListener("DOMContentLoaded", () => void initialize());
 })();
