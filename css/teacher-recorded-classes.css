@@ -269,6 +269,17 @@
   font-weight: 800;
 }
 
+.recording-status-badge[data-status="processing"] {
+  color: #825a05;
+  background: #fff4d6;
+}
+
+.recording-status-badge[data-status="failed"],
+.recording-status-badge[data-status="unavailable"] {
+  color: #9c3434;
+  background: #fdeaea;
+}
+
 .teacher-recording-meta {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

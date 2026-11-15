@@ -49,6 +49,32 @@ create unique index if not exists recorded_classes_one_recording_per_live_class
   on public.recorded_classes (live_class_id)
   where live_class_id is not null;
 
+drop policy if exists recorded_classes_authorized_student_select
+  on public.recorded_classes;
+
+create policy recorded_classes_authorized_student_select
+  on public.recorded_classes
+  for select
+  to authenticated
+  using (
+    recording_status = 'available'
+    and recording_verified_at is not null
+    and storage_path is not null
+    and live_class_id is not null
+    and exists (
+      select 1
+      from public.live_classes class
+      where class.id = recorded_classes.live_class_id
+        and class.teacher_id = recorded_classes.teacher_id
+        and public.live_class_student_can_view(
+          class.teacher_id,
+          class.grade::integer,
+          class.stream,
+          class.subject_id::text
+        )
+    )
+  );
+
 drop policy if exists recorded_classes_published_live_class_guard
   on public.recorded_classes;
 
@@ -70,9 +96,6 @@ create policy recorded_classes_published_live_class_guard
       from public.live_classes class
       where class.id = recorded_classes.live_class_id
         and class.teacher_id = recorded_classes.teacher_id
-        and class.grade = recorded_classes.grade
-        and class.stream is not distinct from recorded_classes.stream
-        and class.subject_id::text = recorded_classes.subject_id::text
     )
     and (
       exists (
@@ -82,37 +105,19 @@ create policy recorded_classes_published_live_class_guard
           and teacher.user_id = auth.uid()
       )
       or (
-        public.live_class_student_can_view(
-          recorded_classes.teacher_id,
-          recorded_classes.grade,
-          recorded_classes.stream,
-          recorded_classes.subject_id::text
-        )
-        and exists (
+        exists (
           select 1
           from public.live_classes class
           where class.id = recorded_classes.live_class_id
             and class.teacher_id = recorded_classes.teacher_id
-            and class.grade = recorded_classes.grade
-            and class.stream is not distinct from recorded_classes.stream
-            and class.subject_id::text = recorded_classes.subject_id::text
             and lower(btrim(coalesce(class.publication_status, ''))) = 'published'
             and lower(btrim(coalesce(class.status, ''))) not in ('cancelled', 'canceled')
-            and case
-              when lower(btrim(coalesce(class.meeting_platform, ''))) like '%zoom%'
-                then 'zoom'
-              when lower(btrim(coalesce(class.meeting_platform, ''))) like '%google%'
-                or lower(btrim(coalesce(class.meeting_platform, ''))) like '%meet%'
-                then 'google meet'
-              else lower(btrim(coalesce(class.meeting_platform, '')))
-            end = case
-              when lower(btrim(coalesce(recorded_classes.provider, ''))) like '%zoom%'
-                then 'zoom'
-              when lower(btrim(coalesce(recorded_classes.provider, ''))) like '%google%'
-                or lower(btrim(coalesce(recorded_classes.provider, ''))) like '%meet%'
-                then 'google meet'
-              else lower(btrim(coalesce(recorded_classes.provider, '')))
-            end
+            and public.live_class_student_can_view(
+              class.teacher_id,
+              class.grade::integer,
+              class.stream,
+              class.subject_id::text
+            )
         )
       )
     )

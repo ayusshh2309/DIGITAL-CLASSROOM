@@ -76,7 +76,7 @@ Deno.serve(async (request) => {
 
   const { data: recording, error: recordingError } = await userClient
     .from("recorded_classes")
-    .select("id, live_class_id, teacher_id, grade, stream, subject_id, storage_path, recording_status")
+    .select("id, live_class_id, teacher_id, storage_path, recording_status")
     .eq("id", recordingId)
     .eq("recording_status", "available")
     .not("recording_verified_at", "is", null)

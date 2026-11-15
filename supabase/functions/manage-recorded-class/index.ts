@@ -111,6 +111,19 @@ Deno.serve(async (request) => {
     console.error("Refusing to manage a recording with an invalid private Storage path.", { recordingId });
     return jsonResponse({ error: "The recording has an invalid private storage reference." }, 500);
   }
+  if (recording.live_class_id) {
+    const { data: liveClass, error: liveClassError } = await adminClient
+      .from("live_classes")
+      .select("id")
+      .eq("id", recording.live_class_id)
+      .eq("teacher_id", teacher.id)
+      .maybeSingle();
+    if (liveClassError) {
+      console.error("Could not verify the live-class owner for recording management.", liveClassError);
+      return jsonResponse({ error: "The associated live class could not be verified." }, 500);
+    }
+    if (!liveClass) return jsonResponse({ error: "The associated live class was not found or is not owned by you." }, 404);
+  }
 
   if (body.action === "update_description") {
     const { data: updated, error: updateError } = await adminClient
@@ -128,12 +141,24 @@ Deno.serve(async (request) => {
   }
 
   if (recording.storage_path) {
-    const { error: storageError } = await adminClient.storage
+    const separator = recording.storage_path.lastIndexOf("/");
+    const folder = recording.storage_path.slice(0, separator);
+    const fileName = recording.storage_path.slice(separator + 1);
+    const { data: objects, error: listError } = await adminClient.storage
       .from(BUCKET)
-      .remove([recording.storage_path]);
-    if (storageError) {
-      console.error("Could not remove the teacher-owned recording video.", storageError);
-      return jsonResponse({ error: "The private video could not be removed. The recording is unchanged." }, 500);
+      .list(folder, { limit: 100, search: fileName });
+    if (listError) {
+      console.error("Could not check for the teacher-owned recording video.", listError);
+      return jsonResponse({ error: "The private video could not be checked. The recording is unchanged." }, 500);
+    }
+    if ((objects || []).some((object) => object.name === fileName)) {
+      const { error: storageError } = await adminClient.storage
+        .from(BUCKET)
+        .remove([recording.storage_path]);
+      if (storageError) {
+        console.error("Could not remove the teacher-owned recording video.", storageError);
+        return jsonResponse({ error: "The private video could not be removed. The recording is unchanged." }, 500);
+      }
     }
   }
   const { data: deleted, error: deleteError } = await adminClient

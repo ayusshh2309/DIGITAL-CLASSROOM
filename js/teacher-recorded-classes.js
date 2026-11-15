@@ -39,8 +39,9 @@
   }
 
   function formatDuration(value) {
+    if (value === null || value === undefined || value === "") return "Not provided";
     const seconds = Number(value);
-    if (!Number.isFinite(seconds) || seconds <= 0) return "Not provided";
+    if (!Number.isFinite(seconds) || seconds < 0) return "Not provided";
     const total = Math.round(seconds);
     const hours = Math.floor(total / 3600);
     const minutes = Math.floor((total % 3600) / 60);
@@ -68,9 +69,8 @@
     return platform.includes("manual") ? "Legacy manual upload" : "Not provided";
   }
 
-  function subjectName(liveClass, recording) {
-    const relation = Array.isArray(liveClass?.subjects) ? liveClass.subjects[0] : liveClass?.subjects;
-    return String(relation?.name || liveClass?.subject_name || liveClass?.subject || recording.subject_id || "Not provided");
+  function subjectName(liveClass) {
+    return String(liveClass?.subject || liveClass?.subject_id || "Not provided");
   }
 
   function hasValidPrivateStoragePath(recording) {
@@ -112,6 +112,9 @@
 
   function makeRecordingCard(recording) {
     const liveClass = state.liveClassesById.get(String(recording.live_class_id));
+    const canPreview = recording.recording_status === "available" &&
+      Boolean(recording.recording_verified_at) &&
+      hasValidPrivateStoragePath(recording);
     const card = document.createElement("article");
     card.className = "teacher-recording-card";
 
@@ -124,14 +127,18 @@
     const titleWrap = document.createElement("div");
     titleWrap.className = "teacher-recording-card-title";
     const title = document.createElement("h3");
-    title.textContent = recording.title || "Recording";
+    title.textContent = liveClass?.title || "Class details unavailable";
     const className = document.createElement("p");
     className.className = "teacher-recording-class-name";
-    className.textContent = liveClass?.title || (recording.live_class_id ? "Live class" : "Legacy manual lecture");
+    className.textContent = liveClass
+      ? "Live class recording"
+      : recording.live_class_id ? "Associated live-class details are unavailable" : "Legacy recording without a live class";
     titleWrap.append(title, className);
     const status = document.createElement("span");
     status.className = "recording-status-badge";
-    status.textContent = "Available";
+    status.dataset.status = recording.recording_status || "unavailable";
+    status.textContent = String(recording.recording_status || "unavailable")
+      .replace(/^\w/, (character) => character.toUpperCase());
     header.append(icon, titleWrap, status);
 
     const meta = document.createElement("div");
@@ -139,25 +146,33 @@
     meta.append(
       detailItem(
         "Grade and stream",
-        `Grade ${liveClass?.grade || liveClass?.class_grade || recording.grade || "Not provided"}${(liveClass?.stream || recording.stream) ? ` · ${streamName(liveClass?.stream || recording.stream)}` : ""}`,
+        liveClass
+          ? `Grade ${liveClass.grade || liveClass.class_grade || "Not provided"}${liveClass.stream ? ` · ${streamName(liveClass.stream)}` : ""}`
+          : "Grade and stream unavailable",
       ),
-      detailItem("Subject", subjectName(liveClass, recording)),
-      detailItem("Chapter", recording.chapter),
-      detailItem("Topic", recording.topic),
-      detailItem("Platform", platformName(liveClass?.meeting_platform || recording.provider)),
+      detailItem("Subject", subjectName(liveClass)),
+      detailItem("Chapter", liveClass?.chapter),
+      detailItem("Topic", liveClass?.topic),
+      detailItem("Platform", platformName(liveClass?.meeting_platform)),
+      detailItem("Class date", liveClass?.start_at || liveClass?.class_date
+        ? formatDate(liveClass.start_at || liveClass.class_date)
+        : "Not provided"),
       detailItem("Duration", formatDuration(recording.duration_seconds)),
-      detailItem("Class date", formatDate(recording.started_at)),
-      detailItem("Verified / uploaded", formatDate(recording.recording_verified_at || recording.ready_at)),
+      detailItem("Recording upload date", formatDate(recording.ready_at || recording.created_at)),
     );
 
     const actions = document.createElement("div");
     actions.className = "teacher-recording-card-actions";
-    const preview = createAction(
-      "Preview recording",
-      "recording-preview-button",
-      () => void openPreview(String(recording.id)),
-    );
-    preview.innerHTML = '<i class="fa-solid fa-play" aria-hidden="true"></i> Preview recording';
+    const preview = canPreview
+      ? createAction(
+        "Preview recording",
+        "recording-preview-button",
+        () => void openPreview(String(recording.id)),
+      )
+      : null;
+    if (preview) {
+      preview.innerHTML = '<i class="fa-solid fa-play" aria-hidden="true"></i> Preview recording';
+    }
     const edit = createAction(
       "Edit description",
       "recording-manage-button",
@@ -168,14 +183,13 @@
       "recording-manage-button recording-delete-button",
       () => void deleteRecording(recording),
     );
-    actions.append(preview, edit, remove);
+    if (preview) actions.appendChild(preview);
+    actions.append(edit, remove);
     card.append(header, meta);
-    if (recording.description) {
-      const description = document.createElement("p");
-      description.className = "teacher-recording-description";
-      description.textContent = recording.description;
-      card.appendChild(description);
-    }
+    const description = document.createElement("p");
+    description.className = "teacher-recording-description";
+    description.textContent = recording.description || "No recording description has been provided.";
+    card.appendChild(description);
     card.appendChild(actions);
     return card;
   }
@@ -199,12 +213,11 @@
     const filtered = state.recordings.filter((recording) => {
       const liveClass = state.liveClassesById.get(String(recording.live_class_id));
       const content = [
-        recording.title,
         recording.description,
-        recording.chapter,
-        recording.topic,
         liveClass?.title,
-        subjectName(liveClass, recording),
+        liveClass?.chapter,
+        liveClass?.topic,
+        subjectName(liveClass),
       ].join(" ").toLocaleLowerCase();
       return content.includes(query);
     });
@@ -234,19 +247,13 @@
     try {
       const { data, error } = await state.client
         .from("recorded_classes")
-        .select("id, live_class_id, teacher_id, title, description, grade, stream, subject_id, chapter, topic, provider, recording_status, recording_verified_at, storage_path, started_at, duration_seconds, ready_at")
+        .select("id, live_class_id, teacher_id, description, thumbnail_url, resource_urls, recording_status, recording_verified_at, storage_path, duration_seconds, ready_at, created_at")
         .eq("teacher_id", state.teacher.id)
-        .eq("recording_status", "available")
-        .not("recording_verified_at", "is", null)
-        .not("storage_path", "is", null)
         .order("ready_at", { ascending: false });
       if (error) throw error;
 
       state.recordings = (data || []).filter((row) =>
-        String(row.teacher_id) === String(state.teacher.id) &&
-        row.recording_status === "available" &&
-        Boolean(row.recording_verified_at) &&
-        hasValidPrivateStoragePath(row)
+        String(row.teacher_id) === String(state.teacher.id)
       );
       state.liveClassesById = new Map();
       const liveClassIds = [...new Set(
@@ -255,16 +262,13 @@
       if (liveClassIds.length) {
         const { data: liveClasses, error: liveClassError } = await state.client
           .from("live_classes")
-          .select("id, title, grade, class_grade, stream, subject_id, subject, chapter, topic, meeting_platform, subjects(id, name)")
+          .select("id, teacher_id, title, grade, class_grade, stream, subject_id, subject, chapter, topic, class_date, start_time, start_at, end_at, duration_minutes, meeting_platform")
           .eq("teacher_id", state.teacher.id)
           .in("id", liveClassIds);
-        if (liveClassError) {
-          console.warn("Original live-class details are unavailable for some recordings.", liveClassError);
-        } else {
-          state.liveClassesById = new Map(
-            (liveClasses || []).map((liveClass) => [String(liveClass.id), liveClass]),
-          );
-        }
+        if (liveClassError) throw liveClassError;
+        state.liveClassesById = new Map(
+          (liveClasses || []).map((liveClass) => [String(liveClass.id), liveClass]),
+        );
       }
     } catch (error) {
       console.error("Could not load the current teacher's recordings.", error);
@@ -327,7 +331,7 @@
   }
 
   async function deleteRecording(recording) {
-    const title = recording.title || "this recording";
+    const title = state.liveClassesById.get(String(recording.live_class_id))?.title || "this recording";
     if (!window.confirm(`Delete "${title}"? Students will no longer be able to play it.`)) return;
     try {
       await invokeManagement({
@@ -344,7 +348,16 @@
   async function openPreview(recordingId) {
     const recording = state.recordings.find((item) => String(item.id) === recordingId);
     if (!recording) return;
-    elements.previewTitle.textContent = recording.title || "Recording preview";
+    const liveClass = state.liveClassesById.get(String(recording.live_class_id));
+    if (recording.recording_status !== "available" ||
+      !recording.recording_verified_at ||
+      !hasValidPrivateStoragePath(recording)) {
+      elements.previewStatus.className = "preview-status is-error";
+      elements.previewStatus.textContent = "This recording is not verified and available for playback.";
+      if (!elements.previewDialog.open) elements.previewDialog.showModal();
+      return;
+    }
+    elements.previewTitle.textContent = liveClass?.title || "Recording preview";
     elements.previewStatus.className = "preview-status";
     elements.previewStatus.textContent = "Requesting an authorized temporary playback link…";
     elements.previewPlayer.hidden = true;

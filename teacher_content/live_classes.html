@@ -1565,7 +1565,7 @@
         }
         const { data, error } = await client
           .from("recorded_classes")
-          .select("id, live_class_id, teacher_id, title, description, recording_status, recording_verified_at, storage_path, ready_at")
+          .select("id, live_class_id, teacher_id, recording_status, recording_verified_at, storage_path, ready_at")
           .eq("teacher_id", currentTeacher.profile.id)
           .not("live_class_id", "is", null)
           .order("ready_at", { ascending: false });

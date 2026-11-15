@@ -132,36 +132,42 @@
         .test(file);
   }
 
-  function mapRecording(row, subjects, teacherNames) {
+  function mapRecording(row, liveClass, subjects, teacherNames) {
+    if (!liveClass ||
+      String(liveClass.teacher_id) !== String(row.teacher_id) ||
+      normalize(liveClass.publication_status) !== "published" ||
+      ["cancelled", "canceled"].includes(normalize(liveClass.status)) ||
+      row.recording_status !== "available" ||
+      !row.recording_verified_at ||
+      !hasValidPrivateStoragePath(row)) return null;
     const subject = subjects.find(
-      (item) => String(item.id) === String(row.subject_id),
+      (item) => String(item.id) === String(liveClass.subject_id),
     );
-    if (!subject || row.recording_status !== "available" ||
-      !row.recording_verified_at || !hasValidPrivateStoragePath(row)) return null;
-    const grade = Number(row.grade);
-    const status = "available";
+    if (!subject) return null;
+    const grade = Number(liveClass.grade ?? String(liveClass.class_grade || "").replace(/\D/g, ""));
+    if (!Number.isInteger(grade)) return null;
     return {
       id: String(row.id),
-      liveClassId: row.live_class_id ? String(row.live_class_id) : null,
-      isManual: !row.live_class_id,
-      title: String(row.title || "Title not provided"),
+      liveClassId: String(row.live_class_id),
+      title: String(liveClass.title || "Title not provided"),
       description: String(row.description || ""),
       grade,
-      stream: String(row.stream || ""),
-      subjectId: String(row.subject_id),
+      stream: String(liveClass.stream || ""),
+      subjectId: String(liveClass.subject_id),
       subject: subject.name,
-      chapter: String(row.chapter || "Not provided"),
-      topic: String(row.topic || "Not provided"),
-      teacher: String(row.teacher_name || row.teacher?.full_name || teacherNames.get(String(row.teacher_id)) || "Your teacher"),
-      provider: String(row.provider || "Not provided"),
-      providerRecordingId: String(row.provider_recording_id || ""),
+      chapter: String(liveClass.chapter || "Not provided"),
+      topic: String(liveClass.topic || "Not provided"),
+      teacher: String(teacherNames.get(String(liveClass.teacher_id)) || "Your teacher"),
       thumbnailUrl: safeHttpUrl(row.thumbnail_url),
       resources: readResources(row.resource_urls),
-      status,
-      startedAt: row.started_at || row.ready_at || row.recording_verified_at || null,
-      uploadedAt: row.ready_at || row.recording_verified_at || null,
-      recordingStartedAt: row.recording_started_at || null,
-      durationSeconds: Number.isFinite(Number(row.duration_seconds)) && Number(row.duration_seconds) > 0
+      status: row.recording_status,
+      classDate: liveClass.start_at || liveClass.class_date || null,
+      classStartTime: liveClass.start_at || liveClass.start_time || null,
+      uploadedAt: row.ready_at || row.created_at || row.recording_verified_at || null,
+      durationSeconds: row.duration_seconds !== null &&
+        row.duration_seconds !== undefined &&
+        Number.isFinite(Number(row.duration_seconds)) &&
+        Number(row.duration_seconds) >= 0
         ? Number(row.duration_seconds)
         : null,
     };
@@ -169,30 +175,39 @@
 
   async function loadRecordedClassesFromSupabase(client, student, subjects) {
     if (!subjects.length) return [];
-    const coreFields =
-      "id, live_class_id, teacher_id, title, description, grade, stream, subject_id, chapter, topic, provider, recording_status, recording_verified_at, recording_started_at, storage_path, started_at, ready_at, duration_seconds";
-    const queryRecordings = async (fields) => {
-      let query = client
-        .from("recorded_classes")
-        .select(fields)
-        .eq("grade", student.grade)
-        .eq("recording_status", "available")
-        .not("recording_verified_at", "is", null)
-        .not("storage_path", "is", null)
-        .in("subject_id", subjects.map((subject) => subject.id))
-        .order("started_at", { ascending: false });
-      if (Number(student.grade) >= 11) {
-        query = query.eq("stream", student.stream);
-      }
-      return query;
-    };
-    let { data, error } = await queryRecordings(`${coreFields}, thumbnail_url, resource_urls`);
-    if (error && /(?:column|schema cache).*(?:thumbnail_url|resource_urls)|(?:thumbnail_url|resource_urls).*(?:column|schema cache)/i.test(error.message || "")) {
-      console.warn("Optional recording artwork/resources columns are unavailable; loading core recording details.", error);
-      ({ data, error } = await queryRecordings(coreFields));
+    let classQuery = client
+      .from("live_classes")
+      .select("id, teacher_id, title, grade, class_grade, stream, subject_id, chapter, topic, class_date, start_time, start_at, end_at, duration_minutes, publication_status, status")
+      .eq("grade", student.grade)
+      .eq("publication_status", "published")
+      .in("subject_id", subjects.map((subject) => subject.id));
+    if (Number(student.grade) >= 11) {
+      classQuery = classQuery.eq("stream", student.stream);
     }
+    const { data: liveClasses, error: liveClassError } = await classQuery;
+    if (liveClassError) throw liveClassError;
+    const eligibleClasses = (liveClasses || []).filter((liveClass) =>
+      !["cancelled", "canceled"].includes(normalize(liveClass.status))
+    );
+    const liveClassesById = new Map(
+      eligibleClasses.map((liveClass) => [String(liveClass.id), liveClass]),
+    );
+    const liveClassIds = [...liveClassesById.keys()];
+    if (!liveClassIds.length) return [];
+
+    const { data: recordings, error } = await client
+      .from("recorded_classes")
+      .select("id, live_class_id, teacher_id, description, thumbnail_url, resource_urls, recording_status, recording_verified_at, storage_path, duration_seconds, ready_at, created_at")
+      .in("live_class_id", liveClassIds)
+      .eq("recording_status", "available")
+      .not("recording_verified_at", "is", null)
+      .not("storage_path", "is", null)
+      .order("ready_at", { ascending: false });
     if (error) throw error;
-    const teacherIds = [...new Set((data || []).map((row) => String(row.teacher_id)).filter(Boolean))];
+
+    const teacherIds = [...new Set(
+      eligibleClasses.map((liveClass) => String(liveClass.teacher_id)).filter(Boolean),
+    )];
     const teacherNames = new Map();
     if (teacherIds.length) {
       const { data: teachers, error: teacherError } = await client
@@ -207,8 +222,13 @@
         });
       }
     }
-    return (data || [])
-      .map((row) => mapRecording(row, subjects, teacherNames))
+    return (recordings || [])
+      .map((row) => mapRecording(
+        row,
+        liveClassesById.get(String(row.live_class_id)),
+        subjects,
+        teacherNames,
+      ))
       .filter((recording) =>
         recording &&
         recording.grade === Number(student.grade) &&
@@ -325,7 +345,7 @@
         (status === "all" || recording.status === status);
     });
     recordings.sort((left, right) => {
-      const delta = Date.parse(left.startedAt || "") - Date.parse(right.startedAt || "");
+      const delta = Date.parse(left.classDate || "") - Date.parse(right.classDate || "");
       return sort === "oldest" ? delta : -delta;
     });
     return recordings;
@@ -339,9 +359,7 @@
       : "";
     const canWatch = recording.status === "available";
     const tone = ["purple", "blue", "green", "orange", "pink", "teal"][index % 6];
-    const dateValue = recording.isManual ? recording.uploadedAt : recording.startedAt;
-    const date = dateValue ? formatDate(dateValue) : "Date not provided";
-    const dateLabel = recording.isManual ? "Upload date" : "Class date";
+    const date = recording.classDate ? formatDate(recording.classDate) : "Date not provided";
     return `<article class="recording-card" data-recording-card="${escapeHTML(recording.id)}">
       <div class="recording-art art-${tone}">
         ${recording.thumbnailUrl
@@ -362,10 +380,9 @@
         <div class="recording-meta">
           <span title="Teacher"><i class="fa-solid fa-user-tie" aria-hidden="true"></i><span>${escapeHTML(recording.teacher)}</span></span>
           <span title="Grade and stream"><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i><span>Grade ${recording.grade}${streamText}</span></span>
-          <span title="${dateLabel}"><i class="fa-regular fa-calendar" aria-hidden="true"></i><span>${escapeHTML(date)}</span></span>
-          <span title="Recording start"><i class="fa-regular fa-clock" aria-hidden="true"></i><span>${escapeHTML(recording.recordingStartedAt ? formatTime(recording.recordingStartedAt) : "Recording time not provided")}</span></span>
+          <span title="Class date"><i class="fa-regular fa-calendar" aria-hidden="true"></i><span>${escapeHTML(date)}</span></span>
+          <span title="Recording upload date"><i class="fa-regular fa-clock" aria-hidden="true"></i><span>${escapeHTML(recording.uploadedAt ? formatDate(recording.uploadedAt) : "Not provided")}</span></span>
           <span title="Duration"><i class="fa-solid fa-stopwatch" aria-hidden="true"></i><span>${formatDuration(recording.durationSeconds)}</span></span>
-          <span title="Recording platform"><i class="fa-solid fa-display" aria-hidden="true"></i><span>${escapeHTML(recording.provider)}</span></span>
         </div>
         <div class="recording-progress-copy"><span>${complete ? "Finished watching" : progress ? "Continue watching" : "Watch progress"}</span><strong>${progress}%</strong></div>
         <div class="recording-progress-track" aria-label="${progress}% watched"><span style="width:${progress}%"></span></div>
@@ -466,15 +483,14 @@
       ["Subject", recording.subject],
       ["Chapter", recording.chapter],
       ["Topic", recording.topic],
-      [recording.isManual ? "Upload date" : "Class date", recording.isManual
-        ? recording.uploadedAt ? formatDate(recording.uploadedAt) : "Not provided"
-        : recording.startedAt ? formatDate(recording.startedAt) : "Not provided"],
-      ...(!recording.isManual
-        ? [["Scheduled class start", recording.startedAt ? formatTime(recording.startedAt) : "Not provided"]]
-        : []),
-      ["Actual recording start", recording.recordingStartedAt ? `${formatDate(recording.recordingStartedAt)} · ${formatTime(recording.recordingStartedAt)}` : "Not provided"],
+      ["Class date", recording.classDate ? formatDate(recording.classDate) : "Not provided"],
+      ["Scheduled class start", recording.classStartTime
+        ? recording.classStartTime.includes("T")
+          ? formatTime(recording.classStartTime)
+          : recording.classStartTime
+        : "Not provided"],
+      ["Recording upload date", recording.uploadedAt ? formatDate(recording.uploadedAt) : "Not provided"],
       ["Duration", formatDuration(recording.durationSeconds)],
-      ["Platform", recording.provider],
     ];
     return rows.map(([label, value]) =>
       `<div class="lecture-info-item"><small>${escapeHTML(label)}</small><strong>${escapeHTML(value)}</strong></div>`

@@ -23,7 +23,6 @@ $$;
 
 alter table public.recorded_classes
   add column if not exists storage_path text,
-  add column if not exists recording_started_at timestamptz,
   add column if not exists recording_verified_at timestamptz;
 
 do $$
@@ -36,21 +35,10 @@ begin
     ('id'),
     ('live_class_id'),
     ('teacher_id'),
-    ('title'),
     ('description'),
-    ('grade'),
-    ('stream'),
-    ('subject_id'),
-    ('chapter'),
-    ('topic'),
-    ('provider'),
-    ('provider_recording_id'),
-    ('playback_url'),
     ('storage_path'),
     ('recording_status'),
-    ('recording_started_at'),
     ('recording_verified_at'),
-    ('started_at'),
     ('duration_seconds'),
     ('ready_at')
   ) as required(column_name)
@@ -77,12 +65,8 @@ begin
     select 1 from information_schema.columns
     where table_schema = 'public' and table_name = 'recorded_classes'
       and column_name = 'live_class_id' and data_type = 'uuid'
-  ) or not exists (
-    select 1 from information_schema.columns
-    where table_schema = 'public' and table_name = 'recorded_classes'
-      and column_name = 'grade' and data_type in ('smallint', 'integer')
   ) then
-    raise exception 'recorded_classes identifiers and grade must use UUID and integer types.';
+    raise exception 'recorded_classes identifiers must use UUID types.';
   end if;
   if not exists (
     select 1
@@ -122,11 +106,18 @@ begin
         recording_status = 'available'
         and recording_verified_at is not null
         and storage_path is not null
-        and public.live_class_student_can_view(
-          teacher_id,
-          grade,
-          stream,
-          subject_id::text
+        and live_class_id is not null
+        and exists (
+          select 1
+          from public.live_classes class
+          where class.id = recorded_classes.live_class_id
+            and class.teacher_id = recorded_classes.teacher_id
+            and public.live_class_student_can_view(
+              class.teacher_id,
+              class.grade::integer,
+              class.stream,
+              class.subject_id::text
+            )
         )
       );
   end if;
@@ -151,37 +142,38 @@ begin
         recording_status = 'available'
         and recording_verified_at is not null
         and storage_path is not null
-        and public.live_class_student_can_view(
-          teacher_id,
-          grade,
-          stream,
-          subject_id::text
+        and live_class_id is not null
+        and storage_path ~* (
+          '^manual/' || teacher_id::text || '/' || live_class_id::text || '/' ||
+          '[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}\.(mp4|webm|mov)$'
         )
         and exists (
           select 1
           from public.live_classes class
-          where class.id = live_class_id
+          where class.id = recorded_classes.live_class_id
             and class.teacher_id = recorded_classes.teacher_id
-            and class.grade = recorded_classes.grade
-            and class.stream is not distinct from recorded_classes.stream
-            and class.subject_id::text = recorded_classes.subject_id::text
-            and lower(btrim(coalesce(class.publication_status, ''))) = 'published'
-            and lower(btrim(coalesce(class.status, ''))) not in ('cancelled', 'canceled')
-            and case
-              when lower(btrim(coalesce(class.meeting_platform, ''))) like '%zoom%'
-                then 'zoom'
-              when lower(btrim(coalesce(class.meeting_platform, ''))) like '%google%'
-                or lower(btrim(coalesce(class.meeting_platform, ''))) like '%meet%'
-                then 'google meet'
-              else lower(btrim(coalesce(class.meeting_platform, '')))
-            end = case
-              when lower(btrim(coalesce(recorded_classes.provider, ''))) like '%zoom%'
-                then 'zoom'
-              when lower(btrim(coalesce(recorded_classes.provider, ''))) like '%google%'
-                or lower(btrim(coalesce(recorded_classes.provider, ''))) like '%meet%'
-                then 'google meet'
-              else lower(btrim(coalesce(recorded_classes.provider, '')))
-            end
+        )
+        and (
+          exists (
+            select 1
+            from public.teachers teacher
+            where teacher.id = recorded_classes.teacher_id
+              and teacher.user_id = auth.uid()
+          )
+          or exists (
+            select 1
+            from public.live_classes class
+            where class.id = recorded_classes.live_class_id
+              and class.teacher_id = recorded_classes.teacher_id
+              and lower(btrim(coalesce(class.publication_status, ''))) = 'published'
+              and lower(btrim(coalesce(class.status, ''))) not in ('cancelled', 'canceled')
+              and public.live_class_student_can_view(
+                class.teacher_id,
+                class.grade::integer,
+                class.stream,
+                class.subject_id::text
+              )
+          )
         )
       );
   end if;

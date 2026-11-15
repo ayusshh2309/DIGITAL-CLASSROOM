@@ -35,6 +35,29 @@ function validClassRecordingPath(path: unknown, teacherId: string, liveClassId: 
       .test(value.slice(prefix.length));
 }
 
+function isFinalizedUpload(
+  recording: {
+    id: string;
+    live_class_id: string | null;
+    teacher_id: string;
+    storage_path: string | null;
+    recording_status: string;
+    recording_verified_at: string | null;
+  },
+  recordingId: string,
+  teacherId: string,
+  liveClassId: string,
+  objectPath: string,
+): boolean {
+  return String(recording.id) === recordingId &&
+    String(recording.live_class_id) === liveClassId &&
+    String(recording.teacher_id) === teacherId &&
+    recording.recording_status === "available" &&
+    Boolean(recording.recording_verified_at) &&
+    recording.storage_path === objectPath &&
+    validClassRecordingPath(recording.storage_path, teacherId, liveClassId);
+}
+
 function readText(value: unknown, field: string, maximum: number, required = false): string | null {
   if (value === undefined || value === null) {
     if (required) throw new Error(`${field} is required.`);
@@ -183,32 +206,26 @@ Deno.serve(async (request) => {
     }
   }
   const start = parseScheduledStart(liveClass, scheduleTimeZone);
+  if (start === null) {
+    return jsonResponse({ error: "The live class has an invalid scheduled start time." }, 400);
+  }
   const end = parseScheduledEnd(liveClass, start);
-  if (start === null || end === null || start > Date.now() || end < start || end > Date.now()) {
+  if (end === null || end < start) {
+    return jsonResponse({ error: "The live class has an invalid scheduled end time." }, 400);
+  }
+  const now = Date.now();
+  if (start > now || end > now) {
     return jsonResponse({ error: "A recording can only be finalized after the live class has ended." }, 400);
   }
-  const provider = providerFor(liveClass.meeting_platform);
-  if (!provider) {
+  if (!providerFor(liveClass.meeting_platform)) {
     return jsonResponse({ error: "The scheduled class must use Zoom or Google Meet before a recording can be finalized." }, 400);
   }
-  const grade = Number(liveClass.grade ?? String(liveClass.class_grade || "").replace(/\D/g, ""));
-  if (!Number.isInteger(grade) || grade < 1 || !liveClass.subject_id) {
-    console.error("The owned live class is missing a usable grade or subject.", { liveClassId });
-    return jsonResponse({ error: "The live class is missing required curriculum details." }, 422);
-  }
-  const stream = liveClass.stream || null;
-  const subjectId = liveClass.subject_id;
-  const startedAt = new Date(start).toISOString();
-  const title = String(liveClass.title || liveClass.subject || "Live class recording").trim().slice(0, 180) ||
-    "Live class recording";
-  const chapter = typeof liveClass.chapter === "string" ? liveClass.chapter.trim().slice(0, 180) || null : null;
-  const topic = typeof liveClass.topic === "string" ? liveClass.topic.trim().slice(0, 180) || null : null;
   const folder = `manual/${teacher.id}/${liveClass.id}`;
   const objectPath = `${folder}/${recordingId}${fileType.extension}`;
 
   const { data: existing, error: existingError } = await adminClient
     .from("recorded_classes")
-    .select("id, live_class_id, teacher_id, storage_path")
+    .select("id, live_class_id, teacher_id, storage_path, recording_status, recording_verified_at")
     .eq("id", recordingId)
     .maybeSingle();
   if (existingError) {
@@ -216,13 +233,17 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: "The recording could not be safely finalized." }, 500);
   }
   if (existing) {
-    if (existing.storage_path !== objectPath ||
-      String(existing.live_class_id) !== liveClassId ||
-      String(existing.teacher_id) !== String(teacher.id)) {
+    if (!isFinalizedUpload(
+      existing,
+      recordingId,
+      String(teacher.id),
+      liveClassId,
+      objectPath,
+    )) {
       return jsonResponse({ error: "This recording identifier is already associated with another upload." }, 409);
     }
     return jsonResponse({
-      recording_id: recordingId,
+      recording_id: String(existing.id),
       upload_session_id: recordingId,
       live_class_id: liveClassId,
       status: "available",
@@ -249,7 +270,7 @@ Deno.serve(async (request) => {
     }
     if (prior.storage_path === objectPath) {
       return jsonResponse({
-        recording_id: replaceRecordingId,
+        recording_id: String(prior.id),
         upload_session_id: recordingId,
         live_class_id: liveClassId,
         status: "available",
@@ -276,6 +297,15 @@ Deno.serve(async (request) => {
   if (bucketError || !bucket || bucket.public) {
     console.error("Private recording storage is not available during finalization.", bucketError);
     return jsonResponse({ error: "Private recording storage is not configured correctly." }, 500);
+  }
+  const allowedMimeTypes = Array.isArray(bucket.allowed_mime_types)
+    ? bucket.allowed_mime_types.filter((mimeType): mimeType is string =>
+      typeof mimeType === "string" && Boolean(mimeType.trim())
+    )
+    : [];
+  if (allowedMimeTypes.length &&
+    !allowedMimeTypes.some((mimeType) => mimeType.trim().toLowerCase() === contentType.toLowerCase())) {
+    return jsonResponse({ error: "The uploaded video MIME type is not allowed by the recording storage bucket." }, 415);
   }
   const bucketLimit = Number(bucket.file_size_limit);
   const maxFileSizeBytes = Math.min(
@@ -336,19 +366,8 @@ Deno.serve(async (request) => {
     id: replacedRecording?.id || recordingId,
     live_class_id: liveClassId,
     teacher_id: teacher.id,
-    title,
     description,
-    grade,
-    stream,
-    subject_id: subjectId,
-    chapter,
-    topic,
-    provider,
-    provider_recording_id: null,
-    playback_url: null,
     storage_path: objectPath,
-    recording_started_at: null,
-    started_at: startedAt,
     duration_seconds: typeof durationSeconds === "number" ? Math.round(durationSeconds) : null,
     recording_status: "available",
     recording_verified_at: verifiedAt,
@@ -393,14 +412,18 @@ Deno.serve(async (request) => {
       if (insertError.code === "23505") {
         const { data: duplicate, error: duplicateError } = await adminClient
           .from("recorded_classes")
-          .select("id, live_class_id, teacher_id, storage_path")
+          .select("id, live_class_id, teacher_id, storage_path, recording_status, recording_verified_at")
           .eq("id", recordingId)
           .maybeSingle();
-        if (!duplicateError && duplicate?.storage_path === objectPath &&
-          String(duplicate.live_class_id) === liveClassId &&
-          String(duplicate.teacher_id) === String(teacher.id)) {
+        if (!duplicateError && duplicate && isFinalizedUpload(
+          duplicate,
+          recordingId,
+          String(teacher.id),
+          liveClassId,
+          objectPath,
+        )) {
           return jsonResponse({
-            recording_id: recordingId,
+            recording_id: String(duplicate.id),
             upload_session_id: recordingId,
             live_class_id: liveClassId,
             status: "available",
