@@ -208,10 +208,11 @@ Deno.serve(async (request) => {
   }
 
   return jsonResponse({
+    success: true,
     recording_id: recordingId,
     recording_mode: "live_class",
-    live_class_id: liveClassId,
-    replace_recording_id: replaceRecordingId,
+    live_class_id: liveClass.id,
+    ...(replaceRecordingId ? { replace_recording_id: replaceRecordingId } : {}),
     upload_url: signedUpload.signedUrl,
     max_file_size_bytes: maxFileSizeBytes,
   });
