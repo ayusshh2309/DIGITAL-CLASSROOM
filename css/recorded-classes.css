@@ -593,9 +593,22 @@
 .player-placeholder strong { color: #fff; font-size: .95rem; }
 .player-placeholder p { color: #b7c1d3; font-size: .75rem; line-height: 1.5; }
 .player-placeholder a { margin-top: 5px; color: #fff; font-size: .75rem; font-weight: 800; }
-.player-extra-controls { display: flex; align-items: center; gap: 8px; padding: 9px 14px; border-bottom: 1px solid var(--recorded-border); font-size: .72rem; }
+.player-extra-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; padding: 10px 14px; border-bottom: 1px solid var(--recorded-border); font-size: .72rem; }
+.player-transport-controls { display: flex; flex: 1 1 420px; min-width: 0; align-items: center; gap: 7px; }
+.player-control-button { display: inline-flex; min-width: 36px; min-height: 36px; flex: 0 0 auto; align-items: center; justify-content: center; gap: 3px; padding: 0 6px; border: 1px solid var(--recorded-border); border-radius: 8px; background: var(--recorded-surface); color: var(--recorded-ink); cursor: pointer; }
+.player-control-button span { margin-top: -9px; margin-left: -6px; font-size: .55rem; font-weight: 800; }
+.player-control-button:hover:not(:disabled) { border-color: var(--recorded-accent); color: var(--recorded-accent); }
+.player-control-button:focus-visible,
+.player-seek:focus-visible,
+.player-extra-controls select:focus-visible { outline: 3px solid color-mix(in srgb, var(--recorded-accent), transparent 70%); outline-offset: 2px; }
+.player-control-button:disabled { cursor: not-allowed; opacity: .5; }
+.player-seek { min-width: 70px; flex: 1 1 100px; accent-color: var(--recorded-accent); cursor: pointer; }
+.player-seek:disabled { cursor: not-allowed; }
+.player-time { min-width: 82px; color: var(--recorded-muted); font-size: .68rem; font-variant-numeric: tabular-nums; text-align: center; white-space: nowrap; }
 .player-extra-controls label { display: inline-flex; align-items: center; gap: 7px; margin-left: auto; color: var(--recorded-muted); }
 .player-extra-controls select { padding: 5px 8px; border: 1px solid var(--recorded-border); border-radius: 7px; background: var(--recorded-surface); color: var(--recorded-ink); }
+.player-control-status { flex: 1 1 100%; color: #a73232; font-size: .7rem; }
+.player-control-status:empty { display: none; }
 .lecture-detail-content { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(240px, .75fr); gap: 22px; padding: 21px 24px 24px; }
 .lecture-description { margin-top: 9px; color: var(--recorded-muted); font-size: .8rem; line-height: 1.6; }
 .lecture-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-top: 17px; }
@@ -658,7 +671,10 @@
   .lecture-player { min-height: 190px; }
   .detail-progress { margin: 0 16px 17px; }
   .lecture-info-grid { gap: 12px 9px; }
-  .player-extra-controls { flex-wrap: wrap; }
+  .player-transport-controls { flex-wrap: wrap; flex-basis: 100%; }
+  .player-seek { flex-basis: 100%; order: 2; }
+  .player-time { margin-left: auto; order: 3; }
+  .player-extra-controls label { margin-left: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

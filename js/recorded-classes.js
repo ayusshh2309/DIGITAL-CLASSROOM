@@ -709,31 +709,158 @@
       dialog.querySelector(".player-extra-controls")?.remove();
       const extraControls = document.createElement("div");
       extraControls.className = "player-extra-controls";
-      extraControls.innerHTML = '<i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Use the video controls to play, pause, adjust volume, seek, or enter fullscreen.</span><label for="playbackSpeed">Speed<select id="playbackSpeed"><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label>';
+      extraControls.innerHTML = `
+        <div class="player-transport-controls" role="group" aria-label="Video playback controls">
+          <button class="player-control-button" type="button" data-playback-action="toggle" aria-label="Play video" title="Play video">
+            <i class="fa-solid fa-play" aria-hidden="true"></i>
+          </button>
+          <button class="player-control-button" type="button" data-playback-action="backward" aria-label="Go back 10 seconds" title="Go back 10 seconds">
+            <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+            <span aria-hidden="true">10</span>
+          </button>
+          <input class="player-seek" id="playbackSeek" type="range" min="0" max="1000" value="0" step="1" disabled aria-label="Seek through video">
+          <span class="player-time" id="playbackTime" aria-live="off">0:00 / --:--</span>
+          <button class="player-control-button" type="button" data-playback-action="forward" aria-label="Go forward 10 seconds" title="Go forward 10 seconds">
+            <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+            <span aria-hidden="true">10</span>
+          </button>
+          <button class="player-control-button" type="button" data-playback-action="fullscreen" aria-label="Enter fullscreen" title="Enter fullscreen">
+            <i class="fa-solid fa-expand" aria-hidden="true"></i>
+          </button>
+        </div>
+        <label for="playbackSpeed">Speed
+          <select id="playbackSpeed">
+            <option value="0.75">0.75×</option>
+            <option value="1" selected>1×</option>
+            <option value="1.25">1.25×</option>
+            <option value="1.5">1.5×</option>
+            <option value="2">2×</option>
+          </select>
+        </label>
+        <span class="player-control-status" id="playbackControlStatus" role="status" aria-live="polite"></span>`;
       dialog.querySelector(".lecture-player").after(extraControls);
-      dialog.querySelector("#playbackSpeed")?.addEventListener("change", (event) => {
-        const video = dialog.querySelector("#lectureVideo");
-        if (video) video.playbackRate = Number(event.currentTarget.value);
-      });
       const video = dialog.querySelector("#lectureVideo");
+      const playButton = extraControls.querySelector('[data-playback-action="toggle"]');
+      const backwardButton = extraControls.querySelector('[data-playback-action="backward"]');
+      const forwardButton = extraControls.querySelector('[data-playback-action="forward"]');
+      const fullscreenButton = extraControls.querySelector('[data-playback-action="fullscreen"]');
+      const seekInput = extraControls.querySelector("#playbackSeek");
+      const playbackTime = extraControls.querySelector("#playbackTime");
+      const playbackStatus = extraControls.querySelector("#playbackControlStatus");
+      let seekPreviewTime = null;
+      const syncPlaybackControls = (previewTime = Number(video.currentTime)) => {
+        const duration = Number(video.duration);
+        const hasDuration = Number.isFinite(duration) && duration > 0;
+        const position = Number.isFinite(previewTime)
+          ? Math.max(0, Math.min(hasDuration ? duration : 0, previewTime))
+          : 0;
+        seekInput.disabled = !hasDuration || Boolean(video.error);
+        backwardButton.disabled = !hasDuration || Boolean(video.error);
+        forwardButton.disabled = !hasDuration || Boolean(video.error);
+        if (hasDuration) seekInput.value = String(Math.round(position / duration * 1000));
+        playbackTime.textContent = `${formatDuration(position)} / ${formatDuration(duration)}`;
+        seekInput.setAttribute("aria-valuetext", `${formatDuration(position)} of ${formatDuration(duration)}`);
+
+        const isPlaying = !video.paused && !video.ended;
+        playButton.innerHTML = `<i class="fa-solid ${isPlaying ? "fa-pause" : "fa-play"}" aria-hidden="true"></i>`;
+        playButton.setAttribute("aria-label", isPlaying ? "Pause video" : "Play video");
+        playButton.title = isPlaying ? "Pause video" : "Play video";
+        playButton.disabled = Boolean(video.error);
+
+        const isFullscreen = document.fullscreenElement === video || Boolean(video.webkitDisplayingFullscreen);
+        const fullscreenLabel = isFullscreen ? "Exit fullscreen" : "Enter fullscreen";
+        fullscreenButton.innerHTML = `<i class="fa-solid ${isFullscreen ? "fa-compress" : "fa-expand"}" aria-hidden="true"></i>`;
+        fullscreenButton.setAttribute("aria-label", fullscreenLabel);
+        fullscreenButton.title = fullscreenLabel;
+      };
+      const seekBy = (seconds) => {
+        const duration = Number(video.duration);
+        if (!Number.isFinite(duration) || duration <= 0) return;
+        video.currentTime = Math.max(0, Math.min(duration, video.currentTime + seconds));
+      };
+
+      playButton.addEventListener("click", async () => {
+        if (!video.paused && !video.ended) {
+          video.pause();
+          return;
+        }
+        playbackStatus.textContent = "";
+        try {
+          await video.play();
+        } catch (error) {
+          console.error("Recorded-class playback could not be started.", error);
+          playbackStatus.textContent = "Playback could not start. Please try again.";
+        }
+      });
+      backwardButton.addEventListener("click", () => seekBy(-10));
+      forwardButton.addEventListener("click", () => seekBy(10));
+      fullscreenButton.addEventListener("click", async () => {
+        playbackStatus.textContent = "";
+        try {
+          if (document.fullscreenElement === video) {
+            await document.exitFullscreen();
+          } else if (video.webkitDisplayingFullscreen && video.webkitExitFullscreen) {
+            video.webkitExitFullscreen();
+          } else if (typeof video.requestFullscreen === "function") {
+            await video.requestFullscreen();
+          } else if (typeof video.webkitEnterFullscreen === "function") {
+            video.webkitEnterFullscreen();
+          } else {
+            throw new Error("Fullscreen is not supported by this browser.");
+          }
+        } catch (error) {
+          console.error("Recorded-class fullscreen could not be changed.", error);
+          playbackStatus.textContent = "Fullscreen is unavailable in this browser or tab.";
+        }
+      });
+      seekInput.addEventListener("input", () => {
+        const duration = Number(video.duration);
+        if (!Number.isFinite(duration) || duration <= 0) return;
+        const previewTime = Number(seekInput.value) / Number(seekInput.max) * duration;
+        seekPreviewTime = previewTime;
+        syncPlaybackControls(previewTime);
+      });
+      seekInput.addEventListener("change", () => {
+        const duration = Number(video.duration);
+        if (!Number.isFinite(duration) || duration <= 0) return;
+        video.currentTime = Number(seekInput.value) / Number(seekInput.max) * duration;
+        seekPreviewTime = null;
+      });
+      dialog.querySelector("#playbackSpeed")?.addEventListener("change", (event) => {
+        video.playbackRate = Number(event.currentTarget.value);
+      });
+      syncPlaybackControls();
+      video.addEventListener("fullscreenchange", syncPlaybackControls);
+      video.addEventListener("webkitbeginfullscreen", syncPlaybackControls);
+      video.addEventListener("webkitendfullscreen", syncPlaybackControls);
+      video.addEventListener("play", () => syncPlaybackControls());
       video.addEventListener("playing", () => {
+        playbackStatus.textContent = "";
+        syncPlaybackControls();
         void queueRecordedStudyOperation(() => startRecordedStudyTracking(recording, video));
       });
       ["pause", "waiting", "stalled", "seeking", "ended", "error"].forEach((eventName) => {
         video.addEventListener(eventName, () => {
+          syncPlaybackControls();
           void queueRecordedStudyOperation(stopRecordedStudyTracking);
         });
       });
       video.addEventListener("seeked", () => {
+        syncPlaybackControls();
         if (canTrackRecordedClass(recording, video)) {
           void queueRecordedStudyOperation(() => startRecordedStudyTracking(recording, video));
         }
       });
+      video.addEventListener("durationchange", () => syncPlaybackControls());
       video.addEventListener("loadedmetadata", () => {
         const savedPosition = state.watchProgress.get(recording.id)?.position || 0;
         if (savedPosition > 0 && savedPosition < video.duration) video.currentTime = savedPosition;
+        syncPlaybackControls();
       }, { once: true });
-      video.addEventListener("timeupdate", () => updateWatchProgress(recording, video));
+      video.addEventListener("timeupdate", () => {
+        updateWatchProgress(recording, video);
+        if (seekPreviewTime === null) syncPlaybackControls();
+      });
       video.addEventListener("ended", () => {
         state.completed.add(recording.id);
         updateWatchProgress(recording, video);
