@@ -41,7 +41,11 @@
 }
 .mfa-primary-button { background: linear-gradient(120deg, #6658df, #4c63d2); color: #fff; box-shadow: 0 6px 14px rgba(84, 89, 205, .2); }
 .mfa-secondary-button { border: 1px solid #dfe4ed; background: #fff; color: #46536b; }
-.mfa-primary-button:disabled, .mfa-secondary-button:disabled { opacity: .58; cursor: not-allowed; }
+.mfa-danger-button {
+  margin-top: 14px; padding: 10px 16px; border: 1px solid #e8c2c6; border-radius: 11px;
+  background: #fff7f7; color: #a3212c; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.mfa-primary-button:disabled, .mfa-secondary-button:disabled, .mfa-danger-button:disabled { opacity: .58; cursor: not-allowed; }
 .mfa-message { min-height: 20px; margin: 12px 0; color: #647086; font-size: 13px; line-height: 1.5; }
 .mfa-message[data-kind="error"] { color: #b42335; }
 .mfa-message[data-kind="success"] { color: #167347; }

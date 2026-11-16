@@ -22,6 +22,9 @@
         <div><strong>Backup authenticator</strong><span id="mfaBackupStatus">Not set up</span></div>
       </div>
       <div class="mfa-factor-list" id="mfaFactorList"></div>
+      <button type="button" class="mfa-danger-button" id="mfaDisableTwoFactor" hidden>
+        Disable Two-Factor Authentication
+      </button>
       <p class="mfa-message" id="mfaMessage" role="status" aria-live="polite"></p>
       <div class="mfa-enrollment" id="mfaEnrollment" hidden>
         <h4 id="mfaEnrollmentTitle">Set up your authenticator app</h4>
@@ -53,6 +56,7 @@
   const primaryStatus = mount.querySelector("#mfaPrimaryStatus");
   const backupStatus = mount.querySelector("#mfaBackupStatus");
   const list = mount.querySelector("#mfaFactorList");
+  const disableButton = mount.querySelector("#mfaDisableTwoFactor");
   const message = mount.querySelector("#mfaMessage");
   const enrollment = mount.querySelector("#mfaEnrollment");
   const enrollmentTitle = mount.querySelector("#mfaEnrollmentTitle");
@@ -68,6 +72,19 @@
   function setMessage(text, kind = "") {
     message.textContent = text;
     message.dataset.kind = kind;
+  }
+
+  function markStatusUnavailable(error) {
+    status.textContent = "Unavailable";
+    status.dataset.enabled = "false";
+    summary.textContent = "";
+    primaryStatus.textContent = "Unable to check";
+    backupStatus.textContent = "Unable to check";
+    list.replaceChildren();
+    addButton.hidden = true;
+    disableButton.hidden = true;
+    disableButton.disabled = true;
+    setMessage(error.message || "Could not load authenticator status.", "error");
   }
 
   function setBusy(value) {
@@ -104,6 +121,35 @@
       throw new Error("Your signed-in account changed. Reload Security settings and try again.");
     }
     return data.user;
+  }
+
+  async function withFactorMutationLock(client, action, required = true) {
+    const user = await requireCurrentUser(client);
+    const locks = window.navigator?.locks;
+    if (!locks?.request) {
+      if (!required) {
+        await requireCurrentUser(client);
+        return action(user.id);
+      }
+      throw new Error("This browser cannot coordinate authenticator changes across tabs. Use a current browser over HTTPS.");
+    }
+
+    // Web Locks coordinate this UI across same-origin tabs, not direct Auth API calls or other devices.
+    let acquired = false;
+    const result = await locks.request(
+      `smart-learning-mfa-factor-mutation:${user.id}`,
+      { mode: "exclusive", ifAvailable: true },
+      async (lock) => {
+        if (!lock) return undefined;
+        acquired = true;
+        await requireCurrentUser(client);
+        return action(user.id);
+      },
+    );
+    if (!acquired) {
+      throw new Error("An authenticator change is already in progress in another tab. Wait for it to finish, then retry.");
+    }
+    return result;
   }
 
   async function refresh() {
@@ -146,6 +192,8 @@
       : verifiedFactors.length && unverifiedFactors.length
         ? "Verification pending"
         : "Not set up";
+    disableButton.hidden = verifiedFactors.length === 0;
+    disableButton.disabled = busy || verifiedFactors.length === 0;
 
     list.replaceChildren();
     factors.forEach((factor) => {
@@ -191,6 +239,7 @@
     addButton.title = pendingSetup
       ? "Verify or remove the pending authenticator setup before starting another."
       : "";
+    return verifiedFactors.length;
   }
 
   async function beginEnrollment() {
@@ -201,27 +250,30 @@
     let createdFactorId = null;
     try {
       client = window.SmartLearningMFA.getClient();
-      await requireCurrentUser(client);
-      const factors = await window.SmartLearningMFA.getTotpFactors(client);
-      const verifiedFactors = factors.filter((factor) => factor.status === "verified");
-      if (factors.some((factor) => factor.status !== "verified")) {
-        throw new Error("Finish or remove the pending authenticator setup before adding another.");
-      }
-      if (verifiedFactors.length) {
-        const { data: assurance, error: assuranceError } =
-          await client.auth.mfa.getAuthenticatorAssuranceLevel();
-        if (assuranceError) throw assuranceError;
-        if (assurance?.currentLevel !== "aal2") {
-          throw new Error("Verify an existing authenticator to AAL2 before setting up a backup.");
+      const { data, verifiedFactorCount } = await withFactorMutationLock(client, async () => {
+        const factors = await window.SmartLearningMFA.getTotpFactors(client);
+        const verifiedFactors = factors.filter((factor) => factor.status === "verified");
+        if (factors.some((factor) => factor.status !== "verified")) {
+          throw new Error("Finish or remove the pending authenticator setup before adding another.");
         }
-      }
 
-      const factorName = verifiedFactors.length ? "Backup authenticator" : "Primary authenticator";
-      const { data, error } = await client.auth.mfa.enroll({
-        factorType: "totp",
-        friendlyName: factorName,
-      });
-      if (error) throw error;
+        if (verifiedFactors.length) {
+          const { data: assurance, error: assuranceError } =
+            await client.auth.mfa.getAuthenticatorAssuranceLevel();
+          if (assuranceError) throw assuranceError;
+          if (assurance?.currentLevel !== "aal2") {
+            throw new Error("Verify an existing authenticator to AAL2 before setting up a backup.");
+          }
+        }
+
+        const factorName = verifiedFactors.length ? "Backup authenticator" : "Primary authenticator";
+        const { data, error } = await client.auth.mfa.enroll({
+          factorType: "totp",
+          friendlyName: factorName,
+        });
+        if (error) throw error;
+        return { data, verifiedFactorCount: verifiedFactors.length };
+      }, false);
       createdFactorId = typeof data?.id === "string" ? data.id : null;
       pendingFactorId = createdFactorId;
       await requireCurrentUser(client);
@@ -231,10 +283,10 @@
       }
 
       const qrImageSource = getQrImageSource(data.totp.qr_code);
-      enrollmentTitle.textContent = verifiedFactors.length
+      enrollmentTitle.textContent = verifiedFactorCount
         ? "Set up your backup authenticator"
         : "Set up your primary authenticator";
-      enrollmentInstructions.textContent = verifiedFactors.length
+      enrollmentInstructions.textContent = verifiedFactorCount
         ? "Scan this QR code or enter the setup key on a separate device. Keep the key private and verify a code from that device."
         : "Scan this QR code or enter the setup key in your authenticator app, then verify a code.";
       qrCode.hidden = !qrImageSource;
@@ -252,14 +304,17 @@
       let cleanupMessage = "";
       if (client && createdFactorId) {
         try {
-          const factors = await window.SmartLearningMFA.getTotpFactors(client);
-          const createdFactor = factors.find((factor) => factor.id === createdFactorId);
-          if (createdFactor?.status === "unverified") {
-            const { error: cleanupError } = await client.auth.mfa.unenroll({
-              factorId: createdFactorId,
-            });
-            if (cleanupError) throw cleanupError;
-          }
+          await withFactorMutationLock(client, async () => {
+            const factors = await window.SmartLearningMFA.getTotpFactors(client);
+            const createdFactor = factors.find((factor) => factor.id === createdFactorId);
+            if (createdFactor?.status === "unverified") {
+              await requireCurrentUser(client);
+              const { error: cleanupError } = await client.auth.mfa.unenroll({
+                factorId: createdFactorId,
+              });
+              if (cleanupError) throw cleanupError;
+            }
+          });
         } catch (cleanupError) {
           console.error("Could not remove the incomplete authenticator setup.", cleanupError);
           cleanupMessage = " The incomplete setup may remain in the factor list; remove it there before retrying.";
@@ -290,24 +345,30 @@
     setMessage("Verifying your authenticator code…");
     try {
       const client = window.SmartLearningMFA.getClient();
-      await requireCurrentUser(client);
-      const { data: challenge, error: challengeError } = await client.auth.mfa.challenge({
-        factorId: pendingFactorId,
-      });
-      if (challengeError) throw challengeError;
-      if (!challenge?.id) throw new Error("Supabase did not return a verification challenge. Try again.");
-      const { error: verifyError } = await client.auth.mfa.verify({
-        factorId: pendingFactorId,
-        challengeId: challenge.id,
-        code,
-      });
-      if (verifyError) throw verifyError;
+      const factorId = pendingFactorId;
+      await withFactorMutationLock(client, async () => {
+        const factors = await window.SmartLearningMFA.getTotpFactors(client);
+        if (!factors.some((factor) => factor.id === factorId && factor.status === "unverified")) {
+          throw new Error("This authenticator setup is no longer pending. Refresh the page and try again.");
+        }
+        const { data: challenge, error: challengeError } = await client.auth.mfa.challenge({
+          factorId,
+        });
+        if (challengeError) throw challengeError;
+        if (!challenge?.id) throw new Error("Supabase did not return a verification challenge. Try again.");
+        const { error: verifyError } = await client.auth.mfa.verify({
+          factorId,
+          challengeId: challenge.id,
+          code,
+        });
+        if (verifyError) throw verifyError;
 
-      await requireCurrentUser(client);
-      const verifiedFactors = await window.SmartLearningMFA.getVerifiedTotpFactors(client);
-      if (!verifiedFactors.some((factor) => factor.id === pendingFactorId)) {
-        throw new Error("Supabase did not mark this authenticator as verified. Try again.");
-      }
+        await requireCurrentUser(client);
+        const verifiedFactors = await window.SmartLearningMFA.getVerifiedTotpFactors(client);
+        if (!verifiedFactors.some((factor) => factor.id === factorId)) {
+          throw new Error("Supabase did not mark this authenticator as verified. Try again.");
+        }
+      }, false);
       clearEnrollment();
       await refresh();
       const { data: assurance, error: assuranceError } =
@@ -329,65 +390,214 @@
   async function removeVerifiedFactor(factor) {
     if (busy) return;
     setBusy(true);
+    setMessage("");
+    let result = null;
+    let operationError = null;
+    let refreshError = null;
     try {
       const client = window.SmartLearningMFA.getClient();
-      await requireCurrentUser(client);
-      const currentFactors = await window.SmartLearningMFA.getVerifiedTotpFactors(client);
-      if (!currentFactors.some((item) => item.id !== factor.id)) {
-        throw new Error("Set up and verify another authenticator before removing this one.");
-      }
-      if (!window.confirm(
-        "Removing this authenticator may invalidate existing sessions. Confirm that another verified authenticator is available before continuing.",
-      )) return;
-      const code = window.prompt("Enter the current 6-digit code from the authenticator you are removing.");
-      if (code === null) return;
-      if (!/^\d{6}$/.test(code.trim())) {
-        throw new Error("Enter a valid 6-digit authenticator code.");
-      }
-      setMessage("Verifying the authenticator before removal…");
-      const { data: assurance, error: assuranceError } =
-        await client.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (assuranceError) throw assuranceError;
-      if (assurance?.currentLevel !== "aal2") {
-        throw new Error("Sign in again and complete two-factor verification before removing an authenticator.");
-      }
-      const verifiedFactors = await window.SmartLearningMFA.getVerifiedTotpFactors(client);
-      if (!verifiedFactors.some((item) => item.id === factor.id) ||
-        !verifiedFactors.some((item) => item.id !== factor.id)) {
-        throw new Error("Keep another verified authenticator enrolled before removing this one.");
-      }
-      const { data: challenge, error: challengeError } = await client.auth.mfa.challenge({
-        factorId: factor.id,
-      });
-      if (challengeError) throw challengeError;
-      if (!challenge?.id) throw new Error("Supabase did not return a verification challenge. Try again.");
-      const { error: verifyError } = await client.auth.mfa.verify({
-        factorId: factor.id,
-        challengeId: challenge.id,
-        code: code.trim(),
-      });
-      if (verifyError) throw verifyError;
+      result = await withFactorMutationLock(client, async () => {
+        const currentFactors = await window.SmartLearningMFA.getVerifiedTotpFactors(client);
+        if (!currentFactors.some((item) => item.id === factor.id)) {
+          throw new Error("This authenticator is no longer verified. Refresh the page and try again.");
+        }
+        if (!currentFactors.some((item) => item.id !== factor.id)) {
+          throw new Error("Set up and verify another authenticator before removing this one.");
+        }
+        if (!window.confirm(
+          "Removing this authenticator may invalidate existing sessions. Confirm that another verified authenticator is available before continuing.",
+        )) return "cancelled";
+        const code = window.prompt("Enter the current 6-digit code from the authenticator you are removing.");
+        if (code === null) return "cancelled";
+        if (!/^\d{6}$/.test(code.trim())) {
+          throw new Error("Enter a valid 6-digit authenticator code.");
+        }
+        await requireCurrentUser(client);
+        setMessage("Verifying the authenticator before removal…");
+        const { data: assurance, error: assuranceError } =
+          await client.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (assuranceError) throw assuranceError;
+        if (assurance?.currentLevel !== "aal2") {
+          throw new Error("Sign in again and complete two-factor verification before removing an authenticator.");
+        }
+        const { data: challenge, error: challengeError } = await client.auth.mfa.challenge({
+          factorId: factor.id,
+        });
+        if (challengeError) throw challengeError;
+        if (!challenge?.id) throw new Error("Supabase did not return a verification challenge. Try again.");
+        const { error: verifyError } = await client.auth.mfa.verify({
+          factorId: factor.id,
+          challengeId: challenge.id,
+          code: code.trim(),
+        });
+        if (verifyError) throw verifyError;
 
-      await requireCurrentUser(client);
-      const { data: verifiedAssurance, error: verifiedAssuranceError } =
-        await client.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (verifiedAssuranceError) throw verifiedAssuranceError;
-      if (verifiedAssurance?.currentLevel !== "aal2") {
-        throw new Error("The authenticator was verified, but this session did not reach AAL2. No authenticator was removed.");
-      }
-      const latestFactors = await window.SmartLearningMFA.getVerifiedTotpFactors(client);
-      if (!latestFactors.some((item) => item.id !== factor.id)) {
-        throw new Error("Another verified authenticator is required. No authenticator was removed.");
-      }
-      await requireCurrentUser(client);
-      const { error: unenrollError } = await client.auth.mfa.unenroll({ factorId: factor.id });
-      if (unenrollError) throw unenrollError;
-      await refresh();
-      setMessage("Authenticator removed. Another verified authenticator remains enrolled.", "success");
+        await requireCurrentUser(client);
+        const { data: verifiedAssurance, error: verifiedAssuranceError } =
+          await client.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (verifiedAssuranceError) throw verifiedAssuranceError;
+        if (verifiedAssurance?.currentLevel !== "aal2") {
+          throw new Error("The authenticator was verified, but this session did not reach AAL2. No authenticator was removed.");
+        }
+        const latestFactors = await window.SmartLearningMFA.getVerifiedTotpFactors(client);
+        if (!latestFactors.some((item) => item.id === factor.id) ||
+          !latestFactors.some((item) => item.id !== factor.id)) {
+          throw new Error("Another verified authenticator is required. No authenticator was removed.");
+        }
+        await requireCurrentUser(client);
+        const { error: unenrollError } = await client.auth.mfa.unenroll({ factorId: factor.id });
+        if (unenrollError) throw unenrollError;
+        return "removed";
+      });
     } catch (error) {
-      setMessage(error.message || "Could not remove the authenticator.", "error");
+      operationError = error;
     } finally {
+      try {
+        await refresh();
+      } catch (error) {
+        refreshError = error;
+        markStatusUnavailable(error);
+      }
       setBusy(false);
+    }
+    if (operationError) {
+      const refreshNotice = refreshError
+        ? " Current authenticator status could not be refreshed; reload Security settings."
+        : "";
+      setMessage(`${operationError.message || "Could not remove the authenticator."}${refreshNotice}`, "error");
+    } else if (result === "removed") {
+      setMessage(refreshError
+        ? "Authenticator removal succeeded, but the remaining status could not be refreshed. Sign in again and reload Security settings."
+        : "Authenticator removed. Another verified authenticator remains enrolled.", refreshError ? "error" : "success");
+    } else if (refreshError) {
+      setMessage("Authenticator status could not be refreshed. Reload Security settings.", "error");
+    }
+  }
+
+  async function disableTwoFactor() {
+    if (busy) return;
+    setBusy(true);
+    setMessage("");
+    let result = null;
+    let operationError = null;
+    let refreshError = null;
+    let removedCount = 0;
+    let totalCount = 0;
+    let remainingCount = null;
+    try {
+      const client = window.SmartLearningMFA.getClient();
+      result = await withFactorMutationLock(client, async () => {
+        const { data: assurance, error: assuranceError } =
+          await client.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (assuranceError) throw assuranceError;
+        if (assurance?.currentLevel !== "aal2") {
+          throw new Error("Complete two-factor verification to AAL2 before disabling it.");
+        }
+
+        const factors = await window.SmartLearningMFA.getTotpFactors(client);
+        if (factors.some((factor) => factor.status !== "verified")) {
+          throw new Error("Finish or cancel the pending authenticator setup before disabling two-factor authentication.");
+        }
+        const verifiedFactors = factors.filter((factor) => factor.status === "verified");
+        if (!verifiedFactors.length) {
+          throw new Error("No verified authenticator is currently enrolled.");
+        }
+        if (!window.confirm(
+          `Disable two-factor authentication and remove all ${verifiedFactors.length} verified authenticator${verifiedFactors.length === 1 ? "" : "s"}? This may invalidate existing sessions.`,
+        )) return "cancelled";
+
+        const code = window.prompt("Enter a current 6-digit code from one of your verified authenticators.");
+        if (code === null) return "cancelled";
+        if (!/^\d{6}$/.test(code.trim())) {
+          throw new Error("Enter a valid 6-digit authenticator code.");
+        }
+
+        await requireCurrentUser(client);
+        const { data: currentAssurance, error: currentAssuranceError } =
+          await client.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (currentAssuranceError) throw currentAssuranceError;
+        if (currentAssurance?.currentLevel !== "aal2") {
+          throw new Error("Your session is no longer at AAL2. Sign in again before disabling two-factor authentication.");
+        }
+        const currentVerifiedFactors = await window.SmartLearningMFA.getVerifiedTotpFactors(client);
+        if (!currentVerifiedFactors.length) {
+          throw new Error("No verified authenticator remains to disable.");
+        }
+        setMessage("Verifying your current authenticator code…");
+        const { data: challenge, error: challengeError } = await client.auth.mfa.challenge({
+          factorId: currentVerifiedFactors[0].id,
+        });
+        if (challengeError) throw challengeError;
+        if (!challenge?.id) throw new Error("Supabase did not return a verification challenge. Try again.");
+        const { error: verifyError } = await client.auth.mfa.verify({
+          factorId: currentVerifiedFactors[0].id,
+          challengeId: challenge.id,
+          code: code.trim(),
+        });
+        if (verifyError) throw verifyError;
+
+        await requireCurrentUser(client);
+        const { data: verifiedAssurance, error: verifiedAssuranceError } =
+          await client.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (verifiedAssuranceError) throw verifiedAssuranceError;
+        if (verifiedAssurance?.currentLevel !== "aal2") {
+          throw new Error("The authenticator code was accepted, but this session did not reach AAL2. No factors were removed.");
+        }
+
+        const factorsToRemove = await window.SmartLearningMFA.getVerifiedTotpFactors(client);
+        if (!factorsToRemove.length) {
+          throw new Error("No verified authenticator remains to disable.");
+        }
+        totalCount = factorsToRemove.length;
+        setMessage("Removing verified authenticators…");
+        for (const factor of factorsToRemove) {
+          await requireCurrentUser(client);
+          const currentFactors = await window.SmartLearningMFA.getVerifiedTotpFactors(client);
+          if (!currentFactors.some((item) => item.id === factor.id)) continue;
+          await requireCurrentUser(client);
+          const { error: unenrollError } = await client.auth.mfa.unenroll({
+            factorId: factor.id,
+          });
+          if (unenrollError) {
+            throw new Error(`Could not remove all authenticators after ${removedCount} of ${totalCount} were removed. ${unenrollError.message}`);
+          }
+          removedCount += 1;
+        }
+        return "disabled";
+      });
+    } catch (error) {
+      operationError = error;
+    } finally {
+      try {
+        remainingCount = await refresh();
+      } catch (error) {
+        refreshError = error;
+        markStatusUnavailable(error);
+      }
+      setBusy(false);
+    }
+
+    if (operationError) {
+      const partialMessage = removedCount
+        ? `Removed ${removedCount} of ${totalCount} verified authenticators before the failure.`
+        : "";
+      const remainingMessage = Number.isInteger(remainingCount)
+        ? ` ${remainingCount} verified authenticator${remainingCount === 1 ? "" : "s"} remain.`
+        : "";
+      const refreshNotice = refreshError
+        ? " The remaining status could not be refreshed; sign in again and reload Security settings."
+        : "";
+      setMessage(`${partialMessage} ${operationError.message || "Could not disable two-factor authentication."}${remainingMessage}${refreshNotice}`, "error");
+    } else if (result === "disabled") {
+      if (refreshError) {
+        setMessage(`Removed ${removedCount} verified authenticator${removedCount === 1 ? "" : "s"}, but the final status could not be refreshed. Sign in again and reload Security settings.`, "error");
+      } else if (remainingCount > 0) {
+        setMessage(`Removed ${removedCount} verified authenticator${removedCount === 1 ? "" : "s"}; ${remainingCount} verified factor${remainingCount === 1 ? "" : "s"} remain. Review the refreshed status and retry if needed.`, "error");
+      } else {
+        setMessage("Two-factor authentication is disabled. No verified authenticator remains enrolled.", "success");
+      }
+    } else if (refreshError) {
+      setMessage("Authenticator status could not be refreshed. Reload Security settings.", "error");
     }
   }
 
@@ -396,17 +606,18 @@
     setBusy(true);
     try {
       const client = window.SmartLearningMFA.getClient();
-      await requireCurrentUser(client);
-      const factors = await window.SmartLearningMFA.getTotpFactors(client);
-      const currentFactor = factors.find((item) => item.id === factor.id);
-      if (currentFactor?.status === "verified") {
-        throw new Error("This authenticator is now verified. Refresh the page before removing it.");
-      }
-      if (currentFactor) {
-        await requireCurrentUser(client);
-        const { error } = await client.auth.mfa.unenroll({ factorId: factor.id });
-        if (error) throw error;
-      }
+      await withFactorMutationLock(client, async () => {
+        const factors = await window.SmartLearningMFA.getTotpFactors(client);
+        const currentFactor = factors.find((item) => item.id === factor.id);
+        if (currentFactor?.status === "verified") {
+          throw new Error("This authenticator is now verified. Refresh the page before removing it.");
+        }
+        if (currentFactor) {
+          await requireCurrentUser(client);
+          const { error } = await client.auth.mfa.unenroll({ factorId: factor.id });
+          if (error) throw error;
+        }
+      });
       if (pendingFactorId === factor.id) clearEnrollment();
       await refresh();
       setMessage("Unverified authenticator setup removed.", "success");
@@ -418,6 +629,7 @@
   }
 
   addButton.addEventListener("click", () => void beginEnrollment());
+  disableButton.addEventListener("click", () => void disableTwoFactor());
   mount.querySelector("#mfaEnrollForm").addEventListener("submit", verifyEnrollment);
   mount.querySelector("#mfaCancelEnrollment").addEventListener("click", async () => {
     if (busy || !pendingFactorId) {
@@ -429,17 +641,18 @@
     setBusy(true);
     try {
       const client = window.SmartLearningMFA.getClient();
-      await requireCurrentUser(client);
-      const factors = await window.SmartLearningMFA.getTotpFactors(client);
-      const factor = factors.find((item) => item.id === factorId);
-      if (factor?.status === "verified") {
-        throw new Error("This authenticator is already verified and was not removed.");
-      }
-      if (factor) {
-        await requireCurrentUser(client);
-        const { error } = await client.auth.mfa.unenroll({ factorId });
-        if (error) throw error;
-      }
+      await withFactorMutationLock(client, async () => {
+        const factors = await window.SmartLearningMFA.getTotpFactors(client);
+        const factor = factors.find((item) => item.id === factorId);
+        if (factor?.status === "verified") {
+          throw new Error("This authenticator is already verified and was not removed.");
+        }
+        if (factor) {
+          await requireCurrentUser(client);
+          const { error } = await client.auth.mfa.unenroll({ factorId });
+          if (error) throw error;
+        }
+      });
       clearEnrollment();
       await refresh();
       setMessage("Authenticator setup canceled.", "success");
@@ -463,10 +676,6 @@
   });
 
   refresh().catch((error) => {
-    status.textContent = "Unavailable";
-    primaryStatus.textContent = "Unable to check";
-    backupStatus.textContent = "Unable to check";
-    setMessage(error.message || "Could not load authenticator status.", "error");
-    addButton.hidden = true;
+    markStatusUnavailable(error);
   });
 })();
