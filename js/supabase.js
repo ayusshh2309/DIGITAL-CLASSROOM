@@ -22,13 +22,7 @@
 
   function getClient() {
     if (!isConfigured()) return null;
-    client ||= window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: {
-        experimental: {
-          recoveryCodes: true,
-        },
-      },
-    });
+    client ||= window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     return client;
   }
 

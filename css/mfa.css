@@ -23,6 +23,10 @@
 }
 .mfa-status-pill[data-enabled="true"] { background: #e7f8ef; color: #167347; }
 .mfa-device-summary { color: #7a8497; font-size: 13px; }
+.mfa-device-status { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.mfa-device-status > div { display: grid; gap: 4px; padding: 12px 14px; border: 1px solid #e8ebf2; border-radius: 12px; background: #fff; }
+.mfa-device-status strong { font-size: 13px; }
+.mfa-device-status span { color: #788399; font-size: 12px; }
 .mfa-factor-list { display: grid; gap: 10px; }
 .mfa-factor-row {
   display: flex; justify-content: space-between; align-items: center; gap: 14px;
@@ -37,7 +41,7 @@
 }
 .mfa-primary-button { background: linear-gradient(120deg, #6658df, #4c63d2); color: #fff; box-shadow: 0 6px 14px rgba(84, 89, 205, .2); }
 .mfa-secondary-button { border: 1px solid #dfe4ed; background: #fff; color: #46536b; }
-.mfa-primary-button:disabled, .mfa-secondary-button:disabled { opacity: .58; cursor: wait; }
+.mfa-primary-button:disabled, .mfa-secondary-button:disabled { opacity: .58; cursor: not-allowed; }
 .mfa-message { min-height: 20px; margin: 12px 0; color: #647086; font-size: 13px; line-height: 1.5; }
 .mfa-message[data-kind="error"] { color: #b42335; }
 .mfa-message[data-kind="success"] { color: #167347; }
@@ -54,13 +58,9 @@
 .mfa-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 13px; }
 .mfa-recovery-section { margin-top: 24px; padding-top: 20px; border-top: 1px solid #e8ebf2; }
 .mfa-recovery-section h4 { margin: 0 0 7px; font-size: 16px; }
-.mfa-recovery-section > p, .mfa-recovery-display > p {
+.mfa-recovery-section > p {
   margin: 0 0 12px; color: #69758b; font-size: 13px; line-height: 1.6;
 }
-.mfa-recovery-count { color: #36435b !important; font-weight: 700; }
-.mfa-recovery-display { margin-top: 16px; padding: 16px; border: 1px solid #e1e6f4; border-radius: 13px; background: #fff; }
-.mfa-recovery-display ol { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px 20px; padding-left: 24px; }
-.mfa-recovery-display li { padding: 5px 8px; border-radius: 7px; background: #f5f6fb; font-family: ui-monospace, monospace; font-weight: 700; letter-spacing: .04em; }
 .mfa-recovery-note { margin-top: 12px !important; font-size: 12px !important; }
 @media (max-width: 560px) {
   .mfa-factor-row { align-items: flex-start; }
