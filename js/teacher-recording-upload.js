@@ -189,7 +189,7 @@
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         activeRequest = xhr;
-        xhr.open("POST", uploadUrl);
+        xhr.open("PUT", uploadUrl);
         xhr.setRequestHeader("apikey", window.SmartLearningSupabase.SUPABASE_ANON_KEY);
         xhr.setRequestHeader("Authorization", `Bearer ${accessToken}`);
         xhr.setRequestHeader("Content-Type", contentType);

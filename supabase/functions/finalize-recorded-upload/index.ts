@@ -325,15 +325,36 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: "The uploaded file could not be verified. Please retry." }, 500);
   }
   const object = (objects || []).find((entry) => entry.name === fileName);
-  if (!object || !object.metadata || typeof object.metadata !== "object") {
-    return jsonResponse({ error: "The video upload is incomplete or could not be found. Upload it again." }, 409);
+  if (!object) {
+    return jsonResponse({
+      error: "Storage object check failed: no video was found at the expected recording path. Upload it again.",
+    }, 409);
+  }
+  if (!object.metadata || typeof object.metadata !== "object") {
+    return jsonResponse({
+      error: "Storage metadata check failed: the uploaded video has no metadata to verify.",
+    }, 422);
   }
   const metadata = object.metadata as Record<string, unknown>;
   const actualSize = Number(metadata.size);
   const actualMimeType = String(metadata.mimetype || metadata.contentType || "");
-  if (!Number.isSafeInteger(actualSize) || actualSize !== fileSize || actualSize <= 0 ||
-    actualSize > maxFileSizeBytes || actualMimeType !== fileType.mimeType) {
-    return jsonResponse({ error: "The uploaded video's size or media type did not match the validated file." }, 422);
+  if (!Number.isSafeInteger(actualSize) || actualSize <= 0) {
+    return jsonResponse({
+      error: "Storage size check failed: the uploaded video has no valid byte-size metadata.",
+    }, 422);
+  }
+  if (actualSize > maxFileSizeBytes) {
+    return jsonResponse({ error: "Storage size check failed: the uploaded video exceeds the configured limit." }, 413);
+  }
+  if (actualSize !== fileSize) {
+    return jsonResponse({
+      error: `Storage size check failed: expected ${fileSize} bytes, found ${actualSize} bytes.`,
+    }, 422);
+  }
+  if (actualMimeType !== fileType.mimeType) {
+    return jsonResponse({
+      error: `Storage MIME type check failed: expected ${fileType.mimeType}, found ${actualMimeType || "missing"}.`,
+    }, 422);
   }
   const { data: probeUrl, error: probeUrlError } = await adminClient.storage
     .from(BUCKET)
