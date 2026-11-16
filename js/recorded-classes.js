@@ -1,6 +1,8 @@
 (() => {
   "use strict";
 
+  const STUDY_TIME_HEARTBEAT_INTERVAL_MS = 15_000;
+  const STUDY_SESSION_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const state = {
     client: null,
     student: null,
@@ -10,6 +12,9 @@
     completed: new Set(),
     loading: false,
     playbackRequest: 0,
+    recordedStudyTracking: null,
+    recordedStudyTrackingQueue: Promise.resolve(),
+    pageClosing: false,
   };
   const $ = (id) => document.getElementById(id);
 
@@ -475,6 +480,171 @@
     return url;
   }
 
+  function studySessionIdFromRpcResult(data) {
+    const result = Array.isArray(data) ? data[0] : data;
+    const sessionId = typeof result === "string"
+      ? result
+      : result?.session_id ?? result?.id;
+    if (!STUDY_SESSION_ID_PATTERN.test(String(sessionId || ""))) {
+      throw new Error("The recorded-class study-time RPC did not return a valid session ID.");
+    }
+    return String(sessionId);
+  }
+
+  function canTrackRecordedClass(recording, video) {
+    const dialog = $("lectureDialog");
+    return Boolean(
+      state.client &&
+      recording?.id &&
+      dialog?.open &&
+      dialog.dataset.recordingId === String(recording.id) &&
+      video?.isConnected &&
+      !document.hidden &&
+      !video.paused &&
+      !video.ended &&
+      !video.seeking &&
+      video.readyState >= 3,
+    );
+  }
+
+  function queueRecordedStudyOperation(operation) {
+    const queued = state.recordedStudyTrackingQueue.then(operation, operation);
+    state.recordedStudyTrackingQueue = queued.catch(() => {});
+    return queued;
+  }
+
+  async function evaluateAchievementsAfterRecordedClass(sessionId) {
+    try {
+      const { data, error } = await state.client.rpc("evaluate_student_achievements_v1");
+      if (error) throw error;
+      console.info("Student achievements evaluated after recorded-class playback.", {
+        sessionId,
+        result: data,
+      });
+    } catch (error) {
+      console.error("Could not evaluate achievements after recorded-class playback.", {
+        sessionId,
+        error,
+      });
+    }
+  }
+
+  async function stopRecordedStudyTracking() {
+    const tracking = state.recordedStudyTracking;
+    if (!tracking) return true;
+    tracking.stopRequested = true;
+    window.clearInterval(tracking.heartbeatTimer);
+    window.clearTimeout(tracking.stopRetryTimer);
+    tracking.heartbeatTimer = null;
+    tracking.stopRetryTimer = null;
+    if (tracking.stopPromise) return tracking.stopPromise;
+
+    tracking.stopPromise = (async () => {
+      if (tracking.heartbeatInFlight) await tracking.heartbeatInFlight;
+      const { error } = await state.client.rpc(
+        "study_time_stop_activity_v1",
+        { p_session_id: tracking.sessionId },
+      );
+      if (error) throw error;
+      if (state.recordedStudyTracking === tracking) state.recordedStudyTracking = null;
+      void evaluateAchievementsAfterRecordedClass(tracking.sessionId);
+      return true;
+    })().catch((error) => {
+      console.error("Could not stop the recorded-class study-time session.", error);
+      tracking.stopPromise = null;
+      if (state.recordedStudyTracking === tracking && !state.pageClosing) {
+        tracking.stopRetryTimer = window.setTimeout(() => {
+          tracking.stopRetryTimer = null;
+          void queueRecordedStudyOperation(stopRecordedStudyTracking);
+        }, STUDY_TIME_HEARTBEAT_INTERVAL_MS);
+      }
+      return false;
+    });
+    return tracking.stopPromise;
+  }
+
+  async function sendRecordedStudyHeartbeat(tracking) {
+    if (
+      state.recordedStudyTracking !== tracking ||
+      tracking.stopRequested ||
+      tracking.heartbeatInFlight
+    ) return;
+    const recording = findRecording(tracking.recordingId);
+    const video = $("lectureDialog").querySelector("#lectureVideo");
+    if (!recording || !canTrackRecordedClass(recording, video)) {
+      void queueRecordedStudyOperation(stopRecordedStudyTracking);
+      return;
+    }
+
+    tracking.heartbeatInFlight = (async () => {
+      const { error } = await state.client.rpc(
+        "study_time_heartbeat_activity_v1",
+        { p_session_id: tracking.sessionId },
+      );
+      if (error) throw error;
+    })();
+    try {
+      await tracking.heartbeatInFlight;
+    } catch (error) {
+      console.error("The recorded-class study-time heartbeat failed.", error);
+      tracking.heartbeatFailed = true;
+    } finally {
+      tracking.heartbeatInFlight = null;
+    }
+    if (tracking.heartbeatFailed) {
+      void queueRecordedStudyOperation(stopRecordedStudyTracking);
+    }
+  }
+
+  async function startRecordedStudyTracking(recording, video) {
+    if (!STUDY_SESSION_ID_PATTERN.test(String(recording?.id || ""))) {
+      console.error("Recorded-class study-time tracking was not started because its ID is invalid.");
+      return false;
+    }
+    const current = state.recordedStudyTracking;
+    if (
+      current &&
+      current.recordingId === String(recording.id) &&
+      !current.stopRequested
+    ) return true;
+
+    try {
+      const previousStopped = await stopRecordedStudyTracking();
+      if (!previousStopped || !canTrackRecordedClass(recording, video)) return false;
+      const { data, error } = await state.client.rpc(
+        "study_time_start_activity_v1",
+        {
+          p_activity_type: "recorded_class",
+          p_resource_id: recording.id,
+        },
+      );
+      if (error) throw error;
+
+      const tracking = {
+        sessionId: studySessionIdFromRpcResult(data),
+        recordingId: String(recording.id),
+        heartbeatTimer: null,
+        stopRetryTimer: null,
+        heartbeatInFlight: null,
+        heartbeatFailed: false,
+        stopRequested: false,
+        stopPromise: null,
+      };
+      state.recordedStudyTracking = tracking;
+      if (!canTrackRecordedClass(recording, video)) {
+        await stopRecordedStudyTracking();
+        return false;
+      }
+      tracking.heartbeatTimer = window.setInterval(() => {
+        void sendRecordedStudyHeartbeat(tracking);
+      }, STUDY_TIME_HEARTBEAT_INTERVAL_MS);
+      return true;
+    } catch (error) {
+      console.error("Could not start the recorded-class study-time session.", error);
+      return false;
+    }
+  }
+
   function detailInfo(recording) {
     const rows = [
       ["Teacher", recording.teacher],
@@ -515,6 +685,11 @@
   }
 
   async function renderLectureDetails(recording) {
+    const previousVideo = $("lectureDialog").querySelector("#lectureVideo");
+    if (previousVideo) {
+      previousVideo.pause();
+      void queueRecordedStudyOperation(stopRecordedStudyTracking);
+    }
     const requestId = ++state.playbackRequest;
     const progress = progressFor(recording.id);
     $("lectureDialogContent").innerHTML = `<div class="lecture-detail-header"><div><div class="recorded-eyebrow"><span class="recording-status" data-status="${recording.status}">${escapeHTML(statusLabel(recording.status))}</span></div><h2 id="detailTitle">${escapeHTML(recording.title)}</h2><p>${escapeHTML(recording.subject)} · ${escapeHTML(recording.chapter)}</p></div><button class="dialog-close" type="button" data-close-dialog aria-label="Close lecture details"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
@@ -541,6 +716,19 @@
         if (video) video.playbackRate = Number(event.currentTarget.value);
       });
       const video = dialog.querySelector("#lectureVideo");
+      video.addEventListener("playing", () => {
+        void queueRecordedStudyOperation(() => startRecordedStudyTracking(recording, video));
+      });
+      ["pause", "waiting", "stalled", "seeking", "ended", "error"].forEach((eventName) => {
+        video.addEventListener(eventName, () => {
+          void queueRecordedStudyOperation(stopRecordedStudyTracking);
+        });
+      });
+      video.addEventListener("seeked", () => {
+        if (canTrackRecordedClass(recording, video)) {
+          void queueRecordedStudyOperation(() => startRecordedStudyTracking(recording, video));
+        }
+      });
       video.addEventListener("loadedmetadata", () => {
         const savedPosition = state.watchProgress.get(recording.id)?.position || 0;
         if (savedPosition > 0 && savedPosition < video.duration) video.currentTime = savedPosition;
@@ -660,7 +848,24 @@
     });
     $("lectureDialog").addEventListener("close", () => {
       state.playbackRequest += 1;
+      $("lectureDialog").querySelector("#lectureVideo")?.pause();
+      void queueRecordedStudyOperation(stopRecordedStudyTracking);
     });
+    document.addEventListener("visibilitychange", () => {
+      const dialog = $("lectureDialog");
+      const video = dialog.querySelector("#lectureVideo");
+      const recording = findRecording(dialog.dataset.recordingId);
+      if (document.hidden) {
+        void queueRecordedStudyOperation(stopRecordedStudyTracking);
+      } else if (recording && video && canTrackRecordedClass(recording, video)) {
+        void queueRecordedStudyOperation(() => startRecordedStudyTracking(recording, video));
+      }
+    });
+    window.addEventListener("pagehide", () => {
+      state.pageClosing = true;
+      $("lectureDialog").querySelector("#lectureVideo")?.pause();
+      void queueRecordedStudyOperation(stopRecordedStudyTracking);
+    }, { once: true });
   }
 
   document.addEventListener("DOMContentLoaded", () => {
