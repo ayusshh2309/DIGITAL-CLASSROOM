@@ -228,14 +228,29 @@
     });
   }
 
+  function lectureTitleFor(liveClass) {
+    const titleValue = Object.prototype.hasOwnProperty.call(liveClass || {}, "recording_title")
+      ? liveClass.recording_title
+      : liveClass?.title;
+    const title = typeof titleValue === "string" ? titleValue.trim() : "";
+    if (!title) throw new Error("The selected live class does not have a lecture title.");
+    if (title.length > 180) throw new Error("The lecture title must be 180 characters or fewer.");
+    return title;
+  }
+
   function payloadFor(file, contentType, durationSeconds) {
     if (!selectedLiveClass || !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(selectedLiveClass.id)) {
       throw new Error("Choose a valid live class.");
     }
+    const chapter = typeof selectedLiveClass.chapter === "string" ? selectedLiveClass.chapter.trim() : "";
+    const topic = typeof selectedLiveClass.topic === "string" ? selectedLiveClass.topic.trim() : "";
     return {
       recording_mode: "live_class",
       live_class_id: selectedLiveClass.id,
       recording_id: currentSession.recording_id,
+      title: lectureTitleFor(selectedLiveClass),
+      ...(chapter ? { chapter } : {}),
+      ...(topic ? { topic } : {}),
       content_type: contentType,
       file_size: file.size,
       duration_seconds: durationSeconds,
@@ -251,6 +266,7 @@
     let file;
     let type;
     try {
+      lectureTitleFor(selectedLiveClass);
       file = elements.file.files[0];
       type = validateFile(file);
       setBusy(true);

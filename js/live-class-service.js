@@ -53,6 +53,7 @@
       id: String(item.id || `live-${Date.now()}-${Math.random().toString(36).slice(2)}`),
       teacher_id: teacherId,
       title,
+      recording_title: typeof item.title === "string" ? item.title : null,
       grade: gradeValue === "" ? "" : String(gradeValue),
       class_grade: String(item.class_grade ?? gradeValue ?? ""),
       stream: String(item.stream || item.class_stream || ""),
