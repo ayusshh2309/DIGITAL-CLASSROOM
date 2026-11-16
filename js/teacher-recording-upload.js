@@ -335,7 +335,7 @@
         ? "Recording replaced and verified."
         : "Recording uploaded and verified.";
       setStatus(
-        finalized.cleanup_warning ? `${successMessage} ${finalized.cleanup_warning}` : successMessage,
+        `${finalized.cleanup_warning ? `${successMessage} ${finalized.cleanup_warning}` : successMessage} Opening Recorded Classes…`,
         "success",
       );
       elements.submit.disabled = true;
@@ -343,6 +343,7 @@
       elements.cancel.disabled = false;
       elements.cancel.textContent = "Close";
       window.dispatchEvent(new CustomEvent("smart-learning-live-classes-updated"));
+      window.setTimeout(() => window.location.assign("teacher_recorded_classes.html"), 1000);
     } catch (error) {
       if (error?.message === "Upload cancelled.") return;
       console.error("Live-class recording upload failed.", error);
