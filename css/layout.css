@@ -4,6 +4,7 @@
   --layout-navy: #071b2c;
   --layout-navy-light: #0b263b;
   --layout-teal: #29aeb8;
+  --layout-active-purple: #6d4aff;
   --layout-muted: #9aabba;
   --layout-border: #e2e7ef;
   --layout-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
@@ -87,12 +88,12 @@ body {
   min-height: 0;
   flex: 1 1 auto;
   flex-direction: column;
-  justify-content: space-between;
+  gap: 6px;
 }
 
 .sidebar-nav-primary .sidebar-link {
-  min-height: 0;
-  max-height: 50px;
+  min-height: 42px;
+  max-height: 46px;
   flex: 1 1 0;
 }
 
@@ -101,7 +102,7 @@ body {
   align-items: center;
   gap: 9px;
   min-height: 34px;
-  padding: 6px 10px;
+  padding: 6px 12px;
   border-radius: 8px;
   color: var(--layout-muted);
   font-size: 0.84rem;
@@ -114,7 +115,7 @@ body {
 .sidebar-link i {
   width: 20px;
   color: #b4c3d0;
-  font-size: 0.98rem;
+  font-size: 1.125rem;
   text-align: center;
 }
 
@@ -122,11 +123,12 @@ body {
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
+  gap: 6px;
 }
 
 .sidebar-nav-footer .sidebar-link {
-  min-height: 34px;
-  flex: 0 0 auto;
+  min-height: 42px;
+  flex: 0 0 42px;
 }
 
 .sidebar-link:hover,
@@ -138,8 +140,8 @@ body {
 
 .sidebar-link.active {
   color: #fff;
-  background: var(--layout-teal);
-  box-shadow: 0 5px 12px rgba(41, 174, 184, 0.2);
+  background: var(--layout-active-purple);
+  box-shadow: 0 5px 12px rgba(109, 74, 255, 0.28);
 }
 
 .sidebar-link.active i,
@@ -312,7 +314,7 @@ body {
   gap: 24px !important;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 850px) {
   :root {
     --layout-sidebar-width: 270px;
   }
@@ -372,7 +374,7 @@ body {
   }
 }
 
-@media (max-height: 680px) {
+@media (max-height: 850px) {
   .sidebar {
     padding-top: 8px;
     padding-bottom: 8px;
@@ -383,20 +385,83 @@ body {
   }
 
   .brand-logo {
-    width: 140px;
+    width: clamp(80px, 15vh, 140px);
   }
 
-  .sidebar-link,
+  .sidebar-nav-primary {
+    gap: clamp(2px, 0.6vh, 5px);
+  }
+
+  .sidebar-nav-footer {
+    gap: clamp(2px, 0.6vh, 5px);
+  }
+
+  .sidebar-nav-primary .sidebar-link {
+    min-height: 0;
+    max-height: none;
+    flex: 0 0 clamp(30px, 5.1vh, 40px);
+    padding-top: 5px;
+    padding-bottom: 5px;
+  }
+
   .sidebar-nav-footer .sidebar-link {
-    min-height: 30px;
-    padding-top: 3px;
-    padding-bottom: 3px;
-    font-size: 0.76rem;
+    min-height: 0;
+    flex: 0 0 clamp(30px, 5.1vh, 40px);
+    padding-top: 5px;
+    padding-bottom: 5px;
   }
 
   .sidebar-divider {
     margin-top: 4px;
     margin-bottom: 4px;
+  }
+}
+
+@media (max-height: 560px) {
+  .sidebar {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  .sidebar-brand {
+    padding-bottom: 2px;
+  }
+
+  .brand-logo {
+    width: clamp(72px, 16vh, 112px);
+  }
+
+  .sidebar-nav-primary {
+    gap: clamp(1px, 0.35vh, 2px);
+  }
+
+  .sidebar-nav-primary .sidebar-link {
+    flex: 1 1 0;
+    min-height: 0;
+    padding-top: clamp(1px, 0.4vh, 4px);
+    padding-bottom: clamp(1px, 0.4vh, 4px);
+    font-size: clamp(0.68rem, 1.9vh, 0.84rem);
+  }
+
+  .sidebar-link i {
+    font-size: clamp(14px, 2.8vh, 18px);
+  }
+
+  .sidebar-nav-footer {
+    gap: clamp(1px, 0.35vh, 2px);
+  }
+
+  .sidebar-nav-footer .sidebar-link {
+    min-height: 0;
+    flex-basis: clamp(20px, 5.5vh, 30px);
+    padding-top: clamp(1px, 0.4vh, 4px);
+    padding-bottom: clamp(1px, 0.4vh, 4px);
+    font-size: clamp(0.68rem, 1.9vh, 0.84rem);
+  }
+
+  .sidebar-divider {
+    margin-top: clamp(2px, 0.7vh, 4px);
+    margin-bottom: clamp(2px, 0.7vh, 4px);
   }
 }
 
