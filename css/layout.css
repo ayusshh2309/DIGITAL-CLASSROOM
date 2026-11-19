@@ -42,7 +42,7 @@ body {
   width: var(--layout-sidebar-width) !important;
   height: 100vh;
   height: 100dvh;
-  padding: 14px 8px;
+  padding: 10px 8px;
   overflow: hidden;
   color: var(--layout-muted);
   background: linear-gradient(180deg, var(--layout-navy) 0%, var(--layout-navy-light) 100%);
@@ -62,7 +62,7 @@ body {
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  padding: 0 2px 6px;
+  padding: 0 2px 10px;
   text-decoration: none;
 }
 
@@ -80,30 +80,26 @@ body {
   min-height: 0;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: 0;
-}
-
-.sidebar-nav-primary {
-  display: flex;
-  min-height: 0;
-  flex: 1 1 auto;
-  flex-direction: column;
   gap: 6px;
 }
 
+.sidebar-nav-primary {
+  display: contents;
+}
+
 .sidebar-nav-primary .sidebar-link {
-  min-height: 42px;
-  max-height: 46px;
-  flex: 1 1 0;
+  min-height: 44px;
+  max-height: 60px;
+  flex: 1 1 46px;
 }
 
 .sidebar-link {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
   min-height: 34px;
-  padding: 6px 12px;
-  border-radius: 8px;
+  padding: 6px 14px;
+  border-radius: 9px;
   color: var(--layout-muted);
   font-size: 0.84rem;
   font-weight: 600;
@@ -115,20 +111,18 @@ body {
 .sidebar-link i {
   width: 20px;
   color: #b4c3d0;
-  font-size: 1.125rem;
+  font-size: 1.1875rem;
   text-align: center;
 }
 
 .sidebar-nav-footer {
-  display: flex;
-  flex: 0 0 auto;
-  flex-direction: column;
-  gap: 6px;
+  display: contents;
 }
 
 .sidebar-nav-footer .sidebar-link {
-  min-height: 42px;
-  flex: 0 0 42px;
+  min-height: 44px;
+  max-height: 60px;
+  flex: 1 1 46px;
 }
 
 .sidebar-link:hover,
@@ -161,7 +155,7 @@ body {
 .sidebar-divider {
   height: 1px;
   flex: 0 0 1px;
-  margin: 7px 5px;
+  margin: 0 5px;
   background: rgba(205, 222, 235, 0.17);
 }
 
@@ -376,44 +370,33 @@ body {
 
 @media (max-height: 850px) {
   .sidebar {
-    padding-top: 8px;
-    padding-bottom: 8px;
+    padding-top: 6px;
+    padding-bottom: 6px;
   }
 
   .sidebar-brand {
-    padding-bottom: 4px;
+    padding-bottom: 8px;
   }
 
   .brand-logo {
-    width: clamp(80px, 15vh, 140px);
+    width: clamp(80px, 13.5vh, 132px);
   }
 
-  .sidebar-nav-primary {
-    gap: clamp(2px, 0.6vh, 5px);
+  .sidebar-nav {
+    gap: clamp(4px, 0.7vh, 6px);
   }
 
-  .sidebar-nav-footer {
-    gap: clamp(2px, 0.6vh, 5px);
-  }
-
-  .sidebar-nav-primary .sidebar-link {
+  .sidebar-nav .sidebar-link {
     min-height: 0;
     max-height: none;
-    flex: 0 0 clamp(30px, 5.1vh, 40px);
-    padding-top: 5px;
-    padding-bottom: 5px;
-  }
-
-  .sidebar-nav-footer .sidebar-link {
-    min-height: 0;
-    flex: 0 0 clamp(30px, 5.1vh, 40px);
+    flex-basis: 46px;
     padding-top: 5px;
     padding-bottom: 5px;
   }
 
   .sidebar-divider {
-    margin-top: 4px;
-    margin-bottom: 4px;
+    margin-top: 0;
+    margin-bottom: 0;
   }
 }
 
@@ -424,39 +407,27 @@ body {
   }
 
   .sidebar-brand {
-    padding-bottom: 2px;
+    padding-bottom: 8px;
   }
 
   .brand-logo {
-    width: clamp(72px, 16vh, 112px);
+    width: clamp(72px, 20vh, 112px);
   }
 
-  .sidebar-nav-primary {
-    gap: clamp(1px, 0.35vh, 2px);
+  .sidebar-nav {
+    gap: clamp(2px, 0.45vh, 4px);
   }
 
-  .sidebar-nav-primary .sidebar-link {
-    flex: 1 1 0;
+  .sidebar-nav .sidebar-link {
+    flex-basis: clamp(18px, 4.8vh, 28px);
     min-height: 0;
     padding-top: clamp(1px, 0.4vh, 4px);
     padding-bottom: clamp(1px, 0.4vh, 4px);
-    font-size: clamp(0.68rem, 1.9vh, 0.84rem);
+    font-size: clamp(0.62rem, 1.9vh, 0.84rem);
   }
 
   .sidebar-link i {
     font-size: clamp(14px, 2.8vh, 18px);
-  }
-
-  .sidebar-nav-footer {
-    gap: clamp(1px, 0.35vh, 2px);
-  }
-
-  .sidebar-nav-footer .sidebar-link {
-    min-height: 0;
-    flex-basis: clamp(20px, 5.5vh, 30px);
-    padding-top: clamp(1px, 0.4vh, 4px);
-    padding-bottom: clamp(1px, 0.4vh, 4px);
-    font-size: clamp(0.68rem, 1.9vh, 0.84rem);
   }
 
   .sidebar-divider {
