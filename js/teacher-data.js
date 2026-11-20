@@ -652,7 +652,7 @@
         .subscribe((status, error) => {
           subscription.status = status;
           subscription.error = error || null;
-          if (status !== "SUBSCRIBED") {
+          if (status !== "SUBSCRIBED" && (status !== "CLOSED" || listeners.size > 0)) {
             console.warn("Teacher Realtime subscription status.", {
               topic,
               status,

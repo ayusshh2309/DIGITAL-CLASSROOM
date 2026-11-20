@@ -440,7 +440,7 @@
 
       .attempt-btn {
         width: 110px;
-        height: 35px;
+        min-height: 44px;
 
         border: none;
         border-radius: 7px;
@@ -1089,7 +1089,7 @@
       }
 
       .attempt-question-number {
-        min-height: 40px;
+        min-height: 44px;
         border: 1px solid #e1e6ed;
         border-radius: 9px;
         background: #f0f2f5;
@@ -1168,7 +1168,7 @@
       .attempt-footer-actions .attempt-btn,
       .attempt-review-button {
         width: auto;
-        min-height: 40px;
+        min-height: 44px;
         padding: 9px 15px;
       }
 
@@ -1247,6 +1247,11 @@
           order: -1;
           width: 100%;
         }
+
+        #studentQuizDialog [data-close] {
+          min-width: 44px;
+          min-height: 44px;
+        }
       }
 
       /* =====================================================
@@ -1319,6 +1324,11 @@
         .attempt-btn,
         .status {
           width: 130px;
+        }
+
+        .quiz-action .attempt-btn {
+          min-height: 44px;
+          height: auto;
         }
       }
 

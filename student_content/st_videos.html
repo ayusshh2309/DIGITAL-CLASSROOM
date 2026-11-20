@@ -1228,11 +1228,17 @@
         }
 
         .modal-video-area {
-          height: 250px;
+          height: min(250px, 42vh);
+          min-height: 190px;
         }
 
         .video-footer {
           align-items: flex-end;
+        }
+
+        .modal-close {
+          width: 44px;
+          height: 44px;
         }
       }
     </style>

@@ -122,7 +122,7 @@
 }
 
 .recorded-refresh {
-  min-height: 42px;
+  min-height: 44px;
   padding: 0 15px;
   box-shadow: 0 4px 14px rgba(17, 24, 39, .04);
 }
@@ -569,6 +569,7 @@
   width: min(940px, calc(100vw - 28px));
   max-width: 940px;
   max-height: min(92vh, 1000px);
+  max-height: min(92dvh, 1000px);
   overflow: auto;
   padding: 0;
   border: 1px solid var(--recorded-border);
@@ -584,7 +585,7 @@
 .lecture-detail-header .recording-status { position: static; padding: 4px 8px; border: 0; font-size: .62rem; }
 .lecture-detail-header h2 { margin-top: 6px; font-size: clamp(1.15rem, 2vw, 1.55rem); letter-spacing: -.035em; }
 .lecture-detail-header p { margin-top: 5px; color: var(--recorded-muted); font-size: .78rem; }
-.dialog-close { width: 37px; height: 37px; flex: 0 0 37px; border-radius: 50%; font-size: 1rem; }
+.dialog-close { width: 44px; height: 44px; flex: 0 0 44px; border-radius: 50%; font-size: 1rem; }
 .lecture-player { position: relative; display: grid; min-height: 220px; aspect-ratio: 16 / 9; place-items: center; overflow: hidden; background: #111827; color: #fff; }
 .lecture-player video,
 .lecture-player iframe { width: 100%; height: 100%; border: 0; background: #000; object-fit: contain; }
@@ -595,7 +596,7 @@
 .player-placeholder a { margin-top: 5px; color: #fff; font-size: .75rem; font-weight: 800; }
 .player-extra-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; padding: 10px 14px; border-bottom: 1px solid var(--recorded-border); font-size: .72rem; }
 .player-transport-controls { display: flex; flex: 1 1 420px; min-width: 0; align-items: center; gap: 7px; }
-.player-control-button { display: inline-flex; min-width: 36px; min-height: 36px; flex: 0 0 auto; align-items: center; justify-content: center; gap: 3px; padding: 0 6px; border: 1px solid var(--recorded-border); border-radius: 8px; background: var(--recorded-surface); color: var(--recorded-ink); cursor: pointer; }
+.player-control-button { display: inline-flex; min-width: 44px; min-height: 44px; flex: 0 0 auto; align-items: center; justify-content: center; gap: 3px; padding: 0 6px; border: 1px solid var(--recorded-border); border-radius: 8px; background: var(--recorded-surface); color: var(--recorded-ink); cursor: pointer; }
 .player-control-button span { margin-top: -9px; margin-left: -6px; font-size: .55rem; font-weight: 800; }
 .player-control-button:hover:not(:disabled) { border-color: var(--recorded-accent); color: var(--recorded-accent); }
 .player-control-button:focus-visible,
@@ -626,7 +627,7 @@
 .resource-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .resource-copy strong { font-size: .68rem; }
 .resource-copy small { margin-top: 3px; color: var(--recorded-muted); font-size: .6rem; text-transform: uppercase; }
-.resource-action { min-height: 30px; padding: 0 8px; font-size: .62rem; text-decoration: none; }
+.resource-action { min-height: 44px; padding: 0 8px; font-size: .62rem; text-decoration: none; }
 .resource-empty { padding: 13px 0 1px; color: var(--recorded-muted); font-size: .7rem; }
 .detail-progress { margin: 0 24px 22px; padding: 12px 14px; border-radius: 11px; background: color-mix(in srgb, var(--recorded-accent), white 95%); }
 .detail-progress-head { display: flex; justify-content: space-between; gap: 10px; color: var(--recorded-muted); font-size: .68rem; }
@@ -656,7 +657,7 @@
   .recorded-header { align-items: flex-start; }
   .recorded-header h1 { font-size: 27px; }
   .recorded-header p { max-width: 330px; font-size: .9rem; line-height: 1.5; }
-  .recorded-refresh { width: 41px; min-width: 41px; padding: 0; font-size: 0; }
+  .recorded-refresh { width: 44px; min-width: 44px; padding: 0; font-size: 0; }
   .recorded-refresh i { font-size: .9rem; }
   .recorded-stats { grid-template-columns: 1fr; }
   .recorded-stat { min-height: 72px; }
@@ -665,7 +666,7 @@
   .recording-card-body { min-height: 230px; }
   .recorded-list-heading { align-items: flex-start; }
   .library-source { flex: 0 0 auto; }
-  .lecture-dialog { width: calc(100vw - 18px); max-height: 94vh; border-radius: 14px; }
+  .lecture-dialog { width: calc(100vw - 18px); max-height: 94vh; max-height: 94dvh; border-radius: 14px; }
   .lecture-detail-header { padding: 18px 16px 13px; }
   .lecture-detail-content { gap: 16px; padding: 17px 16px; }
   .lecture-player { min-height: 190px; }
