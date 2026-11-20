@@ -150,7 +150,7 @@
 }
 
 .recorded-search:focus-within {
-  border-color: #29aeb8;
+  border-color: #00818a;
   box-shadow: 0 0 0 3px rgba(41, 174, 184, .12);
 }
 
@@ -175,7 +175,7 @@
 }
 
 .recorded-search:focus-within {
-  border-color: #29aeb8;
+  border-color: #00818a;
   box-shadow: 0 0 0 3px rgba(41, 174, 184, .12);
 }
 

@@ -1,9 +1,12 @@
 :root {
-  --brand-purple: #6d4aff !important;
-  --brand-purple-dark: #5838d6 !important;
+  --brand-purple: #00818a !important;
+  --brand-purple-dark: #006b73 !important;
   --brand-cyan: #06b6d4 !important;
   --brand-blue: #3b82f6 !important;
-  --brand-green: #10b981 !important;
+  --brand-green: #00818a !important;
+  --primary-color: #00818a !important;
+  --primary-hover: #006b73 !important;
+  --primary-light: #e8f7f8 !important;
   --brand-orange: #f59e0b !important;
   --brand-red: #ef4444 !important;
   --surface-white: #ffffff !important;
@@ -13,12 +16,12 @@
   --border-subtle: #e5e7eb !important;
   --layout-navy: #111827 !important;
   --layout-navy-light: #172033 !important;
-  --layout-teal: #6d4aff !important;
+  --layout-teal: #00818a !important;
   --student-navy: #111827 !important;
   --student-navy-soft: #172033 !important;
-  --student-purple: #6d4aff !important;
-  --student-purple-light: #8065ff !important;
-  --student-active: #6d4aff !important;
+  --student-purple: #00818a !important;
+  --student-purple-light: #00818a !important;
+  --student-active: #00818a !important;
   --student-border: #e5e7eb !important;
   --student-main-bg: #f7f8fc !important;
   --student-surface: #ffffff !important;
@@ -27,10 +30,10 @@
   --surface-border: #e5e7eb !important;
   --text-main: #111827 !important;
   --text-muted: #64748b !important;
-  --primary: #6d4aff !important;
-  --primary-hover: #5838d6 !important;
-  --primary-purple: #6d4aff !important;
-  --primary-teal: #06b6d4 !important;
+  --primary: #00818a !important;
+  --primary-hover: #006b73 !important;
+  --primary-purple: #00818a !important;
+  --primary-teal: #00818a !important;
   --danger: #ef4444 !important;
 }
 
@@ -110,7 +113,7 @@ body,
 .student-nav-link:hover,
 .student-nav-link:focus-visible {
   color: #ffffff !important;
-  background: rgba(109, 74, 255, 0.18) !important;
+  background: rgba(0, 129, 138, 0.18) !important;
 }
 
 .sidebar-link.active,
@@ -118,7 +121,7 @@ body,
   color: #ffffff !important;
   background: var(--brand-purple) !important;
   border-left: 3px solid var(--brand-cyan) !important;
-  box-shadow: 0 6px 16px rgba(109, 74, 255, 0.25) !important;
+  box-shadow: 0 6px 16px rgba(0, 129, 138, 0.25) !important;
 }
 
 .sidebar-link.active i,
@@ -267,7 +270,7 @@ textarea:focus,
 .att-input:focus,
 .att-select:focus {
   border-color: var(--brand-purple) !important;
-  box-shadow: 0 0 0 3px rgba(109, 74, 255, 0.14) !important;
+  box-shadow: 0 0 0 3px rgba(0, 129, 138, 0.14) !important;
   outline: none !important;
 }
 

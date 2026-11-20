@@ -29,9 +29,9 @@
     .student-announcement-list{display:grid;gap:9px;padding:12px}
     .student-announcement-item{display:block;width:100%;padding:13px 14px;text-align:left;background:#fff;border:1px solid #e9edf3;border-radius:12px;cursor:pointer;color:inherit;transition:border-color .15s ease,background .15s ease,box-shadow .15s ease}
     .student-announcement-item:hover{border-color:#d8d2ff;background:#fcfbff;box-shadow:0 4px 12px rgba(31,45,75,.05)}
-    .student-announcement-item.unread{border-left:3px solid #7257e8;background:#faf9ff;padding-left:12px}
+    .student-announcement-item.unread{border-left:3px solid #00818a;background:#faf9ff;padding-left:12px}
     .student-announcement-item strong{display:block;color:#1d2b3d;font-size:13px;font-weight:800;line-height:1.4;overflow-wrap:anywhere}
-    .student-announcement-item.unread strong:after{content:"";display:inline-block;width:7px;height:7px;margin-left:8px;border-radius:50%;background:#7257e8;vertical-align:middle}
+    .student-announcement-item.unread strong:after{content:"";display:inline-block;width:7px;height:7px;margin-left:8px;border-radius:50%;background:#00818a;vertical-align:middle}
     .student-announcement-meta{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:7px}
     .student-announcement-type{display:inline-flex;align-items:center;min-height:21px;padding:3px 8px;border-radius:999px;background:#f0edff;color:#6248cf;font-size:10px;font-weight:800;line-height:1;text-transform:capitalize}
     .student-announcement-date{color:#8995a5;font-size:11px;font-weight:600}

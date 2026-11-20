@@ -1,5 +1,5 @@
 .recorded-page {
-  --recorded-accent: var(--brand-purple, #6d4aff);
+  --recorded-accent: var(--brand-purple, #00818a);
   --recorded-teal: var(--brand-cyan, #06b6d4);
   --recorded-ink: var(--ink-primary, #17233f);
   --recorded-muted: var(--ink-secondary, #64748b);
@@ -83,7 +83,7 @@
 }
 
 .recorded-curriculum-label {
-  color: #087f8a;
+  color: #00818a;
   font-weight: 700;
 }
 

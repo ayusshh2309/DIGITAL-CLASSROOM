@@ -1,5 +1,5 @@
 :root {
-  --quiz-indigo: #5548e8;
+  --quiz-indigo: #00818a;
   --quiz-ink: #172b5e;
   --quiz-muted: #7487a8;
   --quiz-line: #e1e8f3;
@@ -65,7 +65,7 @@
   padding: 9px 15px;
   border-radius: 9px;
   color: #fff;
-  background: linear-gradient(135deg, #6258ef, #4d43d8);
+  background: linear-gradient(135deg, #00818a, #4d43d8);
   text-decoration: none;
   white-space: nowrap;
 }
@@ -142,7 +142,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  color: #087f8a;
+  color: #00818a;
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.1em;
@@ -181,7 +181,7 @@
 }
 
 .quizzes-page .class-scope strong {
-  color: #087f8a;
+  color: #00818a;
 }
 
 .quizzes-page .action-buttons {

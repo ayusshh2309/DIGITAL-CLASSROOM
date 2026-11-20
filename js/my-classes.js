@@ -297,7 +297,7 @@
     }
     const percentage = Math.round(average);
     chart.dataset.label = `${percentage}%`;
-    chart.style.background = `conic-gradient(#2563eb 0% ${percentage}%, #cbd5e1 ${percentage}% 100%)`;
+    chart.style.background = `conic-gradient(#00818a 0% ${percentage}%, #cbd5e1 ${percentage}% 100%)`;
     chart.setAttribute("aria-label", `Average student assessment score: ${percentage} percent.`);
     label.textContent = "Based on released assessments";
   }

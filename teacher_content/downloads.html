@@ -18,15 +18,15 @@
         --sidebar-bg: #031b2e;
         --sidebar-text: #a0aec0;
         --sidebar-text-active: #ffffff;
-        --sidebar-active-bg: #4f46e5;
+        --sidebar-active-bg: #00818a;
         --sidebar-hover-bg: #0a2540;
         --main-bg: linear-gradient(135deg, #e3f2fd 0%, #e0f2f1 50%, #e8f5e9 100%);
         --surface: #ffffff;
         --surface-border: #e2e8f0;
         --text-main: #0f172a;
         --text-muted: #64748b;
-        --primary: #6366f1;
-        --primary-hover: #4f46e5;
+        --primary: #00818a;
+        --primary-hover: #00818a;
         --danger: #ef4444;
         --success: #10b981;
         --warning: #f59e0b;
@@ -325,7 +325,7 @@
       }
 
       .file-badge.pdf { background: linear-gradient(135deg, #ef4444, #f97316); }
-      .file-badge.doc { background: linear-gradient(135deg, #3b82f6, #6366f1); }
+      .file-badge.doc { background: linear-gradient(135deg, #3b82f6, #00818a); }
       .file-badge.ppt { background: linear-gradient(135deg, #f59e0b, #f97316); }
       .file-badge.video { background: linear-gradient(135deg, #8b5cf6, #ec4899); }
       .file-badge.image { background: linear-gradient(135deg, #10b981, #14b8a6); }
@@ -598,7 +598,7 @@
 
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-icon" style="background: #6366f1;"><i class="fa-solid fa-file-lines" aria-hidden="true"></i></div>
+          <div class="stat-icon" style="background: #00818a;"><i class="fa-solid fa-file-lines" aria-hidden="true"></i></div>
           <div>
             <div class="stat-val" id="statTotalFiles">—</div>
             <div class="stat-lbl">Total Files</div>
@@ -884,8 +884,8 @@
         const totalBytes = metrics.storageUsed;
         const storageSlices = [
           { value: metrics.breakdown.pdfs, color: "#ef4444" },
-          { value: metrics.breakdown.documents, color: "#6366f1" },
-          { value: metrics.breakdown.videos, color: "#2563eb" },
+          { value: metrics.breakdown.documents, color: "#00818a" },
+          { value: metrics.breakdown.videos, color: "#00818a" },
           { value: metrics.breakdown.photos, color: "#10b981" },
         ];
         let storageOffset = 0;
@@ -902,8 +902,8 @@
 
         const legendItems = [
           { label: "PDFs", value: metrics.breakdown.pdfs, color: "#ef4444" },
-          { label: "Documents", value: metrics.breakdown.documents, color: "#6366f1" },
-          { label: "Videos", value: metrics.breakdown.videos, color: "#2563eb" },
+          { label: "Documents", value: metrics.breakdown.documents, color: "#00818a" },
+          { label: "Videos", value: metrics.breakdown.videos, color: "#00818a" },
           { label: "Photos", value: metrics.breakdown.photos, color: "#10b981" },
         ];
 
@@ -933,7 +933,7 @@
           ? categorySummary.map(([name, count]) => `
               <div class="cat-row">
                 <div class="cat-row-left">
-                  <i class="fa-solid fa-folder-open" style="color: #6366f1;" aria-hidden="true"></i>
+                  <i class="fa-solid fa-folder-open" style="color: #00818a;" aria-hidden="true"></i>
                   <span>${escapeHtml(name)}</span>
                 </div>
                 <span class="cat-count">${count} file${count > 1 ? "s" : ""}</span>

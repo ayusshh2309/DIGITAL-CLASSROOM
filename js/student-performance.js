@@ -250,7 +250,7 @@
   }
 
   function renderDistribution() {
-    const colors = { Excellent: "#139a70", Good: "#7257e8", Average: "#d28c18", "Needs Help": "#dc5960" };
+    const colors = { Excellent: "#139a70", Good: "#00818a", Average: "#d28c18", "Needs Help": "#dc5960" };
     const assessed = state.performance.students.filter((student) => student.records.length).length;
     if (!assessed) {
       $("distribution").innerHTML = showEmpty("No quiz results available yet.", "fa-chart-pie");

@@ -1,5 +1,5 @@
 :root {
-  --create-indigo: #6258ef;
+  --create-indigo: #00818a;
   --create-indigo-dark: #4d43d8;
   --create-ink: #172b5e;
   --create-muted: #7487a8;
@@ -941,7 +941,7 @@ textarea {
   margin: 20px 32px 0;
   padding: 13px 15px;
   border: 1px solid #e4e8f2;
-  border-left: 3px solid #6258ef;
+  border-left: 3px solid #00818a;
   border-radius: 9px;
   background: #f8f9fd;
   color: #52678f;

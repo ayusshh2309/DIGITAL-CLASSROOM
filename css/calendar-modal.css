@@ -72,13 +72,13 @@
 #calendarModalRoot .field input:focus,
 #calendarModalRoot .field select:focus,
 #calendarModalRoot .field textarea:focus {
-  border-color: #6d4aff;
-  outline: 3px solid rgba(109, 74, 255, 0.14);
+  border-color: #00818a;
+  outline: 3px solid rgba(0, 129, 138, 0.14);
 }
 
 #calendarModalRoot .field a {
   overflow-wrap: anywhere;
-  color: #5838d6;
+  color: #006b73;
 }
 
 #calendarModalRoot .modal-actions {

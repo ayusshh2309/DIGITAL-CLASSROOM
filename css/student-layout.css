@@ -3,9 +3,9 @@
   --student-topbar-height: 68px;
   --student-navy: #031b2e;
   --student-navy-soft: #062540;
-  --student-purple: #6337e8;
-  --student-purple-light: #7b4df2;
-  --student-active: #29aeb8;
+  --student-purple: #00818a;
+  --student-purple-light: #00818a;
+  --student-active: #00818a;
   --student-text: #f8fafc;
   --student-muted: #c4ced9;
   --student-border: #e2e7ef;
@@ -62,8 +62,8 @@ body {
 .student-nav-link:hover, .student-nav-link:focus-visible { color: #fff; background: rgba(255,255,255,.09); outline: none; }
 .student-nav-link:focus-visible { box-shadow: 0 0 0 2px rgba(255,255,255,.6); }
 .student-nav-link.active {
-  color: #fff; border-left-color: #06b6d4; background: #6d4aff;
-  box-shadow: 0 6px 16px rgba(109, 74, 255, .28);
+  color: #fff; border-left-color: #06b6d4; background: #00818a;
+  box-shadow: 0 6px 16px rgba(0, 129, 138, .28);
 }
 .student-nav-link.active i { color: #fff; }
 .student-nav-link-danger, .student-nav-link-danger i { color: #ff4d5e; }
@@ -144,7 +144,7 @@ body {
 }
 .student-registration-context-label,
 .student-page-content .registration-context .scope-label {
-  color: #6846f5;
+  color: #00818a;
   font-weight: 800;
 }
 .student-registration-context-value,
@@ -210,4 +210,141 @@ body {
   }
   .student-nav-link i { font-size: clamp(14px, 2.8vh, 18px); }
   .student-sidebar-divider { margin-top: clamp(2px, .7vh, 4px); margin-bottom: clamp(2px, .7vh, 4px); }
+}
+
+/* Unified Smart Learning DC green theme. */
+:root {
+  --primary-color: #00818a;
+  --primary-hover: #006b73;
+  --primary-active: #00585f;
+  --primary-light: #e8f7f8;
+  --primary: #00818a;
+  --primary-teal: #00818a;
+  --student-purple: #00818a;
+  --student-purple-light: #00818a;
+  --student-active: #00818a;
+}
+
+.page-eyebrow,
+.class-eyebrow,
+.eyebrow,
+.scope-label,
+.student-registration-context-label,
+.student-page-content .registration-context .scope-label,
+.workspace-label {
+  color: #00818a !important;
+}
+
+.student-nav-link.active,
+.student-nav-link.active:hover,
+.student-nav-link.active:focus-visible {
+  color: #fff !important;
+  background: #00818a !important;
+  border-left-color: #00818a !important;
+  box-shadow: 0 6px 16px rgba(0, 129, 138, 0.28) !important;
+}
+
+.student-nav-link:hover,
+.student-nav-link:focus-visible {
+  background: rgba(0, 129, 138, 0.16) !important;
+}
+
+button.primary,
+.btn-primary,
+.primary-button,
+.save-btn,
+.submit-btn,
+.create-btn,
+.continue-button,
+.join-button,
+.join-class,
+.view-details,
+.upload-button,
+.add-button,
+.action-button.primary,
+.modal-primary,
+.form-primary {
+  color: #fff !important;
+  background: #00818a !important;
+  border-color: #00818a !important;
+}
+
+button.primary:hover,
+.btn-primary:hover,
+.primary-button:hover,
+.save-btn:hover,
+.submit-btn:hover,
+.create-btn:hover,
+.continue-button:hover,
+.join-button:hover,
+.join-class:hover,
+.view-details:hover,
+.upload-button:hover,
+.add-button:hover,
+.action-button.primary:hover,
+.modal-primary:hover,
+.form-primary:hover {
+  background: #006b73 !important;
+  border-color: #006b73 !important;
+}
+
+button.primary:active,
+.btn-primary:active,
+.primary-button:active,
+.save-btn:active,
+.submit-btn:active,
+.create-btn:active,
+.continue-button:active,
+.join-button:active,
+.join-class:active,
+.view-details:active {
+  background: #00585f !important;
+  border-color: #00585f !important;
+}
+
+button.primary:focus-visible,
+.btn-primary:focus-visible,
+.primary-button:focus-visible,
+.save-btn:focus-visible,
+.submit-btn:focus-visible,
+.create-btn:focus-visible,
+.continue-button:focus-visible,
+.join-button:focus-visible,
+.join-class:focus-visible,
+.view-details:focus-visible,
+.upload-button:focus-visible,
+.add-button:focus-visible,
+.action-button.primary:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(0, 129, 138, 0.22) !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #00818a !important;
+  box-shadow: 0 0 0 3px rgba(0, 129, 138, 0.14) !important;
+  outline: none !important;
+}
+
+.progress-fill,
+.progress-bar .progress-fill,
+.dashboard-progress-fill,
+.bar-fill,
+.fill {
+  background: #00818a !important;
+}
+
+.tabs .active,
+.tab.active,
+.tab.active-tab,
+.filter-chip.active,
+.filter-button.active,
+.view-switch button.active,
+.page-buttons button.active,
+.calendar-day.selected,
+.mini-calendar button.selected {
+  color: #fff !important;
+  background: #00818a !important;
+  border-color: #00818a !important;
 }

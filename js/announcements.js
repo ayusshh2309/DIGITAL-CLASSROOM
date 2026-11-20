@@ -159,7 +159,7 @@
       ? drafts.map((item) => `<div class="draft">
           <strong>${escapeHtml(item.title)}</strong>
           <small>${escapeHtml(formatClass(item.grade, item.stream))} · ${dateLabel(item.updated_at)}</small>
-          <button class="history-action" data-draft="${escapeHtml(item.id)}" style="border:0;background:transparent;color:#087f8a;font-weight:800;cursor:pointer;margin-top:7px">Continue editing</button>
+          <button class="history-action" data-draft="${escapeHtml(item.id)}" style="border:0;background:transparent;color:#00818a;font-weight:800;cursor:pointer;margin-top:7px">Continue editing</button>
         </div>`).join("")
       : '<div class="empty"><i class="fa-solid fa-file-circle-plus"></i>No drafts yet.</div>';
   }

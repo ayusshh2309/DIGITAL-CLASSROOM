@@ -18,7 +18,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  color: #087f8a;
+  color: #00818a;
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.1em;
@@ -49,7 +49,7 @@
   font-size: 0.82rem;
 }
 
-.page-content.main-box-container:has(.students-content-layout) .scope-label { color: #087f8a; font-weight: 800; }
+.page-content.main-box-container:has(.students-content-layout) .scope-label { color: #00818a; font-weight: 800; }
 .page-content.main-box-container:has(.students-content-layout) .scope-value { font-weight: 600; }
 
 .page-content.main-box-container:has(.students-content-layout) .stats-grid { display: none; }
