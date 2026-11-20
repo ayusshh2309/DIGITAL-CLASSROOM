@@ -39,10 +39,6 @@
       </section>
     </div>
     <section class="dashboard-panel">
-      <div class="panel-heading"><div><h2><i class="fa-solid fa-book-open" aria-hidden="true"></i> Your Classes &amp; Subjects</h2><div class="panel-kicker">Subjects assigned to your registered classes</div></div></div>
-      <div class="subject-classes" id="subjectGrid"></div>
-    </section>
-    <section class="dashboard-panel">
       <div class="panel-heading"><div><h2><i class="fa-solid fa-folder-open" aria-hidden="true"></i> Recent Materials</h2><div class="panel-kicker">Materials uploaded by you</div></div><a class="panel-link" href="materials.html">View all <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div>
       <div class="dashboard-material-list" id="dashboardMaterials"></div>
     </section>
@@ -762,7 +758,6 @@
       chartState.status = "ready";
       chartState.message = "";
       renderChart();
-      renderSubjects();
     } catch (error) {
       if (requestId !== chartState.requestId) return;
       chartState.status = "error";
@@ -873,40 +868,11 @@
     }));
   }
 
-  function renderSubjects() {
-    const iconBySubject = {
-      Physics: ["fa-atom", "blue"], Chemistry: ["fa-flask", "purple"], Mathematics: ["fa-square-root-variable", "blue"],
-      Biology: ["fa-leaf", "green"], English: ["fa-book-open", "cyan"], "Computer Science": ["fa-code", "green"],
-    };
-    const streamLabels = { science_pcm: "PCM", science_pcb: "PCB", commerce: "Commerce", arts_humanities: "Arts / Humanities" };
-    const sections = state.gradeGroups.map((group) => {
-      const grade = String(group.grade);
-      const stream = group.stream || null;
-      const assignments = state.assignmentRows.filter((row) => row.grade === Number(grade) && String(row.stream || "") === String(stream || ""));
-      const subjects = assignments.map((row) => row.subject).sort((first, second) => first.localeCompare(second));
-      const subjectCards = assignments.map((assignment) => {
-        const subject = assignment.subject;
-        const performance = (state.performance.get(grade) || []).filter((row) => row.subject === subject && String(row.stream || "") === String(stream || "") && assignedRow(row));
-        const average = performance.length ? Math.round(performance.reduce((sum, row) => sum + Number(row.percentage || 0), 0) / performance.length) : null;
-        const attendance = state.attendance.filter((row) => gradeOf(row) === grade && subjectOf(row) === subject && String(streamOf(row) || "") === String(stream || ""));
-        const present = attendance.filter((row) => ["present", "late"].includes(String(row.status || "").toLowerCase())).length;
-        const progress = average ?? (attendance.length ? Math.round(present / attendance.length * 100) : null);
-        const progressLabel = progress === null ? "No performance data" : `${progress}% performance`;
-        const [icon, tone] = iconBySubject[subject] || ["fa-book-open", "blue"];
-        return `<a class="subject-card tone-${tone}" href="my_classes.html?class_grade=${encodeURIComponent(grade)}${stream ? `&stream=${encodeURIComponent(stream)}` : ""}" aria-label="View ${escapeHtml(subject)} in Class ${escapeHtml(grade)}${stream ? ` ${escapeHtml(stream)}` : ""}"><span class="subject-icon"><i class="fa-solid ${icon}" aria-hidden="true"></i></span><span class="subject-copy"><span class="subject-topline"><strong>${escapeHtml(subject)}</strong><span class="subject-assigned">Assigned</span></span><span class="subject-progress" role="img" aria-label="${progressLabel}"><span style="width:${progress ?? 0}%"></span></span></span><i class="fa-solid fa-chevron-right subject-chevron" aria-hidden="true"></i></a>`;
-      }).join("");
-      const heading = `${subjects.length} Assigned Subjects`;
-      return `<section class="subject-class-panel"><header class="subject-class-header"><div class="subject-class-identity"><span class="subject-class-badge">Class ${escapeHtml(grade)}</span><h3>${escapeHtml(heading)}</h3>${stream ? `<span class="subject-stream-badge"><i class="fa-solid fa-flask" aria-hidden="true"></i> Stream <strong>${escapeHtml(streamLabels[stream] || stream)}</strong></span>` : ""}</div><span class="subject-class-active"><i class="fa-solid fa-circle" aria-hidden="true"></i> Registered</span><a class="subject-class-link" href="my_classes.html?class_grade=${encodeURIComponent(grade)}${stream ? `&stream=${encodeURIComponent(stream)}` : ""}">View subjects <i class="fa-solid fa-chevron-down" aria-hidden="true"></i></a></header><div class="subject-class-subjects">${subjectCards || '<p class="dashboard-empty">No subjects registered for this grade and stream.</p>'}</div></section>`;
-    });
-    $("subjectGrid").innerHTML = sections.length ? sections.join("") : `<div class="dashboard-empty">No subjects assigned yet.</div>`;
-  }
-
   function renderAll() {
     renderStats();
     renderChart();
     renderToday();
     renderCalendar();
-    renderSubjects();
   }
 
   function subscribeRealtime() {
