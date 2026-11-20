@@ -333,6 +333,62 @@ textarea::placeholder {
   color: #164e63 !important;
 }
 
+.page-content,
+.student-main-content,
+.student-page-content {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.page-content img,
+.page-content canvas,
+.page-content svg,
+.page-content video,
+.student-page-content img,
+.student-page-content canvas,
+.student-page-content svg,
+.student-page-content video {
+  max-width: 100%;
+}
+
+.page-content .table-scroll,
+.page-content .data-table-wrap,
+.page-content .table-section,
+.page-content .table-card,
+.student-page-content .table-scroll,
+.student-page-content .data-table-wrap,
+.student-page-content .table-section,
+.student-page-content .table-card {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.page-content .chart-container,
+.page-content .chart-wrap,
+.student-page-content .chart-container,
+.student-page-content .chart-wrap {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 850px) {
+  .page-content .analytics-grid,
+  .page-content .details-layout,
+  .student-page-content .analytics-grid,
+  .student-page-content .details-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 420px) {
+  .page-content .stats-grid,
+  .student-page-content .stats-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

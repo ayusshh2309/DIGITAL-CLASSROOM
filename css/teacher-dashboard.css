@@ -339,3 +339,9 @@
   .subject-card { min-height: 76px; }
   .panel-heading { align-items: flex-start; }
 }
+@media (max-width: 370px) {
+  .dashboard-stats { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-stat { min-height: 72px; }
+  .dashboard-hero { padding: 12px; }
+  .teacher-dashboard { padding: 10px !important; }
+}

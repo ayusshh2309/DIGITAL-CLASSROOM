@@ -1,4 +1,37 @@
 (function () {
+  const FALLBACK_TEACHER_LANGUAGES = [
+    "Arabic",
+    "Assamese",
+    "Bengali",
+    "Chinese",
+    "Dutch",
+    "English",
+    "French",
+    "German",
+    "Gujarati",
+    "Hindi",
+    "Italian",
+    "Japanese",
+    "Kannada",
+    "Korean",
+    "Malayalam",
+    "Marathi",
+    "Nepali",
+    "Odia",
+    "Portuguese",
+    "Punjabi",
+    "Russian",
+    "Sanskrit",
+    "Spanish",
+    "Swahili",
+    "Tamil",
+    "Telugu",
+    "Thai",
+    "Turkish",
+    "Urdu",
+    "Vietnamese",
+  ].map((name) => ({ id: name, name }));
+
   function isConfigured() {
     return Boolean(window.SmartLearningSupabase?.isConfigured?.());
   }
@@ -78,12 +111,13 @@
       .select("id, name")
       .order("name", { ascending: true });
     if (error) throw error;
-    return (data || [])
+    const catalog = (data || [])
       .filter((language) => language.id !== null && language.id !== undefined && String(language.name || "").trim())
       .map((language) => ({
         id: String(language.id),
         name: String(language.name).trim(),
       }));
+    return catalog.length ? catalog : [...FALLBACK_TEACHER_LANGUAGES];
   }
 
   async function resolveTeacherLanguageIds(client, values) {

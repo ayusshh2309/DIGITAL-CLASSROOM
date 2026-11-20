@@ -460,13 +460,37 @@
       });
 
       const menuToggle = document.getElementById("studentMenuToggle");
+      const sidebar = document.getElementById("studentSidebar");
+      const closeSidebar = () => {
+        document.body.classList.remove("student-sidebar-open");
+        menuToggle?.setAttribute("aria-expanded", "false");
+        menuToggle?.setAttribute("aria-label", "Open navigation");
+      };
       menuToggle?.addEventListener("click", () => {
         const isOpen = document.body.classList.toggle("student-sidebar-open");
         menuToggle.setAttribute("aria-expanded", String(isOpen));
+        menuToggle.setAttribute("aria-label", isOpen ? "Close navigation" : "Open navigation");
       });
 
       document.querySelectorAll(".student-nav-link").forEach((link) => {
-        link.addEventListener("click", () => document.body.classList.remove("student-sidebar-open"));
+        link.addEventListener("click", closeSidebar);
+      });
+
+      document.addEventListener("click", (event) => {
+        if (
+          document.body.classList.contains("student-sidebar-open") &&
+          !sidebar?.contains(event.target) &&
+          !menuToggle?.contains(event.target)
+        ) {
+          closeSidebar();
+        }
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && document.body.classList.contains("student-sidebar-open")) {
+          closeSidebar();
+          menuToggle?.focus();
+        }
       });
 
       document.getElementById("studentLogout")?.addEventListener("click", () => {

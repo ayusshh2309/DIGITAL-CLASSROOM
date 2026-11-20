@@ -21,12 +21,14 @@
 html,
 body {
   width: 100%;
-  height: 100%;
-  overflow: hidden;
+  min-height: 100%;
+  overflow-x: clip;
 }
 
 body {
   min-width: 320px;
+  min-height: 100vh;
+  min-height: 100dvh;
   display: block;
   font-family: "DM Sans", sans-serif;
 }
@@ -310,12 +312,37 @@ body {
 
 @media (max-width: 850px) {
   :root {
-    --layout-sidebar-width: 270px;
+    --layout-sidebar-width: min(270px, calc(100vw - 32px));
   }
 
   .sidebar {
+    z-index: 1000;
+    max-width: calc(100vw - 32px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     transform: translateX(-100%);
     transition: transform 180ms ease;
+  }
+
+  body.sidebar-open {
+    overflow: hidden;
+  }
+
+  #layout::before {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: rgba(8, 20, 32, 0.48);
+    content: "";
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease;
+  }
+
+  body.sidebar-open #layout::before {
+    opacity: 1;
+    pointer-events: auto;
   }
 
   body.sidebar-open .sidebar {
@@ -336,6 +363,7 @@ body {
   }
 
   .topbar {
+    z-index: 1001;
     left: 0;
     justify-content: space-between;
     padding: 10px 16px;
@@ -365,6 +393,31 @@ body {
   .user-info,
   .profile-chevron {
     display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .page-content {
+    padding: 12px;
+  }
+
+  .page-content.main-box-container {
+    margin: 0 12px 16px !important;
+    padding: 16px !important;
+    border-radius: 16px !important;
+  }
+
+  .topbar {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .topbar-actions {
+    gap: 6px;
+  }
+
+  .notification-button {
+    flex: 0 0 38px;
   }
 }
 

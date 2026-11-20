@@ -52,7 +52,8 @@
       .login-container {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        width: 100vw;
+        width: 100%;
+        min-width: 0;
         min-height: 100vh;
         min-height: 100dvh;
       }
@@ -237,6 +238,7 @@
         justify-content: space-between;
         position: relative;
         overflow-y: auto;
+        min-width: 0;
       }
 
       .top-nav {
@@ -671,6 +673,23 @@
 
         .divider {
           margin: 16px 0;
+        }
+
+        .login-container,
+        .right-panel,
+        .form-wrapper {
+          width: 100%;
+          min-width: 0;
+        }
+
+        .form-wrapper {
+          padding: 18px 14px;
+        }
+
+        .input-box,
+        .btn-submit,
+        .social-btn {
+          min-height: 44px;
         }
       }
     </style>

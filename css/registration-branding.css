@@ -6,6 +6,53 @@
   overflow-y: hidden;
 }
 
+.registration-container,
+.right-content,
+.form-grid,
+.review-grid,
+.info-grid,
+.checkbox-grid {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.form-card,
+.form-box {
+  min-width: 0;
+}
+
+.form-container {
+  min-width: 0;
+}
+
+.right-content input,
+.right-content select,
+.right-content textarea,
+.right-content button {
+  max-width: 100%;
+}
+
+.right-content input,
+.right-content select,
+.right-content textarea {
+  box-sizing: border-box;
+}
+
+.input-control,
+.input-control input,
+.input-control select,
+.input-control textarea,
+.form-grid > *,
+.checkbox-grid > * {
+  min-width: 0;
+}
+
+.input-control input,
+.input-control select,
+.input-control textarea {
+  max-width: 100%;
+}
+
 .left-sidebar > div:first-child {
   display: flex;
   flex: 1 1 auto;
@@ -301,33 +348,28 @@
     flex: 0 0 auto;
   }
 
+  .left-sidebar .feature-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .left-sidebar .feature-item {
+    min-width: 0;
+  }
+
+  .left-sidebar .sidebar-illustration,
   .left-sidebar .sidebar-quote {
-    margin-top: clamp(16px, 1.8vh, 20px);
+    display: none;
   }
 
   .left-sidebar .brand-full-logo {
     width: 160px;
   }
 
-  .left-sidebar .sidebar-illustration {
-    display: flex;
-    flex: 0 0 auto;
-    width: 100%;
-    height: auto;
-    min-height: 0;
-    max-height: none;
-    margin: 14px 0 0;
-    overflow: hidden !important;
-    border-radius: 18px !important;
-  }
-
-  .left-sidebar .sidebar-illustration img {
-    width: 100%;
-    height: auto;
-    max-height: none;
-    border-radius: 18px !important;
-    object-fit: contain;
-    clip-path: inset(0 round 18px);
+  .registration-container,
+  .right-content {
+    min-width: 0;
+    max-width: 100%;
   }
 }
 
@@ -336,16 +378,40 @@
     width: 130px;
   }
 
+  .left-sidebar .sidebar-illustration,
+  .left-sidebar .sidebar-quote {
+    display: none;
+  }
+
   .left-sidebar .feature-list {
+    grid-template-columns: 1fr;
     gap: 11px;
     margin: 16px 0 12px;
   }
 
-  .left-sidebar .sidebar-quote {
-    padding: 12px 14px;
+  .stepper {
+    gap: 2px;
+    margin-bottom: 24px;
   }
 
-  .left-sidebar .sidebar-quote p {
-    font-size: 0.875rem;
+  .step {
+    min-width: 0;
+    padding-right: 4px;
+    padding-left: 4px;
+  }
+
+  .step-label {
+    font-size: clamp(0.65rem, 2.7vw, 0.85rem);
+    line-height: 1.25;
+    text-align: center;
+  }
+
+  .stepper::before {
+    right: 32px;
+    left: 32px;
+  }
+
+  .form-box {
+    padding: clamp(16px, 5vw, 24px);
   }
 }

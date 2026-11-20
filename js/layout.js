@@ -259,13 +259,37 @@
       });
 
       const menuToggle = document.getElementById("menuToggle");
+      const sidebar = document.getElementById("sidebar");
+      const closeSidebar = () => {
+        document.body.classList.remove("sidebar-open");
+        menuToggle?.setAttribute("aria-expanded", "false");
+        menuToggle?.setAttribute("aria-label", "Open navigation");
+      };
       menuToggle?.addEventListener("click", () => {
         const isOpen = document.body.classList.toggle("sidebar-open");
         menuToggle.setAttribute("aria-expanded", String(isOpen));
+        menuToggle.setAttribute("aria-label", isOpen ? "Close navigation" : "Open navigation");
       });
 
       document.querySelectorAll(".sidebar-link").forEach((link) => {
-        link.addEventListener("click", () => document.body.classList.remove("sidebar-open"));
+        link.addEventListener("click", closeSidebar);
+      });
+
+      document.addEventListener("click", (event) => {
+        if (
+          document.body.classList.contains("sidebar-open") &&
+          !sidebar?.contains(event.target) &&
+          !menuToggle?.contains(event.target)
+        ) {
+          closeSidebar();
+        }
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && document.body.classList.contains("sidebar-open")) {
+          closeSidebar();
+          menuToggle?.focus();
+        }
       });
 
       document.getElementById("logoutBtn")?.addEventListener("click", async (event) => {
