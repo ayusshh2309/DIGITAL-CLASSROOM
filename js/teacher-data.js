@@ -507,6 +507,109 @@
     return data;
   }
 
+  function requireConfirmedAuthEmailUser(user) {
+    if (!user?.id || typeof user.email !== "string" || !user.email.trim()) {
+      throw new Error("Supabase did not return a confirmed Auth user UUID and email.");
+    }
+    if (!user.email_confirmed_at && !user.confirmed_at) {
+      throw new Error("The Auth email has not been confirmed.");
+    }
+    return user;
+  }
+
+  function requireMatchingEmailUpdateSession(
+    session,
+    userId,
+    missingSessionIsPending = false,
+  ) {
+    if (session && (!session.user?.id || session.user.id !== userId)) {
+      const error = new Error(
+        "The authenticated session does not match the confirmed Auth user.",
+      );
+      if (missingSessionIsPending) {
+        error.code = "TEACHER_EMAIL_SYNC_SESSION_MISSING";
+      }
+      throw error;
+    }
+  }
+
+  function createMissingEmailSyncSessionError() {
+    return Object.assign(
+      new Error("The email is confirmed, but a Teacher sign-in is required to synchronize the Teacher profile."),
+      { code: "TEACHER_EMAIL_SYNC_SESSION_MISSING" },
+    );
+  }
+
+  async function resolveConfirmedEmailSyncUser(client, verifiedUser, verifiedSession) {
+    const confirmedUser = verifiedUser
+      ? requireConfirmedAuthEmailUser(verifiedUser)
+      : null;
+    let expectedUserId = confirmedUser?.id || null;
+
+    if (verifiedSession) {
+      if (!expectedUserId) {
+        expectedUserId = verifiedSession.user?.id || null;
+      }
+      requireMatchingEmailUpdateSession(
+        verifiedSession,
+        expectedUserId,
+        true,
+      );
+    }
+
+    const { data: sessionData, error: sessionError } =
+      await client.auth.getSession();
+    if (sessionError) {
+      if (/auth session missing/i.test(String(sessionError.message || ""))) {
+        throw createMissingEmailSyncSessionError();
+      }
+      throw sessionError;
+    }
+
+    let session = sessionData?.session || null;
+    if (session) {
+      if (!expectedUserId) {
+        expectedUserId = session.user?.id || null;
+      }
+      requireMatchingEmailUpdateSession(session, expectedUserId, true);
+    } else if (verifiedSession) {
+      const { access_token: accessToken, refresh_token: refreshToken } =
+        verifiedSession;
+      if (!accessToken || !refreshToken) {
+        throw createMissingEmailSyncSessionError();
+      }
+
+      const { data: restoredSession, error: restoreError } =
+        await client.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+      if (restoreError) throw restoreError;
+      session = restoredSession?.session || null;
+      if (!session) throw createMissingEmailSyncSessionError();
+      requireMatchingEmailUpdateSession(session, expectedUserId, true);
+    } else {
+      throw createMissingEmailSyncSessionError();
+    }
+
+    const { data: authData, error: authError } = await client.auth.getUser();
+    if (authError) {
+      if (/auth session missing/i.test(String(authError.message || ""))) {
+        throw createMissingEmailSyncSessionError();
+      }
+      throw authError;
+    }
+
+    const user = requireConfirmedAuthEmailUser(authData?.user);
+    if (user.id !== expectedUserId) {
+      throw new Error("The authenticated user does not match the confirmed Auth user.");
+    }
+    if (confirmedUser && user.email !== confirmedUser.email) {
+      throw new Error("The authenticated user does not match the confirmed Auth email.");
+    }
+    return user;
+  }
+
   async function verifyAuthEmailUpdate(tokenHash) {
     const client = getSupabaseClient();
     if (!client) throw new Error("Supabase is not configured.");
@@ -519,25 +622,24 @@
       type: "email_change",
     });
     if (error) throw error;
-    if (!data?.user || !data?.session) {
-      throw new Error("Supabase did not return a confirmed user session.");
-    }
-    return data.user;
+    const user = requireConfirmedAuthEmailUser(data?.user);
+    const session = data?.session || null;
+    if (session) requireMatchingEmailUpdateSession(session, user.id);
+    return { user, session };
   }
 
-  async function getAuthenticatedTeacherEmailSyncState() {
+  async function getAuthenticatedTeacherEmailSyncState(
+    verifiedUser = null,
+    verifiedSession = null,
+  ) {
     const client = getSupabaseClient();
     if (!client) throw new Error("Supabase is not configured.");
 
-    const { data: authData, error: authError } = await client.auth.getUser();
-    if (authError) throw authError;
-    const user = authData?.user;
-    if (!user?.id || !user.email) {
-      throw new Error("The verified Auth user email could not be loaded.");
-    }
-    if (!user.email_confirmed_at && !user.confirmed_at) {
-      throw new Error("The Auth email has not been confirmed.");
-    }
+    const user = await resolveConfirmedEmailSyncUser(
+      client,
+      verifiedUser,
+      verifiedSession,
+    );
 
     const { data: teacher, error: lookupError } = await client
       .from("teachers")
@@ -559,38 +661,39 @@
 
     return {
       user,
-      needsSync:
-        String(teacher.email || "").trim().toLowerCase() !==
-        user.email.trim().toLowerCase(),
+      needsSync: String(teacher.email || "").trim() !== user.email,
     };
   }
 
-  async function syncAuthenticatedTeacherEmail() {
+  async function syncAuthenticatedTeacherEmail(
+    verifiedUser = null,
+    verifiedSession = null,
+  ) {
     const client = getSupabaseClient();
     if (!client) throw new Error("Supabase is not configured.");
 
-    const { data: authData, error: authError } = await client.auth.getUser();
-    if (authError) throw authError;
-    const user = authData?.user;
-    if (!user?.id || !user.email) {
-      throw new Error("The verified Auth user email could not be loaded.");
-    }
-    if (!user.email_confirmed_at && !user.confirmed_at) {
-      throw new Error("The Auth email has not been confirmed.");
-    }
+    const syncState = await getAuthenticatedTeacherEmailSyncState(
+      verifiedUser,
+      verifiedSession,
+    );
+    if (!syncState.needsSync) return syncState.user;
 
     const { data, error } = await client
       .from("teachers")
-      .update({ email: user.email })
-      .eq("user_id", user.id)
-      .select("user_id")
+      .update({ email: syncState.user.email })
+      .eq("user_id", syncState.user.id)
+      .select("user_id, email")
       .maybeSingle();
     if (error) throw error;
-    if (!data || data.user_id !== user.id) {
+    if (
+      !data ||
+      data.user_id !== syncState.user.id ||
+      data.email !== syncState.user.email
+    ) {
       throw new Error("The teacher email record could not be synchronized.");
     }
 
-    return user;
+    return syncState.user;
   }
 
   async function updateAuthPassword(password) {

@@ -775,7 +775,11 @@
         "Email change requested. Check your new inbox and open the confirmation page. Your email will update only after you confirm it there.";
     } catch (error) {
       logSupabaseError("Email update", error);
-      emailStatus.textContent = `Unable to request the email change: ${formatAuthError(error)}`;
+      const duplicateEmailMessage =
+        window.SmartLearningEmailChange?.getDuplicateEmailMessage(error);
+      emailStatus.textContent = duplicateEmailMessage
+        ? `Unable to request the email change: ${duplicateEmailMessage}`
+        : `Unable to request the email change: ${formatAuthError(error)}`;
     } finally {
       changingEmail = false;
       emailSubmitButton.disabled = false;

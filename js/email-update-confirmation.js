@@ -9,6 +9,8 @@
   const verificationType = params.get("type");
   let actionMode = "confirm";
   let busy = false;
+  let verifiedAuthUser = null;
+  let verifiedAuthSession = null;
 
   if (window.location.search || window.location.hash) {
     window.history.replaceState(null, document.title, window.location.pathname);
@@ -24,6 +26,35 @@
     setStatus(
       `${prefix}: ${error?.message || "Unknown authentication or database error."}`,
       "error",
+    );
+  };
+
+  const loginLink = document.createElement("a");
+  loginLink.href = new URL(
+    "teacher_registration/login.html",
+    window.location.href,
+  ).href;
+  loginLink.target = "_blank";
+  loginLink.rel = "noopener noreferrer";
+  loginLink.textContent = "Open Teacher sign-in in a new tab";
+  loginLink.hidden = true;
+  loginLink.style.display = "inline-block";
+  loginLink.style.marginTop = "14px";
+  loginLink.style.color = "#5538ee";
+  loginLink.style.fontWeight = "700";
+  status.insertAdjacentElement("afterend", loginLink);
+
+  const showSyncPending = (emailConfirmed) => {
+    actionMode = "sync";
+    tokenHash = null;
+    button.textContent = "Retry Teacher Profile Sync";
+    button.disabled = false;
+    loginLink.hidden = false;
+    setStatus(
+      emailConfirmed
+        ? "Your Auth email was confirmed successfully. Teacher profile synchronization is pending because a valid Teacher session is unavailable. Sign in with the new email in another tab, then return here and retry."
+        : "A valid Teacher session is required to synchronize the profile. Sign in with the confirmed email in another tab, then return here and retry.",
+      "warning",
     );
   };
 
@@ -57,11 +88,18 @@
     setStatus("Syncing your verified email to your teacher profile...");
 
     try {
-      const user = await window.TeacherData.syncAuthenticatedTeacherEmail();
+      const user = await window.TeacherData.syncAuthenticatedTeacherEmail(
+        verifiedAuthUser,
+        verifiedAuthSession,
+      );
       emailDisplay.textContent = `Verified email: ${user.email}`;
       emailDisplay.hidden = false;
       button.hidden = true;
-      setStatus("Your email has been successfully updated!", "success");
+      loginLink.hidden = true;
+      setStatus(
+        "Your Auth email and Teacher profile email are synchronized.",
+        "success",
+      );
       window.setTimeout(() => {
         window.location.assign(
           new URL("teacher_content/teacher_dashboard.html", window.location.href).href,
@@ -71,8 +109,17 @@
       actionMode = "sync";
       tokenHash = null;
       button.textContent = "Retry Email Sync";
-      showError("Email sync failed", error);
-      button.disabled = false;
+      if (error?.code === "TEACHER_EMAIL_SYNC_SESSION_MISSING") {
+        showSyncPending(Boolean(verifiedAuthUser));
+      } else {
+        showError(
+          verifiedAuthUser
+            ? "Email confirmed, but Teacher profile synchronization could not be completed"
+            : "Teacher profile synchronization could not be completed",
+          error,
+        );
+        button.disabled = false;
+      }
     } finally {
       busy = false;
       button.removeAttribute("aria-busy");
@@ -88,6 +135,7 @@
       const state = await window.TeacherData.getAuthenticatedTeacherEmailSyncState();
       emailDisplay.textContent = `Authenticated email: ${state.user.email}`;
       emailDisplay.hidden = false;
+      loginLink.hidden = true;
 
       if (state.needsSync) {
         actionMode = "sync";
@@ -104,7 +152,13 @@
           : "Your authenticated email is available to synchronize.",
       );
     } catch (error) {
-      if (error?.code === "TEACHER_EMAIL_LOOKUP_FAILED") {
+      if (error?.code === "TEACHER_EMAIL_SYNC_SESSION_MISSING") {
+        if (actionMode === "confirm") {
+          setStatus("Click Confirm Email to complete the email confirmation.");
+        } else {
+          showSyncPending(Boolean(verifiedAuthUser));
+        }
+      } else if (error?.code === "TEACHER_EMAIL_LOOKUP_FAILED") {
         actionMode = "sync";
         tokenHash = null;
         button.textContent = "Retry Email Sync";
@@ -137,7 +191,9 @@
         throw new Error("The email confirmation token is missing or invalid.");
       }
 
-      await window.TeacherData.verifyAuthEmailUpdate(tokenHash);
+      const verified = await window.TeacherData.verifyAuthEmailUpdate(tokenHash);
+      verifiedAuthUser = verified.user;
+      verifiedAuthSession = verified.session;
       tokenHash = null;
       actionMode = "sync";
       busy = false;

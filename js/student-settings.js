@@ -461,7 +461,14 @@
       if (error) throw error;
       showStatus(elements.emailStatusDialog, "Email change requested. Check your new inbox and confirm the change before it appears here.");
     } catch (error) {
-      showStatus(elements.emailStatusDialog, `Unable to request the email change: ${error.message || "Please try again."}`);
+      const duplicateEmailMessage =
+        window.SmartLearningEmailChange?.getDuplicateEmailMessage(error);
+      showStatus(
+        elements.emailStatusDialog,
+        duplicateEmailMessage
+          ? `Unable to request the email change: ${duplicateEmailMessage}`
+          : `Unable to request the email change: ${error.message || "Please try again."}`,
+      );
     } finally {
       changingEmail = false;
       elements.emailSubmit.disabled = false;
