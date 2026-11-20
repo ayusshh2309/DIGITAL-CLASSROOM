@@ -631,11 +631,6 @@
   }
 
   function renderStats() {
-    const markedAttendance = state.attendance.filter((row) => ["present", "late", "absent"].includes(String(row.status || "").toLowerCase()));
-    const attendancePresent = markedAttendance.filter((row) => ["present", "late"].includes(String(row.status || "").toLowerCase())).length;
-    const attendanceRate = state.attendanceAvailable && markedAttendance.length
-      ? `${Math.round(attendancePresent / markedAttendance.length * 100)}%`
-      : "--";
     const studentCount = new Set(state.students.map((row) => String(row.id))).size;
     const subjectCount = state.assignmentRows.length;
     const values = [
@@ -644,7 +639,6 @@
       ["fa-clipboard-check", "purple", state.quizzes.length || "0", "Quizzes Created", state.quizzes.length ? "Published assessments" : "No quizzes created yet"],
       ["fa-user-group", "green", state.studentsAvailable ? studentCount : "—", "Total Students", state.studentsAvailable ? studentCount ? "In your assigned classes" : "No students in your assigned classes" : "Student records unavailable"],
       ["fa-video", "orange", state.liveClasses.length || "0", "Live Classes", state.liveClasses.length ? "Scheduled by you" : "No classes scheduled yet"],
-      ["fa-chart-simple", "teal", attendanceRate, "Attendance Rate", !state.attendanceAvailable ? "Attendance records unavailable" : markedAttendance.length ? `${markedAttendance.length} marked attendance records` : "No attendance records yet"],
     ];
     $("dashboardStats").innerHTML = values.map((value) => statMarkup(...value)).join("");
   }
