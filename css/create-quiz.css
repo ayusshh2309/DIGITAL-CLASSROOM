@@ -1371,3 +1371,29 @@ textarea {
   text-align: center;
   background: #fafcff;
 }
+
+@media (min-width: 761px) and (max-width: 1100px) {
+  .stepper {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    padding: 10px;
+  }
+
+  .step-line {
+    display: none;
+  }
+
+  .step {
+    min-width: 0;
+    flex: 1 1 0;
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .step-info {
+    min-width: 0;
+    padding-left: 26px;
+    overflow-wrap: anywhere;
+  }
+}

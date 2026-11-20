@@ -340,6 +340,32 @@ textarea::placeholder {
   max-width: 100%;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+.page-content > *,
+.student-page-content > * {
+  min-width: 0;
+}
+
+.page-content :is(input, select, textarea),
+.student-page-content :is(input, select, textarea) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+dialog,
+[role="dialog"] {
+  max-width: min(100%, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
 .page-content img,
 .page-content canvas,
 .page-content svg,
@@ -395,5 +421,100 @@ textarea::placeholder {
   *::after {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
+  }
+}
+
+.calendar-page .calendar-layout,
+.calendar-page .calendar-card,
+.calendar-page .calendar-grid,
+.calendar-page .day-cell {
+  min-width: 0;
+}
+
+.calendar-page .calendar-grid {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.calendar-page .calendar-grid > * {
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .calendar-page .calendar-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 1150px) {
+  .performance-page .performance-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .performance-page .toolbar {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .performance-page .details-card > .section-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .performance-page .details-tools {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .performance-page .details-tools .performance-filter,
+  .performance-page .details-tools input,
+  .performance-page .details-tools select {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 760px) {
+  .performance-page .details-tools {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .calendar-page .view-switch button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .calendar-page .icon-button {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (max-width: 420px) {
+  .calendar-page .calendar-grid {
+    gap: 2px;
+  }
+
+  .calendar-page .day-heading {
+    padding-right: 0;
+    padding-left: 0;
+    font-size: 0.58rem;
+    text-align: center;
+  }
+
+  .calendar-page .day-cell {
+    padding: 3px 2px;
+  }
+
+  .calendar-page .calendar-grid .day-number:not(.today) {
+    width: auto;
+  }
+
+  .calendar-page .day-number.today {
+    width: 22px;
+    height: 22px;
   }
 }

@@ -654,3 +654,25 @@ textarea:focus {
 }
 .attendance-page .field label i{width:14px;margin-right:4px;color:var(--layout-teal);font-size:.7rem}.attendance-page .panel-head h2 i,.attendance-page .calendar-head h2 i{margin-right:7px;color:var(--layout-teal);font-size:.88em}.attendance-page .history-panel .panel-head h2 i{color:#6548d8}
 .attendance-page .attendance-table th i,.attendance-page .history-table th i{margin-right:6px;color:#7d91a8;font-size:.82em}.attendance-page #tableTitle:before{content:"\f46d";font-family:"Font Awesome 6 Free";font-weight:900;margin-right:8px;color:var(--layout-teal);font-size:.9em}
+
+@media (max-width: 850px) {
+  #layout > .sidebar {
+    display: block;
+  }
+
+  .sidebar-inner {
+    height: auto;
+    min-height: 100%;
+  }
+
+  .sidebar-nav {
+    flex: 0 0 auto;
+  }
+
+  .sidebar-nav-primary .sidebar-link,
+  .sidebar-nav-footer .sidebar-link {
+    min-height: 44px;
+    max-height: none;
+    flex: 0 0 auto;
+  }
+}

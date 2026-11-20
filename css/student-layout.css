@@ -384,3 +384,22 @@ textarea:focus {
   background: #00818a !important;
   border-color: #00818a !important;
 }
+
+@media (max-width: 850px) {
+  .student-sidebar-inner {
+    height: auto;
+    min-height: 100%;
+    flex: 0 0 auto;
+  }
+
+  .student-sidebar-nav {
+    flex: 0 0 auto;
+  }
+
+  .student-sidebar-nav-primary .student-nav-link,
+  .student-sidebar-nav-footer .student-nav-link {
+    min-height: 44px;
+    max-height: none;
+    flex: 0 0 auto;
+  }
+}

@@ -786,6 +786,27 @@
         .classes-page .page-title-row { align-items: stretch; flex-direction: column; gap: 18px; }
         .classes-page .title-actions { justify-content: space-between; }
       }
+
+      @media (max-width: 1050px) {
+        .classes-page .overview-banner {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 18px;
+          padding: 22px;
+        }
+
+        .classes-page .overview-left,
+        .classes-page .overview-metrics {
+          width: 100%;
+          min-width: 0;
+        }
+
+        .classes-page .overview-metrics {
+          flex-wrap: wrap;
+          justify-content: space-between;
+          gap: 16px;
+        }
+      }
     </style>
       <link rel="stylesheet" href="../css/layout.css" />
   </head>

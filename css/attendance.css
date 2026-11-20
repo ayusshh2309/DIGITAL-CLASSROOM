@@ -526,6 +526,36 @@
 }
 
 @media (max-width: 520px) {
+  .attendance-page .action-buttons,
+  .attendance-page .export-menu {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .attendance-page .action-buttons > *,
+  .attendance-page .export-menu > * {
+    width: 100%;
+  }
+
+  .attendance-page .export-menu .att-select {
+    width: 100%;
+  }
+
+  .attendance-page .panel-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .attendance-page .panel-head > div {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .attendance-page .register-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
   .attendance-page .controls {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
