@@ -4,7 +4,6 @@
   window.teacherDashboardRedesigned = true;
 
   root.innerHTML = `
-    <div class="dashboard-data-notice" id="dashboardDataNotice" role="status" aria-live="polite">Loading your dashboard data...</div>
     <section class="dashboard-hero" aria-labelledby="greetingEl">
       <span class="hero-mark" aria-hidden="true"><i class="fa-solid fa-graduation-cap"></i></span>
       <div class="hero-copy">
@@ -521,14 +520,6 @@
     state.attendanceAvailable = true;
   }
 
-  function renderDataNotice(message = "", isError = false) {
-    const notice = $("dashboardDataNotice");
-    notice.textContent = message;
-    notice.hidden = !message;
-    notice.classList.toggle("is-error", isError);
-    notice.setAttribute("role", isError ? "alert" : "status");
-  }
-
   function renderMaterials() {
     const rows = [...state.materials].sort((left, right) => new Date(right.created_at || 0) - new Date(left.created_at || 0)).slice(0, 5);
     $("dashboardMaterials").innerHTML = rows.length ? rows.map((item) => {
@@ -539,7 +530,6 @@
   }
 
   async function loadData() {
-    renderDataNotice("Loading your dashboard data...");
     try {
       state.client = window.TeacherData?.getSupabaseClient?.() || null;
       if (!state.client) throw new Error("Supabase is unavailable. Check the shared Supabase client configuration.");
@@ -625,7 +615,6 @@
     } catch (error) {
       console.error("Unable to load teacher dashboard data.", error);
       if (profileName()) profileName().textContent = "Unable to load profile";
-      renderDataNotice(error?.message || "Dashboard data could not be loaded.", true);
     }
   }
 
