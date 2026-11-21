@@ -507,6 +507,38 @@
     return data;
   }
 
+  async function syncCurrentTeacherEmail() {
+    const { client, user, profile } = await loadCurrentTeacherProfile();
+    const email = typeof user.email === "string" ? user.email.trim() : "";
+    if (!email || String(profile.email || "").trim() === email) return profile;
+
+    const { data, error } = await client
+      .from("teachers")
+      .update({ email })
+      .eq("id", profile.id)
+      .eq("user_id", user.id)
+      .select("*")
+      .single();
+    if (error) {
+      logSupabaseFailure("Teacher email profile synchronization", error);
+      throw error;
+    }
+    if (
+      !data ||
+      data.id !== profile.id ||
+      data.user_id !== user.id ||
+      data.email !== email
+    ) {
+      throw Object.assign(
+        new Error("The Teacher profile email could not be synchronized with Auth."),
+        { code: "TEACHER_EMAIL_SYNC_WRITE_FAILED" },
+      );
+    }
+
+    window.__currentTeacherProfile = data;
+    return data;
+  }
+
   function requireConfirmedAuthEmailUser(user) {
     if (!user?.id || typeof user.email !== "string" || !user.email.trim()) {
       throw new Error("Supabase did not return a confirmed Auth user UUID and email.");
@@ -971,6 +1003,7 @@
     deleteTeacherProfilePhoto,
     getTeacherProfilePhotoUrl,
     updateAuthEmail,
+    syncCurrentTeacherEmail,
     verifyAuthEmailUpdate,
     getAuthenticatedTeacherEmailSyncState,
     syncAuthenticatedTeacherEmail,

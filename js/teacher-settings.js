@@ -1019,6 +1019,14 @@
     client = loaded.client;
     user = loaded.user;
     profile = loaded.profile;
+    let emailSyncWarning = "";
+    try {
+      profile = await TeacherData.syncCurrentTeacherEmail();
+    } catch (error) {
+      logSupabaseError("Teacher Auth email synchronization", error);
+      emailSyncWarning =
+        `Your authenticated email is current, but the Teacher profile email could not be synchronized: ${errorMessage(error, "Please try again.")}`;
+    }
     try {
       languageCatalog = await TeacherData.loadTeacherLanguageCatalog(client);
       languageCatalogReady = true;
@@ -1037,6 +1045,7 @@
       authenticatedUserId: user.id,
     });
     await renderAccount();
+    if (emailSyncWarning) setAccountStatus(emailSyncWarning);
     profileSaveButton.disabled = false;
     enableAccountActions(true);
     changePasswordButton.disabled = !passwordValidator?.check;
