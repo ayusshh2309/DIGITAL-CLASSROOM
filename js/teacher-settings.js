@@ -837,6 +837,15 @@
     }
   }
 
+  async function accountDeletionErrorMessage(error, fallback) {
+    const response = error?.context;
+    if (response && typeof response.clone === "function") {
+      const payload = await response.clone().json().catch(() => null);
+      if (typeof payload?.error === "string") return payload.error;
+    }
+    return errorMessage(error, fallback);
+  }
+
   async function deleteAccount() {
     if (deletingAccount) return;
     if (!navigator.onLine) {
@@ -863,8 +872,8 @@
         throw new Error("The account deletion function did not confirm deletion.");
       }
       deletionSucceeded = true;
-      if (data.profilePhotoCleanupFailed) {
-        console.error("The account was deleted, but profile photo cleanup failed.");
+      if (data.profilePhotoCleanupQueued !== true) {
+        console.error("The account was deleted, but profile photo cleanup was not confirmed as queued.");
       }
 
       const { error: signOutError } = await client.auth.signOut();
@@ -872,9 +881,10 @@
       window.location.assign("../teacher_registration/login.html");
     } catch (error) {
       console.error("Unable to delete or sign out of the teacher account.", error);
-      setAccountStatus(deletionSucceeded
+      const statusMessage = deletionSucceeded
         ? `Your account was deleted, but sign-out failed: ${errorMessage(error, "close this page and sign in again if needed.")}`
-        : `Account deletion failed. Your account was not deleted: ${errorMessage(error, "please try again later.")}`);
+        : `Account deletion failed: ${await accountDeletionErrorMessage(error, "please try again later.")}`;
+      setAccountStatus(statusMessage);
       if (!deletionSucceeded) {
         deletingAccount = false;
         deleteAccountButton.disabled = false;

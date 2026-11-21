@@ -529,6 +529,15 @@
     }
   }
 
+  async function accountDeletionErrorMessage(error) {
+    const response = error?.context;
+    if (response && typeof response.clone === "function") {
+      const payload = await response.clone().json().catch(() => null);
+      if (typeof payload?.error === "string") return payload.error;
+    }
+    return error?.message || "Please contact support and retry.";
+  }
+
   async function deleteStudentAccount() {
     if (deletingAccount) return;
     if (!window.confirm(
@@ -543,8 +552,8 @@
       });
       if (error) throw error;
       if (data?.deleted !== true) throw new Error("The account deletion was not confirmed.");
-      if (data.studentProfilePhotoCleanupFailed === true) {
-        console.error("[StudentSettings] Account deleted, but the profile photo could not be removed from storage.");
+      if (data.profilePhotoCleanupQueued !== true) {
+        console.error("[StudentSettings] Account deleted, but profile photo cleanup was not confirmed as queued.");
       }
       try {
         await client.auth.signOut();
@@ -554,7 +563,10 @@
       window.location.replace("../student_registration/login.html");
     } catch (error) {
       console.error("[StudentSettings] Student account deletion failed.", error);
-      showStatus(elements.accountStatus, `Unable to delete your account: ${error.message || "Please contact support."}`);
+      showStatus(
+        elements.accountStatus,
+        `Unable to delete your account: ${await accountDeletionErrorMessage(error)}`,
+      );
       deletingAccount = false;
       elements.deleteAccount.disabled = false;
     }

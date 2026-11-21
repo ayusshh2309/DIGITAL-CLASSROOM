@@ -449,6 +449,9 @@ import_map = "./functions/generate-quiz/deno.json"
 verify_jwt = true
 entrypoint = "./functions/manage-recorded-class/index.ts"
 
+[functions.cleanup-profile-photos]
+verify_jwt = false
+
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
 # Specifies static files to be bundled with the function. Supports glob patterns.

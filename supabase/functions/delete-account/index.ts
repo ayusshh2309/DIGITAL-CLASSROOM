@@ -44,61 +44,24 @@ Deno.serve(async (request) => {
   const adminClient = createClient(url, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const [{ data: teacher, error: teacherError }, { data: student, error: studentError }] =
-    await Promise.all([
-      adminClient
-        .from("teachers")
-        .select("profile_photo_url")
-        .eq("user_id", user.id)
-        .maybeSingle(),
-      adminClient
-        .from("students")
-        .select("profile_photo_url")
-        .eq("user_id", user.id)
-        .maybeSingle(),
-    ]);
-  if (teacherError || studentError) {
-    console.error("Could not load profile photos before account deletion.", {
-      teacherError,
-      studentError,
-    });
-    return Response.json(
-      { error: "The account could not be safely prepared for deletion." },
-      { status: 500, headers: corsHeaders },
-    );
-  }
 
   const { error: deleteError } = await adminClient.auth.admin.deleteUser(user.id);
   if (deleteError) {
-    return Response.json({ error: "The account could not be deleted. Related records may require cleanup." }, { status: 409, headers: corsHeaders });
-  }
-
-  const teacherPhotoPath = teacher?.profile_photo_url;
-  let profilePhotoCleanupFailed = false;
-  if (typeof teacherPhotoPath === "string" && teacherPhotoPath.startsWith(`${user.id}/`)) {
-    const { error: photoRemovalError } = await adminClient.storage
-      .from("teacher-profile-images")
-      .remove([teacherPhotoPath]);
-    if (photoRemovalError) {
-      console.error("Unable to remove the deleted teacher's profile photo.", photoRemovalError);
-      profilePhotoCleanupFailed = true;
-    }
-  }
-
-  const studentPhotoPath = student?.profile_photo_url;
-  let studentProfilePhotoCleanupFailed = false;
-  if (typeof studentPhotoPath === "string" && studentPhotoPath.startsWith(`${user.id}/`)) {
-    const { error: photoRemovalError } = await adminClient.storage
-      .from("student-profile-images")
-      .remove([studentPhotoPath]);
-    if (photoRemovalError) {
-      console.error("Unable to remove the deleted student's profile photo.", photoRemovalError);
-      studentProfilePhotoCleanupFailed = true;
-    }
+    console.error("Account deletion was blocked and rolled back.", {
+      code: deleteError.code || null,
+      status: deleteError.status || null,
+    });
+    return Response.json(
+      {
+        code: "ACCOUNT_DELETION_BLOCKED",
+        error: "Account deletion was not completed. No account data was deleted. Contact support to resolve the blocking database error, then retry.",
+      },
+      { status: 409, headers: corsHeaders },
+    );
   }
 
   return Response.json(
-    { deleted: true, profilePhotoCleanupFailed, studentProfilePhotoCleanupFailed },
+    { deleted: true, profilePhotoCleanupQueued: true },
     { status: 200, headers: corsHeaders },
   );
 });
