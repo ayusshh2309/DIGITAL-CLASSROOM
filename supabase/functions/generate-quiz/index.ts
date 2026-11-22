@@ -313,7 +313,7 @@ ${JSON.stringify(metadata)}
 
 Generation requirements:
 - Generate exactly ${request.number_of_questions} questions, in ${request.language}.
-- Use the supplied grade${request.stream ? ` and stream (${request.stream})` : ""}, subject, chapter, and focus to set the appropriate educational context.
+- Use grade ${request.grade}${request.stream ? " and the stream specified in Quiz settings" : ""}, subject, chapter, and focus to set the appropriate educational context.
 - Question type selection: ${request.question_type}. For "both", include at least one MCQ and one True/False question when there are two or more questions; alternate types where practical.
 - Difficulty selection: ${request.difficulty}. For "mixed", include a reasonable mix of easy, medium, and hard questions.
 - Every MCQ must have four distinct plausible options and use A, B, C, or D as correct_answer.
