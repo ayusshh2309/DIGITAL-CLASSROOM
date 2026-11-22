@@ -466,6 +466,8 @@
 
     const button = $("aiGenerateQuizButton");
     button.disabled = true;
+    button.classList.add("is-generating");
+    button.setAttribute("aria-busy", "true");
     button.textContent = "Generating quiz...";
 
     try {
@@ -499,6 +501,8 @@
       showToast(error.message || "AI generation failed. Please try again later.", true);
     } finally {
       button.disabled = false;
+      button.classList.remove("is-generating");
+      button.removeAttribute("aria-busy");
       button.textContent = "Generate Quiz with AI";
     }
   }

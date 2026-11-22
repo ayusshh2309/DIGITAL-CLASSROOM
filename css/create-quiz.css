@@ -1283,6 +1283,30 @@ textarea {
   justify-content: flex-end;
 }
 
+#aiGenerateQuizButton.is-generating {
+  cursor: wait;
+  transform: none;
+}
+
+#aiGenerateQuizButton.is-generating::before {
+  content: "";
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: ai-quiz-generation-spin 700ms linear infinite;
+  vertical-align: -2px;
+}
+
+@keyframes ai-quiz-generation-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .ai-review-header-row {
   display: flex;
   align-items: center;
