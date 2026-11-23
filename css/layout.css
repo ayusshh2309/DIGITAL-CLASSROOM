@@ -1,13 +1,13 @@
 :root {
   --layout-sidebar-width: 270px;
   --layout-topbar-height: 68px;
-  --layout-navy: #071b2c;
-  --layout-navy-light: #0b263b;
-  --layout-teal: #00818a;
-  --layout-active-purple: #00818a;
-  --layout-muted: #9aabba;
-  --layout-border: #e2e7ef;
-  --layout-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --layout-navy: #17213a;
+  --layout-navy-light: #202c49;
+  --layout-teal: var(--color-primary-700, #3d52a8);
+  --layout-active-purple: var(--color-primary-700, #3d52a8);
+  --layout-muted: #aeb9ce;
+  --layout-border: var(--color-border, #e2e7f0);
+  --layout-shadow: 0 2px 8px rgba(27, 36, 52, 0.045);
 }
 
 *,
@@ -189,8 +189,8 @@ body {
 .notification-button {
   position: relative;
   display: grid;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   place-items: center;
   border: 0;
   border-radius: 50%;
@@ -371,8 +371,8 @@ body {
 
   .menu-toggle {
     display: block;
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
     cursor: pointer;
   }
 
@@ -417,7 +417,7 @@ body {
   }
 
   .notification-button {
-    flex: 0 0 38px;
+    flex: 0 0 44px;
   }
 }
 
@@ -497,19 +497,19 @@ body {
 @media(max-width:700px){.attendance-page .page-header{display:block}.attendance-page .action-buttons{margin-top:16px;flex-wrap:wrap;justify-content:flex-start}}
 .attendance-page .workspace{align-items:start}.attendance-page .workspace>.panel:first-child{overflow:hidden}.attendance-page .controls{margin:-4px -4px 22px;padding:14px;background:#f7fafc;border:1px solid #edf2f6;border-radius:14px}.attendance-page .field label{color:#6b7f96;font-size:.68rem;letter-spacing:.08em}.attendance-page .att-select,.attendance-page .att-input{box-shadow:0 1px 2px rgba(20,42,64,.03);transition:border-color .16s ease,box-shadow .16s ease}.attendance-page .att-select:focus,.attendance-page .att-input:focus{border-color:var(--layout-teal);outline:0;box-shadow:0 0 0 3px rgba(41,174,184,.12)}.attendance-page .panel-head{padding-bottom:14px;border-bottom:1px solid #edf1f5}.attendance-page .panel-head h2{font-size:1.05rem;letter-spacing:-.01em}.attendance-page .panel-head p{color:#718196}.attendance-page .attendance-table thead{background:#f8fafc}.attendance-page .attendance-table th{padding-top:13px;padding-bottom:13px;color:#718196}.attendance-page .attendance-table tbody tr{transition:background-color .15s ease}.attendance-page .attendance-table tbody tr:hover{background:#fbfdfe}.attendance-page .attendance-table tbody .empty-state{min-height:190px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}.attendance-page .attendance-table tbody .empty-state i{width:42px;height:42px;margin-bottom:4px;border-radius:12px;background:#eef5f7;color:var(--layout-teal);display:grid;place-items:center;font-size:1.15rem}.attendance-page .attendance-table tbody .empty-state strong{color:#33465b;font-size:.86rem}.attendance-page .attendance-table tbody .empty-state p{color:#8190a3;font-size:.77rem}.attendance-page .calendar-panel{background:linear-gradient(180deg,#fff 0%,#fbfdfe 100%)}.attendance-page .calendar-head{padding-bottom:12px;border-bottom:1px solid #edf1f5}.attendance-page .calendar-head h2{font-size:1.05rem}.attendance-page .calendar-day.selected{box-shadow:0 4px 10px rgba(41,174,184,.22)}.attendance-page .history-panel{overflow:hidden}.attendance-page .history-panel .panel-head{border-bottom:0;padding-bottom:8px}.attendance-page .history-table thead{background:#f8fafc}.attendance-page .history-table th{padding-top:13px;padding-bottom:13px}.attendance-page .history-table tbody tr:hover{background:#fbfdfe}
 
-/* Unified Smart Learning DC green theme. */
+/* Compatibility aliases for existing teacher page styles. */
 :root {
-  --primary-color: #00818a;
-  --primary-hover: #006b73;
-  --primary-active: #00585f;
-  --primary-light: #e8f7f8;
-  --primary-ring: rgba(0, 129, 138, 0.18);
-  --primary: #00818a;
-  --primary-teal: #00818a;
-  --brand-purple: #00818a;
-  --brand-purple-dark: #006b73;
-  --layout-active-purple: #00818a;
-  --layout-teal: #00818a;
+  --primary-color: var(--color-primary-700, #3d52a8);
+  --primary-hover: var(--color-primary-800, #33458f);
+  --primary-active: var(--color-primary-950, #202b63);
+  --primary-light: var(--color-primary-100, #edf0ff);
+  --primary-ring: rgba(75, 99, 191, 0.16);
+  --primary: var(--color-primary-700, #3d52a8);
+  --primary-teal: var(--color-primary-700, #3d52a8);
+  --brand-purple: var(--color-primary-700, #3d52a8);
+  --brand-purple-dark: var(--color-primary-800, #33458f);
+  --layout-active-purple: var(--color-primary-700, #3d52a8);
+  --layout-teal: var(--color-primary-700, #3d52a8);
 }
 
 .page-eyebrow,
@@ -525,21 +525,21 @@ body {
 .view-all,
 .view-all-btn,
 .workspace-label {
-  color: #00818a !important;
+  color: var(--color-primary-700, #3d52a8) !important;
 }
 
 .sidebar-link.active,
 .sidebar-link.active:visited,
 .sidebar-link.active:hover,
 .sidebar-link.active:focus-visible {
-  background: #00818a !important;
-  border-left-color: #00818a !important;
-  box-shadow: 0 6px 16px rgba(0, 129, 138, 0.28) !important;
+  background: var(--color-primary-700, #3d52a8) !important;
+  border-left-color: #aeb9ff !important;
+  box-shadow: 0 5px 14px rgba(8, 15, 50, 0.22) !important;
 }
 
 .sidebar-link:hover,
 .sidebar-link:focus-visible {
-  background: rgba(0, 129, 138, 0.16) !important;
+  background: rgba(75, 99, 191, 0.18) !important;
 }
 
 button.primary,
@@ -561,8 +561,8 @@ button.primary,
 .modal-primary,
 .form-primary {
   color: #fff !important;
-  background: #00818a !important;
-  border-color: #00818a !important;
+  background: var(--color-primary-700, #3d52a8) !important;
+  border-color: var(--color-primary-700, #3d52a8) !important;
 }
 
 button.primary:hover,
@@ -583,8 +583,8 @@ button.primary:hover,
 .action-button.primary:hover,
 .modal-primary:hover,
 .form-primary:hover {
-  background: #006b73 !important;
-  border-color: #006b73 !important;
+  background: var(--color-primary-800, #33458f) !important;
+  border-color: var(--color-primary-800, #33458f) !important;
 }
 
 button.primary:active,
@@ -599,8 +599,8 @@ button.primary:active,
 .ann-button.primary:active,
 .cal-button.primary:active,
 .att-button.primary:active {
-  background: #00585f !important;
-  border-color: #00585f !important;
+  background: var(--color-primary-950, #202b63) !important;
+  border-color: var(--color-primary-950, #202b63) !important;
 }
 
 button.primary:focus-visible,
@@ -620,14 +620,14 @@ button.primary:focus-visible,
 .add-button:focus-visible,
 .action-button.primary:focus-visible {
   outline: none !important;
-  box-shadow: 0 0 0 3px rgba(0, 129, 138, 0.22) !important;
+  box-shadow: 0 0 0 3px rgba(75, 99, 191, 0.18) !important;
 }
 
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: #00818a !important;
-  box-shadow: 0 0 0 3px rgba(0, 129, 138, 0.14) !important;
+  border-color: var(--color-primary-600, #4b63bf) !important;
+  box-shadow: 0 0 0 3px rgba(75, 99, 191, 0.15) !important;
   outline: none !important;
 }
 
@@ -636,7 +636,7 @@ textarea:focus {
 .dashboard-progress-fill,
 .bar-fill,
 .fill {
-  background: #00818a !important;
+  background: var(--color-primary-600, #4b63bf) !important;
 }
 
 .tabs .active,
@@ -649,8 +649,8 @@ textarea:focus {
 .calendar-day.selected,
 .mini-calendar button.selected {
   color: #fff !important;
-  background: #00818a !important;
-  border-color: #00818a !important;
+  background: var(--color-primary-700, #3d52a8) !important;
+  border-color: var(--color-primary-700, #3d52a8) !important;
 }
 .attendance-page .field label i{width:14px;margin-right:4px;color:var(--layout-teal);font-size:.7rem}.attendance-page .panel-head h2 i,.attendance-page .calendar-head h2 i{margin-right:7px;color:var(--layout-teal);font-size:.88em}.attendance-page .history-panel .panel-head h2 i{color:#6548d8}
 .attendance-page .attendance-table th i,.attendance-page .history-table th i{margin-right:6px;color:#7d91a8;font-size:.82em}.attendance-page #tableTitle:before{content:"\f46d";font-family:"Font Awesome 6 Free";font-weight:900;margin-right:8px;color:var(--layout-teal);font-size:.9em}

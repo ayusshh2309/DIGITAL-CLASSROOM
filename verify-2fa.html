@@ -3,8 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#111a3a" />
+    <meta name="theme-color" content="#17213a" />
     <title>Two-Factor Authentication | Smart Learning DC</title>
+    <link rel="stylesheet" href="css/theme.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -14,24 +15,24 @@
       body { display: grid; min-height: 100vh; margin: 0; place-items: center; padding: 24px; background: radial-gradient(circle at top left, #e8eaff, transparent 40%), #f5f7fc; }
       .card { width: min(100%, 465px); padding: clamp(26px, 6vw, 42px); border: 1px solid #e6e9f2; border-radius: 24px; background: #fff; box-shadow: 0 24px 70px rgba(27, 38, 84, .12); }
       .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 30px; color: #222c54; font-weight: 800; letter-spacing: -.03em; }
-      .brand-mark { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 13px; background: linear-gradient(135deg, #7163e8, #465bd1); color: white; font-size: 19px; }
-      .icon { display: grid; width: 58px; height: 58px; margin-bottom: 20px; place-items: center; border-radius: 18px; background: #eeedff; color: #5e55d6; }
+      .brand-mark { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 13px; background: linear-gradient(135deg, var(--color-primary-600), var(--color-primary-800)); color: white; font-size: 19px; }
+      .icon { display: grid; width: 58px; height: 58px; margin-bottom: 20px; place-items: center; border-radius: 18px; background: var(--color-primary-100); color: var(--color-primary-700); }
       .icon svg { width: 28px; height: 28px; fill: currentColor; }
       h1 { margin: 0 0 9px; font-size: clamp(25px, 6vw, 31px); letter-spacing: -.04em; }
       .description { margin: 0 0 25px; color: #69758b; font-size: 14px; line-height: 1.65; }
       label { display: block; margin-bottom: 8px; color: #34415b; font-size: 13px; font-weight: 700; }
       input { width: 100%; height: 55px; padding: 0 16px; border: 1px solid #dfe4ee; border-radius: 13px; outline: none; background: #fbfcff; color: #1d2841; font: inherit; font-size: clamp(20px, 4vw, 22px); font-weight: 700; letter-spacing: .2em; text-align: center; }
       input::placeholder { color: #a5afc5; letter-spacing: 0; }
-      input:focus { border-color: #675ddd; box-shadow: 0 0 0 4px rgba(103, 93, 221, .12); }
+      input:focus { border-color: var(--color-primary-600); box-shadow: 0 0 0 4px rgba(75, 99, 191, .15); }
       select { width: 100%; height: 44px; margin: 0 0 16px; padding: 0 12px; border: 1px solid #dfe4ee; border-radius: 11px; background: #fbfcff; color: #34415b; font: inherit; }
-      button { width: 100%; min-height: 49px; margin-top: 16px; border: 0; border-radius: 12px; background: linear-gradient(120deg, #6658df, #4c63d2); color: #fff; font: inherit; font-weight: 750; cursor: pointer; }
+      button { width: 100%; min-height: 49px; margin-top: 16px; border: 0; border-radius: 12px; background: linear-gradient(120deg, var(--color-primary-700), var(--color-primary-600)); color: #fff; font: inherit; font-weight: 750; cursor: pointer; }
       button:disabled { opacity: .62; cursor: wait; }
       .status { min-height: 22px; margin: 14px 0 0; color: #68748a; font-size: 13px; line-height: 1.5; }
       .status[data-kind="error"] { color: #b42335; }
       .status[data-kind="success"] { color: #167347; }
-      .back { display: block; margin-top: 20px; color: #5963bb; font-size: 13px; text-align: center; text-decoration: none; }
+      .back { display: block; margin-top: 20px; color: var(--color-primary-700); font-size: 13px; text-align: center; text-decoration: none; }
       .back:hover { text-decoration: underline; }
-      .help-toggle { width: auto; min-height: 0; margin: 18px auto 0; padding: 0; background: none; color: #5963bb; font-size: 13px; font-weight: 600; }
+      .help-toggle { width: auto; min-height: 0; margin: 18px auto 0; padding: 0; background: none; color: var(--color-primary-700); font-size: 13px; font-weight: 600; }
       .lost-access-help { margin-top: 17px; padding: 15px; border: 1px solid #e4e7f2; border-radius: 13px; background: #f8f9fd; }
       .lost-access-help p { margin: 0; color: #59677e; font-size: 13px; line-height: 1.6; }
       .lost-access-help p + p { margin-top: 10px; }

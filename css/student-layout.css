@@ -1,17 +1,17 @@
 :root {
   --student-sidebar-width: 270px;
   --student-topbar-height: 68px;
-  --student-navy: #031b2e;
-  --student-navy-soft: #062540;
-  --student-purple: #00818a;
-  --student-purple-light: #00818a;
-  --student-active: #00818a;
+  --student-navy: #17213a;
+  --student-navy-soft: #202c49;
+  --student-purple: var(--color-primary-700, #3d52a8);
+  --student-purple-light: var(--color-primary-600, #4b63bf);
+  --student-active: var(--color-primary-700, #3d52a8);
   --student-text: #f8fafc;
-  --student-muted: #c4ced9;
-  --student-border: #e2e7ef;
-  --student-main-bg: linear-gradient(135deg, #e3f2fd 0%, #e0f2f1 50%, #e8f5e9 100%);
-  --student-surface: rgba(255, 255, 255, 0.7);
-  --student-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --student-muted: #aeb9ce;
+  --student-border: var(--color-border, #e2e7f0);
+  --student-main-bg: var(--color-page, #f5f7fb);
+  --student-surface: #ffffff;
+  --student-shadow: 0 2px 8px rgba(27, 36, 52, 0.045);
 }
 
 body {
@@ -62,8 +62,8 @@ body {
 .student-nav-link:hover, .student-nav-link:focus-visible { color: #fff; background: rgba(255,255,255,.09); outline: none; }
 .student-nav-link:focus-visible { box-shadow: 0 0 0 2px rgba(255,255,255,.6); }
 .student-nav-link.active {
-  color: #fff; border-left-color: #06b6d4; background: #00818a;
-  box-shadow: 0 6px 16px rgba(0, 129, 138, .28);
+  color: #fff; border-left-color: #aeb9ff; background: var(--color-primary-700, #3d52a8);
+  box-shadow: 0 5px 14px rgba(8, 15, 50, .22);
 }
 .student-nav-link.active i { color: #fff; }
 .student-nav-link-danger, .student-nav-link-danger i { color: #ff4d5e; }
@@ -151,7 +151,7 @@ body {
 }
 .student-registration-context-label,
 .student-page-content .registration-context .scope-label {
-  color: #00818a;
+  color: var(--color-primary-700, #3d52a8);
   font-weight: 800;
 }
 .student-registration-context-value,
@@ -270,17 +270,17 @@ body {
   .student-sidebar-divider { margin-top: clamp(2px, .7vh, 4px); margin-bottom: clamp(2px, .7vh, 4px); }
 }
 
-/* Unified Smart Learning DC green theme. */
+/* Compatibility aliases for existing student page styles. */
 :root {
-  --primary-color: #00818a;
-  --primary-hover: #006b73;
-  --primary-active: #00585f;
-  --primary-light: #e8f7f8;
-  --primary: #00818a;
-  --primary-teal: #00818a;
-  --student-purple: #00818a;
-  --student-purple-light: #00818a;
-  --student-active: #00818a;
+  --primary-color: var(--color-primary-700, #3d52a8);
+  --primary-hover: var(--color-primary-800, #33458f);
+  --primary-active: var(--color-primary-950, #202b63);
+  --primary-light: var(--color-primary-100, #edf0ff);
+  --primary: var(--color-primary-700, #3d52a8);
+  --primary-teal: var(--color-primary-700, #3d52a8);
+  --student-purple: var(--color-primary-700, #3d52a8);
+  --student-purple-light: var(--color-primary-600, #4b63bf);
+  --student-active: var(--color-primary-700, #3d52a8);
 }
 
 .page-eyebrow,
@@ -290,21 +290,21 @@ body {
 .student-registration-context-label,
 .student-page-content .registration-context .scope-label,
 .workspace-label {
-  color: #00818a !important;
+  color: var(--color-primary-700, #3d52a8) !important;
 }
 
 .student-nav-link.active,
 .student-nav-link.active:hover,
 .student-nav-link.active:focus-visible {
   color: #fff !important;
-  background: #00818a !important;
-  border-left-color: #00818a !important;
-  box-shadow: 0 6px 16px rgba(0, 129, 138, 0.28) !important;
+  background: var(--color-primary-700, #3d52a8) !important;
+  border-left-color: #aeb9ff !important;
+  box-shadow: 0 5px 14px rgba(8, 15, 50, 0.22) !important;
 }
 
 .student-nav-link:hover,
 .student-nav-link:focus-visible {
-  background: rgba(0, 129, 138, 0.16) !important;
+  background: rgba(75, 99, 191, 0.18) !important;
 }
 
 button.primary,
@@ -323,8 +323,8 @@ button.primary,
 .modal-primary,
 .form-primary {
   color: #fff !important;
-  background: #00818a !important;
-  border-color: #00818a !important;
+  background: var(--color-primary-700, #3d52a8) !important;
+  border-color: var(--color-primary-700, #3d52a8) !important;
 }
 
 button.primary:hover,
@@ -342,8 +342,8 @@ button.primary:hover,
 .action-button.primary:hover,
 .modal-primary:hover,
 .form-primary:hover {
-  background: #006b73 !important;
-  border-color: #006b73 !important;
+  background: var(--color-primary-800, #33458f) !important;
+  border-color: var(--color-primary-800, #33458f) !important;
 }
 
 button.primary:active,
@@ -356,8 +356,8 @@ button.primary:active,
 .join-button:active,
 .join-class:active,
 .view-details:active {
-  background: #00585f !important;
-  border-color: #00585f !important;
+  background: var(--color-primary-950, #202b63) !important;
+  border-color: var(--color-primary-950, #202b63) !important;
 }
 
 button.primary:focus-visible,
@@ -374,14 +374,14 @@ button.primary:focus-visible,
 .add-button:focus-visible,
 .action-button.primary:focus-visible {
   outline: none !important;
-  box-shadow: 0 0 0 3px rgba(0, 129, 138, 0.22) !important;
+  box-shadow: 0 0 0 3px rgba(75, 99, 191, 0.18) !important;
 }
 
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: #00818a !important;
-  box-shadow: 0 0 0 3px rgba(0, 129, 138, 0.14) !important;
+  border-color: var(--color-primary-600, #4b63bf) !important;
+  box-shadow: 0 0 0 3px rgba(75, 99, 191, 0.15) !important;
   outline: none !important;
 }
 
@@ -390,7 +390,7 @@ textarea:focus {
 .dashboard-progress-fill,
 .bar-fill,
 .fill {
-  background: #00818a !important;
+  background: var(--color-primary-600, #4b63bf) !important;
 }
 
 .tabs .active,
@@ -403,8 +403,8 @@ textarea:focus {
 .calendar-day.selected,
 .mini-calendar button.selected {
   color: #fff !important;
-  background: #00818a !important;
-  border-color: #00818a !important;
+  background: var(--color-primary-700, #3d52a8) !important;
+  border-color: var(--color-primary-700, #3d52a8) !important;
 }
 
 @media (max-width: 850px) {
