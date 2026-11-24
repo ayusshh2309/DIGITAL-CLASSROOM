@@ -62,7 +62,7 @@
 }
 
 .left-sidebar .brand-logo {
-  justify-content: center;
+  justify-content: flex-start;
   width: 100%;
   flex: 0 0 auto;
   margin-bottom: 0;
@@ -413,5 +413,38 @@
 
   .form-box {
     padding: clamp(16px, 5vw, 24px);
+  }
+}
+
+@media (min-height: 701px) {
+  .left-sidebar .feature-list {
+    gap: clamp(12px, 1.5vh, 18px);
+  }
+
+  .left-sidebar .feature-text h4 {
+    font-size: clamp(1.125rem, 1.3vw, 1.25rem);
+  }
+
+  .left-sidebar .feature-text p {
+    font-size: clamp(1rem, 1.1vw, 1.0625rem);
+  }
+}
+
+@media (min-width: 1101px) {
+  body {
+    zoom: 0.8;
+    width: 125vw;
+    height: 125vh;
+    min-height: 125vh;
+  }
+
+  .left-sidebar,
+  .right-content {
+    height: 125vh;
+    min-height: 125vh;
+  }
+
+  .registration-container {
+    min-height: 125vh;
   }
 }
