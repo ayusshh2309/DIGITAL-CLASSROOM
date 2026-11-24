@@ -1,0 +1,393 @@
+# MASTER PROMPT: Complete Human-Centered UI/UX Transformation of Smart Learning DC
+
+Act as a Senior Product Designer, Senior UI/UX Engineer, Design Systems Architect, and Frontend Specialist with extensive experience building enterprise-grade EdTech platforms and institutional Learning Management Systems (LMS).
+
+## 1. Project Background
+
+We have developed a complete educational web application called **Smart Learning DC**, designed for teachers and students.
+
+The application already has:
+- A working backend and database.
+- Working authentication and authorization.
+- Working Supabase integrations.
+- Functional AI systems.
+- Student and teacher dashboards.
+- Academic management features.
+- Live classes, recorded classes, quizzes, study materials and analytics.
+
+**Our current problem is NOT backend functionality. Our biggest weakness is the visual design, user experience, usability and overall product presentation.**
+
+Your primary responsibility is to transform the existing application into a premium, professional, human-centered educational platform.
+
+## 2. Primary Design Objective
+
+Create an interface that feels like a professionally designed product developed by an experienced EdTech company.
+
+Use a combination of:
+
+- Google Classroom's simplicity.
+- Khan Academy's student-friendly learning experience.
+- Canvas LMS's academic organization.
+- Premium modern SaaS dashboard aesthetics.
+- Enterprise-grade institutional design.
+
+Do not blindly copy these products. Use them as inspiration to establish our own consistent design identity.
+
+The application must look:
+- Professional.
+- Modern.
+- Trustworthy.
+- Clean.
+- Academically appropriate.
+- Easy to navigate.
+- Visually consistent.
+- Accessible to different age groups.
+
+Avoid generic AI-generated dashboard designs, excessive gradients, unnecessary glassmorphism, random colors, excessive shadows and decorative elements that do not improve usability.
+
+## 3. Establish a Complete Design System
+
+Before redesigning individual pages, establish a unified design system.
+
+### Color palette
+Use a sophisticated educational color palette.
+
+Suggested direction:
+- Primary: Deep Indigo / Professional Blue.
+- Secondary: Soft Blue.
+- Accent: Teal.
+- Background: Soft Neutral / Off-white.
+- Surface: White.
+- Text: Dark Slate.
+- Muted text: Neutral Gray.
+- Success: Green.
+- Warning: Amber.
+- Error: Muted Red.
+
+Use colors consistently across all pages.
+
+Do not assign random colors to every card or component.
+
+### Typography
+Use a professional typography system.
+
+Suggested fonts:
+- Inter.
+- Manrope.
+- Plus Jakarta Sans.
+
+Establish:
+- Page heading hierarchy.
+- Section heading hierarchy.
+- Body text.
+- Supporting text.
+- Form labels.
+- Button typography.
+- Numeric and analytical typography.
+
+Ensure excellent readability.
+
+### Spacing and layout
+Create a consistent spacing system.
+
+Use:
+- Consistent page padding.
+- Consistent card spacing.
+- Proper content alignment.
+- Appropriate whitespace.
+- Consistent border radius.
+- Subtle shadows.
+- Proper responsive containers.
+
+### Shared components
+Build reusable components for:
+- Sidebar.
+- Top navigation.
+- Page headers.
+- Breadcrumbs.
+- Cards.
+- Buttons.
+- Inputs.
+- Dropdowns.
+- Tables.
+- Modals.
+- Confirmation dialogs.
+- Toast notifications.
+- Empty states.
+- Loading states.
+- Skeleton loaders.
+- Pagination.
+- Search.
+- Filters.
+- Tabs.
+- Tooltips.
+
+All pages must follow the same design language.
+
+## 4. Student Dashboard Transformation
+
+Redesign the complete student experience.
+
+The student interface should feel friendly, motivating and easy to understand without looking childish.
+
+Improve:
+- Dashboard overview.
+- Subject navigation.
+- Learning progress.
+- Recorded classes.
+- Live classes.
+- Quizzes.
+- Notes and PDFs.
+- Videos.
+- Downloads.
+- Study-time analytics.
+- Performance analytics.
+- Notifications.
+- Student profile.
+- Settings.
+
+Important requirements:
+
+1. Personalize the dashboard according to the registered class and academic stream.
+2. Make subjects easy to discover.
+3. Display learning activities in a clear hierarchy.
+4. Use attractive but professional subject cards.
+5. Make recorded lessons easy to browse.
+6. Make quiz instructions and quiz-taking interfaces distraction-free.
+7. Show progress through meaningful visualizations.
+8. Provide clear feedback for completed and pending activities.
+9. Ensure mobile usability.
+
+Do not introduce unnecessary dashboard features that are not already part of the application.
+
+## 5. Teacher Dashboard Transformation
+
+The teacher dashboard should feel like a professional academic management workspace.
+
+Improve:
+- Teacher overview.
+- Class management.
+- Subject management.
+- Student information.
+- Material uploads.
+- Quiz creation.
+- Quiz management.
+- Live classes.
+- Recorded classes.
+- Attendance.
+- Student performance.
+- Notifications.
+- Academic schedules.
+- Analytics.
+
+Important requirements:
+
+1. Teachers must immediately understand what actions they can perform.
+2. Organize upload functionality into a clear workflow.
+3. Make file uploads visually intuitive.
+4. Provide upload progress and success/error feedback.
+5. Make class and subject filters easy to use.
+6. Display quiz results and analytics in readable formats.
+7. Make tables professional and easy to scan.
+8. Organize academic activities logically.
+9. Avoid overcrowding the teacher dashboard.
+
+## 6. Registration and Onboarding Redesign
+
+Redesign student and teacher registration pages.
+
+Use a professional multi-step onboarding experience.
+
+Requirements:
+- Clear step indicators.
+- Properly grouped form sections.
+- Consistent input styling.
+- Helpful placeholders.
+- Clear validation messages.
+- Proper field spacing.
+- Responsive layouts.
+- Professional submission screens.
+
+Make registration feel like a modern institutional admission process.
+
+Preserve the existing registration fields, validations and business rules.
+
+## 7. Advanced UI/UX Techniques
+
+Implement the following wherever appropriate:
+
+### Micro-interactions
+- Smooth hover effects.
+- Button feedback.
+- Interactive cards.
+- Dropdown animations.
+- Modal transitions.
+- Tab transitions.
+- Subtle page transitions.
+
+### Loading experience
+- Skeleton loaders.
+- Progress indicators.
+- Upload progress.
+- Meaningful loading messages.
+
+### Feedback experience
+- Success notifications.
+- Error notifications.
+- Confirmation dialogs.
+- Empty states.
+- Helpful error recovery.
+
+### Navigation
+- Clear active navigation states.
+- Consistent sidebar behavior.
+- Breadcrumb navigation where useful.
+- Mobile navigation.
+- Logical grouping of related features.
+
+### Accessibility
+Follow WCAG 2.2 AA principles wherever applicable.
+
+Implement:
+- Appropriate color contrast.
+- Keyboard accessibility.
+- Visible focus states.
+- Accessible form labels.
+- Screen-reader-friendly controls.
+- Touch-friendly interactive elements.
+
+## 8. Technology and Implementation
+
+First inspect the existing project architecture and identify the technologies already being used.
+
+Possible technologies, only when compatible with the existing application:
+
+- Tailwind CSS.
+- CSS Variables.
+- Lucide Icons.
+- shadcn/ui (if React is already used or can be integrated safely).
+- Framer Motion (if React is used).
+- Recharts (if compatible with the existing chart implementation).
+
+Do not introduce unnecessary dependencies.
+
+Do not migrate the application to a different framework simply to achieve better UI.
+
+Create reusable styles and components instead of duplicating CSS across pages.
+
+Use a centralized design-token system for colors, typography, spacing, shadows and border radii.
+
+## 9. CRITICAL: Protect Existing Backend and Functionality
+
+This is an existing, functional application.
+
+**The task is primarily a frontend UI/UX transformation, NOT a redevelopment of the application.**
+
+Strictly follow these rules:
+
+1. Do not modify the Supabase database schema.
+2. Do not create unnecessary database migrations.
+3. Do not modify existing RLS policies.
+4. Do not change authentication or authorization logic.
+5. Do not modify existing AI integrations.
+6. Do not change API contracts.
+7. Do not change existing database queries or business logic unnecessarily.
+8. Do not remove existing functionality.
+9. Do not replace working JavaScript functionality with dummy implementations.
+10. Do not introduce hardcoded demonstration data in place of real application data.
+11. Preserve all existing event listeners, IDs, selectors, function names and integrations wherever possible.
+12. Preserve existing role-based access and permissions.
+13. Do not expose Supabase service-role keys or sensitive credentials.
+14. Do not break existing student and teacher workflows.
+
+If a visual improvement requires a change to existing functionality, inspect the implementation first and make the smallest safe change.
+
+If a feature cannot be redesigned without changing backend behavior, preserve its current functionality and improve its presentation.
+
+## 10. Responsive Design
+
+The complete application must work properly on:
+
+- Desktop computers.
+- Laptops.
+- Tablets.
+- Mobile phones.
+
+Do not simply shrink the desktop interface.
+
+Adapt the layout intelligently.
+
+For example:
+- Desktop: Sidebar and full dashboard workspace.
+- Tablet: Collapsible sidebar and adaptive content grid.
+- Mobile: Compact navigation, stacked cards and touch-friendly controls.
+
+Prevent horizontal overflow, overlapping content and unreadable tables.
+
+## 11. Quality Assurance
+
+After implementing the redesign:
+
+- Check every redesigned page.
+- Verify navigation.
+- Verify all buttons.
+- Verify all forms.
+- Verify modal behavior.
+- Verify uploads.
+- Verify charts and analytics.
+- Verify responsive layouts.
+- Verify student and teacher role separation.
+- Verify existing authentication.
+- Verify existing backend integrations.
+
+Do not consider a page complete just because it looks attractive.
+
+Every existing feature must continue to work.
+
+## 12. Implementation Strategy
+
+Work in the following phases:
+
+**Phase 1 – UI/UX Audit**
+Inspect the entire project, identify all pages, existing components, styles, layouts and user workflows.
+
+Identify:
+- Inconsistent styling.
+- Poor visual hierarchy.
+- Navigation problems.
+- Unnecessary complexity.
+- Responsive issues.
+- Accessibility issues.
+- Repeated or inconsistent components.
+
+**Phase 2 – Design System**
+Establish the complete visual identity, design tokens, typography, spacing, component styles and shared layouts.
+
+**Phase 3 – Student Experience**
+Redesign student pages while preserving their existing functionality.
+
+**Phase 4 – Teacher Experience**
+Redesign teacher pages while preserving their existing functionality.
+
+**Phase 5 – Registration and Shared Pages**
+Improve onboarding, authentication, profile and settings interfaces.
+
+**Phase 6 – Responsive Optimization**
+Test and refine desktop, tablet and mobile experiences.
+
+**Phase 7 – Final Quality Assurance**
+Verify that the redesigned application looks professional and all existing functionality still works.
+
+## 13. Expected Final Result
+
+The final application should look like a premium, production-ready educational SaaS platform that an actual school, coaching institution or educational organization would confidently use.
+
+The most important design principle:
+
+**Make the application easier for humans to use, not just more visually attractive.**
+
+Prioritize clarity, consistency, usability, accessibility and trust.
+
+Start by auditing the existing application. Then establish the design system and implement the redesign systematically.
+
+Do not perform a superficial CSS makeover. Deliver a complete, cohesive UI/UX transformation while protecting all existing working systems.

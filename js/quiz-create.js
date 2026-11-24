@@ -338,11 +338,6 @@
   }
 
   function validateAIGenerationForm(form) {
-    if (!form.content) {
-      showToast("Paste quiz content before generating AI questions.", true);
-      $("aiQuizContent").focus();
-      return false;
-    }
     if (form.content.length > 12000) {
       showToast("Quiz content is too long. Reduce it to 12,000 characters or fewer.", true);
       $("aiQuizContent").focus();
