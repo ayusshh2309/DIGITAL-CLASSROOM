@@ -26,6 +26,22 @@
         --font: "Plus Jakarta Sans", sans-serif;
       }
 
+      @property --role-gradient-position {
+        syntax: "<percentage>";
+        inherits: false;
+        initial-value: 0%;
+      }
+
+      @keyframes rolePageGradientShift {
+        0%,
+        100% {
+          --role-gradient-position: 0%;
+        }
+        50% {
+          --role-gradient-position: 100%;
+        }
+      }
+
       *,
       *::before,
       *::after {
@@ -36,7 +52,8 @@
 
       body {
         font-family: var(--font);
-        background-color: var(--bg-page);
+        --role-gradient-position: 0%;
+        animation: rolePageGradientShift 18s ease-in-out infinite;
         color: var(--text-dark);
         min-height: 100vh;
         display: flex;
@@ -46,7 +63,55 @@
         padding: 16px 0;
       }
 
+      html body {
+        background: linear-gradient(
+          120deg,
+          #e6f7f6,
+          #e9e4fb,
+          #dff0fc,
+          #fdf0dc
+        ) var(--role-gradient-position) 50% / 400% 400% !important;
+      }
+
+      .interactive-gradient {
+        --x1: 18%;
+        --y1: 24%;
+        --x2: 78%;
+        --y2: 22%;
+        --x3: 76%;
+        --y3: 76%;
+        --x4: 24%;
+        --y4: 78%;
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(
+            circle 560px at var(--x1) var(--y1),
+            rgba(104, 208, 200, 0.8) 0%,
+            transparent 65%
+          ),
+          radial-gradient(
+            circle 660px at var(--x2) var(--y2),
+            rgba(178, 152, 245, 0.75) 0%,
+            transparent 65%
+          ),
+          radial-gradient(
+            circle 520px at var(--x3) var(--y3),
+            rgba(120, 200, 248, 0.75) 0%,
+            transparent 65%
+          ),
+          radial-gradient(
+            circle 460px at var(--x4) var(--y4),
+            rgba(255, 208, 140, 0.65) 0%,
+            transparent 65%
+          );
+      }
+
       .container {
+        position: relative;
+        z-index: 1;
         width: 100%;
         max-width: 1480px;
         min-width: 0;
@@ -63,9 +128,14 @@
         display: flex;
         flex-direction: column;
         gap: 36px;
+        padding-top: 158px;
       }
 
       .brand-header {
+        position: fixed;
+        top: clamp(16px, 3vh, 32px);
+        left: clamp(16px, 4vw, 60px);
+        z-index: 2;
         display: flex;
         align-items: center;
         gap: 16px;
@@ -148,6 +218,17 @@
         color: #ffffff;
         flex-shrink: 0;
         font-size: 1.5rem;
+      }
+
+      .ic svg {
+        display: block;
+        width: 26px;
+        height: 26px;
+        fill: none;
+        stroke: #ffffff;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
       }
 
       .feature-info h4 {
@@ -268,6 +349,18 @@
         flex-shrink: 0;
       }
 
+      .security-icon {
+        display: block;
+        width: 16px;
+        height: 16px;
+        flex: 0 0 16px;
+        fill: none;
+        stroke: #d98a0b;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
       .role-info {
         min-width: 0;
         flex: 1;
@@ -310,7 +403,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 10px;
+        gap: 6px;
         font-size: 0.95rem;
         color: var(--text-muted);
         text-align: center;
@@ -329,6 +422,7 @@
         }
         .left-panel {
           gap: 20px;
+          padding-top: 142px;
         }
         .brand-header {
           justify-content: center;
@@ -506,6 +600,7 @@
 
         .left-panel {
           gap: 16px;
+          padding-top: 138px;
         }
 
         .brand-title {
@@ -558,9 +653,16 @@
           padding: 16px 14px;
         }
       }
+
+      @media (prefers-reduced-motion: reduce) {
+        body {
+          animation: none;
+        }
+      }
     </style>
   </head>
   <body>
+    <div class="interactive-gradient" aria-hidden="true"></div>
     <div class="container">
       <!-- LEFT PANEL CONTENT -->
       <div class="left-panel">
@@ -582,7 +684,12 @@
 
         <div class="feature-list">
           <div class="feature-item">
-            <div class="feature-icon" style="background: #00818a">💻</div>
+            <div class="feature-icon ic" style="background: #00818a">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="13" rx="2" />
+                <path d="M2 21h20" />
+              </svg>
+            </div>
             <div class="feature-info">
               <h4>One place for every class</h4>
               <p>
@@ -593,7 +700,13 @@
           </div>
 
           <div class="feature-item">
-            <div class="feature-icon" style="background: #00818a">📤</div>
+            <div class="feature-icon ic" style="background: #00818a">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 16V9" />
+                <path d="m9 12 3-3 3 3" />
+                <path d="M20 16.2A4.5 4.5 0 0 0 18.5 7h-1.26A8 8 0 1 0 4 16.25" />
+              </svg>
+            </div>
             <div class="feature-info">
               <h4>Learning materials, shared instantly</h4>
               <p>
@@ -604,7 +717,12 @@
           </div>
 
           <div class="feature-item">
-            <div class="feature-icon" style="background: #10b981">📊</div>
+            <div class="feature-icon ic" style="background: #10b981">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 4v16h16" />
+                <path d="M9 16v-5M14 16V8M19 16v-3" />
+              </svg>
+            </div>
             <div class="feature-info">
               <h4>Progress you can see</h4>
               <p>
@@ -615,7 +733,12 @@
           </div>
 
           <div class="feature-item">
-            <div class="feature-icon" style="background: #f59e0b">📹</div>
+            <div class="feature-icon ic" style="background: #f59e0b">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="7" width="12" height="10" rx="2" />
+                <path d="m15 10 6-3v10l-6-3z" />
+              </svg>
+            </div>
             <div class="feature-info">
               <h4>Live classes, real engagement</h4>
               <p>
@@ -652,7 +775,13 @@
         <div class="roles-container">
           <!-- Teacher Card -->
           <div class="role-card" onclick="selectRole('teacher')">
-            <div class="role-icon" style="background: #00818a">🎓</div>
+            <div class="role-icon ic" style="background: #00818a">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 4h18" />
+                <rect x="5" y="6" width="14" height="11" rx="1" />
+                <path d="M12 17v4m-4 0h8" />
+              </svg>
+            </div>
             <div class="role-info">
               <div class="role-title">I'm a Teacher</div>
               <div class="role-desc">
@@ -665,7 +794,12 @@
 
           <!-- Student Card -->
           <div class="role-card" onclick="selectRole('student')">
-            <div class="role-icon" style="background: #0ea5e9">🎓</div>
+            <div class="role-icon ic" style="background: #0ea5e9">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m22 10-10-5L2 10l10 5 10-5Z" />
+                <path d="M6 12v5c3.3 2.7 8.7 2.7 12 0v-5M22 10v6" />
+              </svg>
+            </div>
             <div class="role-info">
               <div class="role-title">I'm a Student</div>
               <div class="role-desc">
@@ -678,13 +812,79 @@
         </div>
 
         <div class="security-note">
-          <span>🔒</span> Your information is secure and will never be shared
-          with anyone.
+          <svg class="security-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="4" y="11" width="16" height="10" rx="2" />
+            <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+          </svg>
+          Your information is secure and will never be shared with anyone.
         </div>
       </div>
     </div>
 
     <script>
+      (() => {
+        const reducedMotion = window.matchMedia(
+          "(prefers-reduced-motion: reduce)",
+        );
+        if (reducedMotion.matches) return;
+
+        const gradient = document.querySelector(".interactive-gradient");
+        if (!gradient) return;
+
+        const layers = [
+          { x: 0.18, y: 0.24, ease: 0.09 },
+          { x: 0.78, y: 0.22, ease: 0.05 },
+          { x: 0.76, y: 0.76, ease: 0.03 },
+          { x: 0.24, y: 0.78, ease: 0.02 },
+        ];
+        let pointerX = 0.5;
+        let pointerY = 0.5;
+        let lastPointerTime = performance.now();
+
+        function trackPointer(event) {
+          pointerX = Math.min(1, Math.max(0, event.clientX / window.innerWidth));
+          pointerY = Math.min(1, Math.max(0, event.clientY / window.innerHeight));
+          lastPointerTime = performance.now();
+        }
+
+        window.addEventListener("pointermove", trackPointer, { passive: true });
+        window.addEventListener("pointerdown", trackPointer, { passive: true });
+
+        function animate(now) {
+          let targetX = pointerX;
+          let targetY = pointerY;
+          if (now - lastPointerTime >= 3000) {
+            const drift = now * 0.00018;
+            targetX = 0.5 + Math.cos(drift) * 0.32;
+            targetY = 0.5 + Math.sin(drift * 0.83) * 0.3;
+          }
+
+          const targets = [
+            [targetX, targetY],
+            [1 - targetX, 1 - targetY],
+            [
+              Math.min(1, Math.max(0, targetX + 80 / window.innerWidth)),
+              Math.min(1, Math.max(0, targetY - 60 / window.innerHeight)),
+            ],
+            [
+              Math.min(1, Math.max(0, 1 - targetX - 0.14)),
+              Math.min(1, Math.max(0, 1 - targetY + 0.12)),
+            ],
+          ];
+
+          layers.forEach((layer, index) => {
+            layer.x += (targets[index][0] - layer.x) * layer.ease;
+            layer.y += (targets[index][1] - layer.y) * layer.ease;
+            gradient.style.setProperty(`--x${index + 1}`, `${layer.x * 100}%`);
+            gradient.style.setProperty(`--y${index + 1}`, `${layer.y * 100}%`);
+          });
+
+          window.requestAnimationFrame(animate);
+        }
+
+        window.requestAnimationFrame(animate);
+      })();
+
       function selectRole(role) {
         localStorage.setItem("selected_role", role);
 
