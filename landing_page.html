@@ -111,60 +111,15 @@
         align-items: center;
         gap: 10px;
       }
-      .mark {
-        width: 32px;
-        height: 32px;
-        border-radius: 10px;
-        background: var(--brand);
-        position: relative;
-        flex: none;
-      }
-      .mark::after {
-        content: "";
-        position: absolute;
-        left: 7px;
-        right: 7px;
-        top: 9px;
-        height: 13px;
-        border: 3px solid var(--brand-ink);
-        border-top-width: 5px;
-        border-radius: 2px;
-      }
       .bar-in {
         width: 100%;
         padding: 0 clamp(10px, 2.5vw, 28px) 0 clamp(6px, 1.2vw, 14px);
-      }
-      .logo img {
-        height: clamp(64px, 9vw, 92px);
-        width: auto;
-        display: block;
       }
       .logo .landing-logo {
         height: clamp(64px, 9vw, 92px);
         width: auto;
         max-height: 92px;
         object-fit: contain;
-      }
-      .lg-l,
-      .lg-d {
-        display: none !important;
-      }
-      .lg-d {
-        display: none !important;
-      }
-      @media (prefers-color-scheme: dark) {
-        :root:not([data-theme="light"]) .lg-l {
-          display: none;
-        }
-        :root:not([data-theme="light"]) .lg-d {
-          display: block !important;
-        }
-      }
-      :root[data-theme="dark"] .lg-l {
-        display: none;
-      }
-      :root[data-theme="dark"] .lg-d {
-        display: block !important;
       }
       .menu {
         display: flex;
@@ -685,15 +640,15 @@
     <header class="top">
       <div class="bar-in">
         <nav>
-          <a class="logo" href="#top" aria-label="Smart Learning DC home"
-            ><img
+          <a class="logo" href="#top" aria-label="Smart Learning DC home">
+            <img
               class="landing-logo"
-              src="assets/smart_learning_dc_infinity_loop_logo.png"
+              src="assets/smart_learning_dc_infinity_loop_logo_dark.png"
               width="560"
               height="380"
               alt="Smart Learning DC: Learn. Grow. Succeed."
-            /><img
-              
+            />
+          </a>
           <button
             class="burger"
             id="bg"
@@ -706,8 +661,7 @@
           <div class="menu" id="mn">
             <a href="#features">Features</a><a href="#audience">Who it’s for</a
             ><a href="#how">How it works</a><a href="#faq">FAQ</a
-            ><a class="login" href="teacher_registration/login.html
-            ">Log in</a
+            ><a class="login" href="teacher_registration/login.html">Log in</a
             ><a class="btn" href="#roles">Get early access</a>
           </div>
         </nav>
